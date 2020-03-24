@@ -743,7 +743,7 @@ public final class MessageCorrelationTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("msg1")
             .cancelActivity(false)
             .message(m -> m.name("msg1").zeebeCorrelationKey("key"))
@@ -837,7 +837,7 @@ public final class MessageCorrelationTest {
         .withXmlResource(
             Bpmn.createExecutableProcess("wf")
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeTaskType("test"))
+                .serviceTask("task", t -> t.zeebeJobType("test"))
                 .intermediateCatchEvent(
                     "catch", c -> c.message(m -> m.name("a").zeebeCorrelationKey("key")))
                 .done())

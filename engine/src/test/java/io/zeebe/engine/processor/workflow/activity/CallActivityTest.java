@@ -62,7 +62,7 @@ public final class CallActivityTest {
     final var childWorkflow =
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
             .startEvent()
-            .serviceTask("child-task", t -> t.zeebeTaskType(jobType))
+            .serviceTask("child-task", t -> t.zeebeJobType(jobType))
             .endEvent()
             .done();
 

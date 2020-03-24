@@ -49,12 +49,12 @@ public final class MessageStartEventTest {
 
     customizer.accept(startEventBuilder);
 
-    return startEventBuilder.serviceTask("task", t -> t.zeebeTaskType("test")).done();
+    return startEventBuilder.serviceTask("task", t -> t.zeebeJobType("test")).done();
   }
 
   private static BpmnModelInstance multipleStartEvents() {
     final var process = Bpmn.createExecutableProcess("wf");
-    process.startEvent().message(MESSAGE_NAME_1).serviceTask("task", t -> t.zeebeTaskType("test"));
+    process.startEvent().message(MESSAGE_NAME_1).serviceTask("task", t -> t.zeebeJobType("test"));
     process.startEvent().message(MESSAGE_NAME_2).connectTo("task");
 
     return process.done();

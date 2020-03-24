@@ -32,10 +32,10 @@ public final class ParallelGatewayTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
           .parallelGateway("fork")
-          .serviceTask("task1", b -> b.zeebeTaskType("type1"))
+          .serviceTask("task1", b -> b.zeebeJobType("type1"))
           .endEvent("end1")
           .moveToNode("fork")
-          .serviceTask("task2", b -> b.zeebeTaskType("type2"))
+          .serviceTask("task2", b -> b.zeebeJobType("type2"))
           .endEvent("end2")
           .done();
 
@@ -241,7 +241,7 @@ public final class ParallelGatewayTest {
             .sequenceFlowId("joinFlow1")
             .parallelGateway("join")
             .moveToNode("fork")
-            .serviceTask("waitState", b -> b.zeebeTaskType("type"))
+            .serviceTask("waitState", b -> b.zeebeJobType("type"))
             .sequenceFlowId("joinFlow2")
             .connectTo("join")
             .endEvent()
@@ -291,9 +291,9 @@ public final class ParallelGatewayTest {
             .parallelGateway("join-fork")
             .moveToNode("fork")
             .connectTo("join-fork")
-            .serviceTask("task1", b -> b.zeebeTaskType("type1"))
+            .serviceTask("task1", b -> b.zeebeJobType("type1"))
             .moveToLastGateway()
-            .serviceTask("task2", b -> b.zeebeTaskType("type2"))
+            .serviceTask("task2", b -> b.zeebeJobType("type2"))
             .done();
 
     engine.deployment().withXmlResource(process).deploy();
@@ -322,9 +322,9 @@ public final class ParallelGatewayTest {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent("start")
-            .serviceTask("task1", b -> b.zeebeTaskType("type1"))
+            .serviceTask("task1", b -> b.zeebeJobType("type1"))
             .moveToNode("start")
-            .serviceTask("task2", b -> b.zeebeTaskType("type2"))
+            .serviceTask("task2", b -> b.zeebeJobType("type2"))
             .done();
 
     engine.deployment().withXmlResource(process).deploy();

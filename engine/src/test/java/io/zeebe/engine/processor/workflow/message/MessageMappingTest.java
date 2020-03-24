@@ -61,7 +61,7 @@ public final class MessageMappingTest {
   private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("catch")
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .endEvent()
@@ -70,7 +70,7 @@ public final class MessageMappingTest {
   private static final BpmnModelInstance NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("catch", b -> b.cancelActivity(false))
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .endEvent()
@@ -103,7 +103,7 @@ public final class MessageMappingTest {
                       .interrupting(true)
                       .endEvent())
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType("type"))
+          .serviceTask("task", t -> t.zeebeJobType("type"))
           .endEvent()
           .done();
 
@@ -118,7 +118,7 @@ public final class MessageMappingTest {
                       .interrupting(false)
                       .endEvent())
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType("type"))
+          .serviceTask("task", t -> t.zeebeJobType("type"))
           .endEvent()
           .done();
 

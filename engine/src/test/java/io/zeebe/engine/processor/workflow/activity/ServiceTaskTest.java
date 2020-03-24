@@ -70,7 +70,7 @@ public final class ServiceTaskTest {
   @Test
   public void shouldActivateServiceTask() {
     // given
-    ENGINE.deployment().withXmlResource(workflow(t -> t.zeebeTaskType("test"))).deploy();
+    ENGINE.deployment().withXmlResource(workflow(t -> t.zeebeJobType("test"))).deploy();
 
     // when
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -105,7 +105,7 @@ public final class ServiceTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(workflow(t -> t.zeebeTaskType("test").zeebeTaskRetries(5)))
+        .withXmlResource(workflow(t -> t.zeebeJobType("test").zeebeTaskRetries(5)))
         .deploy();
 
     // when
@@ -141,7 +141,7 @@ public final class ServiceTaskTest {
         .deployment()
         .withXmlResource(
             workflow(
-                t -> t.zeebeTaskType("test").zeebeTaskHeader("a", "b").zeebeTaskHeader("c", "d")))
+                t -> t.zeebeJobType("test").zeebeTaskHeader("a", "b").zeebeTaskHeader("c", "d")))
         .deploy();
 
     // when
@@ -160,7 +160,7 @@ public final class ServiceTaskTest {
   @Test
   public void shouldCompleteServiceTask() {
     // given
-    ENGINE.deployment().withXmlResource(workflow(t -> t.zeebeTaskType("test"))).deploy();
+    ENGINE.deployment().withXmlResource(workflow(t -> t.zeebeJobType("test"))).deploy();
 
     // when
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();

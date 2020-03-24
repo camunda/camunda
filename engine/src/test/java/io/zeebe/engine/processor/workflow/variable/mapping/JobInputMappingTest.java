@@ -73,7 +73,7 @@ public final class JobInputMappingTest {
                 .serviceTask(
                     "service",
                     builder -> {
-                      builder.zeebeTaskType("test");
+                      builder.zeebeJobType("test");
                       mappings.accept(builder);
                     })
                 .endEvent()

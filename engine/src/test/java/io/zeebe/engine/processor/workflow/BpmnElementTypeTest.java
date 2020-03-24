@@ -152,7 +152,7 @@ public final class BpmnElementTypeTest {
             BpmnModelInstance modelInstance() {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
-                  .serviceTask("task", b -> b.zeebeTaskType(taskType()))
+                  .serviceTask("task", b -> b.zeebeJobType(taskType()))
                   .boundaryEvent(elementId())
                   .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
                   .endEvent()
@@ -170,7 +170,7 @@ public final class BpmnElementTypeTest {
             BpmnModelInstance modelInstance() {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
-                  .serviceTask("task", b -> b.zeebeTaskType(taskType()))
+                  .serviceTask("task", b -> b.zeebeJobType(taskType()))
                   .boundaryEvent(elementId())
                   .timerWithDuration("PT0.01S")
                   .endEvent()
@@ -191,7 +191,7 @@ public final class BpmnElementTypeTest {
             BpmnModelInstance modelInstance() {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
-                  .serviceTask(elementId(), b -> b.zeebeTaskType(taskType()))
+                  .serviceTask(elementId(), b -> b.zeebeJobType(taskType()))
                   .done();
             }
 

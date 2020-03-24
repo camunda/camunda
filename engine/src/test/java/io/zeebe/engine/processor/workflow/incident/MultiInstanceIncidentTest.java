@@ -44,7 +44,7 @@ public final class MultiInstanceIncidentTest {
           .serviceTask(
               ELEMENT_ID,
               t ->
-                  t.zeebeTaskType(JOB_TYPE)
+                  t.zeebeJobType(JOB_TYPE)
                       .multiInstance(
                           b ->
                               b.zeebeInputCollection(INPUT_COLLECTION)

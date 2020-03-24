@@ -31,7 +31,7 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
       {
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("boundary")
             .cancelActivity(true)
             .signal("signal")
@@ -44,7 +44,7 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
       {
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("boundary")
             .cancelActivity(true)
             .endEvent("end")
@@ -54,7 +54,7 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
       {
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("boundary")
             .cancelActivity(true)
             .timerWithDuration("PT0.5S")
@@ -66,7 +66,7 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
       {
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("boundary")
             .cancelActivity(true)
             .timerWithDuration("PT0.5S")
@@ -78,12 +78,12 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
       {
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task1", b -> b.zeebeTaskType("type"))
+            .serviceTask("task1", b -> b.zeebeJobType("type"))
             .boundaryEvent("boundary")
             .cancelActivity(true)
             .timerWithDuration("PT0.5S")
             .moveToActivity("task1")
-            .serviceTask("task2", b -> b.zeebeTaskType("type"))
+            .serviceTask("task2", b -> b.zeebeJobType("type"))
             .sequenceFlowId("taskOut")
             .connectTo("boundary")
             .endEvent("end")

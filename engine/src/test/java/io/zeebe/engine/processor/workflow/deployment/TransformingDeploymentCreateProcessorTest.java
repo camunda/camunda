@@ -117,7 +117,7 @@ public final class TransformingDeploymentCreateProcessorTest {
             .serviceTask(
                 "test",
                 task -> {
-                  task.zeebeTaskType("type");
+                  task.zeebeJobType("type");
                 })
             .endEvent()
             .done();

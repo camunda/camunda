@@ -100,7 +100,7 @@ public final class ActivityOutputMappingTest {
                     b -> {
                       b.embeddedSubProcess()
                           .startEvent()
-                          .serviceTask("task", t -> t.zeebeTaskType(jobType))
+                          .serviceTask("task", t -> t.zeebeJobType(jobType))
                           .endEvent();
 
                       mappings.accept(b);

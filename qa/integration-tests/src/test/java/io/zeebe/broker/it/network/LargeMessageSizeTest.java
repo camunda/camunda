@@ -45,7 +45,7 @@ public final class LargeMessageSizeTest {
   private static BpmnModelInstance workflow(final String jobType) {
     return Bpmn.createExecutableProcess("process")
         .startEvent()
-        .serviceTask("task", t -> t.zeebeTaskType(jobType))
+        .serviceTask("task", t -> t.zeebeJobType(jobType))
         .endEvent()
         .done();
   }

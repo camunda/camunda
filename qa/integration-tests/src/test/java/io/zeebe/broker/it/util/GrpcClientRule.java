@@ -166,7 +166,7 @@ public final class GrpcClientRule extends ExternalResource {
         .serviceTask(
             "task",
             t -> {
-              t.zeebeTaskType(jobType);
+              t.zeebeJobType(jobType);
               taskBuilderConsumer.accept(t);
             })
         .endEvent("end")

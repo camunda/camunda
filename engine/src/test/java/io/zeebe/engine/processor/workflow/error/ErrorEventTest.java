@@ -47,7 +47,7 @@ public class ErrorEventTest {
     final var builder =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE));
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE));
 
     customizer.accept(builder);
 
@@ -170,7 +170,7 @@ public class ErrorEventTest {
     final var workflowChild =
         Bpmn.createExecutableProcess("wf-child")
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
             .endEvent()
             .done();
 
@@ -245,7 +245,7 @@ public class ErrorEventTest {
                         .embeddedSubProcess()
                         .eventSubProcess("error-subprocess", eventSubprocess)
                         .startEvent()
-                        .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+                        .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
                         .endEvent())
             .endEvent()
             .done();

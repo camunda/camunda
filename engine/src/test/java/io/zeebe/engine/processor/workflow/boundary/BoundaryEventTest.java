@@ -45,7 +45,7 @@ public final class BoundaryEventTest {
   private static final BpmnModelInstance MULTIPLE_SEQUENCE_FLOWS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("timer")
           .cancelActivity(true)
           .timerWithDuration("PT0.1S")
@@ -58,7 +58,7 @@ public final class BoundaryEventTest {
   private static final BpmnModelInstance NON_INTERRUPTING_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("event")
           .cancelActivity(false)
           .timerWithCycle("R/PT1S")
@@ -143,7 +143,7 @@ public final class BoundaryEventTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("event")
             .message(m -> m.name("message").zeebeCorrelationKey("key"))
             .zeebeOutput("foo", "bar")
@@ -178,7 +178,7 @@ public final class BoundaryEventTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type").zeebeInput("oof", "baz"))
+            .serviceTask("task", b -> b.zeebeJobType("type").zeebeInput("oof", "baz"))
             .boundaryEvent("timer")
             .cancelActivity(true)
             .timerWithDuration("PT1S")
@@ -223,7 +223,7 @@ public final class BoundaryEventTest {
             .subProcess("sub")
             .embeddedSubProcess()
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("type"))
+            .serviceTask("task", t -> t.zeebeJobType("type"))
             .endEvent()
             .subProcessDone()
             .boundaryEvent("timer")
@@ -315,7 +315,7 @@ public final class BoundaryEventTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask("task", c -> c.zeebeTaskType("type").zeebeInput("bar", "foo"))
+            .serviceTask("task", c -> c.zeebeJobType("type").zeebeInput("bar", "foo"))
             .boundaryEvent(
                 "event", b -> b.message(m -> m.zeebeCorrelationKey("foo").name("message")))
             .endEvent()
@@ -352,7 +352,7 @@ public final class BoundaryEventTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask("task", c -> c.zeebeTaskType("type"))
+            .serviceTask("task", c -> c.zeebeJobType("type"))
             .boundaryEvent(
                 "event", b -> b.message(m -> m.zeebeCorrelationKey("orderId").name("message")))
             .endEvent()

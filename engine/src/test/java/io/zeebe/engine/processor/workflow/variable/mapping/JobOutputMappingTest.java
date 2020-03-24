@@ -164,7 +164,7 @@ public final class JobOutputMappingTest {
                 .serviceTask(
                     "task",
                     builder -> {
-                      builder.zeebeTaskType(jobType);
+                      builder.zeebeJobType(jobType);
                       mappings.accept(builder);
                     })
                 .endEvent()

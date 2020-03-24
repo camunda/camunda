@@ -71,7 +71,7 @@ public final class MessageCatchElementTest {
   private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(BOUNDARY_EVENT_WORKFLOW_PROCESS_ID)
           .startEvent()
-          .serviceTask(ELEMENT_ID, b -> b.zeebeTaskType("type"))
+          .serviceTask(ELEMENT_ID, b -> b.zeebeJobType("type"))
           .boundaryEvent()
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
@@ -82,7 +82,7 @@ public final class MessageCatchElementTest {
   private static final BpmnModelInstance NON_INT_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(NON_INT_BOUNDARY_EVENT_WORKFLOW_PROCESS_ID)
           .startEvent()
-          .serviceTask(ELEMENT_ID, b -> b.zeebeTaskType("type"))
+          .serviceTask(ELEMENT_ID, b -> b.zeebeJobType("type"))
           .boundaryEvent("event")
           .cancelActivity(false)
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
