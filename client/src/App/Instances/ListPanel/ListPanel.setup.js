@@ -56,7 +56,7 @@ export const mockProps = {
 export const mockPropsBeforeDataLoaded = {
   ...mockProps,
   instances: [],
-  initialLoad: false,
+  initialLoad: true,
   instancesLoaded: false
 };
 
