@@ -35,7 +35,9 @@
         "canceled": true,
         "workflowIds": [
           "${workflowIds}"
-        ]
+        ],
+        "ids": ["${workflowInstanceIds}"],
+        "activityId": "task2"
       },
       "operationType": "CANCEL_WORKFLOW_INSTANCE"
     }
