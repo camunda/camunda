@@ -19,6 +19,7 @@ import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -68,7 +69,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
   @Override
   public Optional<Snapshot> commitSnapshot(final Path snapshotPath) {
     final var metadata = DbSnapshotMetadata.ofPath(snapshotPath);
-    return metadata.map(m -> createNewCommittedSnapshot(snapshotPath, m));
+    return metadata.flatMap(m -> createNewCommittedSnapshot(snapshotPath, m));
   }
 
   @Override
@@ -143,12 +144,15 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
     LOGGER.debug("Snapshot {} removed from store {}", snapshot, store);
   }
 
-  private Snapshot createNewCommittedSnapshot(
+  private Optional<Snapshot> createNewCommittedSnapshot(
       final Path snapshotPath, final DbSnapshotMetadata metadata) {
     try (final var created =
         store.newSnapshot(
             metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp(), snapshotPath)) {
-      return new SnapshotImpl(metadata.getIndex(), created.getPath());
+      return Optional.of(new SnapshotImpl(metadata.getIndex(), created.getPath()));
+    } catch (final UncheckedIOException e) {
+      LOGGER.error("Failed to commit pending snapshot {} located at {}", metadata, snapshotPath, e);
+      return Optional.empty();
     }
   }
 

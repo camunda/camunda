@@ -16,9 +16,11 @@ import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -189,7 +191,7 @@ public final class DbSnapshotStore implements SnapshotStore {
 
     final var destination = buildSnapshotDirectory(metadata);
     try {
-      Files.move(directory, destination);
+      tryAtomicDirectoryMove(directory, destination);
     } catch (final FileAlreadyExistsException e) {
       LOGGER.debug(
           "Expected to move snapshot from {} to {}, but it already exists",
@@ -201,6 +203,15 @@ public final class DbSnapshotStore implements SnapshotStore {
     }
 
     return put(new DbSnapshot(destination, metadata));
+  }
+
+  private void tryAtomicDirectoryMove(final Path directory, final Path destination)
+      throws IOException {
+    try {
+      Files.move(directory, destination, StandardCopyOption.ATOMIC_MOVE);
+    } catch (final AtomicMoveNotSupportedException e) {
+      Files.move(directory, destination);
+    }
   }
 
   private Optional<DbSnapshot> getLatestSnapshot() {

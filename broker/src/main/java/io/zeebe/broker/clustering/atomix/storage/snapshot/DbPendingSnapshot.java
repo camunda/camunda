@@ -18,7 +18,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -92,7 +91,12 @@ public final class DbPendingSnapshot implements PendingSnapshot {
     final var filename = getFile(chunkId);
     final var path = directory.resolve(filename);
 
-    IoUtil.ensureDirectoryExists(directory.toFile(), "Pending snapshot directory");
+    try {
+      FileUtil.ensureDirectoryExists(directory);
+    } catch (final IOException e) {
+      LOGGER.error("Failed to ensure pending snapshot directory {} exists", directory, e);
+      throw new UncheckedIOException(e);
+    }
 
     try (final var channel =
         Files.newByteChannel(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
