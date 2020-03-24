@@ -11,7 +11,7 @@ import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
 const PointerBottom = css`
   top: 100%;
-  left: 15px;
+  left: 25px;
 `;
 const PointerTop = css`
   bottom: 100%;

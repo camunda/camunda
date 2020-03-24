@@ -8,17 +8,19 @@ import styled, {css} from 'styled-components';
 import {Colors} from 'modules/theme';
 
 const MENU_WIDTH = 165;
-const MENU_RIGHT_OFFSET = 43;
+const MENU_RIGHT_OFFSET = 52;
 
 export const DropdownContainer = styled.div`
   position: relative;
   width: fit-content;
 
   ul {
+    max-width: ${MENU_WIDTH}px;
     min-width: ${MENU_WIDTH}px;
     position: absolute;
     bottom: 30px;
-    right: calc(${MENU_RIGHT_OFFSET}px - ${MENU_WIDTH}px);
+    left: ${({dropdownWidth}) =>
+      dropdownWidth && `calc(${dropdownWidth}px - ${MENU_RIGHT_OFFSET}px)`};
   }
 `;
 
