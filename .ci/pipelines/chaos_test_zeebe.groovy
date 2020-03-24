@@ -108,7 +108,7 @@ void buildNotification(String buildStatus, String to) {
 }
 
 static String pythonAgent() {
-    def nodePool = 'slaves'
+    def nodePool = 'agents-n1-standard-32-netssd-preempt'
     def project = 'zeebe'
 
     """
