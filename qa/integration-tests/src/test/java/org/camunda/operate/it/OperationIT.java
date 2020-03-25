@@ -17,16 +17,16 @@ import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.es.schema.templates.OperationTemplate;
+import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.OperationReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.schema.templates.OperationTemplate;
-import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.OperationDto;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
@@ -35,13 +35,11 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -142,9 +140,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
 
-    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(operationResponse.getCount()).isEqualTo(10);
-    assertThat(operationResponse.getBatchOperationId()).isEqualTo(batchOperationEntity.getId());
+    final BatchOperationEntity batchOperationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    assertThat(batchOperationResponse).isEqualTo(batchOperationEntity);
 
     ListViewResponseDto response = getWorkflowInstances(allRunningQuery);
     assertThat(response.getWorkflowInstances()).hasSize(instanceCount);
@@ -178,9 +175,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
 
-    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<CreateOperationResponseDto>() {});
-    assertThat(operationResponse.getCount()).isEqualTo(1);
-    assertThat(operationResponse.getBatchOperationId()).isEqualTo(batchOperationEntity.getId());
+    final BatchOperationEntity batchOperationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    assertThat(batchOperationResponse).isEqualTo(batchOperationEntity);
 
     final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
     assertThat(workflowInstance.isHasActiveOperation()).isTrue();
@@ -215,12 +211,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
 
-    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(operationResponse.getCount()).isEqualTo(2);
-    assertThat(operationResponse.getBatchOperationId()).isEqualTo(batchOperationEntity.getId());
-    final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
-    assertThat(workflowInstance.isHasActiveOperation()).isTrue();
-    assertThat(workflowInstance.getOperations()).hasSize(2);
+    final BatchOperationEntity batchOperationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    assertThat(batchOperationResponse).isEqualTo(batchOperationEntity);
 
     final List<OperationEntity> operations = operationReader.getOperationsByWorkflowInstanceKey(workflowInstanceKey);
     assertThat(operations).hasSize(2);
@@ -238,10 +230,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //when
     final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
-    //then
-    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(operationResponse.getCount()).isEqualTo(0);
-    assertThat(operationResponse.getReason()).isEqualTo("No incidents found.");
+    final BatchOperationEntity batchOperationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    assertThat(batchOperationResponse.getInstancesCount()).isEqualTo(1);
+    assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(0);
     final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
     assertThat(workflowInstance.isHasActiveOperation()).isFalse();
     assertThat(workflowInstance.getOperations()).hasSize(0);
@@ -264,8 +255,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final MvcResult mvcResult = postBatchOperationWithOKResponse(TestUtil.createGetAllRunningQuery(), OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //then
-    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(operationResponse.getCount()).isEqualTo(0);
+    final BatchOperationEntity batchOperationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    assertThat(batchOperationResponse.getInstancesCount()).isEqualTo(0);
+    assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(0);
 
     final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
     assertThat(batchOperations).hasSize(1);

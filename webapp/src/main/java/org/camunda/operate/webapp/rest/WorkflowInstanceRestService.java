@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.camunda.operate.Metrics;
+import org.camunda.operate.entities.BatchOperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
@@ -28,7 +29,6 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.CollectionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,7 +92,7 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Perform single operation on an instance (async)")
   @PostMapping("/{id}/operation")
-  public CreateOperationResponseDto operation(@PathVariable String id,
+  public BatchOperationEntity operation(@PathVariable String id,
       @RequestBody CreateOperationRequestDto operationRequest) {
     validateOperationRequest(operationRequest);
     return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), operationRequest);
@@ -123,7 +123,7 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Create batch operation based on filter")
   @PostMapping("/batch-operation")
-  public CreateOperationResponseDto createBatchOperation(@RequestBody CreateBatchOperationRequestDto batchOperationRequest) {
+  public BatchOperationEntity createBatchOperation(@RequestBody CreateBatchOperationRequestDto batchOperationRequest) {
     validateBatchOperationRequest(batchOperationRequest);
     return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }

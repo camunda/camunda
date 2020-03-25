@@ -17,9 +17,6 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.webapp.es.reader.IncidentReader;
-import org.camunda.operate.webapp.es.reader.ListViewReader;
-import org.camunda.operate.webapp.es.reader.OperationReader;
 import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
@@ -29,9 +26,11 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.webapp.es.reader.IncidentReader;
+import org.camunda.operate.webapp.es.reader.ListViewReader;
+import org.camunda.operate.webapp.es.reader.OperationReader;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.camunda.operate.webapp.security.UserService;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -51,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
@@ -151,7 +149,7 @@ public class BatchOperationWriter {
    * @return
    * @throws PersistenceException
    */
-  public CreateOperationResponseDto scheduleBatchOperation(CreateBatchOperationRequestDto batchOperationRequest) {
+  public BatchOperationEntity scheduleBatchOperation(CreateBatchOperationRequestDto batchOperationRequest) {
     logger.debug("Creating batch operation: operationRequest [{}]", batchOperationRequest.toString());
     try {
       //create batch operation with unique id
@@ -187,7 +185,7 @@ public class BatchOperationWriter {
 
       persistBatchOperationEntity(batchOperation);
 
-      return new CreateOperationResponseDto(batchOperation.getId(), operationsCount.get());
+      return batchOperation;
 
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
@@ -201,7 +199,7 @@ public class BatchOperationWriter {
    * @return
    * @throws PersistenceException
    */
-  public CreateOperationResponseDto scheduleSingleOperation(long workflowInstanceKey, CreateOperationRequestDto operationRequest) {
+  public BatchOperationEntity scheduleSingleOperation(long workflowInstanceKey, CreateOperationRequestDto operationRequest) {
     logger.debug("Creating operation: workflowInstanceKey [{}], operation type [{}]", workflowInstanceKey, operationRequest.getOperationType());
     try {
       //create batch operation with unique id
@@ -246,7 +244,7 @@ public class BatchOperationWriter {
 
       ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
 
-      return new CreateOperationResponseDto(batchOperation.getId(), operationsCount, noOperationsReason);
+      return batchOperation;
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
     }
