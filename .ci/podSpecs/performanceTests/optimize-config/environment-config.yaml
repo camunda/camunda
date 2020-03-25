@@ -11,6 +11,7 @@ engines:
       endpoint: 'http://cambpm:8080/camunda'
       enabled: true
     importEnabled: true
+    eventImportEnabled: ${EVENT_IMPORT_ENABLED:false}
 
 es:
   connection:

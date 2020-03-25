@@ -4,7 +4,7 @@ die () {
     exit 1
 }
 
-[[ "$#" -eq 7 ]] || die "7 arguments required [NAMESPACE] [DOCKER_REGISTRY_USER] [DOCKER_REGISTRY_PW] [SQL_DUMP_NAME] [ES_VERSION] [CAMPBM_VERSION] [ES_REFRESH_INTERVAL], $# provided"
+[[ "$#" -eq 8 ]] || die "8 arguments required [NAMESPACE] [DOCKER_REGISTRY_USER] [DOCKER_REGISTRY_PW] [SQL_DUMP_NAME] [ES_VERSION] [CAMPBM_VERSION] [ES_REFRESH_INTERVAL] [EVENT_IMPORT_ENABLED], $# provided"
 
 NAMESPACE=$1
 REGISTRY_USR=$2
@@ -13,6 +13,7 @@ SQL_DUMP=$4
 ES_VERSION=$5
 CAMPBM_VERSION=$6
 ES_REFRESH_INTERVAL=$7
+EVENT_IMPORT_ENABLED=$8
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/ns.yml | kubectl apply -f -
 kubectl create secret docker-registry registry-camunda-cloud-secret \
@@ -58,6 +59,6 @@ sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/cambpm.yml
 #Spawning optimize
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/optimize-cfg.yml | kubectl apply -f -
 kubectl -n "$NAMESPACE" create configmap performance-optimize-camunda-cloud --from-file=.ci/podSpecs/performanceTests/optimize-config/
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${ES_REFRESH_INTERVAL}/$ES_REFRESH_INTERVAL/g" < .ci/podSpecs/performanceTests/optimize.yml | kubectl apply -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${ES_REFRESH_INTERVAL}/$ES_REFRESH_INTERVAL/g" -e "s/\${EVENT_IMPORT_ENABLED}/$EVENT_IMPORT_ENABLED/g" < .ci/podSpecs/performanceTests/optimize.yml | kubectl apply -f -
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/optimize.yml  | kubectl rollout status -f - --watch=true

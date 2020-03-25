@@ -46,11 +46,11 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 4
-        memory: 4Gi
+        cpu: 1
+        memory: 1Gi
       requests:
-        cpu: 2
-        memory: 2Gi
+        cpu: 1
+        memory: 1Gi
 """
 }
 
@@ -68,12 +68,6 @@ void buildNotification(String buildStatus) {
   def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
 
   emailext subject: subject, body: body, recipientProviders: recipients
-}
-
-void runMaven(String cmd) {
-  configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-    sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
-  }
 }
 
 pipeline {
@@ -96,7 +90,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '50'))
     timestamps()
-    timeout(time: 10, unit: 'HOURS')
+    timeout(time: 24, unit: 'HOURS')
   }
 
   stages {
@@ -108,6 +102,7 @@ pipeline {
             def mavenProps = readMavenPom().getProperties()
             env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
             env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+            env.EVENT_IMPORT_ENABLED = true
           }
         }
       }
@@ -115,39 +110,48 @@ pipeline {
     stage('Prepare') {
       steps {
         container('gcloud') {
-          sh ("""
+            sh ("""
                 # install jq
                 apk add --no-cache jq gettext
                 # kubectl
                 gcloud components install kubectl --quiet
                 
-                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${REGISTRY_USR}" "${REGISTRY_PSW}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "30s" "false"
+                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${REGISTRY_USR}" "${REGISTRY_PSW}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "${EVENT_IMPORT_ENABLED}"
             """)
         }
       }
     }
-    stage('Import') {
+    stage('ImportTest') {
       steps {
         container('gcloud') {
           sh ("""
                 bash .ci/podSpecs/performanceTests/wait-for-import-to-finish.sh "${NAMESPACE}"
-                bash .ci/podSpecs/performanceTests/scale-optimize-down.sh "${NAMESPACE}"
+
+                curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
+                
+                # assert expected counts
+                # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
+                NUMBER_OF_ACTIVITY_EVENTS=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-camunda-activity-*/_count' | jq '.count') || true
+                NUMBER_OF_VARIABLE_UPDATES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-variable-update-instance*/_count' | jq '.count') || true
+               
+                # note: each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
+                # a final if block checks if there was an error and will let the script fail
+                export EXPECTED_NUMBER_OF_VARIABLES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_variables | cut -f2 -d':'`
+                export EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_activity_instances | cut -f2 -d':'`
+
+                echo "NUMBER_OF_ACTIVITY_EVENTS"
+                # we use -ge here as the event index is a forward written log, and entities of the last timestamp might get duplicated
+                test "\$NUMBER_OF_ACTIVITY_EVENTS" -ge "\${EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES}" || error=true
+                echo "NUMBER_OF_VARIABLE_UPDATES"
+                # we use -ge here as the variable update index contains entries for each variable update
+                test "\$NUMBER_OF_VARIABLE_UPDATES" -ge "\${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
+
+                #Fail the build if there was an error
+                if [ \$error ]
+                then 
+                  exit -1
+                fi
             """)
-        }
-      }
-    }
-    stage('CleanupPerformanceTest') {
-      steps {
-        container('maven') {
-          runMaven('-T\$LIMITS_CPU -pl backend -DskipTests -Dskip.fe.build -Dskip.docker clean install')
-          runMaven("-Pcleanup-performance-test -f qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.${NAMESPACE}:5432/engine -Dengine.url=http://cambpm.${NAMESPACE}:8080/engine-rest -Des.host=elasticsearch.${NAMESPACE} -Dcleanup.timeout.minutes=${CLEANUP_TIMEOUT_MINUTES}")
-        }
-      }
-      post {
-        always {
-          container('maven') {
-            sh "curl -s elasticsearch.${NAMESPACE}:9200/_cat/indices?v || true"
-          }
         }
       }
     }
@@ -159,7 +163,7 @@ pipeline {
     }
     always {
       container('gcloud') {
-        sh ("bash .ci/podSpecs/performanceTests/kill.sh \"${NAMESPACE}\"")
+          sh ("bash .ci/podSpecs/performanceTests/kill.sh \"${NAMESPACE}\"")
       }
       // Retrigger the build if the slave disconnected
       script {
