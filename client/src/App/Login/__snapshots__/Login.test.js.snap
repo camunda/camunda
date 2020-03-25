@@ -28,9 +28,6 @@ exports[`Login redirection should redirect to referrer page on successful login 
 
 exports[`Login should display an error if any field is empty 1`] = `
 <Fragment>
-  <SpinnerSkeleton
-    data-test="spinner"
-  />
   <styled.div
     onSubmit={[Function]}
   >
@@ -78,9 +75,6 @@ exports[`Login should display an error if any field is empty 1`] = `
 
 exports[`Login should display an error on unsuccessful login 1`] = `
 <Fragment>
-  <SpinnerSkeleton
-    data-test="spinner"
-  />
   <styled.div
     onSubmit={[Function]}
   >
