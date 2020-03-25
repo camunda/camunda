@@ -21,6 +21,7 @@ import io.zeebe.util.health.HealthMonitor;
 import io.zeebe.util.health.HealthMonitorable;
 import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,18 +66,19 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   }
 
   @Override
-  public void onBecomingFollower(
+  public ActorFuture<Void> onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    updateBrokerReadyStatus(partitionId);
+    return updateBrokerReadyStatus(partitionId);
   }
 
   @Override
-  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
-    updateBrokerReadyStatus(partitionId);
+  public ActorFuture<Void> onBecomingLeader(
+      final int partitionId, final long term, final LogStream logStream) {
+    return updateBrokerReadyStatus(partitionId);
   }
 
-  private void updateBrokerReadyStatus(final int partitionId) {
-    actor.call(
+  private ActorFuture<Void> updateBrokerReadyStatus(final int partitionId) {
+    return actor.call(
         () -> {
           if (!brokerStarted) {
             partitionInstallStatus.put(partitionId, true);

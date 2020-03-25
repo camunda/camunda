@@ -15,9 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.it.util.GrpcClientRule;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.util.LangUtil;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -64,6 +68,7 @@ public class HealthMonitoringTest {
     // when
     // corrupt snapshot on all followers because we cannot control which one will become leader
     followers.forEach(this::corruptAllSnapshots);
+    followers.forEach(b -> b.addPartitionListener(new FailingPartitionListener()));
     // cannot use clusteringRule.stopbroker() as it waits for new leader to be installed.
     leader.close();
 
@@ -94,6 +99,7 @@ public class HealthMonitoringTest {
   }
 
   private void corruptAllSnapshots(final Broker leader) {
+    // corrupt snapshot to fail leader installation
     final File snapshotsDir = clusteringRule.getSnapshotsDirectory(leader);
     Arrays.stream(snapshotsDir.listFiles())
         .filter(File::isDirectory)
@@ -118,6 +124,22 @@ public class HealthMonitoringTest {
     } catch (final InterruptedException | IOException e) {
       LangUtil.rethrowUnchecked(e);
       return false; // should not happen
+    }
+  }
+
+  private static class FailingPartitionListener implements PartitionListener {
+
+    @Override
+    public ActorFuture<Void> onBecomingFollower(
+        final int partitionId, final long term, final LogStream logStream) {
+      return CompletableActorFuture.completedExceptionally(
+          new RuntimeException("fail follower installation"));
+    }
+
+    @Override
+    public ActorFuture<Void> onBecomingLeader(
+        final int partitionId, final long term, final LogStream logStream) {
+      return new CompletableActorFuture<>();
     }
   }
 }

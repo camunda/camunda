@@ -89,6 +89,9 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
           break;
         case UNHEALTHY:
           failureListener.onFailure();
+          log.debug(
+              "Detected unhealthy components. The current health status of components: {}",
+              componentHealth);
           break;
         default:
           log.warn("Unknown health status {}", status);
