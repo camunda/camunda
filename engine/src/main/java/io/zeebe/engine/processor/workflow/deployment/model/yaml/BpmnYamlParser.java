@@ -142,11 +142,12 @@ public final class BpmnYamlParser {
   private void addInputOutputMappingToTask(
       final YamlTask task, final ServiceTaskBuilder serviceTaskBuilder) {
     for (final YamlMapping inputMapping : task.getInputs()) {
-      serviceTaskBuilder.zeebeInput(inputMapping.getSource(), inputMapping.getTarget());
+      serviceTaskBuilder.zeebeInputExpression(inputMapping.getSource(), inputMapping.getTarget());
     }
 
     for (final YamlMapping outputMapping : task.getOutputs()) {
-      serviceTaskBuilder.zeebeOutput(outputMapping.getSource(), outputMapping.getTarget());
+      serviceTaskBuilder.zeebeOutputExpression(
+          outputMapping.getSource(), outputMapping.getTarget());
     }
   }
 }

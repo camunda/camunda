@@ -193,6 +193,18 @@ public abstract class AbstractCatchEventBuilder<
   }
 
   @Override
+  public B zeebeInputExpression(final String sourceExpression, final String target) {
+    final String expression = asZeebeExpression(sourceExpression);
+    return zeebeInput(expression, target);
+  }
+
+  @Override
+  public B zeebeOutputExpression(final String sourceExpression, final String target) {
+    final String expression = asZeebeExpression(sourceExpression);
+    return zeebeOutput(expression, target);
+  }
+
+  @Override
   public B zeebeInput(final String source, final String target) {
     final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
     final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);

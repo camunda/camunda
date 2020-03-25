@@ -8,6 +8,7 @@
 package io.zeebe.engine.processor.workflow.handlers.gateway;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEventBasedGateway;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
@@ -19,13 +20,16 @@ public final class EventBasedGatewayElementActivatingHandler<T extends Executabl
   private final CatchEventSubscriber catchEventSubscriber;
 
   public EventBasedGatewayElementActivatingHandler(
-      final CatchEventSubscriber catchEventSubscriber) {
-    this(WorkflowInstanceIntent.ELEMENT_ACTIVATED, catchEventSubscriber);
+      final CatchEventSubscriber catchEventSubscriber,
+      final ExpressionProcessor expressionProcessor) {
+    this(WorkflowInstanceIntent.ELEMENT_ACTIVATED, catchEventSubscriber, expressionProcessor);
   }
 
   public EventBasedGatewayElementActivatingHandler(
-      final WorkflowInstanceIntent nextState, final CatchEventSubscriber catchEventSubscriber) {
-    super(nextState);
+      final WorkflowInstanceIntent nextState,
+      final CatchEventSubscriber catchEventSubscriber,
+      final ExpressionProcessor expressionProcessor) {
+    super(nextState, expressionProcessor);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 

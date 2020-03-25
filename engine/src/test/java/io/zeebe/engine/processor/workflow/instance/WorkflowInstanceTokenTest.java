@@ -397,7 +397,8 @@ public final class WorkflowInstanceTokenTest {
                 .serviceTask("task-1", t -> t.zeebeJobType("task-1"))
                 .endEvent("end-1")
                 .moveToLastGateway()
-                .serviceTask("task-2", t -> t.zeebeJobType("task-2").zeebeOutput("result", "r"))
+                .serviceTask(
+                    "task-2", t -> t.zeebeJobType("task-2").zeebeOutputExpression("result", "r"))
                 .endEvent("end-2")
                 .done())
         .deploy();

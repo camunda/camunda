@@ -30,6 +30,8 @@ class MessagePackContext(
 
     private val resultView = new UnsafeBuffer
 
+    override def keys: Iterable[String] = valueOffsets.keys
+
     override def getVariable(name: String): Option[Any] = {
       valueOffsets
         .get(name)
@@ -39,7 +41,9 @@ class MessagePackContext(
         }
     }
 
-    override def keys: Iterable[String] = valueOffsets.keys
+    override def getVariables: Map[String, Any] = valueOffsets.map { case (key, (offset, length)) =>
+      key -> cloneBuffer(entries, offset, length)
+    }
 
   }
 

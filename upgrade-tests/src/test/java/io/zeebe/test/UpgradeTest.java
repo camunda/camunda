@@ -302,7 +302,7 @@ public class UpgradeTest {
   private static BpmnModelInstance incidentWorkflow() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
-        .serviceTask("failingTask", t -> t.zeebeJobType(TASK).zeebeInput("foo", "foo"))
+        .serviceTask("failingTask", t -> t.zeebeJobType(TASK).zeebeInputExpression("foo", "foo"))
         .done();
   }
 

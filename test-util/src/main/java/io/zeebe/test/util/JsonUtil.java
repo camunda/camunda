@@ -21,7 +21,7 @@ public final class JsonUtil {
 
   static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
-      new TypeReference<Map<String, Object>>() {};
+      new TypeReference<>() {};
 
   static {
     JSON_MAPPER.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
@@ -29,6 +29,10 @@ public final class JsonUtil {
 
   public static void assertEquality(final String actualJson, final String expectedJson) {
     assertThat(asJsonNode(actualJson)).isEqualTo(asJsonNode(expectedJson));
+  }
+
+  public static boolean isEqual(final String actualJson, final String expectedJson) {
+    return asJsonNode(actualJson).equals(asJsonNode(expectedJson));
   }
 
   private static JsonNode asJsonNode(final String json) {

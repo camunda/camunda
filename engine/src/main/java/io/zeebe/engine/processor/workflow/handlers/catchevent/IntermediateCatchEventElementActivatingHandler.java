@@ -8,6 +8,7 @@
 package io.zeebe.engine.processor.workflow.handlers.catchevent;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
@@ -20,14 +21,17 @@ public final class IntermediateCatchEventElementActivatingHandler<
   private final CatchEventSubscriber catchEventSubscriber;
 
   public IntermediateCatchEventElementActivatingHandler(
-      final CatchEventSubscriber catchEventSubscriber) {
-    super();
+      final CatchEventSubscriber catchEventSubscriber,
+      final ExpressionProcessor expressionProcessor) {
+    super(expressionProcessor);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public IntermediateCatchEventElementActivatingHandler(
-      final WorkflowInstanceIntent nextState, final CatchEventSubscriber catchEventSubscriber) {
-    super(nextState);
+      final WorkflowInstanceIntent nextState,
+      final CatchEventSubscriber catchEventSubscriber,
+      final ExpressionProcessor expressionProcessor) {
+    super(nextState, expressionProcessor);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 

@@ -50,7 +50,8 @@ public final class IncidentTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("failingTask", t -> t.zeebeJobType(jobType).zeebeInput("foo", "foo"))
+            .serviceTask(
+                "failingTask", t -> t.zeebeJobType(jobType).zeebeInputExpression("foo", "foo"))
             .done();
 
     workflowKey = CLIENT_RULE.deployWorkflow(workflow);

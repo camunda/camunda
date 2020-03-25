@@ -81,7 +81,7 @@ public final class BrokerReprocessingTest {
   private static final BpmnModelInstance WORKFLOW_INCIDENT =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
-          .serviceTask("task", t -> t.zeebeJobType("test").zeebeInput("foo", "foo"))
+          .serviceTask("task", t -> t.zeebeJobType("test").zeebeInputExpression("foo", "foo"))
           .endEvent("end")
           .done();
   private static final BpmnModelInstance WORKFLOW_MESSAGE =

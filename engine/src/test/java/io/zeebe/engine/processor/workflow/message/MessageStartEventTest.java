@@ -137,7 +137,7 @@ public final class MessageStartEventTest {
     // given
     engine
         .deployment()
-        .withXmlResource(singleStartEvent(startEvent -> startEvent.zeebeOutput("x", "y")))
+        .withXmlResource(singleStartEvent(startEvent -> startEvent.zeebeOutputExpression("x", "y")))
         .deploy();
 
     // when

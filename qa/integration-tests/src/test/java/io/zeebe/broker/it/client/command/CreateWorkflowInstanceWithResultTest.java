@@ -111,7 +111,7 @@ public final class CreateWorkflowInstanceWithResultTest {
                       .startEvent()
                       .serviceTask("task", t -> t.zeebeJobType(jobType))
                       .endEvent();
-                  b.zeebeInput("x", "y");
+                  b.zeebeInputExpression("x", "y");
                 })
             .endEvent()
             .done();

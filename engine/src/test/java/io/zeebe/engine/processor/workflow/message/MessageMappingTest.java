@@ -212,7 +212,7 @@ public final class MessageMappingTest {
   @Test
   public void shouldMapMessageVariablesIntoInstanceVariables() {
     // given
-    deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
+    deployWorkflowWithMapping(e -> e.zeebeOutputExpression("foo", MESSAGE_NAME));
 
     // when
     final long workflowInstanceKey =

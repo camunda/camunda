@@ -42,17 +42,27 @@ import org.junit.runners.Parameterized.Parameters;
 public final class ZeebeRuntimeValidationTest {
 
   private static final String INVALID_PATH_QUERY = "$.x";
-
   private static final String INVALID_PATH_QUERY_MESSAGE =
       "JSON path query is invalid: Unexpected json-path token ROOT_OBJECT";
 
   private static final String INVALID_EXPRESSION = "?!";
-
   private static final String INVALID_EXPRESSION_MESSAGE =
       "failed to parse expression '?!': [1.2] failure: end of input expected\n"
           + "\n"
           + "?!\n"
           + " ^";
+
+  private static final String STATIC_EXPRESSION_MESSAGE =
+      "Expected expression but found static value 'foo'. An expression must start with '=' (e.g. '=foo').";
+
+  private static final String MISSING_EXPRESSION_MESSAGE = "Expected expression but not found.";
+
+  private static final String MISSING_PATH_EXPRESSION_MESSAGE =
+      "Expected path expression but not found.";
+
+  private static final String INVALID_PATH_EXPRESSION = "a ? b";
+  private static final String INVALID_PATH_EXPRESSION_MESSAGE =
+      "Expected path expression 'a ? b' but doesn't match the pattern '[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*'.";
 
   public BpmnModelInstance modelInstance;
 
@@ -77,45 +87,93 @@ public final class ZeebeRuntimeValidationTest {
         Arrays.asList(expect(ConditionExpression.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
-        // not a json path expression
+        // not a valid expression
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", s -> s.zeebeInput(INVALID_PATH_QUERY, "foo"))
+            .serviceTask("task", s -> s.zeebeInputExpression(INVALID_EXPRESSION, "foo"))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeInput.class, INVALID_PATH_QUERY_MESSAGE))
-      },
-      { // not a json path expression
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", s -> s.zeebeOutput(INVALID_PATH_QUERY, "foo"))
-            .endEvent()
-            .done(),
-        Arrays.asList(expect(ZeebeOutput.class, INVALID_PATH_QUERY_MESSAGE))
+        Arrays.asList(expect(ZeebeInput.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
-        // input source expression is not supported
+        // static expression
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", s -> s.zeebeInput("foo[1]", "foo"))
+            .serviceTask("task", s -> s.zeebeInput("foo", "bar"))
             .endEvent()
             .done(),
-        Arrays.asList(
-            expect(
-                ZeebeInput.class,
-                "JSON path query is invalid: Unexpected json-path token SUBSCRIPT_OPERATOR_BEGIN"))
+        Arrays.asList(expect(ZeebeInput.class, STATIC_EXPRESSION_MESSAGE))
       },
       {
-        // output target expression is not supported
+        // empty expression
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", s -> s.zeebeInput("foo", "a[1]"))
+            .serviceTask("task", s -> s.zeebeInput("", "bar"))
             .endEvent()
             .done(),
-        Arrays.asList(
-            expect(
-                ZeebeInput.class,
-                "JSON path query is invalid: Unexpected json-path token SUBSCRIPT_OPERATOR_BEGIN"))
+        Arrays.asList(expect(ZeebeInput.class, MISSING_EXPRESSION_MESSAGE))
+      },
+      {
+        // empty path expression
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", s -> s.zeebeInputExpression("foo", ""))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(ZeebeInput.class, MISSING_PATH_EXPRESSION_MESSAGE))
+      },
+      {
+        // invalid target expression
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", s -> s.zeebeInputExpression("foo", INVALID_PATH_EXPRESSION))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(ZeebeInput.class, INVALID_PATH_EXPRESSION_MESSAGE))
+      },
+      { // not a valid expression
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", s -> s.zeebeOutputExpression(INVALID_EXPRESSION, "foo"))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(ZeebeOutput.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        // static expression
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", s -> s.zeebeOutput("foo", "bar"))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(ZeebeOutput.class, STATIC_EXPRESSION_MESSAGE))
+      },
+      {
+        // empty expression
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", s -> s.zeebeOutput("", "bar"))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(ZeebeOutput.class, MISSING_EXPRESSION_MESSAGE))
+      },
+      {
+        // invalid target expression
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", s -> s.zeebeOutputExpression("foo", INVALID_PATH_EXPRESSION))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(ZeebeOutput.class, INVALID_PATH_EXPRESSION_MESSAGE))
+      },
+      {
+        // empty path expression
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", s -> s.zeebeOutputExpression("foo", ""))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(ZeebeOutput.class, MISSING_PATH_EXPRESSION_MESSAGE))
       },
       {
         // correlation key expression is not supported
