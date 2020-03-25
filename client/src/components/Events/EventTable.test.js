@@ -198,7 +198,7 @@ it('should invoke onSelectEvent when clicking on an element', () => {
   const node = shallow(<EventTable {...props} />);
 
   const events = node.find(Table).prop('body');
-  events[0].props.onClick({target: {getAttribute: () => null}});
+  events[0].props.onClick({target: {getAttribute: () => null, closest: () => null}});
 
   expect(props.onSelectEvent).toHaveBeenCalledWith({
     count: 10,

@@ -222,7 +222,7 @@ export default withErrorHandling(
                     const mappedToSelection =
                       deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event));
                     const disabled = !selection || (!mappedToSelection && (allMapped || mappedAs));
-                    const mustMapAsStart = isNonTimerEvent(selection);
+                    const showDropdown = mappedAs && !disabled && !isNonTimerEvent(selection);
 
                     return {
                       content: [
@@ -234,10 +234,9 @@ export default withErrorHandling(
                             onMappingChange(eventAsMapping, checked)
                           }
                         />,
-                        mappedAs ? (
+                        showDropdown ? (
                           <Select
                             value={mappedAs}
-                            disabled={mustMapAsStart || disabled}
                             onOpen={isOpen => {
                               if (isOpen) {
                                 // due to how we integrate Dropdowns in React Table, we need to manually
@@ -265,7 +264,9 @@ export default withErrorHandling(
                             </Select.Option>
                           </Select>
                         ) : (
-                          <span className={classnames({disabled})}>--</span>
+                          <span className={classnames({disabled})}>
+                            {mappedAs ? mappedAs : '--'}
+                          </span>
                         ),
                         eventLabel || eventName,
                         group,
@@ -281,7 +282,7 @@ export default withErrorHandling(
                         onClick: evt => {
                           const type = evt.target.getAttribute('type');
                           if (mappedAs) {
-                            if (type !== 'checkbox' && type !== 'button') {
+                            if (type !== 'checkbox' && !evt.target.closest('.Dropdown')) {
                               this.props.onSelectEvent(event);
                             } else if (type === 'checkbox') {
                               this.props.onSelectEvent(null);

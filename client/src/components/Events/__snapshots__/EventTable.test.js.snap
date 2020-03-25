@@ -64,7 +64,6 @@ exports[`should match snapshot 1`] = `
               type="checkbox"
             />,
             <Select
-              disabled={false}
               onChange={[Function]}
               onOpen={[Function]}
               value="end"
