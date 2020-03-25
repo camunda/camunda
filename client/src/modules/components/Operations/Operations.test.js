@@ -29,14 +29,6 @@ describe('Operations', () => {
     let node = shallow(<Operations.WrappedComponent instance={mockInstance} />);
     //then
     expect(node).toMatchSnapshot();
-
-    // when
-    mockOperation = createOperation({state: OPERATION_STATE.FAILED});
-    mockInstance = createInstance({operations: [mockOperation]});
-    node = shallow(<Operations.WrappedComponent instance={mockInstance} />);
-
-    // then
-    expect(node).toMatchSnapshot();
   });
 
   it('should pass props OperationStatus', () => {
