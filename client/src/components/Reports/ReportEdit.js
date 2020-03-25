@@ -57,7 +57,7 @@ export default withRouter(
             ),
             () => resolve(id),
             async error => {
-              if (error.statusText === 'Conflict') {
+              if (error.status === 409) {
                 const {conflictedItems} = await error.json();
                 this.setState({
                   report: update(this.state.report, {name: {$set: name}}),

@@ -194,8 +194,7 @@ it('should show a warning message when there are incompatible filter ', async ()
 it('should set conflict state when conflict happens on save button click', async () => {
   const conflictedItems = [{id: '1', name: 'alert', type: 'alert'}];
 
-  const mightFail = (promise, cb, err) =>
-    err({statusText: 'Conflict', json: () => ({conflictedItems})});
+  const mightFail = (promise, cb, err) => err({status: 409, json: () => ({conflictedItems})});
 
   const node = shallow(
     <ReportEdit.WrappedComponent {...props} report={report} mightFail={mightFail} />

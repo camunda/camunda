@@ -74,7 +74,7 @@ export default withErrorHandling(
           }
         },
         async error => {
-          if (error.statusText === 'Conflict') {
+          if (error.status === 409) {
             const {conflictedItems} = await error.json();
             this.setState({
               editLoading: false,
