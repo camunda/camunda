@@ -5,22 +5,22 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import LoadingIndicator from './LoadingIndicator';
 
 it('should render without crashing', () => {
-  mount(<LoadingIndicator />);
+  shallow(<LoadingIndicator />);
 });
 
 it('should create a label with the provided id', () => {
-  const node = mount(<LoadingIndicator id="someId" />);
+  const node = shallow(<LoadingIndicator id="someId" />);
 
-  expect(node.find('.sk-circle')).toHaveProp('id', 'someId');
+  expect(node).toHaveProp('id', 'someId');
 });
 
 it('should be possible to get a smaller version', () => {
-  const node = mount(<LoadingIndicator small />);
+  const node = shallow(<LoadingIndicator small />);
 
-  expect(node.find('.sk-circle')).toHaveClassName('small');
+  expect(node).toHaveClassName('small');
 });

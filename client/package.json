@@ -34,7 +34,6 @@
     "react-router": "^5.0.1",
     "react-router-dom": "^5.1.2",
     "react-table": "^6.11.5",
-    "spinkit": "^1.2.5",
     "string.prototype.includes": "^1.0.0",
     "table-js": "^6.0.3"
   },
