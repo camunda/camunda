@@ -129,7 +129,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     this.shouldCleanEngine = shouldCleanEngine;
     initEngine();
   }
-  
+
   @Override
   public void beforeEach(final ExtensionContext extensionContext) throws Exception {
     before();
@@ -629,6 +629,22 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     }
   }
 
+  public void suspendProcessInstance(final String processInstanceId) throws IOException {
+    performProcessInstanceSuspensionRequest(processInstanceId, true);
+  }
+
+  public void unsuspendProcessInstance(final String processInstanceId) throws IOException {
+    performProcessInstanceSuspensionRequest(processInstanceId, false);
+  }
+
+  public void suspendProcessDefinition(final String processDefinitionId) throws IOException {
+    performProcessDefinitionSuspensionRequest(processDefinitionId, true);
+  }
+
+  public void unsuspendProcessDefinition(final String processDefinitionId) throws IOException {
+    performProcessDefinitionSuspensionRequest(processDefinitionId, false);
+  }
+
   public void deleteVariableInstanceForProcessInstance(String variableName, String processInstanceId) {
     HttpDelete delete = new HttpDelete(getVariableDeleteUri(variableName, processInstanceId));
     try {
@@ -679,6 +695,46 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
       log.error("Error during deployment request! Could not deploy the given process model!", e);
     }
     return deployment;
+  }
+
+  private void performProcessDefinitionSuspensionRequest(
+    final String processDefinitionId,
+    final boolean suspended) throws IOException {
+    HttpPut suspendRequest = new HttpPut(getSuspendProcessDefinitionByIdUri(processDefinitionId));
+    suspendRequest.setHeader("Content-type", "application/json");
+    suspendRequest.setEntity(new StringEntity(
+      "{\n" +
+        "\"includeProcessInstances\": true,\n" +
+        "\"suspended\": " + suspended + "\n" +
+        "}"
+    ));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(suspendRequest)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new RuntimeException(
+          "Could not suspend process definition. Status-code: " + response.getStatusLine().getStatusCode()
+        );
+      }
+    }
+  }
+
+
+  private void performProcessInstanceSuspensionRequest(
+    final String processInstanceId,
+    final boolean suspended) throws IOException {
+    HttpPut suspendRequest = new HttpPut(getSuspendProcessInstanceUri(processInstanceId));
+    suspendRequest.setHeader("Content-type", "application/json");
+    suspendRequest.setEntity(new StringEntity(
+      "{\n" +
+        "\"suspended\": " + suspended + "\n" +
+        "}"
+    ));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(suspendRequest)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new RuntimeException(
+          "Could not suspend process instance. Status-code: " + response.getStatusLine().getStatusCode()
+        );
+      }
+    }
   }
 
   public void startDecisionInstance(String decisionDefinitionId) {
@@ -783,6 +839,14 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
 
   private String getCountHistoryUri() {
     return getEngineUrl() + "/history/process-instance/count";
+  }
+
+  private String getSuspendProcessInstanceUri(final String processInstanceId) {
+    return getEngineUrl() + "/process-instance/" + processInstanceId + "/suspended";
+  }
+
+  private String getSuspendProcessDefinitionByIdUri(final String processDefinitionId) {
+    return getEngineUrl() + "/process-definition/" + processDefinitionId + "/suspended";
   }
 
   private String getEngineUrl() {

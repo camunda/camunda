@@ -61,6 +61,7 @@ public class DeployServlet extends HttpServlet {
     configuration.setAuthorizationEnabled(true);
     configuration.setJobExecutorDeploymentAware(true);
     configuration.getProcessEnginePlugins().add(new SpinProcessEnginePlugin());
+    configuration.setRestrictUserOperationLogToAuthenticatedUsers(false);
 
     // For the details of what this config parameter does:
     // https://docs.camunda.org/manual/latest/reference/deployment-descriptors/tags/process-engine/#queryMaxResultsLimit

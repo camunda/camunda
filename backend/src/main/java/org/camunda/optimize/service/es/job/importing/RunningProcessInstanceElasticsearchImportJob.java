@@ -24,6 +24,7 @@ public class RunningProcessInstanceElasticsearchImportJob extends ElasticsearchI
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }
+
   protected void persistEntities(List<ProcessInstanceDto> runningProcessInstances) throws Exception {
     runningProcessInstanceWriter.importProcessInstances(runningProcessInstances);
     camundaEventService.importRunningProcessInstances(runningProcessInstances);

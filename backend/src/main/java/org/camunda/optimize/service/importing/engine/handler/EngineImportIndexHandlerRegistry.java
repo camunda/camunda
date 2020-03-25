@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogInstanceFetcher;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -22,7 +23,8 @@ public class EngineImportIndexHandlerRegistry {
 
   private Map<String, EngineImportIndexHandlerProvider> engineImportIndexHandlerProviderMap = new HashMap<>();
 
-  public void register(final String engineAlias, final EngineImportIndexHandlerProvider engineImportIndexHandlerProvider) {
+  public void register(final String engineAlias,
+                       final EngineImportIndexHandlerProvider engineImportIndexHandlerProvider) {
     engineImportIndexHandlerProviderMap.put(engineAlias, engineImportIndexHandlerProvider);
   }
 
@@ -61,7 +63,8 @@ public class EngineImportIndexHandlerRegistry {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(CompletedActivityInstanceImportIndexHandler.class);
+      result =
+        engineImportIndexHandlerProvider.getImportIndexHandler(CompletedActivityInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -72,6 +75,16 @@ public class EngineImportIndexHandlerRegistry {
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
       result = engineImportIndexHandlerProvider.getImportIndexHandler(RunningActivityInstanceImportIndexHandler.class);
+    }
+    return result;
+  }
+
+  public UserOperationLogImportIndexHandler getUserOperationsLogImportIndexHandler(String engineAlias) {
+    UserOperationLogImportIndexHandler result = null;
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
+      engineAlias);
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(UserOperationLogImportIndexHandler.class);
     }
     return result;
   }
@@ -111,7 +124,8 @@ public class EngineImportIndexHandlerRegistry {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(CompletedUserTaskInstanceImportIndexHandler.class);
+      result =
+        engineImportIndexHandlerProvider.getImportIndexHandler(CompletedUserTaskInstanceImportIndexHandler.class);
     }
     return result;
   }

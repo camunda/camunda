@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -30,7 +31,7 @@ public class NonSuspendedInstancesOnlyFilterIT extends AbstractFilterIT {
 
     engineDatabaseExtension.changeProcessInstanceState(
       firstProcInst.getId(),
-      SuspendedInstancesOnlyQueryFilter.SUSPENDED
+      SUSPENDED_STATE
     );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();

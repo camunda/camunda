@@ -121,7 +121,7 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
     final List<UserTaskInstanceDto> userTasks = (List<UserTaskInstanceDto>) (List<?>) activityInstanceEntry.getValue();
-    final String activiyInstanceId = activityInstanceEntry.getKey();
+    final String activityInstanceId = activityInstanceEntry.getKey();
 
     final Script updateScript = createUpdateScript(userTasks);
 
@@ -137,7 +137,7 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
     } catch (JsonProcessingException e) {
       String reason = String.format(
         "Error while processing JSON for user tasks with ID [%s].",
-        activiyInstanceId
+        activityInstanceId
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -145,7 +145,7 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
 
     UpdateRequest request = new UpdateRequest()
       .index(PROCESS_INSTANCE_INDEX_NAME)
-      .id(activiyInstanceId)
+      .id(activityInstanceId)
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

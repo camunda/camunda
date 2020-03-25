@@ -12,21 +12,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 public class SuspendedInstancesOnlyQueryFilter implements QueryFilter<SuspendedInstancesOnlyFilterDataDto> {
-  public static String SUSPENDED = "SUSPENDED";
-
   @Override
   public void addFilters(BoolQueryBuilder query,
                          List<SuspendedInstancesOnlyFilterDataDto> suspendedInstancesOnlyFilters) {
     if (suspendedInstancesOnlyFilters != null && !suspendedInstancesOnlyFilters.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 
-      BoolQueryBuilder onlySuspendedInstances = boolQuery().should(termQuery(STATE, SUSPENDED));
+      BoolQueryBuilder onlySuspendedInstances = boolQuery().should(termQuery(STATE, SUSPENDED_STATE));
 
       filters.add(onlySuspendedInstances);
     }
