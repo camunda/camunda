@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security.collection;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
@@ -56,6 +57,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
@@ -116,8 +118,8 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     final String key1 = "eventBasedKey1";
     final String key2 = "eventBasedKey2";
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key1, new UserDto(KERMIT_USER));
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key2, new UserDto(KERMIT_USER));
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key1);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key2);
 
     final String collectionId = collectionClient.createNewCollection();
     createScopeForCollection(collectionId, key1, RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -132,7 +134,6 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
       });
 
@@ -151,8 +152,10 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     final String key1 = "eventBasedKey1";
     final String key2 = "eventBasedKey2";
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key1, new UserDto(KERMIT_USER));
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key2, (IdentityDto) null);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      key1, "authorizedProcess", "1", ImmutableList.of(new UserDto(KERMIT_USER), new UserDto(DEFAULT_USERNAME))
+    );
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key2);
 
     final String collectionId = collectionClient.createNewCollection();
     createScopeForCollection(collectionId, key1, RESOURCE_TYPE_PROCESS_DEFINITION);

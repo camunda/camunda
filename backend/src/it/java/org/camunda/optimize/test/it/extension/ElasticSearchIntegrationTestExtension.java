@@ -46,6 +46,8 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
@@ -58,6 +60,8 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
@@ -612,13 +616,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
                                                                                final List<IdentityDto> identityDtos) {
     final IndexableEventProcessMappingDto eventProcessMappingDto = IndexableEventProcessMappingDto.builder()
       .id(key)
-      .roles(
-        identityDtos.stream()
-          .filter(Objects::nonNull)
-          .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
-          .map(EventProcessRoleDto::new)
-          .collect(Collectors.toList())
-      )
+      .roles(normalizeToSimpleIdentityDtos(identityDtos))
       .build();
     addEntryToElasticsearch(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessMappingDto.getId(), eventProcessMappingDto);
 
@@ -636,6 +634,32 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       EVENT_PROCESS_DEFINITION_INDEX_NAME, eventProcessDefinitionDto.getId(), eventProcessDefinitionDto
     );
     return eventProcessDefinitionDto;
+  }
+
+  public void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos) {
+    try {
+      UpdateRequest request = new UpdateRequest(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessId)
+        .script(new Script(
+          ScriptType.INLINE,
+          Script.DEFAULT_SCRIPT_LANG,
+          "ctx._source.roles = params.updatedRoles;",
+          Collections.singletonMap(
+            "updatedRoles",
+            OBJECT_MAPPER.convertValue(normalizeToSimpleIdentityDtos(identityDtos), Object.class)
+          )
+        ))
+        .setRefreshPolicy(IMMEDIATE);
+      final UpdateResponse updateResponse = getOptimizeElasticClient().update(request, RequestOptions.DEFAULT);
+      if (updateResponse.getShardInfo().getFailed() > 0) {
+        final String errorMessage = String.format(
+          "Was not able to update event process roles with id [%s].", eventProcessId
+        );
+        log.error(errorMessage);
+        throw new OptimizeIntegrationTestException(errorMessage);
+      }
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to update event process roles.", e);
+    }
   }
 
   @SneakyThrows
@@ -706,5 +730,13 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {
     return prefixAwareRestHighLevelClient;
+  }
+
+  private List<EventProcessRoleDto<IdentityDto>> normalizeToSimpleIdentityDtos(final List<IdentityDto> identityDtos) {
+    return identityDtos.stream()
+      .filter(Objects::nonNull)
+      .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
+      .map(EventProcessRoleDto::new)
+      .collect(Collectors.toList());
   }
 }

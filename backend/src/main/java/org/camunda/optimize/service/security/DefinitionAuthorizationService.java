@@ -42,7 +42,7 @@ public class DefinitionAuthorizationService {
                                                             final List<String> tenantIds) {
 
     if (definitionDto.getIsEventProcess()) {
-      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, definitionDto.getKey())
+      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, definitionDto.getKey()).orElse(false)
         ? Collections.singletonList(TENANT_NOT_DEFINED)
         : Collections.emptyList();
     } else {
@@ -79,15 +79,11 @@ public class DefinitionAuthorizationService {
     }
     switch (type) {
       case PROCESS:
-        boolean authorized = eventProcessAuthorizationService.isAuthorizedToEventProcess(
+        return eventProcessAuthorizationService.isAuthorizedToEventProcess(
           userId, definitionKey
-        );
-        if (!authorized) {
-          authorized = engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-            userId, IdentityType.USER, definitionKey, tenantIds
-          );
-        }
-        return authorized;
+        ).orElse(engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+          userId, IdentityType.USER, definitionKey, tenantIds
+        ));
       case DECISION:
         return engineDefinitionAuthorizationService.isAuthorizedToSeeDefinition(
           userId, IdentityType.USER, definitionKey, type, tenantIds
@@ -101,7 +97,7 @@ public class DefinitionAuthorizationService {
                                                 final String tenantId,
                                                 final SimpleDefinitionDto definition) {
     if (definition.getIsEventProcess()) {
-      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, definition.getKey());
+      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, definition.getKey()).orElse(false);
     } else {
       return engineDefinitionAuthorizationService.isAuthorizedToSeeDefinition(
         userId, IdentityType.USER, definition.getKey(), definition.getType(), tenantId
@@ -124,7 +120,7 @@ public class DefinitionAuthorizationService {
   public boolean isAuthorizedToAccessProcessDefinition(final String userId,
                                                        final ProcessDefinitionOptimizeDto processDefinition) {
     if (processDefinition.getIsEventBased()) {
-      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey());
+      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey()).orElse(false);
     } else {
       return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
         userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,36 +33,47 @@ public class EventProcessAuthorizationService {
     return configurationService.getEventBasedProcessAccessUserIds().contains(userId);
   }
 
-  public boolean isAuthorizedToEventProcess(@NonNull final String userId, @NonNull final String eventProcessMappingId) {
-    boolean isAuthorized = false;
-
+  /**
+   * Validate whether a user is authorized to access an event process.
+   *
+   * @param userId                to check for authorization
+   * @param eventProcessMappingId the id of the event process
+   * @return {@code Optional.empty} if no event process for that id exists, otherwise the authorization result.
+   */
+  public Optional<Boolean> isAuthorizedToEventProcess(@NonNull final String userId,
+                                                      @NonNull final String eventProcessMappingId) {
     final List<EventProcessRoleDto<IdentityDto>> roles = eventProcessRoleService.getRoles(eventProcessMappingId);
-    final Map<IdentityType, Set<String>> groupAndUserRoleIdentityIds = roles.stream()
-      .map(EventProcessRoleDto::getIdentity)
-      .collect(Collectors.groupingBy(
-        IdentityDto::getType,
-        Collectors.mapping(IdentityDto::getId, Collectors.toSet())
-      ));
-    final Set<String> roleGroupIds = groupAndUserRoleIdentityIds
-      .getOrDefault(IdentityType.GROUP, Collections.emptySet());
-    final Set<String> roleUserIds = groupAndUserRoleIdentityIds
-      .getOrDefault(IdentityType.USER, Collections.emptySet());
+    if (!roles.isEmpty()) {
+      boolean isAuthorized = false;
+      final Map<IdentityType, Set<String>> groupAndUserRoleIdentityIds = roles.stream()
+        .map(EventProcessRoleDto::getIdentity)
+        .collect(Collectors.groupingBy(
+          IdentityDto::getType,
+          Collectors.mapping(IdentityDto::getId, Collectors.toSet())
+        ));
+      final Set<String> roleGroupIds = groupAndUserRoleIdentityIds
+        .getOrDefault(IdentityType.GROUP, Collections.emptySet());
+      final Set<String> roleUserIds = groupAndUserRoleIdentityIds
+        .getOrDefault(IdentityType.USER, Collections.emptySet());
 
-    if (!roleGroupIds.isEmpty()) {
-      // if there are groups check if the user is member of those
-      final Set<String> allGroupIdsOfUser = identityService.getAllGroupsOfUser(userId)
-        .stream()
-        .map(IdentityDto::getId)
-        .collect(Collectors.toSet());
-      isAuthorized = allGroupIdsOfUser.stream().anyMatch(roleGroupIds::contains);
+      if (!roleGroupIds.isEmpty()) {
+        // if there are groups check if the user is member of those
+        final Set<String> allGroupIdsOfUser = identityService.getAllGroupsOfUser(userId)
+          .stream()
+          .map(IdentityDto::getId)
+          .collect(Collectors.toSet());
+        isAuthorized = allGroupIdsOfUser.stream().anyMatch(roleGroupIds::contains);
+      }
+
+      if (!isAuthorized) {
+        // if not authorized yet check the user roles
+        isAuthorized = roleUserIds.stream().anyMatch(userId::equals);
+      }
+
+      return Optional.of(isAuthorized);
+    } else {
+      return Optional.empty();
     }
-
-    if (!isAuthorized) {
-      // if not authorized yet check the user roles
-      isAuthorized = roleUserIds.stream().anyMatch(userId::equals);
-    }
-
-    return isAuthorized;
   }
 
 }
