@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.impl.oauth;
 
+import static io.zeebe.client.OAuthCredentialsProviderTest.EXPIRY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.client.impl.ZeebeClientCredentials;
@@ -32,9 +33,9 @@ public final class OAuthCredentialsCacheTest {
   private static final String AARDVARK_ENDPOINT = "aardvark.cloud.camunda.io";
   private static final String GOLDEN_FILE = "/oauth/credentialsCache.yml";
   private static final ZeebeClientCredentials WOMBAT =
-      new ZeebeClientCredentials("wombat", 3600, "Bearer", "grpc");
+      new ZeebeClientCredentials("wombat", EXPIRY, "Bearer");
   private static final ZeebeClientCredentials AARDVARK =
-      new ZeebeClientCredentials("aardvark", 1800, "Bearer", "grpc");
+      new ZeebeClientCredentials("aardvark", EXPIRY, "Bearer");
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File cacheFile;
