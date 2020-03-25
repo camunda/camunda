@@ -40,17 +40,18 @@ class Login extends React.Component {
     e.preventDefault();
     const {username, password} = this.state;
 
-    this.setState({isLoading: true});
     if (username.length === 0 || password.length === 0) {
-      return this.setState({error: REQUIRED_FIELD_ERROR});
+      return this.setState({error: REQUIRED_FIELD_ERROR, isLoading: false});
     }
+
+    this.setState({isLoading: true});
 
     try {
       await login({username, password});
       this.props.clearStateLocally();
-      this.setState({forceRedirect: true});
+      this.setState({forceRedirect: true, isLoading: false});
     } catch (e) {
-      this.setState({error: LOGIN_ERROR});
+      this.setState({error: LOGIN_ERROR, isLoading: false});
     }
   };
 

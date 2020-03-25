@@ -187,7 +187,7 @@ describe('Login', () => {
     expect(node.state('error')).toEqual(REQUIRED_FIELD_ERROR);
     expect(errorSpan.text()).toContain(REQUIRED_FIELD_ERROR);
     expect(node).toMatchSnapshot();
-
+    expect(node.find('[data-test="spinner"]').exists()).toBe(false);
     // reset api.login
     api.login = originalLogin.bind(api);
   });
@@ -208,6 +208,7 @@ describe('Login', () => {
     expect(node.state('error')).toEqual(LOGIN_ERROR);
     expect(errorSpan.text()).toContain(LOGIN_ERROR);
     expect(node).toMatchSnapshot();
+    expect(node.find('[data-test="spinner"]').exists()).toBe(false);
 
     // reset api.login
     api.login = originalLogin.bind(api);
