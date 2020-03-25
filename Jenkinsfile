@@ -5,11 +5,7 @@
 def static OPERATE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
 
 String getBranchSlug() {
-  name = env.BRANCH_NAME == 'master' ? 'master' : 'o-'+env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-').take(39)
-  if(name.endsWith('-')){
-     name = name.take(39)+"-o"
-  }
-  return name 
+  return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
 }
 
 String getGitCommitMsg() {
