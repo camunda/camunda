@@ -1,0 +1,6 @@
+zeebe:
+  broker:
+    stepTimeout: 42m
+    exporters:
+      elasticsearch:
+        className: io.zeebe.exporter.ElasticsearchExporter

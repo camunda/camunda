@@ -1,10 +1,13 @@
 # Zeebe standalone gateway configuration file.
-# For the configuration of the embedded gateway see the gateway section of the zeebe.cfg.yaml
-
 # ! ! ! ! ! ! ! ! ! !
 # In order to activate the settings in this file, please set the following environment variable:
 # export SPRING_CONFIG_LOCATION='file:./config/gateway.cfg.yaml'
+#
+# Alternatively, you can also pass it as a command line argument:
+# ./bin/gateway --spring.config.location=file:./config/gateway.cfg.yaml
 # ! ! ! ! ! ! ! ! ! !
+
+# For the configuration of the embedded gateway that is deployed alongside a broker see the gateway section of zeebe.cfg.yaml
 
 # Overview -------------------------------------------
 

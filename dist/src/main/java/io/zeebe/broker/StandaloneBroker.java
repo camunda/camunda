@@ -83,7 +83,7 @@ public class StandaloneBroker implements CommandLineRunner {
   }
 
   private Broker createBrokerInTempDirectory() {
-    Loggers.SYSTEM_LOGGER.info("No configuration file specified. Using default configuration.");
+    Loggers.SYSTEM_LOGGER.info("Launching broker in temporary folder.");
 
     try {
       tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();

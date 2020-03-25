@@ -8,6 +8,7 @@
 package io.zeebe.broker.system.configuration;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Exporter component configuration. To be expanded eventually to allow enabling/disabling
@@ -78,5 +79,24 @@ public final class ExporterCfg implements ConfigurationEntry {
         + ", args="
         + args
         + '}';
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ExporterCfg that = (ExporterCfg) o;
+    return Objects.equals(jarPath, that.jarPath)
+        && Objects.equals(className, that.className)
+        && Objects.equals(args, that.args);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(jarPath, className, args);
   }
 }

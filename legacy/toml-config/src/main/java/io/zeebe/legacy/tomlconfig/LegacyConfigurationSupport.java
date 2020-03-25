@@ -172,7 +172,7 @@ public final class LegacyConfigurationSupport {
         Loggers.LEGACY_LOGGER.info(
             "The old environment variable is currently supported as part of our backwards compatibility goals.");
         Loggers.LEGACY_LOGGER.info(
-            "However, please note that support for the old environment variable is scheduled to be removed for release 0.25.0.");
+            "However, please note that support for the old environment variable is scheduled to be removed for release 0.24.0.");
 
         String value = System.getenv(oldEnvironmentVariable);
 
