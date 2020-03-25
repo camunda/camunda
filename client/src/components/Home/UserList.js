@@ -97,12 +97,10 @@ export default withErrorHandling(
                   type: formatType(identity.type),
                   name: identity.name || identity.id,
                   meta: [
-                    identity.type === 'group' && (
-                      <>
-                        {identity.memberCount}{' '}
-                        {t('common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label'))}
-                      </>
-                    ),
+                    identity.type === 'group' &&
+                      `${identity.memberCount} ${t(
+                        'common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label')
+                      )}`,
                     formatRole(role)
                   ],
                   warning:

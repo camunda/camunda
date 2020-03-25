@@ -29,11 +29,7 @@ Array [
     "className": "group",
     "icon": "user-group",
     "meta": Array [
-      <React.Fragment>
-        2
-         
-        Users
-      </React.Fragment>,
+      "2 Users",
     ],
     "name": "Sales",
     "type": "User Group",

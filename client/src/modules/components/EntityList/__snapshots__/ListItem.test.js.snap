@@ -32,12 +32,14 @@ exports[`should match snapshot 1`] = `
     <div
       className="meta"
       key="0"
+      title="Column 1"
     >
       Column 1
     </div>
     <div
       className="meta"
       key="1"
+      title="Column 2"
     >
       Column 2
     </div>

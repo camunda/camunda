@@ -108,9 +108,14 @@
   }
 
   &:not(:hover) .ListItemAction {
-    .Button:not(:focus),
+    .Button,
     &.Button {
       opacity: 0;
+
+      &.active,
+      &.focus-visible {
+        opacity: 1;
+      }
     }
   }
 }

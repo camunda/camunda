@@ -32,11 +32,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           "className": "group",
           "icon": "user-group",
           "meta": Array [
-            <React.Fragment>
-              2
-               
-              Users
-            </React.Fragment>,
+            "2 Users",
             "Manager",
           ],
           "name": "sales",
@@ -150,11 +146,7 @@ exports[`should match snapshot 1`] = `
           "className": "group",
           "icon": "user-group",
           "meta": Array [
-            <React.Fragment>
-              2
-               
-              Users
-            </React.Fragment>,
+            "2 Users",
             "Manager",
           ],
           "name": "sales",
