@@ -13,20 +13,9 @@ import org.camunda.operate.util.ConversionUtils;
 
 public class SequenceFlowDto {
 
-  private String id;
-
   private String workflowInstanceId;
 
   private String activityId;
-
-  public String getId() {
-    return id;
-  }
-
-  public SequenceFlowDto setId(String id) {
-    this.id = id;
-    return this;
-  }
 
   public String getWorkflowInstanceId() {
     return workflowInstanceId;
@@ -51,7 +40,6 @@ public class SequenceFlowDto {
       return null;
     }
     return new SequenceFlowDto()
-      .setId(sequenceFlowEntity.getId())
       .setWorkflowInstanceId(ConversionUtils.toStringOrNull(sequenceFlowEntity.getWorkflowInstanceKey()))
       .setActivityId(sequenceFlowEntity.getActivityId());
   }
@@ -69,17 +57,15 @@ public class SequenceFlowDto {
 
     SequenceFlowDto that = (SequenceFlowDto) o;
 
-    if (id != null ? !id.equals(that.id) : that.id != null)
-      return false;
     if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
       return false;
     return activityId != null ? activityId.equals(that.activityId) : that.activityId == null;
+
   }
 
   @Override
   public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    int result = workflowInstanceId != null ? workflowInstanceId.hashCode() : 0;
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     return result;
   }

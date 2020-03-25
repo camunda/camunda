@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.entities;
 
-public class SequenceFlowEntity extends OperateZeebeEntity<SequenceFlowEntity> {
+public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
   private Long workflowInstanceKey;
   private String activityId;

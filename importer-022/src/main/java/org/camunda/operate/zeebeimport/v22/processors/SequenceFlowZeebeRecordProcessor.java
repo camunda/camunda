@@ -27,6 +27,7 @@ import io.zeebe.protocol.record.Record;
 public class SequenceFlowZeebeRecordProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(SequenceFlowZeebeRecordProcessor.class);
+  private static final String ID_PATTERN = "%s_%s";
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -46,9 +47,7 @@ public class SequenceFlowZeebeRecordProcessor {
     bulkRequest.add(
           getSequenceFlowInsertQuery( 
               new SequenceFlowEntity()
-                .setId( ConversionUtils.toStringOrNull(record.getKey()))
-                .setKey(record.getKey())
-                .setPartitionId(record.getPartitionId())
+                .setId(String.format(ID_PATTERN, recordValue.getWorkflowInstanceKey(), recordValue.getElementId()))
                 .setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey())
                 .setActivityId(recordValue.getElementId())
           )
