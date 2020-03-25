@@ -323,7 +323,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
   }
 
   @Override
-  protected Trigger getScheduleTrigger() {
+  protected Trigger createScheduleTrigger() {
     return new CronTrigger(getIdentitySyncConfiguration().getCronTrigger());
   }
 

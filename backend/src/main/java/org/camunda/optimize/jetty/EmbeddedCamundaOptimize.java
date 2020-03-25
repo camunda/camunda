@@ -191,7 +191,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
         List<EngineImportScheduler> importSchedulers = importSchedulerFactory.getImportSchedulers();
         if (importSchedulers != null) {
           for (EngineImportScheduler scheduler : importSchedulers) {
-            scheduler.start();
+            scheduler.startImportScheduling();
             oneStarted = true;
           }
         }
@@ -206,14 +206,14 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   @Override
   public void disableEngineImportSchedulers() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.disable();
+      scheduler.stopImportScheduling();
     }
   }
 
   @Override
   public void enableEngineImportSchedulers() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.enable();
+      scheduler.startImportScheduling();
     }
   }
 

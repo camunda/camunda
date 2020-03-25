@@ -18,7 +18,7 @@ public class EngineConfiguration {
   private DefaultTenant defaultTenant = new DefaultTenant();
   private String rest;
   private EngineWebappsConfiguration webapps;
-  private boolean importEnabled = true;
+  private boolean importEnabled = false;
   private boolean eventImportEnabled = false;
 
   private EngineAuthenticationConfiguration authentication;

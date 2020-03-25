@@ -6,9 +6,12 @@
 package org.camunda.optimize.service.importing.engine;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.util.ImportJobExecutor;
+import org.springframework.scheduling.Trigger;
+import org.springframework.scheduling.support.PeriodicTrigger;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -18,20 +21,46 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class EngineImportScheduler extends Thread {
+public class EngineImportScheduler extends AbstractScheduledService {
 
   private List<EngineImportMediator> importMediators;
 
   private List<ImportObserver> importObservers = Collections.synchronizedList(new LinkedList<>());
 
   private String engineAlias;
-  private volatile boolean isEnabled = true;
   private boolean isImporting = false;
 
   public EngineImportScheduler(List<EngineImportMediator> importMediators,
                                String engineAlias) {
     this.importMediators = importMediators;
     this.engineAlias = engineAlias;
+  }
+
+  @Override
+  public void run() {
+    if (isScheduledToRun()) {
+      log.debug("Next round!");
+      try {
+        runImportRound();
+      } catch (Exception e) {
+        log.error("Could not schedule next import round!", e);
+      }
+    }
+  }
+
+  @Override
+  protected Trigger createScheduleTrigger() {
+    return new PeriodicTrigger(0L);
+  }
+
+  public synchronized void startImportScheduling() {
+    log.info("Start scheduling import from engine {}.", engineAlias);
+    startScheduling();
+  }
+
+  public synchronized void stopImportScheduling() {
+    log.info("Stop scheduling import from engine {}.", engineAlias);
+    stopScheduling();
   }
 
   public void subscribe(ImportObserver importObserver) {
@@ -42,31 +71,9 @@ public class EngineImportScheduler extends Thread {
     importObservers.remove(importObserver);
   }
 
-  public void disable() {
-    log.debug("Scheduler for engine {} is disabled", engineAlias);
-    isEnabled = false;
-  }
-
-  public void enable() {
-    log.debug("Scheduler for engine {} was enabled and will soon start scheduling the import", engineAlias);
-    isEnabled = true;
-  }
-
   public void shutdown() {
     log.debug("Scheduler for engine {} will shutdown.", engineAlias);
     getImportMediators().forEach(EngineImportMediator::shutdown);
-  }
-
-  @Override
-  public void run() {
-    while (isEnabled) {
-      log.debug("Schedule next round!");
-      try {
-        runImportRound();
-      } catch (Exception e) {
-        log.error("Could not schedule next import round!", e);
-      }
-    }
   }
 
   public Future<Void> runImportRound() {
@@ -83,13 +90,40 @@ public class EngineImportScheduler extends Thread {
       if (!hasActiveImportJobs()) {
         notifyThatImportIsIdle();
       }
-      doBackoff();
+      if (!forceImport) {
+        doBackoff();
+      }
       return CompletableFuture.completedFuture(null);
     } else {
       this.isImporting = true;
       notifyThatImportIsInProgress();
-      return scheduleCurrentImportRound(currentImportRound);
+      return executeImportRound(currentImportRound);
     }
+  }
+
+  public Future<Void> executeImportRound(List<EngineImportMediator> currentImportRound) {
+    if (log.isDebugEnabled()) {
+      log.debug(
+        "Scheduling import round for {}",
+        currentImportRound.stream()
+          .map(mediator1 -> mediator1.getClass().getSimpleName())
+          .collect(Collectors.joining(","))
+      );
+    }
+
+    final CompletableFuture<?>[] importTaskFutures = currentImportRound
+      .stream()
+      .map(mediator -> {
+        try {
+          return mediator.runImport();
+        } catch (Exception e) {
+          log.error("Was not able to execute import of [{}]", mediator.getClass().getSimpleName(), e);
+          return CompletableFuture.completedFuture(null);
+        }
+      })
+      .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(importTaskFutures);
   }
 
   private boolean hasActiveImportJobs() {
@@ -112,46 +146,17 @@ public class EngineImportScheduler extends Thread {
   }
 
   private void doBackoff() {
-    long timeToSleep = calculateTimeToSleep();
-    try {
-      log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
-      Thread.sleep(timeToSleep);
-    } catch (InterruptedException e) {
-      log.error("Scheduler was interrupted while sleeping.", e);
-    }
-  }
-
-  private long calculateTimeToSleep() {
-    return importMediators
+    long timeToSleep = importMediators
       .stream()
       .map(EngineImportMediator::getBackoffTimeInMs)
       .min(Long::compare)
       .orElse(5000L);
-  }
-
-  public Future<Void> scheduleCurrentImportRound(List<EngineImportMediator> currentImportRound) {
-    final String mediators = currentImportRound.stream()
-      .map(mediator -> mediator.getClass().getSimpleName())
-      .collect(Collectors.joining(","));
-    log.debug("Scheduling import round for {}", mediators);
-
-    final CompletableFuture<?>[] importTaskFutures = currentImportRound
-      .stream()
-      .map(mediator -> {
-        try {
-          return mediator.runImport();
-        } catch (Exception e) {
-          log.error("Was not able to execute import of [{}]", mediator.getClass().getSimpleName(), e);
-          return CompletableFuture.completedFuture(null);
-        }
-      })
-      .toArray(CompletableFuture[]::new);
-
-    return CompletableFuture.allOf(importTaskFutures);
-  }
-
-  public boolean isEnabled() {
-    return this.isEnabled;
+    try {
+      log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
+      Thread.sleep(timeToSleep);
+    } catch (InterruptedException e) {
+      log.warn("Scheduler was interrupted while sleeping.", e);
+    }
   }
 
   public String getEngineAlias() {

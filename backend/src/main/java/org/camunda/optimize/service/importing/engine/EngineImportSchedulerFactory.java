@@ -11,7 +11,6 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerProvider;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
@@ -62,9 +61,10 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
           engineContext.getEngineAlias()
         );
 
-        if (!configurationService.isEngineImportEnabled(engineContext.getEngineAlias())) {
+        if (configurationService.isEngineImportEnabled(engineContext.getEngineAlias())) {
+          scheduler.startImportScheduling();
+        } else {
           logger.info("Engine import was disabled by config for engine with alias {}.", engineContext.getEngineAlias());
-          scheduler.disable();
         }
 
         result.add(scheduler);
@@ -155,7 +155,7 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
   public void shutdown() {
     if (schedulers != null) {
       for (EngineImportScheduler oldScheduler : schedulers) {
-        oldScheduler.disable();
+        oldScheduler.stopImportScheduling();
         oldScheduler.shutdown();
       }
     }

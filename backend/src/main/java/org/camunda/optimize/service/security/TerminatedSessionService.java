@@ -43,7 +43,7 @@ public class TerminatedSessionService extends AbstractScheduledService {
   }
 
   @Override
-  protected Trigger getScheduleTrigger() {
+  protected Trigger createScheduleTrigger() {
     return new PeriodicTrigger(CLEANUP_INTERVAL_HOURS, TimeUnit.HOURS);
   }
 

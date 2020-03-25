@@ -66,23 +66,22 @@ public class ProcessImportIT extends AbstractImportIT {
       .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
     embeddedOptimizeExtension.reloadConfiguration();
 
+    // when
     deployAndStartSimpleServiceTask();
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     BpmnModelInstance exampleProcess = Bpmn.createExecutableProcess().name("foo").startEvent().endEvent().done();
     engineIntegrationExtension.deployAndStartProcess(exampleProcess);
 
-    // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
     // then
+    assertThat(embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers().size(), is(greaterThan(0)));
+    embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()
+      .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun(), is(false)));
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
-    assertThat(embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers().size(), is(greaterThan(0)));
-    embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()
-      .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isEnabled(), is(false)));
+
   }
 
   @Test

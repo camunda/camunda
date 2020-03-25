@@ -15,6 +15,5 @@ import lombok.NoArgsConstructor;
 @Data
 public class EventImportConfiguration {
   private boolean enabled;
-  private int importIntervalInSec;
   private int maxPageSize;
 }

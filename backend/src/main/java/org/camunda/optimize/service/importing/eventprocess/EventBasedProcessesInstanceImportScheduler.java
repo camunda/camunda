@@ -8,6 +8,8 @@ package org.camunda.optimize.service.importing.eventprocess;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
+import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.service.EventProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.eventprocess.service.PublishStateUpdateService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -19,9 +21,11 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Slf4j
@@ -41,10 +45,16 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     }
   }
 
-  @PreDestroy
-  public synchronized void stopImportScheduling() {
-    log.info("Stop scheduling ingested event import.");
-    stopScheduling();
+  @Override
+  protected void run() {
+    if (isScheduledToRun()) {
+      runImportRound();
+    }
+  }
+
+  @Override
+  protected Trigger createScheduleTrigger() {
+    return new PeriodicTrigger(0);
   }
 
   public synchronized void startImportScheduling() {
@@ -52,9 +62,10 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     startScheduling();
   }
 
-  @Override
-  protected void run() {
-    runImportRound();
+  @PreDestroy
+  public synchronized void stopImportScheduling() {
+    log.info("Stop scheduling ingested event import.");
+    stopScheduling();
   }
 
   public Future<Void> runImportRound() {
@@ -67,10 +78,25 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     instanceImportMediatorManager.refreshMediators();
     publishStateUpdateService.updateEventProcessPublishStates();
     eventProcessDefinitionImportService.syncPublishedEventProcessDefinitions();
-    final CompletableFuture<?>[] importTaskFutures = instanceImportMediatorManager
-      .getActiveMediators()
+
+    final Collection<EventProcessInstanceImportMediator> allInstanceMediators = instanceImportMediatorManager
+      .getActiveMediators();
+    final List<EventProcessInstanceImportMediator> currentImportRound = allInstanceMediators
       .stream()
       .filter(mediator -> forceImport || mediator.canImport())
+      .collect(Collectors.toList());
+
+    if (log.isDebugEnabled()) {
+      log.debug(
+        "Scheduling import round for {}",
+        currentImportRound.stream()
+          .map(mediator1 -> mediator1.getClass().getSimpleName())
+          .collect(Collectors.joining(","))
+      );
+    }
+
+    final CompletableFuture<?>[] importTaskFutures = currentImportRound
+      .stream()
       .map(mediator -> {
         final CompletableFuture<Void> indexUsageFinishedFuture = eventBasedProcessIndexManager
           .registerIndexUsageAndReturnFinishedHandler(mediator.getPublishedProcessStateId());
@@ -80,12 +106,26 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
       })
       .toArray(CompletableFuture[]::new);
 
+    if (importTaskFutures.length == 0 && !forceImport) {
+      doBackoff(allInstanceMediators);
+    }
+
     return CompletableFuture.allOf(importTaskFutures);
   }
 
-  @Override
-  protected Trigger getScheduleTrigger() {
-    return new PeriodicTrigger(getEventImportConfiguration().getImportIntervalInSec(), TimeUnit.SECONDS);
+
+  private void doBackoff(final Collection<? extends EngineImportMediator> mediators) {
+    long timeToSleep = mediators
+      .stream()
+      .map(EngineImportMediator::getBackoffTimeInMs)
+      .min(Long::compare)
+      .orElse(5000L);
+    try {
+      log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
+      Thread.sleep(timeToSleep);
+    } catch (InterruptedException e) {
+      log.warn("Scheduler was interrupted while sleeping.", e);
+    }
   }
 
   private EventBasedProcessConfiguration getEventBasedProcessConfiguration() {

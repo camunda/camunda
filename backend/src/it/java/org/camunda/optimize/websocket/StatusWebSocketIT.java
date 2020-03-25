@@ -76,9 +76,16 @@ public class StatusWebSocketIT extends AbstractIT {
       assertThat(initialStatusCorrectlyReceived, is(true));
 
       //when
-      deployProcessAndTriggerImport();
+      BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .endEvent()
+        .done();
+      engineIntegrationExtension.deployAndStartProcess(processModel);
 
       //then
+      embeddedOptimizeExtension.getImportSchedulerFactory()
+        .getImportSchedulers()
+        .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun(), is(false)));
       assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS), is(false));
       assertThat(socket.getReceivedTwoUpdatesLatch().getCount(), is(1L));
       assertThat(socket.getImportStatus().isPresent(), is(true));
@@ -95,7 +102,8 @@ public class StatusWebSocketIT extends AbstractIT {
   private void connectStatusClientSocket(Object statusClientSocket)
     throws DeploymentException, IOException, URISyntaxException {
     final String dest = String.format(
-      "ws://localhost:%d/ws/status", embeddedOptimizeExtension.getConfigurationService().getContainerHttpPort().orElse(8090)
+      "ws://localhost:%d/ws/status",
+      embeddedOptimizeExtension.getConfigurationService().getContainerHttpPort().orElse(8090)
     );
     WebSocketContainer container = ContainerProvider.getWebSocketContainer();
     container.connectToServer(statusClientSocket, new URI(dest));

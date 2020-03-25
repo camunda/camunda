@@ -164,10 +164,8 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   public void importAllEngineEntitiesFromLastIndex() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      if (scheduler.isEnabled()) {
-        log.debug("scheduling import round");
-        scheduleImportAndWaitUntilIsFinished(scheduler);
-      }
+      log.debug("scheduling import round");
+      scheduleImportAndWaitUntilIsFinished(scheduler);
     }
   }
 
@@ -202,7 +200,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
       .stream()
       .filter(mediator -> mediator instanceof ScrollBasedImportMediator)
       .collect(Collectors.toList());
-    scheduler.scheduleCurrentImportRound(scrollBasedMediators).get();
+    scheduler.executeImportRound(scrollBasedMediators).get();
     // after each scroll import round, we need to reset the scrolls, since otherwise
     // we will have a lot of dangling scroll contexts in ElasticSearch in our integration tests.
     scrollBasedMediators.stream()

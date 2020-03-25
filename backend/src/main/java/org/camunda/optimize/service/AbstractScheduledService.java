@@ -14,13 +14,13 @@ public abstract class AbstractScheduledService {
   protected ThreadPoolTaskScheduler taskScheduler;
   private ScheduledFuture<?> scheduledTrigger;
 
-  public boolean isScheduledToRun() {
+  public synchronized boolean isScheduledToRun() {
     return this.scheduledTrigger != null;
   }
 
   protected abstract void run();
 
-  protected abstract Trigger getScheduleTrigger();
+  protected abstract Trigger createScheduleTrigger();
 
   protected synchronized boolean startScheduling() {
     boolean wasScheduled = false;
@@ -30,7 +30,7 @@ public abstract class AbstractScheduledService {
       wasScheduled = true;
     }
     if (this.scheduledTrigger == null) {
-      this.scheduledTrigger = this.taskScheduler.schedule(this::run, getScheduleTrigger());
+      this.scheduledTrigger = this.taskScheduler.schedule(this::run, createScheduleTrigger());
     }
     return wasScheduled;
   }

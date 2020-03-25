@@ -44,7 +44,7 @@ public class IndexRolloverService extends AbstractScheduledService {
   }
 
   @Override
-  protected Trigger getScheduleTrigger() {
+  protected Trigger createScheduleTrigger() {
     return new PeriodicTrigger(
       configurationService.getEventBasedProcessConfiguration()
         .getEventIndexRollover()

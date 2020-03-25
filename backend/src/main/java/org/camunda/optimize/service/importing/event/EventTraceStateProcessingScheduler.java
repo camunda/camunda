@@ -13,7 +13,6 @@ import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.event.mediator.PersistEventIndexHandlerStateMediator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
-import org.camunda.optimize.service.util.configuration.EventImportConfiguration;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
@@ -23,7 +22,6 @@ import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,11 +42,16 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     }
   }
 
-  @PreDestroy
   @Override
-  public synchronized void stopScheduling() {
-    log.info("Stop scheduling event pre-aggregation.");
-    super.stopScheduling();
+  protected void run() {
+    if (isScheduledToRun()) {
+      runImportRound();
+    }
+  }
+
+  @Override
+  protected Trigger createScheduleTrigger() {
+    return new PeriodicTrigger(0);
   }
 
   @Override
@@ -57,14 +60,11 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     return super.startScheduling();
   }
 
+  @PreDestroy
   @Override
-  protected Trigger getScheduleTrigger() {
-    return new PeriodicTrigger(getEventImportConfiguration().getImportIntervalInSec(), TimeUnit.SECONDS);
-  }
-
-  @Override
-  protected void run() {
-    runImportRound();
+  public synchronized void stopScheduling() {
+    log.info("Stop scheduling event pre-aggregation.");
+    super.stopScheduling();
   }
 
   public Future<Void> runImportRound() {
@@ -72,13 +72,45 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
   }
 
   public Future<Void> runImportRound(final boolean forceImport) {
-    final CompletableFuture<?>[] importTaskFutures = getImportMediators()
+    final List<EngineImportMediator> allImportMediators = getImportMediators();
+    final List<EngineImportMediator> currentImportRound = allImportMediators
       .stream()
       .filter(mediator -> forceImport || mediator.canImport())
+      .collect(Collectors.toList());
+
+    if (log.isDebugEnabled()) {
+      log.debug(
+        "Scheduling import round for {}",
+        currentImportRound.stream()
+          .map(mediator1 -> mediator1.getClass().getSimpleName())
+          .collect(Collectors.joining(","))
+      );
+    }
+
+    final CompletableFuture<?>[] importTaskFutures = currentImportRound
+      .stream()
       .map(EngineImportMediator::runImport)
       .toArray(CompletableFuture[]::new);
 
+    if (importTaskFutures.length == 0 && !forceImport) {
+      doBackoff(allImportMediators);
+    }
+
     return CompletableFuture.allOf(importTaskFutures);
+  }
+
+  private void doBackoff(final List<EngineImportMediator> mediators) {
+    long timeToSleep = mediators
+      .stream()
+      .map(EngineImportMediator::getBackoffTimeInMs)
+      .min(Long::compare)
+      .orElse(5000L);
+    try {
+      log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
+      Thread.sleep(timeToSleep);
+    } catch (InterruptedException e) {
+      log.warn("Scheduler was interrupted while sleeping.", e);
+    }
   }
 
   public List<EngineImportMediator> getImportMediators() {
@@ -92,7 +124,4 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     return configurationService.getEventBasedProcessConfiguration();
   }
 
-  private EventImportConfiguration getEventImportConfiguration() {
-    return configurationService.getEventImportConfiguration();
-  }
 }

@@ -76,7 +76,7 @@ public class OptimizeCleanupScheduler extends AbstractScheduledService {
   }
 
   @Override
-  protected CronTrigger getScheduleTrigger() {
+  protected CronTrigger createScheduleTrigger() {
     return new CronTrigger(getCleanupConfiguration().getCronTrigger());
   }
 }

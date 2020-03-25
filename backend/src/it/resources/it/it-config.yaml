@@ -7,6 +7,7 @@ engines:
   '1':
     name: ${prefixedDefaultEngineName:integrationTest}
     rest: 'http://localhost:8080/engine-rest'
+    importEnabled: false
     authentication:
       enabled: false
       password: ''
