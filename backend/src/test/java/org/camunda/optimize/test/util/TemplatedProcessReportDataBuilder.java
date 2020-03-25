@@ -244,6 +244,27 @@ public class TemplatedProcessReportDataBuilder {
           .dateInterval(dateInterval)
           .build();
         break;
+      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+        break;
+      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE_BY_USER_TASK:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedBy(DistributedBy.USER_TASK)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+        break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)

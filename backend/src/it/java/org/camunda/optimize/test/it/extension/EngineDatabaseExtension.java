@@ -314,6 +314,19 @@ public class EngineDatabaseExtension implements Extension {
   }
 
   @SneakyThrows
+  public void changeUserTaskEndDates(Map<String, OffsetDateTime> processInstanceIdToEndDate) {
+    String sql = "UPDATE ACT_HI_TASKINST " +
+      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
+      statement.setString(2, idToStartDate.getKey());
+      statement.executeUpdate();
+    }
+    connection.commit();
+  }
+
+  @SneakyThrows
   public void changeUserTaskStartDate(final String processInstanceId,
                                       final String taskId,
                                       final OffsetDateTime startDate) {
@@ -323,6 +336,22 @@ public class EngineDatabaseExtension implements Extension {
       "AND TASK_DEF_KEY_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
+    statement.setString(2, processInstanceId);
+    statement.setString(3, taskId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeUserTaskEndDate(final String processInstanceId,
+                                    final String taskId,
+                                    final OffsetDateTime endDate) {
+    String sql = "UPDATE ACT_HI_TASKINST " +
+      "SET END_TIME_ = ? WHERE " +
+      "PROC_INST_ID_ = ?" +
+      "AND TASK_DEF_KEY_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
     statement.setString(2, processInstanceId);
     statement.setString(3, taskId);
     statement.executeUpdate();
