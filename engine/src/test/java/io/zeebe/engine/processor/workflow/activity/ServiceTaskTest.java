@@ -125,7 +125,7 @@ public final class ServiceTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(workflow(t -> t.zeebeJobType("test").zeebeTaskRetries("5")))
+        .withXmlResource(workflow(t -> t.zeebeJobType("test").zeebeJobRetries("5")))
         .deploy();
 
     // when

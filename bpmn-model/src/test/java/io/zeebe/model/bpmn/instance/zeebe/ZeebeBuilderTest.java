@@ -43,7 +43,7 @@ public class ZeebeBuilderTest {
                 "foo",
                 b ->
                     b.zeebeJobType("taskType")
-                        .zeebeTaskRetries("5")
+                        .zeebeJobRetries("5")
                         .zeebeTaskHeader("foo", "f")
                         .zeebeTaskHeader("bar", "b"))
             .endEvent()

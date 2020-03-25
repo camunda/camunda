@@ -53,7 +53,7 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
     return zeebeJobType(asZeebeExpression(expression));
   }
 
-  public B zeebeTaskRetries(final String retries) {
+  public B zeebeJobRetries(final String retries) {
     final ZeebeTaskDefinition taskDefinition =
         getCreateSingleExtensionElement(ZeebeTaskDefinition.class);
     taskDefinition.setRetries(retries);
@@ -61,7 +61,7 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
   }
 
   public B zeebeJobRetriesExpression(final String expression) {
-    return zeebeTaskRetries(asZeebeExpression(expression));
+    return zeebeJobRetries(asZeebeExpression(expression));
   }
 
   public B zeebeTaskHeader(final String key, final String value) {
