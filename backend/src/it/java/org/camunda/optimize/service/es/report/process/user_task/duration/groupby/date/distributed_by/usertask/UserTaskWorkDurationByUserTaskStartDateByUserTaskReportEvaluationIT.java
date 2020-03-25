@@ -14,7 +14,7 @@ import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
 public class UserTaskWorkDurationByUserTaskStartDateByUserTaskReportEvaluationIT
-  extends AbstractUserTaskDurationByUserTaskStartDateByUserTaskReportEvaluationIT {
+  extends UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {

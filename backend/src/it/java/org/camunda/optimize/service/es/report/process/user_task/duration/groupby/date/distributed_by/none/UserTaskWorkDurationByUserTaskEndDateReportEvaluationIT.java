@@ -13,8 +13,8 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
-public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
-  extends UserTaskDurationByUserTaskStartDateReportEvaluationIT {
+public class UserTaskWorkDurationByUserTaskEndDateReportEvaluationIT
+  extends UserTaskDurationByUserTaskEndDateReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -63,10 +63,5 @@ public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
-  }
-
-  @Override
-  protected Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
-    return executionStateTestValues.expectedWorkDurationValue;
   }
 }

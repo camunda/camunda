@@ -6,15 +6,11 @@
 package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.date.distributed_by.usertask;
 
 import com.google.common.collect.ImmutableList;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -35,7 +31,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -64,16 +59,15 @@ import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
+public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
-  private static final String USER_TASK_1 = "userTask1";
+  protected static final String USER_TASK_1 = "userTask1";
   private static final String USER_TASK_2 = "userTask2";
-  private static final String USER_TASK_1_NAME = "userTask1Name";
+  protected static final String USER_TASK_1_NAME = "userTask1Name";
   private static final String USER_TASK_2_NAME = "userTask2Name";
 
   private static Stream<GroupByDateUnit> staticGroupByDateUnits() {
@@ -108,7 +102,7 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
-    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.START_DATE);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())
       .extracting(DateGroupByValueDto.class::cast)
       .extracting(DateGroupByValueDto::getUnit)
@@ -167,23 +161,23 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final OffsetDateTime today = OffsetDateTime.now();
 
-    final ProcessInstanceEngineDto processInstanceDto1 =
+    final ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK_1, today);
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK_2, today.minusDays(1));
-    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
-    changeDuration(processInstanceDto1, USER_TASK_2, 10L);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+    changeUserTaskDate(processInstance1, USER_TASK_1, today);
+    changeUserTaskDate(processInstance1, USER_TASK_2, today.minusDays(1));
+    changeDuration(processInstance1, USER_TASK_1, 10L);
+    changeDuration(processInstance1, USER_TASK_2, 10L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 =
+    final ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK_1, today);
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK_2, today.minusDays(1));
-    changeDuration(processInstanceDto2, USER_TASK_1, 20L);
-    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
+    changeUserTaskDate(processInstance2, USER_TASK_1, today);
+    changeUserTaskDate(processInstance2, USER_TASK_2, today.minusDays(1));
+    changeDuration(processInstance2, USER_TASK_1, 20L);
+    changeDuration(processInstance2, USER_TASK_2, 20L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -220,8 +214,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_1, referenceDate.minusDays(3));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_2, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
+    changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
     changeDuration(processInstance1, USER_TASK_1, 10L);
     changeDuration(processInstance1, USER_TASK_2, 10L);
 
@@ -229,8 +223,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_1, referenceDate.minusDays(2));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_2, referenceDate.minusDays(4));
+    changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
+    changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
     changeDuration(processInstance2, USER_TASK_1, 10L);
     changeDuration(processInstance2, USER_TASK_2, 10L);
 
@@ -270,8 +264,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_1, referenceDate.minusDays(3));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_2, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
+    changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
     changeDuration(processInstance1, USER_TASK_1, 10L);
     changeDuration(processInstance1, USER_TASK_2, 10L);
 
@@ -279,8 +273,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_1, referenceDate.minusDays(2));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_2, referenceDate.minusDays(4));
+    changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
+    changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
     changeDuration(processInstance2, USER_TASK_1, 10L);
     changeDuration(processInstance2, USER_TASK_2, 10L);
 
@@ -321,8 +315,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_1, referenceDate.minusDays(1));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_2, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
     changeDuration(processInstance1, USER_TASK_1, 20L);
     changeDuration(processInstance1, USER_TASK_2, 10L);
 
@@ -330,8 +324,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_1, referenceDate.minusDays(2));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_2, referenceDate.minusDays(2));
+    changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
+    changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
     changeDuration(processInstance2, USER_TASK_1, 10L);
     changeDuration(processInstance2, USER_TASK_2, 20L);
 
@@ -339,8 +333,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance3.getId(), USER_TASK_1, referenceDate.minusDays(3));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance3.getId(), USER_TASK_2, referenceDate.minusDays(3));
+    changeUserTaskDate(processInstance3, USER_TASK_1, referenceDate.minusDays(3));
+    changeUserTaskDate(processInstance3, USER_TASK_2, referenceDate.minusDays(3));
     changeDuration(processInstance3, USER_TASK_1, 30L);
     changeDuration(processInstance3, USER_TASK_2, 20L);
 
@@ -378,8 +372,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_1, referenceDate.minusDays(3));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_2, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
+    changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
     changeDuration(processInstance1, USER_TASK_1, 10L);
     changeDuration(processInstance1, USER_TASK_2, 10L);
 
@@ -387,8 +381,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_1, referenceDate.minusDays(2));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_2, referenceDate.minusDays(4));
+    changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
+    changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
     changeDuration(processInstance2, USER_TASK_1, 10L);
     changeDuration(processInstance2, USER_TASK_2, 10L);
 
@@ -425,8 +419,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_1, referenceDate.minusDays(1));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_2, referenceDate.minusDays(2));
+    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(2));
     changeDuration(processInstance1, USER_TASK_1, 10L);
     changeDuration(processInstance1, USER_TASK_2, 10L);
 
@@ -434,8 +428,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_1, referenceDate.minusDays(1));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_2, referenceDate.minusDays(2));
+    changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
     changeDuration(processInstance2, USER_TASK_1, 20L);
     changeDuration(processInstance2, USER_TASK_2, 20L);
 
@@ -469,8 +463,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_1, referenceDate.minusDays(1));
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_2, referenceDate.minusDays(3));
+    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(3));
     changeDuration(processInstance1, USER_TASK_1, 10L);
     changeDuration(processInstance1, USER_TASK_2, 10L);
 
@@ -549,14 +543,14 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_1, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
     changeDuration(processInstance1, USER_TASK_1, 10L);
 
     ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance2.getId(), USER_TASK_1, referenceDate.minusDays(1));
+    changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
     changeDuration(processInstance2, USER_TASK_1, 50L);
 
 
@@ -630,77 +624,6 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
     // @formatter:on
   }
 
-  @Data
-  @AllArgsConstructor
-  @NoArgsConstructor
-  static class ExecutionStateTestValues {
-    FlowNodeExecutionState executionState;
-
-    Long expectedIdleDurationValue;
-    Long expectedWorkDurationValue;
-    Long expectedTotalDurationValue;
-  }
-
-  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
-    ExecutionStateTestValues runningStateValues =
-      new ExecutionStateTestValues();
-    runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
-    runningStateValues.expectedIdleDurationValue =  200L;
-    runningStateValues.expectedWorkDurationValue = 500L;
-    runningStateValues.expectedTotalDurationValue = 700L;
-
-    ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
-    completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
-    completedStateValues.expectedIdleDurationValue = 100L;
-    completedStateValues.expectedWorkDurationValue = 100L;
-    completedStateValues.expectedTotalDurationValue = 100L;
-
-    ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
-    allStateValues.executionState = FlowNodeExecutionState.ALL;
-    allStateValues.expectedIdleDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L);
-    allStateValues.expectedWorkDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100L, 500L);
-    allStateValues.expectedTotalDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L);
-
-    return Stream.of(runningStateValues, completedStateValues, allStateValues);
-  }
-
-  @ParameterizedTest
-  @MethodSource("getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
-    // given
-    OffsetDateTime now = OffsetDateTime.now();
-    LocalDateUtil.setCurrentTime(now);
-    final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
-    changeDuration(processInstanceDto1, 100L);
-
-    final ProcessInstanceEngineDto processInstanceDto2 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto2.getId());
-
-    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700L);
-    changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500L);
-
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.DAY);
-    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
-    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_1, getCorrectTestExecutionValue(executionStateTestValues), USER_TASK_1_NAME)
-      .doAssert(result);
-    // @formatter:on
-  }
-
   @Test
   public void automaticIntervalSelection_simpleSetup() {
     // given
@@ -717,7 +640,7 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
     updates.put(processInstanceDto2.getId(), startOfToday);
     updates.put(processInstanceDto3.getId(), startOfToday.minusDays(1));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
+    changeUserTaskDates(updates);
     changeDuration(processInstanceDto1, 10L);
     changeDuration(processInstanceDto2, 10L);
     changeDuration(processInstanceDto3, 20L);
@@ -752,7 +675,7 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
     updates.put(processInstanceDto2.getId(), startOfToday.plusDays(2));
     updates.put(processInstanceDto3.getId(), startOfToday.plusDays(5));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
+    changeUserTaskDates(updates);
     changeDuration(processInstanceDto1, 10L);
     changeDuration(processInstanceDto2, 20L);
     changeDuration(processInstanceDto3, 50L);
@@ -983,7 +906,7 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
         OffsetDateTime newStartDate = now.minus(i, unit);
         idToNewStartDate.put(id, newStartDate);
       });
-    engineDatabaseExtension.changeUserTaskStartDates(idToNewStartDate);
+    changeUserTaskDates(idToNewStartDate);
   }
 
   protected ProcessReportDataDto createReportData(final String processDefinitionKey, final String version,
@@ -998,7 +921,7 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(getUserTaskDurationTime())
-      .setReportDataType(ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_USER_TASK)
+      .setReportDataType(getReportDataType())
       .setDateInterval(groupByDateUnit)
       .build();
   }
@@ -1007,8 +930,8 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
     return createReportData(processDefinition, GroupByDateUnit.DAY);
   }
 
-  private ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
-                                                final GroupByDateUnit groupByDateUnit) {
+  protected ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
+                                                  final GroupByDateUnit groupByDateUnit) {
     return createReportData(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion()),
@@ -1041,7 +964,7 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
     return processKey;
   }
 
-  private ProcessDefinitionEngineDto deployOneUserTaskDefinition() {
+  protected ProcessDefinitionEngineDto deployOneUserTaskDefinition() {
     return deployOneUserTaskDefinition("aProcess", null);
   }
 
@@ -1072,10 +995,10 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
   }
 
   @SuppressWarnings("SameParameterValue")
-  private void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
-                                       final OffsetDateTime now,
-                                       final String userTaskId,
-                                       final long offsetDuration) {
+  protected void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
+                                         final OffsetDateTime now,
+                                         final String userTaskId,
+                                         final long offsetDuration) {
     engineDatabaseExtension.changeUserTaskStartDate(
       processInstanceDto.getId(),
       userTaskId,
@@ -1084,10 +1007,10 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
   }
 
   @SuppressWarnings("SameParameterValue")
-  private void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
-                                       final OffsetDateTime now,
-                                       final String userTaskKey,
-                                       final long offsetDuration) {
+  protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
+                                         final OffsetDateTime now,
+                                         final String userTaskKey,
+                                         final long offsetDuration) {
 
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
@@ -1109,7 +1032,7 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
     return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
-  private String groupedByDayDateAsString(final OffsetDateTime referenceDate) {
+  protected String groupedByDayDateAsString(final OffsetDateTime referenceDate) {
     return groupedByDateAsString(referenceDate, ChronoUnit.DAYS);
   }
 
@@ -1125,5 +1048,13 @@ public abstract class AbstractUserTaskDurationByUserTaskStartDateByUserTaskRepor
 
   protected abstract UserTaskDurationTime getUserTaskDurationTime();
 
-  protected abstract Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues);
+  protected abstract ProcessGroupByType getGroupByType();
+
+  protected abstract ProcessReportDataType getReportDataType();
+
+  protected abstract void changeUserTaskDates(final Map<String, OffsetDateTime> updates);
+
+  protected abstract void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
+                                             final String userTaskKey,
+                                             final OffsetDateTime dateToChangeTo);
 }

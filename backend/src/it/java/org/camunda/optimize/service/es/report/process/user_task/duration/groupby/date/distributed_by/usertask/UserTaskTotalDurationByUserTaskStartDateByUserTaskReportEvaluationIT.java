@@ -12,7 +12,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import java.sql.SQLException;
 
 public class UserTaskTotalDurationByUserTaskStartDateByUserTaskReportEvaluationIT
-  extends AbstractUserTaskDurationByUserTaskStartDateByUserTaskReportEvaluationIT {
+  extends UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {

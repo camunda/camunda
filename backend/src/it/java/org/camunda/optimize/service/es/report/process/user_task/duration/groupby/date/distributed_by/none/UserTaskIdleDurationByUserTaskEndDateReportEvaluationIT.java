@@ -13,26 +13,23 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
-public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
-  extends UserTaskDurationByUserTaskStartDateReportEvaluationIT {
+public class UserTaskIdleDurationByUserTaskEndDateReportEvaluationIT
+  extends UserTaskDurationByUserTaskEndDateReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
-    return UserTaskDurationTime.WORK;
+    return UserTaskDurationTime.IDLE;
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
-        historicUserTaskInstanceDto -> {
-          if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserClaimTimestamp(
-              setDuration,
-              historicUserTaskInstanceDto
-            );
-          }
-        }
+        historicUserTaskInstanceDto ->
+          changeUserClaimTimestamp(
+            setDuration,
+            historicUserTaskInstanceDto
+          )
       );
   }
 
@@ -42,14 +39,11 @@ public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
                                 final long duration) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
-        historicUserTaskInstanceDto -> {
-          if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserClaimTimestamp(
-              duration,
-              historicUserTaskInstanceDto
-            );
-          }
-        }
+        historicUserTaskInstanceDto ->
+          changeUserClaimTimestamp(
+            duration,
+            historicUserTaskInstanceDto
+          )
       );
   }
 
@@ -58,15 +52,10 @@ public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
     try {
       engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
         historicUserTaskInstanceDto.getId(),
-        historicUserTaskInstanceDto.getEndTime().minus(millis, ChronoUnit.MILLIS)
+        historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
       );
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
-  }
-
-  @Override
-  protected Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
-    return executionStateTestValues.expectedWorkDurationValue;
   }
 }

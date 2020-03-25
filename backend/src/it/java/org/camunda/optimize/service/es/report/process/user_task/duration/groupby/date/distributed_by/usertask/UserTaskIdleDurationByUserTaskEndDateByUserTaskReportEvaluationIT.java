@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.date.distributed_by.none;
+package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.date.distributed_by.usertask;
 
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -13,26 +13,23 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
-public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
-  extends UserTaskDurationByUserTaskStartDateReportEvaluationIT {
+public class UserTaskIdleDurationByUserTaskEndDateByUserTaskReportEvaluationIT
+  extends UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
-    return UserTaskDurationTime.WORK;
+    return UserTaskDurationTime.IDLE;
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
-        historicUserTaskInstanceDto -> {
-          if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserClaimTimestamp(
-              setDuration,
-              historicUserTaskInstanceDto
-            );
-          }
-        }
+        historicUserTaskInstanceDto ->
+          changeUserClaimTimestamp(
+            setDuration,
+            historicUserTaskInstanceDto
+          )
       );
   }
 
@@ -42,14 +39,11 @@ public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
                                 final long duration) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
-        historicUserTaskInstanceDto -> {
-          if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserClaimTimestamp(
-              duration,
-              historicUserTaskInstanceDto
-            );
-          }
-        }
+        historicUserTaskInstanceDto ->
+          changeUserClaimTimestamp(
+            duration,
+            historicUserTaskInstanceDto
+          )
       );
   }
 
@@ -58,7 +52,7 @@ public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
     try {
       engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
         historicUserTaskInstanceDto.getId(),
-        historicUserTaskInstanceDto.getEndTime().minus(millis, ChronoUnit.MILLIS)
+        historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
       );
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
@@ -67,6 +61,6 @@ public class UserTaskWorkDurationByUserTaskStartDateReportEvaluationIT
 
   @Override
   protected Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
-    return executionStateTestValues.expectedWorkDurationValue;
+    return executionStateTestValues.expectedIdleDurationValue;
   }
 }

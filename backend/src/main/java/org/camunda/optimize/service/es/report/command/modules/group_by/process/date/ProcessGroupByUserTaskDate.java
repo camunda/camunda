@@ -288,7 +288,10 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   private long getDateHistogramIntervalFromMinMax(OffsetDateTime min, OffsetDateTime max) {
     long minInMs = min.toInstant().toEpochMilli();
     long maxInMs = max.toInstant().toEpochMilli();
-    return (maxInMs - minInMs) / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+    final long intervalFromMinToMax = (maxInMs - minInMs) / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+    // we need to ensure that the interval is > 1 since we create the range buckets based on this
+    // interval and it will cause an endless loop if the interval is 0.
+    return Math.max(intervalFromMinToMax, 1);
   }
 
   private Optional<AggregationBuilder> createIntervalAggregation(final ExecutionContext<ProcessReportDataDto> context,
