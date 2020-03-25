@@ -17,8 +17,10 @@ import io.atomix.protocols.raft.storage.snapshot.Snapshot;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotListener;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
 import io.atomix.utils.time.WallClockTimestamp;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -43,7 +45,7 @@ public final class DbSnapshotStoreTest {
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() {
     Optional.ofNullable(store).ifPresent(SnapshotStore::close);
   }
 
@@ -97,23 +99,18 @@ public final class DbSnapshotStoreTest {
   }
 
   @Test
-  public void shouldDeleteOrphanedPendingSnapshotsOnPurge() {
+  public void shouldDeleteOrphanedPendingSnapshots() throws IOException {
     // given
-    final var toDelete = pendingDirectory.resolve("1-1-1-1");
-    final var snapshotDirectory = pendingDirectory.resolve("2-2-2-2");
-    final var toKeep = pendingDirectory.resolve("3-3-3-3");
+    final var pendingSnapshots =
+        List.of(pendingDirectory.resolve("1-1-1"), pendingDirectory.resolve("2-2-2"));
     final var store = newStore(new ConcurrentSkipListMap<>());
-    IoUtil.ensureDirectoryExists(toDelete.toFile(), "snapshot directory");
-    IoUtil.ensureDirectoryExists(snapshotDirectory.toFile(), "snapshot directory");
-    IoUtil.ensureDirectoryExists(toKeep.toFile(), "snapshot directory");
+    pendingSnapshots.forEach(p -> IoUtil.ensureDirectoryExists(p.toFile(), ""));
 
     // when
-    final var snapshot = store.newSnapshot(2, 1, WallClockTimestamp.from(1), snapshotDirectory);
-    store.purgeSnapshots(snapshot);
+    store.purgePendingSnapshots();
 
     // then
-    assertThat(toDelete).doesNotExist();
-    assertThat(toKeep).exists();
+    pendingSnapshots.forEach(p -> assertThat(p).doesNotExist());
   }
 
   @Test

@@ -17,6 +17,7 @@ import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
 import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotStorage;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,6 +34,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
   private static final Logger LOGGER = new ZbLogger(AtomixSnapshotStorage.class);
 
   private final Path runtimeDirectory;
+  private final Path pendingDirectory;
   private final AtomixRecordEntrySupplier entrySupplier;
   private final SnapshotStore store;
   private final Set<SnapshotDeletionListener> deletionListeners;
@@ -40,17 +42,18 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
 
   public AtomixSnapshotStorage(
       final Path runtimeDirectory,
+      final Path pendingDirectory,
       final SnapshotStore store,
       final AtomixRecordEntrySupplier entrySupplier,
       final SnapshotMetrics metrics) {
     this.runtimeDirectory = runtimeDirectory;
+    this.pendingDirectory = pendingDirectory;
     this.entrySupplier = entrySupplier;
     this.store = store;
     this.metrics = metrics;
 
     this.deletionListeners = new CopyOnWriteArraySet<>();
     this.store.addListener(this);
-
     observeExistingSnapshots();
   }
 
@@ -127,6 +130,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
 
     LOGGER.debug("Purging snapshots older than {}", snapshot);
     store.purgeSnapshots(snapshot);
+    purgePendingSnapshots(snapshot.index());
 
     final var optionalConverted = toSnapshot(snapshot.getPath());
     if (optionalConverted.isPresent()) {
@@ -157,12 +161,16 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
   }
 
   private Path getPendingDirectoryFor(final DbSnapshotMetadata metadata) {
-    return getPendingDirectoryFor(metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp());
+    return pendingDirectory.resolve(metadata.getFileName());
   }
 
-  private Path getPendingDirectoryFor(
-      final long index, final long term, final WallClockTimestamp timestamp) {
-    return store.newPendingSnapshot(index, term, timestamp).getPath();
+  private Path getPendingDirectoryFor(final Indexed<ZeebeEntry> entry) {
+    final var metadata =
+        new DbSnapshotMetadata(
+            entry.index(),
+            entry.entry().term(),
+            WallClockTimestamp.from(System.currentTimeMillis()));
+    return getPendingDirectoryFor(metadata);
   }
 
   private Optional<Snapshot> toSnapshot(final Path path) {
@@ -181,12 +189,8 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
   }
 
   private Snapshot getSnapshot(final Indexed<ZeebeEntry> indexed) {
-    final var pending =
-        store.newPendingSnapshot(
-            indexed.index(),
-            indexed.entry().term(),
-            WallClockTimestamp.from(System.currentTimeMillis()));
-    return new SnapshotImpl(indexed.index(), pending.getPath());
+    final var pending = getPendingDirectoryFor(indexed);
+    return new SnapshotImpl(indexed.index(), pending);
   }
 
   private void observeSnapshotSize(
@@ -205,6 +209,37 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
       metrics.observeSnapshotSize(totalSize);
     } catch (final IOException e) {
       LOGGER.warn("Failed to observe size for snapshot {}", snapshot, e);
+    }
+  }
+
+  private void purgePendingSnapshots(final long cutoffIndex) {
+    LOGGER.debug(
+        "Search for orphaned snapshots below oldest valid snapshot with index {} in {}",
+        cutoffIndex,
+        pendingDirectory);
+
+    try (final var pendingSnapshots = Files.newDirectoryStream(pendingDirectory)) {
+      for (final var pendingSnapshot : pendingSnapshots) {
+        purgePendingSnapshot(cutoffIndex, pendingSnapshot);
+      }
+    } catch (final IOException e) {
+      LOGGER.warn(
+          "Failed to delete orphaned snapshots, could not list pending directory {}",
+          pendingDirectory);
+    }
+  }
+
+  private void purgePendingSnapshot(final long cutoffIndex, final Path pendingSnapshot) {
+    final var optionalMetadata = DbSnapshotMetadata.ofPath(pendingSnapshot);
+    if (optionalMetadata.isPresent() && optionalMetadata.get().getIndex() < cutoffIndex) {
+      try {
+        FileUtil.deleteFolder(pendingSnapshot);
+        LOGGER.debug("Deleted orphaned snapshot {}", pendingSnapshot);
+      } catch (final IOException e) {
+        LOGGER.warn(
+            "Failed to delete orphaned snapshot {}, risk using unnecessary disk space",
+            pendingSnapshot);
+      }
     }
   }
 }

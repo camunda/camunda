@@ -52,6 +52,10 @@ public final class DbSnapshotMetadata implements DbSnapshotId {
     return metadata;
   }
 
+  public String getFileName() {
+    return String.format("%d-%d-%d", getIndex(), getTerm(), getTimestamp().unixTimestamp());
+  }
+
   @Override
   public long getIndex() {
     return index;
