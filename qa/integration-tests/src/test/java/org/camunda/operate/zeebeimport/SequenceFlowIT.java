@@ -30,7 +30,7 @@ public class SequenceFlowIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testVariablesLoaded() throws Exception {
+  public void testSequenceFlowsAreLoaded() throws Exception {
     // having
     String processId = "demoProcess";
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)

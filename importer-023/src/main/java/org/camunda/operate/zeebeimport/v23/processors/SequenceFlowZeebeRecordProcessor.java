@@ -27,6 +27,7 @@ import io.zeebe.protocol.record.Record;
 public class SequenceFlowZeebeRecordProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(SequenceFlowZeebeRecordProcessor.class);
+  private static final String ID_PATTERN = "%s_%s";
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -44,9 +45,7 @@ public class SequenceFlowZeebeRecordProcessor {
 
   private void persistSequenceFlow(Record record, WorkflowInstanceRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     SequenceFlowEntity entity = new SequenceFlowEntity();
-    entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
+    entity.setId(String.format(ID_PATTERN, recordValue.getWorkflowInstanceKey(), recordValue.getElementId()));
     entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     entity.setActivityId(recordValue.getElementId());
     bulkRequest.add(getSequenceFlowInsertQuery(entity));
