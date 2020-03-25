@@ -146,7 +146,7 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("test"))
+            .serviceTask("task", t -> t.zeebeJobType("test"))
             .boundaryEvent(
                 "boundary-1",
                 b -> b.message(m -> m.name(null).zeebeCorrelationKey("correlationKey")))

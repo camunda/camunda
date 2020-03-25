@@ -40,12 +40,12 @@ public final class MappingIncidentTest {
   private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
+          .serviceTask("failingTask", t -> t.zeebeJobType("test").zeebeInput("foo", "foo"))
           .done();
   private static final BpmnModelInstance WORKFLOW_OUTPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeOutput("foo", "foo"))
+          .serviceTask("failingTask", t -> t.zeebeJobType("test").zeebeOutput("foo", "foo"))
           .done();
   private static final Map<String, Object> VARIABLES = Maps.of(entry("foo", "bar"));
   private static final String VARIABLES_JSON =
@@ -120,7 +120,7 @@ public final class MappingIncidentTest {
                 .serviceTask(
                     "service",
                     t ->
-                        t.zeebeTaskType("external")
+                        t.zeebeJobType("external")
                             .zeebeInput("notExisting", "nullVal")
                             .zeebeInput("string", "existing"))
                 .endEvent()
@@ -335,7 +335,7 @@ public final class MappingIncidentTest {
             .startEvent()
             .serviceTask(
                 "failingTask",
-                t -> t.zeebeTaskType("external").zeebeInput("foo", "foo").zeebeInput("bar", "bar"))
+                t -> t.zeebeJobType("external").zeebeInput("foo", "foo").zeebeInput("bar", "bar"))
             .done();
 
     ENGINE.deployment().withXmlResource(modelInstance).deploy();

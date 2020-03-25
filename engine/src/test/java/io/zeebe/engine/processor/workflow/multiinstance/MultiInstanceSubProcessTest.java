@@ -45,7 +45,7 @@ public final class MultiInstanceSubProcessTest {
       workflow(b -> b.sequenceFlowId("sub-process-to-end"));
 
   private static final BpmnModelInstance SERVICE_TASK_SUB_PROCESS =
-      workflow(b -> b.serviceTask(TASK_ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE)));
+      workflow(b -> b.serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE)));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

@@ -46,7 +46,7 @@ public final class MultiInstanceInputCollectionTest {
           .serviceTask(
               ELEMENT_ID,
               t ->
-                  t.zeebeTaskType("test")
+                  t.zeebeJobType("test")
                       .multiInstance(
                           b ->
                               b.zeebeInputCollection(INPUT_COLLECTION)

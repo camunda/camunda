@@ -58,7 +58,7 @@ public final class ErrorCatchEventTest {
         "boundary event on service task",
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE))
+            .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
             .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
             .endEvent()
             .done(),
@@ -74,7 +74,7 @@ public final class ErrorCatchEventTest {
                 s ->
                     s.embeddedSubProcess()
                         .startEvent()
-                        .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE))
+                        .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
                         .endEvent())
             .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
             .endEvent()
@@ -93,7 +93,7 @@ public final class ErrorCatchEventTest {
                         .interrupting(true)
                         .endEvent())
             .startEvent()
-            .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE))
+            .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
             .endEvent()
             .done(),
         "error-start-event",
@@ -108,7 +108,7 @@ public final class ErrorCatchEventTest {
                 s ->
                     s.embeddedSubProcess()
                         .startEvent()
-                        .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE))
+                        .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
                         .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
                         .endEvent())
             .boundaryEvent("error-boundary-event-on-subprocess", b -> b.error(ERROR_CODE))
@@ -124,7 +124,7 @@ public final class ErrorCatchEventTest {
                 "error-event-subprocess",
                 s -> s.startEvent().error(ERROR_CODE).interrupting(true).endEvent())
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
             .boundaryEvent("error-boundary-event")
             .error(ERROR_CODE)
             .endEvent()
@@ -148,7 +148,7 @@ public final class ErrorCatchEventTest {
                                     .interrupting(true)
                                     .endEvent())
                         .startEvent()
-                        .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+                        .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
                         .endEvent())
             .boundaryEvent("error", b -> b.error(ERROR_CODE))
             .endEvent()

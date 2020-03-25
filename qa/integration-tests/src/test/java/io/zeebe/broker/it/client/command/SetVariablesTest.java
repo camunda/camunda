@@ -50,7 +50,7 @@ public final class SetVariablesTest {
         CLIENT_RULE.deployWorkflow(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeTaskType("test"))
+                .serviceTask("task", t -> t.zeebeJobType("test"))
                 .done());
   }
 

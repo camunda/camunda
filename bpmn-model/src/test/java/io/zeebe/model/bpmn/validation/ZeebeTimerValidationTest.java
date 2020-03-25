@@ -59,7 +59,7 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("catch")
             .timerWithCycle("R5/PT05S")
             .endEvent()
@@ -70,7 +70,7 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("catch")
             .cancelActivity(false)
             .timerWithCycle("R5/")

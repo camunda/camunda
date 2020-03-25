@@ -42,7 +42,7 @@ public class ZeebeBuilderTest {
             .serviceTask(
                 "foo",
                 b ->
-                    b.zeebeTaskType("taskType")
+                    b.zeebeJobType("taskType")
                         .zeebeTaskRetries(5)
                         .zeebeTaskHeader("foo", "f")
                         .zeebeTaskHeader("bar", "b"))

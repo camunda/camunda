@@ -52,7 +52,7 @@ public final class ThrowErrorTest {
         CLIENT_RULE.deployWorkflow(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeTaskType(jobType))
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
                 .boundaryEvent("error", b -> b.error(ERROR_CODE).endEvent())
                 .endEvent()
                 .done());

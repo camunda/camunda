@@ -123,7 +123,7 @@ public class ExporterIntegrationRule extends ExternalResource {
           .startEvent()
           .intermediateCatchEvent(
               "message", e -> e.message(m -> m.name("catch").zeebeCorrelationKey("orderId")))
-          .serviceTask("task", t -> t.zeebeTaskType("work").zeebeTaskHeader("foo", "bar"))
+          .serviceTask("task", t -> t.zeebeJobType("work").zeebeTaskHeader("foo", "bar"))
           .endEvent()
           .done();
 

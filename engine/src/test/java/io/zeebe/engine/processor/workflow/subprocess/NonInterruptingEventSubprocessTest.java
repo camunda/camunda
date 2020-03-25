@@ -247,7 +247,7 @@ public class NonInterruptingEventSubprocessTest {
 
     return builder
         .startEvent("start_proc")
-        .serviceTask("task", t -> t.zeebeTaskType("type"))
+        .serviceTask("task", t -> t.zeebeJobType("type"))
         .endEvent("end_proc")
         .done();
   }
@@ -261,12 +261,12 @@ public class NonInterruptingEventSubprocessTest {
                 .eventSubProcess("event_sub_proc")
                 .startEvent("event_sub_start")
                 .interrupting(false))
-        .serviceTask("event_sub_task", t -> t.zeebeTaskType(subprocTaskType))
+        .serviceTask("event_sub_task", t -> t.zeebeJobType(subprocTaskType))
         .endEvent("event_sub_end");
 
     return modelBuilder
         .startEvent("start_proc")
-        .serviceTask("task", t -> t.zeebeTaskType(procTaskType))
+        .serviceTask("task", t -> t.zeebeJobType(procTaskType))
         .endEvent("end_proc")
         .done();
   }

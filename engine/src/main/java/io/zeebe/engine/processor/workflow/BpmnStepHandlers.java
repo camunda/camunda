@@ -162,7 +162,8 @@ public final class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.RECEIVE_TASK_EVENT_OCCURRED, new ReceiveTaskEventOccurredHandler<>());
 
     stepHandlers.put(
-        BpmnStep.SERVICE_TASK_ELEMENT_ACTIVATED, new ServiceTaskElementActivatedHandler<>());
+        BpmnStep.SERVICE_TASK_ELEMENT_ACTIVATED,
+        new ServiceTaskElementActivatedHandler<>(expressionProcessor));
     stepHandlers.put(
         BpmnStep.SERVICE_TASK_ELEMENT_TERMINATING,
         new ServiceTaskElementTerminatingHandler<>(

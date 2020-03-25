@@ -7,13 +7,13 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
+import io.zeebe.el.Expression;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class ExecutableServiceTask extends ExecutableActivity {
 
-  private DirectBuffer type;
+  private Expression type;
   private int retries;
   private DirectBuffer encodedHeaders = JobRecord.NO_HEADERS;
 
@@ -21,12 +21,12 @@ public class ExecutableServiceTask extends ExecutableActivity {
     super(id);
   }
 
-  public DirectBuffer getType() {
+  public Expression getType() {
     return type;
   }
 
-  public void setType(final String type) {
-    this.type = BufferUtil.wrapString(type);
+  public void setType(final Expression type) {
+    this.type = type;
   }
 
   public int getRetries() {

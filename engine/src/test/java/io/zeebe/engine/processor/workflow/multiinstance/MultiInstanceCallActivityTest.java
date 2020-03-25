@@ -58,7 +58,7 @@ public final class MultiInstanceCallActivityTest {
     final var childWorkflow =
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType(jobType))
+            .serviceTask("task", t -> t.zeebeJobType(jobType))
             .endEvent()
             .done();
 

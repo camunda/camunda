@@ -256,7 +256,7 @@ public final class EngineRule extends ExternalResource {
             processId,
             Bpmn.createExecutableProcess(processId)
                 .startEvent("start")
-                .serviceTask("task", b -> b.zeebeTaskType(type).done())
+                .serviceTask("task", b -> b.zeebeJobType(type).done())
                 .endEvent("end")
                 .done())
         .deploy();

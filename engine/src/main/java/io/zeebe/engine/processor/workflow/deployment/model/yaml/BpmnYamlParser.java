@@ -128,7 +128,7 @@ public final class BpmnYamlParser {
     final int taskRetries = task.getRetries();
 
     final ServiceTaskBuilder serviceTaskBuilder =
-        builder.serviceTask(id).zeebeTaskType(taskType).zeebeTaskRetries(taskRetries);
+        builder.serviceTask(id).zeebeJobType(taskType).zeebeTaskRetries(taskRetries);
 
     for (final Entry<String, String> header : task.getHeaders().entrySet()) {
       serviceTaskBuilder.zeebeTaskHeader(header.getKey(), header.getValue());

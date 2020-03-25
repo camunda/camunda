@@ -113,7 +113,7 @@ public final class EventSubscriptionIncidentTest {
   private static final BpmnModelInstance WF_BOUNDARY_EVENT =
       Bpmn.createExecutableProcess(WF_BOUNDARY_EVENT_ID)
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType("test"))
+          .serviceTask("task", t -> t.zeebeJobType("test"))
           .boundaryEvent(
               MESSAGE_NAME_1,
               c ->
@@ -132,7 +132,7 @@ public final class EventSubscriptionIncidentTest {
   private static final BpmnModelInstance WF_BOUNDARY_EVENT_2 =
       Bpmn.createExecutableProcess(WF_BOUNDARY_EVENT_2_ID)
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType("test"))
+          .serviceTask("task", t -> t.zeebeJobType("test"))
           .boundaryEvent(
               MESSAGE_NAME_2,
               c ->

@@ -222,7 +222,7 @@ public class UpgradeTest {
   private static BpmnModelInstance jobWorkflow() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
-        .serviceTask(TASK, t -> t.zeebeTaskType(TASK))
+        .serviceTask(TASK, t -> t.zeebeJobType(TASK))
         .endEvent()
         .done();
   }
@@ -302,7 +302,7 @@ public class UpgradeTest {
   private static BpmnModelInstance incidentWorkflow() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
-        .serviceTask("failingTask", t -> t.zeebeTaskType(TASK).zeebeInput("foo", "foo"))
+        .serviceTask("failingTask", t -> t.zeebeJobType(TASK).zeebeInput("foo", "foo"))
         .done();
   }
 
@@ -337,7 +337,7 @@ public class UpgradeTest {
   private static BpmnModelInstance childWorkflow() {
     return Bpmn.createExecutableProcess(CHILD_PROCESS_ID)
         .startEvent()
-        .serviceTask(TASK, b -> b.zeebeTaskType(TASK))
+        .serviceTask(TASK, b -> b.zeebeJobType(TASK))
         .endEvent()
         .done();
   }

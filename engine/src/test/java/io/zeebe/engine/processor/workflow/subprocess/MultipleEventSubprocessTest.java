@@ -296,7 +296,7 @@ public final class MultipleEventSubprocessTest {
 
     return builder
         .startEvent("start_proc")
-        .serviceTask("task", t -> t.zeebeTaskType("type"))
+        .serviceTask("task", t -> t.zeebeJobType("type"))
         .endEvent("end_proc")
         .done();
   }
@@ -310,7 +310,7 @@ public final class MultipleEventSubprocessTest {
         .startEvent("event_sub_start_timer")
         .interrupting(timerInterrupt)
         .timerWithDuration("PT60S")
-        .serviceTask("event_sub_task_timer", b -> b.zeebeTaskType("timerTask"))
+        .serviceTask("event_sub_task_timer", b -> b.zeebeJobType("timerTask"))
         .endEvent("event_sub_end_timer");
     builder
         .eventSubProcess("event_sub_proc_msg")
@@ -321,7 +321,7 @@ public final class MultipleEventSubprocessTest {
 
     return builder
         .startEvent("start_proc")
-        .serviceTask("task", t -> t.zeebeTaskType("type"))
+        .serviceTask("task", t -> t.zeebeJobType("type"))
         .endEvent("end_proc")
         .done();
   }
@@ -329,7 +329,7 @@ public final class MultipleEventSubprocessTest {
   private static BpmnModelInstance nestedMsgModel(final String msgName) {
     final StartEventBuilder procBuilder =
         Bpmn.createExecutableProcess(PROCESS_ID).startEvent("proc_start");
-    procBuilder.serviceTask("proc_task", b -> b.zeebeTaskType("proc_type")).endEvent();
+    procBuilder.serviceTask("proc_task", b -> b.zeebeJobType("proc_type")).endEvent();
     final EmbeddedSubProcessBuilder subProcBuilder =
         procBuilder.subProcess("sub_proc").embeddedSubProcess();
 
@@ -341,7 +341,7 @@ public final class MultipleEventSubprocessTest {
         .endEvent("event_sub_end");
     return subProcBuilder
         .startEvent("sub_start")
-        .serviceTask("sub_proc_task", t -> t.zeebeTaskType("sub_proc_type"))
+        .serviceTask("sub_proc_task", t -> t.zeebeJobType("sub_proc_type"))
         .endEvent("sub_end")
         .done();
   }

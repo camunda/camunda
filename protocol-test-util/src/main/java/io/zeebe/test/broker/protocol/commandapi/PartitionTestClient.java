@@ -258,7 +258,7 @@ public final class PartitionTestClient {
             .serviceTask(
                 "task",
                 b -> {
-                  b.zeebeTaskType(type).zeebeTaskRetries(3);
+                  b.zeebeJobType(type).zeebeTaskRetries(3);
                   consumer.accept(b);
                 })
             .done());

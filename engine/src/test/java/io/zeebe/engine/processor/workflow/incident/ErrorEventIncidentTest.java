@@ -36,7 +36,7 @@ public final class ErrorEventIncidentTest {
   private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+          .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
           .boundaryEvent("error", b -> b.error(ERROR_CODE))
           .endEvent()
           .done();
@@ -124,10 +124,10 @@ public final class ErrorEventIncidentTest {
                 subprocess ->
                     subprocess
                         .startEvent("error-start", s -> s.error(ERROR_CODE).interrupting(true))
-                        .serviceTask("task-in-subprocess", t -> t.zeebeTaskType(JOB_TYPE))
+                        .serviceTask("task-in-subprocess", t -> t.zeebeJobType(JOB_TYPE))
                         .endEvent())
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
             .endEvent()
             .done();
 

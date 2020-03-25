@@ -40,7 +40,7 @@ public final class CancelWorkflowInstanceTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("WORKFLOW")
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeTaskRetries(5))
+          .serviceTask("task", t -> t.zeebeJobType("test").zeebeTaskRetries(5))
           .endEvent()
           .done();
   private static final BpmnModelInstance SUB_PROCESS_WORKFLOW =
@@ -49,7 +49,7 @@ public final class CancelWorkflowInstanceTest {
           .subProcess("subProcess")
           .embeddedSubProcess()
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeTaskRetries(5))
+          .serviceTask("task", t -> t.zeebeJobType("test").zeebeTaskRetries(5))
           .endEvent()
           .subProcessDone()
           .endEvent()
@@ -61,12 +61,12 @@ public final class CancelWorkflowInstanceTest {
         Bpmn.createExecutableProcess("FORK_PROCESS")
             .startEvent("start")
             .parallelGateway("fork")
-            .serviceTask("task1", b -> b.zeebeTaskType("type1"))
+            .serviceTask("task1", b -> b.zeebeJobType("type1"))
             .endEvent("end1")
             .moveToNode("fork");
 
     FORK_PROCESS =
-        builder.serviceTask("task2", b -> b.zeebeTaskType("type2")).endEvent("end2").done();
+        builder.serviceTask("task2", b -> b.zeebeJobType("type2")).endEvent("end2").done();
   }
 
   @Rule

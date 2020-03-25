@@ -540,7 +540,7 @@ public final class CreateDeploymentTest {
     final BpmnModelInstance definition3 =
         Bpmn.createExecutableProcess("process2")
             .startEvent()
-            .serviceTask("task", (t) -> t.zeebeTaskType("j").zeebeTaskHeader("k", "v"))
+            .serviceTask("task", (t) -> t.zeebeJobType("j").zeebeTaskHeader("k", "v"))
             .done();
 
     // when

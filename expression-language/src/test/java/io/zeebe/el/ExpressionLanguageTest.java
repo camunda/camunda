@@ -65,18 +65,6 @@ public class ExpressionLanguageTest {
   }
 
   @Test
-  public void shouldParseExpressionWithInvalidFormat() {
-    final var expression = expressionLanguage.parseExpression("x.y");
-
-    assertThat(expression).isNotNull();
-    assertThat(expression.isValid()).isFalse();
-    assertThat(expression.getExpression()).isEqualTo("x.y");
-    assertThat(expression.getFailureMessage())
-        .isEqualTo(
-            "Expected FEEL expression (e.g. '=variableName') or static value (e.g. 'jobType') but found 'x.y'");
-  }
-
-  @Test
   public void shouldEvaluateStaticValue() {
     final var expression = expressionLanguage.parseExpression("x");
     final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
@@ -114,19 +102,6 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getFailureMessage())
         .startsWith("failed to evaluate expression 'x': no variable found for name 'x'");
     assertThat(evaluationResult.getExpression()).isEqualTo("x");
-    assertThat(evaluationResult.getType()).isNull();
-    assertThat(evaluationResult.getString()).isNull();
-  }
-
-  @Test
-  public void shouldEvaluateInvalidExpression() {
-    final var expression = expressionLanguage.parseExpression("x.y");
-    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
-
-    assertThat(evaluationResult).isNotNull();
-    assertThat(evaluationResult.isFailure()).isTrue();
-    assertThat(evaluationResult.getFailureMessage()).startsWith("Expected FEEL expression");
-    assertThat(evaluationResult.getExpression()).isEqualTo("x.y");
     assertThat(evaluationResult.getType()).isNull();
     assertThat(evaluationResult.getString()).isNull();
   }

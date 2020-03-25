@@ -51,7 +51,7 @@ public final class JobWorkerTest {
             .serviceTask(
                 "task",
                 t ->
-                    t.zeebeTaskType(jobType)
+                    t.zeebeJobType(jobType)
                         .zeebeTaskRetries(5)
                         .zeebeTaskHeader("x", "1")
                         .zeebeTaskHeader("y", "2"))

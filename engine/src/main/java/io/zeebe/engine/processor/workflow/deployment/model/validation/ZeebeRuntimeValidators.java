@@ -14,6 +14,7 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -43,6 +44,9 @@ public final class ZeebeRuntimeValidators {
             .build(expressionLanguage),
         ZeebeExpressionValidator.verifyThat(ConditionExpression.class)
             .hasValidExpression(ConditionExpression::getTextContent)
+            .build(expressionLanguage),
+        ZeebeExpressionValidator.verifyThat(ZeebeTaskDefinition.class)
+            .hasValidExpression(ZeebeTaskDefinition::getType)
             .build(expressionLanguage));
   }
 }

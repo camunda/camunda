@@ -45,7 +45,7 @@ public final class JobFailIncidentTest {
   private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.zeebeTaskType(JOB_TYPE).zeebeInput("foo", "foo"))
+          .serviceTask("failingTask", t -> t.zeebeJobType(JOB_TYPE).zeebeInput("foo", "foo"))
           .done();
   private static final Map<String, Object> VARIABLES = Maps.of(entry("foo", "bar"));
   private static long workflowKey;

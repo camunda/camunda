@@ -52,7 +52,7 @@ public final class ActivateJobsTest {
       (type) ->
           Bpmn.createExecutableProcess(PROCESS_ID)
               .startEvent("start")
-              .serviceTask("task", b -> b.zeebeTaskType(type).done())
+              .serviceTask("task", b -> b.zeebeJobType(type).done())
               .endEvent("end")
               .done();
 
@@ -264,7 +264,7 @@ public final class ActivateJobsTest {
         Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start");
 
     for (final String type : Arrays.asList(jobType, jobType2, jobType3)) {
-      builder = builder.serviceTask(type, b -> b.zeebeTaskType(type));
+      builder = builder.serviceTask(type, b -> b.zeebeJobType(type));
     }
     ENGINE.deployment().withXmlResource(PROCESS_ID, builder.done()).deploy();
 
@@ -298,7 +298,7 @@ public final class ActivateJobsTest {
             .startEvent()
             .serviceTask(
                 "task",
-                b -> b.zeebeTaskType(taskType).zeebeTaskHeader("foo", LONG_CUSTOM_HEADER_VALUE))
+                b -> b.zeebeJobType(taskType).zeebeTaskHeader("foo", LONG_CUSTOM_HEADER_VALUE))
             .endEvent()
             .done();
 

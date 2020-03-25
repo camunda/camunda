@@ -54,7 +54,7 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .condition("foo")
             .endEvent()
             .done(),

@@ -92,7 +92,7 @@ public final class MultiInstanceActivityTest {
         .startEvent()
         .serviceTask(
             ELEMENT_ID,
-            t -> t.zeebeTaskType(JOB_TYPE).multiInstance(INPUT_VARIABLE_BUILDER.andThen(builder)))
+            t -> t.zeebeJobType(JOB_TYPE).multiInstance(INPUT_VARIABLE_BUILDER.andThen(builder)))
         .endEvent()
         .done();
   }

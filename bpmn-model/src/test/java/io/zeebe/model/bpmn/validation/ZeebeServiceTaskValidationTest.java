@@ -38,7 +38,7 @@ public class ZeebeServiceTaskValidationTest extends AbstractZeebeValidationTest 
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask("task")
-            .zeebeTaskType("")
+            .zeebeJobType("")
             .endEvent()
             .done(),
         singletonList(expect(ZeebeTaskDefinition.class, "Task type must be present and not empty"))
@@ -54,7 +54,7 @@ public class ZeebeServiceTaskValidationTest extends AbstractZeebeValidationTest 
                         BpmnModelConstants.ZEEBE_NS,
                         ZeebeConstants.ATTRIBUTE_RETRIES,
                         "notANumber"))
-            .zeebeTaskType("type")
+            .zeebeJobType("type")
             .endEvent()
             .done(),
         singletonList(expect(ZeebeTaskDefinition.class, "Task retries must be an integer"))

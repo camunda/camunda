@@ -57,7 +57,7 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .endEvent()
-            .serviceTask("task", tb -> tb.zeebeTaskType("task"))
+            .serviceTask("task", tb -> tb.zeebeJobType("task"))
             .done(),
         singletonList(
             expect(
@@ -87,7 +87,7 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("msg1")
             .message(m -> m.name("message").zeebeCorrelationKey("$.id"))
             .endEvent()

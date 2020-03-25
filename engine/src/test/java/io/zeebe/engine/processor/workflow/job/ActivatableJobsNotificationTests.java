@@ -38,7 +38,7 @@ public final class ActivatableJobsNotificationTests {
       (type) ->
           Bpmn.createExecutableProcess(PROCESS_ID)
               .startEvent("start")
-              .serviceTask("task", b -> b.zeebeTaskType(type).done())
+              .serviceTask("task", b -> b.zeebeJobType(type).done())
               .endEvent("end")
               .done();
   private static final Consumer<String> JOB_AVAILABLE_CALLBACK =
