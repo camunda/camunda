@@ -52,9 +52,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +67,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -614,6 +613,19 @@ public final class ClusteringRule extends ExternalResource {
     return waitForNewSnapshotAtBroker(broker, null);
   }
 
+  /**
+   * Waits until a newer snapshot than {@code previousSnapshot} has been committed on the given
+   * {@code broker} and the previous ones have been removed. If {@code previousSnapshot} is null,
+   * then this returns as soon as a new snapshot has been committed.
+   *
+   * @param broker the broker to check on
+   * @param previousSnapshot the previous expected snapshot
+   * @return the new snapshot metadata
+   * @throws AssertionError if no new snapshot has been found after enough repetitions (see {@link
+   *     io.zeebe.test.util.TestUtil#waitUntil(BooleanSupplier)}
+   * @throws IllegalStateException if no new snapshot has been found but {@link
+   *     io.zeebe.test.util.TestUtil#waitUntil(BooleanSupplier)} did not fail
+   */
   DbSnapshotMetadata waitForNewSnapshotAtBroker(
       final Broker broker, final DbSnapshotMetadata previousSnapshot) {
     final var referenceToResult = new AtomicReference<>(Optional.<DbSnapshotMetadata>empty());
@@ -621,25 +633,22 @@ public final class ClusteringRule extends ExternalResource {
     waitUntil(
         () -> {
           final File[] files = snapshotsDir.listFiles();
-          if (files == null || files.length == 0) {
+          if (files == null || files.length != 1) {
             return false;
           }
-          final Optional<DbSnapshotMetadata> latestSnapshot =
-              Arrays.stream(files)
-                  .map(File::toPath)
-                  .map(DbSnapshotMetadata::ofPath)
-                  .flatMap(Optional::stream)
-                  .max(Comparator.naturalOrder());
-          if (latestSnapshot.isEmpty()) {
-            return false;
+
+          final var snapshotPath = files[0].toPath();
+          final var latestSnapshot = DbSnapshotMetadata.ofPath(snapshotPath);
+          if (latestSnapshot.isPresent()
+              && (previousSnapshot == null
+                  || latestSnapshot.get().compareTo(previousSnapshot) > 0)) {
+            referenceToResult.set(latestSnapshot);
+            return true;
           }
-          if (previousSnapshot != null && previousSnapshot.compareTo(latestSnapshot.get()) > -1) {
-            return false;
-          }
-          // latestSnapshot is newer than previousSnapshot
-          referenceToResult.set(latestSnapshot);
-          return true;
+
+          return false;
         });
+
     return referenceToResult
         .get()
         .orElseThrow(
