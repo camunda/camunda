@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.instance.BaseElement;
+import org.camunda.bpm.model.bpmn.instance.Event;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -385,20 +388,35 @@ public class EventProcessService {
   }
 
   private void validateMappingsForProvidedXml(final EventProcessMappingDto eventProcessMappingDto) {
-    Set<String> flowNodeIds = eventProcessMappingDto.getXml() == null ? Collections.emptySet() :
-      extractFlowNodeNames(BpmnModelUtility.parseBpmnModel(
-        eventProcessMappingDto.getXml())).keySet();
-    Map<String, EventMappingDto> eventMappings = eventProcessMappingDto.getMappings();
+    final Optional<BpmnModelInstance> modelInstance = Optional.ofNullable(eventProcessMappingDto.getXml())
+      .map(BpmnModelUtility::parseBpmnModel);
+    Set<String> flowNodeIds = modelInstance.map(instance -> extractFlowNodeNames(instance).keySet())
+      .orElse(Collections.emptySet());
 
+    Map<String, EventMappingDto> eventMappings = eventProcessMappingDto.getMappings();
     if (eventMappings != null) {
       if (!flowNodeIds.containsAll(eventMappings.keySet())) {
         throw new BadRequestException("All Flow Node IDs for event mappings must exist within the provided XML");
       }
       if (eventMappings.entrySet().stream()
         .anyMatch(mapping -> mapping.getValue().getStart() == null && mapping.getValue().getEnd() == null)) {
-        throw new BadRequestException("All Flow Node mappings provided must have either a start or end event mapped");
+        throw new BadRequestException("All Flow Node mappings provided must have a start and/or end event mapped");
+      }
+      final List<String> singleMappableEventIdsInModel = modelInstance.map(this::getSingleMappableEventIds)
+        .orElse(Collections.emptyList());
+
+      if (eventMappings.entrySet().stream().anyMatch(mapping -> singleMappableEventIdsInModel.contains(mapping.getKey())
+        && mapping.getValue().getStart() != null && mapping.getValue().getEnd() != null)) {
+        throw new BadRequestException("BPMN events must have only one of either a start and end mapping");
       }
     }
+  }
+
+  private List<String> getSingleMappableEventIds(final BpmnModelInstance model) {
+    return model.getModelElementsByType(Event.class)
+      .stream()
+      .map(BaseElement::getId)
+      .collect(toList());
   }
 
 }

@@ -282,6 +282,22 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  public void createEventProcessMappingWithBPMNEventWithStartAndEndMapping() {
+    // given event mappings but BPMN event has start and end mapping
+    EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+        Collections.singletonMap(BPMN_START_EVENT_ID, createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+        "process name", simpleDiagramXml
+      );
+
+    // when
+    Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
+
+    // then a bad request exception is thrown
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void getEventProcessMappingWithId() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
@@ -944,7 +960,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
       .camundaVersionTag("aVersionTag")
       .name("aProcessName")
-      .startEvent("startEvent_ID")
+      .startEvent(BPMN_START_EVENT_ID)
       .userTask(USER_TASK_ID_ONE)
       .userTask(USER_TASK_ID_TWO)
       .userTask(USER_TASK_ID_THREE)

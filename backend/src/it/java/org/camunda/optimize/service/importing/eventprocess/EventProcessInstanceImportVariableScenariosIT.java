@@ -41,7 +41,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       )
     );
@@ -58,7 +58,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
         assertEngineVariables(processInstanceDto, variableTypeToVariableMap);
       });
@@ -75,7 +75,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       )
     );
@@ -95,7 +95,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
         assertEngineVariables(processInstanceDto, variableTypeToVariableMap);
       });
@@ -114,7 +114,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       ),
       tracingVariableKeyAndValue.getKey()
@@ -132,7 +132,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
         assertProcessInstance(
           processInstanceDto,
           tracingVariableKeyAndValue.getValue().toString(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
         assertEngineVariables(processInstanceDto, variableTypeToVariableMap);
       });
@@ -150,7 +150,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     final Map<String, EventMappingDto> mappingsForEventProcess = createMappingsForEventProcess(
       processInstanceEngineDto,
       BPMN_START_EVENT_ID,
-      applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+      applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
       BPMN_END_EVENT_ID
     );
     mappingsForEventProcess.put(BPMN_END_EVENT_ID, EventMappingDto.builder()
@@ -180,7 +180,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(processInstanceDto,
                               processInstanceEngineDto.getBusinessKey(),
-                              Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+                              Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
         List<SimpleProcessVariableDto> expectedVariabes = extractExpectedEngineVariables(variableTypeToVariableMap);
         expectedVariabes.add(expectedExternalEventVariable());

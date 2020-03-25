@@ -6,9 +6,12 @@
 package org.camunda.optimize.service.importing.eventprocess;
 
 import org.assertj.core.groups.Tuple;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -193,6 +196,110 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
       );
   }
 
+  @ParameterizedTest
+  @MethodSource("getScenarios")
+  public void instancesAreGeneratedAsExpectedWhenIntermediateCatchBpmnEventUsed(final EventMappingDto startEventMapping,
+                                                                                final EventMappingDto intermediateEventMapping,
+                                                                                final EventMappingDto endEventMapping) {
+    // given
+    final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
+    final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
+    final String thirdEventId = ingestTestEvent(THIRD_EVENT_NAME, THIRD_EVENT_DATETIME);
+
+    final EventProcessMappingDto eventProcessMappingDto = buildSimpleEventProcessMappingDto(
+      startEventMapping, intermediateEventMapping, endEventMapping
+    );
+    eventProcessMappingDto.setXml(createThreeEventActivitiesIncludingIntermediateThrowEventProcessDefinitionXml());
+    final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+
+    // when
+    executeImportCycle();
+
+    // then
+    assertZeroDurationBpmnEventProcessInstance(firstEventId, secondEventId, thirdEventId);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getScenarios")
+  public void instancesAreGeneratedAsExpectedWhenBoundaryBpmnEventUsed(final EventMappingDto startEventMapping,
+                                                                       final EventMappingDto intermediateEventMapping,
+                                                                       final EventMappingDto endEventMapping) {
+    // given
+    final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
+    final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
+    final String thirdEventId = ingestTestEvent(THIRD_EVENT_NAME, THIRD_EVENT_DATETIME);
+
+    final EventProcessMappingDto eventProcessMappingDto = buildSimpleEventProcessMappingDto(
+      startEventMapping, intermediateEventMapping, endEventMapping
+    );
+    eventProcessMappingDto.setXml(createThreeEventActivitiesIncludingBoundaryEventProcessDefinitionXml());
+    final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+
+    // when
+    executeImportCycle();
+
+    // then
+    assertZeroDurationBpmnEventProcessInstance(firstEventId, secondEventId, thirdEventId);
+  }
+
+  private void assertZeroDurationBpmnEventProcessInstance(final String firstEventId, final String secondEventId,
+                                                          final String thirdEventId) {
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances)
+      .hasSize(1)
+      .hasOnlyOneElementSatisfying(
+        processInstanceDto -> {
+          assertThat(processInstanceDto)
+            .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.state, PROCESS_INSTANCE_STATE_COMPLETED)
+            .hasFieldOrPropertyWithValue(
+              ProcessInstanceDto.Fields.duration,
+              Duration.between(FIRST_EVENT_DATETIME, THIRD_EVENT_DATETIME).toMillis()
+            )
+            .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.startDate, FIRST_EVENT_DATETIME)
+            .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, THIRD_EVENT_DATETIME)
+            .extracting(ProcessInstanceDto::getEvents)
+            .satisfies(events -> assertThat(events)
+              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+              .extracting(
+                FlowNodeInstanceDto::getId,
+                FlowNodeInstanceDto::getActivityId,
+                FlowNodeInstanceDto::getStartDate,
+                FlowNodeInstanceDto::getEndDate
+              )
+              .containsExactlyInAnyOrder(
+                Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+                Tuple.tuple(secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+                Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
+              )
+            );
+        }
+      );
+  }
+
+  private static String createThreeEventActivitiesIncludingIntermediateThrowEventProcessDefinitionXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name("aProcessName")
+      .startEvent(BPMN_START_EVENT_ID)
+      .intermediateThrowEvent(USER_TASK_ID_ONE)
+      .endEvent(BPMN_END_EVENT_ID)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  private static String createThreeEventActivitiesIncludingBoundaryEventProcessDefinitionXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name("aProcessName")
+      .startEvent(BPMN_START_EVENT_ID)
+      .userTask().boundaryEvent(USER_TASK_ID_ONE)
+      .endEvent(BPMN_END_EVENT_ID)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
   private void createAndPublishMapping(final EventMappingDto startEventMapping,
                                        final EventMappingDto intermediateEventMapping,
                                        final EventMappingDto endEventMapping) {
@@ -235,18 +342,18 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
                   startEventId,
                   BPMN_START_EVENT_ID,
                   FIRST_EVENT_DATETIME,
-                  startEventMapping.getEnd() == null && intermediateEventMapping.getStart() != null ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME
+                  FIRST_EVENT_DATETIME
                 ),
                 Tuple.tuple(
                   intermediateEventId,
-                  BPMN_INTERMEDIATE_EVENT_ID,
+                  USER_TASK_ID_ONE,
                   intermediateEventMapping.getStart() == null ? FIRST_EVENT_DATETIME : SECOND_EVENT_DATETIME,
                   intermediateEventMapping.getEnd() == null && endEventMapping.getStart() != null ? THIRD_EVENT_DATETIME : SECOND_EVENT_DATETIME
                 ),
                 Tuple.tuple(
                   endEventId,
                   BPMN_END_EVENT_ID,
-                  endEventMapping.getStart() != null ? THIRD_EVENT_DATETIME : SECOND_EVENT_DATETIME,
+                  THIRD_EVENT_DATETIME,
                   THIRD_EVENT_DATETIME
                 )
               )

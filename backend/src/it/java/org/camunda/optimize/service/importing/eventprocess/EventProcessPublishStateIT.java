@@ -391,7 +391,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), timeBaseLine.minusSeconds(60));
     updateActivityStartEndTimestampInEngine(BPMN_START_EVENT_ID, timeBaseLine.minusSeconds(60), processInstanceEngineDto);
-    updateActivityStartEndTimestampInEngine(BPMN_INTERMEDIATE_EVENT_ID, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
+    updateActivityStartEndTimestampInEngine(USER_TASK_ID_ONE, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
     updateActivityStartEndTimestampInEngine(BPMN_END_EVENT_ID, timeBaseLine, processInstanceEngineDto);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), timeBaseLine);
 
@@ -401,7 +401,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     final String eventProcessMappingId = createEventProcessMappingWithMappingsAndEventSources(
       ImmutableMap.of(
         BPMN_START_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
-        BPMN_INTERMEDIATE_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_INTERMEDIATE_EVENT_ID, MappedEventType.END),
+        USER_TASK_ID_ONE, buildCamundaEventMapping(processInstanceEngineDto, USER_TASK_ID_ONE, MappedEventType.END),
         BPMN_END_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
       ),
       Collections.singletonList(
@@ -459,7 +459,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), timeBaseLine.minusSeconds(60));
     updateActivityStartEndTimestampInEngine(BPMN_START_EVENT_ID, timeBaseLine.minusSeconds(60), processInstanceEngineDto);
-    updateActivityStartEndTimestampInEngine(BPMN_INTERMEDIATE_EVENT_ID, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
+    updateActivityStartEndTimestampInEngine(USER_TASK_ID_ONE, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
     updateActivityStartEndTimestampInEngine(BPMN_END_EVENT_ID, timeBaseLine, processInstanceEngineDto);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), timeBaseLine);
 
@@ -469,7 +469,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     final String eventProcessMappingId = createEventProcessMappingWithMappingsAndEventSources(
       ImmutableMap.of(
         BPMN_START_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
-        BPMN_INTERMEDIATE_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_INTERMEDIATE_EVENT_ID, MappedEventType.END),
+        USER_TASK_ID_ONE, buildCamundaEventMapping(processInstanceEngineDto, USER_TASK_ID_ONE, MappedEventType.END),
         BPMN_END_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
       ),
       Collections.singletonList(
@@ -569,7 +569,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), timeBaseLine.minusSeconds(60));
     updateActivityStartEndTimestampInEngine(BPMN_START_EVENT_ID, timeBaseLine.minusSeconds(60), processInstanceEngineDto);
-    updateActivityStartEndTimestampInEngine(BPMN_INTERMEDIATE_EVENT_ID, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
+    updateActivityStartEndTimestampInEngine(USER_TASK_ID_ONE, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
     updateActivityStartEndTimestampInEngine(BPMN_END_EVENT_ID, timeBaseLine, processInstanceEngineDto);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), timeBaseLine);
     importEngineEntities();
@@ -580,21 +580,21 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
     final OffsetDateTime secondExternalEventTimestamp = timeBaseLine.minusSeconds(40);
     LocalDateUtil.setCurrentTime(secondExternalEventTimestamp);
-    ingestTestEvent(BPMN_INTERMEDIATE_EVENT_ID, secondExternalEventTimestamp);
+    ingestTestEvent(USER_TASK_ID_ONE, secondExternalEventTimestamp);
 
     final OffsetDateTime thirdExternalEventTimestamp = timeBaseLine.minusSeconds(20);
     LocalDateUtil.setCurrentTime(thirdExternalEventTimestamp);
     ingestTestEvent(STARTED_EVENT, thirdExternalEventTimestamp);
 
     LocalDateUtil.setCurrentTime(timeBaseLine);
-    ingestTestEvent(BPMN_INTERMEDIATE_EVENT_ID, timeBaseLine);
+    ingestTestEvent(USER_TASK_ID_ONE, timeBaseLine);
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final String eventProcessMappingId = createEventProcessMappingWithMappingsAndEventSources(
       ImmutableMap.of(
         BPMN_START_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
-        BPMN_INTERMEDIATE_EVENT_ID, buildExternalEventMapping(BPMN_INTERMEDIATE_EVENT_ID, MappedEventType.END),
+        USER_TASK_ID_ONE, buildExternalEventMapping(USER_TASK_ID_ONE, MappedEventType.END),
         BPMN_END_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
       ),
       Arrays.asList(

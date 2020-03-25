@@ -194,14 +194,14 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     );
   }
 
-  private EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
+  protected EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
                                                                    final EventMappingDto intermediateEventMapping,
                                                                    final EventMappingDto endEventMapping) {
     final Map<String, EventMappingDto> eventMappings = new HashMap<>();
     Optional.ofNullable(startEventMapping)
       .ifPresent(mapping -> eventMappings.put(BPMN_START_EVENT_ID, mapping));
     Optional.ofNullable(intermediateEventMapping)
-      .ifPresent(mapping -> eventMappings.put(BPMN_INTERMEDIATE_EVENT_ID, mapping));
+      .ifPresent(mapping -> eventMappings.put(USER_TASK_ID_ONE, mapping));
     Optional.ofNullable(endEventMapping)
       .ifPresent(mapping -> eventMappings.put(BPMN_END_EVENT_ID, mapping));
     return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
@@ -416,7 +416,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected ProcessInstanceEngineDto deployAndStartProcessWithVariables(final Map<String, Object> variables) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent(BPMN_START_EVENT_ID)
-      .userTask(BPMN_INTERMEDIATE_EVENT_ID)
+      .userTask(USER_TASK_ID_ONE)
       .endEvent(BPMN_END_EVENT_ID)
       .done();
     return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
@@ -486,7 +486,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
              .source(EVENT_SOURCE_CAMUNDA)
              .build())
       .build());
-    eventMappings.put(BPMN_INTERMEDIATE_EVENT_ID, EventMappingDto.builder()
+    eventMappings.put(USER_TASK_ID_ONE, EventMappingDto.builder()
       .start(EventTypeDto.builder()
                .eventName(intermediateEventName)
                .group(processInstanceEngineDto.getProcessDefinitionKey())
@@ -518,7 +518,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .camundaVersionTag("aVersionTag")
       .name("aProcessName")
       .startEvent(BPMN_START_EVENT_ID)
-      .intermediateCatchEvent(BPMN_INTERMEDIATE_EVENT_ID)
+      .userTask(USER_TASK_ID_ONE)
       .endEvent(BPMN_END_EVENT_ID)
       .done();
     return convertBpmnModelToXmlString(bpmnModel);

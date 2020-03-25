@@ -166,18 +166,18 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
                   firstEventId,
                   BPMN_START_EVENT_ID,
                   FIRST_EVENT_DATETIME,
-                  startEventMapping.getEnd() != null ? FIRST_EVENT_DATETIME : SECOND_EVENT_DATETIME
+                  FIRST_EVENT_DATETIME
                 ),
                 Tuple.tuple(
                   secondEventId,
-                  BPMN_INTERMEDIATE_EVENT_ID,
+                  USER_TASK_ID_ONE,
                   SECOND_EVENT_DATETIME,
                   THIRD_EVENT_DATETIME
                 ),
                 Tuple.tuple(
                   fourthEventId,
                   BPMN_END_EVENT_ID,
-                  endEventMapping.getStart() != null ? FOURTH_EVENT_DATETIME : THIRD_EVENT_DATETIME,
+                  FOURTH_EVENT_DATETIME,
                   FOURTH_EVENT_DATETIME
                 )
               )

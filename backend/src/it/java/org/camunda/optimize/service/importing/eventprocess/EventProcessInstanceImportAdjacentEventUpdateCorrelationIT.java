@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.event.EventCorrelationStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceUpdateDto;
 import org.camunda.optimize.dto.optimize.query.event.MappedEventType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -90,7 +89,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
                     FlowNodeInstanceDto::getEndDate
                   )
                   .containsExactlyInAnyOrder(
-                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
                     Tuple.tuple(secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
                     Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
                   )
@@ -100,12 +99,11 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
                 .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
                 .containsValues(
                   new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START,
-                    ImmutableSet.of(firstEventId)
+                    MappedEventType.START, ImmutableSet.of(firstEventId),
+                    MappedEventType.END, ImmutableSet.of(firstEventId)
                   )),
                   new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(secondEventId),
-                    MappedEventType.END, ImmutableSet.of(firstEventId)
+                    MappedEventType.START, ImmutableSet.of(secondEventId)
                   )),
                   new EventCorrelationStateDto(ImmutableMap.of(
                     MappedEventType.START, ImmutableSet.of(thirdEventId),
@@ -158,7 +156,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
                     FlowNodeInstanceDto::getEndDate
                   )
                   .containsExactlyInAnyOrder(
-                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
                     Tuple.tuple(secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, updatedThirdEventTime),
                     Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, updatedThirdEventTime, updatedThirdEventTime)
                   )
@@ -168,12 +166,11 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
                 .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
                 .containsValues(
                   new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START,
-                    ImmutableSet.of(firstEventId)
+                    MappedEventType.START, ImmutableSet.of(firstEventId),
+                    MappedEventType.END, ImmutableSet.of(firstEventId)
                   )),
                   new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(secondEventId),
-                    MappedEventType.END, ImmutableSet.of(firstEventId)
+                    MappedEventType.START, ImmutableSet.of(secondEventId)
                   )),
                   new EventCorrelationStateDto(ImmutableMap.of(
                     MappedEventType.START, ImmutableSet.of(thirdEventId),
@@ -226,7 +223,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
                     FlowNodeInstanceDto::getEndDate
                   )
                   .containsExactlyInAnyOrder(
-                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
                     Tuple.tuple(secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, updatedThirdEventTime),
                     Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, updatedThirdEventTime, updatedThirdEventTime)
                   )
@@ -236,12 +233,11 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
                 .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
                 .containsValues(
                   new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START,
-                    ImmutableSet.of(firstEventId)
+                    MappedEventType.START, ImmutableSet.of(firstEventId),
+                    MappedEventType.END, ImmutableSet.of(firstEventId)
                   )),
                   new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(secondEventId),
-                    MappedEventType.END, ImmutableSet.of(firstEventId)
+                    MappedEventType.START, ImmutableSet.of(secondEventId)
                   )),
                   new EventCorrelationStateDto(ImmutableMap.of(
                     MappedEventType.START, ImmutableSet.of(thirdEventId),
@@ -298,10 +294,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
             )
             .containsExactlyInAnyOrder(
               Tuple.tuple(
-                firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME
+                firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME
               ),
               Tuple.tuple(
-                SPLITTING_GATEWAY_ID + "_1", SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME
+                SPLITTING_GATEWAY_ID + "_1",
+                SPLITTING_GATEWAY_ID,
+                FIRST_EVENT_DATETIME,
+                openingGatewayType.equalsIgnoreCase(EVENT_BASED_GATEWAY_TYPE) ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME
               ),
               Tuple.tuple(
                 secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, updatedThirdEventTimestamp
@@ -318,10 +317,12 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
         assertThat(processInstanceDto.getCorrelatedEventsById())
           .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
           .containsValues(
-            new EventCorrelationStateDto(ImmutableMap.of(MappedEventType.START, ImmutableSet.of(firstEventId))),
             new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(secondEventId),
+              MappedEventType.START, ImmutableSet.of(firstEventId),
               MappedEventType.END, ImmutableSet.of(firstEventId)
+            )),
+            new EventCorrelationStateDto(ImmutableMap.of(
+              MappedEventType.START, ImmutableSet.of(secondEventId)
             )),
             new EventCorrelationStateDto(ImmutableMap.of(
               MappedEventType.START, ImmutableSet.of(thirdEventId),
@@ -437,11 +438,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
-        assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
-          // an orphaned update for the start event flow node instance originating from the mapped end event
-          // as this could not be applied due to the update originating from userTask event having a lower timestamp
-          .extracting(FlowNodeInstanceUpdateDto::getSourceEventId, FlowNodeInstanceUpdateDto::getFlowNodeId)
-          .containsExactly(Tuple.tuple(thirdEventId, BPMN_START_EVENT_ID));
+        assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates()).isEmpty();
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
@@ -453,10 +450,10 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
             )
             .containsExactlyInAnyOrder(
               Tuple.tuple(
-                firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME
+                firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME
               ),
               Tuple.tuple(
-                SPLITTING_GATEWAY_ID + "_1", SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME
+                SPLITTING_GATEWAY_ID + "_1", SPLITTING_GATEWAY_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME
               ),
               Tuple.tuple(
                 secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, updatedThirdEventTimestamp
@@ -476,10 +473,12 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
         assertThat(processInstanceDto.getCorrelatedEventsById())
           .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
           .containsValues(
-            new EventCorrelationStateDto(ImmutableMap.of(MappedEventType.START, ImmutableSet.of(firstEventId))),
             new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(secondEventId),
+              MappedEventType.START, ImmutableSet.of(firstEventId),
               MappedEventType.END, ImmutableSet.of(firstEventId)
+            )),
+            new EventCorrelationStateDto(ImmutableMap.of(
+              MappedEventType.START, ImmutableSet.of(secondEventId)
             )),
             new EventCorrelationStateDto(ImmutableMap.of(
               MappedEventType.START, ImmutableSet.of(thirdEventId),

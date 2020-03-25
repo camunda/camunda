@@ -58,8 +58,13 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(openingGatewayType, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(
+              openingGatewayType,
+              SPLITTING_GATEWAY_ID,
+              FIRST_EVENT_DATETIME,
+              isEventBasedGatewayType(openingGatewayType) ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME
+            ),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(closingGatewayType, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
@@ -96,8 +101,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(PARALLEL_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(PARALLEL_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(PARALLEL_GATEWAY_TYPE, MERGING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
@@ -116,7 +121,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     ingestTestEvent(FOURTH_EVENT_NAME, FOURTH_EVENT_DATETIME);
 
     Map<String, EventMappingDto> eventMappings = new HashMap<>();
-    eventMappings.put(BPMN_START_EVENT_ID, startAndEndMapping(FIRST_EVENT_NAME, SECOND_EVENT_NAME));
+    eventMappings.put(BPMN_START_EVENT_ID, startMapping(FIRST_EVENT_NAME));
     eventMappings.put(USER_TASK_ID_ONE, startMapping(THIRD_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(FOURTH_EVENT_NAME));
 
@@ -134,8 +139,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(EVENT_BASED_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(EVENT_BASED_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, FIRST_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
@@ -173,8 +178,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(PARALLEL_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(PARALLEL_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, FOURTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME),
             Tuple.tuple(PARALLEL_GATEWAY_TYPE, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, FIFTH_EVENT_DATETIME),
@@ -212,8 +217,13 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(openingGatewayType, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(
+              openingGatewayType,
+              SPLITTING_GATEWAY_ID,
+              FIRST_EVENT_DATETIME,
+              isEventBasedGatewayType(openingGatewayType) ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME
+            ),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, null)
           )
         );
@@ -255,7 +265,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
@@ -328,7 +338,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
@@ -386,8 +396,13 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(openingGatewayType, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(
+              openingGatewayType,
+              SPLITTING_GATEWAY_ID,
+              FIRST_EVENT_DATETIME,
+              isEventBasedGatewayType(openingGatewayType) ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME
+            ),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(closingGatewayType, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
@@ -427,8 +442,13 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(openingGatewayType, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(
+              openingGatewayType,
+              SPLITTING_GATEWAY_ID,
+              FIRST_EVENT_DATETIME,
+              isEventBasedGatewayType(openingGatewayType) ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME
+            ),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(closingGatewayType, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
@@ -468,8 +488,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID_TWO, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
@@ -543,8 +563,13 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(openingGatewayType, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(
+              openingGatewayType,
+              SPLITTING_GATEWAY_ID,
+              FIRST_EVENT_DATETIME,
+              isEventBasedGatewayType(openingGatewayType) ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME
+            ),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME)
           )
         );
@@ -582,8 +607,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID_FOUR, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
+            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID_FOUR, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
             Tuple.tuple(
               EXCLUSIVE_GATEWAY_TYPE,
               SPLITTING_GATEWAY_ID_THREE,
@@ -635,7 +660,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
@@ -677,7 +702,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
           Arrays.asList(
-            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_THREE, FOURTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME),
@@ -742,6 +767,10 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         )
         .containsExactlyInAnyOrderElementsOf(flowNodeEvents)
       );
+  }
+
+  private boolean isEventBasedGatewayType(String gatewayType) {
+    return gatewayType.equalsIgnoreCase(EVENT_BASED_GATEWAY_TYPE);
   }
 
 }

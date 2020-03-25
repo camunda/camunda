@@ -55,7 +55,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       )
     );
@@ -72,7 +72,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
   }
@@ -86,7 +86,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       )
     );
@@ -95,7 +95,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       )
     );
@@ -113,7 +113,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
   }
@@ -127,7 +127,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       )
     );
@@ -143,7 +143,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE)
         );
       });
 
@@ -159,7 +159,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
   }
@@ -173,7 +173,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getProcessDefinitionKey()),
-        BPMN_INTERMEDIATE_EVENT_ID,
+        USER_TASK_ID_ONE,
         applyCamundaProcessInstanceEndEventSuffix(processInstanceEngineDto.getProcessDefinitionKey())
       )
     );
@@ -209,7 +209,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       ),
       tracingVariable
@@ -227,7 +227,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         assertProcessInstance(
           processInstanceDto,
           variableValue,
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
   }
@@ -247,7 +247,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       ),
       tracingVariable
@@ -273,7 +273,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       ),
       tracingVariable
@@ -303,7 +303,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       )
     );
@@ -330,7 +330,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       )
     );
@@ -345,7 +345,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         assertProcessInstance(
           processInstanceDto,
           instanceWithBusinessKey.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
   }
@@ -359,7 +359,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     final Map<String, EventMappingDto> mappingsForEventProcess = createMappingsForEventProcess(
       firstProcessInstanceEngineDto,
       BPMN_START_EVENT_ID,
-      applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+      applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
       BPMN_END_EVENT_ID
     );
     mappingsForEventProcess.put(
@@ -395,7 +395,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         assertProcessInstance(
           processInstanceDto,
           secondProcessInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
   }
@@ -409,7 +409,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     final Map<String, EventMappingDto> mappingsForEventProcess = createMappingsForEventProcess(
       processInstanceEngineDto,
       BPMN_START_EVENT_ID,
-      applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+      applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
       BPMN_END_EVENT_ID
     );
     mappingsForEventProcess.put(
@@ -443,7 +443,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
   }
@@ -461,7 +461,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     final Map<String, EventMappingDto> mappingsForEventProcess = createMappingsForEventProcess(
       processInstanceEngineDto,
       BPMN_START_EVENT_ID,
-      applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+      applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
       BPMN_END_EVENT_ID
     );
     createAndPublishEventMapping(mappingsForEventProcess, eventSource);
@@ -486,7 +486,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       createMappingsForEventProcess(
         processInstanceEngineDto,
         BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
         BPMN_END_EVENT_ID
       )
     );
@@ -513,7 +513,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID)
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE)
         );
       });
   }
@@ -559,7 +559,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
       Bpmn.createExecutableProcess("aProcess")
         .startEvent(BPMN_START_EVENT_ID)
-        .userTask(BPMN_INTERMEDIATE_EVENT_ID)
+        .userTask(USER_TASK_ID_ONE)
         .endEvent(BPMN_END_EVENT_ID)
         .done(),
       Collections.emptyMap(), businessKey, null
