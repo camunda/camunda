@@ -12,27 +12,36 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 
 public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT {
+
   private static final String USER_KERMIT = "kermit";
   private static final String TEST_GROUP = "testGroup";
 
@@ -215,6 +224,47 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
 
     // then
     assertThat(updateResponse.getErrorCode()).isEqualTo(OptimizeValidationException.ERROR_CODE);
+  }
+
+  @Test
+  public void updateEventBasedProcessRoles_afterPublishLastModifiedAndStateUnchanged() {
+    // given
+    ingestTestEvent(STARTED_EVENT, OffsetDateTime.now());
+    ingestTestEvent(FINISHED_EVENT, OffsetDateTime.now());
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+
+    // when
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    executeImportCycle();
+    executeImportCycle();
+    final EventProcessMappingRestDto eventProcessMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
+
+    // then
+    assertThat(eventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISHED);
+
+    // when
+    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtension.grantUserOptimizeAccess(USER_KERMIT);
+    eventProcessClient.updateEventProcessMappingRoles(
+      eventProcessMappingId,
+      Collections.singletonList(new EventProcessRoleDto<>(new UserDto(USER_KERMIT)))
+    );
+
+    // then
+    final List<EventProcessRoleRestDto> roles = eventProcessClient.getEventProcessMappingRoles(eventProcessMappingId);
+    assertThat(roles)
+      .hasSize(1)
+      .extracting(EventProcessRoleRestDto::getIdentity)
+      .extracting(IdentityDto::getId)
+      .containsExactly(USER_KERMIT);
+    final EventProcessMappingRestDto updatedMapping = eventProcessClient.getEventProcessMapping(
+      eventProcessMappingId);
+    assertThat(updatedMapping).isEqualToComparingOnlyGivenFields(eventProcessMapping,
+      EventProcessMappingRestDto.Fields.lastModified,
+      EventProcessMappingRestDto.Fields.lastModifier,
+      EventProcessMappingRestDto.Fields.state
+    );
   }
 
   private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappings() {

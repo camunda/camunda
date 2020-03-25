@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 
@@ -26,6 +27,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Data
 @Builder
+@FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EventProcessMappingRestDto {
   @EqualsAndHashCode.Include

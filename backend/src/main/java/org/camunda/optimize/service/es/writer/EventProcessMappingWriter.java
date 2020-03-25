@@ -84,9 +84,7 @@ public class EventProcessMappingWriter {
   }
 
   public void updateRoles(final EventProcessMappingDto eventProcessMappingDto) {
-    updateOfEventProcessMappingWithScript(eventProcessMappingDto, Sets.newHashSet(
-      EventProcessMappingIndex.ROLES, EventProcessMappingIndex.LAST_MODIFIED, EventProcessMappingIndex.LAST_MODIFIER
-    ));
+    updateOfEventProcessMappingWithScript(eventProcessMappingDto, Sets.newHashSet(EventProcessMappingIndex.ROLES));
   }
 
   public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
