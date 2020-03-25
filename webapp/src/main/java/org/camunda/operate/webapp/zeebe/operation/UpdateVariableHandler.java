@@ -5,12 +5,8 @@
  */
 package org.camunda.operate.webapp.zeebe.operation;
 
-import io.zeebe.client.api.command.ClientException;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.exceptions.PersistenceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
@@ -22,27 +18,19 @@ import io.zeebe.client.api.response.SetVariablesResponse;
 @Component
 public class UpdateVariableHandler extends AbstractOperationHandler implements OperationHandler {
 
-  private static final Logger logger = LoggerFactory.getLogger(UpdateVariableHandler.class);
-
   @Autowired
   private ZeebeClient zeebeClient;
 
   @Override
-  public void handleWithException(OperationEntity operation) throws PersistenceException {
-    try {
-      String updateVariableJson = mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
-      SetVariablesResponse response =
-          zeebeClient
-              .newSetVariablesCommand(operation.getScopeKey())
-              .variables(updateVariableJson)
-              .local(true)
-              .send().join();
-      markAsSucceeded(operation, response.getKey());
-    } catch (ClientException ex) {
-      logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
-      //fail operation
-      failOperation(operation, ex.getMessage());
-    }
+  public void handleWithException(OperationEntity operation) throws Exception {
+    String updateVariableJson = mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
+    SetVariablesResponse response =
+        zeebeClient
+            .newSetVariablesCommand(operation.getScopeKey())
+            .variables(updateVariableJson)
+            .local(true)
+            .send().join();
+    markAsSent(operation, response.getKey());
   }
 
   private String mergeVariableJson(String variableName, String variableValue) {

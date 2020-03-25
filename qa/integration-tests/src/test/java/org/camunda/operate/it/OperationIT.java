@@ -643,6 +643,29 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  public void testRetryOperationOnZeebeNotAvailable() throws Exception {
+    // given
+    final Long workflowInstanceKey = startDemoWorkflowInstance();
+
+    brokerRule.stopBroker();
+
+    //when we call CANCEL_WORKFLOW_INSTANCE and then RESOLVE_INCIDENT operation on one instance
+    final ListViewRequestDto workflowInstanceQuery = TestUtil.createGetAllWorkflowInstancesQuery()
+        .setIds(Collections.singletonList(workflowInstanceKey.toString()));
+    postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));  //#1
+    executeOneBatch();
+
+    //then
+    ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
+    assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(true);
+    final List<OperationDto> operations = workflowInstances.getWorkflowInstances().get(0).getOperations();
+    assertThat(operations).hasSize(1);
+    assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.LOCKED)).hasSize(1)
+        .anyMatch(op -> op.getType().equals(OperationType.CANCEL_WORKFLOW_INSTANCE));
+  }
+
+  @Test
   public void testFailResolveIncidentBecauseOfNoIncidents() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
