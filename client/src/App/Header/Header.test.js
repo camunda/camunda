@@ -21,6 +21,7 @@ import * as Styled from './styled.js';
 import * as NavStyled from './NavElements/styled.js';
 
 import {LOADING_STATE} from 'modules/constants';
+import {createInstance} from 'modules/testUtils';
 
 import {
   countStore,
@@ -232,6 +233,48 @@ describe('Header', () => {
       node.update();
 
       expect(node.find('InstanceDetail')).toExist();
+      expect(node.find(Styled.SkeletonBlock)).not.toExist();
+    });
+
+    it('should update instance details on refresh', () => {
+      const mockProps = {
+        location: location.instance,
+        countStore: countStoreWithCount,
+        dataManager,
+        ...mockCollapsablePanelProps
+      };
+
+      node = mountComponent(mockProps);
+      const subscriptions = node.find(Header.WrappedComponent).instance()
+        .subscriptions;
+
+      dataManager.publish({
+        subscription: subscriptions['LOAD_INSTANCE'],
+        state: LOADING_STATE.LOADED,
+        response: {
+          ...createInstance({id: 'first_instance_id'})
+        }
+      });
+      node.update();
+      expect(node.find('InstanceDetail')).toExist();
+      expect(node.find('InstanceDetail').props().instance.id).toBe(
+        'first_instance_id'
+      );
+      expect(node.find(Styled.SkeletonBlock)).not.toExist();
+
+      dataManager.publish({
+        subscription: subscriptions['CONSTANT_REFRESH'],
+        state: LOADING_STATE.LOADED,
+        response: {
+          LOAD_INSTANCE: {...createInstance({id: 'second_instance_id'})}
+        }
+      });
+      node.update();
+
+      expect(node.find('InstanceDetail')).toExist();
+      expect(node.find('InstanceDetail').props().instance.id).toBe(
+        'second_instance_id'
+      );
       expect(node.find(Styled.SkeletonBlock)).not.toExist();
     });
   });

@@ -61,6 +61,15 @@ class Header extends React.Component {
             instance: response
           });
         }
+      },
+      CONSTANT_REFRESH: ({response, state}) => {
+        if (state === LOADING_STATE.LOADED) {
+          const {LOAD_INSTANCE} = response;
+
+          this.setState({
+            instance: LOAD_INSTANCE
+          });
+        }
       }
     };
     this.state = {
