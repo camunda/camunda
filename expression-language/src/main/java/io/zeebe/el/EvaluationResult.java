@@ -7,6 +7,7 @@
  */
 package io.zeebe.el;
 
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 /** The result of an expression evaluation. */
@@ -55,4 +56,11 @@ public interface EvaluationResult {
    * @return the evaluation result, or {@code null} if it is not a number
    */
   Number getNumber();
+
+  /**
+   * Use {@link #getType()} to check if the result is of the type {@link ResultType#ARRAY}.
+   *
+   * @return the evaluation result, or {@code null} if it is not an array
+   */
+  List<DirectBuffer> getList();
 }

@@ -200,9 +200,9 @@ public final class ZeebeRuntimeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
-                "task", t -> t.multiInstance(m -> m.zeebeInputCollection(INVALID_PATH_QUERY)))
+                "task", t -> t.multiInstance(m -> m.zeebeInputCollection(INVALID_EXPRESSION)))
             .done(),
-        Arrays.asList(expect(ZeebeLoopCharacteristics.class, INVALID_PATH_QUERY_MESSAGE))
+        Arrays.asList(expect(ZeebeLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // invalid job type expression
@@ -223,9 +223,9 @@ public final class ZeebeRuntimeValidationTest {
                         m ->
                             m.zeebeInputCollection("foo")
                                 .zeebeOutputCollection("bar")
-                                .zeebeOutputElement(INVALID_PATH_QUERY)))
+                                .zeebeOutputElement(INVALID_EXPRESSION)))
             .done(),
-        Arrays.asList(expect(ZeebeLoopCharacteristics.class, INVALID_PATH_QUERY_MESSAGE))
+        Arrays.asList(expect(ZeebeLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // process id expression is not supported

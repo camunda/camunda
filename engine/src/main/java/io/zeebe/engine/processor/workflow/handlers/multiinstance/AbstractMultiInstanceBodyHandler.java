@@ -7,20 +7,21 @@
  */
 package io.zeebe.engine.processor.workflow.handlers.multiinstance;
 
+import io.zeebe.el.Expression;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.BpmnStepHandler;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
-import io.zeebe.engine.state.instance.VariablesState;
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
-import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -31,6 +32,7 @@ public abstract class AbstractMultiInstanceBodyHandler
 
   private static final DirectBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
   private static final DirectBuffer LOOP_COUNTER_VARIABLE = BufferUtil.wrapString("loopCounter");
+  protected final ExpressionProcessor expressionProcessor;
 
   private final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup;
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
@@ -42,9 +44,11 @@ public abstract class AbstractMultiInstanceBodyHandler
 
   public AbstractMultiInstanceBodyHandler(
       final WorkflowInstanceIntent nextState,
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup) {
+      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final ExpressionProcessor expressionProcessor) {
     super(nextState);
     this.innerHandlerLookup = innerHandlerLookup;
+    this.expressionProcessor = expressionProcessor;
   }
 
   @Override
@@ -86,19 +90,11 @@ public abstract class AbstractMultiInstanceBodyHandler
   protected abstract boolean handleMultiInstanceBody(
       BpmnStepContext<ExecutableMultiInstanceBody> context);
 
-  protected MsgPackQueryProcessor.QueryResults readInputCollectionVariable(
+  protected Optional<List<DirectBuffer>> readInputCollectionVariable(
       final BpmnStepContext<ExecutableMultiInstanceBody> context) {
-
-    final JsonPathQuery inputCollection =
+    final Expression inputCollection =
         context.getElement().getLoopCharacteristics().getInputCollection();
-    final DirectBuffer variableName = inputCollection.getVariableName();
-
-    final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
-    final DirectBuffer variableAsDocument =
-        variablesState.getVariablesAsDocument(
-            context.getKey(), Collections.singleton(variableName));
-
-    return queryProcessor.process(inputCollection, variableAsDocument);
+    return expressionProcessor.evaluateArrayExpression(inputCollection, context);
   }
 
   protected void createInnerInstance(
@@ -141,13 +137,21 @@ public abstract class AbstractMultiInstanceBodyHandler
                 variablesState.setVariableLocal(
                     elementInstanceKey, workflowKey, variableName, item));
 
+    // Output element expressions that are just a variable or nested variable need to be initialised
+    // with a nil-value. This makes sure that they are not written at a non-local scope.
     loopCharacteristics
         .getOutputElement()
-        .map(JsonPathQuery::getVariableName)
+        .map(Expression::getExpression)
+        .map(expression -> expression.split("\\.")[0]) // only take the main variable name
+        // TODO #4100 (@korthout/@saig0)
+        // Filter out all non-variable expressions without this ugly regex :)
         .ifPresent(
             variableName ->
                 variablesState.setVariableLocal(
-                    elementInstanceKey, workflowKey, variableName, NIL_VALUE));
+                    elementInstanceKey,
+                    workflowKey,
+                    BufferUtil.wrapString(variableName),
+                    NIL_VALUE));
 
     variablesState.setVariableLocal(
         elementInstanceKey,

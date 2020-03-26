@@ -9,12 +9,13 @@ package io.zeebe.engine.processor.workflow.handlers.multiinstance;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.BpmnStepHandler;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
-import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -32,10 +33,10 @@ public final class MultiInstanceBodyCompletedHandler extends AbstractMultiInstan
   private final DirectBuffer resultBuffer = new UnsafeBuffer(0, 0);
 
   public MultiInstanceBodyCompletedHandler(
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup) {
-    super(null, innerHandlerLookup);
-
-    multiInstanceBodyHandler = innerHandlerLookup.apply(BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
+      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final ExpressionProcessor expressionProcessor) {
+    super(null, innerHandlerLookup, expressionProcessor);
+    this.multiInstanceBodyHandler = innerHandlerLookup.apply(BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
   }
 
   @Override
@@ -44,19 +45,29 @@ public final class MultiInstanceBodyCompletedHandler extends AbstractMultiInstan
 
     if (loopCharacteristics.isSequential()) {
 
-      final var array = readInputCollectionVariable(context).getSingleResult().getArray();
-      final var loopCounter = context.getFlowScopeInstance().getMultiInstanceLoopCounter();
+      final var inputCollectionVariable = readInputCollectionVariable(context);
+      if (inputCollectionVariable.isEmpty()) {
+        return;
+      }
 
+      final var array = inputCollectionVariable.get();
+      final var loopCounter = context.getFlowScopeInstance().getMultiInstanceLoopCounter();
       if (loopCounter < array.size()) {
 
-        final var item = array.getElement(loopCounter);
+        final var item = array.get(loopCounter);
         createInnerInstance(context, context.getFlowScopeInstance().getKey(), item);
       }
     }
 
-    loopCharacteristics
-        .getOutputCollection()
-        .ifPresent(variableName -> updateOutputCollection(context, variableName));
+    final Optional<Boolean> updatedSuccessfully =
+        loopCharacteristics
+            .getOutputCollection()
+            .map(variableName -> updateOutputCollection(context, variableName));
+
+    if (updatedSuccessfully.isPresent() && !updatedSuccessfully.get()) {
+      // An incident was raised while updating the output collection, stop handling activity
+      return;
+    }
 
     // completing the multi-instance body if there are no more tokens
     super.handleInnerActivity(context);
@@ -69,7 +80,7 @@ public final class MultiInstanceBodyCompletedHandler extends AbstractMultiInstan
     return true;
   }
 
-  private void updateOutputCollection(
+  private boolean updateOutputCollection(
       final BpmnStepContext<ExecutableMultiInstanceBody> context, final DirectBuffer variableName) {
 
     final var variablesState = context.getElementInstanceState().getVariablesState();
@@ -77,27 +88,25 @@ public final class MultiInstanceBodyCompletedHandler extends AbstractMultiInstan
     final var workflowKey = context.getValue().getWorkflowKey();
     final var loopCounter = context.getElementInstance().getMultiInstanceLoopCounter();
 
-    final var elementVariable = readOutputElementVariable(context);
+    final Optional<DirectBuffer> elementVariable = readOutputElementVariable(context);
+    if (elementVariable.isEmpty()) {
+      return false;
+    }
+
+    // we need to read the output element variable before the current collection is read,
+    // because readOutputElementVariable(Context) uses the same buffer as getVariableLocal
+    // this could also be avoided by cloning the current collection, but that is slower.
     final var currentCollection = variablesState.getVariableLocal(bodyInstanceKey, variableName);
-
-    final var updatedCollection = insertAt(currentCollection, loopCounter, elementVariable);
-
+    final var updatedCollection = insertAt(currentCollection, loopCounter, elementVariable.get());
     variablesState.setVariableLocal(bodyInstanceKey, workflowKey, variableName, updatedCollection);
+    return true;
   }
 
-  private DirectBuffer readOutputElementVariable(
+  private Optional<DirectBuffer> readOutputElementVariable(
       final BpmnStepContext<ExecutableMultiInstanceBody> context) {
-
-    final var query =
+    final var expression =
         context.getElement().getLoopCharacteristics().getOutputElement().orElseThrow();
-
-    final var document =
-        context
-            .getElementInstanceState()
-            .getVariablesState()
-            .getVariablesAsDocument(context.getKey(), List.of(query.getVariableName()));
-
-    return queryProcessor.process(query, document).getSingleResult().getValue();
+    return expressionProcessor.evaluateAnyExpression(expression, context);
   }
 
   private DirectBuffer insertAt(

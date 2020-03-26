@@ -7,11 +7,14 @@
  */
 package io.zeebe.el.impl.feel
 
-import java.lang
+import java.{lang, util}
 
 import io.zeebe.el.{EvaluationResult, Expression, ResultType}
+import io.zeebe.util.buffer.BufferUtil.cloneBuffer
 import org.agrona.DirectBuffer
-import org.camunda.feel.syntaxtree.{Val, ValBoolean, ValContext, ValList, ValNull, ValNumber, ValString}
+import org.camunda.feel.syntaxtree._
+
+import scala.collection.JavaConverters._
 
 class FeelEvaluationResult(
                             expression: Expression,
@@ -49,6 +52,11 @@ class FeelEvaluationResult(
 
   override def getNumber: Number = result match {
     case ValNumber(number) => number
+    case _ => null
+  }
+
+  override def getList: util.List[DirectBuffer] = result match {
+    case ValList(array) => array.map(value => cloneBuffer(messagePackTransformer(value))).asJava
     case _ => null
   }
 }

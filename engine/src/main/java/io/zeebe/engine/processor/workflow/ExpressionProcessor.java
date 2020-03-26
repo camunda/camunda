@@ -18,6 +18,7 @@ import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.protocol.record.value.ErrorType;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -73,6 +74,37 @@ public final class ExpressionProcessor {
         .flatMap(
             result -> typeCheck(result, ResultType.BOOLEAN, ErrorType.EXTRACT_VALUE_ERROR, context))
         .map(EvaluationResult::getBoolean);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result no matter the type.
+   *
+   * @param expression the expression to evaluate
+   * @param context the element context to load the variables from
+   * @return the evaluation result as buffer, or {@link Optional#empty()} if an incident is raised
+   */
+  public Optional<DirectBuffer> evaluateAnyExpression(
+      final Expression expression, final BpmnStepContext<?> context) {
+    final var evaluationResult = evaluateExpression(expression, context.getKey());
+    return failureCheck(evaluationResult, ErrorType.EXTRACT_VALUE_ERROR, context)
+        .map(EvaluationResult::toBuffer);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as a list. The entries of the list are
+   * encoded in MessagePack and can have any type.
+   *
+   * @param expression the expression to evaluate
+   * @param context the element context to load the variables from
+   * @return the evaluation result as a list, or {@link Optional#empty()} if an incident is raised
+   */
+  public Optional<List<DirectBuffer>> evaluateArrayExpression(
+      final Expression expression, final BpmnStepContext<?> context) {
+    final var evaluationResult = evaluateExpression(expression, context.getKey());
+    return failureCheck(evaluationResult, ErrorType.EXTRACT_VALUE_ERROR, context)
+        .flatMap(
+            result -> typeCheck(result, ResultType.ARRAY, ErrorType.EXTRACT_VALUE_ERROR, context))
+        .map(EvaluationResult::getList);
   }
 
   /**
