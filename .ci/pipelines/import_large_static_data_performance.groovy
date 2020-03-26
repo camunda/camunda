@@ -1,7 +1,10 @@
 #!/usr/bin/env groovy
 
-static String agent() {
-  return """
+String agent() {
+  boolean isStage = env.JENKINS_URL.contains('stage')
+  String vaultPrefix = isStage ? 'stage.' : ''
+  String prefix = isStage ? 'stage-' : ''
+  """
 ---
 apiVersion: v1
 kind: Pod
@@ -11,11 +14,35 @@ metadata:
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
+  serviceAccountName: ${prefix}ci-operate-camunda-cloud
   tolerations:
     - key: "agents-n1-standard-32-netssd-preempt"
       operator: "Exists"
       effect: "NoSchedule"
   initContainers:
+    - name: vault-template
+      image: gcr.io/camunda-public/camunda-internal_vault-template
+      imagePullPolicy: Always
+      env:
+      - name: VAULT_ADDR
+        value: https://${vaultPrefix}vault.int.camunda.com/
+      - name: CLUSTER
+        value: camunda-ci
+      - name: SA_NAMESPACE
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+      - name: SA_NAME
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: spec.serviceAccountName
+      volumeMounts:
+      - mountPath: /etc/consul-templates
+        name: vault-config
+      - mountPath: /etc/vault-output
+        name: vault-output
     - name: init-sysctl
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
       command:
@@ -49,7 +76,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/plugins/
         name: plugindir
       - mountPath: /usr/share/elasticsearch/svc/
-        name: operate-ci-service-account
+        name: vault-output
         readOnly: true
   containers:
     - name: maven
@@ -135,10 +162,13 @@ spec:
     emptyDir: {}
   - name: plugindir
     emptyDir: {}
-  - name: operate-ci-service-account
-    secret:
-      secretName: operate-ci-service-account
-"""
+  - name: vault-output
+    emptyDir:
+      medium: Memory
+  - name: vault-config
+    configMap:
+      name: ${prefix}ci-operate-vault-templates
+""" as String
 }
 
 /******** START PIPELINE *******/
