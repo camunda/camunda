@@ -41,7 +41,9 @@ export default function DashboardRenderer({
 
   // I don't know why, but this fixes this bug: https://jira.camunda.com/browse/OPT-3387
   useEffect(() => {
-    window.dispatchEvent(new Event('resize'));
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
   });
 
   return (
