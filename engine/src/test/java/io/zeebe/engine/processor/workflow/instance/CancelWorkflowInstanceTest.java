@@ -40,7 +40,7 @@ public final class CancelWorkflowInstanceTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("WORKFLOW")
           .startEvent()
-          .serviceTask("task", t -> t.zeebeJobType("test").zeebeTaskRetries(5))
+          .serviceTask("task", t -> t.zeebeJobType("test").zeebeJobRetries("5"))
           .endEvent()
           .done();
   private static final BpmnModelInstance SUB_PROCESS_WORKFLOW =
@@ -49,7 +49,7 @@ public final class CancelWorkflowInstanceTest {
           .subProcess("subProcess")
           .embeddedSubProcess()
           .startEvent()
-          .serviceTask("task", t -> t.zeebeJobType("test").zeebeTaskRetries(5))
+          .serviceTask("task", t -> t.zeebeJobType("test").zeebeJobRetries("5"))
           .endEvent()
           .subProcessDone()
           .endEvent()

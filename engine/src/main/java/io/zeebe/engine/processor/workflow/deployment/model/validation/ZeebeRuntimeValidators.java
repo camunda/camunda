@@ -47,6 +47,7 @@ public final class ZeebeRuntimeValidators {
             .build(expressionLanguage),
         ZeebeExpressionValidator.verifyThat(ZeebeTaskDefinition.class)
             .hasValidExpression(ZeebeTaskDefinition::getType)
+            .hasValidExpression(ZeebeTaskDefinition::getRetries)
             .build(expressionLanguage));
   }
 }

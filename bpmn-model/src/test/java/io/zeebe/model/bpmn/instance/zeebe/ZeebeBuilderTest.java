@@ -43,7 +43,7 @@ public class ZeebeBuilderTest {
                 "foo",
                 b ->
                     b.zeebeJobType("taskType")
-                        .zeebeTaskRetries(5)
+                        .zeebeJobRetries("5")
                         .zeebeTaskHeader("foo", "f")
                         .zeebeTaskHeader("bar", "b"))
             .endEvent()
@@ -57,7 +57,7 @@ public class ZeebeBuilderTest {
     final ZeebeTaskDefinition taskDefinition =
         getExtensionElement(serviceTask, ZeebeTaskDefinition.class);
     assertThat(taskDefinition.getType()).isEqualTo("taskType");
-    assertThat(taskDefinition.getRetries()).isEqualTo(5);
+    assertThat(taskDefinition.getRetries()).isEqualTo("5");
 
     final ZeebeTaskHeaders taskHeaders = getExtensionElement(serviceTask, ZeebeTaskHeaders.class);
     final Collection<ZeebeHeader> headerCollection = taskHeaders.getHeaders();

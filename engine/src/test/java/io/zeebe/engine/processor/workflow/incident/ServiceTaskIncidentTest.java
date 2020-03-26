@@ -46,10 +46,15 @@ public class ServiceTaskIncidentTest {
     final var builder =
         Bpmn.createExecutableProcess(PROCESS_ID).startEvent().serviceTask(SERVICE_TASK_ID);
 
+    builder.zeebeJobType("test"); // default job type, can be overridden by consumer
+
     consumer.accept(builder);
 
     return builder.endEvent().done();
   }
+
+  // ----- JobType related tests
+  // --------------------------------------------------------------------------
 
   @Test
   public void shouldCreateIncidentIfJobTypeExpressionEvaluationFailed() {
@@ -124,7 +129,7 @@ public class ServiceTaskIncidentTest {
   }
 
   @Test
-  public void shouldResolveIncidentAfterExpressionEvaluationFailed() {
+  public void shouldResolveIncidentAfterJobTypeExpressionEvaluationFailed() {
     // given
     ENGINE
         .deployment()
@@ -147,6 +152,128 @@ public class ServiceTaskIncidentTest {
         .variables()
         .ofScope(incidentRecord.getValue().getElementInstanceKey())
         .withDocument(Maps.of(entry("lorem", "order123")))
+        .update();
+
+    // ... resolve incident
+    final Record<IncidentRecordValue> incidentResolvedEvent =
+        ENGINE
+            .incident()
+            .ofInstance(workflowInstanceKey)
+            .withKey(incidentRecord.getKey())
+            .resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withElementId(SERVICE_TASK_ID)
+                .exists())
+        .isTrue();
+
+    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentRecord.getKey());
+  }
+
+  // ----- JobRetries related tests
+  // --------------------------------------------------------------------------
+
+  @Test
+  public void shouldCreateIncidentIfJobRetriesExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            createBPMNModel(
+                t ->
+                    t.zeebeJobRetriesExpression(
+                        "lorem.ipsum"))) // invalid expression, will fail at runtime
+        .deploy();
+
+    // when
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final Record<WorkflowInstanceRecordValue> recordThatLeadsToIncident =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst();
+
+    // then
+    final Record<IncidentRecordValue> incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "failed to evaluate expression 'lorem.ipsum': no variable found for name 'lorem'")
+        .hasElementId(SERVICE_TASK_ID)
+        .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
+  }
+
+  @Test
+  public void shouldCreateIncidentIfJobRetriesExpressionOfInvalidType() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            createBPMNModel(
+                t -> t.zeebeJobRetriesExpression("false"))) // boolean expression, has wrong type
+        .deploy();
+
+    // when
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final Record<WorkflowInstanceRecordValue> recordThatLeadsToIncident =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst();
+
+    // then
+    final Record<IncidentRecordValue> incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression 'false' to be 'NUMBER', but was 'BOOLEAN'.")
+        .hasElementId(SERVICE_TASK_ID)
+        .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterJobRetriesExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            createBPMNModel(
+                t ->
+                    t.zeebeJobRetriesExpression(
+                        "lorem"))) // invalid expression, will fail at runtime
+        .deploy();
+
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    // when
+
+    // ... update state to resolve issue
+    ENGINE
+        .variables()
+        .ofScope(incidentRecord.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("lorem", 3)))
         .update();
 
     // ... resolve incident

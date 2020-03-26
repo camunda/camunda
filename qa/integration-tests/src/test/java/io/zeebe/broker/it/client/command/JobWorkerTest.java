@@ -52,7 +52,7 @@ public final class JobWorkerTest {
                 "task",
                 t ->
                     t.zeebeJobType(jobType)
-                        .zeebeTaskRetries(5)
+                        .zeebeJobRetries("5")
                         .zeebeTaskHeader("x", "1")
                         .zeebeTaskHeader("y", "2"))
             .done();

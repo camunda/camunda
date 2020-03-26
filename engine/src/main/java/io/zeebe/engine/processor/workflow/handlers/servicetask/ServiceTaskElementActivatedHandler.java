@@ -44,8 +44,12 @@ public final class ServiceTaskElementActivatedHandler<T extends ExecutableServic
       final Optional<DirectBuffer> optJobType =
           expressionProcessor.evaluateStringExpression(serviceTask.getType(), context);
 
-      if (optJobType.isPresent()) {
-        populateJobFromTask(context, value, optJobType.get(), serviceTask);
+      final Optional<Long> optRetries =
+          expressionProcessor.evaluateLongExpression(serviceTask.getRetries(), context);
+
+      if (optJobType.isPresent() && optRetries.isPresent()) {
+        populateJobFromTask(
+            context, value, optJobType.get(), optRetries.get().intValue(), serviceTask);
         context.getCommandWriter().appendNewCommand(JobIntent.CREATE, jobCommand);
       }
 
@@ -59,13 +63,14 @@ public final class ServiceTaskElementActivatedHandler<T extends ExecutableServic
       final BpmnStepContext<T> context,
       final WorkflowInstanceRecord value,
       final DirectBuffer jobType,
+      final int retries,
       final ExecutableServiceTask serviceTask) {
     final DirectBuffer headers = serviceTask.getEncodedHeaders();
 
     jobCommand.reset();
     jobCommand
         .setType(jobType)
-        .setRetries(serviceTask.getRetries())
+        .setRetries(retries)
         .setVariables(DocumentValue.EMPTY_DOCUMENT)
         .setCustomHeaders(headers)
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())

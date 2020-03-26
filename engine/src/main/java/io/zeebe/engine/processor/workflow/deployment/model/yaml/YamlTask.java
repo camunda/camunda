@@ -18,7 +18,7 @@ public final class YamlTask {
   private String id = "";
 
   private String type = "";
-  private int retries = ZeebeTaskDefinition.DEFAULT_RETRIES;
+  private String retries = ZeebeTaskDefinition.DEFAULT_RETRIES;
 
   private Map<String, String> headers = new HashMap<>();
 
@@ -49,11 +49,11 @@ public final class YamlTask {
     this.type = type;
   }
 
-  public int getRetries() {
+  public String getRetries() {
     return retries;
   }
 
-  public void setRetries(final int retries) {
+  public void setRetries(final String retries) {
     this.retries = retries;
   }
 
