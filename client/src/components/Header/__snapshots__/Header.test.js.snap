@@ -16,8 +16,8 @@ exports[`matches the snapshot 1`] = `
     title="Camunda Optimize"
     to="/"
   >
-    <Logo
-      className="Header__logo"
+    <img
+      alt="Logo"
       src="url"
     />
     <span>

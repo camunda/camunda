@@ -7,7 +7,7 @@
 import React from 'react';
 import {Link, withRouter} from 'react-router-dom';
 
-import {Logo, Dropdown} from 'components';
+import {Dropdown} from 'components';
 import HeaderNav from './HeaderNav';
 import LogoutButton from './LogoutButton';
 import {t} from 'translation';
@@ -54,7 +54,7 @@ export class Header extends React.Component {
         className={classnames('Header', {['text-' + config.textColor]: config.textColor})}
       >
         <Link to="/" replace={location.pathname === '/'} className="Header__link" title={name}>
-          <Logo src={config.logo} className="Header__logo" />
+          <img src={config.logo} alt="Logo" />
           <span>{name}</span>
         </Link>
         {!noActions && (

@@ -5,10 +5,11 @@
   border-bottom: 1px solid $silver-darken-87;
   font-size: 15px;
   font-weight: 500;
-  padding: 8px 20px;
+  padding: 11px 20px;
+  padding-bottom: 10px;
   display: flex;
   flex-shrink: 0;
-  z-index: 2;
+  z-index: 100001;
 
   .Dropdown {
     .activateButton {
@@ -66,15 +67,16 @@
     align-items: center;
     margin-right: 20px;
     white-space: nowrap;
+
+    img {
+      width: auto;
+      margin-right: 20px;
+      height: 26px;
+      display: inline-block;
+    }
   }
 
   .Header__link:visited {
     color: $grey-base-40;
-  }
-
-  .Header__logo {
-    width: auto;
-    margin-right: 20px;
-    height: 16px;
   }
 }
