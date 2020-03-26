@@ -36,7 +36,6 @@ const audience = "localhost"
 
 // response data
 const accessToken = "someToken"
-const tokenType = "Bearer"
 
 type customCredentialsProvider struct {
 	customToken    string
