@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {EXPAND_STATE} from 'modules/constants';
+
 export const mockProps = {
   noWorkflowSelected: false,
   noVersionSelected: false,
@@ -12,7 +14,8 @@ export const mockProps = {
   definitions: {},
   selectedFlowNodeId: '',
   onFlowNodeSelection: jest.fn(),
-  workflowName: ''
+  workflowName: '',
+  expandState: EXPAND_STATE.EXPANDED
 };
 
 export const mockPropsNoDefinitions = {
@@ -25,7 +28,13 @@ export const mockPropsNoWorkflowSelected = {
   noWorkflowSelected: true,
   noVersionSelected: true
 };
+
 export const mockPropsNoVersionSelected = {
   ...mockProps,
   noVersionSelected: true
+};
+
+export const mockPropsCollapsedPanel = {
+  ...mockProps,
+  expandState: EXPAND_STATE.COLLAPSED
 };

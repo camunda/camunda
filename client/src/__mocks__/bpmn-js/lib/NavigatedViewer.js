@@ -6,43 +6,49 @@
 
 import {diObject} from 'modules/testUtils';
 
+export const mockedModules = {
+  canvas: {
+    zoom: jest.fn(),
+    addMarker: jest.fn(),
+    removeMarker: jest.fn(),
+    resized: jest.fn()
+  },
+  zoomScroll: {stepZoom: jest.fn()},
+
+  elementRegistry: {
+    getGraphics: jest.fn(() => ({
+      querySelector: jest.fn(() => ({setAttribute: jest.fn()})),
+      getBoundingClientRect: jest.fn(() => ({
+        x: 0,
+        y: 0,
+        height: 0,
+        width: 0
+      })),
+      getBBox: jest.fn(() => ({x: 0, y: 0, height: 0, width: 0}))
+    })),
+    get: jest.fn(id => ({businessObject: {name: id, di: diObject}})),
+    forEach: jest.fn(() => {})
+  },
+  graphicsFactory: {update: jest.fn(() => {})},
+  eventBus: {on: jest.fn()},
+  overlays: {add: jest.fn(), remove: jest.fn()}
+};
+
+export const mockedImportDefinitions = jest.fn((_, callback) => {
+  callback();
+});
+
 class Viewer {
   constructor({container, bpmnRenderer} = {}) {
-    this.canvas = {
-      zoom: jest.fn(),
-      addMarker: jest.fn(),
-      removeMarker: jest.fn(),
-      resized: jest.fn()
-    };
-    this.zoomScroll = {stepZoom: jest.fn()};
     this.container = container;
     this.bpmnRenderer = bpmnRenderer;
-    this.elementRegistry = {
-      getGraphics: jest.fn(() => ({
-        querySelector: jest.fn(() => ({setAttribute: jest.fn()})),
-        getBoundingClientRect: jest.fn(() => ({
-          x: 0,
-          y: 0,
-          height: 0,
-          width: 0
-        })),
-        getBBox: jest.fn(() => ({x: 0, y: 0, height: 0, width: 0}))
-      })),
-      get: jest.fn(id => ({businessObject: {name: id, di: diObject}})),
-      forEach: jest.fn(() => {})
-    };
-    this.graphicsFactory = {update: jest.fn(() => {})};
-    this.eventBus = {on: jest.fn()};
-    this.overlays = {add: jest.fn(), remove: jest.fn()};
   }
 
-  importDefinitions = jest.fn((_, callback) => {
-    callback();
-  });
+  importDefinitions = mockedImportDefinitions;
 
   detach = jest.fn();
 
-  get = key => this[key];
+  get = key => mockedModules[key];
 }
 
 export default Viewer;

@@ -7,6 +7,7 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 
+import {mockedImportDefinitions} from '__mocks__/bpmn-js/lib/NavigatedViewer';
 import {createActivity, createMetadata} from 'modules/testUtils';
 import {Colors, ThemeProvider} from 'modules/theme';
 import {STATE} from 'modules/constants';
@@ -41,7 +42,8 @@ jest.mock('react-transition-group', () => {
 
 const mockProps = {
   definitions: parsedDiagram.definitions,
-  onFlowNodeSelection: jest.fn()
+  onFlowNodeSelection: jest.fn(),
+  expandState: 'DEFAULT'
 };
 
 function mountNode(customProps = {}) {
@@ -104,7 +106,7 @@ describe('Diagram', () => {
     // then
     const newViewer = node.instance().Viewer;
     expect(newViewer).not.toBe(oldViewer);
-    expect(newViewer.importDefinitions.mock.calls[0][0]).toEqual(
+    expect(mockedImportDefinitions.mock.calls[1][0]).toEqual(
       mockProps.definitions
     );
   });
