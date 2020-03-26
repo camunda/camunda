@@ -1,6 +1,8 @@
 import React, {useState, useRef} from 'react';
-import {Button, Icon, Input} from 'components';
 import classnames from 'classnames';
+
+import {Button, Icon, Input} from 'components';
+import {t} from 'translation';
 
 import './SearchField.scss';
 
@@ -27,6 +29,7 @@ export default function SearchField({value, onChange = () => {}}) {
       <Input
         className={classnames({open})}
         value={value}
+        placeholder={t('home.search.name')}
         onChange={evt => onChange(evt.target.value)}
         ref={input}
       />
