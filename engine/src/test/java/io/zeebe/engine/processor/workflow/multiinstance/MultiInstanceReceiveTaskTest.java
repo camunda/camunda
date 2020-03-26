@@ -111,7 +111,7 @@ public final class MultiInstanceReceiveTaskTest {
                 .message()
                 .withName(MESSAGE_NAME)
                 .withCorrelationKey(element)
-                .withTimeToLive(Duration.ofSeconds(1).toMillis())
+                .withTimeToLive(Duration.ofSeconds(3).toMillis())
                 .publish());
 
     // then
