@@ -71,8 +71,8 @@ public class ReportClient {
     updateCombinedReport(combinedReportId, containedReportIds, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public void updateCombinedReport(final String combinedReportId, final List<String> containedReportIds, String u,
-                                   String p) {
+  public void updateCombinedReport(final String combinedReportId, final List<String> containedReportIds, String username,
+                                   String password) {
     final CombinedReportDefinitionDto combinedReportData = new CombinedReportDefinitionDto();
     combinedReportData.getData()
       .getReports()
@@ -83,15 +83,15 @@ public class ReportClient {
       );
     getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportData)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
   public Response updateCombinedReport(final String combinedReportId, final ReportDefinitionDto combinedReportData,
-                                       String u, String p) {
+                                       String username, String password) {
     return getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportData)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
@@ -100,29 +100,29 @@ public class ReportClient {
   }
 
   public Response updateSingleProcessReport(final String reportId, final ReportDefinitionDto updatedReport,
-                                            Boolean force, String u, String p) {
+                                            Boolean force, String username, String password) {
     return getRequestExecutor()
       .buildUpdateSingleProcessReportRequest(reportId, updatedReport, force)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
   public Response updateDecisionReport(final String reportId, final ReportDefinitionDto updatedReport,
-                                       Boolean force, String u, String p) {
+                                       Boolean force, String username, String password) {
     return getRequestExecutor()
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .buildUpdateSingleDecisionReportRequest(reportId, updatedReport, force)
       .execute();
   }
 
   public Response createNewCombinedReportAsUserRawResponse(String collectionId, List<String> singleReportIds,
-                                                           String u, String p) {
+                                                           String username, String password) {
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
     report.setCollectionId(collectionId);
     report.setData(createCombinedReportData(singleReportIds.toArray(new String[]{})));
     return getRequestExecutor()
       .buildCreateCombinedReportRequest(report)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
@@ -191,20 +191,20 @@ public class ReportClient {
     return createSingleDecisionReportDefinitionDto(null, definitionKey, Collections.singletonList(null));
   }
 
-  public Response createSingleProcessReportAsUser(String collectionId, String definitionKey, String u, String p) {
+  public Response createSingleProcessReportAsUser(String collectionId, String definitionKey, String username, String password) {
     return createSingleProcessReportAsUserRawResponse(createSingleProcessReportDefinitionDto(
       collectionId,
       definitionKey,
       Collections.singletonList(null)
-    ), u, p);
+    ), username, password);
   }
 
-  public Response createSingleDecisionReportAsUser(String collectionId, String definitionKey, String u, String p) {
+  public Response createSingleDecisionReportAsUser(String collectionId, String definitionKey, String username, String password) {
     return createNewDecisionReportAsUserRawResponse(createSingleDecisionReportDefinitionDto(
       collectionId,
       definitionKey,
       Collections.singletonList(null)
-    ), u, p);
+    ), username, password);
   }
 
   public SingleDecisionReportDefinitionDto createSingleDecisionReportDefinitionDto(final String collectionId,
@@ -343,25 +343,25 @@ public class ReportClient {
   }
 
 
-  public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String originalReportId, String u,
-                                                                              String p) {
-    Response response = getSingleProcessReportRawResponse(originalReportId, u, p);
+  public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String originalReportId, String username,
+                                                                              String password) {
+    Response response = getSingleProcessReportRawResponse(originalReportId, username, password);
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     return response.readEntity(SingleProcessReportDefinitionDto.class);
   }
 
-  public Response getSingleProcessReportRawResponse(String originalReportId, String u,
-                                                    String p) {
+  public Response getSingleProcessReportRawResponse(String originalReportId, String username,
+                                                    String password) {
     return getRequestExecutor()
       .buildGetReportRequest(originalReportId)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
-  public Response copyReportToCollection(String reportId, String collectionId, String u, String p) {
+  public Response copyReportToCollection(String reportId, String collectionId, String username, String password) {
     return getRequestExecutor()
       .buildCopyReportRequest(reportId, collectionId)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
@@ -371,9 +371,9 @@ public class ReportClient {
       .execute(CombinedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<AuthorizedReportDefinitionDto> getAllReportsAsUser(String u, String p) {
+  public List<AuthorizedReportDefinitionDto> getAllReportsAsUser(String username, String password) {
     return getRequestExecutor()
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
@@ -382,17 +382,17 @@ public class ReportClient {
     deleteReport(reportId, false);
   }
 
-  public Response deleteReport(final String reportId, final boolean force, String u, String p) {
+  public Response deleteReport(final String reportId, final boolean force, String username, String password) {
     return getRequestExecutor()
       .buildDeleteReportRequest(reportId, force)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
-  public Response evaluateReportAsUserRawResponse(String id, String u, String p) {
+  public Response evaluateReportAsUserRawResponse(String id, String username, String password) {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 

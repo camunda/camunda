@@ -53,7 +53,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAllAlertsRequest()
+      .buildGetAllEntitiesRequest()
       .addSingleCookie(newCookie.getName(), newCookie.getValue())
       .withoutAuthentication()
       .execute();
@@ -71,7 +71,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAllAlertsRequest()
+      .buildGetAllEntitiesRequest()
       .addSingleHeader("user", KERMIT_USER)
       .withoutAuthentication()
       .execute();
@@ -91,7 +91,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAllAlertsRequest()
+      .buildGetAllEntitiesRequest()
       .addSingleHeader("user", "demo")
       .addSingleCookie(OPTIMIZE_AUTHORIZATION, "invalid")
       .withoutAuthentication()
@@ -161,7 +161,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAllAlertsRequest()
+      .buildGetAllEntitiesRequest()
       .withGivenAuthToken("wrong token")
       .execute();
 

@@ -25,6 +25,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -80,25 +81,29 @@ public class PostMigrationTest {
 
   @Test
   public void retrieveAlerts() {
-    Response response = client.target(OPTIMIZE_API_ENDPOINT + "alert")
-      .request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
-      .get();
+    List<AlertDefinitionDto> allAlerts = new ArrayList<>();
+    List<EntityDto> collections = getCollections();
+    collections.forEach(c -> {
+      Response response = client.target(OPTIMIZE_API_ENDPOINT + "collection/" + c.getId() + "/alerts")
+        .request()
+        .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
+        .get();
 
-    // @formatter:off
-    List<AlertDefinitionDto> objects = response.readEntity(new GenericType<List<AlertDefinitionDto>>() {});
-    // @formatter:on
-    assertThat(objects.size() > 0, is(true));
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+      assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+      
+      // @formatter:off
+      List<AlertDefinitionDto> objects = response.readEntity(new GenericType<List<AlertDefinitionDto>>() {});
+      // @formatter:on
+      allAlerts.addAll(objects);
+    });
+
+
+    assertThat(allAlerts.size() > 0, is(true));
   }
 
   @Test
   public void retrieveAllCollections() {
-    final List<EntityDto> entities = getEntityDtos();
-
-    final List<EntityDto> collections = entities.stream()
-      .filter(entityDto -> EntityType.COLLECTION.equals(entityDto.getEntityType()))
-      .collect(Collectors.toList());
+    final List<EntityDto> collections = getCollections();
 
     assertThat(collections.size(), is(greaterThan(0)));
     for (EntityDto collection : collections) {
@@ -106,13 +111,17 @@ public class PostMigrationTest {
     }
   }
 
-  @Test
-  public void evaluateAllCollectionReports() {
-    List<EntityDto> entities = getEntityDtos();
+  private List<EntityDto> getCollections() {
+    final List<EntityDto> entities = getEntityDtos();
 
-    final List<EntityDto> collections = entities.stream()
+    return entities.stream()
       .filter(entityDto -> EntityType.COLLECTION.equals(entityDto.getEntityType()))
       .collect(Collectors.toList());
+  }
+
+  @Test
+  public void evaluateAllCollectionReports() {
+    final List<EntityDto> collections = getCollections();
 
     for (EntityDto collection : collections) {
       final List<EntityDto> collectionEntities = getCollectionEntities(collection.getId());

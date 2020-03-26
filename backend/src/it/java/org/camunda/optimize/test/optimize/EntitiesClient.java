@@ -23,10 +23,10 @@ public class EntitiesClient {
     return getAllEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
-  public List<EntityDto> getAllEntitiesAsUser(String u, String p) {
+  public List<EntityDto> getAllEntitiesAsUser(String username, String password) {
     return getRequestExecutor()
       .buildGetAllEntitiesRequest()
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
   }
 

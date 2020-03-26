@@ -66,7 +66,7 @@ public class ForceReimportIT extends AbstractIT {
     // when
     List<AuthorizedReportDefinitionDto> reports = getAllReportsInCollection(collectionId);
     DashboardDefinitionDto dashboard = getDashboardById(dashboardId);
-    List<AlertDefinitionDto> alerts = getAllAlerts();
+    List<AlertDefinitionDto> alerts = alertClient.getAllAlerts();
 
     // then
     assertThat(licenseExists()).isTrue();
@@ -80,7 +80,7 @@ public class ForceReimportIT extends AbstractIT {
 
     reports = getAllReportsInCollection(collectionId);
     dashboard = getDashboardById(dashboardId);
-    alerts = getAllAlerts();
+    alerts = alertClient.getAllAlerts();
 
     // then
     assertThat(licenseExists()).isTrue();
@@ -113,13 +113,6 @@ public class ForceReimportIT extends AbstractIT {
       throw new OptimizeIntegrationTestException("Could not retrieve license!", e);
     }
     return getResponse.isExists();
-  }
-
-  private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private void addLicense() {

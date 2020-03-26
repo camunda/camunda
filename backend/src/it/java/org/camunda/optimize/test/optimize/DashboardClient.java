@@ -30,10 +30,10 @@ public class DashboardClient {
       .execute(DashboardDefinitionDto.class, HttpStatus.SC_OK);
   }
 
-  public AuthorizedDashboardDefinitionDto getDashboardAsUser(final String dashboardId, String u, String p) {
+  public AuthorizedDashboardDefinitionDto getDashboardAsUser(final String dashboardId, String username, String password) {
     return getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute(AuthorizedDashboardDefinitionDto.class, HttpStatus.SC_OK);
   }
 
@@ -46,17 +46,17 @@ public class DashboardClient {
     return createDashboard(createSimpleDashboardDefinition(collectionId, reportIds));
   }
 
-  public Response createDashboardAsUserGetRawResponse(final String collectionId, final List<String> reportIds, String u, String p) {
+  public Response createDashboardAsUserGetRawResponse(final String collectionId, final List<String> reportIds, String username, String password) {
     return getRequestExecutor()
       .buildCreateDashboardRequest(createSimpleDashboardDefinition(collectionId, reportIds))
-      .withUserAuthentication(u,p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
-  public String createDashboardAsUser(final DashboardDefinitionDto dashboardDefinitionDto, String u, String p) {
+  public String createDashboardAsUser(final DashboardDefinitionDto dashboardDefinitionDto, String username, String password) {
     return getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .withUserAuthentication(u,p)
+      .withUserAuthentication(username, password)
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
@@ -88,10 +88,10 @@ public class DashboardClient {
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public Response updateDashboardAsUser(String id, DashboardDefinitionDto updatedDashboard, String u, String p) {
+  public Response updateDashboardAsUser(String id, DashboardDefinitionDto updatedDashboard, String username, String password) {
     return getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
@@ -101,17 +101,17 @@ public class DashboardClient {
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public IdDto copyDashboardToCollectionAsUser(final String dashboardId, final String collectionId, String u, String p) {
+  public IdDto copyDashboardToCollectionAsUser(final String dashboardId, final String collectionId, String username, String password) {
     return getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId, collectionId)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public Response copyDashboardToCollectionAsUserAndGetRawResponse(final String dashboardId, final String collectionId, String u, String p) {
+  public Response copyDashboardToCollectionAsUserAndGetRawResponse(final String dashboardId, final String collectionId, String username, String password) {
     return getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId, collectionId)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 
@@ -121,10 +121,10 @@ public class DashboardClient {
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public Response deleteDashboardAsUser(final String dashboardId, String u, String p, final boolean force) {
+  public Response deleteDashboardAsUser(final String dashboardId, String username, String password, final boolean force) {
     return getRequestExecutor()
       .buildDeleteDashboardRequest(dashboardId, force)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute();
   }
 

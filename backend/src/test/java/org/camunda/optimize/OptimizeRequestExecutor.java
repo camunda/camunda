@@ -282,12 +282,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetAllAlertsRequest() {
-    this.path = ALERT;
-    this.method = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildDeleteAlertRequest(String id) {
     this.path = ALERT + "/" + id;
     this.method = DELETE;

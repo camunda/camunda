@@ -39,11 +39,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(allAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(ownAlertId));
@@ -63,11 +59,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     final String alertId2 = addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(
@@ -90,11 +82,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(allAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(authorizedAlertId));
@@ -117,11 +105,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     final String alertId = createAlertInCollectionAsDefaultUser(processDefinition);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(allAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), containsInAnyOrder(alertId));
@@ -148,11 +132,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     createAlertInCollectionAsDefaultUser(processDefinition2);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(

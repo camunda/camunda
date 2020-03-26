@@ -215,16 +215,6 @@ public class AlertService implements ReportReferencingService {
     return schedulerFactoryBean.getObject();
   }
 
-  public List<AlertDefinitionDto> getStoredAlerts(String userId) {
-    List<String> authorizedReportIds = reportService
-      .findAndFilterReports(userId)
-      .stream()
-      .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
-      .collect(toList());
-
-    return alertReader.findFirstAlertsForReports(authorizedReportIds);
-  }
-
   public List<AlertDefinitionDto> getStoredAlertsForCollection(String userId, String collectionId) {
     List<String> authorizedReportIds = reportService
       .findAndFilterReports(userId, collectionId)

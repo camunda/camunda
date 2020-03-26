@@ -182,19 +182,6 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
-  @Test
-  public void getStoredAlertsWithoutAuthentication() {
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildGetAllAlertsRequest()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
-  }
-
   @ParameterizedTest
   @MethodSource("definitionType")
   public void getStoredAlerts(final DefinitionType definitionType) {
@@ -205,7 +192,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String id = addAlertToOptimize(alert);
 
     // when
-    List<AlertDefinitionDto> allAlerts = getAllAlerts();
+    List<AlertDefinitionDto> allAlerts = alertClient.getAlertsForCollectionAsDefaultUser(collectionId);
 
     // then
     assertThat(allAlerts.size(), is(1));
@@ -242,7 +229,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-    assertThat(getAllAlerts().size(), is(0));
+    assertThat(alertClient.getAllAlerts().size(), is(0));
   }
 
   @Test
@@ -270,12 +257,5 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .buildCreateAlertRequest(creationDto)
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
-  }
-
-  private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 }

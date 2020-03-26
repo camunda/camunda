@@ -11,8 +11,11 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -56,9 +59,27 @@ public class AlertClient {
   }
 
   public List<AlertDefinitionDto> getAllAlerts() {
-    return getRequestExecutor()
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+    return getAllAlerts(DEFAULT_USERNAME, DEFAULT_USERNAME);
+  }
+
+  public List<AlertDefinitionDto> getAllAlerts(String username, String password) {
+    List<AlertDefinitionDto> result = new ArrayList<>();
+    List<EntityDto> entities = getRequestExecutor()
+      .buildGetAllEntitiesRequest()
+      .withUserAuthentication(username, password)
+      .executeAndReturnList(EntityDto.class, 200);
+
+    entities.stream()
+      .filter(e -> e.getEntityType().equals(EntityType.COLLECTION))
+      .forEach(e -> {
+        List<AlertDefinitionDto> alertsOfCollection = getRequestExecutor()
+          .buildGetAlertsForCollectionRequest(e.getId())
+          .withUserAuthentication(username, password)
+          .executeAndReturnList(AlertDefinitionDto.class, 200);
+        result.addAll(alertsOfCollection);
+      });
+
+    return result;
   }
 
   public Response updateAlert(String id, AlertCreationDto simpleAlert) {
@@ -101,8 +122,9 @@ public class AlertClient {
     return alertCreationDto;
   }
 
-  public AlertCreationDto createAlertWithReminder(String reportId, int reminderIntervalValue, String unit, int threshold,
-                                       int intervalValue) {
+  public AlertCreationDto createAlertWithReminder(String reportId, int reminderIntervalValue, String unit,
+                                                  int threshold,
+                                                  int intervalValue) {
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(reminderIntervalValue);

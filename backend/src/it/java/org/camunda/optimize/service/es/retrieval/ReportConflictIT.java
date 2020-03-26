@@ -301,7 +301,7 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private void checkAlertsStillExist(String[] expectedConflictedItemIds) {
-    List<AlertDefinitionDto> alerts = getAllAlerts();
+    List<AlertDefinitionDto> alerts = alertClient.getAllAlerts();
     assertThat(alerts)
       .hasSize(expectedConflictedItemIds.length)
       .extracting(AlertDefinitionDto::getId)
@@ -365,13 +365,6 @@ public class ReportConflictIT extends AbstractIT {
       .buildCreateAlertRequest(alertCreationDto)
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
-  }
-
-  private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String creatCombinedReport(CombinedReportDefinitionDto definitionDto) {

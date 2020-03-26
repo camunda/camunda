@@ -147,11 +147,11 @@ public class CollectionClient {
       );
   }
 
-  public List<AuthorizedReportDefinitionDto> getReportsForCollectionAsUser(final String collectionId, String u,
-                                                                           String p) {
+  public List<AuthorizedReportDefinitionDto> getReportsForCollectionAsUser(final String collectionId, String username,
+                                                                           String password) {
     return getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .executeAndReturnList(
         AuthorizedReportDefinitionDto.class,
         200
@@ -295,17 +295,17 @@ public class CollectionClient {
   }
 
   public void updateCollectionRoleAsUser(String collectionId, String roleId, CollectionRoleUpdateDto updateDto,
-                                         String u, String p) {
+                                         String username, String password) {
     getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, roleId, updateDto)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public void deleteCollectionRoleAsUser(String collectionId, String roleId, String u, String p) {
+  public void deleteCollectionRoleAsUser(String collectionId, String roleId, String username, String password) {
     getRequestExecutor()
       .buildDeleteRoleToCollectionRequest(collectionId, roleId)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
@@ -316,10 +316,10 @@ public class CollectionClient {
       .withUserAuthentication(userId, password);
   }
 
-  public List<CollectionRoleRestDto> getCollectionRolesAsUser(final String collectionId, String u, String p) {
+  public List<CollectionRoleRestDto> getCollectionRolesAsUser(final String collectionId, String username, String password) {
     return getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
-      .withUserAuthentication(u, p)
+      .withUserAuthentication(username, password)
       .executeAndReturnList(CollectionRoleRestDto.class, Response.Status.OK.getStatusCode());
   }
 
