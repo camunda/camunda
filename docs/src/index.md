@@ -1,4 +1,6 @@
-![Zeebe Logo](/zeebe-logo.png)
+<p style="text-align: center;">
+  <img src="zeebe-brand.svg" style="height: 100px;"/>
+</p>
 
 ### Zeebe is a cloud-native workflow engine for microservices orchestration
 
