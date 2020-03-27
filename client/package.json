@@ -39,7 +39,7 @@
     "table-js": "^6.0.3"
   },
   "peerDependencies": {
-    "date-fns": "^2.11.0"
+    "date-fns": "^2.11.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -109,7 +109,7 @@
     "tree-kill": "^1.2.2",
     "ws": "^7.2.3",
     "xml2js": "^0.4.23",
-    "date-fns": "^2.11.0"
+    "date-fns": "^2.11.1"
   },
   "browserslist": [
     ">0.2%",
