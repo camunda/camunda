@@ -115,7 +115,7 @@ spec:
         fieldRef:
           fieldPath: metadata.name
     - name: ES_JAVA_OPTS
-      value: "-Xms5g -Xmx5g"
+      value: "-Xms3g -Xmx3g"
     - name: cluster.name
       value: elasticsearch
     - name: discovery.type
@@ -138,10 +138,10 @@ spec:
       protocol: TCP
     resources:
       limits:
-        cpu: 12
+        cpu: 6
         memory: 6Gi
       requests:
-        cpu: 12
+        cpu: 6
         memory: 6Gi
     volumeMounts:
       - name: es-storage
@@ -160,7 +160,7 @@ spec:
         fieldRef:
           fieldPath: metadata.name
     - name: ES_JAVA_OPTS
-      value: "-Xms1g -Xmx1g"
+      value: "-Xms3g -Xmx3g"
     - name: cluster.name
       value: elasticsearch
     - name: discovery.type
@@ -183,11 +183,11 @@ spec:
       protocol: TCP
     resources:
       limits:
-        cpu: 2
-        memory: 2Gi
+        cpu: 6
+        memory: 6Gi
       requests:
-        cpu: 2
-        memory: 2Gi
+        cpu: 6
+        memory: 6Gi
     volumeMounts:
       - name: es-storage
         mountPath: /usr/share/elasticsearch/data
