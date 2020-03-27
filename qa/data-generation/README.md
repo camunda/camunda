@@ -69,27 +69,32 @@ is not specified explicitly.
 mvn clean compile exec:java -Dexec.args="--processDefinitions Invoice:10,ChangeContactData:3,BookRequestNoBusinessKey:5"
 ```
 Available processes are:  
-* BranchAnalysis  
-* BookRequestNoBusinessKey  
-* EmbeddedSubprocessRequest  
-* MultiInstanceSubprocessRequest  
-* HiringProcessWithUniqueCorrelationValues  
-* ExtendedOrder  
-* LeadQualification  
-* InvoiceWithAlternativeCorrelationVariable  
-* OrderConfirmation  
-* MultiParallel  
-* TransshipmentArrangement  
-* PickUpHandling  
-* AuthorizationArrangement  
-* ChangeContactData  
-* ProcessRequest  
-* ExportInsurance  
-* DocumentCheckHandling  
-* ReviewCase  
 * AnalysisTesting
-* GroupElements
+* AuthorizationArrangement  
+* BookRequestForOneTenant
+* BookRequestNoBusinessKey
+* BookRequestWithSuspendedInstances  
+* BranchAnalysis  
+* ChangeContactData  
+* DocumentCheckHandling  
 * DRIProcessWithLoadsOfVariables
+* EmbeddedSubprocessRequest  
+* ExportInsurance  
+* ExtendedOrder  
+* GroupElements
+* HiringProcessFor5Tenants
+* HiringProcessWithUniqueCorrelationValues  
+* InvoiceDataFor2TenantsAndShared
+* InvoiceWithAlternativeCorrelationVariable  
+* LeadQualification  
+* MultiInstanceSubprocessRequest  
+* MultiParallel  
+* OrderConfirmation  
+* PickUpHandling  
+* ProcessData
+* ProcessRequest  
+* ReviewCase  
+* TransshipmentArrangement  
 
 * specify **decision definitions** and number of versions to deploy (default value includes all of 
 the 6 decisions, so an example value is displayed)  List comma-separated definitions specifying the 

@@ -29,7 +29,7 @@ public abstract class ProcessDataGenerator extends DataGenerator<BpmnModelInstan
     engineClient.startProcessInstance(definitionId, variables, getBusinessKey());
   }
 
-  private void addCorrelatingVariable(final Map<String, Object> variables) {
+  protected void addCorrelatingVariable(final Map<String, Object> variables) {
     variables.put(getCorrelatingVariableName(), getCorrelatingValue());
   }
 

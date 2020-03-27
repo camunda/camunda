@@ -19,6 +19,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
@@ -39,6 +40,7 @@ import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
@@ -207,7 +209,8 @@ public class SimpleEngineClient {
     return Optional.ofNullable(variable.getValue()).map(Object::toString).map(Boolean::parseBoolean);
   }
 
-  public void startProcessInstance(String procDefId, Map<String, Object> variables, String businessKey) {
+  public ProcessInstanceEngineDto startProcessInstance(String procDefId, Map<String, Object> variables,
+                                                       String businessKey) {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
     post.addHeader("content-type", "application/json");
     final String jsonEntity = convertVariableMapAndBusinessKeyToJsonString(variables, businessKey);
@@ -218,6 +221,11 @@ public class SimpleEngineClient {
         throw new RuntimeException("Could not start the process definition " + procDefId +
                                      ". Reason: " + response.getStatusLine().getReasonPhrase());
       }
+      final String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      return objectMapper.readValue(
+        responseString,
+        ProcessInstanceEngineDto.class
+      );
     } catch (Exception e) {
       log.error("Error during start of process instance!");
       throw new RuntimeException(e);
@@ -247,6 +255,27 @@ public class SimpleEngineClient {
       final String message = "Could not start the given decision model!";
       log.error(message, e);
       throw new RuntimeException(message, e);
+    }
+  }
+
+  public void suspendProcessInstance(final String processInstanceId) {
+    HttpPut suspendRequest = new HttpPut(getSuspendProcessInstanceUri(processInstanceId));
+    suspendRequest.setHeader("Content-type", "application/json");
+    suspendRequest.setEntity(new StringEntity(
+      "{\n" +
+        "\"suspended\": true\n" +
+        "}",
+      StandardCharsets.UTF_8
+    ));
+    try (CloseableHttpResponse response = client.execute(suspendRequest)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new RuntimeException(
+          "Could not suspend process instance. Status-code: " + response.getStatusLine().getStatusCode()
+        );
+      }
+    } catch (Exception e) {
+      log.error("Error while trying to suspend process instance!");
+      throw new RuntimeException(e);
     }
   }
 
@@ -603,6 +632,10 @@ public class SimpleEngineClient {
 
   private String getStartDecisionInstanceUri(final String decisionDefinitionId) {
     return engineRestEndpoint + "/decision-definition/" + decisionDefinitionId + "/evaluate";
+  }
+
+  private String getSuspendProcessInstanceUri(final String processInstanceId) {
+    return engineRestEndpoint + "/process-instance/" + processInstanceId + "/suspended";
   }
 
   private String getTaskListCreatedAfterUri(final String processDefinitionId, long limit,
