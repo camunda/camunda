@@ -20,15 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CollectionRestServiceReportsIT extends AbstractIT {
 
@@ -53,9 +51,8 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollection(collectionId1);
 
     // then
-    assertThat(reports.size(), is(expectedReportIds.size()));
-    assertTrue(reports.stream()
-                 .allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId())));
+    assertThat(reports).hasSize(expectedReportIds.size());
+    assertThat(reports.stream().allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId())));
   }
 
   @Test
@@ -67,7 +64,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollection(collectionId1);
 
     // then
-    assertThat(reports.size(), is(0));
+    assertThat(reports).hasSize(0);
   }
 
   @Test
@@ -80,7 +77,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
       .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
-    assertTrue(response.contains("Collection does not exist!"));
+    assertThat(response).contains("Collection does not exist!");
   }
 
   @ParameterizedTest(name = "deleting a collection with reports of definition type {0} also deletes containing reports")
@@ -110,8 +107,8 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     );
 
     // then
-    assertThat(report1Response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
-    assertThat(report2Response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(report1Response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(report2Response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   private String createReportForCollection(final String collectionId, final DefinitionType definitionType) {

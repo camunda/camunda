@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -35,7 +34,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -83,7 +82,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -120,6 +119,6 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 }

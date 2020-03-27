@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.variable;
 
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;

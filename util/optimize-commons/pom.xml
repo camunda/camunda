@@ -102,21 +102,6 @@
       <artifactId>itu</artifactId>
       <version>1.3.0</version>
     </dependency>
-
-    <!-- Test dependencies-->
-    <dependency>
-      <!-- this is here for some remaining junit 4 tests only, see OPT-2877 -->
-      <groupId>org.junit.platform</groupId>
-      <artifactId>junit-platform-runner</artifactId>
-      <version>${junit.platform.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.github.stefanbirkner</groupId>
-      <artifactId>system-rules</artifactId>
-      <version>1.19.0</version>
-    </dependency>
-
   </dependencies>
 
   <build>

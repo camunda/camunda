@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -117,7 +116,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     assertThat(webappsEndpoints.size(), greaterThan(0));
     WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
     assertThat(defaultEndpoint, Matchers.notNullValue());
-    assertTrue(defaultEndpoint.getEndpoint().isEmpty());
+    assertThat(defaultEndpoint.getEndpoint().isEmpty(), is(true));
   }
 
   @Test

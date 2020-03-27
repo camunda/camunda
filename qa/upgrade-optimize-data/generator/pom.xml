@@ -24,6 +24,13 @@
       <type>test-jar</type>
     </dependency>
 
+    <!-- compile scope dependency need for data-generation -->
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>

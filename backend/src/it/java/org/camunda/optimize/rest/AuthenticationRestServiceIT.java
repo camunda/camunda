@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
 

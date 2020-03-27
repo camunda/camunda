@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,10 +14,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.jetty.NoCachingFilter.NO_STORE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class NoCachingIT extends AbstractIT {
 
@@ -29,8 +27,8 @@ public class NoCachingIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.rootTarget(staticResource).request().get();
 
     // then
-    assertThat(response.getStatus(), is(HttpStatus.SC_OK));
-    assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL), is(NO_STORE));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL)).isEqualTo(NO_STORE);
   }
 
   @Test
@@ -39,7 +37,7 @@ public class NoCachingIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.getRequestExecutor().buildCheckImportStatusRequest().execute();
 
     // then
-    assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL), is(NO_STORE));
+    assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL)).isEqualTo(NO_STORE);
   }
 
   private static Stream<String> noCacheResources() {

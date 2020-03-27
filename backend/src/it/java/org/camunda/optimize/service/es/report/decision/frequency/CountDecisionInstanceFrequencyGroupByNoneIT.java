@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.decision.frequency;
 
 import com.google.common.collect.Lists;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;

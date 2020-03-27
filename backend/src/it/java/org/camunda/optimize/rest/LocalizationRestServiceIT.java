@@ -8,7 +8,6 @@ package org.camunda.optimize.rest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.util.FileReaderUtil;

@@ -64,6 +64,7 @@ import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.IdentityRestService.CURRENT_USER_IDENTITY_SUB_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_RESOURCE_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_PATH;
@@ -71,8 +72,6 @@ import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class OptimizeRequestExecutor {
   private static final String ALERT = "alert";
@@ -215,13 +214,13 @@ public class OptimizeRequestExecutor {
 
   public Response execute(int expectedResponseCode) {
     Response response = execute();
-    assertThat(response.getStatus(), is(expectedResponseCode));
+    assertThat(response.getStatus()).isEqualTo(expectedResponseCode);
     return response;
   }
 
   public <T> T execute(TypeReference<T> classToExtractFromResponse) {
     Response response = execute();
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     String jsonString = response.readEntity(String.class);
     try {
@@ -233,13 +232,13 @@ public class OptimizeRequestExecutor {
 
   public <T> T execute(Class<T> classToExtractFromResponse, int responseCode) {
     Response response = execute();
-    assertThat(response.getStatus(), is(responseCode));
+    assertThat(response.getStatus()).isEqualTo(responseCode);
     return response.readEntity(classToExtractFromResponse);
   }
 
   public <T> List<T> executeAndReturnList(Class<T> classToExtractFromResponse, int responseCode) {
     Response response = execute();
-    assertThat(response.getStatus(), is(responseCode));
+    assertThat(response.getStatus()).isEqualTo(responseCode);
     String jsonString = response.readEntity(String.class);
     try {
       TypeFactory factory = objectMapper.getTypeFactory();

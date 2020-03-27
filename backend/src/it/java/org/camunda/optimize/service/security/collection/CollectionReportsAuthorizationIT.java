@@ -24,14 +24,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CollectionReportsAuthorizationIT extends AbstractIT {
 
@@ -75,9 +73,8 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
     );
 
     // then
-    assertThat(reports.size(), is(expectedReportIds.size()));
-    assertTrue(reports.stream()
-                 .allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId())));
+    assertThat(reports).hasSize(expectedReportIds.size());
+    assertThat(reports.stream().allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId())));
   }
 
   @ParameterizedTest
@@ -105,9 +102,8 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
     );
 
     // then
-    assertThat(allAlerts.size(), is(expectedReportIds.size()));
-    assertTrue(allAlerts.stream()
-                 .allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId())));
+    assertThat(allAlerts).hasSize(expectedReportIds.size());
+    assertThat(allAlerts.stream().allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId())));
   }
 
   @ParameterizedTest
@@ -129,7 +125,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private String createReportForCollection(final String collectionId, final int resourceType) {

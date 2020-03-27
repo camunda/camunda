@@ -7,29 +7,33 @@ package org.camunda.optimize.service.util.configuration;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.util.configuration.extension.EnvironmentVariablesExtension;
+import org.camunda.optimize.service.util.configuration.extension.SystemPropertiesExtension;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
-import org.junit.contrib.java.lang.system.RestoreSystemProperties;
+import org.junit.jupiter.api.Order;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.util.configuration.ConfigurationValidator.createValidatorWithoutDeprecations;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConfigurationValidatorTest {
 
-  @Rule
-  public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
+  @RegisterExtension
+  @Order(1)
+  public EnvironmentVariablesExtension environmentVariablesExtension = new EnvironmentVariablesExtension();
 
-  @Rule
-  public final RestoreSystemProperties restoreSystemProperties = new RestoreSystemProperties();
+  @RegisterExtension
+  @Order(2)
+  public SystemPropertiesExtension systemPropertiesExtension = new SystemPropertiesExtension();
 
   @Test
   public void testDeprecatedLeafKeyForConfigurationLeafKey() {
@@ -42,11 +46,9 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations.size(), is(1));
-    assertThat(
-      deprecations.get("alerting.email.username"),
-      is(generateExpectedDocUrl("/technical-guide/configuration/#email"))
-    );
+    assertThat(deprecations).hasSize(1);
+    assertThat(deprecations.get("alerting.email.username"))
+      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#email"));
   }
 
   @Test
@@ -60,8 +62,9 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations.size(), is(1));
-    assertThat(deprecations.get("alerting.email"), is(generateExpectedDocUrl("/technical-guide/configuration/#email")));
+    assertThat(deprecations).hasSize(1);
+    assertThat(deprecations.get("alerting.email"))
+      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#email"));
   }
 
   @Test
@@ -76,8 +79,9 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations.size(), is(1));
-    assertThat(deprecations.get("alerting.email"), is(generateExpectedDocUrl("/technical-guide/configuration/#email")));
+    assertThat(deprecations).hasSize(1);
+    assertThat(deprecations.get("alerting.email"))
+      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#email"));
   }
 
   @Test
@@ -97,13 +101,11 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations.size(), is(2));
-    assertThat(deprecations.get("alerting.email"), is(generateExpectedDocUrl("/technical-guide/configuration/#email")));
-    assertThat(
-      deprecations.get("somethingelse.email"),
-      is(generateExpectedDocUrl("/technical-guide/configuration/#somethingelse"))
-    );
-
+    assertThat(deprecations).hasSize(2);
+    assertThat(deprecations.get("alerting.email"))
+      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#email"));
+    assertThat(deprecations.get("somethingelse.email"))
+      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#somethingelse"));
   }
 
   @Test
@@ -117,11 +119,9 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations.size(), is(1));
-    assertThat(
-      deprecations.get("es.connection.nodes[*].tcpPort"),
-      is(generateExpectedDocUrl("/technical-guide/setup/configuration/#connection-settings"))
-    );
+    assertThat(deprecations).hasSize(1);
+    assertThat(deprecations.get("es.connection.nodes[*].tcpPort"))
+      .isEqualTo(generateExpectedDocUrl("/technical-guide/setup/configuration/#connection-settings"));
   }
 
   @Test
@@ -132,13 +132,12 @@ public class ConfigurationValidatorTest {
     String[] deprecatedLocations = {"deprecation-samples/deprecated-tcpPort-wildcard-leaf-key.yaml"};
     ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
 
-
     // when
     Optional<Map<String, String>> deprecations =
       validateForAndReturnDeprecations(configurationService, underTest);
 
     // then
-    assertThat(deprecations.isPresent(), is(false));
+    assertThat(deprecations.isPresent()).isFalse();
   }
 
   @Test
@@ -152,7 +151,7 @@ public class ConfigurationValidatorTest {
     Optional<Map<String, String>> deprecations = validateForAndReturnDeprecations(configurationService, underTest);
 
     // then
-    assertThat(deprecations.isPresent(), is(false));
+    assertThat(deprecations.isPresent()).isFalse();
   }
 
   @Test
@@ -231,7 +230,7 @@ public class ConfigurationValidatorTest {
     // then no exception is thrown
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
+  @Test
   public void unsupportedMimeTypeOfLogoThrowsError() {
     // given
     ConfigurationService configurationService = createConfiguration();
@@ -240,13 +239,11 @@ public class ConfigurationValidatorTest {
     UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
     configurationService.setUiConfiguration(uiConfiguration);
 
-    // when
-    underTest.validate(configurationService);
-
-    // then an exception is thrown
+    // then
+    assertThatThrownBy(() -> underTest.validate(configurationService)).isInstanceOf(OptimizeConfigurationException.class);
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
+  @Test
   public void missingWebhookUrlThrowsError() {
     // given
     ConfigurationService configurationService = createConfiguration();
@@ -260,13 +257,11 @@ public class ConfigurationValidatorTest {
     );
     configurationService.setConfiguredWebhooks(webhooks);
 
-    // when
-    underTest.validate(configurationService);
-
-    // then an exception is thrown
+    // then
+    assertThatThrownBy(() -> underTest.validate(configurationService)).isInstanceOf(OptimizeConfigurationException.class);
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
+  @Test
   public void missingWebhookPayloadThrowsError() {
     // given
     ConfigurationService configurationService = createConfiguration();
@@ -280,13 +275,11 @@ public class ConfigurationValidatorTest {
     );
     configurationService.setConfiguredWebhooks(webhooks);
 
-    // when
-    underTest.validate(configurationService);
-
-    // then an exception is thrown
+    // then
+    assertThatThrownBy(() -> underTest.validate(configurationService)).isInstanceOf(OptimizeConfigurationException.class);
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
+  @Test
   public void webhookPayloadWithoutPlaceholderThrowsError() {
     // given
     ConfigurationService configurationService = createConfiguration();
@@ -300,10 +293,8 @@ public class ConfigurationValidatorTest {
     );
     configurationService.setConfiguredWebhooks(webhooks);
 
-    // when
-    underTest.validate(configurationService);
-
-    // then an exception is thrown
+    // then
+    assertThatThrownBy(() -> underTest.validate(configurationService)).isInstanceOf(OptimizeConfigurationException.class);
   }
 
   private String createAbsolutePath(final String relativePathToLogo) {

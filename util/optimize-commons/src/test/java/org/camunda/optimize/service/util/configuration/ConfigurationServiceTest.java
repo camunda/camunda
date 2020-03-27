@@ -10,24 +10,20 @@ import com.jayway.jsonpath.spi.mapper.MappingException;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
-import org.junit.contrib.java.lang.system.RestoreSystemProperties;
+import org.camunda.optimize.service.util.configuration.extension.EnvironmentVariablesExtension;
+import org.camunda.optimize.service.util.configuration.extension.SystemPropertiesExtension;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 
 public class ConfigurationServiceTest {
 
@@ -52,33 +48,35 @@ public class ConfigurationServiceTest {
   private static final String CUSTOM_PACKAGE_3 = "pack_3";
   private static final String SECRET = "secret";
   private static final String ACCESS_URL = "accessUrl";
-  public static final String CUSTOM_EVENT_BASED_USER_IDS = "[demo,kermit]";
+  private static final String CUSTOM_EVENT_BASED_USER_IDS = "[demo,kermit]";
 
-  @Rule
-  public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
+  @RegisterExtension
+  @Order(1)
+  public EnvironmentVariablesExtension environmentVariablesExtension = new EnvironmentVariablesExtension();
 
-  @Rule
-  public final RestoreSystemProperties restoreSystemProperties = new RestoreSystemProperties();
+  @RegisterExtension
+  @Order(2)
+  public SystemPropertiesExtension systemPropertiesExtension = new SystemPropertiesExtension();
 
   @Test
   public void getTokenLifeTimeMinutes() {
     ConfigurationService underTest = createDefaultConfiguration();
-    assertThat(underTest.getTokenLifeTimeMinutes(), is(60));
+    assertThat(underTest.getTokenLifeTimeMinutes()).isEqualTo(60);
   }
 
   @Test
   public void testOverrideAliasOfEngine() {
     String[] locations = {defaultConfigFile(), "environment-config.yaml", "override-engine-config.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getConfiguredEngines().size(), is(1));
-    assertThat(underTest.getConfiguredEngines().get("myAwesomeEngine").getName(), is(notNullValue()));
+    assertThat(underTest.getConfiguredEngines()).hasSize(1);
+    assertThat(underTest.getConfiguredEngines().get("myAwesomeEngine").getName()).isNotNull();
   }
 
   @Test
   public void certificateAuthorizationCanBeAList() {
     String[] locations = {defaultConfigFile(), "config-samples/certificate-authorities/ca-auth-as-list.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities().size(), is(2));
+    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities()).hasSize(2);
   }
 
   @Test
@@ -86,43 +84,43 @@ public class ConfigurationServiceTest {
     String[] locations = {defaultConfigFile(),
       "config-samples/certificate-authorities/ca-auth-as-string-is-converted.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities().size(), is(1));
+    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities()).hasSize(1);
   }
 
-  @Test(expected = MappingException.class)
+  @Test
   public void wrongCaAuthFormatThrowsError() {
     String[] locations = {defaultConfigFile(),
       "config-samples/certificate-authorities/wrong-ca-auth-format-throws-error.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    underTest.getElasticsearchSecuritySSLCertificateAuthorities();
+    assertThatThrownBy(underTest::getElasticsearchSecuritySSLCertificateAuthorities).isInstanceOf(MappingException.class);
   }
 
-  @Test(expected = MappingException.class)
+  @Test
   public void wrongCaAuthListFormatThrowsError() {
     String[] locations = {defaultConfigFile(),
       "config-samples/certificate-authorities/wrong-ca-auth-list-format-throws-error.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    underTest.getElasticsearchSecuritySSLCertificateAuthorities();
+    assertThatThrownBy(underTest::getElasticsearchSecuritySSLCertificateAuthorities).isInstanceOf(MappingException.class);
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
+  @Test
   public void unresolvedLogoPathThrowsErrorOnConfigCreation() {
     String[] locations = {defaultConfigFile(), "config-samples/ui_config/overwrite-ui-config-with-unknown-logo.yaml"};
-    createConfiguration(locations);
+    assertThatThrownBy(() -> createConfiguration(locations)).isInstanceOf(OptimizeConfigurationException.class);
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
+  @Test
   public void wrongBackgroundColorThrowsErrorOnConfigCreation() {
     String[] locations = {defaultConfigFile(),
       "config-samples/ui_config/overwrite-ui-config-with-wrong-background-color-option.yaml"};
-    createConfiguration(locations);
+    assertThatThrownBy(() -> createConfiguration(locations)).isInstanceOf(OptimizeConfigurationException.class);
   }
 
-  @Test(expected = MappingException.class)
+  @Test
   public void wrongTextColorThrowsErrorOnConfigCreation() {
     String[] locations = {defaultConfigFile(),
       "config-samples/ui_config/overwrite-ui-config-with-wrong-text-color-option.yaml"};
-    createConfiguration(locations);
+    assertThatThrownBy(() -> createConfiguration(locations)).isInstanceOf(MappingException.class);
   }
 
   @Test
@@ -139,40 +137,40 @@ public class ConfigurationServiceTest {
       Optional<Integer> containerHttpPort = underTest.getContainerHttpPort();
 
       // then
-      assertThat(containerHttpPort.isPresent(), is(false));
+      assertThat(containerHttpPort.isPresent()).isFalse();
     }
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
+  @Test
   public void invalidHttpsPortThrowsError() {
     String[] locations = {defaultConfigFile(), "config-samples/port/invalid-https-port.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    underTest.getContainerHttpsPort();
+    assertThatThrownBy(underTest::getContainerHttpsPort).isInstanceOf(OptimizeConfigurationException.class);
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
+  @Test
   public void invalidElasticsearchProxyConfigThrowsError() {
     String[] locations = {defaultConfigFile(), "config-samples/config-invalid-elasticsearch-proxy-config.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    underTest.getElasticSearchProxyConfig();
+    assertThatThrownBy(underTest::getElasticSearchProxyConfig).isInstanceOf(OptimizeConfigurationException.class);
   }
 
   @Test
   public void resolvePropertiesFromEnvironmentVariables() {
     //when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
-    environmentVariables.set("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
-    environmentVariables.set("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
-    environmentVariables.set("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
-    environmentVariables.set("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
-    environmentVariables.set("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
-    environmentVariables.set("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
-    environmentVariables.set("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
-    environmentVariables.set("PACKAGE_2", CUSTOM_PACKAGE_2);
-    environmentVariables.set("PACKAGE_3", CUSTOM_PACKAGE_3);
-    environmentVariables.set("SECRET", SECRET);
-    environmentVariables.set("ACCESS_URL", ACCESS_URL);
-    environmentVariables.set("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
+    environmentVariablesExtension.set("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    environmentVariablesExtension.set("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
+    environmentVariablesExtension.set("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
+    environmentVariablesExtension.set("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
+    environmentVariablesExtension.set("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
+    environmentVariablesExtension.set("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
+    environmentVariablesExtension.set("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
+    environmentVariablesExtension.set("PACKAGE_2", CUSTOM_PACKAGE_2);
+    environmentVariablesExtension.set("PACKAGE_3", CUSTOM_PACKAGE_3);
+    environmentVariablesExtension.set("SECRET", SECRET);
+    environmentVariablesExtension.set("ACCESS_URL", ACCESS_URL);
+    environmentVariablesExtension.set("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -205,17 +203,17 @@ public class ConfigurationServiceTest {
   public void resolvePropertiesFromSystemVariablesWinOverEnvironmentVariables() {
     //when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
-    environmentVariables.set("AUTH_TOKEN_LIFEMIN", "wrong");
-    environmentVariables.set("IMPORT_ENABLED_1", "wrong");
-    environmentVariables.set("IMPORT_ENABLED_2", "wrong");
-    environmentVariables.set("ES_HOST_1", "wrong");
-    environmentVariables.set("ES_PORT_1", "wrong");
-    environmentVariables.set("ES_HOST_2", "wrong");
-    environmentVariables.set("ES_PORT_2", "wrong");
-    environmentVariables.set("PACKAGE_2", "wrong");
-    environmentVariables.set("PACKAGE_3", "wrong");
-    environmentVariables.set("SECRET", "wrong");
-    environmentVariables.set("ACCESS_URL", "wrong");
+    environmentVariablesExtension.set("AUTH_TOKEN_LIFEMIN", "wrong");
+    environmentVariablesExtension.set("IMPORT_ENABLED_1", "wrong");
+    environmentVariablesExtension.set("IMPORT_ENABLED_2", "wrong");
+    environmentVariablesExtension.set("ES_HOST_1", "wrong");
+    environmentVariablesExtension.set("ES_PORT_1", "wrong");
+    environmentVariablesExtension.set("ES_HOST_2", "wrong");
+    environmentVariablesExtension.set("ES_PORT_2", "wrong");
+    environmentVariablesExtension.set("PACKAGE_2", "wrong");
+    environmentVariablesExtension.set("PACKAGE_3", "wrong");
+    environmentVariablesExtension.set("SECRET", "wrong");
+    environmentVariablesExtension.set("ACCESS_URL", "wrong");
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
@@ -277,18 +275,15 @@ public class ConfigurationServiceTest {
       configurationException = e;
     }
     // then
-    assertThat(configurationException, is(notNullValue()));
-    assertThat(
-      configurationException.getMessage(),
-      containsString("Could not resolve system/environment variable")
-    );
+    assertThat(configurationException).isNotNull();
+    assertThat(configurationException.getMessage()).contains("Could not resolve system/environment variable");
   }
 
   @Test
   public void testOverride() {
     String[] locations = {defaultConfigFile(), "environment-config.yaml", "override-test-config.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getTokenLifeTimeMinutes(), is(10));
+    assertThat(underTest.getTokenLifeTimeMinutes()).isEqualTo(10);
   }
 
   @Test
@@ -301,7 +296,7 @@ public class ConfigurationServiceTest {
       boolean isGetter = method.getName().startsWith("get") || method.getName().startsWith("is");
       if (isGetter && method.getParameterCount() == 0) {
         Object invoke = method.invoke(underTest);
-        assertThat("invocation of [" + method.getName() + "]", invoke, is(notNullValue()));
+        assertThat(invoke).isNotNull();
       }
     }
   }
@@ -317,7 +312,7 @@ public class ConfigurationServiceTest {
       underTest.getConfiguredEngines().get("myAwesomeEngine").getWebapps().getEndpoint();
 
     // then
-    assertThat(resultUrl.endsWith("/"), is(false));
+    assertThat(resultUrl.endsWith("/")).isFalse();
   }
 
   private ConfigurationService createConfiguration(final String[] locations) {
@@ -329,85 +324,56 @@ public class ConfigurationServiceTest {
   }
 
   private void assertThatPlaceholderDefaultValuesAreResolved(final ConfigurationService underTest) {
-    assertThat(underTest.getTokenLifeTimeMinutes(), is(DEFAULT_AUTH_TOKEN_LIFEMIN));
+    assertThat(underTest.getTokenLifeTimeMinutes()).isEqualTo(DEFAULT_AUTH_TOKEN_LIFEMIN);
     assertThat(
-      underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()),
-      contains(DEFAULT_FIRST_ENGINE_IMPORT_ENABLED, DEFAULT_SECOND_ENGINE_IMPORT_ENABLED)
-    );
+      underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
+      .contains(DEFAULT_FIRST_ENGINE_IMPORT_ENABLED, DEFAULT_SECOND_ENGINE_IMPORT_ENABLED);
     assertThat(
       underTest.getElasticsearchConnectionNodes()
         .stream()
         .map(ElasticsearchConnectionNodeConfiguration::getHost)
-        .collect(toList()),
-      contains(DEFAULT_FIRST_ES_HOST, DEFAULT_SECOND_ES_HOST)
-    );
+        .collect(toList()))
+      .contains(DEFAULT_FIRST_ES_HOST, DEFAULT_SECOND_ES_HOST);
     assertThat(
       underTest.getElasticsearchConnectionNodes()
         .stream()
         .map(ElasticsearchConnectionNodeConfiguration::getHttpPort)
-        .collect(toList()),
-      contains(DEFAULT_FIRST_ES_PORT, DEFAULT_SECOND_ES_PORT)
-    );
-    assertThat(
-      underTest.getVariableImportPluginBasePackages(),
-      contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3)
-    );
-    assertThat(
-      underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds(),
-      is(Collections.emptyList())
-    );
+        .collect(toList()))
+      .contains(DEFAULT_FIRST_ES_PORT, DEFAULT_SECOND_ES_PORT);
+    assertThat(underTest.getVariableImportPluginBasePackages()).contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3);
+    assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEqualTo(Collections.emptyList());
     // by default a secret will get generated, so it should neither be the custom secret value
-    assertThat(
-      underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken(),
-      is(not(SECRET))
-    );
+    assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken()).isNotEqualTo(SECRET);
     // nor should it be null
-    assertThat(
-      underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken(),
-      is(not(nullValue()))
-    );
-    assertThat(
-      underTest.getContainerAccessUrl().isPresent(),
-      is(false)
-    );
+    assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken()).isNotNull();
+    assertThat(underTest.getContainerAccessUrl().isPresent()).isFalse();
   }
 
   private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
-    assertThat(underTest.getTokenLifeTimeMinutes(), is(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    assertThat(underTest.getTokenLifeTimeMinutes()).isEqualTo(CUSTOM_AUTH_TOKEN_LIFEMIN);
     assertThat(
-      underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()),
-      contains(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED, CUSTOM_SECOND_ENGINE_IMPORT_ENABLED)
-    );
+      underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
+      .contains(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED, CUSTOM_SECOND_ENGINE_IMPORT_ENABLED);
     assertThat(
       underTest.getElasticsearchConnectionNodes()
         .stream()
         .map(ElasticsearchConnectionNodeConfiguration::getHost)
-        .collect(toList()),
-      contains(CUSTOM_FIRST_ES_HOST, CUSTOM_SECOND_ES_HOST)
-    );
+        .collect(toList()))
+      .contains(CUSTOM_FIRST_ES_HOST, CUSTOM_SECOND_ES_HOST);
     assertThat(
       underTest.getElasticsearchConnectionNodes()
         .stream()
         .map(ElasticsearchConnectionNodeConfiguration::getHttpPort)
-        .collect(toList()),
-      contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT)
-    );
+        .collect(toList()))
+      .contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT);
     assertThat(
-      underTest.getVariableImportPluginBasePackages(),
-      contains("1", CUSTOM_PACKAGE_2, CUSTOM_PACKAGE_3)
-    );
+      underTest.getVariableImportPluginBasePackages())
+      .contains("1", CUSTOM_PACKAGE_2, CUSTOM_PACKAGE_3);
     assertThat(
-      underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds(),
-      is(ImmutableList.of("demo", "kermit"))
-    );
-    assertThat(
-      underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken(),
-      is(SECRET)
-    );
-    assertThat(
-      underTest.getContainerAccessUrl().get(),
-      is(ACCESS_URL)
-    );
+      underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEqualTo(ImmutableList.of("demo", "kermit"
+    ));
+    assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken()).isEqualTo(SECRET);
+    assertThat(underTest.getContainerAccessUrl().get()).isEqualTo(ACCESS_URL);
   }
 
 }

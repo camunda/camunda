@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.frequency;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
