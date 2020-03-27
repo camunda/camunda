@@ -1,11 +1,11 @@
 {
-  "description": "operate operation pipeline",
+  "description": "operate sequence flow pipeline",
   "processors": [
     {
       "remove": {
         "field": [
-          "startDate",
-          "endDate"
+          "key",
+          "partitionId"
         ]
       }
     }
