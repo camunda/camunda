@@ -102,6 +102,21 @@ data:
       eventIngestion:
         accessToken: secret
 
+    webhookAlerting:
+      webhooks:
+        # This Webhook sends a message to the slack channel `optimize-stage-alerts`
+        'SlackWebhook':
+          # URL of the webhook which can receive alerts from Optimize
+          url: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX'
+          # Map of the headers of the request sent to the webhook URL
+          headers:
+            'Content-type': 'application/json'
+          # HTTP Method for the webhook request
+          httpMethod: 'POST'
+          # The default payload structure with the alertMessagePlaceholder {{ALERT_MESSAGE}} for the alert text.
+          # Optimize will replace this placeholder with the content of the alert message.
+          defaultPayload: '{"text": "{{ALERT_MESSAGE}}"}'
+
 ######################## CAM BPM ########################
   configure-and-run.sh: |
     #!/bin/bash -ex

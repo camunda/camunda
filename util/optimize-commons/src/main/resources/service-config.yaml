@@ -330,7 +330,7 @@ webhookAlerting:
 #    'myWebhook':
 #      # URL of the webhook which can receive alerts from Optimize
 #      url: 'someUrl'
-#      # Map of the headers of the request to the sent to the webhook URL
+#      # Map of the headers of the request sent to the webhook URL
 #      headers:
 #        'Authorization': 'auth token'
 #        'Content-type': 'application/json'
