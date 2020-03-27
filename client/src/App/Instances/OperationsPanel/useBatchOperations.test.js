@@ -67,7 +67,9 @@ describe('useBatchOperations', () => {
     // simulate a publish after subscribing
     useSubscription().subscribe.mockImplementation(
       (topic, stateHooks, callback) => {
-        callback([mockOperationRunning]);
+        if (topic === SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS) {
+          callback([mockOperationRunning]);
+        }
       }
     );
 
@@ -84,7 +86,9 @@ describe('useBatchOperations', () => {
     // simulate a publish after subscribing
     useSubscription().subscribe.mockImplementation(
       (topic, stateHooks, callback) => {
-        callback([mockOperationFinished]);
+        if (topic === SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS) {
+          callback([mockOperationFinished]);
+        }
       }
     );
 
@@ -160,7 +164,7 @@ describe('useBatchOperations', () => {
     expect(useDataManager().poll.unregister).toHaveBeenCalledTimes(2);
   });
 
-  it('should get batch operations on CREATE_BATCH_OPERATION publish', () => {
+  it('should load the new batch operation', () => {
     // given
     let publish;
 
@@ -172,14 +176,15 @@ describe('useBatchOperations', () => {
       }
     );
 
-    renderHook(() => useBatchOperations(), {});
+    const {result} = renderHook(() => useBatchOperations(), {});
 
     // when
     act(() => {
-      publish();
+      publish(mockOperationRunning);
     });
 
     // then
-    expect(useDataManager().getBatchOperations).toHaveBeenCalledTimes(1);
+
+    expect(result.current.batchOperations).toEqual([mockOperationRunning]);
   });
 });

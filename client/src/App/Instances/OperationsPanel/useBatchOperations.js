@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useEffect, useState, useCallback} from 'react';
+import {useEffect, useReducer, useCallback} from 'react';
 
 import {
   SUBSCRIPTION_TOPIC,
@@ -16,12 +16,30 @@ import useDataManager from 'modules/hooks/useDataManager';
 
 import {hasRunningBatchOperations} from './service';
 
+const ACTIONS = Object.freeze({
+  LOAD: 'LOAD',
+  PREPEND: 'PREPEND'
+});
+const INITIAL_STATE = [];
+function reducer(state, action) {
+  switch (action.type) {
+    case ACTIONS.LOAD: {
+      return action.payload;
+    }
+    case ACTIONS.PREPEND: {
+      return [action.payload, ...state];
+    }
+    default:
+      throw new Error('Unexpected action type');
+  }
+}
+
 /**
  * This hook initially fetches and stores the first 20 batch operations and subscribes to further updates.
  * When active batch operations are fetched, is starts polling until all fetched operations are finished.
  */
 export default function useBatchOperations() {
-  const [batchOperations, setBatchOperations] = useState([]);
+  const [batchOperations, dispatch] = useReducer(reducer, INITIAL_STATE);
   const {subscribe, unsubscribe} = useSubscription();
   const dataManager = useDataManager();
 
@@ -34,20 +52,24 @@ export default function useBatchOperations() {
     subscribe(
       SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS,
       LOADING_STATE.LOADED,
-      setBatchOperations
+      payload => {
+        dispatch({type: ACTIONS.LOAD, payload});
+      }
     );
 
     subscribe(
       SUBSCRIPTION_TOPIC.CREATE_BATCH_OPERATION,
       LOADING_STATE.LOADED,
-      requestBatchOperations
+      payload => {
+        dispatch({type: ACTIONS.PREPEND, payload});
+      }
     );
 
     return () => {
       unsubscribe();
       dataManager.poll.unregister(POLL_TOPICS.OPERATIONS);
     };
-  }, [subscribe, unsubscribe, dataManager.poll, requestBatchOperations]);
+  }, [subscribe, unsubscribe, dataManager.poll]);
 
   useEffect(subscribeToOperations, []);
 
