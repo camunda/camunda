@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
+import org.camunda.bpm.model.xml.ModelParseException;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
@@ -18,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.reader.ExternalEventSequenceCountReader;
+import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
@@ -33,7 +35,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.BpmnModelUtility.extractFlowNodeNames;
-import static org.camunda.optimize.service.util.BpmnModelUtility.parseBpmnModel;
 
 @AllArgsConstructor
 @Component
@@ -112,7 +113,7 @@ public class EventCountService {
     }
 
     final Map<String, EventMappingDto> currentMappings = eventCountRequestDto.getMappings();
-    final BpmnModelInstance bpmnModelForXml = parseBpmnModel(eventCountRequestDto.getXml());
+    final BpmnModelInstance bpmnModelForXml = parseXmlIntoBpmnModel(eventCountRequestDto.getXml());
 
     validateEventCountSuggestionsParameters(eventCountRequestDto, currentMappings, bpmnModelForXml);
 
@@ -132,6 +133,14 @@ public class EventCountService {
       .stream()
       .filter(eventCountDto -> eventCountIsPresentInEventTypes(eventCountDto, suggestedEvents))
       .forEach(eventCountDto -> eventCountDto.setSuggested(true));
+  }
+
+  private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
+    try {
+      return BpmnModelUtility.parseBpmnModel(xmlString);
+    } catch (ModelParseException ex) {
+      throw new BadRequestException("The provided xml is not valid");
+    }
   }
 
   private Set<EventTypeDto> getSuggestedExternalEventsForGivenMappings(final List<EventTypeDto> eventsMappedToIncomingNodes,

@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.events;
 
 import lombok.AllArgsConstructor;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.xml.ModelParseException;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
@@ -14,6 +16,7 @@ import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.BadRequestException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -32,13 +35,23 @@ public class EventMappingCleanupService {
       .map(this::mapToEventTypeDto)
       .collect(Collectors.toSet());
 
-    final Set<String> currentModelFlowNodeIds = BpmnModelUtility.extractFlowNodeNames(requestDto.getXml()).keySet();
+    final Set<String> currentModelFlowNodeIds =
+      BpmnModelUtility.extractFlowNodeNames(parseXmlIntoBpmnModel(requestDto.getXml()))
+      .keySet();
     return requestDto.getMappings().entrySet()
       .stream()
       .filter(mappingEntry -> currentModelFlowNodeIds.contains(mappingEntry.getKey()))
       .peek(entry -> cleanupOutOfSourceScopeMappings(entry.getValue(), availableEventTypeDtos))
       .filter(mappingEntry -> mappingEntry.getValue().getStart() != null || mappingEntry.getValue().getEnd() != null)
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
+    try {
+      return BpmnModelUtility.parseBpmnModel(xmlString);
+    } catch (ModelParseException ex) {
+      throw new BadRequestException("The provided xml is not valid");
+    }
   }
 
   private EventCountRequestDto mapToEventCountRequest(final EventMappingCleanupRequestDto requestDto) {

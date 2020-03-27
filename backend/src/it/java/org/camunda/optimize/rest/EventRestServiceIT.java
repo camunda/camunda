@@ -585,6 +585,31 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getEventCounts_withSuggestions_invalidBpmnXml() {
+    // given
+    EventTypeDto previousMappedEvent = eventTypeFromEvent(backendKetchupEvent);
+    EventTypeDto nextMappedEvent = eventTypeFromEvent(ketchupMayoEvent);
+
+    // Suggestions request for flow node with event mapped before and after
+    EventCountRequestDto eventCountRequestDto = EventCountRequestDto.builder()
+      .targetFlowNodeId(SECOND_TASK_ID)
+      .xml("some invalid BPMN xml")
+      .mappings(ImmutableMap.of(
+        FIRST_TASK_ID, createEventMappingDto(null, previousMappedEvent),
+        THIRD_TASK_ID, createEventMappingDto(nextMappedEvent, null)
+      ))
+      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .build();
+
+    // when
+    Response response = createPostEventCountsRequest(eventCountRequestDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExistWithNullFields() {
     // given
     EventTypeDto nextMappedEventWithNullProperties = eventTypeFromEvent(nullGroupEvent);

@@ -14,6 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.BaseElement;
 import org.camunda.bpm.model.bpmn.instance.Event;
+import org.camunda.bpm.model.xml.ModelParseException;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -47,7 +48,6 @@ import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BpmnModelUtility;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
@@ -86,7 +86,6 @@ public class EventProcessService {
   );
 
   private final EngineDefinitionAuthorizationService definitionAuthorizationService;
-  private final ConfigurationService configurationService;
   private final ReportService reportService;
   private final ReportRelationService reportRelationService;
   private final CollectionWriter collectionWriter;
@@ -389,7 +388,7 @@ public class EventProcessService {
 
   private void validateMappingsForProvidedXml(final EventProcessMappingDto eventProcessMappingDto) {
     final Optional<BpmnModelInstance> modelInstance = Optional.ofNullable(eventProcessMappingDto.getXml())
-      .map(BpmnModelUtility::parseBpmnModel);
+      .map(this::parseXmlIntoBpmnModel);
     Set<String> flowNodeIds = modelInstance.map(instance -> extractFlowNodeNames(instance).keySet())
       .orElse(Collections.emptySet());
 
@@ -417,6 +416,14 @@ public class EventProcessService {
       .stream()
       .map(BaseElement::getId)
       .collect(toList());
+  }
+
+  private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
+    try {
+      return BpmnModelUtility.parseBpmnModel(xmlString);
+    } catch (ModelParseException ex) {
+      throw new BadRequestException("The provided xml is not valid");
+    }
   }
 
 }

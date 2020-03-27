@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -93,6 +94,27 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
 
     // then
     assertThat(cleanedMapping).containsOnlyKeys(BPMN_START_EVENT_ID);
+  }
+
+  @Test
+  public void cleanupMissingFlowNodeMappings_invalidBpmnXmlSupplied() {
+    // given
+    final String definitionKey = THREE_EVENT_PROCESS_DEFINITION_KEY_1;
+    deployAndStartThreeEventProcessReturnXml(definitionKey);
+
+    runEngineImportAndEventProcessing();
+
+    // when
+    final Response response = eventProcessClient.createCleanupEventProcessMappingsRequest(
+      EventMappingCleanupRequestDto.builder()
+        .mappings(Collections.emptyMap())
+        .xml("invalid BPMN Xml")
+        .eventSources(ImmutableList.of(createSimpleCamundaEventSourceEntry(definitionKey, ALL_VERSIONS)))
+        .build()
+    ).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

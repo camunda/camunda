@@ -286,7 +286,10 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // given event mappings but BPMN event has start and end mapping
     EventProcessMappingDto eventProcessMappingDto =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
-        Collections.singletonMap(BPMN_START_EVENT_ID, createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+        Collections.singletonMap(
+          BPMN_START_EVENT_ID,
+          createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
+        ),
         "process name", simpleDiagramXml
       );
 
@@ -294,6 +297,19 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then a bad request exception is thrown
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createEventProcessMapping_invalidModelXml() {
+    // when
+    Response response = eventProcessClient
+      .createCreateEventProcessMappingRequest(
+        eventProcessClient.buildEventProcessMappingDto("some invalid BPMN xml")
+      )
+      .execute();
+
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
@@ -497,6 +513,29 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       Collections.singletonMap(USER_TASK_ID_THREE, createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())),
       "process name",
       simpleDiagramXml
+    );
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto)
+      .execute();
+
+    // then a bad request exception is thrown
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void updateEventProcessMapping_invalidModelXml() {
+    // given existing event based process
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
+      eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml)
+    );
+
+    // when
+    EventProcessMappingDto updateDto = eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+      Collections.singletonMap(
+        USER_TASK_ID_THREE, createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
+      ),
+      "new process name",
+      "some invalid BPMN xml"
     );
     Response response = eventProcessClient
       .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto)

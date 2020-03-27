@@ -134,12 +134,12 @@ public class EventProcessClient {
     createDeleteEventProcessMappingRequest(eventProcessMappingId).execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public EventProcessMappingDto buildEventProcessMappingDto(final String xmlPath) {
-    return buildEventProcessMappingDto(null, xmlPath);
+  public EventProcessMappingDto buildEventProcessMappingDto(final String xml) {
+    return buildEventProcessMappingDto(null, xml);
   }
 
-  public EventProcessMappingDto buildEventProcessMappingDto(final String name, final String xmlPath) {
-    return buildEventProcessMappingDtoWithMappingsAndExternalEventSource(null, name, xmlPath);
+  public EventProcessMappingDto buildEventProcessMappingDto(final String name, final String xml) {
+    return buildEventProcessMappingDtoWithMappingsAndExternalEventSource(null, name, xml);
   }
 
   public List<EventProcessRoleRestDto> getEventProcessMappingRoles(final String eventProcessMappingId) {
@@ -167,7 +167,7 @@ public class EventProcessClient {
   public EventProcessMappingDto buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
     final Map<String, EventMappingDto> flowNodeEventMappingsDto,
     final String name,
-    final String xmlPath) {
+    final String xml) {
     List<EventSourceEntryDto> externalEventSource = new ArrayList<>();
     externalEventSource.add(EventSourceEntryDto.builder()
                               .id(IdGenerator.getNextId())
@@ -177,7 +177,7 @@ public class EventProcessClient {
     return buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
       flowNodeEventMappingsDto,
       name,
-      xmlPath,
+      xml,
       externalEventSource
     );
   }
