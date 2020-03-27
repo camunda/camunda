@@ -57,17 +57,36 @@ export default class Publisher {
     }
   }
 
-  async pubLoadingStates(topic, callback, staticContent) {
-    this.publish(topic, {state: this.loadingStates.LOADING});
+  async pubLoadingStates(topics, callback, staticContent) {
+    if (typeof topics !== 'string' && !Array.isArray(topics)) {
+      throw new Error('Unexpected argument type (topics)');
+    }
+
+    const disptachLoading = topic => {
+      this.publish(topic, {state: this.loadingStates.LOADING});
+    };
+    const dispatchResponse = topic => {
+      this.publish(topic, {
+        state: !!response.error
+          ? this.loadingStates.LOAD_FAILED
+          : this.loadingStates.LOADED,
+        response,
+        ...(!!staticContent && {staticContent})
+      });
+    };
+
+    if (typeof topics === 'string') {
+      disptachLoading(topics);
+    } else {
+      topics.forEach(disptachLoading);
+    }
 
     const response = await callback();
 
-    this.publish(topic, {
-      state: !!response.error
-        ? this.loadingStates.LOAD_FAILED
-        : this.loadingStates.LOADED,
-      response,
-      ...(!!staticContent && {staticContent: staticContent})
-    });
+    if (typeof topics === 'string') {
+      dispatchResponse(topics);
+    } else {
+      topics.forEach(dispatchResponse);
+    }
   }
 }

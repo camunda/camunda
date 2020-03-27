@@ -11,20 +11,14 @@ export default function useSubscription() {
   const dataManager = useDataManager();
   const [subscriptions, setSubscription] = useState({});
 
-  function sanitizeStates(statehooks) {
-    if (typeof statehooks === 'string') {
-      return [statehooks];
-    } else if (Array.isArray(statehooks)) {
-      return statehooks;
-    }
-  }
-
   function subscribe(topic, statehooks, cb) {
-    const sanitizedStates = sanitizeStates(statehooks);
+    if (typeof statehooks !== 'string' && !Array.isArray(statehooks)) {
+      throw new Error('Unexpected statehooks type');
+    }
 
     const subscription = {
       [topic]: ({state, response}) => {
-        if (!!sanitizedStates.includes(state)) {
+        if (statehooks.includes(state)) {
           cb(response);
         }
       }

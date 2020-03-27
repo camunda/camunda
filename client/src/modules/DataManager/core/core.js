@@ -43,7 +43,8 @@ const {
   LOAD_STATE_DEFINITIONS,
   LOAD_BATCH_OPERATIONS,
   CREATE_BATCH_OPERATION,
-  LOAD_SEQUENCE_FLOWS
+  LOAD_SEQUENCE_FLOWS,
+  OPERATION_APPLIED
 } = SUBSCRIPTION_TOPIC;
 
 export class DataManager {
@@ -72,7 +73,7 @@ export class DataManager {
     const operationType = typeStrings[typeStrings.length - 1];
 
     this.publisher.pubLoadingStates(
-      `OPERATION_APPLIED_${operationType}_${id}`,
+      [`OPERATION_APPLIED_${operationType}_${id}`, OPERATION_APPLIED],
       () => applyOperation(id, payload)
     );
   };

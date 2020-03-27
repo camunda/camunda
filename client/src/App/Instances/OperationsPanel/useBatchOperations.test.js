@@ -46,7 +46,7 @@ describe('useBatchOperations', () => {
 
     // then
     expect(result.current.batchOperations).toEqual([]);
-    expect(useSubscription().subscribe).toHaveBeenCalledTimes(2);
+    expect(useSubscription().subscribe).toHaveBeenCalledTimes(3);
     expect(useSubscription().subscribe).toHaveBeenNthCalledWith(
       1,
       SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS,
@@ -171,6 +171,30 @@ describe('useBatchOperations', () => {
     useSubscription().subscribe.mockImplementation(
       (topic, stateHooks, callback) => {
         if (topic === SUBSCRIPTION_TOPIC.CREATE_BATCH_OPERATION) {
+          publish = callback;
+        }
+      }
+    );
+
+    const {result} = renderHook(() => useBatchOperations(), {});
+
+    // when
+    act(() => {
+      publish(mockOperationRunning);
+    });
+
+    // then
+
+    expect(result.current.batchOperations).toEqual([mockOperationRunning]);
+  });
+
+  it('should load the new single operation', () => {
+    // given
+    let publish;
+
+    useSubscription().subscribe.mockImplementation(
+      (topic, stateHooks, callback) => {
+        if (topic === SUBSCRIPTION_TOPIC.OPERATION_APPLIED) {
           publish = callback;
         }
       }
