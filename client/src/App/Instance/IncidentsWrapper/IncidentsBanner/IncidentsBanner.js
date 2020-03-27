@@ -7,10 +7,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import pluralSuffix from 'modules/utils/pluralSuffix';
-
+import {EXPAND_STATE} from 'modules/constants';
 import * as Styled from './styled';
 
-export default function IncidentsBanner({id, count, onClick, isOpen}) {
+export default function IncidentsBanner({
+  id,
+  count,
+  onClick,
+  isOpen,
+  expandState
+}) {
   const isOnlyOne = count === 1;
   const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${pluralSuffix(
     count,
@@ -19,14 +25,16 @@ export default function IncidentsBanner({id, count, onClick, isOpen}) {
   const title = `View ${pluralSuffix(count, 'Incident')} in Instance ${id}. `;
 
   return (
-    <Styled.IncidentsBanner
-      onClick={onClick}
-      title={title}
-      isExpanded={isOpen}
-      iconButtonTheme="incidentsBanner"
-    >
-      {errorMessage}
-    </Styled.IncidentsBanner>
+    expandState !== EXPAND_STATE.COLLAPSED && (
+      <Styled.IncidentsBanner
+        onClick={onClick}
+        title={title}
+        isExpanded={isOpen}
+        iconButtonTheme="incidentsBanner"
+      >
+        {errorMessage}
+      </Styled.IncidentsBanner>
+    )
   );
 }
 
@@ -34,5 +42,6 @@ IncidentsBanner.propTypes = {
   id: PropTypes.string.isRequired,
   count: PropTypes.number.isRequired,
   onClick: PropTypes.func,
-  isOpen: PropTypes.bool
+  isOpen: PropTypes.bool,
+  expandState: PropTypes.string
 };
