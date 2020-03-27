@@ -47,7 +47,7 @@ public class AuthenticationService {
 
     boolean userIsAuthenticated = authenticationResults.stream().anyMatch(AuthenticationResultDto::isAuthenticated);
     if (userIsAuthenticated) {
-      final boolean isAuthorized = engineAuthorizationService.isAuthorizedToAccessOptimize(credentials.getUsername());
+      final boolean isAuthorized = engineAuthorizationService.isUserAuthorizedToAccessOptimize(credentials.getUsername());
       if (isAuthorized) {
         return createUserSession(credentials);
       } else {

@@ -196,13 +196,13 @@ public class IdentityRestServiceIT extends AbstractIT {
     // given
     switch (expectedIdentity.getType()) {
       case USER:
-        engineIntegrationExtension.addUser(expectedIdentity.getId(), "password");
+        authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
           embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       case GROUP:
-        engineIntegrationExtension.createGroup(expectedIdentity.getId());
+        authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
           embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
@@ -229,13 +229,13 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     switch (expectedIdentity.getType()) {
       case USER:
-        engineIntegrationExtension.addUser(expectedIdentity.getId(), "password");
+        authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
           embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       case GROUP:
-        engineIntegrationExtension.createGroup(expectedIdentity.getId());
+        authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
           embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
@@ -254,6 +254,50 @@ public class IdentityRestServiceIT extends AbstractIT {
       UserDto.Fields.email, UserDto.Fields.firstName, UserDto.Fields.lastName
     );
     assertThat(identity.getName()).isEqualTo(expectedIdentity.getId());
+  }
+
+  @ParameterizedTest
+  @MethodSource("identities")
+  public void getIdentityById_notPresentInCache_postFetchFailsIfIdentityNotAuthorizedToAccessOptimize(final IdentityWithMetadataDto expectedIdentity) {
+    // given
+    switch (expectedIdentity.getType()) {
+      case USER:
+        engineIntegrationExtension.addUser(expectedIdentity.getId(), "password");
+        assertThat(
+          embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+        ).isEmpty();
+        break;
+      case GROUP:
+        engineIntegrationExtension.createGroup(expectedIdentity.getId());
+        assertThat(
+          embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+        ).isEmpty();
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported identity type: " + expectedIdentity.getType());
+    }
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetIdentityById(expectedIdentity.getId())
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    switch (expectedIdentity.getType()) {
+      case USER:
+        assertThat(
+          embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+        ).isEmpty();
+        break;
+      case GROUP:
+        assertThat(
+          embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+        ).isEmpty();
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported identity type: " + expectedIdentity.getType());
+    }
   }
 
   @Test

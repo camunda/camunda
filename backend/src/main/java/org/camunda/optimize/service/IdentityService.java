@@ -77,24 +77,38 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   public Optional<UserDto> getUserById(final String userId) {
     return syncedIdentityCache.getUserIdentityById(userId)
       .map(Optional::of)
-      .orElseGet(() -> engineContextFactory.getConfiguredEngines().stream()
-        .map(engineContext -> engineContext.getUserById(userId))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .peek(this::addIdentity)
-        .findFirst()
+      .orElseGet(
+        () -> {
+          if (applicationAuthorizationService.isUserAuthorizedToAccessOptimize(userId)) {
+            return engineContextFactory.getConfiguredEngines().stream()
+              .map(engineContext -> engineContext.getUserById(userId))
+              .filter(Optional::isPresent)
+              .map(Optional::get)
+              .peek(this::addIdentity)
+              .findFirst();
+          } else {
+            return Optional.empty();
+          }
+        }
       );
   }
 
   public Optional<GroupDto> getGroupById(final String groupId) {
     return syncedIdentityCache.getGroupIdentityById(groupId)
       .map(Optional::of)
-      .orElseGet(() -> engineContextFactory.getConfiguredEngines().stream()
-        .map(engineContext -> engineContext.getGroupById(groupId))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .peek(this::addIdentity)
-        .findFirst()
+      .orElseGet(
+        () -> {
+          if (applicationAuthorizationService.isGroupAuthorizedToAccessOptimize(groupId)) {
+            return engineContextFactory.getConfiguredEngines().stream()
+              .map(engineContext -> engineContext.getGroupById(groupId))
+              .filter(Optional::isPresent)
+              .map(Optional::get)
+              .peek(this::addIdentity)
+              .findFirst();
+          } else {
+            return Optional.empty();
+          }
+        }
       );
   }
 

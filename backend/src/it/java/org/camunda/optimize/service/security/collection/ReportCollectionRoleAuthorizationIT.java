@@ -125,6 +125,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
@@ -143,6 +144,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
@@ -162,6 +164,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     addKermitGroupRoleToCollectionAsDefaultUser(RoleType.VIEWER, collectionId);
@@ -182,6 +185,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     addKermitGroupRoleToCollectionAsDefaultUser(RoleType.EDITOR, collectionId);
@@ -200,6 +204,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
@@ -217,6 +222,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
@@ -234,6 +240,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(identityAndReport));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
@@ -257,6 +264,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
@@ -275,6 +283,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(reportScenario));
 
@@ -297,6 +306,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
@@ -315,6 +325,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(identityAndReport));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
@@ -337,6 +348,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -354,6 +366,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
@@ -370,6 +383,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(reportScenario));
 
@@ -393,6 +407,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(identityAndReport));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
@@ -412,6 +427,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -429,6 +445,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(reportScenario));
 
@@ -448,6 +465,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
@@ -464,6 +482,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(
       KERMIT_USER, getEngineResourceTypeForReportType(reportScenario)
     );
@@ -497,6 +516,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(engineDefinitionResourceType);
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
@@ -525,6 +545,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollection();
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
@@ -548,6 +569,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -565,6 +587,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     createPrivateReportAsDefaultUser(reportScenario);
 
@@ -584,6 +607,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -604,6 +628,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(reportScenario));
 
@@ -633,6 +658,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
@@ -649,6 +675,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(reportScenario));
 
@@ -668,6 +695,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(identityAndReport));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
@@ -688,6 +716,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String reportId = createReportInCollectionAsDefaultUser(identityAndReport.reportScenario, collectionId);
@@ -706,6 +735,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(reportScenario));
 
@@ -725,6 +755,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -742,6 +773,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
@@ -758,6 +790,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(reportScenario));
 
@@ -777,6 +810,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(identityAndReport));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
@@ -797,6 +831,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(identityAndReport));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
@@ -816,6 +851,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
     authorizationClient.grantAllResourceAuthorizationsForKermit(getEngineResourceTypeForReportType(reportScenario));
 
@@ -835,6 +871,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -914,7 +951,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     collectionClient.addScopeEntriesToCollection(collectionId, Arrays.asList(collectionScope1, collectionScope2));
 
-    engineIntegrationExtension.createGroup(TEST_GROUP, TEST_GROUP);
+    authorizationClient.createGroupAndGrantOptimizeAccess(TEST_GROUP, TEST_GROUP);
     authorizationClient.addUserAndGrantOptimizeAccess(USER_KERMIT);
     authorizationClient.addUserAndGrantOptimizeAccess(USER_MISS_PIGGY);
     authorizationClient.grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(

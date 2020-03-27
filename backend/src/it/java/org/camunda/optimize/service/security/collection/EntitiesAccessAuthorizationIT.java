@@ -38,6 +38,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     addRoleToCollectionAsDefaultUser(

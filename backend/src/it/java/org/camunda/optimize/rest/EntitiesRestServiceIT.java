@@ -302,17 +302,16 @@ public class EntitiesRestServiceIT extends AbstractIT {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
     final String user1 = "user1";
-    engineIntegrationExtension.addUser(user1, user1);
-    engineIntegrationExtension.grantUserOptimizeAccess(user1);
+    authorizationClient.addUserAndGrantOptimizeAccess(user1);
     addRoleToCollection(collectionId, user1, IdentityType.USER);
     final String groupA = "groupA";
-    engineIntegrationExtension.createGroup(groupA);
+    authorizationClient.createGroupAndGrantOptimizeAccess(groupA, groupA);
     addRoleToCollection(collectionId, groupA, IdentityType.GROUP);
     final String groupB = "groupB";
-    engineIntegrationExtension.createGroup(groupB);
+    authorizationClient.createGroupAndGrantOptimizeAccess(groupB, groupB);
     addRoleToCollection(collectionId, groupB, IdentityType.GROUP);
     final String groupC = "groupC";
-    engineIntegrationExtension.createGroup(groupC);
+    authorizationClient.createGroupAndGrantOptimizeAccess(groupC, groupC);
     addRoleToCollection(collectionId, groupC, IdentityType.GROUP);
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

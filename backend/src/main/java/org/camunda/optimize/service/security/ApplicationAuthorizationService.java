@@ -50,9 +50,15 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
    * Notice that this implies that false is returned also if there is no
    * grant nor revoke.
    */
-  public boolean isAuthorizedToAccessOptimize(final String userId) {
+  public boolean isUserAuthorizedToAccessOptimize(final String userId) {
     userAuthorizationLoadingCache.invalidate(userId);
     final List<String> authorizedEngines = getAuthorizedEnginesForUser(userId);
+    return !authorizedEngines.isEmpty();
+  }
+
+  public boolean isGroupAuthorizedToAccessOptimize(final String groupId) {
+    userAuthorizationLoadingCache.invalidate(groupId);
+    final List<String> authorizedEngines = getAuthorizedEnginesForGroup(groupId);
     return !authorizedEngines.isEmpty();
   }
 

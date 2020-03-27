@@ -116,7 +116,7 @@ public class SingleSignOnFilter implements Filter {
   private void createSessionIfIsAuthorizedToAccessOptimize(HttpServletRequest servletRequest,
                                                            HttpServletResponse servletResponse,
                                                            String userName) {
-    boolean isAuthorized = applicationAuthorizationService.isAuthorizedToAccessOptimize(userName);
+    boolean isAuthorized = applicationAuthorizationService.isUserAuthorizedToAccessOptimize(userName);
     if (isAuthorized) {
       logger.debug("User [{}] was authorized to access Optimize, creating new session token.", userName);
       String securityToken = sessionService.createAuthToken(userName);

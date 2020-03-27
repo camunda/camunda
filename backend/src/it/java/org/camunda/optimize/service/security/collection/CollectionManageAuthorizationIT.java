@@ -37,6 +37,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     addRoleToCollectionAsDefaultUser(
       identityAndRole.roleType,
@@ -59,6 +60,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -111,6 +113,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     final CollectionRoleDto collectionRoleDto = createJohnEditorRoleDto();
@@ -128,6 +131,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     final CollectionRoleDto collectionRoleDto = createJohnEditorRoleDto();
@@ -168,6 +172,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when + then
@@ -191,6 +196,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -232,6 +238,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -248,6 +255,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -282,6 +290,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
@@ -297,6 +306,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
@@ -332,6 +342,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -348,6 +359,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -383,6 +395,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -404,6 +417,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when

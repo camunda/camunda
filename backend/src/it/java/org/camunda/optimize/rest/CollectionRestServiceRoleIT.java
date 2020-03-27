@@ -197,6 +197,9 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     engineIntegrationExtension.addUser(USER_MISS_PIGGY, USER_MISS_PIGGY);
     engineIntegrationExtension.addUserToGroup(USER_MISS_PIGGY, TEST_GROUP);
 
+    GroupDto testGroupDto = new GroupDto(TEST_GROUP, TEST_GROUP);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(testGroupDto);
+
     final CollectionRoleDto roleDto = new CollectionRoleDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),
       RoleType.EDITOR
@@ -222,7 +225,9 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void getRolesNoGroupMetadataAvailable() {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    engineIntegrationExtension.createGroup(TEST_GROUP, null);
+
+    GroupDto testGroupDto = new GroupDto(TEST_GROUP, null);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(testGroupDto);
 
     final CollectionRoleDto roleDto = new CollectionRoleDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),
@@ -292,7 +297,9 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void addExistingGroupIdWithoutIdentityType() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    engineIntegrationExtension.createGroup(TEST_GROUP, TEST_GROUP);
+
+    GroupDto testGroupDto = new GroupDto(TEST_GROUP, TEST_GROUP);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(testGroupDto);
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(
@@ -402,7 +409,9 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void addGroupRole() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    engineIntegrationExtension.createGroup(TEST_GROUP, TEST_GROUP);
+
+    GroupDto testGroupDto = new GroupDto(TEST_GROUP, TEST_GROUP);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(testGroupDto);
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(

@@ -43,6 +43,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     createSimpleProcessReportInCollectionAsDefaultUser(collectionId);
