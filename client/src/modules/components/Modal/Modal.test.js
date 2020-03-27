@@ -26,6 +26,7 @@ const mountNode = (props = {}) => {
         onModalClose={onModalClose}
         isVisible={isVisible}
         className="modal-root"
+        size="BIG"
       >
         <Modal.Header>
           <HeaderContent />

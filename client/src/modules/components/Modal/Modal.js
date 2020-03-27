@@ -10,6 +10,7 @@ import {createPortal} from 'react-dom';
 
 import Button from 'modules/components/Button';
 
+import {SIZES} from './constants';
 import * as Styled from './styled';
 
 const ModalContext = React.createContext({});
@@ -37,7 +38,8 @@ export default class Modal extends React.Component {
     onModalClose: PropTypes.func.isRequired,
     isVisible: PropTypes.bool.isRequired,
     children: PropTypes.node,
-    className: PropTypes.string
+    className: PropTypes.string,
+    size: PropTypes.oneOf(Object.values(SIZES)).isRequired
   };
 
   constructor(props) {
@@ -120,7 +122,7 @@ export default class Modal extends React.Component {
   addKeyHandler = (keyCode, handler) => this.keyHandlers.set(keyCode, handler);
 
   render() {
-    const {onModalClose, children, className, isVisible} = this.props;
+    const {onModalClose, children, className, isVisible, size} = this.props;
     return createPortal(
       <Styled.Transition
         in={isVisible}
@@ -133,7 +135,7 @@ export default class Modal extends React.Component {
           ref={this.modalRef}
           role="dialog"
         >
-          <Styled.ModalContent>
+          <Styled.ModalContent size={size}>
             <ModalContext.Provider
               value={{
                 onModalClose,

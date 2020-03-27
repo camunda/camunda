@@ -103,7 +103,9 @@ const withCollapsablePanel = Component => {
 const CollapsablePanelProviderWithSharedState = withSharedState(
   CollapsablePanelProvider
 );
+
 export {
+  CollapsablePanelContext as default,
   CollapsablePanelConsumer,
   CollapsablePanelProviderWithSharedState as CollapsablePanelProvider,
   withCollapsablePanel

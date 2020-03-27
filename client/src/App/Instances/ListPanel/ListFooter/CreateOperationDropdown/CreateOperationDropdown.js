@@ -4,17 +4,50 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState, useContext} from 'react';
 import PropTypes from 'prop-types';
-import * as Styled from './styled';
 
 import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
+import pluralSuffix from 'modules/utils/pluralSuffix';
 import Dropdown from 'modules/components/Dropdown';
+import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionContext';
+import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
+import * as Styled from './styled';
+import ConfirmOperationModal from '../ConfirmOperationModal';
 import useOperationApply from './useOperationApply';
 
-const CreateOperationDropdown = ({label}) => {
+const ACTION_NAMES = {
+  [OPERATION_TYPE.RESOLVE_INCIDENT]: 'retry',
+  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: 'cancel'
+};
+
+const CreateOperationDropdown = ({label, selectedCount}) => {
+  const [modalMode, setModalMode] = useState(null);
   const {applyBatchOperation} = useOperationApply();
+  const {reset} = useInstanceSelectionContext();
+  const {expandOperations} = useContext(CollapsablePanelContext);
+
+  const closeModal = () => {
+    setModalMode(null);
+  };
+
+  const handleApplyClick = () => {
+    closeModal();
+    applyBatchOperation(modalMode);
+    expandOperations();
+  };
+
+  const handleCancelClick = () => {
+    closeModal();
+    reset();
+  };
+
+  const getBodyText = () =>
+    `About to ${ACTION_NAMES[modalMode]} ${pluralSuffix(
+      selectedCount,
+      'Instance'
+    )}.`;
 
   return (
     <Styled.DropdownContainer>
@@ -24,22 +57,28 @@ const CreateOperationDropdown = ({label}) => {
         label={label}
       >
         <Dropdown.Option
-          onClick={() => applyBatchOperation(OPERATION_TYPE.RESOLVE_INCIDENT)}
+          onClick={() => setModalMode(OPERATION_TYPE.RESOLVE_INCIDENT)}
           label="Retry"
         />
         <Dropdown.Option
-          onClick={() =>
-            applyBatchOperation(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)
-          }
+          onClick={() => setModalMode(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)}
           label="Cancel"
         />
       </Dropdown>
+      <ConfirmOperationModal
+        isVisible={!!modalMode}
+        onModalClose={closeModal}
+        bodyText={getBodyText()}
+        onApplyClick={handleApplyClick}
+        onCancelClick={handleCancelClick}
+      />
     </Styled.DropdownContainer>
   );
 };
 
 CreateOperationDropdown.propTypes = {
-  label: PropTypes.string
+  label: PropTypes.string.isRequired,
+  selectedCount: PropTypes.number.isRequired
 };
 
 export default CreateOperationDropdown;

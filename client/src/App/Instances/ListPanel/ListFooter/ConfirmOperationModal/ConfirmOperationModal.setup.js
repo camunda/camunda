@@ -4,5 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './Modal';
-export {SIZES} from './constants';
+export const mockProps = {
+  onModalClose: jest.fn(),
+  onApplyClick: jest.fn(),
+  onCancelClick: jest.fn(),
+  isVisible: true,
+  bodyText: 'My Content'
+};

@@ -4,5 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './Modal';
-export {SIZES} from './constants';
+export {default} from './ConfirmOperationModal';
