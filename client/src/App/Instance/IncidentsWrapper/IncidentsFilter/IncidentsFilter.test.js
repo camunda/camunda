@@ -14,7 +14,7 @@ import {mount} from 'enzyme';
 
 import {testData} from './IncidentsFilter.setup';
 
-const mountNode = props =>
+const mountNode = (props) =>
   mount(
     <ThemeProvider>
       <IncidentsFilter {...testData.props.default} {...props} />
@@ -46,9 +46,7 @@ describe('IncidentsFilter', () => {
       'ul[data-test="incidents-by-errorType"]'
     );
 
-    const FirstPill = PillsByErrorType.find('li')
-      .at(0)
-      .find(Pill);
+    const FirstPill = PillsByErrorType.find('li').at(0).find(Pill);
     expect(FirstPill.props().type).toEqual('FILTER');
     expect(FirstPill.text()).toContain(
       testData.props.default.errorTypes.get('Condition error').errorType
@@ -61,9 +59,7 @@ describe('IncidentsFilter', () => {
   it('should render correctly a flownode pill', () => {
     const PillsByFlowNode = node.find('ul[data-test="incidents-by-flowNode"]');
 
-    const FirstPill = PillsByFlowNode.find('li')
-      .at(0)
-      .find(Pill);
+    const FirstPill = PillsByFlowNode.find('li').at(0).find(Pill);
     expect(FirstPill.props().type).toEqual('FILTER');
     expect(FirstPill.text()).toContain(
       testData.props.default.flowNodes.get('flowNodeId_exclusiveGateway')
@@ -93,13 +89,9 @@ describe('IncidentsFilter', () => {
 
     expect(node.find(Dropdown.Option).length).toEqual(1);
 
-    expect(
-      node
-        .find(Dropdown.Option)
-        .at(0)
-        .find(Pill)
-        .text()
-    ).toContain('error type 4');
+    expect(node.find(Dropdown.Option).at(0).find(Pill).text()).toContain(
+      'error type 4'
+    );
   });
 
   it('should mark selected pills as active', () => {
@@ -109,7 +101,7 @@ describe('IncidentsFilter', () => {
     // FlowNode Filter
     const PillsByFlowNode = node.find('ul[data-test="incidents-by-flowNode"]');
 
-    PillsByFlowNode.find(Pill).forEach(pill => {
+    PillsByFlowNode.find(Pill).forEach((pill) => {
       expect(pill.props().isActive).toEqual(false);
     });
 
@@ -118,7 +110,7 @@ describe('IncidentsFilter', () => {
       'ul[data-test="incidents-by-errorType"]'
     );
 
-    PillsByErrorType.find(Pill).forEach(pill => {
+    PillsByErrorType.find(Pill).forEach((pill) => {
       expect(pill.props().isActive).toEqual(false);
     });
 

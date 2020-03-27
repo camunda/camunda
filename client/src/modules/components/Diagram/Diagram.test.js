@@ -23,7 +23,7 @@ import * as Styled from './styled';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
-  const FakeCSSTransition = jest.fn(props =>
+  const FakeCSSTransition = jest.fn((props) =>
     props.in ? <FakeTransition>{props.children}</FakeTransition> : null
   );
 
@@ -31,19 +31,19 @@ jest.mock('react-transition-group', () => {
     CSSTransition: FakeCSSTransition,
     Transition: FakeTransition,
     TransitionGroup: jest.fn(({children}) => {
-      return children.map(transtion => {
+      return children.map((transtion) => {
         const completedTransition = {...transtion};
         completedTransition.props = {...transtion.props, in: true};
         return completedTransition;
       });
-    })
+    }),
   };
 });
 
 const mockProps = {
   definitions: parsedDiagram.definitions,
   onFlowNodeSelection: jest.fn(),
-  expandState: 'DEFAULT'
+  expandState: 'DEFAULT',
 };
 
 function mountNode(customProps = {}) {
@@ -116,7 +116,7 @@ describe('Diagram', () => {
     const node = shallowRenderNode({
       definitions: mockProps.definitions,
       theme: 'dark',
-      expandState: 'DEFAULT'
+      expandState: 'DEFAULT',
     });
     const oldViewer = node.instance().Viewer;
 
@@ -139,7 +139,7 @@ describe('Diagram', () => {
       expect(container).toBe(nodeInstance.myRef.current);
       expect(bpmnRenderer).toEqual({
         defaultFillColor: Colors.uiDark02,
-        defaultStrokeColor: Colors.darkDiagram
+        defaultStrokeColor: Colors.darkDiagram,
       });
     });
 
@@ -153,7 +153,7 @@ describe('Diagram', () => {
       expect(container).toBe(nodeInstance.myRef.current);
       expect(bpmnRenderer).toEqual({
         defaultFillColor: Colors.uiLight04,
-        defaultStrokeColor: Colors.uiLight06
+        defaultStrokeColor: Colors.uiLight06,
       });
     });
   });
@@ -207,7 +207,7 @@ describe('Diagram', () => {
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
         selectedFlowNodeId: null,
-        onFlowNodeSelection
+        onFlowNodeSelection,
       });
 
       // when
@@ -223,7 +223,7 @@ describe('Diagram', () => {
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
         selectedFlowNodeId: 'nodeA',
-        onFlowNodeSelection
+        onFlowNodeSelection,
       });
 
       // when
@@ -239,7 +239,7 @@ describe('Diagram', () => {
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
         selectedFlowNodeId: 'nodeA',
-        onFlowNodeSelection
+        onFlowNodeSelection,
       });
 
       // when
@@ -257,7 +257,7 @@ describe('Diagram', () => {
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
         selectedFlowNodeId: null,
-        onFlowNodeSelection
+        onFlowNodeSelection,
       });
 
       // when
@@ -275,7 +275,7 @@ describe('Diagram', () => {
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
         selectedFlowNodeId: null,
-        onFlowNodeSelection
+        onFlowNodeSelection,
       });
 
       // when
@@ -293,7 +293,7 @@ describe('Diagram', () => {
       createActivity({state: STATE.ACTIVE}),
       createActivity({state: STATE.INCIDENT}),
       createActivity({state: STATE.COMPLETED}),
-      createActivity({state: STATE.TERMINATED})
+      createActivity({state: STATE.TERMINATED}),
     ];
 
     it('should render flownode state overlays', () => {
@@ -318,8 +318,8 @@ describe('Diagram', () => {
           active: 0,
           canceled: 0,
           incidents: 7,
-          completed: 0
-        }
+          completed: 0,
+        },
       ];
       const node = mountNode({flowNodesStatistics});
 
@@ -338,8 +338,8 @@ describe('Diagram', () => {
           active: 7,
           canceled: 0,
           incidents: 0,
-          completed: 0
-        }
+          completed: 0,
+        },
       ];
       const node = mountNode({flowNodesStatistics});
 
@@ -358,8 +358,8 @@ describe('Diagram', () => {
           active: 0,
           canceled: 0,
           incidents: 0,
-          completed: 7
-        }
+          completed: 7,
+        },
       ];
       const node = mountNode({flowNodesStatistics});
 
@@ -378,8 +378,8 @@ describe('Diagram', () => {
           active: 0,
           canceled: 7,
           incidents: 0,
-          completed: 0
-        }
+          completed: 0,
+        },
       ];
       const node = mountNode({flowNodesStatistics});
 
@@ -398,7 +398,7 @@ describe('Diagram', () => {
       jobId: mockMetadata.data['jobId'],
       activityInstanceId: mockMetadata.data['activityInstanceId'],
       startDate: mockMetadata.data['startDate'],
-      endDate: mockMetadata.data['endDate']
+      endDate: mockMetadata.data['endDate'],
     };
 
     it('should render a popover containing the summary of the metadata', () => {
@@ -406,7 +406,7 @@ describe('Diagram', () => {
       const node = mountNode({
         metadata: mockMetadata,
         selectedFlowNodeId: activityId,
-        selectedFlowNodeName: activityId
+        selectedFlowNodeName: activityId,
       });
 
       // then
@@ -426,7 +426,7 @@ describe('Diagram', () => {
       node = mountNode({
         selectedFlowNodeId: activityId,
         selectedFlowNodeName: activityId,
-        metadata: {...mockMetadata, isSingleRowPeterCase: true}
+        metadata: {...mockMetadata, isSingleRowPeterCase: true},
       });
 
       const overlayNode = node.find('Overlay');
@@ -448,7 +448,7 @@ describe('Diagram', () => {
       const node = mountNode({
         selectedFlowNodeId: activityId,
         selectedFlowNodeName: activityId,
-        metadata: {isMultiRowPeterCase: true, instancesCount: 2}
+        metadata: {isMultiRowPeterCase: true, instancesCount: 2},
       });
 
       // then
@@ -463,7 +463,7 @@ describe('Diagram', () => {
     it('should initially set color for each processed sequence flows', () => {
       // given
       const node = shallowRenderNode({
-        processedSequenceFlows: ['sequence-flow-1', 'sequence-flow-2']
+        processedSequenceFlows: ['sequence-flow-1', 'sequence-flow-2'],
       });
 
       // when
@@ -496,12 +496,12 @@ describe('Diagram', () => {
     it('should remove previous colors for sequence flows and update color for each new processed sequence flows', () => {
       // given
       const node = shallowRenderNode({
-        processedSequenceFlows: ['sequence-flow-1']
+        processedSequenceFlows: ['sequence-flow-1'],
       });
 
       // when
       node.setProps({
-        processedSequenceFlows: ['sequence-flow-1', 'sequence-flow-2']
+        processedSequenceFlows: ['sequence-flow-1', 'sequence-flow-2'],
       });
 
       const elementRegistry = node.instance().Viewer.get('elementRegistry');

@@ -42,7 +42,7 @@ describe('SubMenu', () => {
     node.instance().handleButtonMouseOver();
 
     expect(node.instance().props.onStateChange).toHaveBeenCalledWith({
-      isSubMenuOpen: true
+      isSubMenuOpen: true,
     });
   });
 
@@ -55,7 +55,7 @@ describe('SubMenu', () => {
 
     //then
     expect(node.instance().props.onStateChange).toHaveBeenCalledWith({
-      isSubMenuOpen: false
+      isSubMenuOpen: false,
     });
   });
 
@@ -68,7 +68,7 @@ describe('SubMenu', () => {
 
     //Then
     expect(node.instance().props.onStateChange).toHaveBeenCalledWith({
-      isSubmenuFixed: true
+      isSubmenuFixed: true,
     });
   });
 
@@ -82,7 +82,7 @@ describe('SubMenu', () => {
     //Then
     expect(node.instance().props.onStateChange).toHaveBeenCalledWith({
       isSubMenuOpen: false,
-      isSubmenuFixed: false
+      isSubmenuFixed: false,
     });
   });
 
@@ -96,7 +96,7 @@ describe('SubMenu', () => {
     // Then
     expect(node.instance().props.onStateChange).toHaveBeenCalledWith({
       isSubMenuOpen: true,
-      isSubmenuFixed: true
+      isSubmenuFixed: true,
     });
   });
 });

@@ -15,7 +15,7 @@ export const FiltersWrapper = themed(styled.div`
 
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
 
   &:before {
@@ -28,7 +28,7 @@ export const FiltersWrapper = themed(styled.div`
 
     background-color: ${themeStyle({
       dark: Colors.uiDark03,
-      light: Colors.uiLight02
+      light: Colors.uiLight02,
     })};
   }
 `);
@@ -49,7 +49,7 @@ export const FilterRow = styled.div`
 export const Label = themed(styled.span`
   color: ${themeStyle({
     dark: '#fff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   position: relative;
   width: 120px;
@@ -72,7 +72,7 @@ export const Label = themed(styled.span`
 
     background-color: ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 `);
@@ -98,17 +98,17 @@ export const MoreDropdown = themed(styled(Dropdown)`
 
     background-color: ${themeStyle({
       dark: Colors.uiDark05,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
     border: 1px solid
       ${themeStyle({
         dark: Colors.uiDark06,
-        light: Colors.uiLight03
+        light: Colors.uiLight03,
       })};
     color: 1px solid
       ${themeStyle({
         dark: Colors.uiDark02,
-        light: Colors.uiDark04
+        light: Colors.uiDark04,
       })};
 
     &:active,
@@ -174,7 +174,7 @@ export const ButtonWrapper = themed(styled.div`
 
     background-color: ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 `);

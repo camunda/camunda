@@ -20,7 +20,7 @@ export default function Variables({
   setEditMode,
   Placeholder,
   Overlay,
-  isLoading
+  isLoading,
 }) {
   const MODE = {EDIT: 'edit', ADD: 'add'};
 
@@ -114,7 +114,7 @@ export default function Variables({
   }
 
   renderEditButtons.propTypes = {
-    isDisabled: PropTypes.bool
+    isDisabled: PropTypes.bool,
   };
 
   function renderInlineEdit(propValue) {
@@ -130,13 +130,13 @@ export default function Variables({
             data-test="edit-value"
             placeholder="Value"
             value={value}
-            onChange={e => setValue(e.target.value)}
+            onChange={(e) => setValue(e.target.value)}
             onHeightChange={handleHeightChange}
           />
         </Styled.EditInputTD>
         <Styled.EditButtonsTD>
           {renderEditButtons({
-            isDisabled: valueHasntChanged
+            isDisabled: valueHasntChanged,
           })}
         </Styled.EditButtonsTD>
       </>
@@ -145,8 +145,9 @@ export default function Variables({
 
   function renderInlineAdd() {
     const variableAlreadyExists =
-      !!variables.map(variable => variable.name).filter(name => name === key)
-        .length > 0;
+      !!variables
+        .map((variable) => variable.name)
+        .filter((name) => name === key).length > 0;
     const isVariableEmpty = key.trim() === '';
     return (
       <Styled.TR data-test="add-key-row">
@@ -157,7 +158,7 @@ export default function Variables({
             data-test="add-key"
             placeholder="Variable"
             value={key}
-            onChange={e => setKey(e.target.value)}
+            onChange={(e) => setKey(e.target.value)}
           />
         </Styled.EditInputTD>
         <Styled.EditInputTD>
@@ -168,13 +169,13 @@ export default function Variables({
             minRows={1}
             maxRows={4}
             value={value}
-            onChange={e => setValue(e.target.value)}
+            onChange={(e) => setValue(e.target.value)}
             onHeightChange={scrollToBottom}
           />
         </Styled.EditInputTD>
         <Styled.AddButtonsTD>
           {renderEditButtons({
-            isDisabled: variableAlreadyExists || isVariableEmpty
+            isDisabled: variableAlreadyExists || isVariableEmpty,
           })}
         </Styled.AddButtonsTD>
       </Styled.TR>
@@ -291,5 +292,5 @@ Variables.propTypes = {
   isLoading: PropTypes.bool,
   // render props
   Placeholder: PropTypes.func,
-  Overlay: PropTypes.func
+  Overlay: PropTypes.func,
 };

@@ -41,7 +41,7 @@ export const Label = themed(styled.span`
     type === 'info'
       ? themeStyle({
           dark: infoDarkStyle,
-          light: infoLightStyle
+          light: infoLightStyle,
         })
       : errorStyle}
 

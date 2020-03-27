@@ -12,5 +12,5 @@ export const mockDefaultProps = {
   onChange: jest.fn(),
   checkIsNameComplete: jest.fn(),
   checkIsValueComplete: jest.fn(),
-  checkIsValueValid: jest.fn()
+  checkIsValueValid: jest.fn(),
 };

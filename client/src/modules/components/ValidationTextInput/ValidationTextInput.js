@@ -28,7 +28,7 @@ function ValidationTextInput({
     if (checkIsComplete(value)) setIsComplete(true);
   }, [checkIsComplete, checkIsValid, value]);
 
-  const handleChange = async event => {
+  const handleChange = async (event) => {
     const {value} = event.target;
 
     onChange(event);
@@ -40,7 +40,7 @@ function ValidationTextInput({
     }
   };
 
-  const handleBlur = event => {
+  const handleBlur = (event) => {
     const {value} = event.target;
     if (!checkIsComplete(value)) {
       setIsComplete(false);
@@ -49,14 +49,14 @@ function ValidationTextInput({
 
   return (
     <Styled.InputContainer>
-      {React.Children.map(children, child =>
+      {React.Children.map(children, (child) =>
         React.cloneElement(child, {
           ...props,
           name,
           value,
           onChange: handleChange,
           onBlur: handleBlur,
-          hasError: !isValid || !isComplete
+          hasError: !isValid || !isComplete,
         })
       )}
       {(!isComplete || !isValid) && <Styled.WarningIcon>!</Styled.WarningIcon>}
@@ -71,13 +71,13 @@ ValidationTextInput.propTypes = {
   onFilterChange: PropTypes.func,
   name: PropTypes.string,
   value: PropTypes.string,
-  children: PropTypes.node
+  children: PropTypes.node,
 };
 
 ValidationTextInput.defaultProps = {
   checkIsComplete: () => true,
   checkIsValid: () => true,
-  onFilterChange: () => {}
+  onFilterChange: () => {},
 };
 
 export default ValidationTextInput;

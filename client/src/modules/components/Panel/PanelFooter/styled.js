@@ -21,14 +21,14 @@ export const Footer = themed(styled.div`
   border-top: solid 1px
     ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 `);

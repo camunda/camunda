@@ -12,7 +12,7 @@ describe('trimVariable', () => {
       trimVariable({name: '  myVar  \n  \r  ', value: '   "1" \r  \n  '})
     ).toEqual({
       name: 'myVar',
-      value: '"1"'
+      value: '"1"',
     });
   });
 
@@ -21,31 +21,31 @@ describe('trimVariable', () => {
 
     expect(trimVariable({name: 'myVar', value})).toEqual({
       name: 'myVar',
-      value
+      value,
     });
   });
 
   it('should return variable with empty spaces', () => {
     expect(trimVariable({name: '', value: ''})).toEqual({
       name: '',
-      value: ''
+      value: '',
     });
   });
 
   it('should trim and return variable with empty spaces', () => {
     expect(trimVariable({name: '  \r ', value: ' \n '})).toEqual({
       name: '',
-      value: ''
+      value: '',
     });
 
     expect(trimVariable({name: '', value: ' \n '})).toEqual({
       name: '',
-      value: ''
+      value: '',
     });
 
     expect(trimVariable({name: ' \r ', value: ''})).toEqual({
       name: '',
-      value: ''
+      value: '',
     });
   });
 });

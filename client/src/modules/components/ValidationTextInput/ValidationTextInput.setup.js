@@ -9,5 +9,5 @@ import {mockResolvedAsyncFn} from 'modules/testUtils';
 export const mocks = {
   onChange: jest.fn(),
   onFilterChange: mockResolvedAsyncFn(),
-  checkIsComplete: jest.fn()
+  checkIsComplete: jest.fn(),
 };

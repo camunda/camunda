@@ -12,30 +12,30 @@ import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
 export const NodeIcon = themed(styled(BasicFlowNodeIcon)`
   color: ${themeStyle({
     dark: '#fff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   opacity: ${({isSelected}) =>
     isSelected
       ? themeStyle({
           dark: 0.8,
-          light: 0.65
+          light: 0.65,
         })
       : themeStyle({
           dark: 0.75,
-          light: 0.6
+          light: 0.6,
         })};
 `);
 
 const selectionStyle = css`
   border-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
   border-width: 1px 0px 0px 1px;
   background: ${themeStyle({
     dark: Colors.darkSelectedOdd,
-    light: Colors.lightSelectedOdd
+    light: Colors.lightSelectedOdd,
   })};
   color: '#fff';
 
@@ -60,12 +60,12 @@ export const Bar = themed(styled.div`
   flex-grow: 1;
   background: ${themeStyle({
     dark: Colors.darkItemEven,
-    light: Colors.lightItemEven
+    light: Colors.lightItemEven,
   })};
 
   border-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
   border-width: 1px 0px 0px 1px;
   border-style: solid;
@@ -81,27 +81,27 @@ export const NodeName = themed(styled.span`
       isSelected
         ? themeStyle({
             dark: 'rgba(255,255,255,0.25)',
-            light: 'rgba(98, 98, 110,0.25)'
+            light: 'rgba(98, 98, 110,0.25)',
           })
         : themeStyle({
             dark: Colors.uiDark04,
-            light: Colors.uiLight05
+            light: Colors.uiLight05,
           })};
 
   color: ${themeStyle({
     dark: '#fff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   opacity: ${({isSelected}) =>
     isSelected
       ? themeStyle({
           dark: 0.9,
-          light: 1
+          light: 1,
         })
       : themeStyle({
           dark: 0.9,
-          light: 0.9
+          light: 0.9,
         })};
 
   font-weight: ${({isBold}) => (isBold ? 'bold' : '')};

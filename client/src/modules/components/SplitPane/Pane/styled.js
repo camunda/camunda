@@ -11,7 +11,7 @@ import CollapseButton from 'modules/components/CollapseButton';
 import {EXPAND_STATE} from 'modules/constants';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
-const isCollapsed = expandState => expandState === EXPAND_STATE.COLLAPSED;
+const isCollapsed = (expandState) => expandState === EXPAND_STATE.COLLAPSED;
 
 export const Pane = styled(
   withStrippedProps([
@@ -20,7 +20,7 @@ export const Pane = styled(
     'onAddToSelectionById',
     'onSelectedInstancesUpdate',
     'onTreeRowSelection',
-    'onFlowNodeSelection'
+    'onFlowNodeSelection',
   ])(Panel)
 )`
   ${({expandState}) => (isCollapsed(expandState) ? '' : `flex-grow: 1;`)};

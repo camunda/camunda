@@ -34,7 +34,7 @@ export const DiagramCanvas = themed(styled.div`
     stroke: ${Colors.selections};
     fill: ${themeStyle({
       dark: 'rgba(58, 82, 125, 0.5)',
-      light: 'rgba(189, 212, 253, 0.5)'
+      light: 'rgba(189, 212, 253, 0.5)',
     })} !important;
   }
 `);

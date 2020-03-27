@@ -21,7 +21,7 @@ describe('OperationsEntry', () => {
         {...mockProps}
         batchOperation={{
           ...OPERATIONS.RETRY,
-          instancesCount: 1
+          instancesCount: 1,
         }}
       />
     );
@@ -44,7 +44,7 @@ describe('OperationsEntry', () => {
         {...mockProps}
         batchOperation={{
           ...OPERATIONS.CANCEL,
-          instancesCount: 1
+          instancesCount: 1,
         }}
       />
     );
@@ -68,7 +68,7 @@ describe('OperationsEntry', () => {
         {...mockProps}
         batchOperation={{
           ...OPERATIONS.EDIT,
-          instancesCount: 1
+          instancesCount: 1,
         }}
       />
     );
@@ -93,7 +93,7 @@ describe('OperationsEntry', () => {
         {...mockProps}
         batchOperation={{
           ...OPERATIONS.EDIT,
-          instancesCount: 1
+          instancesCount: 1,
         }}
       />
     );
@@ -113,7 +113,7 @@ describe('OperationsEntry', () => {
         {...mockProps}
         batchOperation={{
           ...OPERATIONS.EDIT,
-          instancesCount: 3
+          instancesCount: 3,
         }}
       />
     );
@@ -133,7 +133,7 @@ describe('OperationsEntry', () => {
         {...mockProps}
         batchOperation={{
           ...OPERATIONS.EDIT,
-          instancesCount: 3
+          instancesCount: 3,
         }}
       />
     );

@@ -26,23 +26,23 @@ export default class IncidentsTable extends React.Component {
     selectedFlowNodeInstanceIds: PropTypes.array,
     sorting: PropTypes.object.isRequired,
     onIncidentSelection: PropTypes.func.isRequired,
-    onSort: PropTypes.func.isRequired
+    onSort: PropTypes.func.isRequired,
   };
 
   static defaultProps = {
     forceSpinner: false,
-    selectedFlowNodeInstanceIds: []
+    selectedFlowNodeInstanceIds: [],
   };
 
   state = {
-    isModalVisibile: false
+    isModalVisibile: false,
   };
 
   toggleModal = ({content, title}) => {
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       isModalVisibile: !prevState.isModalVisibile,
       modalContent: content ? content : null,
-      modalTitle: title ? title : null
+      modalTitle: title ? title : null,
     }));
   };
 
@@ -70,7 +70,7 @@ export default class IncidentsTable extends React.Component {
     e.stopPropagation();
     this.toggleModal({
       content: incident.errorMessage,
-      title: `Flow Node "${incident.flowNodeName}" Error`
+      title: `Flow Node "${incident.flowNodeName}" Error`,
     });
   };
 
@@ -78,7 +78,7 @@ export default class IncidentsTable extends React.Component {
     const {
       selectedFlowNodeInstanceIds,
       onIncidentSelection,
-      instanceId
+      instanceId,
     } = this.props;
     let newSelection;
 
@@ -97,8 +97,8 @@ export default class IncidentsTable extends React.Component {
 
   render() {
     const {incidents, sorting, selectedFlowNodeInstanceIds} = this.props;
-    const isJobIdPresent = incidents =>
-      !Boolean(incidents.find(item => Boolean(item.jobId)));
+    const isJobIdPresent = (incidents) =>
+      !Boolean(incidents.find((item) => Boolean(item.jobId)));
 
     return (
       <>

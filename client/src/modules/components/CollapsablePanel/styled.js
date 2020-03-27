@@ -45,7 +45,7 @@ export const Collapsable = themed(styled.div`
 
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
 
   transition: width 0.2s ease-out;
@@ -65,7 +65,7 @@ const panelStyle = css`
 const backgroundColors = css`
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
 `;
 
@@ -127,11 +127,11 @@ export const ExpandButton = themed(styled.button`
 
   background: ${themeStyle({
     dark: Colors.uiDark03,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
   color: ${themeStyle({
     dark: '#fff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   border: none;
   border-radius: inherit;

@@ -23,5 +23,5 @@ export default function Disclaimer(props) {
 }
 
 Disclaimer.propTypes = {
-  isEnterprise: PropTypes.bool
+  isEnterprise: PropTypes.bool,
 };

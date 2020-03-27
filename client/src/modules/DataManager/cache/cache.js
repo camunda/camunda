@@ -22,7 +22,7 @@ export default class RequestCache {
     } else {
       this.set(name, {
         params,
-        apiCall
+        apiCall,
       });
       return params;
     }

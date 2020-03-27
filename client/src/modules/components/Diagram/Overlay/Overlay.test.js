@@ -16,7 +16,7 @@ const mockProps = {
   isViewerLoaded: true,
   id: 'someId',
   type: 'someType',
-  position: {top: 20, left: 20}
+  position: {top: 20, left: 20},
 };
 
 const Child = () => <div>Child</div>;

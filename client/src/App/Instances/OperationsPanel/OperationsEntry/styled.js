@@ -10,28 +10,28 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 const runningEntryStyles = css`
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
-    light: Colors.uiLight04
+    light: Colors.uiLight04,
   })};
 `;
 
 const finishedEntryStyles = css`
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
 `;
 
 export const Entry = themed(styled.li`
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)'
+    light: 'rgba(98, 98, 110, 0.9)',
   })};
 
   ${({isRunning}) => (isRunning ? runningEntryStyles : finishedEntryStyles)}
 
   border-top: ${themeStyle({
     dark: `solid 1px ${Colors.uiDark04}`,
-    light: `solid 1px ${Colors.uiLight05}`
+    light: `solid 1px ${Colors.uiLight05}`,
   })};
   display: flex;
   flex-direction: column;
@@ -72,7 +72,7 @@ export const InstancesCount = themed(styled.div`
   font-size: 14px;
   color: ${themeStyle({
     dark: `${Colors.darkLinkDefault}`,
-    light: `${Colors.lightLinkDefault}`
+    light: `${Colors.lightLinkDefault}`,
   })};
   text-decoration: underline;
 

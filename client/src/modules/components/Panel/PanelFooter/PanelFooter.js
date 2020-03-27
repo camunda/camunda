@@ -17,6 +17,6 @@ export default function PanelFooter(props) {
 PanelFooter.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
-  ])
+    PropTypes.node,
+  ]),
 };

@@ -18,20 +18,20 @@ import * as Styled from './styled';
 import {
   createWorkflow,
   createIncidentsByError,
-  createInstanceByError
+  createInstanceByError,
 } from 'modules/testUtils';
 
 const InstancesByErrorMessage = [
   createInstanceByError({
-    workflows: [createWorkflow()]
+    workflows: [createWorkflow()],
   }),
   createInstanceByError({
     errorMessage: 'No space left on device.',
     workflows: [
       createWorkflow({name: 'workflowA', version: 42}),
-      createWorkflow({name: 'workflowB', version: 23})
-    ]
-  })
+      createWorkflow({name: 'workflowB', version: 23}),
+    ],
+  }),
 ];
 
 const mockIncidentsByError = createIncidentsByError(InstancesByErrorMessage);

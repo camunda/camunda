@@ -6,7 +6,7 @@
 
 export const MOCK_TOPICS = {
   FETCH_STATE_FOO: 'FETCH_STATE_FOO',
-  FETCH_STATE_BAR: 'FETCH_STATE_BAR'
+  FETCH_STATE_BAR: 'FETCH_STATE_BAR',
 };
 
 export const topicFoo = MOCK_TOPICS.FETCH_STATE_FOO;
@@ -14,5 +14,5 @@ export const topicBar = MOCK_TOPICS.FETCH_STATE_BAR;
 
 export const mockApiData = {
   success: {data: ['someData', 'someMoreData'], error: null},
-  error: {data: [], error: 'fetchError'}
+  error: {data: [], error: 'fetchError'},
 };

@@ -7,11 +7,11 @@
 export const SIZE = {
   SMALL: 'small',
   MEDIUM: 'medium',
-  LARGE: 'large'
+  LARGE: 'large',
 };
 
 export const COLOR = {
   MAIN: 'main',
   PRIMARY: 'primary',
-  SECONDARY: 'secondary'
+  SECONDARY: 'secondary',
 };

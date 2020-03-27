@@ -20,7 +20,7 @@ export function getFlowNodes(bpmnElements) {
   let flowNodes = [];
   let ids = [];
 
-  Object.values(bpmnElements).forEach(bpmnElement => {
+  Object.values(bpmnElements).forEach((bpmnElement) => {
     if (isFlowNode(bpmnElement)) {
       flowNodes.push(bpmnElement);
       ids.push(bpmnElement.id);

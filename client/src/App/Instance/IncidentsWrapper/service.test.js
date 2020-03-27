@@ -12,21 +12,21 @@ const data = [
     id: '1',
     creationTime: '2017-03-14T15:17:21.296+0000',
     errorType: 'No more retries left',
-    flowNodeName: 'Task B'
+    flowNodeName: 'Task B',
   }),
   createIncident({
     id: '2',
     creationTime: '2018-12-14T15:17:32.919+0000',
     errorType: 'I/O error',
-    flowNodeName: 'Task A'
+    flowNodeName: 'Task A',
   }),
 
   createIncident({
     id: '3',
     creationTime: '2018-03-14T15:17:32.919+0000',
     errorType: 'I/O error',
-    flowNodeName: 'Task C'
-  })
+    flowNodeName: 'Task C',
+  }),
 ];
 
 describe('sortData', () => {

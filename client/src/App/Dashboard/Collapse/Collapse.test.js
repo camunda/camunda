@@ -12,7 +12,7 @@ import * as Styled from './styled';
 const mockProps = {
   content: <div data-test="content">content</div>,
   header: <div data-test="header">header</div>,
-  buttonTitle: 'someTitle'
+  buttonTitle: 'someTitle',
 };
 
 describe('Collapse', () => {

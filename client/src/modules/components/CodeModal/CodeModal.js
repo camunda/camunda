@@ -20,7 +20,7 @@ function CodeModal({
   isModalVisible,
   mode,
   headline,
-  initialValue
+  initialValue,
 }) {
   function onModalClose() {
     handleModalClose();
@@ -59,7 +59,7 @@ CodeModal.propTypes = {
   isModalVisible: PropTypes.bool,
   headline: PropTypes.string,
   initialValue: PropTypes.string,
-  mode: PropTypes.oneOf(Object.values(MODE)).isRequired
+  mode: PropTypes.oneOf(Object.values(MODE)).isRequired,
 };
 
 export default CodeModal;

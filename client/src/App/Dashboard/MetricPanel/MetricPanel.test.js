@@ -14,7 +14,7 @@ import {
   countStoreEmpty,
   countStoreComplete,
   countStoreWithoutIncidents,
-  countStoreLoading
+  countStoreLoading,
 } from './MetricPanel.setup';
 
 jest.mock('modules/utils/bpmn');

@@ -10,7 +10,7 @@ export function concatUrl({
   bpmnProcessId,
   versions,
   hasFinishedInstances,
-  name
+  name,
 }) {
   const versionId = versions.length === 1 ? versions[0].version : 'all';
 
@@ -18,13 +18,13 @@ export function concatUrl({
     workflow: bpmnProcessId,
     version: versionId.toString(),
     incidents: true,
-    active: true
+    active: true,
   };
 
   if (hasFinishedInstances) {
     Object.assign(filter, {
       completed: true,
-      canceled: true
+      canceled: true,
     });
   }
 

@@ -18,7 +18,7 @@ export default function Select(props) {
       aria-disabled={props.disabled}
     >
       <option value="">{placeholder}</option>
-      {options.map(option => {
+      {options.map((option) => {
         return (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -32,9 +32,9 @@ export default function Select(props) {
 Select.propTypes = {
   options: PropTypes.array.isRequired,
   placeholder: PropTypes.string,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
 };
 
 Select.defaulProps = {
-  placeholder: 'Select'
+  placeholder: 'Select',
 };

@@ -58,7 +58,7 @@ const newIconStyle = css`
   position: relative;
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   top: 0px;

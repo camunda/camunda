@@ -11,7 +11,7 @@ import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 const borderColor = themeStyle({
   dark: Colors.uiDark04,
-  light: Colors.uiLight05
+  light: Colors.uiLight05,
 });
 
 export const Transition = themed(styled(TransitionComponent)`

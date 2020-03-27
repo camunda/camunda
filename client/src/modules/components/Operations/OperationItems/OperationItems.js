@@ -12,7 +12,7 @@ import * as Styled from './styled';
 
 const iconsMap = {
   [OPERATION_TYPE.RESOLVE_INCIDENT]: <Styled.RetryIcon />,
-  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: <Styled.CancelIcon />
+  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: <Styled.CancelIcon />,
 };
 
 export default function OperationItems(props) {
@@ -22,7 +22,7 @@ export default function OperationItems(props) {
 }
 
 OperationItems.propTypes = {
-  children: PropTypes.node.isRequired
+  children: PropTypes.node.isRequired,
 };
 
 OperationItems.Item = function Item({title, onClick, type, ...rest}) {
@@ -40,5 +40,5 @@ OperationItems.Item = function Item({title, onClick, type, ...rest}) {
 OperationItems.Item.propTypes = {
   type: PropTypes.oneOf(Object.keys(OPERATION_TYPE)).isRequired,
   onClick: PropTypes.func,
-  title: PropTypes.string
+  title: PropTypes.string,
 };

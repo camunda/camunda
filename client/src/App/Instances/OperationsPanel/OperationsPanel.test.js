@@ -16,7 +16,7 @@ import {mockProps} from './OperationsPanel.setup';
 
 import {
   mockOperationFinished,
-  mockOperationRunning
+  mockOperationRunning,
 } from './OperationsPanel.setup';
 
 import useBatchOperations from './useBatchOperations';
@@ -34,7 +34,7 @@ describe('OperationsPanel', () => {
   beforeEach(() => {
     useBatchOperations.mockReturnValue({
       batchOperations: [],
-      requestBatchOperations: jest.fn()
+      requestBatchOperations: jest.fn(),
     });
   });
 
@@ -58,7 +58,7 @@ describe('OperationsPanel', () => {
     // given
     useBatchOperations.mockReturnValue({
       batchOperations: [mockOperationRunning, mockOperationFinished],
-      requestBatchOperations: jest.fn()
+      requestBatchOperations: jest.fn(),
     });
 
     // when
@@ -81,7 +81,7 @@ describe('OperationsPanel', () => {
     // given
     useBatchOperations.mockReturnValue({
       batchOperations: [],
-      requestBatchOperations: jest.fn()
+      requestBatchOperations: jest.fn(),
     });
 
     // when
@@ -98,10 +98,7 @@ describe('OperationsPanel', () => {
     const node = mountOperationsPanel();
 
     // when
-    node
-      .find('[data-test="expand-button"]')
-      .first()
-      .simulate('click');
+    node.find('[data-test="expand-button"]').first().simulate('click');
 
     // then
     const expandedPanel = node.find('[data-test="expanded-panel"]');
@@ -116,15 +113,9 @@ describe('OperationsPanel', () => {
     const node = mountOperationsPanel();
 
     // when
-    node
-      .find('[data-test="expand-button"]')
-      .first()
-      .simulate('click');
+    node.find('[data-test="expand-button"]').first().simulate('click');
 
-    node
-      .find('[data-test="collapse-button"]')
-      .first()
-      .simulate('click');
+    node.find('[data-test="collapse-button"]').first().simulate('click');
 
     // then
     const expandedPanel = node.find('[data-test="expanded-panel"]');
@@ -138,7 +129,7 @@ describe('OperationsPanel', () => {
     // given
     useBatchOperations.mockReturnValue({
       batchOperations: [mockOperationRunning, mockOperationFinished],
-      requestBatchOperations: jest.fn()
+      requestBatchOperations: jest.fn(),
     });
 
     // when
@@ -155,7 +146,7 @@ describe('OperationsPanel', () => {
       endDate: null,
       instancesCount: 1,
       operationsFinishedCount: 0,
-      operationsTotalCount: 1
+      operationsTotalCount: 1,
     });
     expect(secondEntry.prop('batchOperation')).toEqual({
       id: '5678',
@@ -163,7 +154,7 @@ describe('OperationsPanel', () => {
       endDate: '2020-02-06T15:37:29.699+0100',
       instancesCount: 2,
       operationsFinishedCount: 2,
-      operationsTotalCount: 2
+      operationsTotalCount: 2,
     });
   });
 
@@ -171,7 +162,7 @@ describe('OperationsPanel', () => {
     // given
     useBatchOperations.mockReturnValue({
       batchOperations: [mockOperationRunning, mockOperationFinished],
-      requestBatchOperations: jest.fn()
+      requestBatchOperations: jest.fn(),
     });
 
     // when

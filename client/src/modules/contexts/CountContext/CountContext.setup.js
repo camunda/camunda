@@ -8,18 +8,18 @@ const values = {undefined: undefined, null: null, integer: 123};
 
 const filters = {
   integerValues: {
-    filterCount: values.integer
+    filterCount: values.integer,
   },
   undefiendValues: {
-    filterCount: values.undefined
+    filterCount: values.undefined,
   },
   nullValues: {
-    filterCount: values.null
-  }
+    filterCount: values.null,
+  },
 };
 
 export const localStorage = {filters};
 export const dataRequests = {
   coreStatistics: {running: 23, active: 13, withIncidents: 123},
-  totalCount: 23
+  totalCount: 23,
 };

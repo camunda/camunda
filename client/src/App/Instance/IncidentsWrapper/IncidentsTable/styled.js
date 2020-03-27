@@ -29,7 +29,7 @@ export const Index = styled.span`
   opacity: 0.6;
   color: ${themeStyle({
     dark: Colors.white,
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 `;
 
@@ -61,7 +61,7 @@ export const FirstTH = themed(styled(TH)`
     width: 1px;
     background: ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 
@@ -73,7 +73,7 @@ export const FirstTH = themed(styled(TH)`
     width: 1px;
     background: ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 `);
@@ -91,7 +91,7 @@ export const IncidentTR = themed(styled(TR)`
       },
       light: ({isSelected}) => {
         return isSelected ? Colors.lightSelectedOdd : Colors.lightItemOdd;
-      }
+      },
     })};
   }
   &:nth-child(even) {
@@ -101,7 +101,7 @@ export const IncidentTR = themed(styled(TR)`
       },
       light: ({isSelected}) => {
         return isSelected ? Colors.lightSelectedEven : Colors.lightItemEven;
-      }
+      },
     })};
   }
 
@@ -111,7 +111,7 @@ export const IncidentTR = themed(styled(TR)`
         !isSelected &&
         themeStyle({
           dark: Colors.darkTreeHover,
-          light: Colors.lightButton05
+          light: Colors.lightButton05,
         })
       );
     }};
@@ -139,17 +139,17 @@ export const Fake = themed(styled.span`
     border-bottom: 1px solid
       ${themeStyle({
         dark: Colors.uiDark04,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
     border-top: 1px solid
       ${themeStyle({
         dark: Colors.uiDark04,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
 
     background-color: ${themeStyle({
       dark: Colors.uiDark03,
-      light: Colors.uiLight02
+      light: Colors.uiLight02,
     })};
   }
 `);

@@ -14,12 +14,12 @@ import {
   fetchSequenceFlows,
   fetchVariables,
   applyBatchOperation,
-  applyOperation
+  applyOperation,
 } from 'modules/api/instances';
 
 import {
   fetchInstancesByWorkflow,
-  fetchIncidentsByError
+  fetchIncidentsByError,
 } from 'modules/api/incidents';
 
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
@@ -44,7 +44,7 @@ const {
   LOAD_BATCH_OPERATIONS,
   CREATE_BATCH_OPERATION,
   LOAD_SEQUENCE_FLOWS,
-  OPERATION_APPLIED
+  OPERATION_APPLIED,
 } = SUBSCRIPTION_TOPIC;
 
 export class DataManager {
@@ -55,11 +55,11 @@ export class DataManager {
   }
 
   // Public api to interact with the publisher.
-  subscribe = subscriptions => {
+  subscribe = (subscriptions) => {
     this.publisher.subscribe(subscriptions);
   };
 
-  unsubscribe = subscriptions => {
+  unsubscribe = (subscriptions) => {
     this.publisher.unsubscribe(subscriptions);
   };
 
@@ -96,11 +96,11 @@ export class DataManager {
   getVariables = (instanceId, scopeId) => {
     this.fetchAndPublish(SUBSCRIPTION_TOPIC.LOAD_VARIABLES, fetchVariables, {
       instanceId,
-      scopeId
+      scopeId,
     });
   };
 
-  getActivityInstancesTreeData = instance => {
+  getActivityInstancesTreeData = (instance) => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE,
       fetchActivityInstancesTree,
@@ -109,7 +109,7 @@ export class DataManager {
     );
   };
 
-  getEvents = instanceId => {
+  getEvents = (instanceId) => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_EVENTS,
       fetchEvents,
@@ -117,7 +117,7 @@ export class DataManager {
     );
   };
 
-  getIncidents = instance => {
+  getIncidents = (instance) => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_INCIDENTS,
       fetchWorkflowInstanceIncidents,
@@ -125,7 +125,7 @@ export class DataManager {
     );
   };
 
-  getWorkflowInstance = instanceId => {
+  getWorkflowInstance = (instanceId) => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_INSTANCE,
       fetchWorkflowInstance,
@@ -151,11 +151,11 @@ export class DataManager {
     this.fetchAndPublish(LOAD_CORE_STATS, fetchWorkflowCoreStatistics, {});
   };
 
-  getWorkflowInstances = params => {
+  getWorkflowInstances = (params) => {
     this.fetchAndPublish(LOAD_LIST_INSTANCES, fetchWorkflowInstances, params);
   };
 
-  getWorkflowInstancesStatistics = params => {
+  getWorkflowInstancesStatistics = (params) => {
     this.fetchAndPublish(
       LOAD_STATE_STATISTICS,
       fetchWorkflowInstancesStatistics,
@@ -164,7 +164,7 @@ export class DataManager {
   };
 
   getWorkflowXML = (params, staticContent) => {
-    const fetchDiagramModel = async params => {
+    const fetchDiagramModel = async (params) => {
       const xml = await fetchWorkflowXML(params);
       return await parseDiagramXML(xml);
     };
@@ -186,11 +186,11 @@ export class DataManager {
     this.fetchAndPublish(topic, fetchWorkflowInstancesByIds, params);
   };
 
-  getBatchOperations = params => {
+  getBatchOperations = (params) => {
     this.fetchAndPublish(LOAD_BATCH_OPERATIONS, fetchBatchOperations, params);
   };
 
-  getSequenceFlows = workflowInstanceId => {
+  getSequenceFlows = (workflowInstanceId) => {
     this.fetchAndPublish(
       LOAD_SEQUENCE_FLOWS,
       fetchSequenceFlows,
@@ -203,7 +203,7 @@ export class DataManager {
   // fetches the data again for all passed endpoints and publishes loading states and result to passed topic
   update = ({endpoints, topic, staticData}) => {
     this.publisher.publish(topic, {
-      state: LOADING_STATE.LOADING
+      state: LOADING_STATE.LOADING,
     });
 
     Promise.all([
@@ -215,9 +215,9 @@ export class DataManager {
           return apiCall(params);
         }
         return null;
-      })
+      }),
     ])
-      .then(response => {
+      .then((response) => {
         const publishData = {
           state: LOADING_STATE.LOADED,
           response: {
@@ -225,15 +225,15 @@ export class DataManager {
               const responseName = endpoints[index].name;
               return {...acc, [responseName]: response};
             }, {}),
-            ...staticData
-          }
+            ...staticData,
+          },
         };
         this.publisher.publish(topic, publishData);
       })
-      .catch(error => {
+      .catch((error) => {
         this.publisher.publish(topic, {
           state: LOADING_STATE.LOAD_FAILED,
-          error
+          error,
         });
       });
   };

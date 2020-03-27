@@ -16,7 +16,7 @@ import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext
 
 import {
   mockedModules,
-  mockedImportDefinitions
+  mockedImportDefinitions,
 } from '__mocks__/bpmn-js/lib/NavigatedViewer';
 
 import {
@@ -24,7 +24,7 @@ import {
   mockPropsNoWorkflowSelected,
   mockPropsNoVersionSelected,
   mockPropsNoDefinitions,
-  mockPropsCollapsedPanel
+  mockPropsCollapsedPanel,
 } from './DiagramPanel.setup';
 
 import SplitPane from 'modules/components/SplitPane';
@@ -71,7 +71,7 @@ describe('DiagramPanel', () => {
       it('should show the indicator, when diagram is loading', () => {
         // when
         diagramPanel.subscriptions['LOAD_STATE_DEFINITIONS']({
-          state: LOADING_STATE.LOADING
+          state: LOADING_STATE.LOADING,
         });
 
         node.update();
@@ -82,7 +82,7 @@ describe('DiagramPanel', () => {
 
         // when
         diagramPanel.subscriptions['LOAD_STATE_DEFINITIONS']({
-          state: LOADING_STATE.LOADED
+          state: LOADING_STATE.LOADED,
         });
 
         node.update();
@@ -94,7 +94,7 @@ describe('DiagramPanel', () => {
       it('should stop show the indicator, when statistics are loaded', () => {
         // given
         diagramPanel.subscriptions['LOAD_STATE_DEFINITIONS']({
-          state: LOADING_STATE.LOADING
+          state: LOADING_STATE.LOADING,
         });
         node.update();
 
@@ -102,7 +102,7 @@ describe('DiagramPanel', () => {
         expect(diagramPanel.state.isLoading).toBe(LOADING_STATE.LOADING);
         // when
         diagramPanel.subscriptions['LOAD_STATE_STATISTICS']({
-          state: LOADING_STATE.LOADED
+          state: LOADING_STATE.LOADED,
         });
 
         node.update();

@@ -20,7 +20,7 @@ export const Row = themed(styled.div`
   border-top: 1px solid
     ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   padding: 13px 10px;
 `);

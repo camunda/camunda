@@ -24,26 +24,26 @@ class DiagramPanel extends React.Component {
     definitions: PropTypes.object,
     selectedFlowNodeId: PropTypes.string,
     onFlowNodeSelection: PropTypes.func,
-    workflowName: PropTypes.string
+    workflowName: PropTypes.string,
   };
 
   constructor(props) {
     super(props);
 
     this.state = {
-      isLoading: ''
+      isLoading: '',
     };
     this.subscriptions = {
-      LOAD_STATE_DEFINITIONS: response => {
+      LOAD_STATE_DEFINITIONS: (response) => {
         if (response.state === LOADING_STATE.LOADING) {
           this.setState({isLoading: LOADING_STATE.LOADING});
         }
       },
-      LOAD_STATE_STATISTICS: response => {
+      LOAD_STATE_STATISTICS: (response) => {
         if (response.state === LOADING_STATE.LOADED) {
           this.setState({isLoading: LOADING_STATE.LOADED});
         }
-      }
+      },
     };
   }
 
@@ -55,10 +55,10 @@ class DiagramPanel extends React.Component {
     this.props.dataManager.unsubscribe(this.subscriptions);
   }
 
-  renderMessage = type => {
+  renderMessage = (type) => {
     const message = {
       NoWorkflow: `There is no Workflow selected.\n To see a diagram, select a Workflow in the Filters panel.`,
-      NoVersion: `There is more than one version selected for Workflow "${this.props.workflowName}".\n To see a diagram, select a single version.`
+      NoVersion: `There is more than one version selected for Workflow "${this.props.workflowName}".\n To see a diagram, select a single version.`,
     };
     return (
       <Styled.EmptyMessageWrapper>

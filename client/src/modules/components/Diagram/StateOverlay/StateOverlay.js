@@ -19,7 +19,7 @@ import Overlay from '../Overlay';
 
 const position = {
   bottom: 17,
-  left: -7
+  left: -7,
 };
 
 export default function StateOverlay(props) {
@@ -29,7 +29,7 @@ export default function StateOverlay(props) {
     onOverlayAdd,
     onOverlayClear,
     isViewerLoaded,
-    theme
+    theme,
   } = props;
 
   let TargetIcon;
@@ -71,5 +71,5 @@ StateOverlay.propTypes = {
   onOverlayAdd: PropTypes.func.isRequired,
   onOverlayClear: PropTypes.func.isRequired,
   isViewerLoaded: PropTypes.bool.isRequired,
-  theme: PropTypes.oneOf(['dark', 'light']).isRequired
+  theme: PropTypes.oneOf(['dark', 'light']).isRequired,
 };

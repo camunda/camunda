@@ -13,7 +13,7 @@ import {DataManagerProvider} from 'modules/DataManager';
 import {
   mockResolvedAsyncFn,
   createInstance,
-  createOperation
+  createOperation,
 } from 'modules/testUtils';
 
 import {SUBSCRIPTION_TOPIC} from 'modules/constants';
@@ -28,23 +28,23 @@ const providerPropsMock = {
   onWorkflowInstancesRefresh: jest.fn(),
   onSelectionsRefresh: jest.fn(),
   visibleIdsInListPanel: ['1', '2', '3', '4'],
-  filter: {workflow: 'asd', version: '1'}
+  filter: {workflow: 'asd', version: '1'},
 };
 
 // api mock
 const INSTANCE = createInstance({
   id: '1',
   hasActiveOperation: false,
-  operations: [createOperation({state: 'FAILED'})]
+  operations: [createOperation({state: 'FAILED'})],
 });
 const ACTIVE_INSTANCE = createInstance({
   id: '2',
   hasActiveOperation: true,
-  operations: [createOperation({state: 'SENT'})]
+  operations: [createOperation({state: 'SENT'})],
 });
 
 api.fetchWorkflowInstancesByIds = mockResolvedAsyncFn({
-  workflowInstances: [INSTANCE, ACTIVE_INSTANCE]
+  workflowInstances: [INSTANCE, ACTIVE_INSTANCE],
 });
 
 describe('InstancesPollContext', () => {
@@ -173,16 +173,16 @@ describe('InstancesPollContext', () => {
     const COMPLETED_OPERATION_INSTANCE = createInstance({
       id: '2',
       hasActiveOperation: false,
-      operations: [createOperation({state: 'COMPLETED'})]
+      operations: [createOperation({state: 'COMPLETED'})],
     });
     api.fetchWorkflowInstancesByIds = jest
       .fn()
       .mockResolvedValue({
-        workflowInstances: [INSTANCE, COMPLETED_OPERATION_INSTANCE]
+        workflowInstances: [INSTANCE, COMPLETED_OPERATION_INSTANCE],
       }) // default
       .mockResolvedValueOnce({workflowInstances: [INSTANCE, ACTIVE_INSTANCE]}) // 1st call
       .mockResolvedValueOnce({
-        workflowInstances: [INSTANCE, COMPLETED_OPERATION_INSTANCE]
+        workflowInstances: [INSTANCE, COMPLETED_OPERATION_INSTANCE],
       }); // 2nd call
 
     // given
@@ -222,7 +222,7 @@ describe('InstancesPollContext', () => {
     const COMPLETED_OPERATION_INSTANCE = createInstance({
       id: '2',
       hasActiveOperation: false,
-      operations: [createOperation({state: 'COMPLETED'})]
+      operations: [createOperation({state: 'COMPLETED'})],
     });
 
     // given
@@ -250,8 +250,8 @@ describe('InstancesPollContext', () => {
       subscription: subscriptions['LOAD_SELECTION_INSTANCES'],
       state: 'LOADED',
       response: {
-        workflowInstances: [INSTANCE, COMPLETED_OPERATION_INSTANCE]
-      }
+        workflowInstances: [INSTANCE, COMPLETED_OPERATION_INSTANCE],
+      },
     });
 
     expect(dataManagerMock.update).toHaveBeenCalled();

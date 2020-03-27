@@ -26,6 +26,6 @@ export function removeLineBreaks(value) {
 export function trimVariable(variable) {
   return {
     name: trimValue(variable.name),
-    value: trimValue(variable.value)
+    value: trimValue(variable.value),
   };
 }

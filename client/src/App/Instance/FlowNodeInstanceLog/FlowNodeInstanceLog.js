@@ -26,7 +26,7 @@ class FlowNodeInstanceLog extends React.Component {
     activityInstancesTree: PropTypes.object,
     getNodeWithMetaData: PropTypes.func,
     selectedTreeRowIds: PropTypes.array,
-    onTreeRowSelection: PropTypes.func
+    onTreeRowSelection: PropTypes.func,
   };
 
   constructor(props) {
@@ -34,19 +34,19 @@ class FlowNodeInstanceLog extends React.Component {
 
     this.state = {
       loadingStateInstanceTree: LOADING_STATE.LOADING,
-      loadingStateDefinitions: LOADING_STATE.LOADING
+      loadingStateDefinitions: LOADING_STATE.LOADING,
     };
     this.subscriptions = {
       LOAD_INSTANCE_TREE: ({state}) => {
-        this.storeLoadingState(state, loadedOrFailed =>
+        this.storeLoadingState(state, (loadedOrFailed) =>
           this.setState({loadingStateInstanceTree: loadedOrFailed})
         );
       },
       LOAD_STATE_DEFINITIONS: ({state}) => {
-        this.storeLoadingState(state, loadedOrFailed =>
+        this.storeLoadingState(state, (loadedOrFailed) =>
           this.setState({loadingStateDefinitions: loadedOrFailed})
         );
-      }
+      },
     };
   }
 
@@ -107,7 +107,7 @@ class FlowNodeInstanceLog extends React.Component {
       diagramDefinitions,
       activityInstancesTree,
       getNodeWithMetaData,
-      onTreeRowSelection
+      onTreeRowSelection,
     } = this.props;
 
     return (

@@ -15,12 +15,12 @@ const Button = React.forwardRef(function Button(props, ref) {
 
 Button.propTypes = {
   size: PropTypes.oneOf(Object.values(SIZE)),
-  color: PropTypes.oneOf(Object.values(COLOR))
+  color: PropTypes.oneOf(Object.values(COLOR)),
 };
 
 Button.defaultProps = {
   size: SIZE.MEDIUM,
-  color: COLOR.MAIN
+  color: COLOR.MAIN,
 };
 
 export default Button;

@@ -15,7 +15,7 @@ import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
 import {
   mockOperationFinished,
   mockOperationRunning,
-  mockExistingOperationFinished
+  mockExistingOperationFinished,
 } from './OperationsPanel.setup';
 
 jest.mock('modules/hooks/useSubscription');
@@ -25,15 +25,15 @@ describe('useBatchOperations', () => {
   beforeEach(() => {
     useSubscription.mockReturnValue({
       subscribe: jest.fn(),
-      unsubscribe: jest.fn()
+      unsubscribe: jest.fn(),
     });
 
     useDataManager.mockReturnValue({
       poll: {
         register: jest.fn(),
-        unregister: jest.fn()
+        unregister: jest.fn(),
       },
-      getBatchOperations: jest.fn()
+      getBatchOperations: jest.fn(),
     });
   });
 
@@ -150,7 +150,7 @@ describe('useBatchOperations', () => {
 
     // then
     expect(result.current.batchOperations).toEqual([
-      mockExistingOperationFinished
+      mockExistingOperationFinished,
     ]);
     expect(useDataManager().poll.register).toHaveBeenCalledTimes(1);
     expect(useDataManager().poll.unregister).toHaveBeenCalledTimes(2);

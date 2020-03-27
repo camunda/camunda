@@ -8,7 +8,7 @@ import {getBreadcrumbs} from './service';
 import {
   defaultProps,
   multiInstanceBodyProps,
-  multiInstanceChildProps
+  multiInstanceChildProps,
 } from './service.setup';
 
 describe('PopupOverlay.service', () => {

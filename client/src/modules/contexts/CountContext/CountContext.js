@@ -17,7 +17,7 @@ const initialState = {
   active: 0,
   withIncidents: 0,
   filterCount: null,
-  isLoaded: false
+  isLoaded: false,
 };
 
 export function countReducer(state, {type, payload}) {
@@ -37,7 +37,7 @@ export function Provider(props) {
       if (state === LOADING_STATE.LOADED) {
         dispatch({
           type: 'coreStats',
-          payload: response.coreStatistics
+          payload: response.coreStatistics,
         });
       }
     },
@@ -45,16 +45,16 @@ export function Provider(props) {
       if (state === LOADING_STATE.LOADED) {
         const {
           LOAD_CORE_STATS: {coreStatistics},
-          LOAD_LIST_INSTANCES: {totalCount}
+          LOAD_LIST_INSTANCES: {totalCount},
         } = response;
 
         dispatch({
           type: 'coreStats',
-          payload: coreStatistics
+          payload: coreStatistics,
         });
         dispatch({
           type: 'filterCount',
-          payload: totalCount
+          payload: totalCount,
         });
       }
     },
@@ -62,7 +62,7 @@ export function Provider(props) {
       if (state === LOADING_STATE.LOADED) {
         dispatch({
           type: 'coreStats',
-          payload: response[SUBSCRIPTION_TOPIC.LOAD_CORE_STATS].coreStatistics
+          payload: response[SUBSCRIPTION_TOPIC.LOAD_CORE_STATS].coreStatistics,
         });
       }
     },
@@ -70,10 +70,10 @@ export function Provider(props) {
       if (state === LOADING_STATE.LOADED) {
         dispatch({
           type: 'filterCount',
-          payload: response.totalCount
+          payload: response.totalCount,
         });
       }
-    }
+    },
   };
   const {dataManager} = useContext(DataContext);
   const [store, dispatch] = useReducer(countReducer, initialState);
@@ -96,7 +96,7 @@ export function Provider(props) {
       typeof filterCount !== 'undefined' &&
       dispatch({
         type: 'filterCount',
-        payload: filterCount
+        payload: filterCount,
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -111,25 +111,25 @@ export function Provider(props) {
 Provider.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
+    PropTypes.node,
   ]),
-  getStateLocally: PropTypes.func
+  getStateLocally: PropTypes.func,
 };
 
 function withCountStore(Component) {
   function withCountStore(props) {
     return (
       <CountContext.Consumer>
-        {countStore => <Component {...props} countStore={countStore} />}
+        {(countStore) => <Component {...props} countStore={countStore} />}
       </CountContext.Consumer>
     );
   }
 
   withCountStore.WrappedComponent = Component;
 
-  withCountStore.displayName = `WithStore(${Component.displayName ||
-    Component.name ||
-    'Component'})`;
+  withCountStore.displayName = `WithStore(${
+    Component.displayName || Component.name || 'Component'
+  })`;
 
   return withCountStore;
 }

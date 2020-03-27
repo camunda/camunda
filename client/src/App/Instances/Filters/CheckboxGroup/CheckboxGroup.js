@@ -18,10 +18,10 @@ export default class CheckboxGroup extends React.Component {
       active: PropTypes.bool,
       incidents: PropTypes.bool,
       canceled: PropTypes.bool,
-      completed: PropTypes.bool
+      completed: PropTypes.bool,
     }).isRequired,
     onChange: PropTypes.func.isRequired,
-    type: PropTypes.oneOf(['running', 'finished']).isRequired
+    type: PropTypes.oneOf(['running', 'finished']).isRequired,
   };
   constructor(props) {
     super(props);
@@ -29,7 +29,7 @@ export default class CheckboxGroup extends React.Component {
   }
 
   getCheckedChildrenCount = () => {
-    return Object.values(this.props.filter).filter(value => value).length;
+    return Object.values(this.props.filter).filter((value) => value).length;
   };
 
   areAllChildrenChecked = () => {
@@ -42,7 +42,7 @@ export default class CheckboxGroup extends React.Component {
     return childrenCount >= 1 && childrenCount < this.childFilterTypes.length;
   };
 
-  handleChange = type => (event, isChecked) => {
+  handleChange = (type) => (event, isChecked) => {
     this.props.onChange({[type]: isChecked});
   };
 
@@ -50,9 +50,9 @@ export default class CheckboxGroup extends React.Component {
     const change = {};
     const allChildrenChecked = this.areAllChildrenChecked();
 
-    this.childFilterTypes.map(type =>
+    this.childFilterTypes.map((type) =>
       Object.assign(change, {
-        [type]: !allChildrenChecked
+        [type]: !allChildrenChecked,
       })
     );
 
@@ -74,7 +74,7 @@ export default class CheckboxGroup extends React.Component {
           />
         </div>
         <Styled.NestedCheckboxes>
-          {this.childFilterTypes.map(type => {
+          {this.childFilterTypes.map((type) => {
             return (
               <Checkbox
                 key={type}

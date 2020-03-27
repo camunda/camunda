@@ -10,7 +10,7 @@ import {
   fieldParser,
   parseFilterForRequest,
   getFilterWithWorkflowIds,
-  parseQueryString
+  parseQueryString,
 } from './filter';
 
 import {DEFAULT_FILTER} from 'modules/constants';
@@ -26,27 +26,27 @@ const workflows = {
         id: '6',
         name: 'New demo process',
         version: 3,
-        bpmnProcessId: 'demoProcess'
+        bpmnProcessId: 'demoProcess',
       },
       {
         id: '4',
         name: 'Demo process',
         version: 2,
-        bpmnProcessId: 'demoProcess'
+        bpmnProcessId: 'demoProcess',
       },
       {
         id: '1',
         name: 'Demo process',
         version: 1,
-        bpmnProcessId: 'demoProcess'
-      }
-    ]
+        bpmnProcessId: 'demoProcess',
+      },
+    ],
   },
   orderProcess: {
     bpmnProcessId: 'orderProcess',
     name: 'Order',
-    workflows: []
-  }
+    workflows: [],
+  },
 };
 
 describe('modules/utils/filter.js', () => {
@@ -65,7 +65,7 @@ describe('modules/utils/filter.js', () => {
       const input =
         '?filter={"a":true,"b":true,"c":"X", "array": ["lorem", "ipsum"]}';
       const output = {
-        filter: {a: true, b: true, c: 'X', array: ['lorem', 'ipsum']}
+        filter: {a: true, b: true, c: 'X', array: ['lorem', 'ipsum']},
       };
 
       expect(parseQueryString(input)).toEqual(output);
@@ -75,7 +75,7 @@ describe('modules/utils/filter.js', () => {
       const input = '?filter={"a":true,"b":true,"c":"X"}&extra={"extra": true}';
       const output = {
         filter: {a: true, b: true, c: 'X'},
-        extra: {extra: true}
+        extra: {extra: true},
       };
 
       expect(parseQueryString(input)).toEqual(output);
@@ -88,7 +88,7 @@ describe('modules/utils/filter.js', () => {
         active: false,
         incidents: false,
         canceled: false,
-        completed: false
+        completed: false,
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({});
@@ -99,11 +99,11 @@ describe('modules/utils/filter.js', () => {
         active: true,
         incidents: false,
         canceled: false,
-        completed: false
+        completed: false,
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        running: true
+        running: true,
       });
     });
 
@@ -112,11 +112,11 @@ describe('modules/utils/filter.js', () => {
         active: false,
         incidents: true,
         canceled: false,
-        completed: false
+        completed: false,
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        running: true
+        running: true,
       });
     });
 
@@ -125,11 +125,11 @@ describe('modules/utils/filter.js', () => {
         active: false,
         incidents: true,
         canceled: false,
-        completed: false
+        completed: false,
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        running: true
+        running: true,
       });
     });
 
@@ -138,11 +138,11 @@ describe('modules/utils/filter.js', () => {
         active: false,
         incidents: false,
         canceled: false,
-        completed: true
+        completed: true,
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        finished: true
+        finished: true,
       });
     });
 
@@ -151,11 +151,11 @@ describe('modules/utils/filter.js', () => {
         active: false,
         incidents: false,
         canceled: true,
-        completed: false
+        completed: false,
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        finished: true
+        finished: true,
       });
     });
   });
@@ -174,7 +174,7 @@ describe('modules/utils/filter.js', () => {
         active: true,
         incidents: false,
         completed: true,
-        canceled: false
+        canceled: false,
       };
 
       // when
@@ -215,7 +215,7 @@ describe('modules/utils/filter.js', () => {
         active: true,
         incidents: false,
         completed: true,
-        canceled: false
+        canceled: false,
       };
 
       // when
@@ -234,7 +234,7 @@ describe('modules/utils/filter.js', () => {
 
       expect(parsedFilter.variable).toEqual({
         name: 'myVar',
-        value: '"1, 2\r \n "'
+        value: '"1, 2\r \n "',
       });
     });
   });
@@ -340,7 +340,7 @@ describe('modules/utils/filter.js', () => {
       const filter = {
         active: true,
         errorMessage: 'lorem',
-        activityId: 'lorem'
+        activityId: 'lorem',
       };
 
       expect(getFilterWithWorkflowIds(filter, workflows)).toEqual(filter);
@@ -351,7 +351,7 @@ describe('modules/utils/filter.js', () => {
         active: true,
         errorMessage: 'lorem',
         workflow: 'demoProcess',
-        version: '3'
+        version: '3',
       };
 
       expect(getFilterWithWorkflowIds(filter, workflows).workflow).toEqual(
@@ -361,7 +361,7 @@ describe('modules/utils/filter.js', () => {
         undefined
       );
       expect(getFilterWithWorkflowIds(filter, workflows).workflowIds).toEqual([
-        '6'
+        '6',
       ]);
     });
 
@@ -370,13 +370,13 @@ describe('modules/utils/filter.js', () => {
         active: true,
         errorMessage: 'lorem',
         workflow: 'demoProcess',
-        version: 'all'
+        version: 'all',
       };
 
       expect(getFilterWithWorkflowIds(filter, workflows).workflowIds).toEqual([
         '6',
         '4',
-        '1'
+        '1',
       ]);
     });
   });

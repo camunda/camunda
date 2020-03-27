@@ -19,14 +19,14 @@ export default class Checkbox extends React.Component {
     type: PropTypes.oneOf(['selection']),
     value: PropTypes.string,
     title: PropTypes.string,
-    id: PropTypes.string
+    id: PropTypes.string,
   };
 
   constructor(props) {
     super(props);
     this.el = {};
     this.state = {
-      isFocused: false
+      isFocused: false,
     };
   }
 
@@ -46,16 +46,16 @@ export default class Checkbox extends React.Component {
     }
   }
 
-  handleChange = event => {
+  handleChange = (event) => {
     this.props.onChange(event, event.target.checked);
   };
 
-  handleFocus = event => {
+  handleFocus = (event) => {
     const {isFocused} = this.state;
     this.setState({isFocused: !isFocused});
   };
 
-  inputRef = node => {
+  inputRef = (node) => {
     this.el = node;
   };
 

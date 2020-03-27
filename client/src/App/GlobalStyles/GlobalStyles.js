@@ -9,7 +9,7 @@ import * as Styled from './styled';
 
 export default class GlobalCss extends React.Component {
   state = {
-    tabKeyPressed: false
+    tabKeyPressed: false,
   };
 
   componentDidMount() {
@@ -22,18 +22,18 @@ export default class GlobalCss extends React.Component {
     document.body.removeEventListener('mousedown', this.onMousePressed, true);
   }
 
-  onKeyPressed = event => {
+  onKeyPressed = (event) => {
     // if it's tab key
     if (event.keyCode === 9) {
       this.setState({
-        tabKeyPressed: true
+        tabKeyPressed: true,
       });
     }
   };
 
-  onMousePressed = event => {
+  onMousePressed = (event) => {
     this.setState({
-      tabKeyPressed: false
+      tabKeyPressed: false,
     });
   };
 

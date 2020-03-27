@@ -34,11 +34,11 @@ describe('CodeModal', () => {
       testData.editorMountsWithJSON,
       testData.editorMountsWithArray,
       testData.editorMountsWithBrokenJSON,
-      testData.editorMountsWithNullValue
+      testData.editorMountsWithNullValue,
     ];
 
     let node;
-    contentTypes.forEach(contentType => {
+    contentTypes.forEach((contentType) => {
       //when
       act(() => {
         node = mountNode(contentType);

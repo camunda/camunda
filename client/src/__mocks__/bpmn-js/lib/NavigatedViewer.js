@@ -11,7 +11,7 @@ export const mockedModules = {
     zoom: jest.fn(),
     addMarker: jest.fn(),
     removeMarker: jest.fn(),
-    resized: jest.fn()
+    resized: jest.fn(),
   },
   zoomScroll: {stepZoom: jest.fn()},
 
@@ -22,16 +22,16 @@ export const mockedModules = {
         x: 0,
         y: 0,
         height: 0,
-        width: 0
+        width: 0,
       })),
-      getBBox: jest.fn(() => ({x: 0, y: 0, height: 0, width: 0}))
+      getBBox: jest.fn(() => ({x: 0, y: 0, height: 0, width: 0})),
     })),
-    get: jest.fn(id => ({businessObject: {name: id, di: diObject}})),
-    forEach: jest.fn(() => {})
+    get: jest.fn((id) => ({businessObject: {name: id, di: diObject}})),
+    forEach: jest.fn(() => {}),
   },
   graphicsFactory: {update: jest.fn(() => {})},
   eventBus: {on: jest.fn()},
-  overlays: {add: jest.fn(), remove: jest.fn()}
+  overlays: {add: jest.fn(), remove: jest.fn()},
 };
 
 export const mockedImportDefinitions = jest.fn((_, callback) => {
@@ -48,7 +48,7 @@ class Viewer {
 
   detach = jest.fn();
 
-  get = key => mockedModules[key];
+  get = (key) => mockedModules[key];
 }
 
 export default Viewer;

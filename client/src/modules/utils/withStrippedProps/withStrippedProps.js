@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-const withStrippedProps = propsToRemove => Component => {
+const withStrippedProps = (propsToRemove) => (Component) => {
   function strippedComponent(props) {
     const strippedProps = Object.entries(props)
       .filter(([key]) => !propsToRemove.includes(key))
@@ -15,9 +15,9 @@ const withStrippedProps = propsToRemove => Component => {
     return <Component {...strippedProps} />;
   }
 
-  strippedComponent.displayName = `withStrippedProps(${Component.displayName ||
-    Component.name ||
-    'Component'})`;
+  strippedComponent.displayName = `withStrippedProps(${
+    Component.displayName || Component.name || 'Component'
+  })`;
 
   strippedComponent.WrappedComponent = Component;
 

@@ -27,11 +27,11 @@ export const SkeletonBar = themed(styled.div`
 
   background: ${themeStyle({
     dark: 'rgba(136, 136, 141)',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   opacity: ${themeStyle({
     dark: 0.2,
-    light: 0.09
+    light: 0.09,
   })};
 `);
 

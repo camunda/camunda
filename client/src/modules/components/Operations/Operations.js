@@ -14,7 +14,7 @@ import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
 import {
   getLatestOperation,
   isWithIncident,
-  isRunning
+  isRunning,
 } from 'modules/utils/instance';
 
 import OperationStatus from 'modules/components/OperationStatus';
@@ -28,11 +28,11 @@ class Operations extends React.Component {
     selected: PropTypes.bool,
     onButtonClick: PropTypes.func,
     forceSpinner: PropTypes.bool,
-    dataManager: PropTypes.object
+    dataManager: PropTypes.object,
   };
 
   static defaultProps = {
-    forceSpinner: false
+    forceSpinner: false,
   };
 
   state = {operationState: '', operationType: ''};
@@ -44,19 +44,19 @@ class Operations extends React.Component {
 
       this.setState({
         operationState: state,
-        operationType: type
+        operationType: type,
       });
     }
   };
 
-  componentDidUpdate = prevProps => {
+  componentDidUpdate = (prevProps) => {
     const {operations} = this.props.instance;
     if (!isEqual(operations, prevProps.instance.operations)) {
       // change operation state & failed operation icons when new page is loaded;
       const {state, type} = getLatestOperation(operations);
       this.setState({
         operationState: state,
-        operationType: type
+        operationType: type,
       });
     } else if (this.props.instance.id !== prevProps.instance.id) {
       // change operation state
@@ -66,19 +66,19 @@ class Operations extends React.Component {
     }
   };
 
-  handleOnClick = async operationType => {
+  handleOnClick = async (operationType) => {
     this.setState({operationState: OPERATION_STATE.SCHEDULED});
 
     this.props.dataManager.applyOperation(this.props.instance.id, {
-      operationType
+      operationType,
     });
     this.props.onButtonClick && this.props.onButtonClick(this.props.instance);
   };
 
-  renderItem = operationType => {
+  renderItem = (operationType) => {
     const ariaLabelMap = {
       [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: 'Cancel',
-      [OPERATION_TYPE.RESOLVE_INCIDENT]: 'Retry'
+      [OPERATION_TYPE.RESOLVE_INCIDENT]: 'Retry',
     };
 
     return (

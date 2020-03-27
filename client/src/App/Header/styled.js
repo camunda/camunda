@@ -14,7 +14,7 @@ import * as Styled from './NavElements/styled';
 export const HEADER_HEIGHT = 56;
 const separator = themeStyle({
   dark: 'rgba(246, 252, 251, 0.5)',
-  light: 'rgba(98, 98, 110, 0.25)'
+  light: 'rgba(98, 98, 110, 0.25)',
 });
 
 export const FilterNavElement = styled(NavElement)`
@@ -35,14 +35,14 @@ export const Header = themed(styled(
   height: ${HEADER_HEIGHT}px;
   background-color: ${themeStyle({
     dark: Colors.uiDark01,
-    light: Colors.uiLight01
+    light: Colors.uiLight01,
   })};
   padding: 9px 20px 21px 20px;
   font-size: 15px;
   font-weight: 500;
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   line-height: 19px;
 `);
@@ -65,11 +65,11 @@ export const Menu = styled.ul`
 const colors = css`
   background: ${themeStyle({
     dark: 'rgba(136, 136, 141)',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   opacity: ${themeStyle({
     dark: 0.2,
-    light: 0.09
+    light: 0.09,
   })};
 `;
 

@@ -15,7 +15,7 @@ function getUrl({filter, hasFinishedInstances}) {
   if (hasFinishedInstances) {
     Object.assign(filter, {
       completed: true,
-      canceled: true
+      canceled: true,
     });
   }
 
@@ -31,7 +31,7 @@ export function MetricPanel({countStore}) {
         data-test="total-instances-link"
         to={getUrl({
           filter: {active: true, incidents: true},
-          hasFinishedInstances: running === 0
+          hasFinishedInstances: running === 0,
         })}
       >
         {isLoaded && `${running} `}Running Instances in total
@@ -52,7 +52,7 @@ export function MetricPanel({countStore}) {
         <Styled.Label
           data-test="incident-instances-link"
           to={getUrl({
-            filter: {incidents: true}
+            filter: {incidents: true},
           })}
         >
           Instances with Incident
@@ -60,7 +60,7 @@ export function MetricPanel({countStore}) {
         <Styled.Label
           data-test="active-instances-link"
           to={getUrl({
-            filter: {active: true}
+            filter: {active: true},
           })}
         >
           Active Instances
@@ -75,8 +75,8 @@ MetricPanel.propTypes = {
     running: PropTypes.number,
     active: PropTypes.number,
     withIncidents: PropTypes.number,
-    isLoaded: PropTypes.bool
-  })
+    isLoaded: PropTypes.bool,
+  }),
 };
 
 export default withCountStore(MetricPanel);

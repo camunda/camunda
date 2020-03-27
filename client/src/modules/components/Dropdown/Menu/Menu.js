@@ -17,10 +17,10 @@ export default class Menu extends React.Component {
     /** The options of this dropdown. Each child should be a `Dropdown.Option` instance */
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
+      PropTypes.node,
     ]),
     transitionTiming: PropTypes.object,
-    className: PropTypes.string
+    className: PropTypes.string,
   };
 
   render() {
@@ -29,7 +29,7 @@ export default class Menu extends React.Component {
       placement,
       children,
       transitionTiming,
-      className
+      className,
     } = this.props;
 
     return (

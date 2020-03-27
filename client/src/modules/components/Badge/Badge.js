@@ -24,15 +24,15 @@ export default function Badge(props) {
 Badge.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
+    PropTypes.node,
   ]),
   type: PropTypes.oneOf(Object.keys(BADGE_TYPE)),
   isActive: PropTypes.bool,
-  position: PropTypes.number
+  position: PropTypes.number,
 };
 
 Badge.defaultProps = {
   isActive: true,
   /* position of Badge in ComboBadge; independent Badges have position 0 */
-  position: 0
+  position: 0,
 };

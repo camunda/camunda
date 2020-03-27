@@ -48,12 +48,12 @@ FiltersPanel.propTypes = {
     active: PropTypes.number,
     withIncidents: PropTypes.number,
     filterCount: PropTypes.number,
-    isLoaded: PropTypes.bool
+    isLoaded: PropTypes.bool,
   }).isRequired,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
-  ])
+    PropTypes.node,
+  ]),
 };
 
 export default withCollapsablePanel(withCountStore(FiltersPanel));

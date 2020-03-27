@@ -32,12 +32,12 @@ export const SubMenuButton = themed(styled.button`
     submenuActive
       ? themeStyle({
           dark: Colors.darkActive,
-          light: Colors.lightActive
+          light: Colors.lightActive,
         })
       : 'none'};
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)'
+    light: 'rgba(98, 98, 110, 0.9)',
   })};
 
   /* Text */
@@ -49,14 +49,14 @@ export const SubMenuButton = themed(styled.button`
   &:hover {
     background: ${themeStyle({
       dark: Colors.uiDark06,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 
   &:active {
     background: ${themeStyle({
       dark: Colors.darkActive,
-      light: Colors.lightActive
+      light: Colors.lightActive,
     })};
   }
 `);
@@ -73,17 +73,17 @@ export const Ul = themed(styled.ul`
   box-shadow: 0 0 2px 0
     ${themeStyle({
       dark: 'rgba(0, 0, 0, 0.6)',
-      light: ' rgba(0, 0, 0, 0.2)'
+      light: ' rgba(0, 0, 0, 0.2)',
     })};
 
   /* Color */
   background: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   /* Other */
@@ -98,7 +98,7 @@ export const Li = themed(styled.li`
     border-bottom: 1px solid
       ${themeStyle({
         dark: Colors.uiDark06,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
   }
 

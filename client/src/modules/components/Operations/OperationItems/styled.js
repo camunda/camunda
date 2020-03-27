@@ -14,7 +14,7 @@ export const iconStyle = css`
   opacity: 0.7;
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiDark02
+    light: Colors.uiDark02,
   })};
   cursor: pointer;
 `;
@@ -32,33 +32,33 @@ const ColorMap = new Map(
     default: {
       background: {
         dark: Colors.uiDark04,
-        light: Colors.lightButton04
+        light: Colors.lightButton04,
       },
       border: {
         dark: Colors.uiDark06,
-        light: Colors.uiLight03
-      }
+        light: Colors.uiLight03,
+      },
     },
     hover: {
       background: {
         dark: Colors.darkButton05,
-        light: Colors.lightButton06
+        light: Colors.lightButton06,
       },
       border: {
         dark: Colors.darkButton02,
-        light: Colors.lightButton02
-      }
+        light: Colors.lightButton02,
+      },
     },
     active: {
       background: {
         dark: Colors.darkButton03,
-        light: Colors.uiLight03
+        light: Colors.uiLight03,
       },
       border: {
         dark: Colors.uiDark05,
-        light: Colors.lightButton03
-      }
-    }
+        light: Colors.lightButton03,
+      },
+    },
   })
 );
 

@@ -20,7 +20,7 @@ function ListFooter({
   perPage,
   firstElement,
   onFirstElementChange,
-  hasContent
+  hasContent,
 }) {
   const {getSelectedCount} = useInstanceSelectionContext();
   const maxPage = getMaxPage(filterCount, perPage);
@@ -63,7 +63,7 @@ ListFooter.propTypes = {
   perPage: PropTypes.number.isRequired,
   firstElement: PropTypes.number.isRequired,
   filterCount: PropTypes.number.isRequired,
-  hasContent: PropTypes.bool.isRequired
+  hasContent: PropTypes.bool.isRequired,
 };
 
 export default ListFooter;

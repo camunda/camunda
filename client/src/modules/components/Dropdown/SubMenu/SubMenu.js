@@ -15,30 +15,30 @@ export default class SubMenu extends React.Component {
   static propTypes = {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
+      PropTypes.node,
     ]),
     label: PropTypes.string,
     onStateChange: PropTypes.func,
     isOpen: PropTypes.bool,
-    isFixed: PropTypes.bool
+    isFixed: PropTypes.bool,
   };
 
   state = {submenuActive: false, isFocused: false};
 
-  handleOnClick = evt => {
+  handleOnClick = (evt) => {
     const {isOpen, isFixed} = this.props;
 
     if (!isOpen) {
       this.props.onStateChange({
         isSubMenuOpen: !isOpen,
-        isSubmenuFixed: !isFixed
+        isSubmenuFixed: !isFixed,
       });
       this.setState({submenuActive: !this.state.submenuActive});
     }
 
     if (isOpen) {
       this.props.onStateChange({
-        isSubmenuFixed: !isFixed
+        isSubmenuFixed: !isFixed,
       });
       this.setState({submenuActive: !this.state.submenuActive});
     }
@@ -46,17 +46,17 @@ export default class SubMenu extends React.Component {
     if (isOpen && isFixed) {
       this.props.onStateChange({
         isSubmenuFixed: !isFixed,
-        isSubMenuOpen: !isOpen
+        isSubMenuOpen: !isOpen,
       });
     }
   };
 
-  handleMouseLeave = evt => {
+  handleMouseLeave = (evt) => {
     const {isOpen, isFixed} = this.props;
 
     if (!isFixed && isOpen) {
       this.props.onStateChange({
-        isSubMenuOpen: !isOpen
+        isSubMenuOpen: !isOpen,
       });
       this.setState({submenuActive: false});
     }
@@ -66,12 +66,12 @@ export default class SubMenu extends React.Component {
     this.setState({submenuActive: true});
   };
 
-  handleButtonMouseOver = evt => {
+  handleButtonMouseOver = (evt) => {
     const {isOpen} = this.props;
 
     if (!isOpen) {
       this.props.onStateChange({
-        isSubMenuOpen: !isOpen
+        isSubMenuOpen: !isOpen,
       });
     }
   };
@@ -93,7 +93,7 @@ export default class SubMenu extends React.Component {
             {React.Children.map(children, (child, index) => (
               <Styled.Li onMouseOver={this.handleMenuMouseOver} key={index}>
                 {React.cloneElement(child, {
-                  onStateChange: this.props.onStateChange
+                  onStateChange: this.props.onStateChange,
                 })}
               </Styled.Li>
             ))}

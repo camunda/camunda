@@ -6,12 +6,12 @@
 
 import {
   DEFAULT_SORTING,
-  DEFAULT_FILTER_CONTROLLED_VALUES
+  DEFAULT_FILTER_CONTROLLED_VALUES,
 } from 'modules/constants';
 
 import {
   groupedWorkflowsMock,
-  createMockInstancesObject
+  createMockInstancesObject,
 } from 'modules/testUtils';
 
 import {parsedDiagram} from 'modules/utils/bpmn';
@@ -30,7 +30,7 @@ export const filterMock = {
   endDate: '28 December 2018',
   workflow: 'demoProcess',
   version: '1',
-  activityId: 'taskD'
+  activityId: 'taskD',
 };
 export const mockInstances = createMockInstancesObject();
 
@@ -49,5 +49,5 @@ export const mockProps = {
   onFlowNodeSelection: jest.fn(),
   diagramModel: parsedDiagram,
   statistics: [],
-  onInstancesClick: jest.fn()
+  onInstancesClick: jest.fn(),
 };

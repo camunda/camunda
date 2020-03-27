@@ -39,7 +39,7 @@ function InstancesBar(props) {
         <Styled.Bar hasActive={hasActive} />
         <Styled.IncidentsBar
           style={{
-            width: `${incidentsBarRatio}%`
+            width: `${incidentsBarRatio}%`,
           }}
         />
       </Styled.BarContainer>
@@ -53,7 +53,7 @@ InstancesBar.propTypes = {
   incidentsCount: PropTypes.number.isRequired,
   className: PropTypes.string,
   size: PropTypes.oneOf(['small', 'medium', 'large']).isRequired,
-  barHeight: PropTypes.number.isRequired
+  barHeight: PropTypes.number.isRequired,
 };
 
 export default InstancesBar;

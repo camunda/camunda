@@ -10,7 +10,7 @@ const URL = '/api/activity-instances';
 
 export async function fetchActivityInstancesTree(workflowInstanceId) {
   const response = await post(URL, {
-    workflowInstanceId
+    workflowInstanceId,
   });
   return await response.json();
 }

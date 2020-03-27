@@ -17,11 +17,11 @@ import {
   fetchGroupedWorkflows,
   fetchWorkflowInstancesStatistics,
   fetchWorkflowInstancesByIds,
-  fetchSequenceFlows
+  fetchSequenceFlows,
 } from './instances';
 
 const successResponse = {
-  json: mockResolvedAsyncFn({})
+  json: mockResolvedAsyncFn({}),
 };
 
 describe('instances api', () => {
@@ -52,8 +52,8 @@ describe('instances api', () => {
         firstResult: 0,
         maxResults: 0,
         payload: {
-          queries: [{}]
-        }
+          queries: [{}],
+        },
       };
 
       // when
@@ -64,8 +64,8 @@ describe('instances api', () => {
       );
       expect(wrappers.post.mock.calls[0][1]).toEqual({
         payload: {
-          queries: [{}]
-        }
+          queries: [{}],
+        },
       });
       expect(successResponse.json).toBeCalled();
     });
@@ -113,7 +113,7 @@ describe('instances api', () => {
           canceled: true,
           completed: true,
           finished: true,
-          incidents: true
+          incidents: true,
         }
       );
     });
@@ -123,7 +123,7 @@ describe('instances api', () => {
     it('should call post with the right url and payload', async () => {
       //given
       const payload = {
-        queries: [{}]
+        queries: [{}],
       };
 
       // when
@@ -134,7 +134,7 @@ describe('instances api', () => {
         '/api/workflow-instances/statistics'
       );
       expect(wrappers.post.mock.calls[0][1]).toEqual({
-        queries: [...payload.queries]
+        queries: [...payload.queries],
       });
       expect(successResponse.json).toBeCalled();
     });
@@ -164,7 +164,7 @@ describe('instances api', () => {
       // when
       await applyOperation('instance_1', {
         operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
-        incidentId: 'incident_1'
+        incidentId: 'incident_1',
       });
 
       // then

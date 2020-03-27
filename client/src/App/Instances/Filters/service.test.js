@@ -10,7 +10,7 @@ import {
   sanitizeFilter,
   checkIsVariableNameComplete,
   checkIsVariableValueComplete,
-  checkIsIdComplete
+  checkIsIdComplete,
 } from './service';
 import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
 
@@ -189,8 +189,8 @@ describe('Filters/service', () => {
         ...DEFAULT_FILTER_CONTROLLED_VALUES,
         variable: {
           name: '',
-          value: ''
-        }
+          value: '',
+        },
       });
 
       expect(sanitizedFilter).toEqual({});
@@ -210,7 +210,7 @@ describe('Filters/service', () => {
     it('should return empty object when date is incomplete', () => {
       const sanitizedFilter = sanitizeFilter({
         ...DEFAULT_FILTER_CONTROLLED_VALUES,
-        startDate: '2019-10'
+        startDate: '2019-10',
       });
 
       expect(sanitizedFilter).toEqual({});
@@ -222,7 +222,7 @@ describe('Filters/service', () => {
       const sanitizedFilter = sanitizeFilter({
         ...DEFAULT_FILTER_CONTROLLED_VALUES,
         startDate,
-        endDate
+        endDate,
       });
 
       expect(sanitizedFilter).toEqual({startDate, endDate});
@@ -238,12 +238,12 @@ describe('Filters/service', () => {
         errorMessage: 'Bad error.',
         activityId: 'Task_1',
         version: '2',
-        workflow: 'eventBasedGatewayProcess'
+        workflow: 'eventBasedGatewayProcess',
       };
 
       const sanitizedFilter = sanitizeFilter({
         ...DEFAULT_FILTER_CONTROLLED_VALUES,
-        ...filter
+        ...filter,
       });
 
       expect(sanitizedFilter).toEqual(filter);

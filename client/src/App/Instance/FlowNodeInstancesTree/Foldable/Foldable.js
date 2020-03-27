@@ -13,15 +13,15 @@ export default class Foldable extends React.Component {
   static propTypes = {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
+      PropTypes.node,
     ]),
     isFoldable: PropTypes.bool,
-    isFolded: PropTypes.bool
+    isFolded: PropTypes.bool,
   };
 
   state = {
     isFolded: this.props.isFolded,
-    isFoldable: this.props.isFoldable
+    isFoldable: this.props.isFoldable,
   };
 
   toggleFold = () => {
@@ -32,12 +32,12 @@ export default class Foldable extends React.Component {
   render() {
     const children = Children.map(
       this.props.children,
-      child =>
+      (child) =>
         child &&
         cloneElement(child, {
           isFoldable: this.props.isFoldable,
           isFolded: this.state.isFolded,
-          toggleFold: this.toggleFold
+          toggleFold: this.toggleFold,
         })
     );
 
@@ -87,12 +87,12 @@ Foldable.Summary.propTypes = {
   onSelection: PropTypes.func,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
-  ])
+    PropTypes.node,
+  ]),
 };
 
 Foldable.Summary.defaultProps = {
-  isFoldable: true
+  isFoldable: true,
 };
 
 Foldable.Details = function Details({isFolded, ...props}) {
@@ -100,5 +100,5 @@ Foldable.Details = function Details({isFolded, ...props}) {
 };
 
 Foldable.Details.propTypes = {
-  isFolded: PropTypes.bool
+  isFolded: PropTypes.bool,
 };

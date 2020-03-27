@@ -34,7 +34,7 @@ export const Logo = themed(styled(BaseLogo)`
 
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 `);
 
@@ -44,7 +44,7 @@ export const LoginTitle = themed(styled.span`
   font-weight: normal;
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 `);
 
@@ -85,28 +85,28 @@ export const Anchor = themed(styled.a`
   &:link {
     color: ${themeStyle({
       dark: Colors.darkLinkDefault,
-      light: Colors.lightLinkDefault
+      light: Colors.lightLinkDefault,
     })};
   }
 
   &:hover {
     color: ${themeStyle({
       dark: Colors.darkLinkHover,
-      light: Colors.lightLinkHover
+      light: Colors.lightLinkHover,
     })};
   }
 
   &:active {
     color: ${themeStyle({
       dark: Colors.darkLinkActive,
-      light: Colors.lightLinkActive
+      light: Colors.lightLinkActive,
     })};
   }
 
   &:visited {
     color: ${themeStyle({
       dark: Colors.darkLinkVisited,
-      light: Colors.lightLinkVisited
+      light: Colors.lightLinkVisited,
     })};
   }
 `);
@@ -114,7 +114,7 @@ export const Anchor = themed(styled.a`
 export const Disclaimer = themed(styled.div`
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.7)',
-    light: '#7e7e7f'
+    light: '#7e7e7f',
   })};
   opacity: 0.9;
   font-size: 12px;

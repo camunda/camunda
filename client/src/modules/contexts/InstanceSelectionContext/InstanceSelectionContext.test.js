@@ -10,12 +10,12 @@ import {renderHook, act} from '@testing-library/react-hooks';
 
 import InstanceSelectionContext, {
   InstanceSelectionProvider,
-  useInstanceSelection
+  useInstanceSelection,
 } from './InstanceSelectionContext';
 
 const INSTANCE_IDS = {
   A: '4503599627371065',
-  B: '2737113845035996'
+  B: '2737113845035996',
 };
 
 const TOTAL_COUNT = Object.values(INSTANCE_IDS).length;
@@ -176,7 +176,7 @@ describe('InstanceSelectionContext', () => {
 
     // when
     const node = mount(<Component />, {
-      wrappingComponent: InstanceSelectionProvider
+      wrappingComponent: InstanceSelectionProvider,
     });
 
     // then

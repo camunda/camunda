@@ -19,7 +19,7 @@ function Transition(props) {
 }
 
 Transition.propTypes = {
-  children: PropTypes.node.isRequired
+  children: PropTypes.node.isRequired,
 };
 
 export {Transition, TransitionGroup};

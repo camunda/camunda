@@ -19,9 +19,9 @@ export default class Option extends React.Component {
     onClick: PropTypes.func,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
+      PropTypes.node,
     ]),
-    className: PropTypes.string
+    className: PropTypes.string,
   };
 
   handleOnClick = () => {
@@ -36,7 +36,7 @@ export default class Option extends React.Component {
       React.cloneElement(child, {
         isOpen: this.props.isSubMenuOpen,
         isFixed: this.props.isSubmenuFixed,
-        onStateChange: this.props.onStateChange
+        onStateChange: this.props.onStateChange,
       })
     );
 

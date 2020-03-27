@@ -7,7 +7,7 @@
 const ZB = require('zeebe-node');
 const zbc = new ZB.ZBClient({
   onReady: () => console.log(`Connected!`),
-  onConnectionError: () => console.log(`Disconnected!`)
+  onConnectionError: () => console.log(`Disconnected!`),
 }); // localhost:26500 || ZEEBE_GATEWAY_ADDRESS
 
 export async function deploy(processNames) {
@@ -20,7 +20,7 @@ export async function createInstances(processId, version, noOfInstances) {
   for (var i = 0; i < noOfInstances; i++) {
     const result = await zbc.createWorkflowInstance({
       bpmnProcessId: processId,
-      version: version
+      version: version,
     });
     console.log(result);
   }
@@ -37,7 +37,7 @@ function handler(job, complete) {
 
   // Task worker business logic goes here
   const updateToBrokerVariables = {
-    updatedProperty: 'newValue'
+    updatedProperty: 'newValue',
   };
 
   complete(updateToBrokerVariables);

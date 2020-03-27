@@ -21,21 +21,21 @@ class IncidentOperation extends React.Component {
     incident: PropTypes.object.isRequired,
     instanceId: PropTypes.string.isRequired,
     showSpinner: PropTypes.bool,
-    dataManager: PropTypes.object
+    dataManager: PropTypes.object,
   };
 
   constructor(props) {
     super(props);
 
     this.state = {
-      isSpinnerVisible: false
+      isSpinnerVisible: false,
     };
     this.subscriptions = {
       [`OPERATION_APPLIED_INSTANCE_${this.props.instanceId}`]: ({state}) => {
         if (state === LOADING_STATE.LOADING) {
           this.setState({isSpinnerVisible: true});
         }
-      }
+      },
     };
   }
 
@@ -47,7 +47,7 @@ class IncidentOperation extends React.Component {
     this.props.dataManager.unsubscribe(this.subscriptions);
   }
 
-  handleOnClick = async e => {
+  handleOnClick = async (e) => {
     e.stopPropagation();
     this.setState({isSpinnerVisible: true});
 
@@ -56,7 +56,7 @@ class IncidentOperation extends React.Component {
     // incidents operations should listen to main btn who publishes the incident ids which are affected
     dataManager.applyOperation(instanceId, {
       operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
-      incidentId: incident.id
+      incidentId: incident.id,
     });
   };
 

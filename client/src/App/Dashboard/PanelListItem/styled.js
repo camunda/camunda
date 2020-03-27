@@ -11,10 +11,10 @@ import withStrippedProps from 'modules/utils/withStrippedProps';
 
 export const PanelListItem = themed(
   styled(withStrippedProps(['boxSize'])(Link))`
-    height: ${props => (props.boxSize === 'small' ? '39' : '45')}px;
+    height: ${(props) => (props.boxSize === 'small' ? '39' : '45')}px;
 
     display: block;
-    padding: ${props =>
+    padding: ${(props) =>
       props.boxSize === 'small' ? '5px 8px 6px' : '8px 8px 7px'};
     margin-left: 24px;
     border: 1px solid transparent;
@@ -23,22 +23,22 @@ export const PanelListItem = themed(
     &:hover {
       box-shadow: ${themeStyle({
         dark: '0 0 4px 0 #000000',
-        light: '0 0 5px 0 rgba(0, 0, 0, 0.1)'
+        light: '0 0 5px 0 rgba(0, 0, 0, 0.1)',
       })};
       border-color: ${themeStyle({
         dark: Colors.uiDark05,
-        light: 'rgba(216, 220, 227, 0.5)'
+        light: 'rgba(216, 220, 227, 0.5)',
       })};
     }
 
     &:active {
       box-shadow: ${themeStyle({
         dark: 'inset 0 0 6px 0 rgba(0, 0, 0, 0.4)',
-        light: 'inset 0 0 6px 0 rgba(0, 0, 0, 0.1)'
+        light: 'inset 0 0 6px 0 rgba(0, 0, 0, 0.1)',
       })};
       border-color: ${themeStyle({
         dark: 'rgba(91, 94, 99, 0.7)',
-        light: 'rgba(216, 220, 227, 0.4)'
+        light: 'rgba(216, 220, 227, 0.4)',
       })};
     }
   `

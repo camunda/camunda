@@ -17,7 +17,7 @@ import * as Styled from './styled';
 
 export default class PopoverOverlay extends React.Component {
   state = {
-    isModalVisible: false
+    isModalVisible: false,
   };
 
   handleModalClose = () => {
@@ -52,16 +52,16 @@ export default class PopoverOverlay extends React.Component {
       metadata,
       selectedFlowNodeId,
       selectedFlowNodeName,
-      onFlowNodeSelection
+      onFlowNodeSelection,
     } = this.props;
 
     const breadcrumbs = getBreadcrumbs({
       metadata,
       selectedFlowNodeName,
-      selectedFlowNodeId
+      selectedFlowNodeId,
     });
 
-    return breadcrumbs.map(item => {
+    return breadcrumbs.map((item) => {
       return item.hasLink ? (
         <Fragment key={`${selectedFlowNodeId}-a${item.name}`}>
           <Styled.Button
@@ -129,7 +129,7 @@ export default class PopoverOverlay extends React.Component {
       onOverlayClear,
       isViewerLoaded,
       selectedFlowNodeId,
-      theme
+      theme,
     } = this.props;
 
     return (
@@ -175,6 +175,6 @@ PopoverOverlay.propTypes = {
     bottom: PropTypes.number,
     left: PropTypes.number,
     side: PropTypes.oneOf(['TOP', 'RIGHT', 'BOTTOM', 'LEFT', 'BOTTOM_MIRROR'])
-      .isRequired
-  }).isRequired
+      .isRequired,
+  }).isRequired,
 };

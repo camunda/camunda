@@ -8,11 +8,11 @@ import {css} from 'styled-components';
 import {Colors, themeStyle} from 'modules/theme';
 
 const focusTransition = 'box-shadow 0.05s ease-out';
-const focusCss = theme => {
+const focusCss = (theme) => {
   return css`
     box-shadow: ${themeStyle({
       dark: `0 0 0 1px ${Colors.lightFocusInner}, 0 0 0 4px ${Colors.focusOuter}`,
-      light: `0 0 0 1px ${Colors.darkFocusInner}, 0 0 0 4px ${Colors.focusOuter}`
+      light: `0 0 0 1px ${Colors.darkFocusInner}, 0 0 0 4px ${Colors.focusOuter}`,
     })};
     outline: none;
 
@@ -22,7 +22,7 @@ const focusCss = theme => {
   `;
 };
 
-const focusSelector = theme => {
+const focusSelector = (theme) => {
   return css`
     &:focus {
       ${focusCss};
@@ -32,16 +32,17 @@ const focusSelector = theme => {
 
 const focus = {
   css: focusCss,
-  selector: focusSelector
+  selector: focusSelector,
 };
 
 export const errorBorders = css`
   &:not(:focus) {
-    ${props => props.hasError && `border-color: ${Colors.incidentsAndErrors};`}
+    ${(props) =>
+      props.hasError && `border-color: ${Colors.incidentsAndErrors};`}
   }
 
   &:focus {
-    ${props =>
+    ${(props) =>
       props.hasError &&
       `box-shadow: 0 0 0 1px ${Colors.incidentsAndErrors}, 0 0 0 4px #ffafaf; 
   `}

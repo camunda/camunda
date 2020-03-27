@@ -28,9 +28,7 @@ export const TextInput = styled(BasicTextInput)`
     margin-left: -1px;
   }
 
-  ${props => props.hasError && 'z-index: 2'}
-
-  :focus {
+  ${(props) => props.hasError && 'z-index: 2'} :focus {
     z-index: 3;
   }
 `;

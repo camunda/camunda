@@ -19,16 +19,16 @@ function withModal(Component) {
   function WithModal(props) {
     return (
       <ModalContext.Consumer>
-        {contextValue => <Component {...props} {...contextValue} />}
+        {(contextValue) => <Component {...props} {...contextValue} />}
       </ModalContext.Consumer>
     );
   }
 
   WithModal.WrappedComponent = Component;
 
-  WithModal.displayName = `WithModal(${Component.displayName ||
-    Component.name ||
-    'Component'})`;
+  WithModal.displayName = `WithModal(${
+    Component.displayName || Component.name || 'Component'
+  })`;
 
   return WithModal;
 }
@@ -39,14 +39,14 @@ export default class Modal extends React.Component {
     isVisible: PropTypes.bool.isRequired,
     children: PropTypes.node,
     className: PropTypes.string,
-    size: PropTypes.oneOf(Object.values(SIZES)).isRequired
+    size: PropTypes.oneOf(Object.values(SIZES)).isRequired,
   };
 
   constructor(props) {
     super(props);
     this.keyHandlers = new Map([
       [27, this.props.onModalClose],
-      [9, this.handleTabKeyDown]
+      [9, this.handleTabKeyDown],
     ]);
     this.modalRef = React.createRef();
     this.eventListenerAdded = false;
@@ -84,17 +84,17 @@ export default class Modal extends React.Component {
     this.prevActiveElement.focus();
   }
 
-  handleKeyDown = e => {
+  handleKeyDown = (e) => {
     const keyHandler = this.keyHandlers.get(e.keyCode);
     return keyHandler && keyHandler(e);
   };
 
-  handleTabKeyDown = e => {
+  handleTabKeyDown = (e) => {
     const focusableModalElements = [
       ...this.modalRef.current.querySelectorAll(
         'a[href], button, textarea, code, input[type="text"], input[type="radio"], input[type="checkbox"], select'
-      )
-    ].filter(element => !!element.disabled === false);
+      ),
+    ].filter((element) => !!element.disabled === false);
 
     const firstElement = focusableModalElements[0];
     const lastElement =
@@ -139,7 +139,7 @@ export default class Modal extends React.Component {
             <ModalContext.Provider
               value={{
                 onModalClose,
-                addKeyHandler: this.addKeyHandler
+                addKeyHandler: this.addKeyHandler,
               }}
             >
               {children}
@@ -157,7 +157,7 @@ Modal.Header = function ModalHeader({children, ...props}) {
     <Styled.ModalHeader {...props}>
       {children}
       <ModalContext.Consumer>
-        {modalContext => (
+        {(modalContext) => (
           <Styled.CrossButton
             data-test="cross-button"
             onClick={modalContext.onModalClose}
@@ -172,7 +172,7 @@ Modal.Header = function ModalHeader({children, ...props}) {
 };
 
 Modal.Header.propTypes = {
-  children: PropTypes.node
+  children: PropTypes.node,
 };
 
 Modal.Body = Styled.ModalBody;
@@ -188,7 +188,7 @@ Modal.Footer = function ModalFooter(props) {
 
 Modal.Footer.propTypes = {
   className: PropTypes.string,
-  children: PropTypes.node
+  children: PropTypes.node,
 };
 
 class ModalPrimaryButton extends React.Component {
@@ -196,7 +196,7 @@ class ModalPrimaryButton extends React.Component {
     addKeyHandler: PropTypes.func.isRequired,
     disableKeyBinding: PropTypes.bool,
     className: PropTypes.string,
-    children: PropTypes.node
+    children: PropTypes.node,
   };
 
   componentDidMount() {
@@ -206,7 +206,7 @@ class ModalPrimaryButton extends React.Component {
 
   primaryButtonRef = React.createRef();
 
-  handleReturnKeyPress = e => {
+  handleReturnKeyPress = (e) => {
     e.preventDefault();
     this.primaryButtonRef.current.click();
   };
@@ -225,14 +225,14 @@ class ModalPrimaryButton extends React.Component {
 }
 
 ModalPrimaryButton.propTypes = {
-  onModalClose: PropTypes.func
+  onModalClose: PropTypes.func,
 };
 
 class ModalSecondaryButton extends React.Component {
   static propTypes = {
     addKeyHandler: PropTypes.func.isRequired,
     className: PropTypes.string,
-    children: PropTypes.node
+    children: PropTypes.node,
   };
 
   render() {
@@ -242,7 +242,7 @@ class ModalSecondaryButton extends React.Component {
 }
 
 ModalSecondaryButton.propTypes = {
-  onModalClose: PropTypes.func
+  onModalClose: PropTypes.func,
 };
 
 Modal.PrimaryButton = withModal(ModalPrimaryButton);

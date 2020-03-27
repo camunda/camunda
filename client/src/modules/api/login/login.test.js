@@ -29,8 +29,8 @@ describe('login api', () => {
       expect(post.mock.calls[0][1]).toBe('username=foo&password=bar');
       expect(post.mock.calls[0][2]).toEqual({
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       });
     });
   });

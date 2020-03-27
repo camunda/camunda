@@ -10,14 +10,14 @@ const mockOperationRunning = {
   endDate: null,
   instancesCount: 1,
   operationsTotalCount: 1,
-  operationsFinishedCount: 0
+  operationsFinishedCount: 0,
 };
 
 const mockExistingOperationFinished = {
   id: '1234',
   type: 'RESOLVE_INCIDENT',
   endDate: '2020-02-06T15:37:29.699+0100',
-  instancesCount: 1
+  instancesCount: 1,
 };
 
 const mockOperationFinished = {
@@ -26,16 +26,16 @@ const mockOperationFinished = {
   endDate: '2020-02-06T15:37:29.699+0100',
   instancesCount: 2,
   operationsTotalCount: 2,
-  operationsFinishedCount: 2
+  operationsFinishedCount: 2,
 };
 
 const mockProps = {
-  onInstancesClick: jest.fn()
+  onInstancesClick: jest.fn(),
 };
 
 export {
   mockOperationRunning,
   mockExistingOperationFinished,
   mockOperationFinished,
-  mockProps
+  mockProps,
 };

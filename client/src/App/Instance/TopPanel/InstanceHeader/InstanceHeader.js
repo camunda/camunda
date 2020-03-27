@@ -26,14 +26,14 @@ class InstanceHeader extends React.PureComponent {
       state: PropTypes.string.isRequired,
       errorMessage: PropTypes.string,
       workflowVersion: PropTypes.number,
-      hasActiveOperation: PropTypes.bool
-    })
+      hasActiveOperation: PropTypes.bool,
+    }),
   };
 
   constructor(props) {
     super(props);
     this.state = {
-      hasActiveOperation: false
+      hasActiveOperation: false,
     };
     this.subscriptions = {};
   }
@@ -77,7 +77,7 @@ class InstanceHeader extends React.PureComponent {
         if (state === LOADING_STATE.LOADING) {
           this.setState({hasActiveOperation: true});
         }
-      }
+      },
     };
 
     dataManager.subscribe(this.subscriptions);

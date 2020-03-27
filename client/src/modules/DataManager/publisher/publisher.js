@@ -12,7 +12,7 @@ export default class Publisher {
   }
 
   printWarning(topic, action) {
-    const getActionTerms = action =>
+    const getActionTerms = (action) =>
       action === 'subscribe'
         ? {action: 'subscribed', counterpart: 'publishes'}
         : {action: 'published', counterpart: 'subscribed'};
@@ -37,7 +37,7 @@ export default class Publisher {
     Object.entries(subscriptions).forEach(([topic, callback]) => {
       if (Array.isArray(this.subscriptions[topic])) {
         this.subscriptions[topic] = this.subscriptions[topic].filter(
-          subcscription => {
+          (subcscription) => {
             return subcscription !== callback;
           }
         );
@@ -47,7 +47,7 @@ export default class Publisher {
 
   publish(topic, value, staticContent) {
     if (Array.isArray(this.subscriptions[topic])) {
-      this.subscriptions[topic].forEach(handle => {
+      this.subscriptions[topic].forEach((handle) => {
         if (staticContent) {
           handle(value, staticContent);
         } else {
@@ -62,16 +62,16 @@ export default class Publisher {
       throw new Error('Unexpected argument type (topics)');
     }
 
-    const disptachLoading = topic => {
+    const disptachLoading = (topic) => {
       this.publish(topic, {state: this.loadingStates.LOADING});
     };
-    const dispatchResponse = topic => {
+    const dispatchResponse = (topic) => {
       this.publish(topic, {
         state: !!response.error
           ? this.loadingStates.LOAD_FAILED
           : this.loadingStates.LOADED,
         response,
-        ...(!!staticContent && {staticContent})
+        ...(!!staticContent && {staticContent}),
       });
     };
 

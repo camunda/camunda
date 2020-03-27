@@ -20,7 +20,7 @@ import OperationsEntry from './OperationsEntry';
 function OperationsPanel({
   isOperationsCollapsed,
   toggleOperations,
-  onInstancesClick
+  onInstancesClick,
 }) {
   const {
     batchOperations,
@@ -55,7 +55,7 @@ function OperationsPanel({
     >
       <Styled.OperationsList>
         {hasBatchOperations(batchOperations) ? (
-          batchOperations.map(batchOperation => (
+          batchOperations.map((batchOperation) => (
             <OperationsEntry
               onInstancesClick={onInstancesClick}
               key={batchOperation.id}
@@ -75,7 +75,7 @@ OperationsPanel.propTypes = {
   isOperationsCollapsed: PropTypes.bool.isRequired,
   toggleOperations: PropTypes.func.isRequired,
   dataManager: PropTypes.object,
-  onInstancesClick: PropTypes.func.isRequired
+  onInstancesClick: PropTypes.func.isRequired,
 };
 
 export default withCollapsablePanel(OperationsPanel);

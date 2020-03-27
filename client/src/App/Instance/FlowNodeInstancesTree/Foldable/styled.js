@@ -34,7 +34,7 @@ const partialBorder = css`
         ? 'none'
         : themeStyle({
             dark: Colors.uiDark04,
-            light: Colors.uiLight05
+            light: Colors.uiLight05,
           })};
   }
 `;
@@ -42,7 +42,7 @@ const partialBorder = css`
 const fullBorder = css`
   border-bottom-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
   border-bottom-width: 1px;
   border-bottom-style: solid;
@@ -78,7 +78,7 @@ export const FocusButton = themed(styled.button`
       showHoverState &&
       themeStyle({
         dark: Colors.darkTreeHover,
-        light: Colors.lightButton05
+        light: Colors.lightButton05,
       })};
   }
 `);

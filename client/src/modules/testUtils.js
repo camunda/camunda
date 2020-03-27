@@ -11,14 +11,14 @@ import {STATE} from 'modules/constants';
  * flushes promises in queue
  */
 export const flushPromises = () => {
-  return new Promise(resolve => setImmediate(resolve));
+  return new Promise((resolve) => setImmediate(resolve));
 };
 
 /**
  * @returns a jest mock function that resolves with given value
  * @param {*} value to resolve with
  */
-export const mockResolvedAsyncFn = value => {
+export const mockResolvedAsyncFn = (value) => {
   return jest.fn(() => Promise.resolve(value));
 };
 
@@ -26,7 +26,7 @@ export const mockResolvedAsyncFn = value => {
  * @returns a jest mock function that rejects with given value
  * @param {*} value to reject with
  */
-export const mockRejectedAsyncFn = value => {
+export const mockRejectedAsyncFn = (value) => {
   return jest.fn(() => Promise.reject(value));
 };
 
@@ -38,7 +38,7 @@ export const mockRejectedAsyncFn = value => {
  */
 export const setProps = (RootComponent, ChildComponent, updatedProps) => {
   return RootComponent.setProps({
-    children: <ChildComponent {...updatedProps} />
+    children: <ChildComponent {...updatedProps} />,
   });
 };
 
@@ -46,7 +46,7 @@ export const setProps = (RootComponent, ChildComponent, updatedProps) => {
  * @returns a higher order function which executes the wrapped method x times;
  * @param {*} x number of times the method should be executed
  */
-export const xTimes = x => method => {
+export const xTimes = (x) => (method) => {
   if (x > 0) {
     method(x);
     xTimes(x - 1)(method);
@@ -91,10 +91,10 @@ export const createQuery = (options = {}) => {
     startDateBefore: '2018-11-13T14:55:58.464Z',
     variablesQuery: {
       name: 'string',
-      value: {}
+      value: {},
     },
     workflowIds: [],
-    ...options
+    ...options,
   };
 };
 
@@ -110,7 +110,7 @@ export const createSelection = (options = {}) => {
     selectionId: 1,
     totalCount: 1,
     instancesMap: new Map([[instanceId, createInstance({id: instanceId})]]),
-    ...options
+    ...options,
   };
 };
 
@@ -132,7 +132,7 @@ export const createIncident = (options = {}) => {
     flowNodeName: 'flowNodeName_alwaysFailingTask',
     creationTime: '2019-03-01T14:26:19',
     hasActiveOperation: false,
-    ...options
+    ...options,
   };
 };
 
@@ -147,7 +147,7 @@ export const createOperation = (options = {}) => {
     startDate: '2018-10-10T09:20:38.661Z',
     state: 'SCHEDULED',
     type: 'RESOLVE_INCIDENT',
-    ...options
+    ...options,
   };
 };
 
@@ -162,7 +162,7 @@ export const createActivity = (options = {}) => {
     id: randomIdIterator.next().value,
     startDate: '2018-10-10T09:20:38.658Z',
     state: 'ACTIVE',
-    ...options
+    ...options,
   };
 };
 
@@ -183,14 +183,14 @@ export const createInstance = (options = {}) => {
     workflowId: '2',
     workflowName: 'someWorkflowName',
     workflowVersion: 1,
-    ...options
+    ...options,
   };
 };
 
 export const createMockInstancesObject = (amount = 5, options = {}) => ({
   workflowInstances: createArrayOfMockInstances(amount),
   totalCount: amount,
-  ...options
+  ...options,
 });
 
 /**
@@ -204,7 +204,7 @@ export const createArrayOfMockInstances = (amount, options = {}) => {
     arrayOfInstances.push(
       createInstance({
         id: randomIdIterator.next().value,
-        ...options
+        ...options,
       })
     )
   );
@@ -215,11 +215,11 @@ export const createArrayOfMockInstances = (amount, options = {}) => {
  * @returns a Map with mocked instanceId 'keys' and instance object 'values'
  * @param {Array} arrayofInstances contains any number of instance objects
  */
-export const createMapOfMockInstances = arrayofInstances => {
+export const createMapOfMockInstances = (arrayofInstances) => {
   const transformedInstances = arrayofInstances.reduce((acc, instance) => {
     return {
       ...acc,
-      [instance.id]: instance
+      [instance.id]: instance,
     };
   }, {});
   return new Map(Object.entries(transformedInstances));
@@ -237,27 +237,27 @@ export const groupedWorkflowsMock = [
         id: '6',
         name: 'New demo process',
         version: 3,
-        bpmnProcessId: 'demoProcess'
+        bpmnProcessId: 'demoProcess',
       },
       {
         id: '4',
         name: 'Demo process',
         version: 2,
-        bpmnProcessId: 'demoProcess'
+        bpmnProcessId: 'demoProcess',
       },
       {
         id: '1',
         name: 'Demo process',
         version: 1,
-        bpmnProcessId: 'demoProcess'
-      }
-    ]
+        bpmnProcessId: 'demoProcess',
+      },
+    ],
   },
   {
     bpmnProcessId: 'orderProcess',
     name: 'Order',
-    workflows: []
-  }
+    workflows: [],
+  },
 ];
 
 /**
@@ -278,7 +278,7 @@ export const createFilter = (options = {}) => {
     completed: true,
     activityId: randomActivityIdIterator.next().value,
     variable: {name: 'myVariable', value: '123'},
-    ...options
+    ...options,
   };
 };
 
@@ -295,7 +295,7 @@ export const createWorkflow = (options = {}) => {
     errorMessage: 'JSON path $.paid has no result.',
     instancesWithActiveIncidentsCount: 37,
     activeInstancesCount: 5,
-    ...options
+    ...options,
   };
 };
 
@@ -314,10 +314,10 @@ export const createInstanceByWorkflow = (options = {}) => {
         name: null,
         bpmnProcessId: 'loanProcess',
         instancesWithActiveIncidentsCount: 16,
-        activeInstancesCount: 122
-      })
+        activeInstancesCount: 122,
+      }),
     ],
-    ...options
+    ...options,
   };
 };
 
@@ -325,7 +325,7 @@ export const createInstanceByWorkflow = (options = {}) => {
  * @returns a mocked InstancesByWorkflow Object as exposed by 'api/incidents/byWorkflow'
  * @param {*} customProps array with any number of instanceByWorkflow Objects
  */
-export const createInstancesByWorkflow = options => {
+export const createInstancesByWorkflow = (options) => {
   return options || [createInstanceByWorkflow()];
 };
 
@@ -345,10 +345,10 @@ export const createInstanceByError = (options = {}) => {
         bpmnProcessId: 'orderProcess',
         errorMessage: "JSON path '$.paid' has no result.",
         instancesWithActiveIncidentsCount: 36,
-        activeInstancesCount: null
-      })
+        activeInstancesCount: null,
+      }),
     ],
-    ...options
+    ...options,
   };
 };
 
@@ -356,7 +356,7 @@ export const createInstanceByError = (options = {}) => {
  * @returns a mocked InstancesByError Object as exposed by 'api/incidents/byError'
  * @param {*} customProps array with any number of instanceByError Objects
  */
-export const createIncidentsByError = options => {
+export const createIncidentsByError = (options) => {
   return options || [createInstanceByError()];
 };
 
@@ -369,7 +369,7 @@ export const createCoreStatistics = (options = {}) => {
     running: 10,
     active: 7,
     withIncident: 3,
-    ...options
+    ...options,
   };
 };
 
@@ -383,15 +383,15 @@ export const createDiagramNode = (options = {}) => {
     name: 'Start Event',
     $type: 'bpmn:StartEvent',
 
-    $instanceOf: type => type === 'bpmn:StartEvent',
-    ...options
+    $instanceOf: (type) => type === 'bpmn:StartEvent',
+    ...options,
   };
 };
 
-export const createActivities = diagramNodes => {
-  return Object.values(diagramNodes).map(diagramNode =>
+export const createActivities = (diagramNodes) => {
+  return Object.values(diagramNodes).map((diagramNode) =>
     createActivity({
-      activityId: diagramNode.id
+      activityId: diagramNode.id,
     })
   );
 };
@@ -403,15 +403,15 @@ export const createDiagramStatistics = () => {
       active: 0,
       canceled: 0,
       incidents: 8,
-      completed: 0
+      completed: 0,
     },
     {
       activityId: 'lastTask',
       active: 0,
       canceled: 0,
       incidents: 21,
-      completed: 0
-    }
+      completed: 0,
+    },
   ];
 };
 
@@ -423,7 +423,7 @@ export const createDefinitions = () => {
     exporterVersion: '0.4.0',
     id: 'Definitions_0hir062',
     rootElements: [],
-    targetNamespace: ''
+    targetNamespace: '',
   };
 };
 
@@ -447,30 +447,30 @@ export const createEvent = (options = {}) => {
       jobWorker: '',
       payload: '',
       workflowId: '1',
-      workflowInstanceId: '53'
+      workflowInstanceId: '53',
     },
     workflowId: '1',
     workflowInstanceId: '1197',
-    ...options
+    ...options,
   };
 };
 
-export const createEvents = activities =>
-  activities.map(node =>
+export const createEvents = (activities) =>
+  activities.map((node) =>
     createEvent({
       activityId: node.activityId,
       activityInstanceId: node.id,
-      bpmnProcessId: node.activityId
+      bpmnProcessId: node.activityId,
     })
   );
 
-export const createMetadata = activityId => ({
+export const createMetadata = (activityId) => ({
   endDate: '--',
   activityInstanceId: activityId,
   jobId: '67',
   startDate: '28 Jan 2019 13:37:46',
   incidentErrorMessage: 'Cannot connect to server delivery05',
-  incidentErrorType: 'JOB_NO_RETRIES'
+  incidentErrorType: 'JOB_NO_RETRIES',
 });
 
 export const createFlowNodeInstance = (options = {}) => {
@@ -484,7 +484,7 @@ export const createFlowNodeInstance = (options = {}) => {
     startDate: '2019-02-07T09:02:34.760+0000',
     state: STATE.ACTIVE,
     type: 'bpmn:StartEvent',
-    ...options
+    ...options,
   };
 };
 
@@ -498,7 +498,7 @@ export const createRawTreeNode = (options = {}) => {
     startDate: '2019-02-07T13:03:36.218Z',
     state: 'ACTIVE',
     type: 'UNSPECIFIED',
-    ...options
+    ...options,
   };
 };
 
@@ -509,7 +509,7 @@ export const createVariables = () => {
       name: 'clientNo',
       value: '"CNT-1211132-02"',
       scopeId: '1031',
-      workflowInstanceId: '1031'
+      workflowInstanceId: '1031',
     },
     {
       id: '1031-items',
@@ -517,15 +517,15 @@ export const createVariables = () => {
       value:
         '[{"code":"123.135.625","name":"Laptop Lenovo ABC-001","quantity":1,"price":488.0},{"code":"111.653.365","name":"Headset Sony QWE-23","quantity":2,"price":72.0}]',
       scopeId: '1031',
-      workflowInstanceId: '1031'
+      workflowInstanceId: '1031',
     },
     {
       id: '1031-mwst',
       name: 'mwst',
       value: '106.4',
       scopeId: '1031',
-      workflowInstanceId: '1031'
-    }
+      workflowInstanceId: '1031',
+    },
   ];
 };
 export const diObject = {set: jest.fn()};
@@ -535,22 +535,22 @@ export const createSequenceFlows = () => {
     {
       id: '2251799813695632',
       workflowInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_0drux68'
+      activityId: 'SequenceFlow_0drux68',
     },
     {
       id: '2251799813693749',
       workflowInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_0j6tsnn'
+      activityId: 'SequenceFlow_0j6tsnn',
     },
     {
       id: '2251799813695543',
       workflowInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_1dwqvrt'
+      activityId: 'SequenceFlow_1dwqvrt',
     },
     {
       id: '2251799813695629',
       workflowInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_1fgekwd'
-    }
+      activityId: 'SequenceFlow_1fgekwd',
+    },
   ];
 };

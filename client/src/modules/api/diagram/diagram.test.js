@@ -18,7 +18,7 @@ describe('diagram api', () => {
       const expectedURL = `/api/workflows/${id}/xml`;
       const mockXML = '<foo />';
       const successResponse = {
-        text: mockResolvedAsyncFn(mockXML)
+        text: mockResolvedAsyncFn(mockXML),
       };
       wrappers.get = mockResolvedAsyncFn(successResponse);
 

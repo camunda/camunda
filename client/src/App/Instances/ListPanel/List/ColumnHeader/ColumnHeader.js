@@ -18,7 +18,7 @@ function ColumnHeader(props) {
         onClick: () => {
           !disabled && onSort(sortKey);
         },
-        title: `Sort by ${sortKey}`
+        title: `Sort by ${sortKey}`,
       }
     : {disabled};
 
@@ -47,7 +47,7 @@ ColumnHeader.propTypes = {
   label: PropTypes.string.isRequired,
   sortKey: PropTypes.string,
   onSort: PropTypes.func,
-  sorting: PropTypes.object
+  sorting: PropTypes.object,
 };
 
 export default ColumnHeader;

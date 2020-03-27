@@ -18,7 +18,7 @@ jest.mock('modules/utils/bpmn');
 function FooComp(props) {
   return (
     <CountContext.Consumer>
-      {countStore => <div countStore={countStore} />}
+      {(countStore) => <div countStore={countStore} />}
     </CountContext.Consumer>
   );
 }
@@ -43,7 +43,7 @@ describe('CountContext', () => {
     dataManager = createMockDataManager();
 
     node = mountComponent(dataManager, {
-      filterCount: 0
+      filterCount: 0,
     });
   });
 
@@ -107,7 +107,7 @@ describe('CountContext', () => {
 
         subscriptions['LOAD_CORE_STATS']({
           state: 'LOADED',
-          response: coreStatistics
+          response: coreStatistics,
         });
 
         jest.setTimeout(1, () => {
@@ -127,8 +127,8 @@ describe('CountContext', () => {
           state: 'LOADED',
           response: {
             LOAD_CORE_STATS: {coreStatistics},
-            LOAD_LIST_INSTANCES: {totalCount}
-          }
+            LOAD_LIST_INSTANCES: {totalCount},
+          },
         });
 
         jest.setTimeout(1, () => {
@@ -145,12 +145,12 @@ describe('CountContext', () => {
       it('should update when new instances are loaded', () => {
         const subscriptions = dataManager.subscriptions();
         const response = {
-          totalCount: dataRequests.totalCount
+          totalCount: dataRequests.totalCount,
         };
 
         subscriptions['LOAD_LIST_INSTANCES']({
           state: 'LOADED',
-          response
+          response,
         });
 
         jest.setTimeout(1, () => {

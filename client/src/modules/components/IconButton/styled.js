@@ -24,7 +24,7 @@ export const Icon = themed(styled.div`
 
   svg {
     // default icon color/opacity
-    ${props => getTheme(props.iconButtonTheme).default.icon[props.theme]}};
+    ${(props) => getTheme(props.iconButtonTheme).default.icon[props.theme]}};
   }
 
   &:before {
@@ -37,7 +37,8 @@ export const Icon = themed(styled.div`
     z-index: -1;
 
     // default background color/opacity
-    ${props => getTheme(props.iconButtonTheme).default.background[props.theme]};
+    ${(props) =>
+      getTheme(props.iconButtonTheme).default.background[props.theme]};
   }
 `);
 
@@ -51,7 +52,7 @@ export const Button = themed(styled.button`
   &:hover {
     ${Icon.WrappedComponent}::before {
       // hover background color/opacity
-      ${props =>
+      ${(props) =>
         !props.disabled &&
         getTheme(props.iconButtonTheme).hover.background[props.theme]}
 
@@ -61,7 +62,7 @@ export const Button = themed(styled.button`
     ${Icon.WrappedComponent} {
       svg {
         // hover icon color/opacity
-        ${props =>
+        ${(props) =>
           !props.disabled &&
           getTheme(props.iconButtonTheme).hover.icon[props.theme]};
       }
@@ -71,13 +72,14 @@ export const Button = themed(styled.button`
   &:active {
     ${Icon.WrappedComponent}::before {
       // active background color/opacity
-      ${props => getTheme(props.iconButtonTheme).active.background[props.theme]}
+      ${(props) =>
+        getTheme(props.iconButtonTheme).active.background[props.theme]}
     }
 
     ${Icon.WrappedComponent} {
       svg {
         // active icon color/opacity
-        ${props => getTheme(props.iconButtonTheme).active.icon[props.theme]};
+        ${(props) => getTheme(props.iconButtonTheme).active.icon[props.theme]};
       }
     }
   }

@@ -21,12 +21,12 @@ export default class FlowNodeInstancesTree extends React.Component {
       activityId: PropTypes.string,
       state: PropTypes.oneOf(Object.values(STATE)),
       children: PropTypes.arrayOf(PropTypes.object),
-      isLastChild: PropTypes.bool
+      isLastChild: PropTypes.bool,
     }),
     selectedTreeRowIds: PropTypes.array.isRequired,
     treeDepth: PropTypes.number.isRequired,
     onTreeRowSelection: PropTypes.func.isRequired,
-    getNodeWithMetaData: PropTypes.func.isRequired
+    getNodeWithMetaData: PropTypes.func.isRequired,
   };
 
   renderNode = () => {
@@ -80,7 +80,7 @@ export default class FlowNodeInstancesTree extends React.Component {
             key={index}
             node={{
               ...childNode,
-              isLastChild: this.props.node.children.length === index + 1
+              isLastChild: this.props.node.children.length === index + 1,
             }}
             treeDepth={this.props.treeDepth + 1}
             selectedTreeRowIds={this.props.selectedTreeRowIds}

@@ -26,7 +26,7 @@ jest.mock('modules/utils/bpmn');
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
-  const FakeCSSTransition = jest.fn(props =>
+  const FakeCSSTransition = jest.fn((props) =>
     props.in ? <FakeTransition>{props.children}</FakeTransition> : null
   );
 
@@ -40,12 +40,12 @@ jest.mock('react-transition-group', () => {
     CSSTransition: FakeCSSTransition,
     Transition: FakeTransition,
     TransitionGroup: jest.fn(({children}) => {
-      return children.map(transtion => {
+      return children.map((transtion) => {
         const completedTransition = {...transtion};
         completedTransition.props = {...transtion.props, in: true};
         return completedTransition;
       });
-    })
+    }),
   };
 });
 
@@ -178,7 +178,7 @@ describe('IncidentsWrapper', () => {
       const PillsByFlowNode = node.find(
         'ul[data-test="incidents-by-flowNode"]'
       );
-      PillsByFlowNode.find(Pill).forEach(pill => {
+      PillsByFlowNode.find(Pill).forEach((pill) => {
         expect(pill.props().isActive).toEqual(false);
       });
 
@@ -186,7 +186,7 @@ describe('IncidentsWrapper', () => {
       const PillsByErrorType = node.find(
         'ul[data-test="incidents-by-errorType"]'
       );
-      PillsByErrorType.find(Pill).forEach(pill => {
+      PillsByErrorType.find(Pill).forEach((pill) => {
         expect(pill.props().isActive).toEqual(false);
       });
     });
@@ -281,7 +281,7 @@ describe('IncidentsWrapper', () => {
       // Incident is resolved
 
       node.setProps({
-        children: <IncidentsWrapper {...testData.props.incidentResolved} />
+        children: <IncidentsWrapper {...testData.props.incidentResolved} />,
       });
       node.update();
 
@@ -351,7 +351,7 @@ describe('IncidentsWrapper', () => {
       expect(node.find(IncidentsTable).find('tr').length).toBe(3);
 
       // no filter pill active
-      node.find(Pill).forEach(pill => {
+      node.find(Pill).forEach((pill) => {
         expect(pill.props().isActive).toEqual(false);
       });
     });

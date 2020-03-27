@@ -16,7 +16,7 @@ import Dropdown from './Dropdown';
 import * as Styled from './styled';
 
 const buttonStyles = {
-  fontSize: '13px'
+  fontSize: '13px',
 };
 
 const stringLabel = 'Some Label';
@@ -24,7 +24,7 @@ const stringLabel = 'Some Label';
 const mockOnOpen = jest.fn();
 const mockOnClick = jest.fn();
 
-const mountDropDown = placement => {
+const mountDropDown = (placement) => {
   return mount(
     <ThemeProvider>
       <Dropdown
@@ -56,10 +56,7 @@ describe('Dropdown', () => {
     expect(node.find(Dropdown.Option)).not.toExist();
 
     //when
-    node
-      .find('button')
-      .find("[data-test='dropdown-toggle']")
-      .simulate('click');
+    node.find('button').find("[data-test='dropdown-toggle']").simulate('click');
 
     //then
     expect(node.find(Dropdown.Option)).toExist();
@@ -84,16 +81,10 @@ describe('Dropdown', () => {
 
   it('should isOpen/close on click of the button', () => {
     //given
-    node
-      .find('button')
-      .find("[data-test='dropdown-toggle']")
-      .simulate('click');
+    node.find('button').find("[data-test='dropdown-toggle']").simulate('click');
     expect(node.find(Dropdown).state().isOpen).toBe(true);
     //when
-    node
-      .find('button')
-      .find("[data-test='dropdown-toggle']")
-      .simulate('click');
+    node.find('button').find("[data-test='dropdown-toggle']").simulate('click');
     //then
     expect(node.find(Dropdown).state().isOpen).toBe(false);
   });
@@ -101,10 +92,7 @@ describe('Dropdown', () => {
   it('should close the dropdown when clicking anywhere', async () => {
     //given
     const onCloseSpy = jest.spyOn(node.find(Dropdown).instance(), 'onClose');
-    await node
-      .find(Dropdown)
-      .instance()
-      .componentDidMount();
+    await node.find(Dropdown).instance().componentDidMount();
     //when
     document.body.click();
     //then
@@ -113,10 +101,7 @@ describe('Dropdown', () => {
 
   it('should call onOpen on the initial click', () => {
     // when clicking to open
-    node
-      .find('button')
-      .find("[data-test='dropdown-toggle']")
-      .simulate('click');
+    node.find('button').find("[data-test='dropdown-toggle']").simulate('click');
     expect(mockOnOpen).toHaveBeenCalledTimes(1);
   });
 });

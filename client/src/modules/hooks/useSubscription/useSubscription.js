@@ -21,7 +21,7 @@ export default function useSubscription() {
         if (statehooks.includes(state)) {
           cb(response);
         }
-      }
+      },
     };
     dataManager.subscribe(subscription);
     setSubscription(subscription);

@@ -10,12 +10,12 @@ import {request, setResponseInterceptor} from './request';
 
 const successResponse = {
   status: 200,
-  content: 'I have some content'
+  content: 'I have some content',
 };
 
 const failedResponse = {
   status: 401,
-  content: 'FAILED'
+  content: 'FAILED',
 };
 
 describe('request', () => {
@@ -62,7 +62,7 @@ describe('request', () => {
         credentials: 'include',
         body: 'body',
         headers: {'Content-Type': 'application/json'},
-        mode: 'cors'
+        mode: 'cors',
       };
 
       // when
@@ -101,7 +101,7 @@ describe('request', () => {
   });
 
   describe('CSRF', () => {
-    const setCsrfToken = token => {
+    const setCsrfToken = (token) => {
       document.cookie = `X-CSRF-TOKEN=${token}`;
     };
 

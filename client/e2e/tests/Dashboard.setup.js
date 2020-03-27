@@ -11,12 +11,12 @@ export async function setup() {
     './tests/resources/withoutInstancesProcess_v_1.bpmn',
     './tests/resources/withoutIncidentsProcess_v_1.bpmn',
     './tests/resources/onlyIncidentsProcess_v_1.bpmn',
-    './tests/resources/orderProcess_v_1.bpmn'
+    './tests/resources/orderProcess_v_1.bpmn',
   ]);
   await deploy([
     './tests/resources/withoutInstancesProcess_v_2.bpmn',
     './tests/resources/withoutIncidentsProcess_v_2.bpmn',
-    './tests/resources/onlyIncidentsProcess_v_2.bpmn'
+    './tests/resources/onlyIncidentsProcess_v_2.bpmn',
   ]);
 
   await createInstances('withoutIncidentsProcess', 1, 4);

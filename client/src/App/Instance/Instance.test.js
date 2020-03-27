@@ -19,7 +19,7 @@ import {ThemeProvider} from 'modules/theme';
 
 import {
   createMockDataManager,
-  constants as dataManagerConstants
+  constants as dataManagerConstants,
 } from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 
@@ -33,7 +33,7 @@ import {
   getActivityIdToActivityInstancesMap,
   getSelectableFlowNodes,
   createNodeMetaDataMap,
-  isRunningInstance
+  isRunningInstance,
 } from './service';
 
 // mock modules
@@ -94,7 +94,7 @@ const {
   instanceHistoryTree,
   diagramNodes,
   events,
-  processedSequenceFlows
+  processedSequenceFlows,
 } = testData.fetch.onPageLoad;
 
 const {mockDefinition} = testData.diagramData;
@@ -114,9 +114,9 @@ describe('Instance', () => {
         [
           ThemeProvider,
           {
-            Wrapper: DataManagerProvider
+            Wrapper: DataManagerProvider,
           },
-          MemoryRouter
+          MemoryRouter,
         ],
         Instance,
         {match: testData.props.match}
@@ -145,7 +145,7 @@ describe('Instance', () => {
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-          response: {...workflowInstance}
+          response: {...workflowInstance},
         });
 
         // update document title
@@ -163,7 +163,7 @@ describe('Instance', () => {
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-          response: workflowInstance
+          response: workflowInstance,
         });
 
         //then
@@ -190,7 +190,7 @@ describe('Instance', () => {
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-          response: workflowInstanceWithIncident
+          response: workflowInstanceWithIncident,
         });
 
         expect(dataManager.getIncidents).toHaveBeenCalledWith(
@@ -204,7 +204,7 @@ describe('Instance', () => {
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-          response: workflowInstance
+          response: workflowInstance,
         });
 
         expect(node.instance().state.instance).toEqual(workflowInstance);
@@ -217,7 +217,7 @@ describe('Instance', () => {
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INCIDENTS],
-          response: incidents
+          response: incidents,
         });
         // then
         expect(node.instance().state.incidents).toEqual(incidents);
@@ -230,11 +230,11 @@ describe('Instance', () => {
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-          response: workflowInstance
+          response: workflowInstance,
         });
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-          response: variables
+          response: variables,
         });
         // then
         expect(node.instance().state.variables).toEqual(variables);
@@ -247,7 +247,7 @@ describe('Instance', () => {
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_EVENTS],
-          response: events
+          response: events,
         });
         // then
         expect(node.instance().state.events).toEqual(events);
@@ -260,7 +260,7 @@ describe('Instance', () => {
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INCIDENTS],
-          response: incidents
+          response: incidents,
         });
         // then
         expect(node.instance().state.incidents).toEqual(incidents);
@@ -274,7 +274,7 @@ describe('Instance', () => {
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE],
           response: instanceHistoryTree,
-          staticContent: workflowInstance
+          staticContent: workflowInstance,
         });
         // then
         expect(node.instance().state.activityIdToActivityInstanceMap).toEqual(
@@ -285,7 +285,7 @@ describe('Instance', () => {
           id: workflowInstance.id,
           type: 'WORKFLOW',
           state: workflowInstance.state,
-          endDate: workflowInstance.endDate
+          endDate: workflowInstance.endDate,
         });
       });
     });
@@ -298,7 +298,7 @@ describe('Instance', () => {
           subscription:
             subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
           response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-          staticContent: {}
+          staticContent: {},
         });
         // then
         expect(node.instance().state.nodeMetaDataMap).toEqual(
@@ -319,14 +319,14 @@ describe('Instance', () => {
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS],
-          response: processedSequenceFlows
+          response: processedSequenceFlows,
         });
         // then
         expect(node.instance().state.processedSequenceFlows).toEqual([
           'SequenceFlow_0drux68',
           'SequenceFlow_0j6tsnn',
           'SequenceFlow_1dwqvrt',
-          'SequenceFlow_1fgekwd'
+          'SequenceFlow_1fgekwd',
         ]);
       });
     });
@@ -341,8 +341,8 @@ describe('Instance', () => {
             LOAD_INSTANCE: workflowInstance,
             LOAD_EVENTS: events,
             LOAD_INSTANCE_TREE: instanceHistoryTree,
-            LOAD_SEQUENCE_FLOWS: processedSequenceFlows
-          }
+            LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
+          },
         });
 
         //then
@@ -369,8 +369,8 @@ describe('Instance', () => {
             LOAD_INCIDENTS: incidents,
             LOAD_EVENTS: events,
             LOAD_INSTANCE_TREE: instanceHistoryTree,
-            LOAD_SEQUENCE_FLOWS: processedSequenceFlows
-          }
+            LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
+          },
         });
 
         //then
@@ -405,13 +405,13 @@ describe('Instance', () => {
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstance
+        response: workflowInstance,
       });
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
         response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-        staticContent: workflowInstance
+        staticContent: workflowInstance,
       });
 
       dataManager.publish({
@@ -422,8 +422,8 @@ describe('Instance', () => {
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
-          LOAD_SEQUENCE_FLOWS: processedSequenceFlows
-        }
+          LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
+        },
       });
       node.update();
 
@@ -444,13 +444,13 @@ describe('Instance', () => {
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstanceCompleted
+        response: workflowInstanceCompleted,
       });
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
         response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-        staticContent: workflowInstanceCompleted
+        staticContent: workflowInstanceCompleted,
       });
 
       dataManager.publish({
@@ -461,8 +461,8 @@ describe('Instance', () => {
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
-          LOAD_SEQUENCE_FLOWS: processedSequenceFlows
-        }
+          LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
+        },
       });
       node.update();
 
@@ -477,13 +477,13 @@ describe('Instance', () => {
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstanceCanceled
+        response: workflowInstanceCanceled,
       });
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
         response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-        staticContent: workflowInstanceCompleted
+        staticContent: workflowInstanceCompleted,
       });
 
       dataManager.publish({
@@ -494,8 +494,8 @@ describe('Instance', () => {
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
-          LOAD_SEQUENCE_FLOWS: processedSequenceFlows
-        }
+          LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
+        },
       });
       node.update();
 
@@ -509,13 +509,13 @@ describe('Instance', () => {
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstance
+        response: workflowInstance,
       });
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
         response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-        staticContent: workflowInstance
+        staticContent: workflowInstance,
       });
 
       dataManager.publish({
@@ -526,8 +526,8 @@ describe('Instance', () => {
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
-          LOAD_SEQUENCE_FLOWS: processedSequenceFlows
-        }
+          LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
+        },
       });
       node.update();
 
@@ -536,7 +536,7 @@ describe('Instance', () => {
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstanceWithIncident
+        response: workflowInstanceWithIncident,
       });
 
       node.update();
@@ -580,7 +580,7 @@ describe('Instance', () => {
     it('should render properly', () => {
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstance
+        response: workflowInstance,
       });
 
       node.update();

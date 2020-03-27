@@ -14,7 +14,7 @@ import {createWorkflow, createInstanceByWorkflow} from 'modules/testUtils';
 
 const mockInstancesByWorkflow = [
   createInstanceByWorkflow({
-    workflows: [createWorkflow()]
+    workflows: [createWorkflow()],
   }),
   createInstanceByWorkflow({
     instancesWithActiveIncidentsCount: 65,
@@ -23,23 +23,23 @@ const mockInstancesByWorkflow = [
     bpmnProcessId: 'orderProcess',
     workflows: [
       createWorkflow({name: 'First Version', version: 1}),
-      createWorkflow({name: 'Second Version', version: 2})
-    ]
+      createWorkflow({name: 'Second Version', version: 2}),
+    ],
   }),
   createInstanceByWorkflow({
     bpmnProcessId: 'noIncidentsProcess',
     workflowName: 'Without Incidents Process',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 23,
-    workflows: [createWorkflow()]
+    workflows: [createWorkflow()],
   }),
   createInstanceByWorkflow({
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 0,
     bpmnProcessId: 'noInstancesProcess',
     workflowName: 'Without Instances Process',
-    workflows: [createWorkflow()]
-  })
+    workflows: [createWorkflow()],
+  }),
 ];
 
 describe('InstancesByWorkflow', () => {

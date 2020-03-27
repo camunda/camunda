@@ -11,7 +11,7 @@ import {act} from 'react-dom/test-utils';
 import {
   FILTER_TYPES,
   DEFAULT_FILTER,
-  DEFAULT_FILTER_CONTROLLED_VALUES
+  DEFAULT_FILTER_CONTROLLED_VALUES,
 } from 'modules/constants';
 import Button from 'modules/components/Button';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
@@ -29,7 +29,7 @@ import {
   mockPropsWithSelectableFlowNodes,
   mockPropsWithInitFilter,
   mockPropsWithDefaultFilter,
-  COMPLETE_FILTER
+  COMPLETE_FILTER,
 } from './Filters.setup';
 
 import {DEBOUNCE_DELAY, ALL_VERSIONS_OPTION} from './constants';
@@ -113,7 +113,7 @@ describe('Filters', () => {
       active,
       incidents,
       completed,
-      canceled
+      canceled,
     } = DEFAULT_FILTER_CONTROLLED_VALUES;
 
     const node = mount(
@@ -138,7 +138,7 @@ describe('Filters', () => {
   });
 
   describe('errorMessage filter', () => {
-    it('should render an errorMessage field', done => {
+    it('should render an errorMessage field', (done) => {
       // given
       const node = mount(
         <ThemeProvider>
@@ -153,7 +153,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'errorMessage')
+        .filterWhere((n) => n.props().name === 'errorMessage')
         .find('input');
 
       field.simulate('change', {target: {value: 'asd', name: 'errorMessage'}});
@@ -164,14 +164,14 @@ describe('Filters', () => {
         expect(field.prop('placeholder')).toEqual('Error Message');
         expect(field.prop('value')).toEqual('');
         expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          errorMessage: 'asd'
+          errorMessage: 'asd',
         });
 
         done();
       }, DEBOUNCE_DELAY * 2);
     });
 
-    it('should not call onFilterChange before debounce delay', done => {
+    it('should not call onFilterChange before debounce delay', (done) => {
       // given
       const node = mount(
         <ThemeProvider>
@@ -186,7 +186,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'errorMessage');
+        .filterWhere((n) => n.props().name === 'errorMessage');
 
       field.simulate('change', {target: {value: '', name: 'errorMessage'}});
 
@@ -226,7 +226,7 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'errorMessage');
+        .filterWhere((n) => n.props().name === 'errorMessage');
 
       // then
       expect(field.props().value).toEqual('This is an error message');
@@ -242,13 +242,13 @@ describe('Filters', () => {
       );
 
       node.instance().handleControlledInputChange({
-        target: {value: 'error message', name: 'errorMessage'}
+        target: {value: 'error message', name: 'errorMessage'},
       });
 
       expect(node.state().filter.errorMessage).toEqual('error message');
     });
 
-    it('should call onFilterChange with the right error message', done => {
+    it('should call onFilterChange with the right error message', (done) => {
       // given
       const errorMessage = 'lorem ipsum';
       const node = shallow(
@@ -262,20 +262,20 @@ describe('Filters', () => {
 
       //when
       instance.handleControlledInputChange({
-        target: {value: errorMessage, name: 'errorMessage'}
+        target: {value: errorMessage, name: 'errorMessage'},
       });
       instance.waitForTimer(instance.propagateFilter);
 
       setTimeout(() => {
         // then
         expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          errorMessage
+          errorMessage,
         });
         done();
       }, DEBOUNCE_DELAY * 2);
     });
 
-    it('should call onFilterChange with empty object', done => {
+    it('should call onFilterChange with empty object', (done) => {
       // given
       const emptyErrorMessage = '';
       const node = shallow(
@@ -289,7 +289,7 @@ describe('Filters', () => {
 
       //when
       instance.handleControlledInputChange({
-        target: {value: emptyErrorMessage, name: 'errorMessage'}
+        target: {value: emptyErrorMessage, name: 'errorMessage'},
       });
       instance.waitForTimer(instance.propagateFilter);
 
@@ -320,7 +320,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.Textarea)
-        .filterWhere(n => n.props().name === 'ids');
+        .filterWhere((n) => n.props().name === 'ids');
 
       // when
       field.simulate('change', {target});
@@ -336,7 +336,7 @@ describe('Filters', () => {
         'Instance Id(s) separated by space or comma'
       );
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        [target.name]: target.value
+        [target.name]: target.value,
       });
     });
 
@@ -362,7 +362,7 @@ describe('Filters', () => {
       );
 
       node.instance().handleControlledInputChange({
-        target: {value: 'aa, ab, ac', name: 'ids'}
+        target: {value: 'aa, ab, ac', name: 'ids'},
       });
 
       expect(node.state().filter.ids).toEqual('aa, ab, ac');
@@ -377,7 +377,7 @@ describe('Filters', () => {
               {...mockPropsWithInitFilter}
               filter={{
                 ...DEFAULT_FILTER_CONTROLLED_VALUES,
-                ids: '0000000000000001, 0000000000000002'
+                ids: '0000000000000001, 0000000000000002',
               }}
             />
           </CollapsablePanelProvider>
@@ -386,7 +386,7 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.Textarea)
-        .filterWhere(n => n.props().name === 'ids');
+        .filterWhere((n) => n.props().name === 'ids');
 
       // then
       expect(field.props().value).toEqual('0000000000000001, 0000000000000002');
@@ -406,13 +406,13 @@ describe('Filters', () => {
       //when
       const instance = node.instance();
       instance.handleControlledInputChange({
-        target: {value: instanceIds, name: 'ids'}
+        target: {value: instanceIds, name: 'ids'},
       });
       instance.propagateFilter();
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ids: instanceIds
+        ids: instanceIds,
       });
     });
 
@@ -431,7 +431,7 @@ describe('Filters', () => {
       //when
       const instance = node.instance();
       instance.handleControlledInputChange({
-        target: {value: emptyInstanceIds, name: 'ids'}
+        target: {value: emptyInstanceIds, name: 'ids'},
       });
       instance.propagateFilter();
 
@@ -456,7 +456,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
       const onChange = field.props().onChange;
 
       // when
@@ -484,7 +484,7 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
 
       // then
       expect(field.props().value).toEqual('demoProcess');
@@ -505,11 +505,11 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
 
       expect(field.props().options).toEqual([
         {value: 'demoProcess', label: 'New demo process'},
-        {value: 'orderProcess', label: 'Order'}
+        {value: 'orderProcess', label: 'Order'},
       ]);
     });
 
@@ -551,7 +551,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'version');
+        .filterWhere((n) => n.props().name === 'version');
       const onChange = field.props().onChange;
 
       // when
@@ -579,7 +579,7 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'version');
+        .filterWhere((n) => n.props().name === 'version');
 
       // then
       expect(field.props().value).toEqual('2');
@@ -601,14 +601,14 @@ describe('Filters', () => {
       );
       const workflowField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
       //when
       workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'version');
+        .filterWhere((n) => n.props().name === 'version');
       // then
       expect(field.props().value).toEqual(
         String(groupedWorkflowsMock[0].workflows[0].version)
@@ -634,14 +634,14 @@ describe('Filters', () => {
 
       const workflowField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
       //when
       workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
       const options = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'version')
+        .filterWhere((n) => n.props().name === 'version')
         .props().options;
 
       // then
@@ -667,11 +667,11 @@ describe('Filters', () => {
       );
       const workflowField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
 
       const versionField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'version');
+        .filterWhere((n) => n.props().name === 'version');
 
       //when
       // select workflowName, the version is set to the latest
@@ -687,7 +687,7 @@ describe('Filters', () => {
       expect(
         node
           .find(Styled.Select)
-          .filterWhere(n => n.props().name === 'version')
+          .filterWhere((n) => n.props().name === 'version')
           .props().value
       ).toEqual(String(groupedWorkflowsMock[0].workflows[0].version));
       // should update the workflow in Instances
@@ -709,7 +709,7 @@ describe('Filters', () => {
       );
       const workflowField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
 
       //when
       // select workflowName, the version is set to the latest
@@ -725,13 +725,13 @@ describe('Filters', () => {
       expect(
         node
           .find(Styled.Select)
-          .filterWhere(n => n.props().name === 'version')
+          .filterWhere((n) => n.props().name === 'version')
           .props().value
       ).toEqual('');
       expect(
         node
           .find(Styled.Select)
-          .filterWhere(n => n.props().name === 'workflow')
+          .filterWhere((n) => n.props().name === 'workflow')
           .props().value
       ).toEqual('');
     });
@@ -754,7 +754,7 @@ describe('Filters', () => {
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
         workflow: 'demoProcess',
-        version: '3'
+        version: '3',
       });
     });
 
@@ -779,7 +779,7 @@ describe('Filters', () => {
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
         version: ALL_VERSIONS_OPTION,
-        workflow: workflowName
+        workflow: workflowName,
       });
     });
   });
@@ -800,7 +800,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'activityId');
+        .filterWhere((n) => n.props().name === 'activityId');
       const onChange = field.props().onChange;
 
       //when
@@ -828,7 +828,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'activityId');
+        .filterWhere((n) => n.props().name === 'activityId');
 
       // then
       expect(field.props().value).toEqual('4');
@@ -850,10 +850,10 @@ describe('Filters', () => {
 
       const workflowField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
       const versionField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'version');
+        .filterWhere((n) => n.props().name === 'version');
 
       //when
       // select workflowName, the version is set to the latest
@@ -865,7 +865,7 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'activityId');
+        .filterWhere((n) => n.props().name === 'activityId');
 
       // then
       expect(field.props().disabled).toEqual(true);
@@ -886,10 +886,10 @@ describe('Filters', () => {
       );
       const workflowField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
       const versionField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'version');
+        .filterWhere((n) => n.props().name === 'version');
 
       //when
       // select workflowName, the version is set to the latest
@@ -897,13 +897,13 @@ describe('Filters', () => {
       node.update();
 
       versionField.prop('onChange')({
-        target: {value: groupedWorkflowsMock[0].workflows[0].version}
+        target: {value: groupedWorkflowsMock[0].workflows[0].version},
       });
       node.update();
 
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'activityId');
+        .filterWhere((n) => n.props().name === 'activityId');
 
       // then
       expect(field.props().disabled).toEqual(false);
@@ -925,7 +925,7 @@ describe('Filters', () => {
       );
       const workflowField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
 
       //when
       // select workflowName, the version is set to the latest
@@ -934,7 +934,7 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'activityId');
+        .filterWhere((n) => n.props().name === 'activityId');
 
       expect(field.props().options[0].value).toEqual(
         mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].id
@@ -957,7 +957,7 @@ describe('Filters', () => {
         {id: 'TaskC', $type: 'bpmn:StartEvent', name: 'task C'},
         {id: 'TaskA', $type: 'bpmn:StartEvent', name: 'task A'},
         {id: 'TaskD', $type: 'bpmn:AEndEvent'},
-        {id: 'TaskE', $type: 'bpmn:CEndEvent'}
+        {id: 'TaskE', $type: 'bpmn:CEndEvent'},
       ];
 
       const node = mount(
@@ -975,7 +975,7 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'activityId');
+        .filterWhere((n) => n.props().name === 'activityId');
 
       expect(field.props().options[0].label).toEqual(
         unsortedSelectableFlowNodes[1].name
@@ -1003,7 +1003,7 @@ describe('Filters', () => {
 
       const workflowField = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'workflow');
+        .filterWhere((n) => n.props().name === 'workflow');
 
       //when
       // select workflowName, the version is set to the latest
@@ -1015,7 +1015,7 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'activityId');
+        .filterWhere((n) => n.props().name === 'activityId');
 
       // then
       expect(field.props().disabled).toEqual(true);
@@ -1037,7 +1037,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.Select)
-        .filterWhere(n => n.props().name === 'activityId');
+        .filterWhere((n) => n.props().name === 'activityId');
 
       // then
       expect(field.props().options.length).toEqual(2);
@@ -1068,8 +1068,8 @@ describe('Filters', () => {
       instance.handleControlledInputChange({
         target: {
           value: mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].id,
-          name: 'activityId'
-        }
+          name: 'activityId',
+        },
       });
       instance.propagateFilter();
 
@@ -1097,7 +1097,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'startDate')
+        .filterWhere((n) => n.props().name === 'startDate')
         .find('input');
 
       field.simulate('change', {target});
@@ -1113,7 +1113,7 @@ describe('Filters', () => {
       );
       expect(field.props().value).toEqual('');
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        startDate: '1084-10-08'
+        startDate: '1084-10-08',
       });
     });
 
@@ -1131,7 +1131,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'startDate');
+        .filterWhere((n) => n.props().name === 'startDate');
 
       // then
       expect(field.props().value).toEqual('2018-10-08');
@@ -1149,7 +1149,7 @@ describe('Filters', () => {
 
       //when
       node.instance().handleControlledInputChange({
-        target: {value: '2009-01-25 10:23:01', name: 'startDate'}
+        target: {value: '2009-01-25 10:23:01', name: 'startDate'},
       });
       node.update();
 
@@ -1168,7 +1168,7 @@ describe('Filters', () => {
       //when
       const instance = node.instance();
       instance.handleControlledInputChange({
-        target: {value: '2009-01-25', name: 'startDate'}
+        target: {value: '2009-01-25', name: 'startDate'},
       });
       instance.propagateFilter();
       node.update();
@@ -1192,7 +1192,7 @@ describe('Filters', () => {
       //when
       const instance = node.instance();
       instance.handleControlledInputChange({
-        target: {value: '', name: 'startDate'}
+        target: {value: '', name: 'startDate'},
       });
       instance.propagateFilter();
       node.update();
@@ -1221,7 +1221,7 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'endDate')
+        .filterWhere((n) => n.props().name === 'endDate')
         .find('input');
 
       field.simulate('change', {target});
@@ -1235,7 +1235,7 @@ describe('Filters', () => {
       expect(field.props().placeholder).toEqual('End Date yyyy-mm-dd hh:mm:ss');
       expect(field.props().value).toEqual('');
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        endDate: '1984-10-08'
+        endDate: '1984-10-08',
       });
     });
 
@@ -1255,7 +1255,7 @@ describe('Filters', () => {
       //when
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'endDate');
+        .filterWhere((n) => n.props().name === 'endDate');
 
       // then
       expect(field.props().value).toEqual('2018-10-10');
@@ -1273,7 +1273,7 @@ describe('Filters', () => {
 
       //when
       node.instance().handleControlledInputChange({
-        target: {value: '2009-01-25', name: 'endDate'}
+        target: {value: '2009-01-25', name: 'endDate'},
       });
       node.update();
 
@@ -1293,7 +1293,7 @@ describe('Filters', () => {
       //when
       const instance = node.instance();
       instance.handleControlledInputChange({
-        target: {value: '2009-01-25', name: 'endDate'}
+        target: {value: '2009-01-25', name: 'endDate'},
       });
       instance.propagateFilter();
       node.update();
@@ -1347,7 +1347,7 @@ describe('Filters', () => {
 
       await triggerVariableChange({
         node,
-        ...variable
+        ...variable,
       });
 
       // then
@@ -1363,7 +1363,7 @@ describe('Filters', () => {
       await act(async () => {
         await triggerVariableChange({
           node,
-          ...variable
+          ...variable,
         });
       });
 
@@ -1380,7 +1380,7 @@ describe('Filters', () => {
       await act(async () => {
         await triggerVariableChange({
           node,
-          ...variable
+          ...variable,
         });
       });
 
@@ -1397,7 +1397,7 @@ describe('Filters', () => {
       await act(async () => {
         await triggerVariableChange({
           node,
-          ...variable
+          ...variable,
         });
       });
 
@@ -1413,7 +1413,7 @@ describe('Filters', () => {
       // when
       await triggerVariableChange({
         node,
-        ...variable
+        ...variable,
       });
 
       // then
@@ -1459,7 +1459,7 @@ describe('Filters', () => {
               {...mockPropsWithDefaultFilter}
               filter={{
                 ...DEFAULT_FILTER_CONTROLLED_VALUES,
-                ...DEFAULT_FILTER
+                ...DEFAULT_FILTER,
               }}
             />
           </CollapsablePanelProvider>
@@ -1489,7 +1489,7 @@ describe('Filters', () => {
 
       // when
       errorMessageInput.simulate('change', {
-        target: {value: 'abc', name: 'errorMessage'}
+        target: {value: 'abc', name: 'errorMessage'},
       });
 
       const ResetButtonNode = node.find(Button);
@@ -1576,11 +1576,11 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'batchOperationId')
+        .filterWhere((n) => n.props().name === 'batchOperationId')
         .find('input');
 
       field.simulate('change', {
-        target: {value: 'asd', name: 'batchOperationId'}
+        target: {value: 'asd', name: 'batchOperationId'},
       });
 
       jest.advanceTimersByTime(DEBOUNCE_DELAY);
@@ -1591,7 +1591,7 @@ describe('Filters', () => {
       expect(field.prop('placeholder')).toEqual('Operation Id');
       expect(field.prop('value')).toEqual('');
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        batchOperationId: 'asd'
+        batchOperationId: 'asd',
       });
     });
 
@@ -1612,11 +1612,11 @@ describe('Filters', () => {
       );
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'batchOperationId')
+        .filterWhere((n) => n.props().name === 'batchOperationId')
         .find('input');
 
       field.simulate('change', {
-        target: {value: 'asd', name: 'batchOperationId'}
+        target: {value: 'asd', name: 'batchOperationId'},
       });
 
       await flushPromises();
@@ -1652,7 +1652,7 @@ describe('Filters', () => {
 
       const field = node
         .find(Styled.ValidationTextInput)
-        .filterWhere(n => n.props().name === 'batchOperationId');
+        .filterWhere((n) => n.props().name === 'batchOperationId');
 
       // then
       expect(field.props().value).toEqual('batch-operation-id-example');
@@ -1668,7 +1668,7 @@ describe('Filters', () => {
       );
 
       node.instance().handleControlledInputChange({
-        target: {value: 'batch operation id', name: 'batchOperationId'}
+        target: {value: 'batch operation id', name: 'batchOperationId'},
       });
 
       expect(node.state().filter.batchOperationId).toEqual(
@@ -1691,7 +1691,7 @@ describe('Filters', () => {
 
       //when
       instance.handleControlledInputChange({
-        target: {value: batchOperationId, name: 'batchOperationId'}
+        target: {value: batchOperationId, name: 'batchOperationId'},
       });
       instance.waitForTimer(instance.propagateFilter);
 
@@ -1701,7 +1701,7 @@ describe('Filters', () => {
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        batchOperationId
+        batchOperationId,
       });
     });
 
@@ -1720,7 +1720,7 @@ describe('Filters', () => {
 
       //when
       instance.handleControlledInputChange({
-        target: {value: emptyBatchOperationId, name: 'batchOperationId'}
+        target: {value: emptyBatchOperationId, name: 'batchOperationId'},
       });
       instance.waitForTimer(instance.propagateFilter);
       jest.advanceTimersByTime(DEBOUNCE_DELAY);

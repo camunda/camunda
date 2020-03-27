@@ -29,7 +29,7 @@ const ProgressBar = ({totalCount, finishedCount}) => {
 
 ProgressBar.propTypes = {
   totalCount: PropTypes.number.isRequired,
-  finishedCount: PropTypes.number.isRequired
+  finishedCount: PropTypes.number.isRequired,
 };
 
 export default ProgressBar;

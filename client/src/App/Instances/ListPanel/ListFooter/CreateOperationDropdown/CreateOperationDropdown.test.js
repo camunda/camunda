@@ -15,7 +15,7 @@ import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext
 
 import {
   mockUseOperationApply,
-  mockConfirmOperationModal
+  mockConfirmOperationModal,
 } from './CreateOperationDropdown.setup';
 
 import CreateOperationDropdown from './';
@@ -56,15 +56,9 @@ describe('CreateOperationDropdown', () => {
     button.simulate('click');
 
     // then
-    const retryButton = node
-      .find(Dropdown.Option)
-      .at(0)
-      .find('button');
+    const retryButton = node.find(Dropdown.Option).at(0).find('button');
 
-    const cancelButton = node
-      .find(Dropdown.Option)
-      .at(1)
-      .find('button');
+    const cancelButton = node.find(Dropdown.Option).at(1).find('button');
 
     expect(retryButton.text()).toContain('Retry');
     expect(cancelButton.text()).toContain('Cancel');
@@ -82,10 +76,7 @@ describe('CreateOperationDropdown', () => {
     // when
     button.simulate('click');
 
-    const retryButton = node
-      .find(Dropdown.Option)
-      .at(0)
-      .find('button');
+    const retryButton = node.find(Dropdown.Option).at(0).find('button');
 
     retryButton.simulate('click');
 
@@ -111,10 +102,7 @@ describe('CreateOperationDropdown', () => {
     // when
     button.simulate('click');
 
-    const cancelButton = node
-      .find(Dropdown.Option)
-      .at(1)
-      .find('button');
+    const cancelButton = node.find(Dropdown.Option).at(1).find('button');
 
     cancelButton.simulate('click');
 
@@ -140,10 +128,7 @@ describe('CreateOperationDropdown', () => {
     button.simulate('click');
 
     // then
-    const retryButton = node
-      .find(Dropdown.Option)
-      .at(1)
-      .find('button');
+    const retryButton = node.find(Dropdown.Option).at(1).find('button');
 
     retryButton.simulate('click');
 

@@ -11,17 +11,17 @@ export default class Collapse extends React.Component {
   static propTypes = {
     content: PropTypes.node,
     header: PropTypes.node,
-    buttonTitle: PropTypes.string
+    buttonTitle: PropTypes.string,
   };
 
   state = {
-    isCollapsed: true
+    isCollapsed: true,
   };
 
   handleToggle = () => {
-    this.setState(prevState => {
+    this.setState((prevState) => {
       return {
-        isCollapsed: !prevState.isCollapsed
+        isCollapsed: !prevState.isCollapsed,
       };
     });
   };

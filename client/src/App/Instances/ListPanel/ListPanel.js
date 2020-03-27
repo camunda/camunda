@@ -36,20 +36,20 @@ class ListPanel extends React.Component {
     dataManager: PropTypes.shape({
       subscribe: PropTypes.func,
       unsubscribe: PropTypes.func,
-      update: PropTypes.func
+      update: PropTypes.func,
     }),
     polling: PropTypes.shape({
       active: PropTypes.object,
       removeIds: PropTypes.func,
-      addIds: PropTypes.func
-    })
+      addIds: PropTypes.func,
+    }),
   };
 
   constructor(props) {
     super(props);
 
     this.state = {
-      entriesPerPage: 0
+      entriesPerPage: 0,
     };
   }
 
@@ -68,12 +68,12 @@ class ListPanel extends React.Component {
       if (prevProps.instances.length) {
         const prevActiveInstances = prevProps.instances
           .slice(0, prevState.entriesPerPage)
-          .filter(item => this.props.polling.active.has(item.id));
+          .filter((item) => this.props.polling.active.has(item.id));
 
         // remove instances with active ops.  from previous page from polling
         Boolean(prevActiveInstances.length) &&
           this.props.polling.removeIds(
-            prevActiveInstances.map(instance => instance.id)
+            prevActiveInstances.map((instance) => instance.id)
           );
       }
 
@@ -85,7 +85,7 @@ class ListPanel extends React.Component {
       if (isListExpanded) {
         dataManager.update({
           endpoints: [SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES],
-          topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION
+          topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION,
         });
       } else {
         // list is collapsed
@@ -93,8 +93,8 @@ class ListPanel extends React.Component {
 
         const activeInstancesNotInView = this.props.instances
           .slice(this.state.entriesPerPage) // get hidden ids from collapse
-          .filter(item => activeIds.has(item.id)) // get only active ids
-          .map(item => item.id);
+          .filter((item) => activeIds.has(item.id)) // get only active ids
+          .map((item) => item.id);
         if (Boolean(activeInstancesNotInView.length)) {
           this.props.polling.removeIds(activeInstancesNotInView);
         }
@@ -112,12 +112,12 @@ class ListPanel extends React.Component {
     );
     if (instancesWithActiveOperations.length > 0) {
       this.props.polling.addIds(
-        instancesWithActiveOperations.map(instance => instance.id)
+        instancesWithActiveOperations.map((instance) => instance.id)
       );
     }
   };
 
-  handleOperationButtonClick = instance => {
+  handleOperationButtonClick = (instance) => {
     this.props.polling.addIds([instance.id]);
   };
 
@@ -175,7 +175,7 @@ class ListPanel extends React.Component {
               sorting={this.props.sorting}
               onSort={this.props.onSort}
               expandState={this.props.expandState}
-              onEntriesPerPageChange={entriesPerPage =>
+              onEntriesPerPageChange={(entriesPerPage) =>
                 this.setState({entriesPerPage})
               }
               rowsToDisplay={this.state.entriesPerPage}

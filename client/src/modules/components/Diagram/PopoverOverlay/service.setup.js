@@ -9,18 +9,18 @@ const defaultMetadata = {data: {activityInstanceId: '123'}};
 export const defaultProps = {
   metadata: defaultMetadata,
   selectedFlowNodeName: 'MyFlowNode',
-  selectedFlowNodeId: '000111222333444'
+  selectedFlowNodeId: '000111222333444',
 };
 
 export const multiInstanceBodyProps = {
   ...defaultProps,
-  metadata: {...defaultMetadata, isMultiInstanceBody: true}
+  metadata: {...defaultMetadata, isMultiInstanceBody: true},
 };
 
 export const multiInstanceChildProps = {
   ...defaultProps,
   metadata: {
     ...defaultMetadata,
-    isMultiInstanceChild: true
-  }
+    isMultiInstanceChild: true,
+  },
 };

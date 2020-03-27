@@ -17,7 +17,7 @@ import {
   STATE,
   TYPE,
   LOADING_STATE,
-  POLL_TOPICS
+  POLL_TOPICS,
 } from 'modules/constants';
 
 import {compactObject, immutableArraySet} from 'modules/utils';
@@ -37,7 +37,7 @@ import {
   getMultiInstanceBodies,
   getMultiInstanceChildren,
   storeResponse,
-  getProcessedSequenceFlows
+  getProcessedSequenceFlows,
 } from './service';
 import * as Styled from './styled';
 
@@ -46,9 +46,9 @@ class Instance extends Component {
     dataManager: PropTypes.object,
     match: PropTypes.shape({
       params: PropTypes.shape({
-        id: PropTypes.string.isRequired
-      }).isRequired
-    }).isRequired
+        id: PropTypes.string.isRequired,
+      }).isRequired,
+    }).isRequired,
   };
 
   constructor(props) {
@@ -58,7 +58,7 @@ class Instance extends Component {
       instance: null,
       selection: {
         treeRowIds: [],
-        flowNodeId: null
+        flowNodeId: null,
       },
       nodeMetaDataMap: null,
       diagramDefinitions: null,
@@ -70,13 +70,13 @@ class Instance extends Component {
         count: 0,
         incidents: [],
         flowNodes: [],
-        errorTypes: []
+        errorTypes: [],
       },
       forceInstanceSpinner: false,
       forceIncidentsSpinner: false,
       variables: null,
       editMode: '',
-      isPollActive: false
+      isPollActive: false,
     };
     this.pollingTimer = null;
     this.subscriptions = {
@@ -101,20 +101,20 @@ class Instance extends Component {
           }
 
           this.setState({
-            instance: response
+            instance: response,
           });
         }
       },
-      LOAD_VARIABLES: responseData =>
-        storeResponse(responseData, response => {
+      LOAD_VARIABLES: (responseData) =>
+        storeResponse(responseData, (response) => {
           this.setState({variables: response});
         }),
-      LOAD_INCIDENTS: responseData =>
-        storeResponse(responseData, response => {
+      LOAD_INCIDENTS: (responseData) =>
+        storeResponse(responseData, (response) => {
           this.setState({incidents: response});
         }),
-      LOAD_EVENTS: responseData =>
-        storeResponse(responseData, response => {
+      LOAD_EVENTS: (responseData) =>
+        storeResponse(responseData, (response) => {
           this.setState({events: response});
         }),
 
@@ -129,8 +129,8 @@ class Instance extends Component {
               id: staticContent.id,
               type: 'WORKFLOW',
               state: staticContent.state,
-              endDate: staticContent.endDate
-            }
+              endDate: staticContent.endDate,
+            },
           });
         }
       },
@@ -142,20 +142,20 @@ class Instance extends Component {
           );
           const selection = {
             flowNodeId: null,
-            treeRowIds: [staticContent.id]
+            treeRowIds: [staticContent.id],
           };
 
           this.setState({
             nodeMetaDataMap: nodeMetaDataMap,
             diagramDefinitions: response.definitions,
-            selection
+            selection,
           });
         }
       },
       LOAD_SEQUENCE_FLOWS: ({response, state}) => {
         if (state === LOADING_STATE.LOADED) {
           this.setState({
-            processedSequenceFlows: getProcessedSequenceFlows(response)
+            processedSequenceFlows: getProcessedSequenceFlows(response),
           });
         }
       },
@@ -167,7 +167,7 @@ class Instance extends Component {
             LOAD_INCIDENTS,
             LOAD_EVENTS,
             LOAD_INSTANCE_TREE,
-            LOAD_SEQUENCE_FLOWS
+            LOAD_SEQUENCE_FLOWS,
           } = response;
 
           this.setState({
@@ -179,7 +179,7 @@ class Instance extends Component {
               id: LOAD_INSTANCE.id,
               type: 'WORKFLOW',
               state: LOAD_INSTANCE.state,
-              endDate: LOAD_INSTANCE.endDate
+              endDate: LOAD_INSTANCE.endDate,
             },
             activityIdToActivityInstanceMap: getActivityIdToActivityInstancesMap(
               LOAD_INSTANCE_TREE
@@ -189,10 +189,10 @@ class Instance extends Component {
             ),
             // conditional updates
             ...(LOAD_INCIDENTS && {incidents: LOAD_INCIDENTS}),
-            ...(LOAD_VARIABLES && {variables: LOAD_VARIABLES})
+            ...(LOAD_VARIABLES && {variables: LOAD_VARIABLES}),
           });
         }
-      }
+      },
     };
   }
 
@@ -231,8 +231,8 @@ class Instance extends Component {
         {name: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS},
         {name: SUBSCRIPTION_TOPIC.LOAD_EVENTS},
         {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE},
-        {name: SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS}
-      ]
+        {name: SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS},
+      ],
     };
     const {selection, instance} = this.state;
     if (selection.treeRowIds.length === 1) {
@@ -240,8 +240,8 @@ class Instance extends Component {
         ...updateParams.endpoints,
         {
           name: SUBSCRIPTION_TOPIC.LOAD_VARIABLES,
-          payload: {instanceId: instance.id, scopeId: selection.treeRowIds[0]}
-        }
+          payload: {instanceId: instance.id, scopeId: selection.treeRowIds[0]},
+        },
       ];
     }
     this.props.dataManager.update(updateParams);
@@ -265,7 +265,7 @@ class Instance extends Component {
    * Handles selecting a node row in the tree
    * @param {object} node: selected row node
    */
-  handleTreeRowSelection = async node => {
+  handleTreeRowSelection = async (node) => {
     const {selection, instance} = this.state;
     const isRootNode = node.id === instance.id;
 
@@ -273,7 +273,7 @@ class Instance extends Component {
     const flowNodeId = isRootNode ? null : node.activityId;
     const hasSelectedSiblings = selection.treeRowIds.length > 1;
     const rowIsSelected = !!selection.treeRowIds.find(
-      selectedId => selectedId === node.id
+      (selectedId) => selectedId === node.id
     );
     const newSelection =
       rowIsSelected && !hasSelectedSiblings
@@ -285,8 +285,8 @@ class Instance extends Component {
       // clear variables object if we don't have exactly 1 selected row
       ...(newSelection.treeRowIds.length !== 1 && {
         variables: null,
-        editMode: ''
-      })
+        editMode: '',
+      }),
     });
 
     if (newSelection.treeRowIds.length === 1) {
@@ -304,7 +304,7 @@ class Instance extends Component {
   handleFlowNodeSelection = async (
     flowNodeId,
     options = {
-      selectMultiInstanceChildrenOnly: false
+      selectMultiInstanceChildrenOnly: false,
     }
   ) => {
     const {instance, activityIdToActivityInstanceMap} = this.state;
@@ -327,7 +327,7 @@ class Instance extends Component {
     this.setState({
       selection,
       // clear variables object if we don't have exactly 1 selected row
-      ...(treeRowIds.length !== 1 && {variables: null, editMode: ''})
+      ...(treeRowIds.length !== 1 && {variables: null, editMode: ''}),
     });
 
     if (treeRowIds.length === 1) {
@@ -341,7 +341,7 @@ class Instance extends Component {
     const {
       selection: {flowNodeId, treeRowIds},
       events,
-      activityIdToActivityInstanceMap
+      activityIdToActivityInstanceMap,
     } = this.state;
 
     const activityInstancesMap = activityIdToActivityInstanceMap.get(
@@ -352,7 +352,7 @@ class Instance extends Component {
     if (treeRowIds.length > 1) {
       return {
         isMultiRowPeterCase: true,
-        instancesCount: treeRowIds.length
+        instancesCount: treeRowIds.length,
       };
     }
 
@@ -380,13 +380,13 @@ class Instance extends Component {
         isMultiInstanceBody,
         isMultiInstanceChild,
         parentId: activityInstance.parentId,
-        isSingleRowPeterCase: activityInstancesMap.size > 1 ? true : null
+        isSingleRowPeterCase: activityInstancesMap.size > 1 ? true : null,
       }),
       data: Object.entries({
         activityInstanceId,
         ...metadata,
         startDate,
-        endDate
+        endDate,
       }).reduce((cleanMetadata, [key, value]) => {
         // ignore other empty values
         if (!value) {
@@ -394,22 +394,22 @@ class Instance extends Component {
         }
 
         return {...cleanMetadata, [key]: value};
-      }, {})
+      }, {}),
     };
   };
 
-  getNodeWithMetaData = node => {
+  getNodeWithMetaData = (node) => {
     const metaData = this.state.nodeMetaDataMap.get(node.activityId) || {
       name: undefined,
       type: {
         elementType: undefined,
         eventType: undefined,
-        multiInstanceType: undefined
-      }
+        multiInstanceType: undefined,
+      },
     };
 
     const typeDetails = {
-      ...metaData.type
+      ...metaData.type,
     };
 
     if (node.type === TYPE.WORKFLOW) {
@@ -429,11 +429,11 @@ class Instance extends Component {
     return {
       ...node,
       typeDetails,
-      name: nodeName
+      name: nodeName,
     };
   };
 
-  addFlowNodeName = object => {
+  addFlowNodeName = (object) => {
     const modifiedObject = {...object};
 
     const nodeMetaData = this.state.nodeMetaDataMap.get(
@@ -449,10 +449,10 @@ class Instance extends Component {
     const {
       selection: {treeRowIds},
       instance: {id},
-      variables
+      variables,
     } = this.state;
 
-    const keyIdx = variables.findIndex(variable => variable.name === key);
+    const keyIdx = variables.findIndex((variable) => variable.name === key);
 
     this.setState({
       variables: immutableArraySet(
@@ -461,16 +461,16 @@ class Instance extends Component {
         {
           name: key,
           value,
-          hasActiveOperation: true
+          hasActiveOperation: true,
         }
-      )
+      ),
     });
 
     return this.props.dataManager.applyOperation(id, {
       operationType: 'UPDATE_VARIABLE',
       variableScopeId: treeRowIds[0],
       variableName: key,
-      variableValue: value
+      variableValue: value,
     });
   };
 
@@ -479,7 +479,7 @@ class Instance extends Component {
       instance,
       activityIdToActivityInstanceMap,
       variables,
-      selection: {flowNodeId, treeRowIds}
+      selection: {flowNodeId, treeRowIds},
     } = this.state;
 
     if (!variables) {
@@ -494,12 +494,12 @@ class Instance extends Component {
     return [STATE.ACTIVE, STATE.INCIDENT].includes(selectedRowState);
   };
 
-  setVariables = variables => {
+  setVariables = (variables) => {
     this.resetPolling();
     this.setState({variables, editMode: ''});
   };
 
-  setEditMode = editMode => {
+  setEditMode = (editMode) => {
     this.setState({editMode});
   };
 
@@ -514,7 +514,7 @@ class Instance extends Component {
       activityInstancesTree,
       variables,
       editMode,
-      processedSequenceFlows
+      processedSequenceFlows,
     } = this.state;
 
     return (

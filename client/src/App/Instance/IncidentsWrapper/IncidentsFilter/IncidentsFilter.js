@@ -21,7 +21,7 @@ export default class IncidentsFilter extends React.Component {
       flowNodes,
       errorTypes,
       selectedErrorTypes,
-      selectedFlowNodes
+      selectedFlowNodes,
     } = this.props;
 
     const groupedFlowNodes = splitArray([...flowNodes.values()]);
@@ -34,7 +34,7 @@ export default class IncidentsFilter extends React.Component {
             <Styled.FilterRow>
               <Styled.Label>Incident type:</Styled.Label>
               <Styled.Ul data-test="incidents-by-errorType">
-                {groupedErrorTypes[0].map(item => {
+                {groupedErrorTypes[0].map((item) => {
                   return (
                     <li key={item.errorType}>
                       <Pill
@@ -57,7 +57,7 @@ export default class IncidentsFilter extends React.Component {
                     <Styled.MoreDropdown
                       label={`${groupedErrorTypes[1].length} more`}
                     >
-                      {groupedErrorTypes[1].map(item => {
+                      {groupedErrorTypes[1].map((item) => {
                         return (
                           <Dropdown.Option key={item.errorType}>
                             <Pill
@@ -86,7 +86,7 @@ export default class IncidentsFilter extends React.Component {
             <Styled.FilterRow>
               <Styled.Label>Flow Node:</Styled.Label>
               <Styled.Ul data-test="incidents-by-flowNode">
-                {groupedFlowNodes[0].map(item => {
+                {groupedFlowNodes[0].map((item) => {
                   return (
                     <li key={item.flowNodeId}>
                       <Pill
@@ -109,7 +109,7 @@ export default class IncidentsFilter extends React.Component {
                     <Styled.MoreDropdown
                       label={`${groupedFlowNodes[1].length} more`}
                     >
-                      {groupedFlowNodes[1].map(item => {
+                      {groupedFlowNodes[1].map((item) => {
                         return (
                           <Dropdown.Option key={item.flowNodeId}>
                             <Pill
@@ -162,5 +162,5 @@ IncidentsFilter.propTypes = {
   selectedFlowNodes: PropTypes.arrayOf(PropTypes.string),
   onFlowNodeSelect: PropTypes.func.isRequired,
   onErrorTypeSelect: PropTypes.func.isRequired,
-  onClearAll: PropTypes.func.isRequired
+  onClearAll: PropTypes.func.isRequired,
 };

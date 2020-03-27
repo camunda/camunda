@@ -28,7 +28,7 @@ export const Spinner = themed(styled.div`
   border: 3px solid
     ${themeStyle({
       dark: '#ffffff',
-      light: Colors.badge02
+      light: Colors.badge02,
     })};
   border-right-color: transparent;
 

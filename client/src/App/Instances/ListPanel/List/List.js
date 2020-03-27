@@ -41,9 +41,9 @@ class List extends React.Component {
     onOperationButtonClick: PropTypes.func,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
+      PropTypes.node,
     ]),
-    rowsToDisplay: PropTypes.number
+    rowsToDisplay: PropTypes.number,
   };
 
   constructor(props) {
@@ -74,7 +74,7 @@ class List extends React.Component {
     }
   }
 
-  handleOperationButtonClick = instance => {
+  handleOperationButtonClick = (instance) => {
     this.props.onOperationButtonClick(instance);
   };
 
@@ -92,7 +92,7 @@ class List extends React.Component {
               onSort: this.props.onSort,
               rowsToDisplay: this.props.rowsToDisplay,
               isDataLoaded: this.props.isDataLoaded,
-              handleOperationButtonClick: this.handleOperationButtonClick
+              handleOperationButtonClick: this.handleOperationButtonClick,
             }}
           >
             <Table>{this.props.children}</Table>
@@ -105,12 +105,12 @@ class List extends React.Component {
 
 export default List;
 
-const Skeleton = function(props) {
+const Skeleton = function (props) {
   const {rowsToDisplay} = useListContext();
   return <BaseSkeleton {...props} rowsToDisplay={rowsToDisplay} />;
 };
 
-const Message = function({message}) {
+const Message = function ({message}) {
   return (
     <TBody>
       <Styled.EmptyTR>
@@ -126,10 +126,10 @@ const Message = function({message}) {
 };
 
 Message.propTypes = {
-  message: PropTypes.string
+  message: PropTypes.string,
 };
 
-const Body = function(props) {
+const Body = function (props) {
   const {data, rowsToDisplay, handleOperationButtonClick} = useListContext();
   const {isInstanceChecked, handleCheckInstance} = useContext(
     InstanceSelectionContext
@@ -182,7 +182,7 @@ const Body = function(props) {
   );
 };
 
-const Header = function(props) {
+const Header = function (props) {
   const {data, filter, sorting, onSort, isDataLoaded} = useListContext();
   const {handleCheckAll, isAllChecked} = useContext(InstanceSelectionContext);
 

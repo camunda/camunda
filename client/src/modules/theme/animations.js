@@ -16,7 +16,7 @@ const foldKeyFrames = (minValue, maxValue) => keyframes`
 }`;
 
 const Animations = {
-  SelectionTransition: timeout => styled(TransitionComponent)`
+  SelectionTransition: (timeout) => styled(TransitionComponent)`
     &.transition-enter {
       opacity: 0;
     }
@@ -39,7 +39,7 @@ const Animations = {
       animation-name: ${foldKeyFrames(474, 0)};
       animation-duration: ${({timeout}) => timeout.exit + 'ms'};
     }
-  `
+  `,
 };
 
 export default Animations;

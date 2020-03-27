@@ -27,7 +27,7 @@ describe('FlowNodeIcon', () => {
   it('should render parallel multi instance body', () => {
     const node = mountIcon({
       elementType: TYPE.MULTI_INSTANCE_BODY,
-      multiInstanceType: MULTI_INSTANCE_TYPE.PARALLEL
+      multiInstanceType: MULTI_INSTANCE_TYPE.PARALLEL,
     });
     expect(getName(node)).toMatchSnapshot();
   });
@@ -35,7 +35,7 @@ describe('FlowNodeIcon', () => {
   it('should render sequential multi instance body', () => {
     const node = mountIcon({
       elementType: TYPE.MULTI_INSTANCE_BODY,
-      multiInstanceType: MULTI_INSTANCE_TYPE.SEQUENTIAL
+      multiInstanceType: MULTI_INSTANCE_TYPE.SEQUENTIAL,
     });
     expect(getName(node)).toMatchSnapshot();
   });
@@ -43,7 +43,7 @@ describe('FlowNodeIcon', () => {
   it('should render intermediate timer event', () => {
     const node = mountIcon({
       elementType: TYPE.EVENT_INTERMEDIATE_CATCH,
-      eventType: TYPE.EVENT_TIMER
+      eventType: TYPE.EVENT_TIMER,
     });
     expect(getName(node)).toMatchSnapshot();
   });
@@ -51,7 +51,7 @@ describe('FlowNodeIcon', () => {
   it('should render message boundary event', () => {
     const node = mountIcon({
       elementType: TYPE.EVENT_BOUNDARY_NON_INTERRUPTING,
-      eventType: TYPE.EVENT_MESSAGE
+      eventType: TYPE.EVENT_MESSAGE,
     });
     expect(getName(node)).toMatchSnapshot();
   });

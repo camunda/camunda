@@ -17,16 +17,16 @@ const statisticBackground = ({state, theme}) => {
     active: {light: Colors.allIsWell, dark: Colors.allIsWell},
     incidents: {
       light: Colors.incidentsAndErrors,
-      dark: Colors.incidentsAndErrors
+      dark: Colors.incidentsAndErrors,
     },
     completed: {
       light: Colors.badge01,
-      dark: Colors.badge02
+      dark: Colors.badge02,
     },
     canceled: {
       light: Colors.badge02,
-      dark: Colors.badge01
-    }
+      dark: Colors.badge01,
+    },
   };
 
   return background[state][theme];

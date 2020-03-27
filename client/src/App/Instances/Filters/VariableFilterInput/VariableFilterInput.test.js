@@ -19,7 +19,7 @@ const getStyledInput = (node, dataTestName) => {
   return node.find(Styled.TextInput).filter(`[data-test="${dataTestName}"]`);
 };
 
-const mountNode = mockCustomProps => {
+const mountNode = (mockCustomProps) => {
   return mount(
     <ThemeProvider>
       <VariableFilterInput {...mockDefaultProps} {...mockCustomProps} />
@@ -30,7 +30,7 @@ const mountNode = mockCustomProps => {
 /* Helper function as node.setProps() changes only props of the rootNode, here: <ThemeProvider>*/
 const setProps = (node, WrappedComponent, updatedProps) => {
   return node.setProps({
-    children: <WrappedComponent {...updatedProps} />
+    children: <WrappedComponent {...updatedProps} />,
   });
 };
 
@@ -50,7 +50,7 @@ describe('VariableFilterInput', () => {
     // when
     setProps(node, VariableFilterInput, {
       ...mockDefaultProps,
-      variable: {name: newName, value: newValue}
+      variable: {name: newName, value: newValue},
     });
     node.update();
 
@@ -84,11 +84,11 @@ describe('VariableFilterInput', () => {
     expect(mockDefaultProps.onChange).toHaveBeenCalledTimes(2);
     expect(mockDefaultProps.onChange).toHaveBeenNthCalledWith(1, {
       name,
-      value: ''
+      value: '',
     });
     expect(mockDefaultProps.onChange).toHaveBeenNthCalledWith(2, {
       name: '',
-      value
+      value,
     });
   });
 
@@ -123,7 +123,7 @@ describe('VariableFilterInput', () => {
     const {
       checkIsNameComplete,
       checkIsValueComplete,
-      checkIsValueValid
+      checkIsValueValid,
     } = mockDefaultProps;
 
     checkIsNameComplete.mockImplementation(() => true);
@@ -131,7 +131,7 @@ describe('VariableFilterInput', () => {
     checkIsValueValid.mockImplementation(() => false);
 
     const node = mountNode({
-      variable: {name: 'fancyName', value: '{{{'}
+      variable: {name: 'fancyName', value: '{{{'},
     });
 
     let nameInput, valueInput;
@@ -159,7 +159,7 @@ describe('VariableFilterInput', () => {
     const {
       checkIsNameComplete,
       checkIsValueComplete,
-      checkIsValueValid
+      checkIsValueValid,
     } = mockDefaultProps;
 
     checkIsNameComplete.mockImplementation(() => false);

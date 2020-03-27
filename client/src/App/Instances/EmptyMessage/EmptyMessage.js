@@ -19,5 +19,5 @@ export default function EmptyMessage({message, ...props}) {
 }
 
 EmptyMessage.propTypes = {
-  message: PropTypes.string.isRequired
+  message: PropTypes.string.isRequired,
 };

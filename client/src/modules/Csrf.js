@@ -10,7 +10,7 @@ export function getToken(cookies) {
   cookies
     .replace(/ /g, '')
     .split(';')
-    .forEach(cookie => {
+    .forEach((cookie) => {
       const items = cookie.split('=');
 
       if (items[0] === 'X-CSRF-TOKEN') {

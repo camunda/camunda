@@ -10,17 +10,17 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 export const Header = themed(styled.div`
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   border-bottom: solid 1px
     ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
 
   font-size: 15px;

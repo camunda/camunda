@@ -17,13 +17,13 @@ import ProgressBar from './ProgressBar';
 const {
   UPDATE_VARIABLE,
   RESOLVE_INCIDENT,
-  CANCEL_WORKFLOW_INSTANCE
+  CANCEL_WORKFLOW_INSTANCE,
 } = OPERATION_TYPES;
 
 const TYPE_LABELS = {
   [UPDATE_VARIABLE]: 'Edit',
   [RESOLVE_INCIDENT]: 'Retry',
-  [CANCEL_WORKFLOW_INSTANCE]: 'Cancel'
+  [CANCEL_WORKFLOW_INSTANCE]: 'Cancel',
 };
 
 const OperationsEntry = ({batchOperation, onInstancesClick}) => {
@@ -33,7 +33,7 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
     endDate,
     instancesCount,
     operationsTotalCount,
-    operationsFinishedCount
+    operationsFinishedCount,
   } = batchOperation;
 
   return (
@@ -69,9 +69,9 @@ OperationsEntry.propTypes = {
     endDate: PropTypes.string,
     instancesCount: PropTypes.number.isRequired,
     operationsTotalCount: PropTypes.number.isRequired,
-    operationsFinishedCount: PropTypes.number.isRequired
+    operationsFinishedCount: PropTypes.number.isRequired,
   }).isRequired,
-  onInstancesClick: PropTypes.func.isRequired
+  onInstancesClick: PropTypes.func.isRequired,
 };
 
 OperationsEntry.defaultProps = {};

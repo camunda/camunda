@@ -24,12 +24,12 @@ export const Label = themed(styled.label`
   /* Colors */
   opacity: ${themeStyle({
     dark: ({checked}) => (checked ? 0.9 : 0.7),
-    light: ({checked}) => (checked ? 1 : 0.7)
+    light: ({checked}) => (checked ? 1 : 0.7),
   })};
 
   color: ${themeStyle({
     dark: '#ececec',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 `);
 
@@ -63,11 +63,11 @@ export const CustomCheckbox = themed(styled.div`
     border-radius: 3px;
     border: solid 1px ${themeStyle({
       dark: '#bebec0',
-      light: Colors.uiLight03
+      light: Colors.uiLight03,
     })};
     background: ${themeStyle({
       dark: Colors.uiDark02,
-      light: Colors.uiLight01
+      light: Colors.uiLight01,
     })};
   }
 
@@ -87,7 +87,7 @@ export const CustomCheckbox = themed(styled.div`
           light: ({checkboxType}) =>
             checkboxType === 'selection'
               ? 'rgba(0, 0, 0, 0.5)'
-              : 'rgba(231, 233, 238, 0.35)'
+              : 'rgba(231, 233, 238, 0.35)',
         })};
   }
 
@@ -116,7 +116,7 @@ export const CustomCheckbox = themed(styled.div`
     border-color: ${themeStyle({
       dark: '#ffffff',
       light: ({checkboxType}) =>
-        checkboxType === 'selection' ? '#ffffff' : Colors.uiLight06
+        checkboxType === 'selection' ? '#ffffff' : Colors.uiLight06,
     })};
     };
   }

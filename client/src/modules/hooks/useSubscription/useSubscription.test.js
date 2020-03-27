@@ -13,7 +13,7 @@ jest.mock('modules/hooks/useDataManager');
 
 const mockFunctions = {
   subscribe: jest.fn(),
-  unsubscribe: jest.fn()
+  unsubscribe: jest.fn(),
 };
 
 describe('useSubscription', () => {

@@ -29,11 +29,11 @@ const PanelStyles = css`
     ${themeStyle({dark: Colors.uiDark04, light: Colors.uiLight05})};
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
-    light: Colors.uiLight04
+    light: Colors.uiLight04,
   })};
   box-shadow: ${themeStyle({
     dark: '0 3px 6px 0 #000000',
-    light: '0 2px 3px 0 rgba(0, 0, 0, 0.1)'
+    light: '0 2px 3px 0 rgba(0, 0, 0, 0.1)',
   })};
 `;
 
@@ -42,7 +42,7 @@ export const MetricPanelWrapper = themed(styled.div`
 
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   height: 198px;
@@ -76,11 +76,11 @@ export const TileTitle = themed(styled.h2`
   line-height: 2;
   color: ${themeStyle({
     dark: '#fff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   opacity: ${themeStyle({
     dark: 0.9,
-    light: 1
+    light: 1,
   })};
 `);
 
@@ -114,11 +114,11 @@ export const MultiRowContainer = styled.div`
 const colors = css`
   background: ${themeStyle({
     dark: 'rgba(136, 136, 141)',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   opacity: ${themeStyle({
     dark: 0.2,
-    light: 0.09
+    light: 0.09,
   })};
 `;
 

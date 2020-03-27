@@ -14,7 +14,7 @@ const iconsMap = {
   [DIRECTION.UP]: Styled.Up,
   [DIRECTION.DOWN]: Styled.Down,
   [DIRECTION.LEFT]: Styled.Left,
-  [DIRECTION.RIGHT]: Styled.Right
+  [DIRECTION.RIGHT]: Styled.Right,
 };
 
 const CollapseButton = React.forwardRef(function CollapseButton(
@@ -32,7 +32,7 @@ const CollapseButton = React.forwardRef(function CollapseButton(
 
 CollapseButton.propTypes = {
   direction: PropTypes.oneOf(Object.keys(DIRECTION)),
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
 };
 
 export default CollapseButton;

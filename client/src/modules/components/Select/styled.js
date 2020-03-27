@@ -26,17 +26,17 @@ export const Select = themed(styled.select`
   border: solid 1px
     ${themeStyle({
       dark: Colors.uiDark05,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   border-radius: 3px;
 
   background-color: ${themeStyle({
     dark: '#3e3f45',
-    light: Colors.uiLight01
+    light: Colors.uiLight01,
   })};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiDark06
+    light: Colors.uiDark06,
   })};
 
   font-family: IBMPlexSans;
@@ -60,7 +60,7 @@ export const Select = themed(styled.select`
     text-shadow: 0 0 0
       ${themeStyle({
         dark: '#ffffff',
-        light: Colors.uiDark06
+        light: Colors.uiDark06,
       })};
   }
 `);

@@ -35,12 +35,12 @@ describe('Operations', () => {
     // when
     mockOperation = createOperation({
       state: OPERATION_STATE.SCHEDULED,
-      type: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+      type: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
     });
     mockInstance = createInstance({operations: [mockOperation]});
     const mockProps = {
       forceSpinner: true,
-      onButtonClick: jest.fn()
+      onButtonClick: jest.fn(),
     };
 
     const node = shallow(
@@ -90,14 +90,10 @@ describe('Operations', () => {
       expect(OperationItemsNode).toExist();
       expect(OperationItemsNode.find(OperationItems.Item).length).toEqual(2);
       expect(
-        OperationItemsNode.find(OperationItems.Item)
-          .at(0)
-          .props().type
+        OperationItemsNode.find(OperationItems.Item).at(0).props().type
       ).toEqual(OPERATION_TYPE.RESOLVE_INCIDENT);
       expect(
-        OperationItemsNode.find(OperationItems.Item)
-          .at(1)
-          .props().type
+        OperationItemsNode.find(OperationItems.Item).at(1).props().type
       ).toEqual(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE);
     });
 
@@ -128,7 +124,7 @@ describe('Operations', () => {
         const {dataManager} = node.instance().props;
 
         expect(dataManager.applyOperation).toBeCalledWith(mockInstance.id, {
-          operationType: OPERATION_TYPE.RESOLVE_INCIDENT
+          operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
         });
         // expect Spinner to appear
         expect(node.find(OperationStatus).props().operationState).toEqual(
@@ -167,7 +163,7 @@ describe('Operations', () => {
 
         // then
         expect(dataManager.applyOperation).toBeCalledWith(mockInstance.id, {
-          operationType: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+          operationType: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
         });
 
         // expect Spinner to appear

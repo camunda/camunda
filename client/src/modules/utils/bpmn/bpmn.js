@@ -16,7 +16,7 @@ export function parseDiagramXML(xml) {
   const moddle = bpmnJs.prototype._createModdle({});
 
   return new Promise((resolve, reject) => {
-    moddle.fromXML(xml, 'bpmn:Definitions', function(
+    moddle.fromXML(xml, 'bpmn:Definitions', function (
       err,
       definitions,
       context

@@ -7,7 +7,7 @@
 import React from 'react';
 
 export const mockUseOperationApply = {
-  applyBatchOperation: jest.fn()
+  applyBatchOperation: jest.fn(),
 };
 
 // eslint-disable-next-line react/prop-types

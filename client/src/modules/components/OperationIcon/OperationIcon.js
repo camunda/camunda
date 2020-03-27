@@ -13,7 +13,7 @@ import * as Styled from './styled';
 const iconsMap = {
   [OPERATION_TYPE.RESOLVE_INCIDENT]: Styled.Retry,
   [OPERATION_TYPE.UPDATE_VARIABLE]: Styled.Edit,
-  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: Styled.Cancel
+  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: Styled.Cancel,
 };
 
 const OperationIcon = function OperationIcon({operationType, ...props}) {
@@ -27,7 +27,7 @@ const OperationIcon = function OperationIcon({operationType, ...props}) {
 };
 
 OperationIcon.propTypes = {
-  operationType: PropTypes.oneOf(Object.keys(OPERATION_TYPE))
+  operationType: PropTypes.oneOf(Object.keys(OPERATION_TYPE)),
 };
 
 export default OperationIcon;

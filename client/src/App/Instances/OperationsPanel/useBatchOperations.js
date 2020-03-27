@@ -9,7 +9,7 @@ import {useEffect, useReducer, useCallback} from 'react';
 import {
   SUBSCRIPTION_TOPIC,
   LOADING_STATE,
-  POLL_TOPICS
+  POLL_TOPICS,
 } from 'modules/constants';
 import useSubscription from 'modules/hooks/useSubscription';
 import useDataManager from 'modules/hooks/useDataManager';
@@ -20,7 +20,7 @@ const pageSize = 20;
 const ACTIONS = Object.freeze({
   LOAD: 'LOAD',
   PREPEND: 'PREPEND',
-  INCREASE_PAGE: 'INCREASE_PAGE'
+  INCREASE_PAGE: 'INCREASE_PAGE',
 });
 const INITIAL_STATE = {batchOperations: [], page: 1};
 function reducer(state, action) {
@@ -28,7 +28,7 @@ function reducer(state, action) {
     case ACTIONS.LOAD: {
       const batchOperations = [
         ...state.batchOperations,
-        ...action.payload
+        ...action.payload,
       ].reduce((accumulator, operation) => {
         accumulator[operation.id] = operation;
         return accumulator;
@@ -36,19 +36,19 @@ function reducer(state, action) {
 
       return {
         ...state,
-        batchOperations: sortOperations(Object.values(batchOperations))
+        batchOperations: sortOperations(Object.values(batchOperations)),
       };
     }
     case ACTIONS.PREPEND: {
       return {
         ...state,
-        batchOperations: [action.payload, ...state.batchOperations]
+        batchOperations: [action.payload, ...state.batchOperations],
       };
     }
     case ACTIONS.INCREASE_PAGE: {
       return {
         ...state,
-        page: state.page + 1
+        page: state.page + 1,
       };
     }
     default:
@@ -70,11 +70,11 @@ export default function useBatchOperations() {
   }, [dataManager, state.page]);
 
   const requestNextBatchOperations = useCallback(
-    searchAfter => {
+    (searchAfter) => {
       dispatch({type: ACTIONS.INCREASE_PAGE});
       dataManager.getBatchOperations({
         pageSize,
-        searchAfter
+        searchAfter,
       });
     },
     [dataManager]
@@ -85,7 +85,7 @@ export default function useBatchOperations() {
     subscribe(
       SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS,
       LOADING_STATE.LOADED,
-      payload => {
+      (payload) => {
         dispatch({type: ACTIONS.LOAD, payload});
       }
     );
@@ -93,7 +93,7 @@ export default function useBatchOperations() {
     subscribe(
       SUBSCRIPTION_TOPIC.CREATE_BATCH_OPERATION,
       LOADING_STATE.LOADED,
-      payload => {
+      (payload) => {
         dispatch({type: ACTIONS.PREPEND, payload});
       }
     );
@@ -101,10 +101,10 @@ export default function useBatchOperations() {
     subscribe(
       SUBSCRIPTION_TOPIC.OPERATION_APPLIED,
       LOADING_STATE.LOADED,
-      payload => {
+      (payload) => {
         dispatch({
           type: ACTIONS.PREPEND,
-          payload
+          payload,
         });
       }
     );
@@ -129,6 +129,6 @@ export default function useBatchOperations() {
   return {
     batchOperations: state.batchOperations,
     requestBatchOperations,
-    requestNextBatchOperations
+    requestNextBatchOperations,
   };
 }

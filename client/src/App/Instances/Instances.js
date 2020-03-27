@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 
 import {
   DEFAULT_FILTER,
-  DEFAULT_FILTER_CONTROLLED_VALUES
+  DEFAULT_FILTER_CONTROLLED_VALUES,
 } from 'modules/constants';
 
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
@@ -41,9 +41,9 @@ export default class Instances extends Component {
       activityId: PropTypes.string,
       variable: PropTypes.shape({
         name: PropTypes.string,
-        value: PropTypes.string
+        value: PropTypes.string,
       }),
-      batchOperationId: PropTypes.string
+      batchOperationId: PropTypes.string,
     }).isRequired,
     filterCount: PropTypes.number.isRequired,
     resetFilters: PropTypes.bool,
@@ -61,10 +61,10 @@ export default class Instances extends Component {
     onFlowNodeSelection: PropTypes.func.isRequired,
     diagramModel: PropTypes.shape({
       bpmnElements: PropTypes.object,
-      definitions: PropTypes.object
+      definitions: PropTypes.object,
     }).isRequired,
     statistics: PropTypes.array.isRequired,
-    onInstancesClick: PropTypes.func.isRequired
+    onInstancesClick: PropTypes.func.isRequired,
   };
 
   render() {
@@ -85,7 +85,7 @@ export default class Instances extends Component {
       resetFilters,
       afterFilterReset,
       initialLoad,
-      instancesLoaded
+      instancesLoaded,
     } = this.props;
 
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
@@ -107,7 +107,7 @@ export default class Instances extends Component {
                 groupedWorkflows={groupedWorkflows}
                 filter={{
                   ...DEFAULT_FILTER_CONTROLLED_VALUES,
-                  ...filter
+                  ...filter,
                 }}
                 resetFilters={resetFilters}
                 afterFilterReset={afterFilterReset}

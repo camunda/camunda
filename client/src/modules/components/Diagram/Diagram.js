@@ -22,7 +22,7 @@ import PopoverOverlay from './PopoverOverlay';
 import {
   getDiagramColors,
   getPopoverPostion,
-  isNonSelectableFlowNode
+  isNonSelectableFlowNode,
 } from './service';
 
 class Diagram extends React.PureComponent {
@@ -39,7 +39,7 @@ class Diagram extends React.PureComponent {
     flowNodeStateOverlays: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
-        state: PropTypes.oneOf(Object.keys(STATE)).isRequired
+        state: PropTypes.oneOf(Object.keys(STATE)).isRequired,
       })
     ),
     flowNodesStatistics: PropTypes.arrayOf(
@@ -48,11 +48,11 @@ class Diagram extends React.PureComponent {
         active: PropTypes.number,
         incidents: PropTypes.number,
         completed: PropTypes.number,
-        canceled: PropTypes.number
+        canceled: PropTypes.number,
       })
     ),
     metadata: PropTypes.object,
-    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)).isRequired
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)).isRequired,
   };
 
   constructor(props) {
@@ -62,7 +62,7 @@ class Diagram extends React.PureComponent {
   }
 
   state = {
-    isViewerLoaded: false
+    isViewerLoaded: false,
   };
 
   componentDidMount() {
@@ -74,14 +74,14 @@ class Diagram extends React.PureComponent {
     definitions: prevDefinitions,
     selectedFlowNodeId,
     processedSequenceFlows: prevSequenceFlows,
-    expandState: prevExpandState
+    expandState: prevExpandState,
   }) {
     const hasNewDefinitions = this.props.definitions !== prevDefinitions;
     const hasNewTheme = this.props.theme !== prevTheme;
 
     const {
       expandState,
-      processedSequenceFlows: currentSequenceFlows
+      processedSequenceFlows: currentSequenceFlows,
     } = this.props;
 
     if (
@@ -120,13 +120,13 @@ class Diagram extends React.PureComponent {
 
   // 1- state.isViewerLoaded => true
   // 2- canvas.resized() && canvas.zoom('fit-viewport', 'auto')
-  handleDiagramLoad = e => {
+  handleDiagramLoad = (e) => {
     if (e) {
       return console.log('Error rendering diagram:', e);
     }
 
     this.setState({
-      isViewerLoaded: true
+      isViewerLoaded: true,
     });
 
     if (this.props.expandState !== EXPAND_STATE.COLLAPSED) {
@@ -160,7 +160,7 @@ class Diagram extends React.PureComponent {
 
     this.Viewer = new BPMNViewer({
       container: this.myRef.current,
-      bpmnRenderer: getDiagramColors(this.props.theme)
+      bpmnRenderer: getDiagramColors(this.props.theme),
     });
 
     this.Viewer.importDefinitions(
@@ -175,18 +175,18 @@ class Diagram extends React.PureComponent {
       this.Viewer.detach();
       return this.setState(
         {
-          isViewerLoaded: false
+          isViewerLoaded: false,
         },
         this.initViewer
       );
     }
   };
 
-  containerRef = node => {
+  containerRef = (node) => {
     this.containerNode = node;
   };
 
-  handleZoom = step => {
+  handleZoom = (step) => {
     this.Viewer.get('zoomScroll').stepZoom(step);
   };
 
@@ -231,8 +231,8 @@ class Diagram extends React.PureComponent {
     }
   };
 
-  handleProcessedSequenceFlows = processedSequenceFlows => {
-    processedSequenceFlows.forEach(id => {
+  handleProcessedSequenceFlows = (processedSequenceFlows) => {
+    processedSequenceFlows.forEach((id) => {
       this.colorElement(id, Colors.selections);
     });
   };
@@ -241,17 +241,17 @@ class Diagram extends React.PureComponent {
     prevSequenceFlows,
     currentSequenceFlows
   ) => {
-    prevSequenceFlows.forEach(id => {
+    prevSequenceFlows.forEach((id) => {
       this.colorElement(id);
     });
 
-    currentSequenceFlows.forEach(id => {
+    currentSequenceFlows.forEach((id) => {
       this.colorElement(id, Colors.selections);
     });
   };
 
-  handleSelectableFlowNodes = selectableFlowNodes => {
-    selectableFlowNodes.forEach(id => {
+  handleSelectableFlowNodes = (selectableFlowNodes) => {
+    selectableFlowNodes.forEach((id) => {
       this.addMarker(id, 'op-selectable');
     });
   };
@@ -259,7 +259,7 @@ class Diagram extends React.PureComponent {
   handleNonSelectableFlowNodes = () => {
     const elementRegistry = this.Viewer.get('elementRegistry');
 
-    elementRegistry.forEach(element => {
+    elementRegistry.forEach((element) => {
       if (isNonSelectableFlowNode(element, this.props.selectableFlowNodes)) {
         const gfx = elementRegistry.getGraphics(element);
         gfx.style.cursor = 'not-allowed';
@@ -288,7 +288,7 @@ class Diagram extends React.PureComponent {
     }
 
     const isSelectableElement =
-      selectableFlowNodes.filter(id => id === element.id).length > 0;
+      selectableFlowNodes.filter((id) => id === element.id).length > 0;
 
     // Only select the flownode if it's selectable and if it's not already selected.
     if (isSelectableElement && element.id !== selectedFlowNodeId) {
@@ -309,18 +309,18 @@ class Diagram extends React.PureComponent {
 
   handleOverlayClear = (...args) => this.Viewer.get('overlays').remove(...args);
 
-  renderFlowNodeStateOverlays = overlayProps => {
+  renderFlowNodeStateOverlays = (overlayProps) => {
     const {flowNodeStateOverlays} = this.props;
     if (!flowNodeStateOverlays) {
       return null;
     }
 
-    return flowNodeStateOverlays.map(stateData => (
+    return flowNodeStateOverlays.map((stateData) => (
       <StateOverlay key={stateData.id} {...stateData} {...overlayProps} />
     ));
   };
 
-  renderStatisticsOverlays = overlayProps => {
+  renderStatisticsOverlays = (overlayProps) => {
     const {flowNodesStatistics} = this.props;
     if (flowNodesStatistics && flowNodesStatistics.length === 0) {
       return null;
@@ -328,8 +328,8 @@ class Diagram extends React.PureComponent {
 
     const states = ['active', 'incidents', 'canceled', 'completed'];
 
-    return flatMap(flowNodesStatistics, statistic => {
-      return states.map(state => (
+    return flatMap(flowNodesStatistics, (statistic) => {
+      return states.map((state) => (
         <StatisticOverlay
           key={`${state} ${statistic.activityId}`}
           statistic={statistic}
@@ -340,7 +340,7 @@ class Diagram extends React.PureComponent {
     });
   };
 
-  getPopoverPostion = isSummaryPopover => {
+  getPopoverPostion = (isSummaryPopover) => {
     const flowNode = this.Viewer.get('elementRegistry').getGraphics(
       this.props.selectedFlowNodeId
     );
@@ -348,7 +348,7 @@ class Diagram extends React.PureComponent {
     return getPopoverPostion(
       {
         diagramContainer: this.myRef.current,
-        flowNode
+        flowNode,
       },
       isSummaryPopover
     );
@@ -359,7 +359,7 @@ class Diagram extends React.PureComponent {
       onOverlayAdd: this.handleOverlayAdd,
       onOverlayClear: this.handleOverlayClear,
       isViewerLoaded: this.state.isViewerLoaded,
-      theme: this.props.theme
+      theme: this.props.theme,
     };
 
     return (

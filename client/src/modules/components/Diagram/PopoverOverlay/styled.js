@@ -28,7 +28,7 @@ const arrowStyle = ({side}) => {
         &:before {
           border-bottom-color: ${themeStyle({
             dark: Colors.uiDark06,
-            light: Colors.uiLight05
+            light: Colors.uiLight05,
           })};
           left: calc(50% - 9px);
         }
@@ -36,7 +36,7 @@ const arrowStyle = ({side}) => {
         &:after {
           border-bottom-color: ${themeStyle({
             dark: Colors.uiDark04,
-            light: Colors.uiLight02
+            light: Colors.uiLight02,
           })};
           left: calc(50% - 8px);
         }
@@ -58,7 +58,7 @@ const arrowStyle = ({side}) => {
         &:before {
           border-left-color: ${themeStyle({
             dark: Colors.uiDark06,
-            light: Colors.uiLight05
+            light: Colors.uiLight05,
           })};
           top: calc(50% - 9px);
         }
@@ -66,7 +66,7 @@ const arrowStyle = ({side}) => {
         &:after {
           border-left-color: ${themeStyle({
             dark: Colors.uiDark04,
-            light: Colors.uiLight02
+            light: Colors.uiLight02,
           })};
           top: calc(50% - 8px);
         }
@@ -88,7 +88,7 @@ const arrowStyle = ({side}) => {
         &:before {
           border-right-color: ${themeStyle({
             dark: Colors.uiDark06,
-            light: Colors.uiLight05
+            light: Colors.uiLight05,
           })};
           top: calc(50% - 9px);
         }
@@ -96,7 +96,7 @@ const arrowStyle = ({side}) => {
         &:after {
           border-right-color: ${themeStyle({
             dark: Colors.uiDark04,
-            light: Colors.uiLight02
+            light: Colors.uiLight02,
           })};
           top: calc(50% - 8px);
         }
@@ -118,7 +118,7 @@ const arrowStyle = ({side}) => {
         &:before {
           border-top-color: ${themeStyle({
             dark: Colors.uiDark06,
-            light: Colors.uiLight05
+            light: Colors.uiLight05,
           })};
           left: calc(50% - 9px);
         }
@@ -126,7 +126,7 @@ const arrowStyle = ({side}) => {
         &:after {
           border-top-color: ${themeStyle({
             dark: Colors.uiDark04,
-            light: Colors.uiLight02
+            light: Colors.uiLight02,
           })};
           left: calc(50% - 8px);
         }
@@ -139,19 +139,19 @@ export const Popover = styled.div`
 
   background-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
 
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   font-size: 12px;
   border: 1px solid
     ${themeStyle({
       dark: Colors.uiDark06,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
 
   border-radius: 3px;
@@ -159,7 +159,7 @@ export const Popover = styled.div`
   box-shadow: 0 0 2px 0
     ${themeStyle({
       dark: 'rgba(0, 0, 0, 0.6)',
-      light: 'rgba(0, 0, 0, 0.2)'
+      light: 'rgba(0, 0, 0, 0.2)',
     })};
 
   padding: 11px;
@@ -247,20 +247,20 @@ export const Button = themed(styled.button`
 
   color: ${themeStyle({
     dark: Colors.darkLinkDefault,
-    light: Colors.lightLinkDefault
+    light: Colors.lightLinkDefault,
   })};
 
   &:hover {
     color: ${themeStyle({
       dark: Colors.darkLinkHover,
-      light: Colors.lightLinkHover
+      light: Colors.lightLinkHover,
     })};
   }
 
   &:active {
     color: ${themeStyle({
       dark: Colors.darkLinkActive,
-      light: Colors.lightLinkActive
+      light: Colors.lightLinkActive,
     })};
   }
 `);
@@ -282,7 +282,7 @@ export const CodeLine = themed(styled.p`
   line-height: 14px;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   font-family: IBMPlexMono;
   font-size: 14px;
@@ -295,13 +295,13 @@ export const CodeLine = themed(styled.p`
     content: counter(line);
     color: ${themeStyle({
       dark: '#ffffff',
-      light: Colors.uiLight06
+      light: Colors.uiLight06,
     })};
     display: inline-block;
     width: 35px;
     opacity: ${themeStyle({
       dark: 0.5,
-      light: 0.65
+      light: 0.65,
     })};
     padding-right: 11px;
     -webkit-user-select: none;
@@ -316,6 +316,6 @@ export const LinesSeparator = themed(styled.span`
   width: 1px;
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
 `);

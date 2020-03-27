@@ -8,7 +8,7 @@ import {
   STATE,
   TYPE,
   FLOWNODE_TYPE_HANDLE,
-  MULTI_INSTANCE_TYPE
+  MULTI_INSTANCE_TYPE,
 } from 'modules/constants';
 import * as api from 'modules/api/instances';
 import {isFlowNode} from 'modules/utils/flowNodes/flowNodes';
@@ -60,8 +60,8 @@ export function createNodeMetaDataMap(bpmnElements) {
         type: {
           elementType: getElementType(bpmnElement),
           eventType: getEventType(bpmnElement),
-          multiInstanceType: getMultiInstanceType(bpmnElement)
-        }
+          multiInstanceType: getMultiInstanceType(bpmnElement),
+        },
       });
 
       return map;
@@ -146,12 +146,14 @@ export function getActivityIdToActivityInstancesMap(
 }
 
 function hasMultiInstanceActivities(instances) {
-  return instances.some(instance => instance.type === TYPE.MULTI_INSTANCE_BODY);
+  return instances.some(
+    (instance) => instance.type === TYPE.MULTI_INSTANCE_BODY
+  );
 }
 
 export function getProcessedSequenceFlows(response) {
   return response
-    .map(item => item.activityId)
+    .map((item) => item.activityId)
     .filter((value, index, self) => self.indexOf(value) === index);
 }
 
@@ -175,7 +177,7 @@ function filterMultiInstanceActivities(activityInstancesMap, filterFn) {
 export function getMultiInstanceBodies(activityInstancesMap) {
   return filterMultiInstanceActivities(
     activityInstancesMap,
-    instance => instance.type === TYPE.MULTI_INSTANCE_BODY
+    (instance) => instance.type === TYPE.MULTI_INSTANCE_BODY
   );
 }
 
@@ -186,7 +188,7 @@ export function getMultiInstanceBodies(activityInstancesMap) {
 export function getMultiInstanceChildren(activityInstancesMap) {
   return filterMultiInstanceActivities(
     activityInstancesMap,
-    instance => instance.type !== TYPE.MULTI_INSTANCE_BODY
+    (instance) => instance.type !== TYPE.MULTI_INSTANCE_BODY
   );
 }
 

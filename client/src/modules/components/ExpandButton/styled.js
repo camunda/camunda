@@ -22,7 +22,7 @@ export const Transition = styled(TransitionComponent)`
 
   &.transition-enter-active {
     transform: rotate(90deg);
-    ${props => `transition: transform ${props.timeout}ms`};
+    ${(props) => `transition: transform ${props.timeout}ms`};
   }
 
   &.transition-enter-done {
@@ -35,7 +35,7 @@ export const Transition = styled(TransitionComponent)`
 
   &.transition-exit-active {
     transform: none;
-    ${props => `transition: transform ${props.timeout}ms`};
+    ${(props) => `transition: transform ${props.timeout}ms`};
   }
 
   &.transition-exit-done {

@@ -15,10 +15,10 @@ const mockProps = {
   count: 1,
   onClick: jest.fn(),
   isArrowFlipped: false,
-  expandState: 'DEFAULT'
+  expandState: 'DEFAULT',
 };
 
-const mountComponent = mockProps =>
+const mountComponent = (mockProps) =>
   mount(
     <ThemeProvider>
       <IncidentsBanner {...mockProps} />
@@ -34,7 +34,7 @@ describe('IncidentsBanner', () => {
   it('should not display incidents banner if panel is collapsed', () => {
     const node = mountComponent({
       ...mockProps,
-      expandState: EXPAND_STATE.COLLAPSED
+      expandState: EXPAND_STATE.COLLAPSED,
     });
     expect(node.contains(IncidentsBanner)).toBe(false);
   });
@@ -47,7 +47,7 @@ describe('IncidentsBanner', () => {
   it('should show the right text for more than 1 incident', () => {
     const mockProps2 = {
       ...mockProps,
-      count: 2
+      count: 2,
     };
     const node = mountComponent(mockProps2);
 

@@ -48,7 +48,7 @@ function TimeStampPill(props) {
 
 TimeStampPill.propTypes = {
   onTimeStampToggle: PropTypes.func.isRequired,
-  showTimeStamp: PropTypes.bool.isRequired
+  showTimeStamp: PropTypes.bool.isRequired,
 };
 
 export default withFlowNodeTimeStampContext(TimeStampPill);

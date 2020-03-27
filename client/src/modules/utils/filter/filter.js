@@ -32,10 +32,7 @@ export function getFilterQueryString(filter = {}, name) {
 export function parseQueryString(queryString = '') {
   var params = {};
 
-  const queries = queryString
-    .replace(/%22/g, '"')
-    .substring(1)
-    .split('&');
+  const queries = queryString.replace(/%22/g, '"').substring(1).split('&');
 
   queries.forEach((item, index) => {
     const [paramKey, paramValue] = queries[index].split('=');
@@ -64,7 +61,7 @@ const parseDate = (value, name) => {
   if (value === '') {
     return {
       [`${name}After`]: null,
-      [`${name}Before`]: null
+      [`${name}Before`]: null,
     };
   }
 
@@ -81,7 +78,7 @@ const parseDate = (value, name) => {
 
   return {
     [`${name}After`]: format(dateAfter, formatWithTimezone),
-    [`${name}Before`]: format(dateBefore, formatWithTimezone)
+    [`${name}Before`]: format(dateBefore, formatWithTimezone),
   };
 };
 
@@ -102,7 +99,7 @@ export const fieldParser = {
   },
   variable: (name, value) => {
     return {[name]: trimVariable(value)};
-  }
+  },
 };
 
 function defaultFieldParser(name, value) {
@@ -145,18 +142,18 @@ export function parseFilterForRequest(filter) {
 
     parsedFilter = {
       ...parsedFilter,
-      ...parsedField
+      ...parsedField,
     };
   }
 
   return {
-    ...trimmFilter(parsedFilter)
+    ...trimmFilter(parsedFilter),
   };
 }
 
 export function getWorkflowByVersion(workflow, version) {
   if (!workflow || version === 'all') return {};
-  return workflow.workflows.find(item => {
+  return workflow.workflows.find((item) => {
     return String(item.version) === String(version);
   });
 }
@@ -188,7 +185,7 @@ export function getFilterWithWorkflowIds(filter = {}, allWorkflows = {}) {
   }
 
   if (version === 'all') {
-    allWorkflows[workflow].workflows.forEach(item => {
+    allWorkflows[workflow].workflows.forEach((item) => {
       workflowIds.push(item.id);
     });
     newFilter.workflowIds = workflowIds;

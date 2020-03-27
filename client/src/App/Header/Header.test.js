@@ -27,7 +27,7 @@ import {
   countStore,
   location,
   countStoreWithCount,
-  mockInstance
+  mockInstance,
 } from './Header.setup';
 
 jest.mock('bpmn-js', () => ({}));
@@ -47,14 +47,14 @@ jest.mock(
 const mockCollapsablePanelProps = {
   getStateLocally: () => ({}),
   isFiltersCollapsed: false,
-  expandFilters: jest.fn()
+  expandFilters: jest.fn(),
 };
 
 const getLinkNode = (node, selector) => {
   return node.find(`[data-test="header-link-${selector}"]`).first();
 };
 
-const mountComponent = props => {
+const mountComponent = (props) => {
   const node = mount(
     <Router>
       <ThemeProvider>
@@ -80,7 +80,7 @@ describe('Header', () => {
         location: location.dashboard,
         countStore,
         dataManager,
-        ...mockCollapsablePanelProps
+        ...mockCollapsablePanelProps,
       };
 
       node = mountComponent(mockProps);
@@ -140,7 +140,7 @@ describe('Header', () => {
         location: location.dashboard,
         countStore,
         dataManager,
-        ...mockCollapsablePanelProps
+        ...mockCollapsablePanelProps,
       };
 
       node = mountComponent(mockProps);
@@ -160,7 +160,7 @@ describe('Header', () => {
         location: location.dashboard,
         countStore: countStoreWithCount,
         dataManager,
-        ...mockCollapsablePanelProps
+        ...mockCollapsablePanelProps,
       };
 
       node = mountComponent(mockProps);
@@ -189,7 +189,7 @@ describe('Header', () => {
         location: location.dashboard,
         countStore,
         dataManager,
-        ...mockCollapsablePanelProps
+        ...mockCollapsablePanelProps,
       };
 
       node = mountComponent(mockProps);
@@ -203,7 +203,7 @@ describe('Header', () => {
         location: location.instance,
         countStore: countStoreWithCount,
         dataManager,
-        ...mockCollapsablePanelProps
+        ...mockCollapsablePanelProps,
       };
 
       node = mountComponent(mockProps);
@@ -215,7 +215,7 @@ describe('Header', () => {
         location: location.instance,
         countStore: countStoreWithCount,
         dataManager,
-        ...mockCollapsablePanelProps
+        ...mockCollapsablePanelProps,
       };
 
       node = mountComponent(mockProps);
@@ -227,8 +227,8 @@ describe('Header', () => {
         subscription: subscriptions['LOAD_INSTANCE'],
         state: LOADING_STATE.LOADED,
         response: {
-          ...mockInstance
-        }
+          ...mockInstance,
+        },
       });
       node.update();
 
@@ -241,7 +241,7 @@ describe('Header', () => {
         location: location.instance,
         countStore: countStoreWithCount,
         dataManager,
-        ...mockCollapsablePanelProps
+        ...mockCollapsablePanelProps,
       };
 
       node = mountComponent(mockProps);
@@ -252,8 +252,8 @@ describe('Header', () => {
         subscription: subscriptions['LOAD_INSTANCE'],
         state: LOADING_STATE.LOADED,
         response: {
-          ...createInstance({id: 'first_instance_id'})
-        }
+          ...createInstance({id: 'first_instance_id'}),
+        },
       });
       node.update();
       expect(node.find('InstanceDetail')).toExist();
@@ -266,8 +266,8 @@ describe('Header', () => {
         subscription: subscriptions['CONSTANT_REFRESH'],
         state: LOADING_STATE.LOADED,
         response: {
-          LOAD_INSTANCE: {...createInstance({id: 'second_instance_id'})}
-        }
+          LOAD_INSTANCE: {...createInstance({id: 'second_instance_id'})},
+        },
       });
       node.update();
 
@@ -285,23 +285,19 @@ describe('Header', () => {
         location: location.instances,
         countStore: countStoreWithCount,
         dataManager,
-        ...mockCollapsablePanelProps
+        ...mockCollapsablePanelProps,
       };
 
       node = mountComponent(mockProps);
 
       expect(
-        node
-          .find('[data-test="header-link-instances"]')
-          .find(Badge)
-          .props().isActive
+        node.find('[data-test="header-link-instances"]').find(Badge).props()
+          .isActive
       ).toBe(true);
 
       expect(
-        node
-          .find('[data-test="header-link-filters"]')
-          .find(Badge)
-          .props().isActive
+        node.find('[data-test="header-link-filters"]').find(Badge).props()
+          .isActive
       ).toBe(true);
     });
 
@@ -310,17 +306,12 @@ describe('Header', () => {
         location: location.dashboard,
         countStore: countStoreWithCount,
         dataManager,
-        ...mockCollapsablePanelProps
+        ...mockCollapsablePanelProps,
       };
 
       node = mountComponent(mockProps);
 
-      expect(
-        node
-          .find('header')
-          .find(LinkElement)
-          .props().isActive
-      ).toBe(true);
+      expect(node.find('header').find(LinkElement).props().isActive).toBe(true);
     });
   });
 });

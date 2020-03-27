@@ -24,7 +24,7 @@ export const TimeStamp = themed(styled.span`
         })
       : themeStyle({
           dark: Colors.darkScopeLabel,
-          light: Colors.lightScopeLabel
+          light: Colors.lightScopeLabel,
         })};
 
   font-size: 11px;

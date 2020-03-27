@@ -19,7 +19,7 @@ export const TH = themed(styled.th`
   padding: 0 0 0 5px;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.8)',
-    light: 'rgba(98, 98, 110, 0.8)'
+    light: 'rgba(98, 98, 110, 0.8)',
   })};
 
   &:not(:last-child):after {
@@ -30,7 +30,7 @@ export const TH = themed(styled.th`
     width: 1px;
     background: ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 `);
@@ -40,7 +40,7 @@ export const TD = themed(styled.td`
   white-space: nowrap;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)'
+    light: 'rgba(98, 98, 110, 0.9)',
   })};
 `);
 
@@ -52,7 +52,7 @@ export const TR = themed(styled.tr`
   border-style: solid;
   border-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
 
   &:nth-child(odd) {
@@ -96,13 +96,13 @@ export const THead = themed(styled.thead`
   text-align: left;
   background-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
 
   ${TR.WrappedComponent} {
     background-color: ${themeStyle({
       dark: Colors.uiDark03,
-      light: Colors.uiLight02
+      light: Colors.uiLight02,
     })};
   }
 `);

@@ -12,7 +12,7 @@ export const labels = {
   filters: 'Filters',
   dashboard: 'Dashboard',
   incidents: 'Incidents',
-  brand: 'Camunda Operate'
+  brand: 'Camunda Operate',
 };
 
 export const createTitle = (type, count) => {
@@ -21,7 +21,7 @@ export const createTitle = (type, count) => {
     dashboard: 'View Dashboard',
     instances: `View ${count} Running Instances`,
     filters: `View ${count} Instances in Filters`,
-    incidents: `View ${count} Incidents`
+    incidents: `View ${count} Incidents`,
   };
   return titles[type];
 };
@@ -29,5 +29,5 @@ export const createTitle = (type, count) => {
 export const PATHNAME = {
   INSTANCES: '/instances',
   INSTANCE: '/instances/',
-  DASHBOARD: '/'
+  DASHBOARD: '/',
 };

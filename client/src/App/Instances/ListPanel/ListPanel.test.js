@@ -25,7 +25,7 @@ import {
   mockPropsWithNoOperation,
   mockPropsBeforeDataLoaded,
   mockPropsWithPoll,
-  ACTIVE_INSTANCE
+  ACTIVE_INSTANCE,
 } from './ListPanel.setup';
 
 import ListPanel from './ListPanel';
@@ -236,7 +236,7 @@ describe('ListPanel', () => {
 
       // then
       expect(mockPropsWithPoll.polling.addIds).toHaveBeenCalledWith([
-        ACTIVE_INSTANCE.id
+        ACTIVE_INSTANCE.id,
       ]);
     });
 
@@ -271,7 +271,7 @@ describe('ListPanel', () => {
 
       // then
       expect(mockPropsWithPoll.polling.addIds).toHaveBeenCalledWith([
-        node.find(List).props().data[0].id
+        node.find(List).props().data[0].id,
       ]);
     });
 

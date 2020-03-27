@@ -20,10 +20,10 @@ export default class Paginator extends React.Component {
     onFirstElementChange: PropTypes.func.isRequired,
     perPage: PropTypes.number.isRequired,
     firstElement: PropTypes.number.isRequired,
-    maxPage: PropTypes.number.isRequired
+    maxPage: PropTypes.number.isRequired,
   };
 
-  handlePageChange = page => () => {
+  handlePageChange = (page) => () => {
     this.props.onFirstElementChange((page - 1) * this.props.perPage);
   };
 
@@ -67,7 +67,7 @@ export default class Paginator extends React.Component {
             )}
           </React.Fragment>
         )}
-        {pageRange.map(page => (
+        {pageRange.map((page) => (
           <Styled.Page
             title={`Page ${page}`}
             aria-label={`Page ${page}`}

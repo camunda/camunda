@@ -21,9 +21,9 @@ function withData(Component) {
 
   withData.WrappedComponent = Component;
 
-  withData.displayName = `WithModal(${Component.displayName ||
-    Component.name ||
-    'Component'})`;
+  withData.displayName = `WithModal(${
+    Component.displayName || Component.name || 'Component'
+  })`;
 
   return WithData;
 }
@@ -39,7 +39,7 @@ function DataManagerProvider(props) {
 }
 
 DataManagerProvider.propTypes = {
-  children: PropTypes.object
+  children: PropTypes.object,
 };
 
 export {DataManagerProvider, withData, DataContext};

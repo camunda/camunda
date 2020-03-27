@@ -18,7 +18,7 @@ import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {
   getWorkflowName,
-  getInstancesWithActiveOperations
+  getInstancesWithActiveOperations,
 } from 'modules/utils/instance';
 
 import Operations from 'modules/components/Operations';
@@ -32,7 +32,7 @@ jest.mock('modules/utils/bpmn');
 const mockInstance = createInstance();
 createMockDataManager();
 
-const mountInstanceHeader = props => {
+const mountInstanceHeader = (props) => {
   return mount(
     <DataManagerProvider>
       <InstanceHeader {...props} />
@@ -59,7 +59,7 @@ describe('InstanceHeader', () => {
 
     expect(Object.keys(subscriptions())).toEqual([
       'OPERATION_APPLIED_INCIDENT_id_1',
-      'OPERATION_APPLIED_VARIABLE_id_1'
+      'OPERATION_APPLIED_VARIABLE_id_1',
     ]);
   });
 
@@ -81,7 +81,7 @@ describe('InstanceHeader', () => {
 
   it('should render', () => {
     root = mountInstanceHeader({
-      instance: mockInstance
+      instance: mockInstance,
     });
     // given
     const workflowName = getWorkflowName(mockInstance);
@@ -120,14 +120,14 @@ describe('InstanceHeader', () => {
   describe('operation feedback', () => {
     it('should show spinner based on instance data', () => {
       root = mountInstanceHeader({
-        instance: {...mockInstance, hasActiveOperation: false, operations: []}
+        instance: {...mockInstance, hasActiveOperation: false, operations: []},
       });
 
       let node = root.find(InstanceHeader.WrappedComponent);
 
       expect(node.find('Spinner')).not.toExist();
       setProps(root, InstanceHeader, {
-        instance: {...mockInstance, hasActiveOperation: true}
+        instance: {...mockInstance, hasActiveOperation: true},
       });
 
       root.update();
@@ -144,7 +144,7 @@ describe('InstanceHeader', () => {
       expect(root.find(Spinner)).not.toHaveLength(1);
 
       setProps(root, InstanceHeader, {
-        instance: {...mockInstance, hasActiveOperation: false, operations: []}
+        instance: {...mockInstance, hasActiveOperation: false, operations: []},
       });
 
       root.update();
@@ -153,7 +153,7 @@ describe('InstanceHeader', () => {
 
       node.instance().props.dataManager.publish({
         subscription: subscriptions['OPERATION_APPLIED_INCIDENT_id_1'],
-        state: 'LOADING'
+        state: 'LOADING',
       });
 
       root.update();
@@ -169,7 +169,7 @@ describe('InstanceHeader', () => {
       expect(root.find(Spinner)).not.toHaveLength(1);
 
       setProps(root, InstanceHeader, {
-        instance: {...mockInstance, hasActiveOperation: false, operations: []}
+        instance: {...mockInstance, hasActiveOperation: false, operations: []},
       });
 
       root.update();
@@ -178,7 +178,7 @@ describe('InstanceHeader', () => {
 
       node.instance().props.dataManager.publish({
         subscription: subscriptions['OPERATION_APPLIED_VARIABLE_id_1'],
-        state: 'LOADING'
+        state: 'LOADING',
       });
 
       root.update();
