@@ -25,7 +25,10 @@ const BarComponent = ({node, isSelected}) => {
         isSelected={isSelected}
         data-test={`flowNodeIcon-${node.type}`}
       />
-      <Styled.NodeName isWhite={isSelected} isBold={!!node.children.length}>
+      <Styled.NodeName
+        isSelected={isSelected}
+        isBold={node.children.length > 0}
+      >
         {name}
       </Styled.NodeName>
       <TimeStampLabel timeStamp={node.endDate} isSelected={isSelected} />

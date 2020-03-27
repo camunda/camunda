@@ -10,28 +10,34 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
 
 export const NodeIcon = themed(styled(BasicFlowNodeIcon)`
-  color: ${({isSelected}) =>
-    !isSelected &&
-    themeStyle({
-      dark: '#fff',
-      light: Colors.uiLight06
-    })};
+  color: ${themeStyle({
+    dark: '#fff',
+    light: Colors.uiLight06
+  })};
+
   opacity: ${({isSelected}) =>
-    !isSelected &&
-    themeStyle({
-      dark: 0.75,
-      light: 0.6
-    })};
+    isSelected
+      ? themeStyle({
+          dark: 0.8,
+          light: 0.65
+        })
+      : themeStyle({
+          dark: 0.75,
+          light: 0.6
+        })};
 `);
 
 const selectionStyle = css`
-  border-color: ${Colors.darkFocusInner};
-  border-width: 1px 1px 0px 1px;
-  background: ${Colors.selections};
+  border-color: ${themeStyle({
+    dark: Colors.uiDark04,
+    light: Colors.uiLight05
+  })};
+  border-width: 1px 0px 0px 1px;
+  background: ${themeStyle({
+    dark: Colors.darkSelectedOdd,
+    light: Colors.lightSelectedOdd
+  })};
   color: '#fff';
-  > svg {
-    fill: ${({showSelectionStyle}) => showSelectionStyle && '#fff'};
-  }
 
   /* Bottom Border */
   &:before {
@@ -42,7 +48,6 @@ const selectionStyle = css`
     width: 100%;
     height: 1px;
     z-index: 1;
-    background: ${Colors.darkFocusInner};
   }
 `;
 
@@ -72,13 +77,32 @@ export const NodeName = themed(styled.span`
   margin-left: 5px;
   padding-left: 5px;
   border-left: 1px solid
-    ${({isWhite}) =>
-      isWhite
-        ? 'rgba(255, 255, 255, 0.9)'
+    ${({isSelected}) =>
+      isSelected
+        ? themeStyle({
+            dark: 'rgba(255,255,255,0.25)',
+            light: 'rgba(98, 98, 110,0.25)'
+          })
         : themeStyle({
             dark: Colors.uiDark04,
             light: Colors.uiLight05
           })};
-  color: ${({isWhite}) => isWhite && '#fff'};
+
+  color: ${themeStyle({
+    dark: '#fff',
+    light: Colors.uiLight06
+  })};
+
+  opacity: ${({isSelected}) =>
+    isSelected
+      ? themeStyle({
+          dark: 0.9,
+          light: 1
+        })
+      : themeStyle({
+          dark: 0.9,
+          light: 0.9
+        })};
+
   font-weight: ${({isBold}) => (isBold ? 'bold' : '')};
 `);
