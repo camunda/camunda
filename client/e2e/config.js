@@ -5,7 +5,7 @@
  */
 
 export default {
-  endpoint: 'http://localhost:8080/',
+  endpoint: `http://localhost:${process.env.PORT}`,
   agentUser: {
     username: 'demo',
     password: 'demo'
