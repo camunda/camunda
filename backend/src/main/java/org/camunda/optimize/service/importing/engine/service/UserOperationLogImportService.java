@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricUserOperationLogDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
@@ -59,7 +60,8 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
 
   private List<UserOperationLogEntryDto> mapEngineEntitiesToOptimizeEntities(final List<HistoricUserOperationLogDto> engineEntities) {
     return engineEntities.stream()
-      .filter(instance -> instance.getProcessInstanceId() != null)
+      .filter(userOpLog -> userOpLog.getProcessInstanceId() != null)
+      .filter(userOpLog -> userOpLog.getProperty().equalsIgnoreCase(ProcessInstanceDto.Fields.state))
       .map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }

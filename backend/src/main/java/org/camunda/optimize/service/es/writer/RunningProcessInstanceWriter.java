@@ -10,7 +10,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Set;
 
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
@@ -65,21 +63,13 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
     );
   }
 
-  public void importProcessInstancesFromUserOperationLogs(List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
+  public void importProcessInstancesFromUserOperationLogs(List<ProcessInstanceDto> processInstanceDtos) {
     final String importItemName = "running process instances";
     log.debug(
-      "Writing changes from [{}] user operation logs to {} to ES.",
-      userOperationLogEntryDtos.size(),
+      "Writing changes from user operation logs to [{}] {} to ES.",
+      processInstanceDtos.size(),
       importItemName
     );
-
-    final List<ProcessInstanceDto> processInstanceDtos =
-      mapUserOperationsLogsToProcessInstanceDtos(userOperationLogEntryDtos);
-
-    if (processInstanceDtos.isEmpty()) {
-      log.debug("No {} to udpate", importItemName);
-      return;
-    }
 
     ElasticsearchWriterUtil.doBulkRequestWithList(
       esClient,
@@ -92,23 +82,6 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
         objectMapper
       )
     );
-  }
-
-  private List<ProcessInstanceDto> mapUserOperationsLogsToProcessInstanceDtos(
-    final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
-    return userOperationLogEntryDtos.stream()
-      .filter(this::isProcessInstanceStatusChangeOperation)
-      .map(userOpLog -> ProcessInstanceDto.builder()
-        .processInstanceId(userOpLog.getProcessInstanceId())
-        .state(userOpLog.getNewValue())
-        .build()
-      )
-      .collect(toList());
-  }
-
-  private boolean isProcessInstanceStatusChangeOperation(final UserOperationLogEntryDto userOperationLogEntryDto) {
-    return userOperationLogEntryDto.getProcessInstanceId() != null
-      && userOperationLogEntryDto.getProperty().equalsIgnoreCase(ProcessInstanceDto.Fields.state);
   }
 
   private Script createUpdateStatusScript(final ProcessInstanceDto processInstanceDto) {

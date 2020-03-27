@@ -5,11 +5,14 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 
 import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 public class UserOperationLogElasticsearchImportJob extends ElasticsearchImportJob<UserOperationLogEntryDto> {
   private RunningProcessInstanceWriter runningProcessInstanceWriter;
@@ -22,6 +25,19 @@ public class UserOperationLogElasticsearchImportJob extends ElasticsearchImportJ
 
   @Override
   protected void persistEntities(final List<UserOperationLogEntryDto> newOptimizeEntities) throws Exception {
-    runningProcessInstanceWriter.importProcessInstancesFromUserOperationLogs(newOptimizeEntities);
+    runningProcessInstanceWriter.importProcessInstancesFromUserOperationLogs(
+      mapUserOperationsLogsToProcessInstanceDtos(newOptimizeEntities)
+    );
+  }
+
+  private List<ProcessInstanceDto> mapUserOperationsLogsToProcessInstanceDtos(
+    final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
+    return userOperationLogEntryDtos.stream()
+      .map(userOpLog -> ProcessInstanceDto.builder()
+        .processInstanceId(userOpLog.getProcessInstanceId())
+        .state(userOpLog.getNewValue())
+        .build()
+      )
+      .collect(toList());
   }
 }
