@@ -438,6 +438,8 @@ public final class EventbasedGatewayTest {
             .map(r -> r.getValue().getMessageName())
             .collect(Collectors.toList());
 
+    assertThat(messageNames).hasSize(2);
+
     assertThat(
             RecordingExporter.workflowInstanceSubscriptionRecords(
                     WorkflowInstanceSubscriptionIntent.CORRELATED)

@@ -31,7 +31,11 @@ public class MessageBuilder extends AbstractBaseElementBuilder<MessageBuilder, M
     return this;
   }
 
-  public MessageBuilder zeebeCorrelationKey(final String correlationKey) {
+  public MessageBuilder nameExpression(final String nameExpression) {
+    return name(asZeebeExpression(nameExpression));
+  }
+
+  public MessageBuilder zeebeCorrelationKey(String correlationKey) {
     final ZeebeSubscription subscription = getCreateSingleExtensionElement(ZeebeSubscription.class);
     subscription.setCorrelationKey(correlationKey);
     return this;

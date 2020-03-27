@@ -56,6 +56,14 @@ public final class MessageCorrelationTest {
           .endEvent()
           .done();
 
+  private static final BpmnModelInstance SINGLE_MESSAGE_WORKFLOW_WITH_FEEL_EXPRESSION_MESSAGE_NAME =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .intermediateCatchEvent("receive-message")
+          .message(m -> m.nameExpression("\"message\"").zeebeCorrelationKeyExpression("key"))
+          .endEvent()
+          .done();
+
   private static final BpmnModelInstance TWO_MESSAGES_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -124,6 +132,40 @@ public final class MessageCorrelationTest {
   public void shouldCorrelateMessageIfPublishedBefore() {
     // given
     engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
+
+    engine
+        .message()
+        .withName("message")
+        .withCorrelationKey("order-123")
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
+
+    // when
+    final long workflowInstanceKey =
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
+
+    // then
+    final Record<WorkflowInstanceRecordValue> event =
+        RecordingExporter.workflowInstanceRecords()
+            .withElementId("receive-message")
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .getFirst();
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+    assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("foo", "\"bar\""));
+  }
+
+  @Test
+  public void shouldCorrelateMessageToMessageWithFeelExpressionNameIfPublishedBefore() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(SINGLE_MESSAGE_WORKFLOW_WITH_FEEL_EXPRESSION_MESSAGE_NAME)
+        .deploy();
 
     engine
         .message()

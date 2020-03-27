@@ -33,19 +33,28 @@ import org.junit.Test;
 public final class MessageStartEventTest {
 
   private static final String MESSAGE_NAME_1 = "a";
+  private static final String MESSAGE_NAME_EXPRESSION_1 = "=\"a\"";
   private static final String MESSAGE_NAME_2 = "b";
 
   private static final String CORRELATION_KEY_1 = "key-1";
   private static final String CORRELATION_KEY_2 = "key-2";
 
-  private static final BpmnModelInstance SINGLE_START_EVENT = singleStartEvent(startEvent -> {});
+  private static final BpmnModelInstance SINGLE_START_EVENT_1 =
+      singleStartEvent(startEvent -> {}, MESSAGE_NAME_1);
+  private static final BpmnModelInstance SINGLE_START_EVENT_EXPRESSION_1 =
+      singleStartEvent(startEvent -> {}, MESSAGE_NAME_EXPRESSION_1);
   private static final BpmnModelInstance MULTIPLE_START_EVENTS = multipleStartEvents();
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   private static BpmnModelInstance singleStartEvent(final Consumer<StartEventBuilder> customizer) {
+    return singleStartEvent(customizer, MESSAGE_NAME_1);
+  }
+
+  private static BpmnModelInstance singleStartEvent(
+      final Consumer<StartEventBuilder> customizer, String messageName) {
     final var startEventBuilder =
-        Bpmn.createExecutableProcess("wf").startEvent().message(MESSAGE_NAME_1);
+        Bpmn.createExecutableProcess("wf").startEvent().message(messageName);
 
     customizer.accept(startEventBuilder);
 
@@ -63,7 +72,7 @@ public final class MessageStartEventTest {
   @Test
   public void shouldCorrelateMessageToStartEvent() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
 
     // when
     engine.message().withCorrelationKey(CORRELATION_KEY_1).withName(MESSAGE_NAME_1).publish();
@@ -88,9 +97,33 @@ public final class MessageStartEventTest {
   }
 
   @Test
-  public void shouldCreateNewInstance() {
+  public void shouldCreateNewInstanceWithNameLiteral() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
+
+    // when
+    engine.message().withCorrelationKey(CORRELATION_KEY_1).withName(MESSAGE_NAME_1).publish();
+
+    final var job = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+    engine.job().withKey(job.getKey()).complete();
+
+    // then
+    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSequence(
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCreateNewInstanceWithNameFeelExpression() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_EXPRESSION_1).deploy();
 
     // when
     engine.message().withCorrelationKey(CORRELATION_KEY_1).withName(MESSAGE_NAME_1).publish();
@@ -114,7 +147,7 @@ public final class MessageStartEventTest {
   @Test
   public void shouldCreateNewInstanceWithMessageVariables() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
 
     // when
     engine
@@ -286,7 +319,7 @@ public final class MessageStartEventTest {
   @Test
   public void shouldCreateMultipleInstancesIfCorrelationKeyIsEmpty() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
 
     engine
         .message()
@@ -315,7 +348,7 @@ public final class MessageStartEventTest {
   @Test
   public void shouldCreateOnlyOneInstancePerCorrelationKey() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
 
     engine
         .message()
@@ -395,7 +428,7 @@ public final class MessageStartEventTest {
   @Test
   public void shouldCreateNewInstanceAfterCompletion() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
 
     engine
         .message()
@@ -430,7 +463,7 @@ public final class MessageStartEventTest {
   @Test
   public void shouldCreateNewInstanceAfterTermination() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
 
     engine
         .message()
@@ -461,7 +494,7 @@ public final class MessageStartEventTest {
   @Test
   public void shouldCreateNewInstanceForBufferedMessageAfterCompletion() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
 
     engine
         .message()
@@ -502,7 +535,7 @@ public final class MessageStartEventTest {
   @Test
   public void shouldCreateNewInstanceForBufferedMessageAfterTermination() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
 
     engine
         .message()
@@ -584,7 +617,7 @@ public final class MessageStartEventTest {
   @Test
   public void shouldNotCreateNewInstanceForBufferedMessageAfterTTL() {
     // given
-    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
 
     engine
         .message()
