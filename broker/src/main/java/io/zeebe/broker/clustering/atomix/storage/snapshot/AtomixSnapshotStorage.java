@@ -7,9 +7,9 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
-import io.atomix.protocols.raft.storage.snapshot.SnapshotListener;
-import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
-import io.atomix.protocols.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.storage.snapshot.SnapshotListener;
+import io.atomix.raft.storage.snapshot.SnapshotStore;
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
@@ -123,8 +123,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
 
   @Override
   public void onNewSnapshot(
-      final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
-      final SnapshotStore store) {
+      final io.atomix.raft.storage.snapshot.Snapshot snapshot, final SnapshotStore store) {
     metrics.incrementSnapshotCount();
     observeSnapshotSize(snapshot);
 
@@ -142,8 +141,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
 
   @Override
   public void onSnapshotDeletion(
-      final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
-      final SnapshotStore store) {
+      final io.atomix.raft.storage.snapshot.Snapshot snapshot, final SnapshotStore store) {
     metrics.decrementSnapshotCount();
     LOGGER.debug("Snapshot {} removed from store {}", snapshot, store);
   }
@@ -193,8 +191,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
     return new SnapshotImpl(indexed.index(), pending);
   }
 
-  private void observeSnapshotSize(
-      final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot) {
+  private void observeSnapshotSize(final io.atomix.raft.storage.snapshot.Snapshot snapshot) {
     try (final var contents = Files.newDirectoryStream(snapshot.getPath())) {
       var totalSize = 0L;
 

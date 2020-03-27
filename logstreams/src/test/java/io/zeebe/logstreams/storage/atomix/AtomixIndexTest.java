@@ -10,7 +10,7 @@ package io.zeebe.logstreams.storage.atomix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import io.atomix.protocols.raft.storage.log.entry.InitializeEntry;
+import io.atomix.raft.storage.log.entry.InitializeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.storage.journal.index.Position;
@@ -200,7 +200,7 @@ public class AtomixIndexTest {
     assertEquals(20, index.lookup(12).position());
   }
 
-  private static Indexed asIndexedEntry(long index) {
+  private static Indexed asIndexedEntry(final long index) {
     return new Indexed(index, new InitializeEntry(0, System.currentTimeMillis()), 0);
   }
 }

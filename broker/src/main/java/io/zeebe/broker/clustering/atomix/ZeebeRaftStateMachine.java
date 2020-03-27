@@ -7,11 +7,11 @@
  */
 package io.zeebe.broker.clustering.atomix;
 
-import io.atomix.protocols.raft.RaftStateMachine;
-import io.atomix.protocols.raft.impl.RaftContext;
-import io.atomix.protocols.raft.metrics.RaftServiceMetrics;
-import io.atomix.protocols.raft.storage.log.RaftLogReader;
-import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.RaftStateMachine;
+import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.metrics.RaftServiceMetrics;
+import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.util.Optional;

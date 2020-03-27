@@ -7,12 +7,12 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import io.atomix.protocols.raft.RaftCommitListener;
-import io.atomix.protocols.raft.RaftRoleChangeListener;
-import io.atomix.protocols.raft.RaftServer.Role;
-import io.atomix.protocols.raft.partition.RaftPartition;
-import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.protocols.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.RaftRoleChangeListener;
+import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.zeebe.broker.Loggers;

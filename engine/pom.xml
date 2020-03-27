@@ -146,7 +146,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>atomix-raft</artifactId>
+      <artifactId>atomix-cluster</artifactId>
       <scope>test</scope>
     </dependency>
 

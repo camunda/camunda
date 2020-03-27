@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.logstreams;
 
-import io.atomix.protocols.raft.partition.impl.RaftPartitionServer;
+import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.zeebe.broker.Loggers;
 import java.util.concurrent.CompletableFuture;
 

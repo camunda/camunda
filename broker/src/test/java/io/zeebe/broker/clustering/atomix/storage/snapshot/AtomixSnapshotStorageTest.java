@@ -13,8 +13,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
-import io.atomix.protocols.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.storage.snapshot.SnapshotStore;
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
 import io.zeebe.logstreams.state.Snapshot;

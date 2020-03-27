@@ -7,8 +7,8 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
-import io.atomix.protocols.raft.storage.snapshot.SnapshotChunk;
-import io.atomix.protocols.raft.storage.snapshot.SnapshotChunkReader;
+import io.atomix.raft.storage.snapshot.SnapshotChunk;
+import io.atomix.raft.storage.snapshot.SnapshotChunkReader;
 import io.zeebe.protocol.Protocol;
 import java.io.IOException;
 import java.io.UncheckedIOException;
