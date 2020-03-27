@@ -20,11 +20,15 @@
       .label.after {
         padding: 10px 0;
       }
+      .displayHeader {
+        display: flex;
 
-      h4 {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #606060;
+        h4 {
+          font-weight: bold;
+          margin-bottom: 10px;
+          color: #606060;
+          margin-right: 10px;
+        }
       }
     }
   }

@@ -183,7 +183,8 @@
       "selectExternal": "Select external events",
       "allExternal": "all events",
       "hide": "Hide in table",
-      "show": "Show in Table"
+      "show": "Show in Table",
+      "learnMore": "Learn more"
     }
   },
   "report": {

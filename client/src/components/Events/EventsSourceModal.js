@@ -25,6 +25,7 @@ import ExternalSource from './ExternalSource';
 import {loadEvents} from './service';
 
 import './EventsSourceModal.scss';
+import {getOptimizeVersion} from 'config';
 
 export default withErrorHandling(
   class EventsSourceModal extends React.Component {
@@ -43,12 +44,16 @@ export default withErrorHandling(
       externalExist: false
     };
 
-    componentDidMount = () => {
+    componentDidMount = async () => {
       if (this.isEditing()) {
         this.setState({source: this.props.initialSource});
         const {processDefinitionKey, versions, tenants} = this.props.initialSource;
         this.loadVariables(processDefinitionKey, versions, tenants);
       }
+
+      const version = (await getOptimizeVersion()).split('.');
+      version.length = 2;
+      this.setState({optimizeVersion: version.join('.')});
 
       this.props.mightFail(
         loadEvents({eventSources: [{type: 'external'}]}),
@@ -123,7 +128,7 @@ export default withErrorHandling(
 
     render() {
       const {onClose, existingSources} = this.props;
-      const {source, variables, type, externalExist} = this.state;
+      const {optimizeVersion, source, variables, type, externalExist} = this.state;
       const {
         processDefinitionKey,
         versions,
@@ -132,7 +137,7 @@ export default withErrorHandling(
         tracedByBusinessKey,
         traceVariable
       } = source;
-
+      const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/user-guide/event-based-processes/#camunda-events`;
       const externalAlreadyAdded = existingSources.some(src => src.type === 'external');
 
       return (
@@ -212,7 +217,12 @@ export default withErrorHandling(
                     />
                   </Form.Group>
                   <Form.Group>
-                    <h4>{t('events.sources.display')}</h4>
+                    <div className="displayHeader">
+                      <h4>{t('events.sources.display')}</h4>
+                      <a href={docsLink} target="_blank" rel="noopener noreferrer">
+                        {t('events.sources.learnMore')}
+                      </a>
+                    </div>
                     <LabeledInput
                       label={t('events.sources.startAndEnd')}
                       checked={eventScope === 'process_instance'}

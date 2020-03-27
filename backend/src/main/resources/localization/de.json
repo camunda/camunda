@@ -183,7 +183,8 @@
       "selectExternal": "Wählen Sie Externe Events aus",
       "allExternal": "Alle Events",
       "hide": "In Tabelle ausblenden",
-      "show": "In Tabelle anzeigen"
+      "show": "In Tabelle anzeigen",
+      "learnMore": "Mehr Informationen"
     }
   },
   "report": {
