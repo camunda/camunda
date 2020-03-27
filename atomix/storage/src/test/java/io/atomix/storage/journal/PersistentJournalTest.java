@@ -29,7 +29,6 @@ public abstract class PersistentJournalTest extends AbstractJournalTest {
   /** Tests reading from a compacted journal. */
   @Test
   public void testCompactAndRecover() throws Exception {
-    SegmentedJournal<TestEntry> journal = createJournal();
 
     // Write three segments to the journal.
     JournalWriter<TestEntry> writer = journal.writer();

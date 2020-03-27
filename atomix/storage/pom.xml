@@ -18,6 +18,10 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <artifactId>atomix-storage</artifactId>
 
+  <modelVersion>4.0.0</modelVersion>
+  <name>Atomix Storage</name>
+  <packaging>jar</packaging>
+
   <dependencies>
     <dependency>
       <artifactId>atomix-utils</artifactId>
@@ -48,10 +52,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <modelVersion>4.0.0</modelVersion>
-  <name>Atomix Storage</name>
-  <packaging>jar</packaging>
 
   <parent>
     <artifactId>atomix-parent</artifactId>
