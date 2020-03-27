@@ -16,7 +16,7 @@ follow the Elasticsearch REST API format and can be found in `schema/create` fol
 
 Index names follow the defined pattern:
 ```
-operate_{datatype}_{schemaversion}_[{date}]
+operate-{datatype}-{schemaversion}_[{date}]
 
 ```
 , where `datatype` defines which data is stored in the index, e.g. `user`, `variable` etc.,
@@ -28,7 +28,7 @@ E.g. to define desired number of shards and replicas, you can define following t
 ```
 PUT _template/template_operate
 {
-  "index_patterns": ["operate_*"],
+  "index_patterns": ["operate-*"],
   "settings": {
     "number_of_shards": 5,
     "number_of_replicas": 2
