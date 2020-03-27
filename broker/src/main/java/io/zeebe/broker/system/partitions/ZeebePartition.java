@@ -142,8 +142,7 @@ public final class ZeebePartition extends Actor
 
     this.actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
     criticalComponentsHealthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
-    raftPartitionHealth =
-        new RaftPartitionHealth(atomixRaftPartition, actor, this::inactiveTransition);
+    raftPartitionHealth = new RaftPartitionHealth(atomixRaftPartition, actor, this::onRaftFailed);
     healthMetrics = new HealthMetrics(partitionId);
     healthMetrics.setUnhealthy();
   }
@@ -214,19 +213,38 @@ public final class ZeebePartition extends Actor
             });
   }
 
-  private CompletableFuture<Void> inactiveTransition() {
-    final CompletableFuture<Void> inactiveTransitionFuture = new CompletableFuture<>();
+  private ActorFuture<Void> inactiveTransition() {
+    return onTransitionTo(this::transitionToInactive);
+  }
+
+  private void transitionToInactive(final CompletableActorFuture<Void> transitionComplete) {
+    updateHealthStatus(HealthStatus.UNHEALTHY);
     closePartition()
         .onComplete(
-            (v, t) -> {
-              if (t != null) {
-                LOG.error("Failed to close partition when transition to inactive role");
-                inactiveTransitionFuture.completeExceptionally(t);
-              } else {
-                inactiveTransitionFuture.complete(null);
+            (nothing, error) -> {
+              if (error != null) {
+                LOG.error("Unexpected exception on transition to inactive role!", error);
+                transitionComplete.completeExceptionally(error);
+                return;
               }
+              transitionComplete.complete(null);
             });
-    updateHealthStatus(HealthStatus.UNHEALTHY);
+  }
+
+  private CompletableFuture<Void> onRaftFailed() {
+    final CompletableFuture<Void> inactiveTransitionFuture = new CompletableFuture<>();
+    actor.run(
+        () -> {
+          final ActorFuture<Void> transitionComplete = inactiveTransition();
+          transitionComplete.onComplete(
+              (v, t) -> {
+                if (t != null) {
+                  inactiveTransitionFuture.completeExceptionally(t);
+                  return;
+                }
+                inactiveTransitionFuture.complete(null);
+              });
+        });
     return inactiveTransitionFuture;
   }
 
