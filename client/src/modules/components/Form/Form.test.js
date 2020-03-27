@@ -43,3 +43,14 @@ it('should render child elements and their props', () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should prevent the default action on form submit events', () => {
+  const spy = jest.fn();
+  const evt = {preventDefault: jest.fn()};
+
+  const node = shallow(<Form onSubmit={spy} />);
+  node.simulate('submit', evt);
+
+  expect(evt.preventDefault).toHaveBeenCalled();
+  expect(spy).toHaveBeenCalledWith(evt);
+});
