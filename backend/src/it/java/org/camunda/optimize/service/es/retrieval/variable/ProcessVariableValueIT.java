@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -27,7 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
@@ -37,8 +36,6 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.INTE
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.SHORT;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessVariableValueIT extends AbstractIT {
 
@@ -62,10 +59,10 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(processDefinition, "var");
 
     // then
-    assertThat(variableResponse.size(), is(3));
-    assertThat(variableResponse.contains("value1"), is(true));
-    assertThat(variableResponse.contains("value2"), is(true));
-    assertThat(variableResponse.contains("value3"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(3);
+    assertThat(variableResponse.contains("value1")).isTrue();
+    assertThat(variableResponse.contains("value2")).isTrue();
+    assertThat(variableResponse.contains("value3")).isTrue();
   }
 
   @Test
@@ -92,7 +89,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(valueRequestDto);
 
     // then
-    assertThat(variableResponse.size(), is(selectedTenants.size()));
+    assertThat(variableResponse.size()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -125,9 +122,9 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(valueRequestDto);
 
     // then
-    assertThat(variableResponse.size(), is(2));
-    assertThat(variableResponse.get(0), is("value1"));
-    assertThat(variableResponse.get(1), is("value3"));
+    assertThat(variableResponse.size()).isEqualTo(2);
+    assertThat(variableResponse.get(0)).isEqualTo("value1");
+    assertThat(variableResponse.get(1)).isEqualTo("value3");
   }
 
   @Test
@@ -152,9 +149,9 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(valueRequestDto);
 
     // then
-    assertThat(variableResponse.size(), is(2));
-    assertThat(variableResponse.get(0), is("value1"));
-    assertThat(variableResponse.get(1), is("value2"));
+    assertThat(variableResponse.size()).isEqualTo(2);
+    assertThat(variableResponse.get(0)).isEqualTo("value1");
+    assertThat(variableResponse.get(1)).isEqualTo("value2");
   }
 
   @Test
@@ -180,8 +177,8 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(valueRequestDto);
 
     // then
-    assertThat(variableResponse.size(), is(1));
-    assertThat(variableResponse.get(0), is("latest"));
+    assertThat(variableResponse.size()).isEqualTo(1);
+    assertThat(variableResponse.get(0)).isEqualTo("latest");
   }
 
   @Test
@@ -202,7 +199,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(processDefinition, "var");
 
     // then
-    assertThat(variableResponse.size(), is(15));
+    assertThat(variableResponse.size()).isEqualTo(15);
   }
 
   @Test
@@ -221,8 +218,8 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(processDefinition, "var1");
 
     // then
-    assertThat(variableResponse.size(), is(1));
-    assertThat(variableResponse.contains("value1"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(1);
+    assertThat(variableResponse.contains("value1")).isTrue();
   }
 
   @Test
@@ -242,8 +239,8 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(processDefinition, "var");
 
     // then
-    assertThat(variableResponse.size(), is(1));
-    assertThat(variableResponse.contains("value1"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(1);
+    assertThat(variableResponse.contains("value1")).isTrue();
   }
 
   @Test
@@ -262,8 +259,8 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(processDefinition, "var");
 
     // then
-    assertThat(variableResponse.size(), is(1));
-    assertThat(variableResponse.contains("value1"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(1);
+    assertThat(variableResponse.contains("value1")).isTrue();
   }
 
   @Test
@@ -282,8 +279,8 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(processDefinition, "var");
 
     // then
-    assertThat(variableResponse.size(), is(1));
-    assertThat(variableResponse.contains("value1"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(1);
+    assertThat(variableResponse.contains("value1")).isTrue();
   }
 
   @Test
@@ -294,7 +291,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
     variables.put("boolVar", true);
-    variables.put("shortVar", (short)2);
+    variables.put("shortVar", (short) 2);
     variables.put("intVar", 5);
     variables.put("longVar", 5L);
     variables.put("doubleVar", 5.5);
@@ -321,8 +318,8 @@ public class ProcessVariableValueIT extends AbstractIT {
       } else {
         expectedValue = variables.get(name).toString();
       }
-      assertThat(variableResponse.size(), is(1));
-      assertThat("contains [" + expectedValue + "]", variableResponse.contains(expectedValue), is(true));
+      assertThat(variableResponse.size()).isEqualTo(1);
+      assertThat(variableResponse.contains(expectedValue)).isTrue();
     }
 
   }
@@ -338,7 +335,6 @@ public class ProcessVariableValueIT extends AbstractIT {
     varToType.put("stringVar", STRING);
     return varToType;
   }
-
 
   @Test
   public void valuesListIsCutByMaxResults() {
@@ -364,9 +360,9 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(2));
-    assertThat(variableResponse.contains("value1"), is(true));
-    assertThat(variableResponse.contains("value2"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(2);
+    assertThat(variableResponse.contains("value1")).isTrue();
+    assertThat(variableResponse.contains("value2")).isTrue();
   }
 
   @Test
@@ -393,9 +389,9 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(2));
-    assertThat(variableResponse.contains("value2"), is(true));
-    assertThat(variableResponse.contains("value3"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(2);
+    assertThat(variableResponse.contains("value2")).isTrue();
+    assertThat(variableResponse.contains("value3")).isTrue();
   }
 
   @Test
@@ -423,8 +419,8 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(1));
-    assertThat(variableResponse.contains("value2"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(1);
+    assertThat(variableResponse.contains("value2")).isTrue();
   }
 
   @Test
@@ -451,9 +447,9 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(2));
-    assertTrue(variableResponse.contains("bar"));
-    assertTrue(variableResponse.contains("ball"));
+    assertThat(variableResponse.size()).isEqualTo(2);
+    assertThat(variableResponse.contains("bar")).isTrue();
+    assertThat(variableResponse.contains("ball")).isTrue();
   }
 
   @Test
@@ -479,7 +475,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(1));
+    assertThat(variableResponse.size()).isEqualTo(1);
   }
 
   @Test
@@ -506,9 +502,9 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(2));
-    assertThat(variableResponse.contains("doSooomething"), is(true));
-    assertThat(variableResponse.contains("oooo"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(2);
+    assertThat(variableResponse.contains("doSooomething")).isTrue();
+    assertThat(variableResponse.contains("oooo")).isTrue();
   }
 
   @Test
@@ -537,10 +533,10 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(3));
-    assertThat(variableResponse.contains("fooBArich"), is(true));
-    assertThat(variableResponse.contains("dobarski"), is(true));
-    assertThat(variableResponse.contains("oobaRtenderoo"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(3);
+    assertThat(variableResponse.contains("fooBArich")).isTrue();
+    assertThat(variableResponse.contains("dobarski")).isTrue();
+    assertThat(variableResponse.contains("oobaRtenderoo")).isTrue();
   }
 
   @Test
@@ -567,9 +563,9 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(2));
-    assertThat(variableResponse.contains("foobarbarbarbarin"), is(true));
-    assertThat(variableResponse.contains("dobarbaRBarbarng"), is(true));
+    assertThat(variableResponse.size()).isEqualTo(2);
+    assertThat(variableResponse.contains("foobarbarbarbarin")).isTrue();
+    assertThat(variableResponse.contains("dobarbaRBarbarng")).isTrue();
   }
 
   @Test
@@ -592,7 +588,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(0));
+    assertThat(variableResponse.size()).isEqualTo(0);
   }
 
   @Test
@@ -615,7 +611,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(1));
+    assertThat(variableResponse.size()).isEqualTo(1);
   }
 
   @Test
@@ -638,7 +634,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(1));
+    assertThat(variableResponse.size()).isEqualTo(1);
   }
 
   @Test
@@ -661,7 +657,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     List<String> variableResponse = getVariableValues(requestDto);
 
     // then
-    assertThat(variableResponse.size(), is(1));
+    assertThat(variableResponse.size()).isEqualTo(1);
   }
 
   @Test
@@ -676,7 +672,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -691,7 +687,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -706,11 +702,11 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
-  public void missingProcessDefinitionVersionQueryParamThrowsError() {
+  public void missingProcessDefinitionVersionQueryParamDoesNotThrowError() {
     // given
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
     requestDto.setProcessDefinitionKey("aKey");
@@ -721,7 +717,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
@@ -748,16 +744,16 @@ public class ProcessVariableValueIT extends AbstractIT {
 
   private List<String> getVariableValues(ProcessVariableValueRequestDto valueRequestDto) {
     return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildProcessVariableValuesRequest(valueRequestDto)
-            .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+      .getRequestExecutor()
+      .buildProcessVariableValuesRequest(valueRequestDto)
+      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
   }
 
   private Response getVariableValueResponse(ProcessVariableValueRequestDto valueRequestDto) {
     return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildProcessVariableValuesRequest(valueRequestDto)
-            .execute();
+      .getRequestExecutor()
+      .buildProcessVariableValuesRequest(valueRequestDto)
+      .execute();
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final String variableName,
@@ -770,7 +766,10 @@ public class ProcessVariableValueIT extends AbstractIT {
 
         final ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleProcessDefinition(tenant);
         String randomValue = RandomStringUtils.random(10);
-        engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId(), ImmutableMap.of(variableName, randomValue));
+        engineIntegrationExtension.startProcessInstance(
+          processDefinitionEngineDto.getId(),
+          ImmutableMap.of(variableName, randomValue)
+        );
       });
 
     return PROCESS_DEFINITION_KEY;

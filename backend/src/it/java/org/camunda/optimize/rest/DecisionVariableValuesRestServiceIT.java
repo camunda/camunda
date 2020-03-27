@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
@@ -96,9 +95,9 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
-  @ParameterizedTest(name = "missing decision definition version query param throws error for type {0}")
+  @ParameterizedTest(name = "missing decision definition version query param does not throw error for type {0}")
   @MethodSource("getInputOutputArgs")
-  public void missingDecisionDefinitionVersionQueryParamThrowsError(String inputOutput) {
+  public void missingDecisionDefinitionVersionQueryParamDoesNotThrowError(String inputOutput) {
     // given
     DecisionVariableValueRequestDto request = generateDefaultVariableRequest();
     request.setDecisionDefinitionVersions(null);
@@ -108,7 +107,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   private static Stream<String> getInputOutputArgs() {

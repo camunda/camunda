@@ -15,9 +15,8 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessVariableRestServiceIT extends AbstractIT {
 
@@ -30,13 +29,13 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
 
     // when
     Response response = embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildProcessVariableNamesRequest(variableRequestDto)
-            .withoutAuthentication()
-            .execute();
+      .getRequestExecutor()
+      .buildProcessVariableNamesRequest(variableRequestDto)
+      .withoutAuthentication()
+      .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_UNAUTHORIZED);
   }
 
   @Test
@@ -48,26 +47,43 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
 
     // when
     List<ProcessVariableNameResponseDto> responseList =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildProcessVariableNamesRequest(variableRequestDto)
-            .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+      embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildProcessVariableNamesRequest(variableRequestDto)
+        .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
-    // then the status code is not authorized
-    assertThat(responseList.isEmpty(), is(true));
+    // then
+    assertThat(responseList.isEmpty()).isTrue();
+  }
+
+  @Test
+  public void getVariableNamesWithoutDefinitionVersionDoesNotFail() {
+    // given
+    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
+    variableRequestDto.setProcessDefinitionKey("akey");
+
+    // when
+    List<ProcessVariableNameResponseDto> responseList =
+      embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildProcessVariableNamesRequest(variableRequestDto)
+        .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(responseList.isEmpty()).isTrue();
   }
 
   @Test
   public void getVariableValuesWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildProcessVariableValuesRequest(new ProcessVariableValueRequestDto())
-            .withoutAuthentication()
-            .execute();
+      .getRequestExecutor()
+      .buildProcessVariableValuesRequest(new ProcessVariableValueRequestDto())
+      .withoutAuthentication()
+      .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_UNAUTHORIZED);
   }
 
   @Test
@@ -81,13 +97,29 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
 
     // when
     List responseList = embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildProcessVariableValuesRequest(requestDto)
-            .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+      .getRequestExecutor()
+      .buildProcessVariableValuesRequest(requestDto)
+      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(responseList.isEmpty(), is(true));
+    assertThat(responseList.isEmpty()).isTrue();
   }
 
+  @Test
+  public void getVariableValuesWithoutDefinitionVersionDoesNotFail() {
+    // given
+    ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
+    requestDto.setProcessDefinitionKey("aKey");
+    requestDto.setName("bla");
+    requestDto.setType(BOOLEAN);
 
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildProcessVariableValuesRequest(requestDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+  }
 }

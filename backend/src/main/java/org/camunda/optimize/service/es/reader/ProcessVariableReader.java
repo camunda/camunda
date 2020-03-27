@@ -35,6 +35,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
@@ -69,6 +70,11 @@ public class ProcessVariableReader {
   private final ProcessDefinitionReader processDefinitionReader;
 
   public List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto requestDto) {
+    if (requestDto.getProcessDefinitionVersions() == null || requestDto.getProcessDefinitionVersions().isEmpty()) {
+      log.debug("Cannot fetch variable names for process definition with missing versions.");
+      return Collections.emptyList();
+    }
+
     log.debug(
       "Fetching variable names for process definition with key [{}] and versions [{}]",
       requestDto.getProcessDefinitionKey(),
@@ -124,7 +130,8 @@ public class ProcessVariableReader {
     return responseDtoList;
   }
 
-  private void addVariableNameAggregation(SearchSourceBuilder requestBuilder, ProcessVariableNameRequestDto requestDto) {
+  private void addVariableNameAggregation(SearchSourceBuilder requestBuilder,
+                                          ProcessVariableNameRequestDto requestDto) {
     String securedNamePrefix = requestDto.getNamePrefix() == null ? "" : requestDto.getNamePrefix();
     FilterAggregationBuilder filterAllVariablesWithCertainPrefixInName = filter(
       FILTERED_VARIABLES_AGGREGATION,
@@ -160,6 +167,11 @@ public class ProcessVariableReader {
   // ----------------------------
 
   public List<String> getVariableValues(final ProcessVariableValueRequestDto requestDto) {
+    if (requestDto.getProcessDefinitionVersions() == null || requestDto.getProcessDefinitionVersions().isEmpty()) {
+      log.debug("Cannot fetch variable names for process definition with missing versions.");
+      return Collections.emptyList();
+    }
+
     log.debug(
       "Fetching input variable values for process definition with key [{}] and versions [{}]",
       requestDto.getProcessDefinitionKey(),
@@ -230,7 +242,8 @@ public class ProcessVariableReader {
   }
 
   private FilterAggregationBuilder getVariableValueFilterAggregation(final String variableName,
-                                                                     final VariableType type, final String valueFilter) {
+                                                                     final VariableType type,
+                                                                     final String valueFilter) {
     final BoolQueryBuilder filterQuery = boolQuery()
       .must(termQuery(ProcessVariableHelper.getNestedVariableNameField(), variableName))
       .must(termQuery(getNestedVariableTypeField(), type.getId()));

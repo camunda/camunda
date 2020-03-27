@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -73,7 +72,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("getInputOutputArgs")
-  public void missingDecisionDefinitionVersionQueryParamThrowsError(String inputOutput) {
+  public void missingDecisionDefinitionVersionQueryParamDoesNotThrowError(String inputOutput) {
     // given
     DecisionVariableNameRequestDto request = generateDefaultVariableRequest();
     request.setDecisionDefinitionVersions(null);
@@ -83,7 +82,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   private DecisionVariableNameRequestDto generateDefaultVariableRequest() {
@@ -102,7 +101,11 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
     definition.setTenantId(null);
     definition.setDmn10Xml("someXml");
     definition.setEngine(DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, definition.getId(), definition);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      DECISION_DEFINITION_INDEX_NAME,
+      definition.getId(),
+      definition
+    );
   }
 
   private static Stream<String> getInputOutputArgs() {
