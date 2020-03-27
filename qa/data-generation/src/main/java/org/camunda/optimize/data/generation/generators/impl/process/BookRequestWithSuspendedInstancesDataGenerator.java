@@ -12,6 +12,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class BookRequestWithSuspendedInstancesDataGenerator extends ProcessDataGenerator {
   private static final String DIAGRAM = "diagrams/process/book-request-suspended-instances.bpmn";
@@ -30,7 +31,7 @@ public class BookRequestWithSuspendedInstancesDataGenerator extends ProcessDataG
       getBusinessKey()
     );
     // randomly suspend some process instances
-    Random rnd = new Random();
+    Random rnd = ThreadLocalRandom.current();
     if (rnd.nextBoolean()) {
       engineClient.suspendProcessInstance(processInstance.getId());
     }
