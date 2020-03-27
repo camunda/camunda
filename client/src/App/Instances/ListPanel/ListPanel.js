@@ -6,11 +6,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  LOADING_STATE,
-  EXPAND_STATE,
-  SUBSCRIPTION_TOPIC
-} from 'modules/constants';
+import {EXPAND_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
 import {getInstancesWithActiveOperations} from 'modules/utils/instance';
 
@@ -35,6 +31,8 @@ class ListPanel extends React.Component {
     firstElement: PropTypes.number.isRequired,
     onFirstElementChange: PropTypes.func.isRequired,
     rowsToDisplay: PropTypes.number,
+    initialLoad: PropTypes.bool,
+    instancesLoaded: PropTypes.bool,
     dataManager: PropTypes.shape({
       subscribe: PropTypes.func,
       unsubscribe: PropTypes.func,
@@ -51,32 +49,15 @@ class ListPanel extends React.Component {
     super(props);
 
     this.state = {
-      entriesPerPage: 0,
-      instancesLoaded: false,
-      initialLoad: true
+      entriesPerPage: 0
     };
-
-    this.subscriptions = {
-      LOAD_LIST_INSTANCES: response => {
-        if (response.state === LOADING_STATE.LOADING) {
-          this.setState({instancesLoaded: false});
-        }
-
-        if (response.state === LOADING_STATE.LOADED) {
-          this.setState({initialLoad: false, instancesLoaded: true});
-        }
-      }
-    };
-  }
-
-  componentDidMount() {
-    this.props.dataManager.subscribe(this.subscriptions);
   }
 
   componentDidUpdate(prevProps, prevState) {
     const {dataManager} = this.props;
+
     const hasListChanged =
-      !prevState.instancesLoaded && this.state.instancesLoaded;
+      !prevProps.instancesLoaded && this.props.instancesLoaded;
 
     const hasEntriesPerPageChanged =
       this.state.instancesLoaded &&
@@ -121,10 +102,6 @@ class ListPanel extends React.Component {
     }
   }
 
-  componentWillUnmount() {
-    this.props.dataManager.unsubscribe(this.subscriptions);
-  }
-
   checkForInstancesWithActiveOperations = () => {
     const instancesInView = this.props.instances.slice(
       0,
@@ -159,7 +136,7 @@ class ListPanel extends React.Component {
   renderContent(isListEmpty) {
     if (!isListEmpty) {
       return <List.Body />;
-    } else if (this.state.initialLoad) {
+    } else if (this.props.initialLoad) {
       return <List.Skeleton rowsToDisplay={this.props.rowsToDisplay} />;
     } else {
       return <List.Message message={this.getEmptyListMessage()} />;
@@ -168,8 +145,8 @@ class ListPanel extends React.Component {
 
   renderSpinner() {
     return (
-      !this.state.instancesLoaded &&
-      !this.state.initialLoad &&
+      !this.props.instancesLoaded &&
+      !this.props.initialLoad &&
       (() => <Styled.Spinner />)
     );
   }
@@ -202,7 +179,7 @@ class ListPanel extends React.Component {
                 this.setState({entriesPerPage})
               }
               rowsToDisplay={this.state.entriesPerPage}
-              isDataLoaded={this.state.instancesLoaded}
+              isDataLoaded={this.props.instancesLoaded}
               onOperationButtonClick={this.handleOperationButtonClick}
               Overlay={this.renderSpinner()}
             >

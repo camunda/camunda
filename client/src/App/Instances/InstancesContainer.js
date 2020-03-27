@@ -73,7 +73,9 @@ class InstancesContainer extends Component {
       groupedWorkflows: {},
       workflowInstances: [],
       firstElement: DEFAULT_FIRST_ELEMENT,
-      sorting: DEFAULT_SORTING
+      sorting: DEFAULT_SORTING,
+      instancesLoaded: false,
+      initialLoad: true
     };
     this.subscriptions = {
       LOAD_STATE_DEFINITIONS: ({response, state}) => {
@@ -88,10 +90,16 @@ class InstancesContainer extends Component {
         }
       },
       LOAD_LIST_INSTANCES: ({response, state}) => {
+        if (state === LOADING_STATE.LOADING) {
+          this.setState({instancesLoaded: false});
+        }
+
         if (state === LOADING_STATE.LOADED) {
           this.setState({
             workflowInstances: response.workflowInstances,
-            filterCount: response.totalCount
+            filterCount: response.totalCount,
+            initialLoad: false,
+            instancesLoaded: true
           });
           this.props.storeStateLocally({
             filterCount: response.totalCount

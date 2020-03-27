@@ -106,17 +106,11 @@ describe('ListPanel', () => {
 
     it('should render table body', () => {
       // given
-      const node = shallow(ComponentWithInstances);
-      const subscriptions = node.instance().subscriptions;
+      const node = shallow(ComponentBeforeDataLoaded);
 
       // when
-      dataManager.publish({
-        subscription: subscriptions['LOAD_LIST_INSTANCES'],
-        state: LOADING_STATE.LOADED,
-        response: {
-          instancesLoaded: true
-        }
-      });
+      node.setProps(mockPropsWithInstances);
+      node.update();
       // TBody
       const TBodyNode = node.find(List.Body);
       expect(TBodyNode).toHaveLength(1);
@@ -237,8 +231,8 @@ describe('ListPanel', () => {
       node.setState({entriesPerPage: 2});
 
       // simulate change of instances displayed
-      node.setState({instancesLoaded: false});
-      node.setState({instancesLoaded: true});
+      node.setProps({instancesLoaded: false});
+      node.setProps({instancesLoaded: true});
 
       // then
       expect(mockPropsWithPoll.polling.addIds).toHaveBeenCalledWith([

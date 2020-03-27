@@ -50,6 +50,8 @@ export default class Instances extends Component {
     afterFilterReset: PropTypes.func,
     groupedWorkflows: PropTypes.object.isRequired,
     workflowInstances: PropTypes.array.isRequired,
+    initialLoad: PropTypes.bool,
+    instancesLoaded: PropTypes.bool,
     firstElement: PropTypes.number.isRequired,
     onFirstElementChange: PropTypes.func.isRequired,
     sorting: PropTypes.object.isRequired,
@@ -81,7 +83,9 @@ export default class Instances extends Component {
       firstElement,
       onFirstElementChange,
       resetFilters,
-      afterFilterReset
+      afterFilterReset,
+      initialLoad,
+      instancesLoaded
     } = this.props;
 
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
@@ -131,6 +135,8 @@ export default class Instances extends Component {
               />
               <ListPanel
                 instances={workflowInstances}
+                initialLoad={initialLoad}
+                instancesLoaded={instancesLoaded}
                 filter={filter}
                 filterCount={filterCount}
                 onSort={onSort}
