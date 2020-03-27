@@ -77,9 +77,20 @@ public final class SnapshotReplicationTest {
   public void shouldReceiveLatestSnapshotOnRejoin() {
     // given
     final var leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
-    final var otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
-    final var firstFollowerId = otherBrokers.get(0).getConfig().getCluster().getNodeId();
-    final var secondFollowerId = otherBrokers.get(1).getConfig().getCluster().getNodeId();
+    final var followers =
+        clusteringRule.getOtherBrokerObjects(leaderNodeId).stream()
+            .map(b -> b.getConfig().getCluster().getNodeId())
+            .collect(Collectors.toList());
+
+    // Temp fix to make sure we don't restart broker-0 due to
+    // https://github.com/zeebe-io/atomix/issues/208
+    final var firstFollowerId =
+        followers.stream().filter(nodeId -> !nodeId.equals(0)).findFirst().orElseThrow();
+    final var secondFollowerId =
+        followers.stream()
+            .filter(nodeId -> nodeId.equals(firstFollowerId))
+            .findFirst()
+            .orElseThrow();
 
     // when - snapshot
     clusteringRule.stopBroker(firstFollowerId);
@@ -99,9 +110,20 @@ public final class SnapshotReplicationTest {
   public void shouldReceiveNewSnapshotsOnRejoin() {
     // given
     final var leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
-    final var otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
-    final var firstFollowerId = otherBrokers.get(0).getConfig().getCluster().getNodeId();
-    final var secondFollowerId = otherBrokers.get(1).getConfig().getCluster().getNodeId();
+    final var followers =
+        clusteringRule.getOtherBrokerObjects(leaderNodeId).stream()
+            .map(b -> b.getConfig().getCluster().getNodeId())
+            .collect(Collectors.toList());
+
+    // Temp fix to make sure we don't restart broker-0 due to
+    // https://github.com/zeebe-io/atomix/issues/208
+    final var firstFollowerId =
+        followers.stream().filter(nodeId -> !nodeId.equals(0)).findFirst().orElseThrow();
+    final var secondFollowerId =
+        followers.stream()
+            .filter(nodeId -> nodeId.equals(firstFollowerId))
+            .findFirst()
+            .orElseThrow();
 
     // when - snapshot
     clusteringRule.stopBroker(firstFollowerId);
