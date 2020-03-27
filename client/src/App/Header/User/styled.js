@@ -12,7 +12,7 @@ export const Dropdown = styled(DefaultDropdown)`
   > button > div {
     white-space: nowrap;
     text-overflow: ellipsis;
-    max-width: 100px;
+    max-width: 200px;
     display: block;
     overflow: hidden;
   }
