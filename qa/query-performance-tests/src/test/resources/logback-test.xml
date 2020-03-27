@@ -8,9 +8,10 @@
     </encoder>
   </appender>
 
-  <logger name="org.camunda.optimize" level="info" />
+  <logger name="org.camunda.optimize" level="WARN" />
+  <logger name="org.camunda.optimize.test.query.performance" level="INFO" />
 
-  <root level="info">
+  <root level="WARN">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>

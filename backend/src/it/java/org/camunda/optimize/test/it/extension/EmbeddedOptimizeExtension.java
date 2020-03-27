@@ -148,9 +148,14 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   @SneakyThrows
   public void importAllEngineData() {
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.runImportRound(true).get();
-    }
+    boolean isDoneImporting;
+    do {
+      isDoneImporting = true;
+      for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+        scheduler.runImportRound(false).get();
+        isDoneImporting &= !scheduler.isImporting();
+      }
+    } while (!isDoneImporting);
   }
 
   public void importAllEngineEntitiesFromScratch() {
