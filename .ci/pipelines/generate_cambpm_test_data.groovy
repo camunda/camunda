@@ -257,7 +257,7 @@ pipeline {
                                   if [ "${USE_E2E_PRESETS}" = true ]; then
                                     mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation compile exec:java -Dexec.args="\$(cat client/e2e_presets.json | jq -r 'to_entries|map("--\\(.key) \\(.value|tostring)")| .[]' | tr '\\n' ' ')"
                                   else
-                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation compile exec:java -Dexec.args="--numberOfProcessInstances ${NUM_PROCESS_INSTANCES} --numberOfDecisionInstances ${NUM_DECISION_INSTANCES}"
+                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation compile exec:java -Dexec.args="--processDefinitions '${PROCESS_DEFINITIONS}' --numberOfProcessInstances ${NUM_PROCESS_INSTANCES} --numberOfDecisionInstances ${NUM_DECISION_INSTANCES} --decisionDefinitions '${DECISION_DEFINITIONS}'"
                                   fi
                                 """)
                             }

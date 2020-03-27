@@ -9,6 +9,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
 import org.camunda.optimize.data.generation.generators.impl.decision.DecisionDataGenerator;
@@ -46,12 +47,12 @@ public class DataGenerationMain {
     HashMap<String, Integer> decisionDefinitions = parseDefinitions(arguments.get("decisionDefinitions"));
 
     return new DataGenerationInformation()
-    .setProcessInstanceCountToGenerate(processInstanceCountToGenerate)
-    .setDecisionInstanceCountToGenerate(decisionInstanceCountToGenerate)
-    .setEngineRestEndpoint(engineRestEndpoint)
-    .setProcessDefinitions(processDefinitions)
-    .setDecisionDefinitions(decisionDefinitions)
-    .setRemoveDeployments(removeDeployments);
+      .setProcessInstanceCountToGenerate(processInstanceCountToGenerate)
+      .setDecisionInstanceCountToGenerate(decisionInstanceCountToGenerate)
+      .setEngineRestEndpoint(engineRestEndpoint)
+      .setProcessDefinitions(processDefinitions)
+      .setDecisionDefinitions(decisionDefinitions)
+      .setRemoveDeployments(removeDeployments);
   }
 
   public static HashMap<String, Integer> parseDefinitions(String definitions) {
@@ -69,17 +70,18 @@ public class DataGenerationMain {
     return res;
   }
 
-  private static Map<String, String> extractArguments(String[] args) {
-    if (arrayHasUnevenLength(args)) {
-      throw new RuntimeException("The number of given arguments should be even!");
-    }
-    Map<String, String> arguments = new HashMap<>();
+  private static Map<String, String> extractArguments(final String[] args) {
+    final Map<String, String> arguments = new HashMap<>();
     fillArgumentMapWithDefaultValues(arguments);
-    for (int i = 0; i < args.length; i += 2) {
-      String identifier = stripLeadingHyphens(args[i]);
-      String value = args[i + 1];
+    for (int i = 0; i < args.length; i++) {
+      final String identifier = stripLeadingHyphens(args[i]);
       ensureIdentifierIsKnown(arguments, identifier);
-      arguments.put(identifier, value);
+      final String value = args[i + 1];
+      if (value.indexOf("--") != 0 && !StringUtils.isBlank(value)) {
+        arguments.put(identifier, value);
+        // increase i one further as we have a value argument here
+        i += 1;
+      }
     }
     return arguments;
   }
@@ -118,10 +120,6 @@ public class DataGenerationMain {
     } else {
       return str;
     }
-  }
-
-  private static boolean arrayHasUnevenLength(String[] args) {
-    return args.length % 2 != 0;
   }
 
   private void generateData() {
