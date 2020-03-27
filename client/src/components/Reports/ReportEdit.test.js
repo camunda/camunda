@@ -191,6 +191,30 @@ it('should show a warning message when there are incompatible filter ', async ()
   expect(node.find('MessageBox').props().type).toBe('warning');
 });
 
+it('should show a warning when node status is running on a grouped by endDate user task report', async () => {
+  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+
+  node.setState({
+    report: {
+      ...report,
+      data: {
+        visualization: 'table',
+        view: {
+          entity: 'UserTask',
+          property: 'count'
+        },
+        groupBy: {
+          type: 'endDate'
+        },
+        configuration: {flowNodeExecutionState: 'running'}
+      }
+    }
+  });
+
+  expect(node.find('MessageBox')).toExist();
+  expect(node.find('MessageBox').props().type).toBe('warning');
+});
+
 it('should set conflict state when conflict happens on save button click', async () => {
   const conflictedItems = [{id: '1', name: 'alert', type: 'alert'}];
 

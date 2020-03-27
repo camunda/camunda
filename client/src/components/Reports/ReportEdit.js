@@ -230,9 +230,14 @@ export default withRouter(
               </MessageBox>
             )}
 
-            {data && data.filter && incompatibleFilters(data.filter) && (
+            {data?.filter && incompatibleFilters(data.filter) && (
               <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
             )}
+
+            {data?.groupBy?.type === 'endDate' &&
+              data.configuration.flowNodeExecutionState === 'running' && (
+                <MessageBox type="warning">{t('report.runningEndedUserTaskWarning')}</MessageBox>
+              )}
 
             <div className="Report__view">
               <div className="Report__content">

@@ -120,6 +120,7 @@ export const combinations = {
   },
   userTask: {
     task: ['table', 'chart', 'heat'],
+    date: ['table', 'chart'],
     user: ['table', 'chart']
   }
 };

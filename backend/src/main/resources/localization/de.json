@@ -219,9 +219,9 @@
       "none": "Keiner",
       "flowNodes": "Prozessknoten",
       "userTasks": "Benutzeraufgaben",
-      "startDate": "Startdatum der Prozessinstanz",
+      "startDate": "Startdatum",
       "automatic": "Automatisch",
-      "endDate": "Enddatum der Prozessinstanz",
+      "endDate": "Enddatum",
       "variable": "Variable",
       "userAssignee": "Bearbeiter",
       "userGroup": "Potenzielle Gruppe",
@@ -396,7 +396,8 @@
       "showGradientBars": "Verlaufsbalken anzeigen"
     },
     "missingVariableValue": "nicht definiert",
-    "missingAssignee": "Nicht zugewiesen"
+    "missingAssignee": "Nicht zugewiesen",
+    "runningEndedUserTaskWarning": "Bei der Gruppierung nach Enddatum werden nur abgeschlossene Benutzeraufgaben berücksichtigt. Daher zeigt das Setzen des Prozessknoten-Status auf 'In Ausführung' keine Ergebnisse"
   },
   "dashboard": {
     "label": "Dashboard",

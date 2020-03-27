@@ -219,9 +219,9 @@
       "none": "None",
       "flowNodes": "Flow Nodes",
       "userTasks": "User Tasks",
-      "startDate": "Start Date of Process Instance",
+      "startDate": "Start Date",
       "automatic": "Automatic",
-      "endDate": "End Date of Process Instance",
+      "endDate": "End Date",
       "variable": "Variable",
       "userAssignee": "Assignee",
       "userGroup": "Candidate Group",
@@ -396,7 +396,8 @@
       "showGradientBars": "Show Gradient Bars"
     },
     "missingVariableValue": "null / undefined",
-    "missingAssignee": "Unassigned"
+    "missingAssignee": "Unassigned",
+    "runningEndedUserTaskWarning": "Only completed user tasks are considered when grouping by End Date. Therefore, setting Node Status to 'running' will show no results"
   },
   "dashboard": {
     "label": "Dashboard",

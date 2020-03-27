@@ -11,11 +11,14 @@ import {t} from 'translation';
 
 export default function NodeStatus({
   report: {
-    data: {groupBy, configuration}
+    data: {view, groupBy, configuration}
   },
   onChange
 }) {
-  if (groupBy && ['userTasks', 'flowNodes', 'assignee', 'candidateGroup'].includes(groupBy.type)) {
+  if (
+    (groupBy?.type.includes('Date') && view?.entity === 'userTask') ||
+    ['userTasks', 'flowNodes', 'assignee', 'candidateGroup'].includes(groupBy?.type)
+  ) {
     return (
       <fieldset className="NodeStatus">
         <legend>{t('report.config.nodeStatus.legend')}</legend>

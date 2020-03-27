@@ -202,7 +202,7 @@ test('should only enable valid combinations for process instance count grouped b
   await t.click(e.groupbyDropdown);
 
   await t.expect(e.option('None').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Start Date of Process Instance').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Start Date').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Variable').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Flow Nodes').hasAttribute('disabled')).ok();
 
@@ -244,14 +244,14 @@ test('Disable absolute and relative values for table reports', async t => {
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
   await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'Start Date of Process Instance', 'Month');
+  await u.selectGroupby(t, 'Start Date', 'Month');
 
   await u.selectVisualization(t, 'Table');
   await t.click(e.configurationButton);
   await t.click(e.selectSwitchLabel('Show Absolute Value'));
   await t.click(e.selectSwitchLabel('Show Relative Value'));
 
-  await t.expect(e.reportTable.textContent).contains('Start Date of Process Instance: Month');
+  await t.expect(e.reportTable.textContent).contains('Start Date: Month');
   await t.expect(e.reportTable.textContent).notContains('Process Instance: Count');
   await t.expect(e.reportTable.textContent).notContains('Relative Frequency');
 });
@@ -261,7 +261,7 @@ test('select process instance count grouped by end date', async t => {
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Count');
 
-  await u.selectGroupby(t, 'End Date of Process Instance', 'Automatic');
+  await u.selectGroupby(t, 'End Date', 'Automatic');
 
   await t.click(e.visualizationDropdown);
 
@@ -368,7 +368,7 @@ test('bar/line chart configuration', async t => {
   await u.selectDefinition(t, 'Multi-Instance Subprocess', 'All');
 
   await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'Start Date of Process Instance', 'Automatic');
+  await u.selectGroupby(t, 'Start Date', 'Automatic');
   await u.selectVisualization(t, 'Bar Chart');
 
   await t.resizeWindow(1600, 800);
@@ -590,7 +590,7 @@ test('should only enable valid combinations for user task', async t => {
   await t.expect(e.option('User Task').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Assignee').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Candidate Group').hasAttribute('disabled')).notOk();
-  await t.expect(e.option('Start Date of Process Instance').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Start Date').hasAttribute('disabled')).notOk();
 
   await t.click(e.option('User Tasks'));
 
