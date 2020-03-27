@@ -5,6 +5,7 @@
  */
 
 import React, {useState, useContext} from 'react';
+
 import PropTypes from 'prop-types';
 
 import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
@@ -24,6 +25,8 @@ const ACTION_NAMES = {
 
 const CreateOperationDropdown = ({label, selectedCount}) => {
   const [modalMode, setModalMode] = useState(null);
+
+  const [dropdownWidth, setDropdownWidth] = useState();
   const {applyBatchOperation} = useOperationApply();
   const {reset} = useInstanceSelectionContext();
   const {expandOperations} = useContext(CollapsablePanelContext);
@@ -50,11 +53,12 @@ const CreateOperationDropdown = ({label, selectedCount}) => {
     )}.`;
 
   return (
-    <Styled.DropdownContainer>
+    <Styled.DropdownContainer dropdownWidth={dropdownWidth}>
       <Dropdown
         buttonStyles={Styled.dropdownButtonStyles}
         placement={DROPDOWN_PLACEMENT.TOP}
         label={label}
+        calculateWidth={setDropdownWidth}
       >
         <Dropdown.Option
           onClick={() => setModalMode(OPERATION_TYPE.RESOLVE_INCIDENT)}

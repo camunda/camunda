@@ -32,7 +32,8 @@ export default class Dropdown extends React.Component {
     buttonStyles: PropTypes.array,
     disabled: PropTypes.bool,
     onOpen: PropTypes.func,
-    className: PropTypes.string
+    className: PropTypes.string,
+    calculateWidth: PropTypes.func
   };
 
   state = {
@@ -84,6 +85,10 @@ export default class Dropdown extends React.Component {
   };
 
   handleOnClick = () => {
+    if (this.props.calculateWidth && this.container) {
+      this.props.calculateWidth(this.container.clientWidth);
+    }
+
     if (!this.state.isOpen && this.props.onOpen) {
       this.props.onOpen();
     }
