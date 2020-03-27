@@ -21,6 +21,24 @@ import java.util.Optional;
 public class DecisionDefinitionReader {
   private final DefinitionReader definitionReader;
 
+  public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinition(final String decisionDefinitionKey,
+                                                                       final List<String> decisionDefinitionVersions,
+                                                                       final List<String> tenantIds) {
+    return tenantIds.stream()
+      .map(tenantId -> getFullyImportedDecisionDefinition(
+        decisionDefinitionKey,
+        decisionDefinitionVersions,
+        tenantId
+      ))
+      .filter(Optional::isPresent)
+      .findFirst()
+      .orElse(getFullyImportedDecisionDefinition(
+        decisionDefinitionKey,
+        decisionDefinitionVersions,
+        null
+      ));
+  }
+
   public Optional<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinition(
     final String decisionDefinitionKey,
     final List<String> decisionDefinitionVersions,

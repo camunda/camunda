@@ -7,6 +7,8 @@ package org.camunda.optimize.service.es.reader;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
@@ -30,7 +32,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
@@ -60,7 +64,45 @@ public class DecisionVariableReader {
   private final OptimizeElasticsearchClient esClient;
   private final DecisionDefinitionReader decisionDefinitionReader;
 
+  public List<DecisionVariableNameDto> getInputVariableNames(final String decisionDefinitionKey,
+                                                             final List<String> decisionDefinitionVersions,
+                                                             final List<String> tenantIds) {
+    if (decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
+      log.debug("Cannot fetch output variable values for decision definition with missing versions.");
+      return Collections.emptyList();
+    }
+
+    final Optional<DecisionDefinitionOptimizeDto> decisionDefinition = decisionDefinitionReader.getDecisionDefinition(
+      decisionDefinitionKey,
+      decisionDefinitionVersions,
+      tenantIds
+    );
+    return decisionDefinition.orElseThrow(() -> new OptimizeRuntimeException(
+      "Could not extract input variables. Requested decision definition not found!")).getInputVariableNames();
+  }
+
+  public List<DecisionVariableNameDto> getOutputVariableNames(final String decisionDefinitionKey,
+                                                              final List<String> decisionDefinitionVersions,
+                                                              final List<String> tenantIds) {
+    if (decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
+      return Collections.emptyList();
+    } else {
+      final Optional<DecisionDefinitionOptimizeDto> decisionDefinition = decisionDefinitionReader.getDecisionDefinition(
+        decisionDefinitionKey,
+        decisionDefinitionVersions,
+        tenantIds
+      );
+      return decisionDefinition.orElseThrow(() -> new OptimizeRuntimeException(
+        "Could not extract output variables. Requested decision definition not found!")).getOutputVariableNames();
+    }
+  }
+
   public List<String> getInputVariableValues(final DecisionVariableValueRequestDto requestDto) {
+    if (requestDto.getDecisionDefinitionVersions() == null || requestDto.getDecisionDefinitionVersions().isEmpty()) {
+      log.debug("Cannot fetch input variable values for decision definition with missing versions.");
+      return Collections.emptyList();
+    }
+
     log.debug(
       "Fetching input variable values for decision definition with key [{}] and versions [{}]",
       requestDto.getDecisionDefinitionKey(),
@@ -71,6 +113,11 @@ public class DecisionVariableReader {
   }
 
   public List<String> getOutputVariableValues(final DecisionVariableValueRequestDto requestDto) {
+    if (requestDto.getDecisionDefinitionVersions() == null || requestDto.getDecisionDefinitionVersions().isEmpty()) {
+      log.debug("Cannot fetch output variable values for decision definition with missing versions.");
+      return Collections.emptyList();
+    }
+
     log.debug(
       "Fetching output variable values for decision definition with key [{}] and versions [{}]",
       requestDto.getDecisionDefinitionKey(),

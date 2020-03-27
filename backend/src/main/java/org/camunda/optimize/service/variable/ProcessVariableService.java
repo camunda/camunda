@@ -16,9 +16,9 @@ import org.camunda.optimize.service.security.TenantAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
+import java.util.Collections;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.ValidationHelper.ensureListNotEmpty;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 
 @RequiredArgsConstructor
@@ -33,7 +33,6 @@ public class ProcessVariableService {
   public List<ProcessVariableNameResponseDto> getVariableNames(String userId,
                                                                ProcessVariableNameRequestDto variableRequestDto) {
     ensureNotEmpty("process definition key", variableRequestDto.getProcessDefinitionKey());
-    ensureListNotEmpty("process definition versions", variableRequestDto.getProcessDefinitionVersions());
 
     if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(
       userId,
@@ -47,13 +46,16 @@ public class ProcessVariableService {
 
   public List<String> getVariableValues(String userId, ProcessVariableValueRequestDto requestDto) {
     ensureNotEmpty("process definition key", requestDto.getProcessDefinitionKey());
-    ensureListNotEmpty("process definition versions", requestDto.getProcessDefinitionVersions());
     ensureNotEmpty("variable name", requestDto.getName());
     ensureNotEmpty("variable type", requestDto.getType());
 
     if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER, requestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
-    return processVariableReader.getVariableValues(requestDto);
+    if (requestDto.getProcessDefinitionVersions().isEmpty()) {
+      return Collections.emptyList();
+    } else {
+      return processVariableReader.getVariableValues(requestDto);
+    }
   }
 }
