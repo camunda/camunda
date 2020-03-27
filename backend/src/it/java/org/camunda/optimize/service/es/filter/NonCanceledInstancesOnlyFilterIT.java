@@ -17,6 +17,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.INTERNALLY_TERMINATED_STATE;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,12 +34,12 @@ public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
 
     engineDatabaseExtension.changeProcessInstanceState(
       firstProcInst.getId(),
-      CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
+      INTERNALLY_TERMINATED_STATE
     );
 
     engineDatabaseExtension.changeProcessInstanceState(
       thirdProcInst.getId(),
-      CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED
+      INTERNALLY_TERMINATED_STATE
     );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -59,4 +60,4 @@ public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     assertThat(resultProcDefIds, hasItem(secondProcInst.getId()));
   }
 
- }
+}

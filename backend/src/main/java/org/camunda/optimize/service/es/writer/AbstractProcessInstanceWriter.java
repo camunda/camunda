@@ -44,6 +44,18 @@ public abstract class AbstractProcessInstanceWriter<T extends OptimizeDto> {
       procInst
     );
 
+    addImportProcessInstanceRequest(bulkRequest, optimizeDto, updateScript, objectMapper);
+  }
+
+  protected void addImportProcessInstanceRequest(BulkRequest bulkRequest,
+                                                 T optimizeDto,
+                                                 Script updateScript,
+                                                 ObjectMapper objectMapper) {
+    if (!(optimizeDto instanceof ProcessInstanceDto)) {
+      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
+    }
+    ProcessInstanceDto procInst = (ProcessInstanceDto) optimizeDto;
+
     String newEntryIfAbsent = "";
     try {
       newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
@@ -66,4 +78,5 @@ public abstract class AbstractProcessInstanceWriter<T extends OptimizeDto> {
 
     bulkRequest.add(request);
   }
+
 }

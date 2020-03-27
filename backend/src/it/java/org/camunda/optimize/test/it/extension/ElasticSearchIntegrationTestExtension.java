@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
@@ -569,6 +570,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   public List<EventDto> getAllStoredExternalEvents() {
     final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(EXTERNAL_EVENTS_INDEX_NAME);
     return mapHits(response.getHits(), EventDto.class, getObjectMapper());
+  }
+
+  public List<ProcessInstanceDto> getAllProcessInstances() {
+    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    return mapHits(response.getHits(), ProcessInstanceDto.class, getObjectMapper());
   }
 
   @SneakyThrows

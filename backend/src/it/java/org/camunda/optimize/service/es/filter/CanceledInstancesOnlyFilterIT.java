@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.INTERNALLY_TERMINATED_STATE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -31,8 +32,8 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
 
     engineIntegrationExtension.externallyTerminateProcessInstance(firstProcInst.getId());
     engineDatabaseExtension.changeProcessInstanceState(
-            secondProcInst.getId(),
-            CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
+      secondProcInst.getId(),
+      INTERNALLY_TERMINATED_STATE
     );
 
 
@@ -47,9 +48,9 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // then
     assertThat(result.getData().size(), is(2));
     List<String> resultProcDefIds = result.getData()
-            .stream()
-            .map(RawDataProcessInstanceDto::getProcessInstanceId)
-            .collect(Collectors.toList());
+      .stream()
+      .map(RawDataProcessInstanceDto::getProcessInstanceId)
+      .collect(Collectors.toList());
 
     assertThat(resultProcDefIds.contains(firstProcInst.getId()), is(true));
     assertThat(resultProcDefIds.contains(secondProcInst.getId()), is(true));
@@ -64,12 +65,12 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
     engineDatabaseExtension.changeProcessInstanceState(
-            firstProcInst.getId(),
-            CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
+      firstProcInst.getId(),
+      INTERNALLY_TERMINATED_STATE
     );
     engineDatabaseExtension.changeProcessInstanceState(
-            secondProcInst.getId(),
-            CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
+      secondProcInst.getId(),
+      INTERNALLY_TERMINATED_STATE
     );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -83,9 +84,9 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     //then
     assertThat(result.getData().size(), is(2));
     List<String> resultProcDefIds = result.getData()
-            .stream()
-            .map(RawDataProcessInstanceDto::getProcessInstanceId)
-            .collect(Collectors.toList());
+      .stream()
+      .map(RawDataProcessInstanceDto::getProcessInstanceId)
+      .collect(Collectors.toList());
 
     assertThat(resultProcDefIds.contains(firstProcInst.getId()), is(true));
     assertThat(resultProcDefIds.contains(secondProcInst.getId()), is(true));
@@ -113,9 +114,9 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     //then
     assertThat(result.getData().size(), is(2));
     List<String> resultProcDefIds = result.getData()
-            .stream()
-            .map(RawDataProcessInstanceDto::getProcessInstanceId)
-            .collect(Collectors.toList());
+      .stream()
+      .map(RawDataProcessInstanceDto::getProcessInstanceId)
+      .collect(Collectors.toList());
 
     assertThat(resultProcDefIds.contains(firstProcInst.getId()), is(true));
     assertThat(resultProcDefIds.contains(secondProcInst.getId()), is(true));

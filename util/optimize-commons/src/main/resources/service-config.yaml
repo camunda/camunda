@@ -137,6 +137,9 @@ import:
     identity-link-log:
       # Determines the page size for identity link log fetching.
       maxPageSize: 10000
+    user-operation-log:
+      # Determines the page size for user operations log fetching.
+      maxPageSize: 10000
     decision-definition-xml:
       # Determines the page size for decision definition xml model
       # fetching. Should be a low value, as large models will lead to
@@ -323,7 +326,7 @@ email:
 
 webhookAlerting:
   webhooks:
-    # Name of the webhook, must be unique.
+  # Name of the webhook, must be unique.
 #    'myWebhook':
 #      # URL of the webhook which can receive alerts from Optimize
 #      url: 'someUrl'

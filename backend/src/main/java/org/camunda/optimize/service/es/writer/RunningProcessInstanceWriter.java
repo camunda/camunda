@@ -6,15 +6,19 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Set;
 
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ENGINE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_ID;
@@ -23,6 +27,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 
 @Component
 @Slf4j
@@ -55,6 +60,51 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
         PRIMITIVE_UPDATABLE_FIELDS,
         objectMapper
       )
+    );
+  }
+
+  public void importProcessInstancesFromUserOperationLogs(List<ProcessInstanceDto> processInstanceDtos) {
+    final String importItemName = "running process instances";
+    log.debug(
+      "Writing changes from user operation logs to [{}] {} to ES.",
+      processInstanceDtos.size(),
+      importItemName
+    );
+
+    ElasticsearchWriterUtil.doBulkRequestWithList(
+      esClient,
+      importItemName,
+      processInstanceDtos,
+      (request, dto) -> addImportProcessInstanceRequest(
+        request,
+        dto,
+        createUpdateStatusScript(dto),
+        objectMapper
+      )
+    );
+  }
+
+  private Script createUpdateStatusScript(final ProcessInstanceDto processInstanceDto) {
+    final ImmutableMap<String, Object> scriptParameters = createScriptParamsMap(processInstanceDto);
+    return createDefaultScript(createInlineUpdateScript(), scriptParameters);
+  }
+
+  private String createInlineUpdateScript() {
+    // @formatter:off
+    return
+      "if ((ctx._source.state == params.activeState || ctx_.source.state == params.suspendedState)" +
+        "&& (params.newState.equals(params.activeState) || params.newState.equals(params.suspendedState)) {" +
+        "ctx_.source.state = params.newState;" +
+        "}\n"
+      ;
+    // @formatter:on
+  }
+
+  private ImmutableMap<String, Object> createScriptParamsMap(final ProcessInstanceDto processInstanceDto) {
+    return ImmutableMap.of(
+      "activeState", ACTIVE_STATE,
+      "suspendedState", SUSPENDED_STATE,
+      "newState", processInstanceDto.getState()
     );
   }
 }

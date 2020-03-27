@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.action.search.SearchRequest;
@@ -37,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -287,7 +287,11 @@ public class ProcessImportIT extends AbstractImportIT {
       .engine("1")
       .build();
 
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, procDef.getId(), procDef);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME,
+      procDef.getId(),
+      procDef
+    );
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -341,7 +345,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(
       idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceIndex.STATE),
-      is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED)
+      is(EXTERNALLY_TERMINATED_STATE)
     );
   }
 
@@ -562,7 +566,8 @@ public class ProcessImportIT extends AbstractImportIT {
       .indices(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .search(searchRequest, RequestOptions.DEFAULT);
 
     Nested nested = response.getAggregations()
       .get(EVENTS);

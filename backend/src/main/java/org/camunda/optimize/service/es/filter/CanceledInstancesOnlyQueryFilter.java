@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.INTERNALLY_TERMINATED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -19,18 +21,16 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 public class CanceledInstancesOnlyQueryFilter implements QueryFilter<CanceledInstancesOnlyFilterDataDto> {
 
-  public static String EXTERNALLY_TERMINATED = "EXTERNALLY_TERMINATED";
-  public static String INTERNALLY_TERMINATED = "INTERNALLY_TERMINATED";
-
-  public void addFilters(BoolQueryBuilder query, List<CanceledInstancesOnlyFilterDataDto> canceledInstancesOnlyFilters) {
+  public void addFilters(BoolQueryBuilder query,
+                         List<CanceledInstancesOnlyFilterDataDto> canceledInstancesOnlyFilters) {
     if (canceledInstancesOnlyFilters != null && !canceledInstancesOnlyFilters.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 
       BoolQueryBuilder onlyRunningInstances =
         boolQuery()
-          .should(termQuery(STATE, EXTERNALLY_TERMINATED))
-          .should(termQuery(STATE, INTERNALLY_TERMINATED)
-        );
+          .should(termQuery(STATE, EXTERNALLY_TERMINATED_STATE))
+          .should(termQuery(STATE, INTERNALLY_TERMINATED_STATE)
+          );
 
       filters.add(onlyRunningInstances);
     }

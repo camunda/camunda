@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.SuspendedInstancesOnlyQueryFilter.SUSPENDED;
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -26,7 +26,7 @@ public class NonSuspendedInstancesOnlyQueryFilter implements QueryFilter<NonSusp
       List<QueryBuilder> filters = query.filter();
 
       BoolQueryBuilder onlyNonSuspendedInstancesQuery =
-        boolQuery().mustNot(termQuery(STATE, SUSPENDED));
+        boolQuery().mustNot(termQuery(STATE, SUSPENDED_STATE));
 
       filters.add(onlyNonSuspendedInstancesQuery);
     }
