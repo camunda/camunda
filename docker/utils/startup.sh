@@ -1,9 +1,12 @@
-#!/bin/bash -xeu
+#!/usr/bin/env sh
+# sets printing every command, exiting on first error, and failing on undefined variables
+set -eux
 
 # legacy support
 # This environment variable was used to set the gatewway cluster host in standalone and embedded mode.
 # Now, there are two dedicated environment variables for the two different deployment scenarios.
 export ZEEBE_HOST=${ZEEBE_HOST:-$(hostname -i)}
+export ZEEBE_STANDALONE_GATEWAY=${ZEEBE_STANDALONE_GATEWAY:-"false"}
 # Legacy support
 
 if [ "$ZEEBE_STANDALONE_GATEWAY" = "true" ]; then
