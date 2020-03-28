@@ -179,10 +179,11 @@
             </goals>
             <configuration>
               <target>
-                <copy file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="${zbctl.force}" />
-                <copy file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="${zbctl.force}" />
-                <copy file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="${zbctl.force}" />
-                <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" failonerror="${zbctl.force}" />
+                <!-- in order to execute multiple, conditional targets, we use a separate ant.xml,
+                     as the maven plugin DSL does not support this case -->
+                <ant antfile="ant.xml">
+                  <target name="copy-zbctl" />
+                </ant>
               </target>
             </configuration>
           </execution>

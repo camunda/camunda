@@ -111,6 +111,11 @@
          for the docker distribution -->
     <classifier.rocksdb />
 
+    <!-- specifies which platform specific zbctl flavors should be packaged in the distribution -->
+    <zbctl.linux.skip>false</zbctl.linux.skip>
+    <zbctl.windows.skip>false</zbctl.windows.skip>
+    <zbctl.darwin.skip>false</zbctl.darwin.skip>
+
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
 
@@ -1173,6 +1178,8 @@
     <profile>
       <id>docker</id>
       <properties>
+        <zbctl.windows.skip>true</zbctl.windows.skip>
+        <zbctl.darwin.skip>true</zbctl.darwin.skip>
         <classifier.rocksdb>linux64-musl</classifier.rocksdb>
       </properties>
     </profile>
