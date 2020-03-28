@@ -43,7 +43,7 @@ VOLUME ${ZEEBE_HOME}/data
 
 # RocksDB requires libstdc++
 # Temporarily install bash to be compatible with helm charts and other startup scripts
-RUN apk add --no-cache tini libstdc++ bash
+RUN apk add --no-cache tini libstdc++ bash procps htop iftop
 COPY docker/utils/startup.sh /usr/local/bin
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
 
