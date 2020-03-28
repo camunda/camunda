@@ -77,14 +77,8 @@ import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.serializer.Namespace;
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -110,7 +104,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.slf4j.LoggerFactory;
 
 /** Raft test. */
@@ -142,12 +138,15 @@ public class RaftTest extends ConcurrentTestCase {
           .register(long[].class)
           .build();
 
+  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
   protected volatile int nextId;
   protected volatile List<RaftMember> members;
   protected volatile List<RaftClient> clients = new ArrayList<>();
   protected volatile List<RaftServer> servers = new ArrayList<>();
   protected volatile TestRaftProtocolFactory protocolFactory;
   protected volatile ThreadContext context;
+  private Path directory;
 
   @Before
   @After
@@ -173,26 +172,7 @@ public class RaftTest extends ConcurrentTestCase {
           }
         });
 
-    final Path directory = Paths.get("target/test-logs/");
-    if (Files.exists(directory)) {
-      Files.walkFileTree(
-          directory,
-          new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-                throws IOException {
-              Files.delete(file);
-              return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
-                throws IOException {
-              Files.delete(dir);
-              return FileVisitResult.CONTINUE;
-            }
-          });
-    }
+    directory = temporaryFolder.newFolder().toPath();
 
     if (context != null) {
       context.close();
@@ -301,7 +281,7 @@ public class RaftTest extends ConcurrentTestCase {
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
             .withStorageLevel(StorageLevel.DISK)
-            .withDirectory(new File(String.format("target/test-logs/%s", memberId)))
+            .withDirectory(new File(directory.toFile(), memberId.toString()))
             .withMaxEntriesPerSegment(10)
             .withMaxSegmentSize(1024 * 10)
             .withNamespace(NAMESPACE);
@@ -1564,8 +1544,7 @@ public class RaftTest extends ConcurrentTestCase {
                             storageBuilder ->
                                 storageBuilder.withStorageStatistics(
                                     new FakeStatistics(
-                                        new File(
-                                            String.format("target/test-logs/%s", memberId)))))));
+                                        new File(directory.toFile(), memberId.toString()))))));
     final Map<MemberId, RaftServer> servers =
         storages.entrySet().stream()
             .collect(
