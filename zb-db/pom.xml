@@ -28,6 +28,7 @@
     <dependency>
       <groupId>org.rocksdb</groupId>
       <artifactId>rocksdbjni</artifactId>
+      <classifier>${classifier.rocksdb}</classifier>
     </dependency>
 
     <dependency>

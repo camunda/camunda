@@ -3,7 +3,7 @@
 set -eux
 
 # legacy support
-# This environment variable was used to set the gatewway cluster host in standalone and embedded mode.
+# This environment variable was used to set the gateway cluster host in standalone and embedded mode.
 # Now, there are two dedicated environment variables for the two different deployment scenarios.
 export ZEEBE_HOST=${ZEEBE_HOST:-$(hostname -i)}
 export ZEEBE_STANDALONE_GATEWAY=${ZEEBE_STANDALONE_GATEWAY:-"false"}

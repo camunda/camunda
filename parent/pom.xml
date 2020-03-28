@@ -107,6 +107,9 @@
     <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
     <plugin.version.clirr>2.8</plugin.version.clirr>
 
+    <!-- rocksdb specific platform classifier, used primarily to select a single one
+         for the docker distribution -->
+    <classifier.rocksdb />
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
@@ -268,6 +271,7 @@
         <groupId>org.rocksdb</groupId>
         <artifactId>rocksdbjni</artifactId>
         <version>${version.rocksdbjni}</version>
+        <classifier>${classifier.rocksdb}</classifier>
       </dependency>
 
       <dependency>
@@ -1164,6 +1168,13 @@
         </plugins>
 
       </build>
+    </profile>
+
+    <profile>
+      <id>docker</id>
+      <properties>
+        <classifier.rocksdb>linux64-musl</classifier.rocksdb>
+      </properties>
     </profile>
 
     <!--
