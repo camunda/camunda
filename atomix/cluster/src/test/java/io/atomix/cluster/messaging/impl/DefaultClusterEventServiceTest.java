@@ -148,7 +148,7 @@ public class DefaultClusterEventServiceTest {
         new DefaultClusterEventService(clusterMembershipService3, messagingService3);
     final ClusterEventService eventService3 = clusterEventingService3.start().join();
 
-    Thread.sleep(100);
+    Thread.sleep(250);
 
     final Set<Integer> events = new CopyOnWriteArraySet<>();
 
