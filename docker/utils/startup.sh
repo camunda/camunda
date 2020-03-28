@@ -1,6 +1,5 @@
-#!/usr/bin/env sh
-# sets printing every command, exiting on first error, and failing on undefined variables
-set -eux
+#!/usr/bin/env bash
+set -xeu -o pipefail
 
 # legacy support
 # This environment variable was used to set the gateway cluster host in standalone and embedded mode.
