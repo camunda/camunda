@@ -1,9 +1,12 @@
+# It is very important that both the jrebuilder and the target container have the same ELF program
+# interpreter, so it's simpler if we just use the same base image for both
 FROM azul/zulu-openjdk-alpine:11 as jrebuilder
 
 # Required for strip utility
 RUN apk add --no-cache --update binutils
 
 # Build custom JRE
+# For non-dev builds we can remove jdk.jcmd which provides JDK tools (e.g. jcmd, jstats, etc.)
 RUN ${JAVA_HOME}/bin/jlink --verbose --compress 2 --strip-debug --no-header-files --no-man-pages \
       --output /opt/minijre \
       --add-modules java.base,java.xml,java.desktop,java.naming,java.sql,java.management,java.instrument,jdk.unsupported,jdk.jcmd \
