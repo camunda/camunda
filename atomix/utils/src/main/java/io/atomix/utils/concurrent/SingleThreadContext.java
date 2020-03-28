@@ -52,9 +52,9 @@ public class SingleThreadContext extends AbstractThreadContext {
         @Override
         public void execute(final Runnable command) {
           try {
-            executor.execute(() -> command.run());
+            executor.execute(command);
           } catch (final RejectedExecutionException e) {
-            LOGGER.warn("Execution was rejected!", e);
+            LOGGER.warn("Execution of {} was rejected!", command, e);
           }
         }
       };
