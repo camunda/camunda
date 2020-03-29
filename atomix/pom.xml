@@ -237,18 +237,7 @@
       <plugin>
         <artifactId>license-maven-plugin</artifactId>
         <configuration>
-          <includes>
-            <include>**/zeebe/**/*.java</include>
-          </includes>
-          <header>${license.header}</header>
-          <!--          <skipExistingHeaders>true</skipExistingHeaders>-->
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
-          <properties>
-            <email>info@camunda.com</email>
-            <owner>camunda services GmbH</owner>
-          </properties>
+          <skipExistingHeaders>true</skipExistingHeaders>
         </configuration>
         <groupId>com.mycila</groupId>
         <version>${plugin.version.license}</version>
