@@ -21,3 +21,10 @@ es:
   settings:
     index:
       refresh_interval: ${ES_REFRESH_INTERVAL}
+
+eventBasedProcess:
+  authorizedUserIds: ['demo']
+  eventImport:
+    enabled: ${EVENT_IMPORT_ENABLED:false}
+  eventIngestion:
+    accessToken: secret

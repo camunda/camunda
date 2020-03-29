@@ -155,6 +155,42 @@ pipeline {
         }
       }
     }
+    stage('EventPublish') {
+      steps {
+        container('gcloud') {
+          sh ("""
+                # make sure that on piping we fail if any command of the pipe failed
+                set -o pipefail
+
+                # Authenticate as demo user
+                curl -f -s -w "%{http_code}" -H 'Content-Type: application/json' -XPOST optimize.${NAMESPACE}:8090/api/authentication --data-binary '{"username":"demo", "password":"demo"}' -c authCookie
+                # Create event based invoice process
+                INVOICE_PROCESS_ID=\$(curl -b authCookie -f -s -H 'Content-Type: application/json' -XPOST 'optimize.${NAMESPACE}:8090/api/eventBasedProcess' -d @.ci/pipelines/event_import_performance/invoiceEventProcessMapping.json | jq -r '.id')
+                # Publish the event based process
+                curl -b authCookie -f -s -w "%{http_code}" -XPOST "optimize.${NAMESPACE}:8090/api/eventBasedProcess/\$INVOICE_PROCESS_ID/_publish"
+                # wait for publish to finish
+                bash .ci/pipelines/event_import_performance/wait-for-event-process-publish.sh ${NAMESPACE} "\$INVOICE_PROCESS_ID" "authCookie"
+                
+                # assert expected counts
+                NUMBER_OF_EVENT_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-event-process-instance-*/_count' | jq '.count') || true
+                export EXPECTED_NUMBER_OF_EVENT_PROCESS_INSTANCES=\$(curl -s -H 'Content-Type: application/json' -XPOST 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_doc/_count' -d '{"query":{"bool":{"must":[{"term":{"processDefinitionKey":"invoice"}}],"must_not":[],"should":[]}}}' | jq '.count') || true
+
+                # note: each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
+                # a final if block checks if there was an error and will let the script fail
+                echo "NUMBER_OF_EVENT_PROCESS_INSTANCES"
+                test "\$NUMBER_OF_EVENT_PROCESS_INSTANCES" = "\${EXPECTED_NUMBER_OF_EVENT_PROCESS_INSTANCES}" || error=true
+
+                curl -s "http://elasticsearch.${NAMESPACE}:9200/_cat/indices?v" || true
+
+                # Fail the build if there was an error
+                if [ \$error ]
+                then 
+                  exit -1
+                fi
+            """)
+        }
+      }
+    }
   }
 
   post {
