@@ -38,6 +38,14 @@
 
   <dependencies>
     <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+    <dependency>
+      <artifactId>zeebe-test-util</artifactId>
+      <groupId>io.zeebe</groupId>
+    </dependency>
+    <dependency>
       <artifactId>atomix-cluster</artifactId>
       <groupId>io.zeebe</groupId>
     </dependency>

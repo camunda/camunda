@@ -64,17 +64,11 @@ public class AtomixTest extends AbstractAtomixTest {
     } catch (final Exception e) {
       // Do nothing
     }
-    teardownAtomix();
   }
 
   protected CompletableFuture<Atomix> startAtomix(
       final int id, final List<Integer> persistentNodes, final Profile... profiles) {
     return startAtomix(id, persistentNodes, b -> b.withProfiles(profiles).build());
-  }
-
-  /** Creates and starts a new test Atomix instance. */
-  protected CompletableFuture<Atomix> startAtomix(final int id, final List<Integer> persistentIds) {
-    return startAtomix(id, persistentIds, b -> b.build());
   }
 
   /** Creates and starts a new test Atomix instance. */
@@ -100,17 +94,6 @@ public class AtomixTest extends AbstractAtomixTest {
     return atomix.start().thenApply(v -> atomix);
   }
 
-  /** Creates and starts a new test Atomix instance. */
-  protected CompletableFuture<Atomix> startAtomix(
-      final int id,
-      final List<Integer> persistentIds,
-      final Properties properties,
-      final Function<AtomixBuilder, Atomix> builderFunction) {
-    final Atomix atomix = createAtomix(id, persistentIds, properties, builderFunction);
-    instances.add(atomix);
-    return atomix.start().thenApply(v -> atomix);
-  }
-
   /** Tests scaling up a cluster. */
   @Test
   public void testScaleUpPersistent() throws Exception {
@@ -120,7 +103,7 @@ public class AtomixTest extends AbstractAtomixTest {
                 Arrays.asList(1),
                 ConsensusProfile.builder()
                     .withMembers("1")
-                    .withDataPath(new File(DATA_DIR, "scale-up"))
+                    .withDataPath(new File(getDataDir(), "scale-up"))
                     .build())
             .get(30, TimeUnit.SECONDS);
     final Atomix atomix2 =
@@ -137,7 +120,7 @@ public class AtomixTest extends AbstractAtomixTest {
                 Arrays.asList(1),
                 ConsensusProfile.builder()
                     .withMembers("1")
-                    .withDataPath(new File(DATA_DIR, "start-stop-consensus"))
+                    .withDataPath(new File(getDataDir(), "start-stop-consensus"))
                     .build())
             .get(30, TimeUnit.SECONDS);
     atomix1.stop().get(30, TimeUnit.SECONDS);
@@ -156,15 +139,15 @@ public class AtomixTest extends AbstractAtomixTest {
     testClientJoinLeave(
         ConsensusProfile.builder()
             .withMembers("1", "2", "3")
-            .withDataPath(new File(new File(DATA_DIR, "join-leave"), "1"))
+            .withDataPath(new File(new File(getDataDir(), "join-leave"), "1"))
             .build(),
         ConsensusProfile.builder()
             .withMembers("1", "2", "3")
-            .withDataPath(new File(new File(DATA_DIR, "join-leave"), "2"))
+            .withDataPath(new File(new File(getDataDir(), "join-leave"), "2"))
             .build(),
         ConsensusProfile.builder()
             .withMembers("1", "2", "3")
-            .withDataPath(new File(new File(DATA_DIR, "join-leave"), "3"))
+            .withDataPath(new File(new File(getDataDir(), "join-leave"), "3"))
             .build());
   }
 
@@ -224,7 +207,7 @@ public class AtomixTest extends AbstractAtomixTest {
             Arrays.asList(1, 2, 3),
             ConsensusProfile.builder()
                 .withMembers("1", "2", "3")
-                .withDataPath(new File(new File(DATA_DIR, "client-properties"), "1"))
+                .withDataPath(new File(new File(getDataDir(), "client-properties"), "1"))
                 .build()));
     futures.add(
         startAtomix(
@@ -232,7 +215,7 @@ public class AtomixTest extends AbstractAtomixTest {
             Arrays.asList(1, 2, 3),
             ConsensusProfile.builder()
                 .withMembers("1", "2", "3")
-                .withDataPath(new File(new File(DATA_DIR, "client-properties"), "2"))
+                .withDataPath(new File(new File(getDataDir(), "client-properties"), "2"))
                 .build()));
     futures.add(
         startAtomix(
@@ -240,7 +223,7 @@ public class AtomixTest extends AbstractAtomixTest {
             Arrays.asList(1, 2, 3),
             ConsensusProfile.builder()
                 .withMembers("1", "2", "3")
-                .withDataPath(new File(new File(DATA_DIR, "client-properties"), "3"))
+                .withDataPath(new File(new File(getDataDir(), "client-properties"), "3"))
                 .build()));
     Futures.allOf(futures).get(30, TimeUnit.SECONDS);
 

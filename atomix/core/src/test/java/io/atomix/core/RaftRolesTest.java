@@ -47,8 +47,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
     final List<CompletableFuture<Void>> futures =
         instances.stream().map(Atomix::stop).collect(Collectors.toList());
     try {
-      CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]))
-          .get(30, TimeUnit.SECONDS);
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(30, TimeUnit.SECONDS);
     } catch (final Exception e) {
       // Do nothing
     }
@@ -411,7 +410,8 @@ public final class RaftRolesTest extends AbstractAtomixTest {
                   .withNumPartitions(partitionCount)
                   .withPartitionSize(memberIds.size())
                   .withMembers(memberIds)
-                  .withDataDirectory(new File(new File(DATA_DIR, "log"), "" + nodeId))
+                  .withDataDirectory(
+                      new File(new File(atomixRule.getDataDir(), "log"), "" + nodeId))
                   .build();
 
           final Atomix atomix = builder.withManagementGroup(partitionGroup).build();
