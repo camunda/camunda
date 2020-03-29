@@ -25,7 +25,8 @@ Atomix 3.0 is a fully featured framework for building fault-tolerant distributed
 
 ## Acknowledgements
 
-Atomix is developed as part of the [ONOS][ONOS] project at the [Open Networking Foundation][ONF]. Atomix project thanks ONF for its ongoing support!
+Atomix is developed as part of the [ONOS][ONOS] project at the [Open Networking Foundation
+ * Copyright © 2020 camunda services GmbH (info@camunda.com)][ONF]. Atomix project thanks ONF for its ongoing support!
 
 ![ONF](https://3vf60mmveq1g8vzn48q2o71a-wpengine.netdna-ssl.com/wp-content/uploads/2017/06/onf-logo.jpg)
 
