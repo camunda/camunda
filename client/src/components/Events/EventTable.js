@@ -265,7 +265,7 @@ export default withErrorHandling(
                           </Select>
                         ) : (
                           <span className={classnames({disabled})}>
-                            {mappedAs ? mappedAs : '--'}
+                            {mappedAs ? t(`events.table.${mappedAs}`) : '--'}
                           </span>
                         ),
                         eventLabel || eventName,
