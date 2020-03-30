@@ -1,23 +1,35 @@
+options:
+  machineType: N1_HIGHCPU_32 # otherwise the build times out just downloading the dependencies...
 steps:
   - name: golang:1.13.4
     dir: 'clients/go/cmd/zbctl'
     timeout: 500s
     entrypoint: './build.sh'
+# Uncomment the following and replace with correct commit hash if building locally
+#    env:
+#      - 'RELEASE_HASH=6e827bded2b92158d7e54774e793afb72040e0bd'
   - name: maven:3.6.0-jdk-11-slim
-    timeout: 500s
+    timeout: 600s
     entrypoint: mvn
     args:
       - 'package'
-      - '-DfinalName=zeebe-distribution-cloud' # necessary to get a specific DISTBALL later on
-      - '-P docker'
+      - '-P'
+      - 'docker' # build for the docker image
       - '-am' # also build dependents
-      - '-DskipTests -Dcheckstyle.skip -Denforcer.skip -Dformatter.skip -Dlicense.skip' # skip checks
-      - '-pl dist' # build only distribution package
+      - '-DskipTests'
+      - '-Dcheckstyle.skip'
+      - '-Denforcer.skip'
+      - '-Dformatter.skip'
+      - '-Dlicense.skip' # skip checks
+      - '-pl'
+      - 'dist' # build only distribution package
+      - '-DfinalName=zeebe-distribution-cloud' # necessary to get a specific DISTBALL later on
   - name: gcr.io/cloud-builders/docker
     timeout: 500s
     args:
       - 'build'
-      - '-t gcr.io/$PROJECT_ID/zeebe:$BRANCH_NAME'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/zeebe:$BRANCH_NAME'
       - '--build-arg=DISTBALL=dist/target/zeebe-distribution-cloud.tar.gz'
       - '.'
   - name: gcr.io/cloud-builders/docker
