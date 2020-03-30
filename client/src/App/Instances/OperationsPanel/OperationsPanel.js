@@ -22,7 +22,11 @@ function OperationsPanel({
   toggleOperations,
   onInstancesClick
 }) {
-  const {batchOperations, requestBatchOperations} = useBatchOperations();
+  const {
+    batchOperations,
+    requestBatchOperations,
+    requestNextBatchOperations
+  } = useBatchOperations();
 
   useEffect(requestBatchOperations, []);
 
@@ -36,6 +40,18 @@ function OperationsPanel({
       toggle={toggleOperations}
       hasBackgroundColor
       verticalLabelOffset={27}
+      onScroll={event => {
+        const {target} = event;
+
+        if (
+          target.scrollHeight - target.clientHeight - target.scrollTop <= 0 &&
+          batchOperations.length > 0
+        ) {
+          requestNextBatchOperations(
+            batchOperations[batchOperations.length - 1].sortValues
+          );
+        }
+      }}
     >
       <Styled.OperationsList>
         {hasBatchOperations(batchOperations) ? (

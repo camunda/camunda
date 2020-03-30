@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const mockOperationRunning = {
+const mockOperationRunning = {
   id: '1234',
   type: 'RESOLVE_INCIDENT',
   endDate: null,
@@ -13,7 +13,14 @@ export const mockOperationRunning = {
   operationsFinishedCount: 0
 };
 
-export const mockOperationFinished = {
+const mockExistingOperationFinished = {
+  id: '1234',
+  type: 'RESOLVE_INCIDENT',
+  endDate: '2020-02-06T15:37:29.699+0100',
+  instancesCount: 1
+};
+
+const mockOperationFinished = {
   id: '5678',
   type: 'CANCEL_WORKFLOW_INSTANCE',
   endDate: '2020-02-06T15:37:29.699+0100',
@@ -22,6 +29,13 @@ export const mockOperationFinished = {
   operationsFinishedCount: 2
 };
 
-export const mockProps = {
+const mockProps = {
   onInstancesClick: jest.fn()
+};
+
+export {
+  mockOperationRunning,
+  mockExistingOperationFinished,
+  mockOperationFinished,
+  mockProps
 };
