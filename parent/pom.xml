@@ -1180,7 +1180,7 @@
       <properties>
         <zbctl.windows.skip>true</zbctl.windows.skip>
         <zbctl.darwin.skip>true</zbctl.darwin.skip>
-        <classifier.rocksdb>linux64-musl</classifier.rocksdb>
+        <classifier.rocksdb>linux64</classifier.rocksdb>
       </properties>
     </profile>
 

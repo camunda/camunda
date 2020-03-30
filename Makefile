@@ -1,25 +1,34 @@
 VERSION ?= $(shell mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | grep -v "^\[")
 DISTBALL ?= dist/target/zeebe-distribution-$(VERSION).tar.gz
-REGISTRY ?= gcr.io/zeebe-io
+IMAGE ?= gcr.io/zeebe-io/zeebe
+DOCKERFILE ?= Dockerfile
 TAG ?= $(VERSION)
-IMAGE ?= $(REGISTRY)/zeebe:$(TAG)
-DOCKERFILE ?= dev.Dockerfile
+
+%.tar.gz:
+	mvn package -P docker -DskipTests -Dcheckstyle.skip -Denforcer.skip -Dformatter.skip -Dlicense.skip -pl dist -am
+
+.PHONY: package
+package: | $(DISTBALL)
 
 .PHONY: clean
 clean:
 	mvn clean
 
-%.tar.gz:
-	mvn package -P docker -DskipTests -Dcheckstyle.skip -Denforcer.skip -Dformatter.skip -Dlicense.skip -pl dist -am
+.PHONY: dist
+dist: | package
+	docker build -f $(DOCKERFILE) -t $(IMAGE):$(TAG) --build-arg DISTBALL=$(DISTBALL) --target zeebe .
 
-package: $(DISTBALL)
+.PHONY: redist
+redist: | clean dist
 
-dist: package
-	docker build -f $(DOCKERFILE) -t $(IMAGE) --build-arg DISTBALL=$(DISTBALL) --target zeebe .
-
-redist: clean dist
-
-push: dist
+.PHONY: push
+push: | dist
 	docker push $(IMAGE)
 
-repush: redist push
+.PHONY: repush
+repush: | redist push
+
+.EXPORT_ALL_VARIABLES: dev
+.PHONY: dev
+dev: TAG := $(shell sha1sum $(DISTBALL) | cut -c 1-8)
+dev: | package dist
