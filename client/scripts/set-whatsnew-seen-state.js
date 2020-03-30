@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const request = require('request');
+const fetch = require('node-fetch');
 const users = require('../demo-data/users.json');
 const url = 'http://localhost:8090/api';
 
@@ -17,55 +17,51 @@ const url = 'http://localhost:8090/api';
 })();
 
 function authenticate(username) {
-  return new Promise(resolve =>
-    request.post(
-      {
-        url: `${url}/authentication`,
+  return new Promise(async resolve => {
+    try {
+      const response = await fetch(`${url}/authentication`, {
+        method: 'POST',
         headers: {'content-type': 'application/json'},
-        body: {username, password: username},
-        json: true
-      },
-      (err, res, body) => {
-        if (err) {
-          console.error(err);
-          process.exit(1);
-        } else if (res && res.statusCode !== 200) {
-          console.error('Failed to login for user: ', username);
-          console.error(body);
-          process.exit(1);
-        } else {
-          resolve(body);
-        }
+        body: JSON.stringify({username, password: username})
+      });
+
+      if (response && response.status != 200) {
+        console.error('Failed to login for user: ', username);
+        console.error(response);
+        process.exit(1);
+      } else {
+        const body = await response.text();
+        resolve(body);
       }
-    )
-  );
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
+  });
 }
 
 function setSeen(token, username) {
-  return new Promise(resolve =>
-    request.put(
-      {
-        url: `${url}/onboarding/whatsnew`,
+  return new Promise(async resolve => {
+    try {
+      const response = await fetch(`${url}/onboarding/whatsnew`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Cookie: `X-Optimize-Authorization=Bearer ${token};`
         },
-        body: {seen: true},
-        json: true
-      },
-      function(error, response, body) {
-        if (error) {
-          console.error(error);
-          process.exit(1);
-        } else if (response && response.statusCode !== 204) {
-          console.error('Failed to set whatsnew seen state for user: ', username);
-          console.error(response.statusCode);
-          console.error(body);
-          process.exit(1);
-        } else {
-          resolve();
-        }
+        body: JSON.stringify({seen: true})
+      });
+
+      if (response && response.status != 204) {
+        console.error('Failed to set whatsnew seen state for user: ', username);
+        console.error(response);
+        process.exit(1);
+      } else {
+        resolve();
       }
-    )
-  );
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
+  });
 }

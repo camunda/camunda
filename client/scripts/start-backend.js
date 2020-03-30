@@ -6,7 +6,6 @@
 
 const {spawn} = require('child_process');
 const path = require('path');
-const request = require('request');
 const fetch = require('node-fetch');
 const http = require('http');
 const fs = require('fs');
@@ -151,13 +150,13 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function serverCheck(url, onComplete) {
-      setTimeout(() => {
-        request(url, err => {
-          if (err) {
-            return serverCheck(url, onComplete);
-          }
-          onComplete();
-        });
+      setTimeout(async () => {
+        try {
+          await fetch(url);
+        } catch (e) {
+          return serverCheck(url, onComplete);
+        }
+        onComplete();
       }, 1000);
     }
 
@@ -186,14 +185,13 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function downloadFile(downloadUrl, filePath) {
-      return new Promise(resolve => {
+      return new Promise(async resolve => {
         const file = fs.createWriteStream(filePath);
-        request
-          .get(downloadUrl)
-          .pipe(file)
-          .on('finish', () => {
-            resolve();
-          });
+        const res = await fetch(downloadUrl);
+        res.body.pipe(file);
+        file.on('finish', () => {
+          resolve();
+        });
       });
     }
 

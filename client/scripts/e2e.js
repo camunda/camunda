@@ -7,10 +7,8 @@
 const fetch = require('node-fetch');
 const createTestCafe = require('testcafe');
 const chalk = require('chalk');
-const request = require('request');
 
 const {spawn} = require('child_process');
-const net = require('net');
 const kill = require('tree-kill');
 const fs = require('fs');
 
@@ -66,13 +64,13 @@ const connectionInterval = setInterval(async () => {
 }, 5000);
 
 function checkHttpPort(number) {
-  return new Promise(resolve => {
-    request({url: 'http://localhost:' + number, timeout: 1000}, err => {
-      if (err) {
-        resolve(false);
-      }
+  return new Promise(async resolve => {
+    try {
+      await fetch('http://localhost:' + number, {timeout: 1000});
       resolve(true);
-    });
+    } catch (e) {
+      resolve(false);
+    }
   });
 }
 
