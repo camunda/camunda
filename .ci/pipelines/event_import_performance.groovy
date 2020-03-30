@@ -155,34 +155,90 @@ pipeline {
         }
       }
     }
-    stage('EventPublish') {
+    stage('CamundaActivityEventProcessPublish') {
       steps {
         container('gcloud') {
           sh ("""
                 # make sure that on piping we fail if any command of the pipe failed
                 set -o pipefail
 
-                # Authenticate as demo user
-                curl -f -s -w "%{http_code}" -H 'Content-Type: application/json' -XPOST optimize.${NAMESPACE}:8090/api/authentication --data-binary '{"username":"demo", "password":"demo"}' -c authCookie
-                # Create event based invoice process
-                INVOICE_PROCESS_ID=\$(curl -b authCookie -f -s -H 'Content-Type: application/json' -XPOST 'optimize.${NAMESPACE}:8090/api/eventBasedProcess' -d @.ci/pipelines/event_import_performance/invoiceEventProcessMapping.json | jq -r '.id')
-                # Publish the event based process
-                curl -b authCookie -f -s -w "%{http_code}" -XPOST "optimize.${NAMESPACE}:8090/api/eventBasedProcess/\$INVOICE_PROCESS_ID/_publish"
-                # wait for publish to finish
-                bash .ci/pipelines/event_import_performance/wait-for-event-process-publish.sh ${NAMESPACE} "\$INVOICE_PROCESS_ID" "authCookie"
+                bash .ci/pipelines/event_import_performance/create-and-publish-event-process.sh ${NAMESPACE} .ci/pipelines/event_import_performance/invoiceEventProcessMapping.json
                 
                 # assert expected counts
-                NUMBER_OF_EVENT_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-event-process-instance-*/_count' | jq '.count') || true
-                export EXPECTED_NUMBER_OF_EVENT_PROCESS_INSTANCES=\$(curl -s -H 'Content-Type: application/json' -XPOST 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_doc/_count' -d '{"query":{"bool":{"must":[{"term":{"processDefinitionKey":"invoice"}}],"must_not":[],"should":[]}}}' | jq '.count') || true
-
+                NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-event-process-instance-*/_count' | jq '.count') || true
+                EXPECTED_NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES=\$(curl -s -H 'Content-Type: application/json' -XPOST 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_doc/_count' -d '{"query":{"bool":{"must":[{"term":{"processDefinitionKey":"invoice"}}],"must_not":[],"should":[]}}}' | jq '.count') || true
+                
                 # note: each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
                 # a final if block checks if there was an error and will let the script fail
-                echo "NUMBER_OF_EVENT_PROCESS_INSTANCES"
-                test "\$NUMBER_OF_EVENT_PROCESS_INSTANCES" = "\${EXPECTED_NUMBER_OF_EVENT_PROCESS_INSTANCES}" || error=true
+                echo "NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES"
+                test "\$NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES" = "\${EXPECTED_NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES}" || error=true
 
                 curl -s "http://elasticsearch.${NAMESPACE}:9200/_cat/indices?v" || true
 
                 # Fail the build if there was an error
+                if [ \$error ]
+                then 
+                  exit -1
+                fi
+                
+                # store the number of activity event processes for reuse
+                echo "\$NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES" > numberOfActivityEventProcessInstances.txt
+            """)
+        }
+      }
+    }
+    stage('ExternalEventIngestion') {
+      steps {
+        container('gcloud') {
+          sh ("""
+                # make sure that on piping we fail if any command of the pipe failed
+                set -o pipefail
+
+                # ingest events
+                bash .ci/pipelines/event_import_performance/ingestEvents.sh ${NAMESPACE} .ci/pipelines/event_import_performance/eventTemplates ${EXTERNAL_EVENT_COUNT} secret
+                
+                curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
+                # assert expected counts
+                # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
+                NUMBER_OF_EVENTS=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-event/_count' | jq '.count') || true
+
+                echo "\$NUMBER_OF_EVENTS"
+                test "\$NUMBER_OF_EVENTS" = "\${EXTERNAL_EVENT_COUNT}" || error=true
+
+                curl -s "http://elasticsearch.${NAMESPACE}:9200/_cat/indices?v" || true
+
+                #Fail the build if there was an error
+                if [ \$error ]
+                then 
+                  exit -1
+                fi
+            """)
+        }
+      }
+    }
+    stage('ExternalEventProcessPublish') {
+      steps {
+        container('gcloud') {
+          sh ("""
+                # make sure that on piping we fail if any command of the pipe failed
+                set -o pipefail
+                
+                bash .ci/pipelines/event_import_performance/create-and-publish-event-process.sh ${NAMESPACE} .ci/pipelines/event_import_performance/externalInvoiceEventProcessMapping.json
+                
+                curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
+                # assert expected counts
+                # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
+                NUMBER_OF_EVENT_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-event-process-instance-*/_count' | jq '.count') || true
+                # this reads the previously saved count of activity event processInstances
+                NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES=\$(cat numberOfActivityEventProcessInstances.txt)
+                EXPECTED_NUMBER_OF_EVENT_PROCESS_INSTANCES=\$((NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES+${EXTERNAL_EVENT_COUNT}/4))
+                
+                echo "NUMBER_OF_EVENT_PROCESS_INSTANCES"
+                test "\$NUMBER_OF_EVENT_PROCESS_INSTANCES" = "\$EXPECTED_NUMBER_OF_EVENT_PROCESS_INSTANCES" || error=true
+
+                curl -s "http://elasticsearch.${NAMESPACE}:9200/_cat/indices?v" || true
+
+                #Fail the build if there was an error
                 if [ \$error ]
                 then 
                   exit -1

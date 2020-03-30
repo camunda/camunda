@@ -22,6 +22,10 @@ es:
     index:
       refresh_interval: ${ES_REFRESH_INTERVAL}
 
+auth:
+  token:
+    secret: 'test'
+
 eventBasedProcess:
   authorizedUserIds: ['demo']
   eventImport:
