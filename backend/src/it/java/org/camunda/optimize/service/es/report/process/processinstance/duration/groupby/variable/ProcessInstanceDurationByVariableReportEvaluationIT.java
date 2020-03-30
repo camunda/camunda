@@ -466,7 +466,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      completeProcessInstanceDto.getId(),
+      completedProcInstStartDate
+    );
     engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
@@ -519,7 +522,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      completeProcessInstanceDto.getId(),
+      completedProcInstStartDate
+    );
     engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
@@ -573,7 +579,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      completeProcessInstanceDto.getId(),
+      completedProcInstStartDate
+    );
     engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
@@ -623,7 +632,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      completeProcessInstanceDto.getId(),
+      completedProcInstStartDate
+    );
     engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
@@ -900,6 +912,53 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
+  public void missingVariablesAggregationsForNullVariableOfTypeDouble_sortingByKeyDoesNotFail() throws SQLException {
+    // given a process instance with variable of non null value and one instance with variable of null value
+    final String varName = "testVar";
+    final Double varValue = 1.0;
+    OffsetDateTime testEndDate = OffsetDateTime.now();
+    OffsetDateTime testStartDate = testEndDate.minusSeconds(2);
+
+    final ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcess();
+
+    startProcessWithVariablesAndDates(
+      definition,
+      of(varName, varValue),
+      testStartDate,
+      testEndDate
+    );
+
+    OffsetDateTime missingTestStartDate = testEndDate.minusDays(1);
+
+    startProcessWithVariablesAndDates(
+      definition,
+      Collections.singletonMap(varName, new EngineVariableValue(null, "Double")),
+      missingTestStartDate,
+      missingTestStartDate.plus(400, MILLIS)
+    );
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(definition.getKey())
+      .setProcessDefinitionVersion(definition.getVersionAsString())
+      .setVariableName(varName)
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+  }
+
+  @Test
   public void groupByDateVariableIntervalSelection() {
     //given
     Map<String, Object> variables = new HashMap<>();
@@ -1141,7 +1200,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
                                                                      final Map<String, Object> variables,
                                                                      final OffsetDateTime startDate,
                                                                      final OffsetDateTime endDate) throws SQLException {
-    ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definition.getId(), variables);
+    ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(
+      definition.getId(),
+      variables
+    );
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), startDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstance.getId(), endDate);
     return processInstance;

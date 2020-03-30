@@ -52,7 +52,8 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private static String getInputVariableNameForId(String inputId) {
     switch (inputId) {

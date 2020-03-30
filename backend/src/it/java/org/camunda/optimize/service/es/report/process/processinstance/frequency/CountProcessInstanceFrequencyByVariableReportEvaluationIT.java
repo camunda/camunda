@@ -521,13 +521,19 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(of("testVar", "withValue"));
 
     // 4 process instances without 'testVar'
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), Collections.singletonMap("testVar", null));
+    engineIntegrationExtension.startProcessInstance(
+      processInstanceDto.getDefinitionId(),
+      Collections.singletonMap("testVar", null)
+    );
     engineIntegrationExtension.startProcessInstance(
       processInstanceDto.getDefinitionId(),
       Collections.singletonMap("testVar", new EngineVariableValue(null, "String"))
     );
     engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), of("differentStringValue", "test"));
+    engineIntegrationExtension.startProcessInstance(
+      processInstanceDto.getDefinitionId(),
+      of("differentStringValue", "test")
+    );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -548,6 +554,40 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(result.getData().size(), is(2));
     assertThat(result.getEntryForKey("withValue").get().getValue(), is(1L));
     assertThat(result.getEntryForKey("missing").get().getValue(), is(4L));
+  }
+
+  @Test
+  public void missingVariablesAggregationForNullInputVariableOfTypeDouble_sortingByKeyDoesNotFail() {
+    // given a process instance with variable with non null value and one instance with variable with null value
+    final String varName = "doubleVar";
+    final Double varValue = 1.0;
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(of(
+      varName,
+      varValue
+    ));
+
+    engineIntegrationExtension.startProcessInstance(
+      processInstanceDto.getDefinitionId(),
+      Collections.singletonMap(varName, new EngineVariableValue(null, "Double"))
+    );
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      varName,
+      VariableType.DOUBLE
+    );
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test

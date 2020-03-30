@@ -575,8 +575,14 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
 
     engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
-    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
-    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
+    engineIntegrationExtension.startDecisionInstance(
+      definition.getId(),
+      ImmutableMap.of(camInputVariable, now.minusDays(1L))
+    );
+    engineIntegrationExtension.startDecisionInstance(
+      definition.getId(),
+      ImmutableMap.of(camInputVariable, now.minusDays(1L))
+    );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -607,8 +613,14 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
 
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
-    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(1L)));
-    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(6L)));
+    engineIntegrationExtension.startDecisionInstance(
+      definition.getId(),
+      ImmutableMap.of(camInputVariable, now.minusSeconds(1L))
+    );
+    engineIntegrationExtension.startDecisionInstance(
+      definition.getId(),
+      ImmutableMap.of(camInputVariable, now.minusSeconds(6L))
+    );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -630,7 +642,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   }
 
   @Test
-  public void missingVariablesAggregationForUndefinedAndNullInputVariables() {
+  public void missingVariablesAggregationForUndefinedAndNullInputVariables_string() {
     // given
     final String inputClauseId = "TestyTest";
     final String camInputVariable = "putIn";
@@ -672,6 +684,46 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(result.getEntryForKey("testValidMatch").get().getValue(), is(1L));
     assertThat(result.getEntryForKey("whateverElse").get().getValue(), is(1L));
     assertThat(result.getEntryForKey("missing").get().getValue(), is(2L));
+  }
+
+  @Test
+  public void missingVariablesAggregationNullVariableOfTypeDouble_sortingByKeyDoesNotFail() {
+    // given one decision instance with non null variable and one with null variable
+    final String inputVariableName = "inputVariableName";
+    final String outputVariableName = "outPutVariableName";
+
+    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleInputDecisionDefinition(
+      inputVariableName,
+      outputVariableName,
+      DecisionTypeRef.DOUBLE
+    );
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      ImmutableMap.of(outputVariableName, 1.0)
+    );
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(outputVariableName, null)
+    );
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(outputVariableName, new EngineVariableValue(null, "Double"))
+    );
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportDataDto reportDataDto = createReportDataDto(
+      decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), inputVariableName, null, VariableType.DOUBLE
+    );
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -738,7 +790,22 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     final String variableId,
     final String variableName,
     final VariableType variableType) {
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+    DecisionReportDataDto reportData = createReportDataDto(
+      decisionDefinitionDto,
+      decisionDefinitionVersion,
+      variableId,
+      variableName,
+      variableType
+    );
+    return evaluateMapReport(reportData);
+  }
+
+  private DecisionReportDataDto createReportDataDto(final DecisionDefinitionEngineDto decisionDefinitionDto,
+                                                    final String decisionDefinitionVersion,
+                                                    final String variableId,
+                                                    final String variableName,
+                                                    final VariableType variableType) {
+    return DecisionReportDataBuilder.create()
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
@@ -746,7 +813,5 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableName(variableName)
       .setVariableType(variableType)
       .build();
-    return evaluateMapReport(reportData);
   }
-
 }

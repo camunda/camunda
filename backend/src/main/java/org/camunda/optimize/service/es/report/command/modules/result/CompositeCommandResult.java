@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
+import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 
 @Data
 @Accessors(chain = true)
@@ -246,8 +247,9 @@ public class CompositeCommandResult {
     switch (sortBy) {
       default:
       case SortingDto.SORT_BY_KEY:
-        valueToSortByExtractor = keyIsOfNumericType ?
-          entry -> Double.valueOf(entry.getKey()) : entry -> entry.getKey().toLowerCase();
+        valueToSortByExtractor = keyIsOfNumericType
+          ? entry -> entry.getKey().equals(MISSING_VARIABLE_KEY) ? null : Double.valueOf(entry.getKey())
+          : entry -> entry.getKey().toLowerCase();
         break;
       case SortingDto.SORT_BY_VALUE:
         valueToSortByExtractor = MapResultEntryDto::getValue;
