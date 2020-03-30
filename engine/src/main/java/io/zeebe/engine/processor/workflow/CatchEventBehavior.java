@@ -43,6 +43,7 @@ public final class CatchEventBehavior {
   private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
   private final TimerRecord timerRecord = new TimerRecord();
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
+  private final Map<DirectBuffer, Timer> evaluatedTimers = new HashMap<>();
 
   public CatchEventBehavior(
       final ZeebeState state,
@@ -74,9 +75,10 @@ public final class CatchEventBehavior {
         new MessageCorrelationKeyContext(variablesSupplier, context.getValue().getFlowScopeKey());
 
     // collect all message correlation keys from their respective variables, as this might fail and
-    // we might need to raise an incident
+    // we might need to raise an incident. This works the same for timers
     final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
         extractMessageCorrelationKeys(events, elementContext, scopeContext);
+    final Map<DirectBuffer, Timer> evaluatedTimers = evaluateTimers(events, context.getKey());
 
     // if all subscriptions are valid then open the subscriptions
     for (final ExecutableCatchEvent event : events) {
@@ -86,7 +88,7 @@ public final class CatchEventBehavior {
             context.getValue().getWorkflowInstanceKey(),
             context.getValue().getWorkflowKey(),
             event.getId(),
-            event.getTimer(),
+            evaluatedTimers.get(event.getId()),
             context.getOutput().getStreamWriter());
       } else if (event.isMessage()) {
         subscribeToMessageEvent(context, event, extractedCorrelationKeys.get(event.getId()));
@@ -264,5 +266,19 @@ public final class CatchEventBehavior {
     }
 
     return extractedCorrelationKeys;
+  }
+
+  private Map<DirectBuffer, Timer> evaluateTimers(
+      final List<ExecutableCatchEvent> events, final long key) {
+    evaluatedTimers.clear();
+
+    for (final ExecutableCatchEvent event : events) {
+      if (event.isTimer()) {
+        final var timer = event.getTimerFactory().apply(expressionProcessor, key);
+        evaluatedTimers.put(event.getId(), timer);
+      }
+    }
+
+    return evaluatedTimers;
   }
 }

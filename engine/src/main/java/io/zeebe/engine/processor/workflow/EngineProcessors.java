@@ -60,7 +60,12 @@ public final class EngineProcessors {
             zeebeState, expressionProcessor, subscriptionCommandSender, partitionsCount);
 
     addDeploymentRelatedProcessorAndServices(
-        catchEventBehavior, partitionId, zeebeState, typedRecordProcessors, deploymentResponder);
+        catchEventBehavior,
+        partitionId,
+        zeebeState,
+        typedRecordProcessors,
+        deploymentResponder,
+        expressionProcessor);
     addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors);
 
     final BpmnStepProcessor stepProcessor =
@@ -116,12 +121,13 @@ public final class EngineProcessors {
       final int partitionId,
       final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
-      final DeploymentResponder deploymentResponder) {
+      final DeploymentResponder deploymentResponder,
+      final ExpressionProcessor expressionProcessor) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
-          typedRecordProcessors, zeebeState, catchEventBehavior);
+          typedRecordProcessors, zeebeState, catchEventBehavior, expressionProcessor);
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(
           typedRecordProcessors, workflowState, deploymentResponder, partitionId);

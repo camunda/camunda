@@ -561,6 +561,28 @@ public final class CreateDeploymentTest {
                 + "Duplicated process id in resources 'p2.bpmn' and 'p3.bpmn'");
   }
 
+  @Test
+  public void shouldRejectDeploymentWithInvalidTimerStartEventExpression() {
+    // given
+    final BpmnModelInstance definition =
+        Bpmn.createExecutableProcess("process1")
+            .startEvent()
+            .timerWithCycleExpression("INVALID_CYCLE_EXPRESSION")
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> deploymentRejection =
+        ENGINE.deployment().withXmlResource("p1.bpmn", definition).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(deploymentRejection)
+        .hasRejectionType(RejectionType.PROCESSING_ERROR)
+        .hasRejectionReason(
+            "Expected to create timer for start event, but encountered the following error: "
+                + "failed to evaluate expression 'INVALID_CYCLE_EXPRESSION': "
+                + "no variable found for name 'INVALID_CYCLE_EXPRESSION'");
+  }
+
   private DeployedWorkflow findWorkflow(
       final List<DeployedWorkflow> workflows, final String processId) {
     return workflows.stream()

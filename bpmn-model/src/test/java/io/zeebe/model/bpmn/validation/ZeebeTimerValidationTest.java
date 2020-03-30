@@ -21,7 +21,6 @@ import static java.util.Collections.singletonList;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
-import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
@@ -29,22 +28,6 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
   @Parameters(name = "{index}: {1}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .intermediateCatchEvent("catch", c -> c.timerWithDuration(""))
-            .endEvent()
-            .done(),
-        singletonList(expect(TimerEventDefinition.class, "Time duration is invalid"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .intermediateCatchEvent("catch", c -> c.timerWithDuration("R/PT01S"))
-            .endEvent()
-            .done(),
-        singletonList(expect(TimerEventDefinition.class, "Time duration is invalid"))
-      },
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -66,41 +49,6 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(
             expect(BoundaryEvent.class, "Interrupting timer event with time cycle is not allowed."))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeJobType("type"))
-            .boundaryEvent("catch")
-            .cancelActivity(false)
-            .timerWithCycle("R5/")
-            .endEvent()
-            .done(),
-        singletonList(expect(TimerEventDefinition.class, "Time cycle is invalid"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .intermediateCatchEvent("catch", c -> c.timerWithDuration("foo"))
-            .endEvent()
-            .done(),
-        singletonList(expect(TimerEventDefinition.class, "Time duration is invalid"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .timerWithDate("03-20")
-            .endEvent()
-            .done(),
-        singletonList(expect(TimerEventDefinition.class, "Time date is invalid"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .timerWithCycle("R5/2008-03-01T13:00:00Z/P1Y2M10DT2H30M")
-            .endEvent()
-            .done(),
-        singletonList(expect(TimerEventDefinition.class, "Time cycle is invalid"))
       }
     };
   }

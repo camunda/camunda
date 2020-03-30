@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.handlers;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor.EvaluationException;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.protocol.record.value.ErrorType;
@@ -28,6 +29,8 @@ public final class CatchEventSubscriber {
     } catch (final MessageCorrelationKeyException e) {
       context.raiseIncident(
           ErrorType.EXTRACT_VALUE_ERROR, e.getContext().getVariablesScopeKey(), e.getMessage());
+    } catch (final EvaluationException e) {
+      context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, e.getMessage());
     }
 
     return false;

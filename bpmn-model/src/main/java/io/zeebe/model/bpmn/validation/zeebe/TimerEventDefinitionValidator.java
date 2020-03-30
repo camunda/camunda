@@ -19,10 +19,6 @@ import io.zeebe.model.bpmn.instance.TimeCycle;
 import io.zeebe.model.bpmn.instance.TimeDate;
 import io.zeebe.model.bpmn.instance.TimeDuration;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import io.zeebe.model.bpmn.util.time.Interval;
-import io.zeebe.model.bpmn.util.time.RepeatingInterval;
-import io.zeebe.model.bpmn.util.time.TimeDateTimer;
-import java.time.format.DateTimeParseException;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -42,51 +38,20 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
     int definitionsCount = 0;
 
     if (timeDate != null) {
-
-      validateTimeDate(element.getTimeDate(), validationResultCollector);
       definitionsCount++;
     }
 
     if (timeDuration != null) {
-      validateTimeDuration(validationResultCollector, timeDuration);
       definitionsCount++;
     }
 
     if (timeCycle != null) {
-      validateTimeCycle(validationResultCollector, timeCycle);
       definitionsCount++;
     }
 
     if (definitionsCount != 1) {
       validationResultCollector.addError(
           0, "Must be exactly one type of timer: timeDuration, timeDate or timeCycle");
-    }
-  }
-
-  private void validateTimeDate(
-      final TimeDate timeDate, final ValidationResultCollector validationResultCollector) {
-    try {
-      TimeDateTimer.parse(timeDate.getTextContent());
-    } catch (final DateTimeParseException e) {
-      validationResultCollector.addError(0, "Time date is invalid");
-    }
-  }
-
-  private void validateTimeCycle(
-      final ValidationResultCollector validationResultCollector, final TimeCycle timeCycle) {
-    try {
-      RepeatingInterval.parse(timeCycle.getTextContent());
-    } catch (final DateTimeParseException e) {
-      validationResultCollector.addError(0, "Time cycle is invalid");
-    }
-  }
-
-  private void validateTimeDuration(
-      final ValidationResultCollector validationResultCollector, final TimeDuration timeDuration) {
-    try {
-      Interval.parse(timeDuration.getTextContent());
-    } catch (final DateTimeParseException e) {
-      validationResultCollector.addError(0, "Time duration is invalid");
     }
   }
 }

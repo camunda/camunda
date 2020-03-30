@@ -27,11 +27,12 @@ public class TimeDateTimer implements Timer {
     this.interval = interval;
   }
 
+  public TimeDateTimer(final ZonedDateTime dateTime) {
+    this(new Interval(Period.ZERO, Duration.ofMillis(dateTime.toInstant().toEpochMilli())));
+  }
+
   public static TimeDateTimer parse(final String timeDate) {
-    final ZonedDateTime dateTime = ZonedDateTime.parse(timeDate);
-    final Interval interval =
-        new Interval(Period.ZERO, Duration.ofMillis(dateTime.toInstant().toEpochMilli()));
-    return new TimeDateTimer(interval);
+    return new TimeDateTimer(ZonedDateTime.parse(timeDate));
   }
 
   @Override

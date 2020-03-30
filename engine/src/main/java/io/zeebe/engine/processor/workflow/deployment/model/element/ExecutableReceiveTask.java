@@ -7,7 +7,9 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
-import io.zeebe.model.bpmn.util.time.RepeatingInterval;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
+import io.zeebe.model.bpmn.util.time.Timer;
+import java.util.function.BiFunction;
 
 public class ExecutableReceiveTask extends ExecutableActivity implements ExecutableCatchEvent {
 
@@ -41,8 +43,8 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
   }
 
   @Override
-  public RepeatingInterval getTimer() {
-    return null;
+  public BiFunction<ExpressionProcessor, Long, Timer> getTimerFactory() {
+    return (expressionProcessor, context) -> null;
   }
 
   @Override
