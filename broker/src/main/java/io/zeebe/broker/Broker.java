@@ -109,20 +109,33 @@ public final class Broker implements AutoCloseable {
 
   public synchronized CompletableFuture<Broker> start() {
     if (startFuture == null) {
+      logBrokerStart();
+
       startFuture = new CompletableFuture<>();
       LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), this::internalStart);
     }
     return startFuture;
   }
 
+  private void logBrokerStart() {
+    if (LOG.isInfoEnabled()) {
+      final BrokerCfg brokerCfg = getConfig();
+      LOG.info("Version: {}", VersionUtil.getVersion());
+      LOG.info(
+          "Starting broker {} with configuration {}",
+          brokerCfg.getCluster().getNodeId(),
+          brokerCfg.toJson());
+    }
+  }
+
   private void internalStart() {
-    final BrokerCfg brokerCfg = getConfig();
     final StartProcess startProcess = initStart();
 
     try {
       closeProcess = startProcess.start();
       startFuture.complete(this);
     } catch (final Exception bootStrapException) {
+      final BrokerCfg brokerCfg = getConfig();
       LOG.error(
           "Failed to start broker {}!", brokerCfg.getCluster().getNodeId(), bootStrapException);
 
@@ -142,12 +155,6 @@ public final class Broker implements AutoCloseable {
         new BrokerInfo(
             clusterCfg.getNodeId(),
             SocketUtil.toHostAndPortString(networkCfg.getCommandApi().getAdvertisedAddress()));
-
-    if (LOG.isInfoEnabled()) {
-      LOG.info("Version: {}", VersionUtil.getVersion());
-      LOG.info(
-          "Starting broker {} with configuration {}", localBroker.getNodeId(), brokerCfg.toJson());
-    }
 
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
