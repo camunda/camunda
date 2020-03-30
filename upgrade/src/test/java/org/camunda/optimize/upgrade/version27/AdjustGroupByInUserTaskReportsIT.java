@@ -5,24 +5,16 @@
  */
 package org.camunda.optimize.upgrade.version27;
 
-import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom27To30;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -94,25 +86,5 @@ public class AdjustGroupByInUserTaskReportsIT extends AbstractUpgradeIT {
       .filter(r -> reportId.equals(r.getId()))
       .findFirst()
       .orElseThrow(() -> new OptimizeRuntimeException("The report should be available!"));
-  }
-
-  @SneakyThrows
-  private List<SingleProcessReportDefinitionDto> getAllProcessReports(String indexName) {
-    final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(indexName).source(new SearchSourceBuilder().size(10000)),
-      RequestOptions.DEFAULT
-    );
-    return Arrays
-      .stream(searchResponse.getHits().getHits())
-      .map(doc -> {
-        try {
-          return objectMapper.readValue(
-            doc.getSourceAsString(), SingleProcessReportDefinitionDto.class
-          );
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      })
-      .collect(Collectors.toList());
   }
 }

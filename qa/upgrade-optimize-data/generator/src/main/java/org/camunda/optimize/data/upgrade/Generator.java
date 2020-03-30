@@ -313,7 +313,7 @@ public class Generator {
   private static VariableFilterDto prepareBooleanVariableFilter() {
     VariableFilterDto variableFilter = new VariableFilterDto();
 
-    BooleanVariableFilterDataDto booleanVariableFilterDataDto = new BooleanVariableFilterDataDto("true");
+    BooleanVariableFilterDataDto booleanVariableFilterDataDto = new BooleanVariableFilterDataDto(true);
     booleanVariableFilterDataDto.setName("var");
 
     variableFilter.setData(booleanVariableFilterDataDto);

@@ -213,11 +213,11 @@ public class QueryPerformanceTest {
     List<DecisionFilterDto> list = new ArrayList<>();
     list.add(DecisionFilterUtilHelper.createBooleanInputVariableFilter(
       "boolVar",
-      String.valueOf(randomGen.nextBoolean())
+      randomGen.nextBoolean()
     ));
     list.add(DecisionFilterUtilHelper.createBooleanOutputVariableFilter(
       "boolVar",
-      String.valueOf(randomGen.nextBoolean())
+      randomGen.nextBoolean()
     ));
     list.add(DecisionFilterUtilHelper.createFixedEvaluationDateFilter(
       OffsetDateTime.now().minusDays(1L),

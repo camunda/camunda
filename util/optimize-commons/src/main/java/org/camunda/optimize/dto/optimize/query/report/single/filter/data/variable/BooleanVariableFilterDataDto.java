@@ -14,7 +14,7 @@ public class BooleanVariableFilterDataDto extends VariableFilterDataDto<BooleanV
     this(null);
   }
 
-  public BooleanVariableFilterDataDto(String value) {
+  public BooleanVariableFilterDataDto(Boolean value) {
     this.type = VariableType.BOOLEAN;
     BooleanVariableFilterSubDataDto dataDto = new BooleanVariableFilterSubDataDto();
     dataDto.setValue(value);

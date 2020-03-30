@@ -40,7 +40,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
     final OffsetDateTime dateTimeInputFilterStart = OffsetDateTime.parse("2019-01-01T00:00:00+00:00");
     final double expectedAmountValue = 200.0;
     final String expectedCategory = "Misc";
-    final String expectedAuditOutput = "false";
+    final Boolean expectedAuditOutput = false;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
       "dmn/invoiceBusinessDecision_withDate.xml"

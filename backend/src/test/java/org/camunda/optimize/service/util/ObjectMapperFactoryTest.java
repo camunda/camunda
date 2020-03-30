@@ -28,7 +28,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -117,13 +116,13 @@ public class ObjectMapperFactoryTest {
         .getResourceAsStream("/test/data/filter_request.json"),
       ProcessReportDataDto.class
     );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is("true"));
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is(true));
 
     data = optimizeMapper.readValue(
       this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
       ProcessReportDataDto.class
     );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is("true"));
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is(true));
   }
 
 
@@ -134,13 +133,13 @@ public class ObjectMapperFactoryTest {
         .getResourceAsStream("/test/data/filter_request_lowercase_type.json"),
       ProcessReportDataDto.class
     );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is("true"));
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is(true));
 
     data = optimizeMapper.readValue(
       this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
       ProcessReportDataDto.class
     );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is("true"));
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is(true));
   }
 
   @Test

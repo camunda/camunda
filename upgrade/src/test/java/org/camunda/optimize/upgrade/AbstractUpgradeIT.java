@@ -6,12 +6,14 @@
 package org.camunda.optimize.upgrade;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -34,15 +36,20 @@ import org.camunda.optimize.upgrade.version27.TimestampBasedImportIndexV2;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
@@ -158,6 +165,26 @@ public abstract class AbstractUpgradeIT {
     } catch (IOException e) {
       throw new RuntimeException("Failed cleaning elasticsearch");
     }
+  }
+
+  @SneakyThrows
+  protected List<SingleProcessReportDefinitionDto> getAllProcessReports(String indexName) {
+    final SearchResponse searchResponse = prefixAwareClient.search(
+      new SearchRequest(indexName).source(new SearchSourceBuilder().size(10000)),
+      RequestOptions.DEFAULT
+    );
+    return Arrays
+      .stream(searchResponse.getHits().getHits())
+      .map(doc -> {
+        try {
+          return objectMapper.readValue(
+            doc.getSourceAsString(), SingleProcessReportDefinitionDto.class
+          );
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      })
+      .collect(Collectors.toList());
   }
 
 }

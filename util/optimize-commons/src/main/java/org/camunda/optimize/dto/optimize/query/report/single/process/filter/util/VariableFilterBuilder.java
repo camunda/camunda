@@ -144,7 +144,7 @@ public class VariableFilterBuilder {
 
   public ProcessFilterBuilder createBooleanVariableFilter() {
     BooleanVariableFilterDataDto dataDto =
-      new BooleanVariableFilterDataDto(values == null || values.isEmpty() ? null : values.get(0));
+      new BooleanVariableFilterDataDto(values == null || values.isEmpty() ? null : Boolean.valueOf(values.get(0)));
     dataDto.setName(name);
     dataDto.setType(type);
     dataDto.setFilterForUndefined(filterForUndefined);

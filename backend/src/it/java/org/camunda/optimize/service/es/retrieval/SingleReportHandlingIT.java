@@ -330,7 +330,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   }
 
   private List<ProcessFilterDto> createVariableFilter() {
-    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto("true");
+    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(true);
     data.setName("foo");
 
     VariableFilterDto variableFilterDto = new VariableFilterDto();
