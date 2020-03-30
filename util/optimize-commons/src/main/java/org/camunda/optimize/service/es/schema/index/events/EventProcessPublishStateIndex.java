@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
@@ -42,6 +42,7 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
   public static final String GROUP = EventTypeDto.Fields.group;
   public static final String SOURCE = EventTypeDto.Fields.source;
   public static final String EVENT_NAME = EventTypeDto.Fields.eventName;
+  public static final String EVENT_LABEL = EventTypeDto.Fields.eventLabel;
 
   public static final String FIRST_EVENT_FOR_IMPORT_SOURCE_TIMESTAMP = EventImportSourceDto.Fields.firstEventForSourceAtTimeOfPublishTimestamp;
   public static final String PUBLISH_COMPLETED_TIMESTAMP = EventImportSourceDto.Fields.lastEventForSourceAtTimeOfPublishTimestamp;
@@ -148,6 +149,9 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(EVENT_NAME)
         .field("type", "keyword")
+      .endObject()
+      .startObject(EVENT_LABEL)
+      .field("type", "keyword")
       .endObject();
     // @formatter:on
   }

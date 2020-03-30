@@ -39,6 +39,27 @@ public class UpgradeEventProcessPublishStateEventImportSourceIT extends Abstract
   }
 
   @Test
+  public void addEventLabelFieldToEvents() throws IOException {
+    // given
+    final UpgradePlan upgradePlan = new UpgradeFrom27To30().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    List<IndexableEventProcessPublishStateDto> eventProcessPublishStates = getEventProcessPublishStates();
+    assertThat(eventProcessPublishStates).hasSize(3);
+    assertThat(eventProcessPublishStates)
+      .extracting(IndexableEventProcessPublishStateDto::getMappings)
+      .allSatisfy(mappings -> {
+        assertThat(
+          mappings.stream()
+            .allMatch(mapping -> (mapping.getStart() == null || mapping.getStart().getEventLabel() == null)
+              && (mapping.getEnd() == null || mapping.getEnd().getEventLabel() == null)));
+      });
+  }
+
+  @Test
   public void addEventImportSourcesFieldToExistingEventPublishStates() throws IOException {
     // given
     final UpgradePlan upgradePlan = new UpgradeFrom27To30().buildUpgradePlan();
@@ -48,7 +69,7 @@ public class UpgradeEventProcessPublishStateEventImportSourceIT extends Abstract
 
     // then
     List<IndexableEventProcessPublishStateDto> eventProcessPublishStates = getEventProcessPublishStates();
-    assertThat(eventProcessPublishStates.size()).isEqualTo(2);
+    assertThat(eventProcessPublishStates).hasSize(3);
     assertThat(eventProcessPublishStates)
       .extracting(IndexableEventProcessPublishStateDto::getEventImportSources)
       .allSatisfy(importSources -> assertThat(importSources)

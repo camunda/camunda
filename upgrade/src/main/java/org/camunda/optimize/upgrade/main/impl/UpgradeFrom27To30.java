@@ -51,16 +51,16 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
       .addUpgradeStep(new UpdateIndexStep(new EventIndex(), null))
       .addUpgradeStep(new DeleteIndexIfExistsStep("event-sequence-count", 1))
       .addUpgradeStep(new DeleteIndexIfExistsStep("event-trace-state", 1))
-      .addUpgradeStep(addEventSourcesAndRolesField())
+      .addUpgradeStep(addEventSourcesAndRolesFieldAndEventLabels())
       .addUpgradeStep(new CreateIndexStep(new VariableUpdateInstanceIndex()))
       .addUpgradeStep(new CreateIndexStep(new BusinessKeyIndex()))
-      .addUpgradeStep(addEventImportSourceFieldForPublishStates())
+      .addUpgradeStep(addEventImportSourceFieldAndEventLabelsForPublishStates())
       .addUpgradeStep(replaceFlowNodeWithUserTaskGroupByInUserTaskReports())
       .addUpgradeStep(new UpdateIndexStep(new TimestampBasedImportIndex(), null))
       .build();
   }
 
-  private UpgradeStep addEventImportSourceFieldForPublishStates() {
+  private UpgradeStep addEventImportSourceFieldAndEventLabelsForPublishStates() {
     //@formatter:off
     final String script =
         "Map externalEventSource = [\n" +
@@ -85,7 +85,7 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
     );
   }
 
-  private UpdateIndexStep addEventSourcesAndRolesField() {
+  private UpdateIndexStep addEventSourcesAndRolesFieldAndEventLabels() {
     //@formatter:off
     final String script =
       "Map externalEventSource = new HashMap();\n" +

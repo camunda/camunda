@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
@@ -166,6 +167,35 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
         .withMethod("PUT"),
       exactly(1)
     );
+  }
+
+  @Test
+  public void createEventProcessMappingUsingLabels_returnedByGetRequest() {
+    final String firstLabel = "oneLabel";
+    final String secondLabel = "anotherLabel";
+    Map<String, EventMappingDto> eventMappings = ImmutableMap.of(
+      USER_TASK_ID_ONE, createEventMappingsDto(
+        createMappedEventDtoWithLabel(firstLabel),
+        createMappedEventDtoWithLabel(secondLabel)
+    ));
+    EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+        eventMappings, "process name", simpleDiagramXml
+      );
+    String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto)
+      .execute(Response.Status.OK.getStatusCode());
+    EventProcessMappingRestDto storedMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
+
+    // then
+    assertThat(storedMapping.getMappings().values())
+      .hasSize(1)
+      .allSatisfy(mappings -> {
+        assertThat(mappings.getStart().getEventLabel()).isEqualTo(firstLabel);
+        assertThat(mappings.getEnd().getEventLabel()).isEqualTo(secondLabel);
+      });
   }
 
   @Test
@@ -463,6 +493,58 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
         eventSourceEntry.getType(),
         eventSourceEntry.getEventScope()
       ));
+  }
+
+  @Test
+  public void updateEventProcessMappingAddEventLabels() {
+    Map<String, EventMappingDto> eventMappings = ImmutableMap.of(
+      USER_TASK_ID_ONE, createEventMappingsDto(
+        createMappedEventDto(),
+        createMappedEventDto()
+      ));
+    EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+        eventMappings, "process name", simpleDiagramXml
+      );
+    String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto)
+      .execute(Response.Status.OK.getStatusCode());
+    EventProcessMappingRestDto storedMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
+
+    // then
+    assertThat(storedMapping.getMappings().values())
+      .hasSize(1)
+      .allSatisfy(mappings -> {
+        assertThat(mappings.getStart().getEventLabel()).isNull();
+        assertThat(mappings.getEnd().getEventLabel()).isNull();
+      });
+
+    // when
+    final String firstLabel = "oneLabel";
+    final String secondLabel = "anotherLabel";
+    Map<String, EventMappingDto> updatedEventMappings = ImmutableMap.of(
+      USER_TASK_ID_ONE, createEventMappingsDto(
+        createMappedEventDtoWithLabel(firstLabel),
+        createMappedEventDtoWithLabel(secondLabel)
+      ));
+    EventProcessMappingDto updateDto = eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+      updatedEventMappings, "process name", simpleDiagramXml
+    );
+    eventProcessClient.createUpdateEventProcessMappingRequest(eventProcessMappingId, updateDto)
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
+
+    // then
+    EventProcessMappingRestDto updatedMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
+
+    // then
+    assertThat(updatedMapping.getMappings().values())
+      .hasSize(1)
+      .allSatisfy(mappings -> {
+        assertThat(mappings.getStart().getEventLabel()).isEqualTo(firstLabel);
+        assertThat(mappings.getEnd().getEventLabel()).isEqualTo(secondLabel);
+      });
   }
 
   @Test
@@ -992,6 +1074,15 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       "process name",
       simpleDiagramXml
     );
+  }
+
+  private static EventTypeDto createMappedEventDtoWithLabel(String eventLabel) {
+    return EventTypeDto.builder()
+      .group(IdGenerator.getNextId())
+      .source(IdGenerator.getNextId())
+      .eventName(IdGenerator.getNextId())
+      .eventLabel(eventLabel)
+      .build();
   }
 
   @SneakyThrows

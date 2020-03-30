@@ -522,10 +522,18 @@ public class ExternalEventTraceStateImportIT extends AbstractIT {
   private EventSequenceCountDto createSequenceFromSourceAndTargetEvents(CloudEventDto sourceEventDto,
                                                                         CloudEventDto targetEventDto, long count) {
     EventTypeDto sourceEvent = Optional.ofNullable(sourceEventDto)
-      .map(source -> new EventTypeDto(source.getGroup().orElse(null), source.getSource(), source.getType()))
+      .map(source -> EventTypeDto.builder()
+        .eventName(source.getType())
+        .source(source.getSource())
+        .group(source.getGroup().orElse(null))
+        .build())
       .orElse(null);
     EventTypeDto targetEvent = Optional.ofNullable(targetEventDto)
-      .map(target -> new EventTypeDto(target.getGroup().orElse(null), target.getSource(), target.getType()))
+      .map(target -> EventTypeDto.builder()
+        .eventName(target.getType())
+        .source(target.getSource())
+        .group(target.getGroup().orElse(null))
+        .build())
       .orElse(null);
     EventSequenceCountDto eventSequenceCountDto = EventSequenceCountDto.builder()
       .sourceEvent(sourceEvent)

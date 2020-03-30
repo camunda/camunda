@@ -8,9 +8,9 @@ package org.camunda.optimize.service.es.schema.index.events;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -40,6 +40,7 @@ public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
   public static final String GROUP = EventTypeDto.Fields.group;
   public static final String SOURCE = EventTypeDto.Fields.source;
   public static final String EVENT_NAME = EventTypeDto.Fields.eventName;
+  public static final String EVENT_LABEL = EventTypeDto.Fields.eventLabel;
 
   public static final String EVENT_SOURCE_ID = EventSourceEntryDto.Fields.id;
   public static final String EVENT_SOURCE_TYPE = EventSourceEntryDto.Fields.type;
@@ -141,6 +142,9 @@ public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(EVENT_NAME)
         .field("type", "keyword")
+      .endObject()
+      .startObject(EVENT_LABEL)
+      .field("type", "keyword")
       .endObject();
     // @formatter:on
   }

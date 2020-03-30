@@ -20,9 +20,9 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;

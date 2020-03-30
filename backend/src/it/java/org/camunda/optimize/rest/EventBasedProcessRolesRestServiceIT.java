@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
@@ -27,16 +26,12 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 

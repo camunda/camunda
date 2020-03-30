@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.upgrade.version27;
 
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;

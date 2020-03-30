@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom27To30;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -43,6 +44,27 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
   }
 
   @Test
+  public void addEventLabelFieldToEvents() {
+    // given
+    final UpgradePlan upgradePlan = new UpgradeFrom27To30().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    List<EventProcessMappingDto> eventProcessMappingRestDtos = getEventProcessMappings();
+    assertThat(eventProcessMappingRestDtos.size()).isEqualTo(3);
+    assertThat(eventProcessMappingRestDtos)
+      .extracting(EventProcessMappingDto::getMappings)
+      .allSatisfy(mappings -> {
+        assertThat(mappings.values().stream().allMatch(mapping ->
+          (mapping.getStart() == null || mapping.getStart().getEventLabel() == null)
+          && (mapping.getEnd() == null || mapping.getEnd().getEventLabel() == null))
+        );
+      });
+  }
+
+  @Test
   public void addEventSourcesListFieldWithDefaultExternalEventsEntry() {
     // given
     final UpgradePlan upgradePlan = new UpgradeFrom27To30().buildUpgradePlan();
@@ -52,7 +74,7 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
 
     // then
     List<EventProcessMappingDto> eventProcessMappingRestDtos = getEventProcessMappings();
-    assertThat(eventProcessMappingRestDtos.size()).isEqualTo(2);
+    assertThat(eventProcessMappingRestDtos.size()).isEqualTo(3);
     assertThat(eventProcessMappingRestDtos)
       .extracting(EventProcessMappingDto::getEventSources)
       .allSatisfy(eventSourceEntryDtos -> {
@@ -77,7 +99,7 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
     // then
     final List<EventProcessMappingDto> eventProcessMappingRestDtos = getEventProcessMappings();
     assertThat(eventProcessMappingRestDtos)
-      .hasSize(2)
+      .hasSize(3)
       .extracting(EventProcessMappingDto::getRoles)
       .flatExtracting(eventProcessRoleDtos -> eventProcessRoleDtos)
       .allSatisfy(eventProcessRoleDto -> {
@@ -93,13 +115,13 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
       new SearchRequest(EVENT_PROCESS_MAPPING_INDEX_NAME).source(new SearchSourceBuilder().size(10000)),
       RequestOptions.DEFAULT
     );
-    return Arrays
+     return Arrays
       .stream(searchResponse.getHits().getHits())
       .map(doc -> {
         try {
           return objectMapper.readValue(
-            doc.getSourceAsString(), EventProcessMappingDto.class
-          );
+            doc.getSourceAsString(), IndexableEventProcessMappingDto.class
+          ).toEventProcessMappingDto();
         } catch (IOException e) {
           throw new RuntimeException(e);
         }

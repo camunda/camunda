@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,16 +15,15 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import javax.validation.constraints.NotBlank;
 
-@Builder
 @Data
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Builder(toBuilder = true)
 @FieldNameConstants
 public class EventTypeDto implements OptimizeDto {
-
   private String group;
   private String source;
   @NotBlank
   private String eventName;
-
+  private String eventLabel;
 }

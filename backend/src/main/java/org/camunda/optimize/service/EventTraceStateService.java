@@ -192,10 +192,18 @@ public class EventTraceStateService {
   private EventSequenceCountDto createAdjustment(TracedEventDto sourceEvent, TracedEventDto targetEvent) {
     EventSequenceCountDto eventSequenceCountDto = EventSequenceCountDto.builder()
       .sourceEvent(Optional.ofNullable(sourceEvent)
-                     .map(source -> new EventTypeDto(source.getGroup(), source.getSource(), source.getEventName()))
+                     .map(source -> EventTypeDto.builder()
+                       .eventName(sourceEvent.getEventName())
+                       .source(sourceEvent.getSource())
+                       .group(sourceEvent.getGroup())
+                       .build())
                      .orElse(null))
       .targetEvent(Optional.ofNullable(targetEvent)
-                     .map(target -> new EventTypeDto(target.getGroup(), target.getSource(), target.getEventName()))
+                     .map(target -> EventTypeDto.builder()
+                       .eventName(targetEvent.getEventName())
+                       .source(targetEvent.getSource())
+                       .group(targetEvent.getGroup())
+                       .build())
                      .orElse(null))
       .build();
     eventSequenceCountDto.generateIdForEventSequenceCountDto();

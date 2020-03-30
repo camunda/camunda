@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.LabeledEventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -151,12 +151,12 @@ public class CamundaEventService {
       .collect(Collectors.toList());
   }
 
-  public List<LabeledEventTypeDto> getLabeledCamundaEventTypesForProcess(final String userId,
-                                                                         final String definitionKey,
-                                                                         final List<String> versions,
-                                                                         final List<String> tenants,
-                                                                         final EventScopeType eventScope) {
-    List<LabeledEventTypeDto> result;
+  public List<EventTypeDto> getLabeledCamundaEventTypesForProcess(final String userId,
+                                                                  final String definitionKey,
+                                                                  final List<String> versions,
+                                                                  final List<String> tenants,
+                                                                  final EventScopeType eventScope) {
+    List<EventTypeDto> result;
     switch (eventScope) {
       case ALL:
         result = extractLabeledEventTypeDtos(
@@ -182,15 +182,15 @@ public class CamundaEventService {
     return camundaActivityEventReader.getMinAndMaxIngestedTimestampsForDefinition(processDefinitionKey);
   }
 
-  private List<LabeledEventTypeDto> createLabeledProcessInstanceStartEndEventTypeDtos(final String definitionKey) {
+  private List<EventTypeDto> createLabeledProcessInstanceStartEndEventTypeDtos(final String definitionKey) {
     return ImmutableList.of(
-      LabeledEventTypeDto.builder()
+      EventTypeDto.builder()
         .source(EVENT_SOURCE_CAMUNDA)
         .group(definitionKey)
         .eventName(applyCamundaProcessInstanceStartEventSuffix(definitionKey))
         .eventLabel(PROCESS_START_TYPE)
         .build(),
-      LabeledEventTypeDto.builder()
+      EventTypeDto.builder()
         .source(EVENT_SOURCE_CAMUNDA)
         .group(definitionKey)
         .eventName(applyCamundaProcessInstanceEndEventSuffix(definitionKey))
@@ -199,9 +199,9 @@ public class CamundaEventService {
     );
   }
 
-  private List<LabeledEventTypeDto> extractLabeledEventTypeDtos(final String definitionKey,
-                                                                final Set<String> typesToInclude,
-                                                                final BpmnModelInstance bpmnModel) {
+  private List<EventTypeDto> extractLabeledEventTypeDtos(final String definitionKey,
+                                                         final Set<String> typesToInclude,
+                                                         final BpmnModelInstance bpmnModel) {
     return bpmnModel.getModel().getTypes().stream()
       .filter(modelElementType -> typesToInclude.contains(modelElementType.getTypeName()))
       .map(bpmnModel::getModelElementsByType)
@@ -209,13 +209,13 @@ public class CamundaEventService {
       .flatMap(Collection::stream)
       .distinct()
       .flatMap(modelElementInstance -> {
-        final List<LabeledEventTypeDto> eventDtos = new ArrayList<>();
+        final List<EventTypeDto> eventDtos = new ArrayList<>();
         final String elementId = modelElementInstance.getAttributeValue("id");
         final String elementName = Optional.ofNullable(modelElementInstance.getAttributeValue("name"))
           .orElse(elementId);
         if (SPLIT_START_END_MAPPED_TYPES.contains(modelElementInstance.getElementType().getTypeName())) {
           eventDtos.add(
-            LabeledEventTypeDto.builder()
+            EventTypeDto.builder()
               .source(EVENT_SOURCE_CAMUNDA)
               .group(definitionKey)
               .eventName(applyCamundaTaskStartEventSuffix(elementId))
@@ -223,7 +223,7 @@ public class CamundaEventService {
               .build()
           );
           eventDtos.add(
-            LabeledEventTypeDto.builder()
+            EventTypeDto.builder()
               .source(EVENT_SOURCE_CAMUNDA)
               .group(definitionKey)
               .eventName(applyCamundaTaskEndEventSuffix(elementId))
@@ -232,7 +232,7 @@ public class CamundaEventService {
           );
         } else {
           eventDtos.add(
-            LabeledEventTypeDto.builder()
+            EventTypeDto.builder()
               .source(EVENT_SOURCE_CAMUNDA)
               .group(definitionKey)
               .eventName(elementId)

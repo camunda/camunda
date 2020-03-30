@@ -33,6 +33,7 @@ import static org.camunda.optimize.rest.providers.BeanConstraintViolationExcepti
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 
 public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventProcessIT {
+
   public static final String THREE_EVENT_PROCESS_DEFINITION_KEY_1 = "threeEvents1";
   public static final String THREE_EVENT_PROCESS_DEFINITION_KEY_2 = "threeEvents2";
 

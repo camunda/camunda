@@ -26,8 +26,9 @@ public class CompletedActivityInstanceElasticsearchImportJob extends Elasticsear
   }
 
   @Override
-  protected void persistEntities(List<FlowNodeEventDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(List<FlowNodeEventDto> newOptimizeEntities) {
     completedActivityInstanceWriter.importActivityInstancesToProcessInstances(newOptimizeEntities);
     camundaEventService.importCompletedActivityInstancesToCamundaActivityEvents(newOptimizeEntities);
   }
+
 }
