@@ -13,6 +13,7 @@
   </parent>
 
   <properties>
+    <finalName>${project.artifactId}-${project.version}</finalName>
     <zbctl.force>false</zbctl.force>
     <zbctl.rootDir>${maven.multiModuleProjectDirectory}</zbctl.rootDir>
   </properties>
@@ -125,6 +126,7 @@
 
   </dependencies>
   <build>
+    <finalName>${finalName}</finalName>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
