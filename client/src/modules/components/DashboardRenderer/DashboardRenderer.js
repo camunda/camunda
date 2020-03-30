@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
-
+import React, {useEffect, useState} from 'react';
 import {Responsive, WidthProvider} from 'react-grid-layout';
+import classnames from 'classnames';
 
 import {DashboardReport} from './DashboardReport';
 
@@ -26,6 +26,8 @@ export default function DashboardRenderer({
   addons,
   onChange
 }) {
+  const [isDragging, setIsDragging] = useState(false);
+
   const style = {};
 
   if (disableReportInteractions) {
@@ -53,10 +55,12 @@ export default function DashboardRenderer({
       breakpoints={{all: 0}}
       rowHeight={rowHeight}
       onLayoutChange={onChange}
-      className="DashboardRenderer"
+      className={classnames('DashboardRenderer', {isDragging})}
       style={style}
       isDraggable={!!disableReportInteractions}
       isResizable={!!disableReportInteractions}
+      onDragStart={() => setIsDragging(true)}
+      onResizeStart={() => setIsDragging(true)}
     >
       {reports.map((report, idx) => {
         return (
