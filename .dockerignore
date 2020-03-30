@@ -1,0 +1,17 @@
+# Project maintenance
+.ci/
+.github/
+.mvn/
+
+# Build stuff, except the distribution
+**/target/
+!/dist/target/
+
+# Log files (incl. VM crash dumps)
+**/*.log
+
+# JetBrains/idea
+.idea/
+
+# Large-ish project files we don't need when building
+docs/
