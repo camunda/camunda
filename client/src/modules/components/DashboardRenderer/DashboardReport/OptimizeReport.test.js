@@ -8,6 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ThemedOptimizeReport from './OptimizeReport';
+import {ReportRenderer} from 'components';
 
 const {WrappedComponent: OptimizeReportWithErrorHandling} = ThemedOptimizeReport;
 const {WrappedComponent: OptimizeReport} = OptimizeReportWithErrorHandling;
@@ -47,7 +48,7 @@ it('should render the ReportRenderer if data is loaded', async () => {
 
   await node.instance().loadReport();
 
-  expect(node).toIncludeText('ReportRenderer');
+  expect(node.find(ReportRenderer)).toExist();
 });
 
 it('should contain the report name', async () => {

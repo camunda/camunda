@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
+import {Button, ReportRenderer} from 'components';
 
 import Sharing from './Sharing';
 import {evaluateEntity} from './service';
@@ -76,7 +76,7 @@ it('should have report if everything is fine', () => {
     evaluationResult: {name: 'foo'}
   });
 
-  expect(node.find('ReportRenderer')).toExist();
+  expect(node.find(ReportRenderer)).toExist();
 });
 
 it('should retrieve report for the given id', () => {

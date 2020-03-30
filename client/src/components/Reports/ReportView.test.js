@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import ReportView from './ReportView';
 
-import {Deleter} from 'components';
+import {Deleter, ReportRenderer} from 'components';
 import {checkDeleteConflict} from 'services';
 
 jest.mock('services', () => {
@@ -88,7 +88,7 @@ it('should redirect to the report list on report deletion', () => {
 it('should contain a ReportRenderer with the report evaluation result', () => {
   const node = shallow(<ReportView report={report} />);
 
-  expect(node).toIncludeText('ReportRenderer');
+  expect(node.find(ReportRenderer)).toExist();
 });
 
 it('should render a sharing popover', () => {

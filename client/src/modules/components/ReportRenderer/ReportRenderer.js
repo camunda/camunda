@@ -13,6 +13,7 @@ import HyperReportRenderer from './HyperReportRenderer';
 import SetupNotice from './SetupNotice';
 import IncompleteReport from './IncompleteReport';
 import NoDataNotice from './NoDataNotice';
+import deepEqual from 'deep-equal';
 
 import {ErrorBoundary, MessageBox} from 'components';
 
@@ -23,7 +24,7 @@ import {isEmpty} from './service';
 import './ReportRenderer.scss';
 import {t} from 'translation';
 
-export default function ReportRenderer(props) {
+function ReportRenderer(props) {
   const {report, updateReport, isExternal} = props;
   let View, somethingMissing;
   if (report) {
@@ -101,6 +102,16 @@ function containsData(report) {
     );
   }
 }
+
+export default React.memo(ReportRenderer, (prevProps, nextProps) => {
+  const prevReport = {...prevProps.report, name: ''};
+  const nextReport = {...nextProps.report, name: ''};
+
+  if (deepEqual(prevReport, nextReport)) {
+    return true;
+  }
+  return false;
+});
 
 function checkCombined(data) {
   const reports = data.reports;
