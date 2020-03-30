@@ -3,6 +3,7 @@
 exports[`should render child elements and their props 1`] = `
 <form
   className="Form horizontal"
+  onSubmit={[Function]}
 >
   <FormGroup>
     <label>

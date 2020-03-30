@@ -10,9 +10,16 @@ import classnames from 'classnames';
 
 import './Form.scss';
 
-export default function Form({compact, title, description, horizontal, ...props}) {
+export default function Form({compact, title, description, horizontal, onSubmit, ...props}) {
   return (
-    <form {...props} className={classnames('Form', {compact, horizontal}, props.className)}>
+    <form
+      {...props}
+      onSubmit={evt => {
+        evt.preventDefault();
+        onSubmit && onSubmit(evt);
+      }}
+      className={classnames('Form', {compact, horizontal}, props.className)}
+    >
       {title && <h3 className="formTitle">{title}</h3>}
       {description && <p className="formDescription">{description}</p>}
       {props.children}

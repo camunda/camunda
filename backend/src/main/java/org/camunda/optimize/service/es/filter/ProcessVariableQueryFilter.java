@@ -256,7 +256,7 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
 
   private QueryBuilder createBoolQueryBuilder(BooleanVariableFilterDataDto dto) {
     ValidationHelper.ensureNotEmpty("boolean filter value", dto.getData().getValue());
-    boolean value = Boolean.parseBoolean(dto.getData().getValue());
+    boolean value = dto.getData().getValue();
     BoolQueryBuilder filterBooleanVariables = boolQuery()
       .must(termsQuery(getNestedVariableNameField(), dto.getName()))
       .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()))

@@ -87,7 +87,7 @@ public class DecisionFilterUtilHelper {
     return variableFilterDto;
   }
 
-  public static InputVariableFilterDto createBooleanInputVariableFilter(String variableName, String variableValue) {
+  public static InputVariableFilterDto createBooleanInputVariableFilter(String variableName, Boolean variableValue) {
     BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableValue);
     data.setName(variableName);
 
@@ -109,7 +109,7 @@ public class DecisionFilterUtilHelper {
     return variableFilterDto;
   }
 
-  public static OutputVariableFilterDto createBooleanOutputVariableFilter(String variableName, String variableValue) {
+  public static OutputVariableFilterDto createBooleanOutputVariableFilter(String variableName, Boolean variableValue) {
     BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableValue);
     data.setName(variableName);
 

@@ -25,7 +25,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
   @Test
   public void resultFilterByEqualBooleanOutputVariable() {
     // given
-    final String outputAuditValueToFilterFor = "true";
+    final Boolean outputAuditValueToFilterFor = true;
     final String outputVariableIdToFilterOn = OUTPUT_AUDIT_ID;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
@@ -61,7 +61,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     assertThat(result.getData().size(), is(1));
 
     assertThat(
-      result.getData().get(0).getOutputVariables().get(outputVariableIdToFilterOn).getFirstValue(),
+      Boolean.valueOf(result.getData().get(0).getOutputVariables().get(outputVariableIdToFilterOn).getFirstValue().toString()),
       is(outputAuditValueToFilterFor)
     );
   }

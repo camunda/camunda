@@ -140,6 +140,7 @@ export default class DecisionControlPanel extends React.Component {
                 <ReportSelect
                   type="decision"
                   field={field}
+                  report={this.props.report}
                   value={data[field]}
                   variables={this.state.variables}
                   previous={previous}

@@ -13,16 +13,7 @@ import equal from 'deep-equal';
 import './ReportSelect.scss';
 import {t} from 'translation';
 
-export default function ReportSelect({
-  type,
-  field,
-  value,
-  disabled,
-  onChange,
-  variables,
-  report,
-  previous = []
-}) {
+function ReportSelect({type, field, value, disabled, onChange, variables, report, previous = []}) {
   const config = reportConfig[type];
   const optionsWithoutVariables = config.options[field];
 
@@ -77,6 +68,13 @@ export default function ReportSelect({
     </Select>
   );
 }
+
+export default React.memo(ReportSelect, (prevProps, nextProps) => {
+  if (prevProps.report.data !== nextProps.report.data) {
+    return false;
+  }
+  return true;
+});
 
 function addVariables(options, variables) {
   return options.map(option => {
