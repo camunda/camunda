@@ -1,0 +1,17 @@
+{
+  "description": "operate user pipeline",
+  "processors": [
+    {
+      "set": {
+        "field": "firstname",
+        "value": "Demo"
+      }
+    },
+    {
+      "set": {
+        "field": "lastname",
+        "value": "user"
+      }
+    }
+  ]
+}

@@ -17,10 +17,12 @@ import static org.mockito.BDDMockito.given;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.MetricAssert;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -28,6 +30,9 @@ import org.camunda.operate.webapp.rest.AuthenticationRestService;
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.security.WebSecurityConfig;
 import org.camunda.operate.webapp.security.es.DefaultUserService;
+import org.camunda.operate.webapp.security.es.ElasticSearchUserDetailsService;
+import org.camunda.operate.webapp.security.es.User;
+import org.camunda.operate.webapp.security.es.UserStorage;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,8 +45,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,10 +54,16 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+/**
+ * This test tests:
+ * * authentication and security of REST API
+ * * /api/authentications/user endpoint to get current user
+ * * {@link UserStorage} is mocked (integration with ELS is not tested)
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = { TestApplicationWithNoBeans.class, OperateProperties.class, WebSecurityConfig.class, DefaultUserService.class, AuthenticationRestService.class
-  },
+  classes = { TestApplicationWithNoBeans.class, OperateProperties.class, WebSecurityConfig.class, DefaultUserService.class, AuthenticationRestService.class,
+      ElasticSearchUserDetailsService.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles({"auth", "test"})
@@ -61,25 +71,34 @@ public class AuthenticationTest {
 
   private static final String SET_COOKIE_HEADER = "Set-Cookie";
 
-  public static final String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
+  private static final String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
 
-  public static final String USERNAME = "demo";
-  public static final String PASSWORD = USERNAME;
+  private static final String USERNAME = "demo";
+  private static final String PASSWORD = "demo";
+  private static final String FIRSTNAME = "Firstname";
+  private static final String LASTNAME = "Lastname";
 
   @Autowired
   private OperateProperties operateProperties;
   
   @Autowired
   private TestRestTemplate testRestTemplate;
+
+  @Autowired
+  private PasswordEncoder encoder;
  
   @MockBean
-  private UserDetailsService userDetailsService;
-  
+  private UserStorage userStorage;
+
   @Before
   public void setUp() {
-    PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    UserDetails userDetails = User.builder().passwordEncoder(encoder::encode).username(USERNAME).password(PASSWORD).roles("USER").build();
-    given(userDetailsService.loadUserByUsername(USERNAME)).willReturn(userDetails);
+    UserEntity user = new UserEntity()
+        .setUsername(USERNAME)
+        .setPassword(encoder.encode(PASSWORD))
+        .setRole("USER")
+        .setFirstname(FIRSTNAME)
+        .setLastname(LASTNAME);
+    given(userStorage.getByName(USERNAME)).willReturn(user);
   }
   
   @Test
@@ -133,8 +152,8 @@ public class AuthenticationTest {
 
     //then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(responseEntity.getBody().getFirstname()).isNotEmpty();
-    assertThat(responseEntity.getBody().getLastname()).isNotEmpty();
+    assertThat(responseEntity.getBody().getFirstname()).isEqualTo(FIRSTNAME);
+    assertThat(responseEntity.getBody().getLastname()).isEqualTo(LASTNAME);
   }
 
   @Test

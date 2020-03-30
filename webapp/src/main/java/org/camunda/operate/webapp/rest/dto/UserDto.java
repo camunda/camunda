@@ -5,11 +5,10 @@
  */
 package org.camunda.operate.webapp.rest.dto;
 
-import org.springframework.security.core.userdetails.UserDetails;
+import org.camunda.operate.webapp.security.es.User;
 
 public class UserDto {
 
-  private static final String EMPTY = "";
   private String firstname;
   private String lastname;
   private boolean canLogout;
@@ -41,18 +40,11 @@ public class UserDto {
     return this;
   }
 
-  public static UserDto fromUserDetails(UserDetails userDetails) {
+  public static UserDto fromUser(User userDetails) {
     return new UserDto()
-        .setFirstname("Demo")
-        .setLastname("User")
-        .setCanLogout(true);
+        .setFirstname(userDetails.getFirstname())
+        .setLastname(userDetails.getLastname())
+        .setCanLogout(userDetails.isCanLogout());
   }
   
-  public static UserDto fromName(String name) {
-    return new UserDto()
-        .setFirstname(EMPTY)
-        .setLastname(name)
-        .setCanLogout(false);
-  }
-
 }

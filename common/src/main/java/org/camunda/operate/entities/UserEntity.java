@@ -5,12 +5,13 @@
  */
 package org.camunda.operate.entities;
 
-public class UserEntity extends OperateEntity<UserEntity>{
+public class UserEntity extends OperateEntity<UserEntity> {
 
   private String username;
   private String password;
-  
   private String role;
+  private String firstname;
+  private String lastname;
 
   public String getRole() {
     return role;
@@ -39,45 +40,60 @@ public class UserEntity extends OperateEntity<UserEntity>{
     this.password = password;
     return this;
   }
-  
+
+  public String getFirstname() {
+    return firstname;
+  }
+
+  public UserEntity setFirstname(String firstname) {
+    this.firstname = firstname;
+    return this;
+  }
+
+  public String getLastname() {
+    return lastname;
+  }
+
+  public UserEntity setLastname(String lastname) {
+    this.lastname = lastname;
+    return this;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
+    if (!super.equals(o))
+      return false;
+
+    UserEntity that = (UserEntity) o;
+
+    if (username != null ? !username.equals(that.username) : that.username != null)
+      return false;
+    if (password != null ? !password.equals(that.password) : that.password != null)
+      return false;
+    if (role != null ? !role.equals(that.role) : that.role != null)
+      return false;
+    if (firstname != null ? !firstname.equals(that.firstname) : that.firstname != null)
+      return false;
+    return lastname != null ? lastname.equals(that.lastname) : that.lastname == null;
+
+  }
+
   @Override
   public int hashCode() {
-    final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((password == null) ? 0 : password.hashCode());
-    result = prime * result + ((role == null) ? 0 : role.hashCode());
-    result = prime * result + ((username == null) ? 0 : username.hashCode());
+    result = 31 * result + (username != null ? username.hashCode() : 0);
+    result = 31 * result + (password != null ? password.hashCode() : 0);
+    result = 31 * result + (role != null ? role.hashCode() : 0);
+    result = 31 * result + (firstname != null ? firstname.hashCode() : 0);
+    result = 31 * result + (lastname != null ? lastname.hashCode() : 0);
     return result;
   }
 
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    UserEntity other = (UserEntity) obj;
-    if (password == null) {
-      if (other.password != null)
-        return false;
-    } else if (!password.equals(other.password))
-      return false;
-    if (role == null) {
-      if (other.role != null)
-        return false;
-    } else if (!role.equals(other.role))
-      return false;
-    if (username == null) {
-      if (other.username != null)
-        return false;
-    } else if (!username.equals(other.username))
-      return false;
-    return true;
-  }
-
-  public static UserEntity from(String username, String password,String role) {
+  public static UserEntity from(String username, String password, String role) {
     UserEntity userEntity = new UserEntity();
     userEntity.setId(username);
     userEntity.setUsername(username);
