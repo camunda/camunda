@@ -691,6 +691,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // given one decision instance with non null variable and one with null variable
     final String inputVariableName = "inputVariableName";
     final String outputVariableName = "outPutVariableName";
+    final Double doubleVarValue = 1.0;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleInputDecisionDefinition(
       inputVariableName,
@@ -699,7 +700,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
     engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
-      ImmutableMap.of(outputVariableName, 1.0)
+      ImmutableMap.of(outputVariableName, doubleVarValue)
     );
     engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
@@ -714,16 +715,15 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportDataDto reportDataDto = createReportDataDto(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), inputVariableName, null, VariableType.DOUBLE
-    );
-    final Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
-      .execute();
+    ).getResult();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.getEntryForKey(String.valueOf(doubleVarValue)).get().getValue(), is(1L));
+    assertThat(result.getEntryForKey("missing").get().getValue(), is(2L));
   }
 
   @Test

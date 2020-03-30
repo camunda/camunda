@@ -575,19 +575,21 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = createReport(
+    final ProcessReportDataDto reportData = createReport(
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion(),
       varName,
       VariableType.DOUBLE
     );
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      evaluateMapReport(reportData);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.getEntryForKey(String.valueOf(varValue)).get().getValue(), is(1L));
+    assertThat(result.getEntryForKey("missing").get().getValue(), is(1L));
   }
 
   @Test

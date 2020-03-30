@@ -247,9 +247,12 @@ public class CompositeCommandResult {
     switch (sortBy) {
       default:
       case SortingDto.SORT_BY_KEY:
-        valueToSortByExtractor = keyIsOfNumericType
-          ? entry -> entry.getKey().equals(MISSING_VARIABLE_KEY) ? null : Double.valueOf(entry.getKey())
-          : entry -> entry.getKey().toLowerCase();
+        if (keyIsOfNumericType) {
+          valueToSortByExtractor =
+            entry -> entry.getKey().equals(MISSING_VARIABLE_KEY) ? null : Double.valueOf(entry.getKey());
+        } else {
+          valueToSortByExtractor = entry -> entry.getKey().toLowerCase();
+        }
         break;
       case SortingDto.SORT_BY_VALUE:
         valueToSortByExtractor = MapResultEntryDto::getValue;

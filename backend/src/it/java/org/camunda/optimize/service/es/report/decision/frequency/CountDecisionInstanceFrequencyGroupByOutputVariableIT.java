@@ -665,16 +665,15 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportDataDto reportDataDto = createReportDataDto(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), outputVarName, null, VariableType.DOUBLE
-    );
-    final Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
-      .execute();
+    ).getResult();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.getEntryForKey(String.valueOf(doubleVarValue)).get().getValue(), is(1L));
+    assertThat(result.getEntryForKey("missing").get().getValue(), is(1L));
   }
 
   @Test

@@ -941,7 +941,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(definition.getKey())
@@ -949,13 +949,19 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName(varName)
       .setVariableType(VariableType.DOUBLE)
       .build();
-    final Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
+      reportData);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(
+      result.getEntryForKey(String.valueOf(varValue)).get().getValue(),
+      is(testStartDate.until(testEndDate, MILLIS)
+      )
+    );
+    assertThat(result.getEntryForKey("missing").get().getValue(), is(400L));
   }
 
   @Test
