@@ -77,6 +77,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_D
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
@@ -92,6 +93,8 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   private static final String RANGE_AGGREGATION = "rangeAggregation";
   private static final String STATS_AGGREGATION = "minMaxValueOfData";
   private static final String USER_TASK_MOST_RECENT_DATE_AGGREGATION = "userTaskMostRecentDateAggregation";
+  private static final String FILTER_USER_TASKS_WITH_DATE_FIELD_SET_AGGREGATION =
+    "filterUserTasksWithDateFieldSetAgg";
 
   private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeElasticsearchClient esClient;
@@ -123,7 +126,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     final Optional<OffsetDateTime> latestDate =
       getMostRecentUserTaskDate(searchSourceBuilder.query(), getDateField(), context);
     final BoolQueryBuilder limitFilterQuery = createLimitFilterQuery(unit, latestDate.orElse(OffsetDateTime.now()));
-    final FilterAggregationBuilder bucketLimitedHistogramAggregation = wrapWithFilterLimitedParentAggregation(
+    FilterAggregationBuilder bucketLimitedHistogramAggregation = wrapWithFilterLimitedParentAggregation(
       limitFilterQuery,
       dateHistogramAggregation.subAggregation(distributedByPart.createAggregation(context))
     );
@@ -214,6 +217,12 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
         )
           .subAggregation(
             aggregationToWrap
+          )
+          .subAggregation(
+            filter(
+              FILTER_USER_TASKS_WITH_DATE_FIELD_SET_AGGREGATION,
+              existsQuery(getDateField())
+            )
           )
       );
   }
@@ -358,7 +367,9 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     if (filteredUserTasks.getAggregations().getAsMap().containsKey(FILTER_LIMITED_AGGREGATION)) {
       final ParsedFilter limitingAggregation = filteredUserTasks.getAggregations().get(FILTER_LIMITED_AGGREGATION);
-      complete = limitingAggregation.getDocCount() == filteredUserTasks.getDocCount();
+      final ParsedFilter totalUserTasksWithDateFieldSetAgg =
+        filteredUserTasks.getAggregations().get(FILTER_USER_TASKS_WITH_DATE_FIELD_SET_AGGREGATION);
+      complete = limitingAggregation.getDocCount() == totalUserTasksWithDateFieldSetAgg.getDocCount();
     }
     return complete;
   }

@@ -723,6 +723,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     // given there is only one data point
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -980,7 +981,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
-  private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
+  protected ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
     // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)

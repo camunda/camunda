@@ -12,7 +12,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import java.sql.SQLException;
 
 public class UserTaskTotalDurationByUserTaskEndDateByUserTaskReportEvaluationIT
-  extends UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluationIT {
+  extends UserTaskDurationByUserTaskEndDateByUserTaskReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -37,10 +37,5 @@ public class UserTaskTotalDurationByUserTaskEndDateByUserTaskReportEvaluationIT
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
-  }
-
-  @Override
-  protected Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
-    return executionStateTestValues.expectedTotalDurationValue;
   }
 }

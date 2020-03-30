@@ -200,6 +200,7 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(0));
 

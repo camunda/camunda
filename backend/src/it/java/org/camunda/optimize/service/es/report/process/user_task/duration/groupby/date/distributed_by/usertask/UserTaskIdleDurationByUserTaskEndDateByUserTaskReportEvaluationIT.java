@@ -14,7 +14,7 @@ import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
 public class UserTaskIdleDurationByUserTaskEndDateByUserTaskReportEvaluationIT
-  extends UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluationIT {
+  extends UserTaskDurationByUserTaskEndDateByUserTaskReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -57,10 +57,5 @@ public class UserTaskIdleDurationByUserTaskEndDateByUserTaskReportEvaluationIT
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
-  }
-
-  @Override
-  protected Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
-    return executionStateTestValues.expectedIdleDurationValue;
   }
 }
