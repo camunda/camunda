@@ -411,7 +411,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
   @Test
   public void resultLimited_onTooBroadFixedEndAndStartDateFilter_startDateFilterIsLimited() {
     // given
-    final OffsetDateTime startDate = OffsetDateTime.now();
+    final OffsetDateTime startDate = OffsetDateTime.parse("2019-06-15T12:00:00+01:00");
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
