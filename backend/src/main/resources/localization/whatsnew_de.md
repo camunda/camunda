@@ -1,24 +1,20 @@
-## Filter für Start- und Enddatum
+## Event-basierte Prozesse
 
-Start- und Enddatum Filter umfassen jetzt rollierende und laufende Bereiche. Es ist jetzt auch möglich, Daten nach Quartalen zu filtern.
+Kombinieren Sie Prozessdaten aus Camunda mit Daten aus externen Systemen und erstellen Sie End-To-End Prozesse und Reports.
 
-## Verbesserung des Dashboard-Layouts
+Lesen Sie mehr über [Event-basierte Prozesse](https://docs.camunda.org/optimize/latest/user-guide/event-based-processes/) in der Dokumentation.  
 
-Beim Hinzufügen oder Verschieben eines Berichts werden andere Berichte im Dashboard automatisch verschoben, um Platz zu schaffen.
+## Neue Reporting Möglichkeiten
 
-## Verbesserungen der Benutzeraufgabenberichte
+Weitere Reporting Möglichkeiten in dieser Version sind:
 
-Wenn Sie Benutzeraufgaben nach Verantwortlichen gruppieren, können Sie jetzt Benutzeraufgaben anzeigen, die niemandem zugewiesen sind.
+- User Tasks gruppiert nach Start- und Enddatum
+- Analyse von User Tasks, die nicht zugewiesen sind bzw. wurden
+- Filter nach pausierten und nicht pausierten Prozessinstanzen
+- Filter nach rollierenden Zeiträumen
+- Filter nach Quartalen
 
-## Filter für suspendierte/nicht suspendierte Instanzen für Prozessbericht
+## Alerts an externe Systeme
 
-Ein neuer Filter wird hinzugefügt, um die Prozessinstanzen zu filtern, die sich im suspendierten/nicht suspendierten Zustand befinden.
-
-## Erhalten Sie Alarme auf benutzerdefinierten Benachrichtigungssystemen mit Webhooks
-
-Alarme können nun über Webhooks an externe Systeme gesendet werden. Wenn Sie einen Webhook konfiguriert haben, wird er als Option angezeigt, wenn Sie einen Alarm erstellen oder aktualisieren.
-
-## Eventbasierte Prozesse
-
-Es gibt nun die Möglichkeit eventbasierte BPMN-Prozesse in Optimize zu erstellen. Als Basis für diese Prozesse dienen externe Events oder aber auch Activiy-Events von allen importierten Camunda BPM Prozessen.
-Dies ermöglicht es erstmals allein in Optimize z.B. End-to-End Prozesse zu erstellen um prozessübergreifende Optimize Berichte zu erstellen und auch externe Systeme in teilautomatisierten Prozessen mit einzubeziehen.
+Senden sie einfach Alerts an externe Systeme indem Sie das System zur Konfiguration hinzufügen.
+Anschließend wird das System direkt im Alert-Setup zur Verfügung stehen.

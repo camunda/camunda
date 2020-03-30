@@ -1,24 +1,20 @@
-## Start and end date range filters
-
-Expanded date ranges now include rolling and in progress ranges. It is also now possible to filter data by quarter.
-
-## Dashboard layout improvement
-
-When adding or moving a report, other reports on the dashboard automatically move to make space.
-
-## User Task Report Improvements
-
-When grouping user tasks by assignee, it is now possible to see user tasks that are not assigned to anyone.
-
-## Suspended/Non-suspended instances filter for process report
-
- A new filter is added to allow for filtering the process instances that are in the suspended/non-suspended state. 
-
-## Receive Alerts on custom notification systems using webhooks
-
-Alerts can now be sent to external systems using webhooks. If you have any webhook configured, it will appear as an option when creating or updating an Alert.
-
 ## Event Based Processes
 
-You can now create event based processes in Optimize. External events as well as Camunda Activity events of all imported Camunda BPM processes can be used to create those.
-This allows you for the first time to create e.g. End-to-End processes that give you the power to create Optimize Reports that span multiple processes or even external systems.
+Combine multiple Camunda and External System process data to create reports and monitor processes End-to-End.  
+
+[Read more](https://docs.camunda.org/optimize/latest/user-guide/event-based-processes/) about the Event-Based Process feature in the Documentation.
+
+## New Reporting Features
+
+To continually enhance the granularity of Reports we have added a number of additional features.
+
+- User Tasks grouping by start and end date
+- Analysis on unassigned User Tasks
+- Filter by suspended / non-suspended process instances
+- Filter by rolling and in-progress date ranges
+- Filter by calendar Quarters.
+
+## Alerts to External Systems
+
+Easily send Alerts to external systems by adding system to the configuration.
+This link will then be selectable in the Alert set up form for all users.  
