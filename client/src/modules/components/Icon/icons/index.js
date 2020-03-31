@@ -32,6 +32,7 @@ import {ReactComponent as error} from './error.svg';
 import {ReactComponent as warning} from './warning.svg';
 import {ReactComponent as closeLarge} from './close-large.svg';
 import {ReactComponent as checkLarge} from './check-large.svg';
+import {ReactComponent as checkCircle} from './check-circle.svg';
 import {ReactComponent as collection} from './collection.svg';
 import {ReactComponent as search} from './search.svg';
 import {ReactComponent as searchReset} from './search-reset.svg';
@@ -78,6 +79,7 @@ const icons = {
   error,
   warning,
   'check-large': checkLarge,
+  'check-circle': checkCircle,
   'close-large': closeLarge,
   collection,
   search,

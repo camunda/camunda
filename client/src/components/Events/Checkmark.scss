@@ -1,0 +1,45 @@
+@import 'shared-styles/shared-styles.scss';
+
+.Checkmark {
+  flex: 0 0 50px;
+  color: $red-darken-38;
+  position: relative;
+  height: 18px;
+
+  .Icon {
+    margin: 0;
+    color: $blue-darken-55;
+    font-size: 18px;
+    vertical-align: initial;
+  }
+
+  .Tooltip {
+    display: none;
+    position: absolute;
+    z-index: 9;
+    left: 50%;
+    transform: translateX(-50%);
+
+    &.top {
+      bottom: 20px;
+    }
+
+    .Tooltip__text-top,
+    .Tooltip__text-bottom {
+      padding: 10px;
+      line-height: 20px;
+      font-size: 0.875em;
+      font-weight: normal;
+      text-align: left;
+      white-space: nowrap;
+
+      span {
+        font-weight: bold;
+      }
+    }
+  }
+
+  &:hover .Tooltip {
+    display: block;
+  }
+}

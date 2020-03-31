@@ -20,12 +20,14 @@ jest.mock('./service', () => ({
       group: 'eventGroup',
       source: 'order-service',
       eventName: 'OrderProcessed',
+      eventLabel: 'Order Processed',
       count: 10
     },
     {
       group: 'eventGroup',
       source: 'order-service',
       eventName: 'OrderAccepted',
+      eventLabel: 'Order Accepted',
       count: 10
     }
   ]),
@@ -42,7 +44,8 @@ const props = {
       end: {
         group: 'eventGroup',
         source: 'order-service',
-        eventName: 'OrderProcessed'
+        eventName: 'OrderProcessed',
+        eventLabel: 'Order Processed'
       }
     }
   },
@@ -94,7 +97,12 @@ it('should call callback when changing mapping', () => {
     .content[0].props.onChange({target: {checked: false}});
 
   expect(spy).toHaveBeenCalledWith(
-    {group: 'eventGroup', source: 'order-service', eventName: 'OrderProcessed'},
+    {
+      group: 'eventGroup',
+      source: 'order-service',
+      eventName: 'OrderProcessed',
+      eventLabel: 'Order Processed'
+    },
     false
   );
 });
@@ -204,7 +212,8 @@ it('should invoke onSelectEvent when clicking on an element', () => {
     count: 10,
     eventName: 'OrderProcessed',
     group: 'eventGroup',
-    source: 'order-service'
+    source: 'order-service',
+    eventLabel: 'Order Processed'
   });
 });
 

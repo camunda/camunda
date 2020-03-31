@@ -4,11 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useEffect} from 'react';
+import React, {useEffect} from 'react';
 import deepEqual from 'deep-equal';
-import mappedIcon from './icons/mapped.svg';
+import ReactDOM from 'react-dom';
+import Checkmark from './Checkmark';
 
-const asMapping = ({group, source, eventName}) => ({group, source, eventName});
+const asMapping = ({group, source, eventName, eventLabel}) => ({
+  group,
+  source,
+  eventName,
+  eventLabel
+});
 
 export default function ProcessRenderer({
   viewer,
@@ -45,25 +51,28 @@ export default function ProcessRenderer({
     const overlays = viewer.get('overlays');
     const elementRegistry = viewer.get('elementRegistry');
 
-    function createOverlay(id, type) {
+    function createOverlay(id, type, event) {
       const position = type === 'start' ? {top: -33, left: 9} : {top: -33, right: 27};
-      overlays.add(id, 'MAPPED', {
-        position,
-        show: {
-          minZoom: -Infinity,
-          maxZoom: +Infinity
-        },
-        html: `<img src="${mappedIcon}" />`
+      const overlayHtml = document.createElement('div');
+      ReactDOM.render(<Checkmark event={event} />, overlayHtml, () => {
+        overlays.add(id, 'MAPPED', {
+          position,
+          show: {
+            minZoom: -Infinity,
+            maxZoom: +Infinity
+          },
+          html: overlayHtml
+        });
       });
     }
 
     Object.entries(mappings).forEach(([id, {start, end}]) => {
       if (elementRegistry.get(id)) {
         if (start) {
-          createOverlay(id, 'start');
+          createOverlay(id, 'start', start);
         }
         if (end) {
-          createOverlay(id, 'end');
+          createOverlay(id, 'end', end);
         }
       }
     });

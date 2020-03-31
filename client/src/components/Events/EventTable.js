@@ -18,7 +18,12 @@ import EventsSources from './EventsSources';
 
 import './EventTable.scss';
 
-const asMapping = ({group, source, eventName}) => ({group, source, eventName});
+const asMapping = ({group, source, eventName, eventLabel}) => ({
+  group,
+  source,
+  eventName,
+  eventLabel
+});
 
 export default withErrorHandling(
   class EventTable extends React.Component {

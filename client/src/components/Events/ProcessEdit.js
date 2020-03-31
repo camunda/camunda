@@ -25,7 +25,12 @@ import EventTable from './EventTable';
 
 import './ProcessEdit.scss';
 
-const asMapping = ({group, source, eventName}) => ({group, source, eventName});
+const asMapping = ({group, source, eventName, eventLabel}) => ({
+  group,
+  source,
+  eventName,
+  eventLabel
+});
 
 export default withErrorHandling(
   class ProcessEdit extends React.Component {
