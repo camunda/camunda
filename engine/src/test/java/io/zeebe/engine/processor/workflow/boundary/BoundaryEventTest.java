@@ -145,7 +145,7 @@ public final class BoundaryEventTest {
             .startEvent()
             .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("event")
-            .message(m -> m.name("message").zeebeCorrelationKey("key"))
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
             .zeebeOutputExpression("foo", "bar")
             .endEvent("endTimer")
             .moveToActivity("task")
@@ -317,7 +317,8 @@ public final class BoundaryEventTest {
             .startEvent()
             .serviceTask("task", c -> c.zeebeJobType("type").zeebeInputExpression("bar", "foo"))
             .boundaryEvent(
-                "event", b -> b.message(m -> m.zeebeCorrelationKey("foo").name("message")))
+                "event",
+                b -> b.message(m -> m.zeebeCorrelationKeyExpression("foo").name("message")))
             .endEvent()
             .moveToActivity("task")
             .endEvent()
@@ -354,7 +355,8 @@ public final class BoundaryEventTest {
             .startEvent()
             .serviceTask("task", c -> c.zeebeJobType("type"))
             .boundaryEvent(
-                "event", b -> b.message(m -> m.zeebeCorrelationKey("orderId").name("message")))
+                "event",
+                b -> b.message(m -> m.zeebeCorrelationKeyExpression("orderId").name("message")))
             .endEvent()
             .moveToActivity("task")
             .endEvent()

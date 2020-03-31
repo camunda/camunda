@@ -54,7 +54,7 @@ public final class MessageCatchElementTest {
       Bpmn.createExecutableProcess(CATCH_EVENT_WORKFLOW_PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent(ELEMENT_ID)
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
@@ -63,7 +63,7 @@ public final class MessageCatchElementTest {
       Bpmn.createExecutableProcess(RECEIVE_TASK_WORKFLOW_PROCESS_ID)
           .startEvent()
           .receiveTask(ELEMENT_ID)
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
@@ -73,7 +73,7 @@ public final class MessageCatchElementTest {
           .startEvent()
           .serviceTask(ELEMENT_ID, b -> b.zeebeJobType("type"))
           .boundaryEvent()
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
@@ -85,7 +85,7 @@ public final class MessageCatchElementTest {
           .serviceTask(ELEMENT_ID, b -> b.zeebeJobType("type"))
           .boundaryEvent("event")
           .cancelActivity(false)
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();

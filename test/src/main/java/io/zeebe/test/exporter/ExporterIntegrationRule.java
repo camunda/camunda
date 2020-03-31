@@ -122,7 +122,8 @@ public class ExporterIntegrationRule extends ExternalResource {
       Bpmn.createExecutableProcess("testProcess")
           .startEvent()
           .intermediateCatchEvent(
-              "message", e -> e.message(m -> m.name("catch").zeebeCorrelationKey("orderId")))
+              "message",
+              e -> e.message(m -> m.name("catch").zeebeCorrelationKeyExpression("orderId")))
           .serviceTask("task", t -> t.zeebeJobType("work").zeebeTaskHeader("foo", "bar"))
           .endEvent()
           .done();
@@ -396,7 +397,7 @@ public class ExporterIntegrationRule extends ExternalResource {
   }
 
   private <T> Map<String, Object> convertConfigToMap(final T configuration) {
-    return OBJECT_MAPPER.convertValue(configuration, new TypeReference<Map<String, Object>>() {});
+    return OBJECT_MAPPER.convertValue(configuration, new TypeReference<>() {});
   }
 
   private <T> T convertMapToConfig(final Map<String, Object> map, final Class<T> configClass) {

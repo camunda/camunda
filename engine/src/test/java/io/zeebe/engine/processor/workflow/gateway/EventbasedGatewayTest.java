@@ -69,12 +69,14 @@ public final class EventbasedGatewayTest {
           .eventBasedGateway()
           .id("gateway")
           .intermediateCatchEvent(
-              "message-1", c -> c.message(m -> m.name("msg-1").zeebeCorrelationKey("key")))
+              "message-1",
+              c -> c.message(m -> m.name("msg-1").zeebeCorrelationKeyExpression("key")))
           .sequenceFlowId("to-end1")
           .endEvent("end1")
           .moveToLastGateway()
           .intermediateCatchEvent(
-              "message-2", c -> c.message(m -> m.name("msg-2").zeebeCorrelationKey("key")))
+              "message-2",
+              c -> c.message(m -> m.name("msg-2").zeebeCorrelationKeyExpression("key")))
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
@@ -88,7 +90,7 @@ public final class EventbasedGatewayTest {
           .endEvent("end1")
           .moveToLastGateway()
           .intermediateCatchEvent(
-              "message", c -> c.message(m -> m.name("msg").zeebeCorrelationKey("key")))
+              "message", c -> c.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();

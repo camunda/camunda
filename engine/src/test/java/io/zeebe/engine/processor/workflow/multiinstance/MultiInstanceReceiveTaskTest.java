@@ -42,10 +42,10 @@ public final class MultiInstanceReceiveTaskTest {
           .receiveTask(
               ELEMENT_ID,
               t ->
-                  t.message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(INPUT_ELEMENT))
+                  t.message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(INPUT_ELEMENT))
                       .multiInstance(
                           b ->
-                              b.zeebeInputCollection(INPUT_COLLECTION)
+                              b.zeebeInputCollectionExpression(INPUT_COLLECTION)
                                   .zeebeInputElement(INPUT_ELEMENT)))
           .endEvent()
           .done();

@@ -65,13 +65,13 @@ public final class MultiInstanceActivityTest {
   private static final Consumer<MultiInstanceLoopCharacteristicsBuilder> INPUT_VARIABLE_BUILDER =
       multiInstance(
           m ->
-              m.zeebeInputCollection(INPUT_COLLECTION_VARIABLE)
+              m.zeebeInputCollectionExpression(INPUT_COLLECTION_VARIABLE)
                   .zeebeInputElement(INPUT_ELEMENT_VARIABLE)
                   .zeebeOutputCollection(OUTPUT_COLLECTION_VARIABLE)
-                  .zeebeOutputElement(OUTPUT_ELEMENT_VARIABLE));
+                  .zeebeOutputElementExpression(OUTPUT_ELEMENT_VARIABLE));
 
   private static final Consumer<MessageBuilder> MESSAGE_BUILDER =
-      m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(MESSAGE_CORRELATION_KEY_VARIABLE);
+      m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(MESSAGE_CORRELATION_KEY_VARIABLE);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -458,7 +458,8 @@ public final class MultiInstanceActivityTest {
             workflow(
                 miBuilder.andThen(
                     m ->
-                        m.zeebeInputCollection(INPUT_COLLECTION_VARIABLE).zeebeInputElement(null))))
+                        m.zeebeInputCollectionExpression(INPUT_COLLECTION_VARIABLE)
+                            .zeebeInputElement(null))))
         .deploy();
 
     // when
@@ -489,7 +490,7 @@ public final class MultiInstanceActivityTest {
         .withXmlResource(
             workflow(
                 miBuilder.andThen(
-                    m -> m.zeebeInputCollection("nested." + INPUT_COLLECTION_VARIABLE))))
+                    m -> m.zeebeInputCollectionExpression("nested." + INPUT_COLLECTION_VARIABLE))))
         .deploy();
 
     final long workflowInstanceKey =
@@ -635,7 +636,8 @@ public final class MultiInstanceActivityTest {
         .deployment()
         .withXmlResource(
             workflow(
-                miBuilder.andThen(m -> m.zeebeOutputCollection(null).zeebeOutputElement(null))))
+                miBuilder.andThen(
+                    m -> m.zeebeOutputCollection(null).zeebeOutputElementExpression(null))))
         .deploy();
 
     // when

@@ -49,7 +49,6 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.junit.MockitoJUnitRunner;
 
-@SuppressWarnings("unchecked")
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
 public final class CreateWorkflowInstanceProcessorTest
     extends CommandProcessorTestCase<WorkflowInstanceCreationRecord> {
@@ -149,7 +148,7 @@ public final class CreateWorkflowInstanceProcessorTest
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess()
             .startEvent()
-            .message(m -> m.name("message").zeebeCorrelationKey("key"))
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
             .endEvent()
             .done();
     final DeployedWorkflow workflow = deployNewWorkflow(process);

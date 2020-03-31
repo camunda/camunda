@@ -31,10 +31,13 @@ public class MessageBuilder extends AbstractBaseElementBuilder<MessageBuilder, M
     return this;
   }
 
-  public MessageBuilder zeebeCorrelationKey(final String zeebeCorrelationKey) {
+  public MessageBuilder zeebeCorrelationKey(final String correlationKey) {
     final ZeebeSubscription subscription = getCreateSingleExtensionElement(ZeebeSubscription.class);
-
-    subscription.setCorrelationKey(asZeebeExpression(zeebeCorrelationKey));
+    subscription.setCorrelationKey(correlationKey);
     return this;
+  }
+
+  public MessageBuilder zeebeCorrelationKeyExpression(final String correlationKeyExpression) {
+    return zeebeCorrelationKey(asZeebeExpression(correlationKeyExpression));
   }
 }

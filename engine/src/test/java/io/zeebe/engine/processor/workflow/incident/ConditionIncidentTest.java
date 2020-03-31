@@ -46,11 +46,11 @@ public final class ConditionIncidentTest {
                 .startEvent()
                 .exclusiveGateway("xor")
                 .sequenceFlowId("s1")
-                .condition("foo < 5")
+                .conditionExpression("foo < 5")
                 .endEvent()
                 .moveToLastGateway()
                 .sequenceFlowId("s2")
-                .condition("foo > 10")
+                .conditionExpression("foo > 10")
                 .endEvent()
                 .done())
         .deploy();

@@ -89,11 +89,11 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
             .startEvent()
             .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("msg1")
-            .message(m -> m.name("message").zeebeCorrelationKey("$.id"))
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("id"))
             .endEvent()
             .moveToActivity("task")
             .boundaryEvent("msg2")
-            .message(m -> m.name("message").zeebeCorrelationKey("$.orderId"))
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("orderId"))
             .endEvent()
             .done(),
         singletonList(

@@ -291,7 +291,7 @@ public final class MultipleEventSubprocessTest {
         .eventSubProcess("event_sub_proc_msg")
         .startEvent("event_sub_start_msg")
         .interrupting(msgInterrupt)
-        .message(b -> b.name(msgName).zeebeCorrelationKey("key"))
+        .message(b -> b.name(msgName).zeebeCorrelationKeyExpression("key"))
         .endEvent("event_sub_end_msg");
 
     return builder
@@ -316,7 +316,7 @@ public final class MultipleEventSubprocessTest {
         .eventSubProcess("event_sub_proc_msg")
         .startEvent("event_sub_start_msg")
         .interrupting(msgInterrupt)
-        .message(b -> b.name(msgName).zeebeCorrelationKey("key"))
+        .message(b -> b.name(msgName).zeebeCorrelationKeyExpression("key"))
         .endEvent("event_sub_end_msg");
 
     return builder
@@ -337,7 +337,7 @@ public final class MultipleEventSubprocessTest {
         .eventSubProcess("event_sub_proc")
         .startEvent("event_sub_start")
         .interrupting(true)
-        .message(b -> b.name(msgName).zeebeCorrelationKey("key"))
+        .message(b -> b.name(msgName).zeebeCorrelationKeyExpression("key"))
         .endEvent("event_sub_end");
     return subProcBuilder
         .startEvent("sub_start")

@@ -2024,7 +2024,6 @@ public class ProcessBuilderTest {
     assertThat(timeCycle.getTextContent()).isEqualTo(timerCycle);
   }
 
-  @SuppressWarnings("unchecked")
   protected <T extends EventDefinition> T assertAndGetSingleEventDefinition(
       final String elementId, final Class<T> eventDefinitionType) {
     final BpmnModelElementInstance element = modelInstance.getModelElementById(elementId);

@@ -92,7 +92,7 @@ public final class BpmnYamlParser {
 
           addTask(gatewayBuilder, flow.getDefaultCase());
         } else {
-          gatewayBuilder.condition(flow.getCondition());
+          gatewayBuilder.conditionExpression(flow.getCondition());
 
           addTask(gatewayBuilder, flow.getNext());
         }

@@ -79,7 +79,8 @@ public class NonInterruptingEventSubprocessTest {
       },
       {
         "message",
-        eventSubprocess(s -> s.message(b -> b.name(messageName).zeebeCorrelationKey("key"))),
+        eventSubprocess(
+            s -> s.message(b -> b.name(messageName).zeebeCorrelationKeyExpression("key"))),
         eventTrigger(
             key -> {
               RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)

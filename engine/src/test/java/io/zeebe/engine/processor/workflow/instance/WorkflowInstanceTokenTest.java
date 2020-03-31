@@ -163,7 +163,8 @@ public final class WorkflowInstanceTokenTest {
                 .endEvent("end-1")
                 .moveToLastGateway()
                 .intermediateCatchEvent(
-                    "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("key")))
+                    "catch",
+                    e -> e.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
                 .endEvent("end-2")
                 .done())
         .deploy();
@@ -257,11 +258,13 @@ public final class WorkflowInstanceTokenTest {
                 .moveToLastGateway()
                 .eventBasedGateway("gateway")
                 .intermediateCatchEvent(
-                    "catch-1", e -> e.message(m -> m.name("msg-1").zeebeCorrelationKey("key")))
+                    "catch-1",
+                    e -> e.message(m -> m.name("msg-1").zeebeCorrelationKeyExpression("key")))
                 .endEvent("end-2")
                 .moveToNode("gateway")
                 .intermediateCatchEvent(
-                    "catch-2", e -> e.message(m -> m.name("msg-2").zeebeCorrelationKey("key")))
+                    "catch-2",
+                    e -> e.message(m -> m.name("msg-2").zeebeCorrelationKeyExpression("key")))
                 .endEvent("end-3")
                 .done())
         .deploy();
@@ -357,7 +360,8 @@ public final class WorkflowInstanceTokenTest {
                 .endEvent("end-1")
                 .moveToLastGateway()
                 .intermediateCatchEvent(
-                    "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("key")))
+                    "catch",
+                    e -> e.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
                 .endEvent("end-2")
                 .done())
         .deploy();
@@ -444,7 +448,7 @@ public final class WorkflowInstanceTokenTest {
                 .endEvent("end-2")
                 .moveToNode("gateway")
                 .sequenceFlowId("to-end-3")
-                .condition("x < 21")
+                .conditionExpression("x < 21")
                 .endEvent("end-3")
                 .done())
         .deploy();

@@ -103,7 +103,7 @@ public class ZeebeBuilderTest {
         Bpmn.createExecutableProcess()
             .startEvent()
             .intermediateCatchEvent("catch")
-            .message(b -> b.name("messageName").zeebeCorrelationKey("correlationKey"))
+            .message(b -> b.name("messageName").zeebeCorrelationKeyExpression("correlationKey"))
             .endEvent()
             .done();
 
@@ -134,7 +134,7 @@ public class ZeebeBuilderTest {
         Bpmn.createExecutableProcess()
             .startEvent()
             .receiveTask("catch")
-            .message(b -> b.name("messageName").zeebeCorrelationKey("correlationKey"))
+            .message(b -> b.name("messageName").zeebeCorrelationKeyExpression("correlationKey"))
             .endEvent()
             .done();
 

@@ -88,7 +88,7 @@ public final class BrokerReprocessingTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch-event")
-          .message(m -> m.name("order canceled").zeebeCorrelationKey("orderId"))
+          .message(m -> m.name("order canceled").zeebeCorrelationKeyExpression("orderId"))
           .sequenceFlowId("to-end")
           .endEvent()
           .done();

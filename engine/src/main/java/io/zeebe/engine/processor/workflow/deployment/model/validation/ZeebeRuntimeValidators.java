@@ -24,30 +24,50 @@ public final class ZeebeRuntimeValidators {
   public static final Collection<ModelElementValidator<?>> getValidators(
       final ExpressionLanguage expressionLanguage) {
     return List.of(
+        // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
-            .hasValidNonStaticExpression(ZeebeInput::getSource)
+            .hasValidExpression(
+                ZeebeInput::getSource, expression -> expression.isNonStatic().isMandatory())
             .hasValidPath(ZeebeInput::getTarget)
             .build(expressionLanguage),
+        // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeOutput.class)
-            .hasValidNonStaticExpression(ZeebeOutput::getSource)
+            .hasValidExpression(
+                ZeebeOutput::getSource, expression -> expression.isNonStatic().isMandatory())
             .hasValidPath(ZeebeOutput::getTarget)
             .build(expressionLanguage),
+        // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeSubscription.class)
-            .hasValidExpression(ZeebeSubscription::getCorrelationKey)
+            .hasValidExpression(
+                ZeebeSubscription::getCorrelationKey,
+                expression -> expression.isNonStatic().isMandatory())
             .build(expressionLanguage),
+        // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeLoopCharacteristics.class)
-            .hasValidExpression(ZeebeLoopCharacteristics::getInputCollection)
-            .hasValidExpressionIfPresent(ZeebeLoopCharacteristics::getOutputElement)
+            .hasValidExpression(
+                ZeebeLoopCharacteristics::getInputCollection,
+                expression -> expression.isNonStatic().isMandatory())
+            .hasValidExpression(
+                ZeebeLoopCharacteristics::getOutputElement,
+                expression -> expression.isNonStatic().isOptional())
             .build(expressionLanguage),
-        ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
-            .hasValidExpression(ZeebeCalledElement::getProcessId)
-            .build(expressionLanguage),
+        // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ConditionExpression.class)
-            .hasValidExpression(ConditionExpression::getTextContent)
+            .hasValidExpression(
+                ConditionExpression::getTextContent,
+                expression -> expression.isNonStatic().isMandatory())
             .build(expressionLanguage),
+        // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeTaskDefinition.class)
-            .hasValidExpression(ZeebeTaskDefinition::getType)
-            .hasValidExpression(ZeebeTaskDefinition::getRetries)
+            .hasValidExpression(
+                ZeebeTaskDefinition::getType, expression -> expression.isMandatory())
+            .hasValidExpression(
+                ZeebeTaskDefinition::getRetries, expression -> expression.isMandatory())
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
+            .hasValidExpression(
+                ZeebeCalledElement::getProcessId, expression -> expression.isMandatory())
             .build(expressionLanguage));
   }
 }

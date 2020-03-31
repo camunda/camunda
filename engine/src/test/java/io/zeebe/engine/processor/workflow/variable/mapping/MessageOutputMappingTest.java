@@ -143,7 +143,9 @@ public final class MessageOutputMappingTest {
                     "catch-event",
                     b -> {
                       b.message(
-                          m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE));
+                          m ->
+                              m.name(MESSAGE_NAME)
+                                  .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE));
 
                       mappings.accept(b);
                     })

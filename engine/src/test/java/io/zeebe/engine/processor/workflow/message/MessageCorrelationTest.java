@@ -44,7 +44,7 @@ public final class MessageCorrelationTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("receive-message")
-          .message(m -> m.name("message").zeebeCorrelationKey("key"))
+          .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
           .endEvent()
           .done();
 
@@ -52,7 +52,7 @@ public final class MessageCorrelationTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("receive-message")
-          .message(m -> m.name("message").zeebeCorrelationKey("key"))
+          .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
           .endEvent()
           .done();
 
@@ -60,22 +60,22 @@ public final class MessageCorrelationTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("message1")
-          .message(m -> m.name("ping").zeebeCorrelationKey("key"))
+          .message(m -> m.name("ping").zeebeCorrelationKeyExpression("key"))
           .intermediateCatchEvent("message2")
-          .message(m -> m.name("ping").zeebeCorrelationKey("key"))
+          .message(m -> m.name("ping").zeebeCorrelationKeyExpression("key"))
           .done();
 
   private static final BpmnModelInstance BOUNDARY_EVENTS_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("task")
-          .message(m -> m.name("taskMsg").zeebeCorrelationKey("key"))
+          .message(m -> m.name("taskMsg").zeebeCorrelationKeyExpression("key"))
           .boundaryEvent("msg1")
-          .message(m -> m.name("msg1").zeebeCorrelationKey("key"))
+          .message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key"))
           .endEvent("msg1End")
           .moveToActivity("task")
           .boundaryEvent("msg2")
-          .message(m -> m.name("msg2").zeebeCorrelationKey("key"))
+          .message(m -> m.name("msg2").zeebeCorrelationKeyExpression("key"))
           .endEvent("msg2End")
           .moveToActivity("task")
           .endEvent("taskEnd")
@@ -311,7 +311,8 @@ public final class MessageCorrelationTest {
             Bpmn.createExecutableProcess("process-2")
                 .startEvent()
                 .intermediateCatchEvent(
-                    "catch", c -> c.message(m -> m.name("message").zeebeCorrelationKey("key")))
+                    "catch",
+                    c -> c.message(m -> m.name("message").zeebeCorrelationKeyExpression("key")))
                 .endEvent()
                 .done())
         .deploy();
@@ -401,7 +402,8 @@ public final class MessageCorrelationTest {
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .intermediateCatchEvent(
-                    "catch", c -> c.message(m -> m.name("message").zeebeCorrelationKey("key")))
+                    "catch",
+                    c -> c.message(m -> m.name("message").zeebeCorrelationKeyExpression("key")))
                 .endEvent()
                 .done())
         .deploy();
@@ -515,10 +517,10 @@ public final class MessageCorrelationTest {
                 .startEvent()
                 .parallelGateway()
                 .intermediateCatchEvent("message1")
-                .message(m -> m.name("ping").zeebeCorrelationKey("key"))
+                .message(m -> m.name("ping").zeebeCorrelationKeyExpression("key"))
                 .moveToLastGateway()
                 .intermediateCatchEvent("message2")
-                .message(m -> m.name("ping").zeebeCorrelationKey("key"))
+                .message(m -> m.name("ping").zeebeCorrelationKeyExpression("key"))
                 .done())
         .deploy();
 
@@ -746,7 +748,7 @@ public final class MessageCorrelationTest {
             .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("msg1")
             .cancelActivity(false)
-            .message(m -> m.name("msg1").zeebeCorrelationKey("key"))
+            .message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key"))
             .endEvent("msg1End")
             .moveToActivity("task")
             .endEvent("taskEnd")
@@ -788,16 +790,16 @@ public final class MessageCorrelationTest {
             .startEvent()
             .eventBasedGateway("split")
             .intermediateCatchEvent(
-                "element-a", c -> c.message(m -> m.name("a").zeebeCorrelationKey("key")))
+                "element-a", c -> c.message(m -> m.name("a").zeebeCorrelationKeyExpression("key")))
             .intermediateCatchEvent(
-                "element-ab", c -> c.message(m -> m.name("b").zeebeCorrelationKey("key")))
+                "element-ab", c -> c.message(m -> m.name("b").zeebeCorrelationKeyExpression("key")))
             .exclusiveGateway("merge")
             .endEvent()
             .moveToNode("split")
             .intermediateCatchEvent(
-                "element-b", c -> c.message(m -> m.name("b").zeebeCorrelationKey("key")))
+                "element-b", c -> c.message(m -> m.name("b").zeebeCorrelationKeyExpression("key")))
             .intermediateCatchEvent(
-                "element-ba", c -> c.message(m -> m.name("a").zeebeCorrelationKey("key")))
+                "element-ba", c -> c.message(m -> m.name("a").zeebeCorrelationKeyExpression("key")))
             .connectTo("merge")
             .done();
 
@@ -839,7 +841,7 @@ public final class MessageCorrelationTest {
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType("test"))
                 .intermediateCatchEvent(
-                    "catch", c -> c.message(m -> m.name("a").zeebeCorrelationKey("key")))
+                    "catch", c -> c.message(m -> m.name("a").zeebeCorrelationKeyExpression("key")))
                 .done())
         .deploy();
 

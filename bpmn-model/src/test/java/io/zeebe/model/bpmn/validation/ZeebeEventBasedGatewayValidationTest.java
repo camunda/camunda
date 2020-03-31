@@ -51,7 +51,7 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
             .timerWithCycle("R/PT1M")
             .moveToLastGateway()
             .intermediateCatchEvent(
-                "catch", c -> c.message(m -> m.name("msg").zeebeCorrelationKey("foo")))
+                "catch", c -> c.message(m -> m.name("msg").zeebeCorrelationKeyExpression("foo")))
             .done(),
         singletonList(
             expect(
@@ -63,10 +63,10 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
             .startEvent()
             .eventBasedGateway()
             .intermediateCatchEvent(
-                "catch-1", c -> c.message(m -> m.name("msg").zeebeCorrelationKey("foo")))
+                "catch-1", c -> c.message(m -> m.name("msg").zeebeCorrelationKeyExpression("foo")))
             .moveToLastGateway()
             .intermediateCatchEvent(
-                "catch-2", c -> c.message(m -> m.name("msg").zeebeCorrelationKey("foo")))
+                "catch-2", c -> c.message(m -> m.name("msg").zeebeCorrelationKeyExpression("foo")))
             .done(),
         singletonList(
             expect(
@@ -78,10 +78,10 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
             .startEvent()
             .eventBasedGateway()
             .intermediateCatchEvent(
-                "catch-1", c -> c.message(m -> m.name(null).zeebeCorrelationKey("foo")))
+                "catch-1", c -> c.message(m -> m.name(null).zeebeCorrelationKeyExpression("foo")))
             .moveToLastGateway()
             .intermediateCatchEvent(
-                "catch-2", c -> c.message(m -> m.name("msg").zeebeCorrelationKey(null)))
+                "catch-2", c -> c.message(m -> m.name("msg").zeebeCorrelationKeyExpression(null)))
             .done(),
         Arrays.asList(
             expect(Message.class, "Name must be present and not empty"),
@@ -92,10 +92,10 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
             .startEvent()
             .eventBasedGateway()
             .receiveTask()
-            .message(m -> m.name("this").zeebeCorrelationKey("foo"))
+            .message(m -> m.name("this").zeebeCorrelationKeyExpression("foo"))
             .moveToLastGateway()
             .receiveTask()
-            .message(m -> m.name("that").zeebeCorrelationKey("foo"))
+            .message(m -> m.name("that").zeebeCorrelationKeyExpression("foo"))
             .done(),
         singletonList(
             expect(

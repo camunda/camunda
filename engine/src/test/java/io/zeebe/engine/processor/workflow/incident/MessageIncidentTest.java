@@ -37,7 +37,8 @@ public final class MessageIncidentTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent(
-              "catch", e -> e.message(m -> m.name("cancel").zeebeCorrelationKey("orderId")))
+              "catch",
+              e -> e.message(m -> m.name("cancel").zeebeCorrelationKeyExpression("orderId")))
           .done();
 
   @Rule

@@ -56,7 +56,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
             Bpmn.createExecutableProcess("process")
                 .startEvent()
                 .intermediateCatchEvent()
-                .message(m -> m.name(messageName).zeebeCorrelationKey("key"))
+                .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
                 .endEvent("end")
                 .done());
   }

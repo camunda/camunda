@@ -108,7 +108,7 @@ public final class BpmnElementTypeTest {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
                   .intermediateCatchEvent(elementId())
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKeyExpression("id"))
                   .done();
             }
 
@@ -154,7 +154,7 @@ public final class BpmnElementTypeTest {
                   .startEvent()
                   .serviceTask("task", b -> b.zeebeJobType(taskType()))
                   .boundaryEvent(elementId())
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKeyExpression("id"))
                   .endEvent()
                   .done();
             }
@@ -207,7 +207,7 @@ public final class BpmnElementTypeTest {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
                   .receiveTask(elementId())
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKeyExpression("id"))
                   .done();
             }
 
@@ -235,7 +235,7 @@ public final class BpmnElementTypeTest {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
                   .exclusiveGateway()
-                  .condition("5 > 1")
+                  .conditionExpression("5 > 1")
                   .sequenceFlowId(elementId())
                   .endEvent()
                   .moveToLastExclusiveGateway()
@@ -251,7 +251,7 @@ public final class BpmnElementTypeTest {
                   .startEvent()
                   .eventBasedGateway(elementId())
                   .intermediateCatchEvent()
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKeyExpression("id"))
                   .moveToLastGateway()
                   .intermediateCatchEvent()
                   .timerWithDuration("PT0.01S")

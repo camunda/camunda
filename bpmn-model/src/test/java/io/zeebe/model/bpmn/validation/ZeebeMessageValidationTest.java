@@ -59,7 +59,7 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent("foo")
-            .message(m -> m.name("foo").zeebeCorrelationKey(""))
+            .message(m -> m.name("foo").zeebeCorrelationKeyExpression(""))
             .done(),
         singletonList(
             expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
@@ -87,7 +87,7 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .receiveTask("foo")
-            .message(m -> m.name("foo").zeebeCorrelationKey(""))
+            .message(m -> m.name("foo").zeebeCorrelationKeyExpression(""))
             .done(),
         singletonList(
             expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
@@ -120,7 +120,7 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .subProcess("subProcess")
             .embeddedSubProcess()
             .startEvent("subProcessStart")
-            .message(b -> b.name("message").zeebeCorrelationKey("correlationKey"))
+            .message(b -> b.name("message").zeebeCorrelationKeyExpression("correlationKey"))
             .endEvent()
             .subProcessDone()
             .endEvent()
@@ -131,9 +131,9 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .receiveTask("task")
-            .message(m -> m.name("message").zeebeCorrelationKey("correlationKey"))
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("correlationKey"))
             .boundaryEvent("boundary")
-            .message(m -> m.name("message").zeebeCorrelationKey("correlationKey"))
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("correlationKey"))
             .endEvent()
             .done(),
         singletonList(expect("task", "Cannot reference the same message name as a boundary event"))
@@ -149,12 +149,12 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .serviceTask("task", t -> t.zeebeJobType("test"))
             .boundaryEvent(
                 "boundary-1",
-                b -> b.message(m -> m.name(null).zeebeCorrelationKey("correlationKey")))
+                b -> b.message(m -> m.name(null).zeebeCorrelationKeyExpression("correlationKey")))
             .endEvent()
             .moveToActivity("task")
             .boundaryEvent(
                 "boundary-2",
-                b -> b.message(m -> m.name(null).zeebeCorrelationKey("correlationKey")))
+                b -> b.message(m -> m.name(null).zeebeCorrelationKeyExpression("correlationKey")))
             .endEvent()
             .done(),
         Arrays.asList(
@@ -165,9 +165,9 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .receiveTask("task")
-            .message(m -> m.name("message").zeebeCorrelationKey("correlationKey"))
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("correlationKey"))
             .boundaryEvent("boundary")
-            .message(m -> m.name(null).zeebeCorrelationKey("correlationKey"))
+            .message(m -> m.name(null).zeebeCorrelationKeyExpression("correlationKey"))
             .endEvent()
             .done(),
         singletonList(expect(Message.class, "Name must be present and not empty"))

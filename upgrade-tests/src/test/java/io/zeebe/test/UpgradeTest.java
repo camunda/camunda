@@ -48,7 +48,8 @@ public class UpgradeTest {
   private static final String TASK = "task";
   private static final String MESSAGE = "message";
   private static final File SHARED_DATA;
-  private static String lastVersion = VersionUtil.getPreviousVersion();
+
+  private static final String LAST_VERSION = VersionUtil.getPreviousVersion();
 
   static {
     final var sharedDataPath =
@@ -175,7 +176,7 @@ public class UpgradeTest {
     // given
     state
         .broker(CURRENT_VERSION, tmpFolder.getRoot().getPath())
-        .withStandaloneGateway(lastVersion)
+        .withStandaloneGateway(LAST_VERSION)
         .start();
     final long wfInstanceKey = testCase.setUp(state.client());
 
@@ -199,7 +200,7 @@ public class UpgradeTest {
 
   private void upgradeZeebe(final boolean deleteSnapshot) {
     // given
-    state.broker(lastVersion, tmpFolder.getRoot().getPath()).start();
+    state.broker(LAST_VERSION, tmpFolder.getRoot().getPath()).start();
     final long wfInstanceKey = testCase.setUp(state.client());
     final long key = testCase.runBefore(state);
 
@@ -244,7 +245,7 @@ public class UpgradeTest {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .intermediateCatchEvent(
-            "catch", b -> b.message(m -> m.name(MESSAGE).zeebeCorrelationKey("key")))
+            "catch", b -> b.message(m -> m.name(MESSAGE).zeebeCorrelationKeyExpression("key")))
         .endEvent()
         .done();
   }
@@ -271,7 +272,7 @@ public class UpgradeTest {
   private static BpmnModelInstance msgStartWorkflow() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
-        .message(b -> b.zeebeCorrelationKey("key").name(MESSAGE))
+        .message(b -> b.zeebeCorrelationKeyExpression("key").name(MESSAGE))
         .endEvent()
         .done();
   }

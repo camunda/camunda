@@ -10,6 +10,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.validation;
 import io.zeebe.el.ExpressionLanguage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -55,57 +56,6 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     return new ZeebeExpressionValidator.Builder<>(elementType);
   }
 
-  private static void verifyExpression(
-      final String expression,
-      final ExpressionLanguage expressionLanguage,
-      final ValidationResultCollector resultCollector) {
-
-    if (expression == null) {
-      resultCollector.addError(0, "Expected expression but not found.");
-      return;
-    }
-
-    final var parseResult = expressionLanguage.parseExpression(expression);
-
-    if (!parseResult.isValid()) {
-      resultCollector.addError(0, parseResult.getFailureMessage());
-    }
-  }
-
-  private static void verifyExpressionIfPresent(
-      final String expression,
-      final ExpressionLanguage expressionLanguage,
-      final ValidationResultCollector resultCollector) {
-    if (expression != null) {
-      verifyExpression(expression, expressionLanguage, resultCollector);
-    }
-  }
-
-  private static void verifyNonStaticExpression(
-      final String expression,
-      final ExpressionLanguage expressionLanguage,
-      final ValidationResultCollector resultCollector) {
-
-    if (expression == null) {
-      resultCollector.addError(0, "Expected expression but not found.");
-      return;
-    }
-
-    final var parseResult = expressionLanguage.parseExpression(expression);
-
-    if (!parseResult.isValid()) {
-      resultCollector.addError(0, parseResult.getFailureMessage());
-    }
-
-    if (parseResult.isStatic()) {
-      resultCollector.addError(
-          0,
-          String.format(
-              "Expected expression but found static value '%s'. An expression must start with '=' (e.g. '=%s').",
-              expression, expression));
-    }
-  }
-
   private static void verifyPath(
       final String expression,
       final ExpressionLanguage expressionLanguage,
@@ -136,23 +86,14 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
       this.elementType = elementType;
     }
 
-    public Builder<T> hasValidExpression(final Function<T, String> expressionSupplier) {
-      verifications.add(
-          new Verification<>(expressionSupplier, ZeebeExpressionValidator::verifyExpression));
-      return this;
-    }
+    public Builder<T> hasValidExpression(
+        final Function<T, String> expressionSupplier,
+        final Consumer<ExpressionVerification> expressionVerification) {
 
-    public Builder<T> hasValidExpressionIfPresent(final Function<T, String> expressionSupplier) {
-      verifications.add(
-          new Verification<>(
-              expressionSupplier, ZeebeExpressionValidator::verifyExpressionIfPresent));
-      return this;
-    }
+      final var expressionV = new ExpressionVerification();
+      expressionVerification.accept(expressionV);
 
-    public Builder<T> hasValidNonStaticExpression(final Function<T, String> expressionSupplier) {
-      verifications.add(
-          new Verification<>(
-              expressionSupplier, ZeebeExpressionValidator::verifyNonStaticExpression));
+      verifications.add(new Verification<>(expressionSupplier, expressionV.build()));
       return this;
     }
 
@@ -165,6 +106,53 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     public ZeebeExpressionValidator<T> build(final ExpressionLanguage expressionLanguage) {
 
       return new ZeebeExpressionValidator<>(expressionLanguage, elementType, verifications);
+    }
+  }
+
+  public static final class ExpressionVerification {
+
+    private boolean isNonStatic = false;
+    private boolean isMandatory = false;
+
+    public ExpressionVerification isNonStatic() {
+      isNonStatic = true;
+      return this;
+    }
+
+    public ExpressionVerification isMandatory() {
+      isMandatory = true;
+      return this;
+    }
+
+    public ExpressionVerification isOptional() {
+      isMandatory = false;
+      return this;
+    }
+
+    private Assertion build() {
+      return ((expression, expressionLanguage, resultCollector) -> {
+        if (expression == null) {
+          if (isMandatory) {
+            resultCollector.addError(0, "Expected expression but not found.");
+          }
+          return;
+        }
+
+        final var parseResult = expressionLanguage.parseExpression(expression);
+
+        if (!parseResult.isValid()) {
+          resultCollector.addError(0, parseResult.getFailureMessage());
+          return;
+        }
+
+        if (parseResult.isStatic() && isNonStatic) {
+          resultCollector.addError(
+              0,
+              String.format(
+                  "Expected expression but found static value '%s'. An expression must start with '=' (e.g. '=%s').",
+                  expression, expression));
+        }
+      });
     }
   }
 

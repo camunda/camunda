@@ -244,7 +244,9 @@ public final class MessageStartEventTest {
                 .startEvent()
                 .message(MESSAGE_NAME_1)
                 .intermediateCatchEvent(
-                    "catch", e -> e.message(m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey("key")))
+                    "catch",
+                    e ->
+                        e.message(m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKeyExpression("key")))
                 .endEvent()
                 .done())
         .deploy();

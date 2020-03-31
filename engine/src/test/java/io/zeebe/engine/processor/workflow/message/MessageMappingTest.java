@@ -48,14 +48,14 @@ public final class MessageMappingTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .done();
 
   private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("catch")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .done();
 
   private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
@@ -63,7 +63,7 @@ public final class MessageMappingTest {
           .startEvent()
           .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("catch")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .endEvent()
           .done();
 
@@ -72,7 +72,7 @@ public final class MessageMappingTest {
           .startEvent()
           .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("catch", b -> b.cancelActivity(false))
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .endEvent()
           .done();
 
@@ -83,7 +83,10 @@ public final class MessageMappingTest {
           .id("gateway")
           .intermediateCatchEvent(
               "catch",
-              c -> c.message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE)))
+              c ->
+                  c.message(
+                      m ->
+                          m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE)))
           .sequenceFlowId("to-end1")
           .endEvent("end1")
           .moveToLastGateway()
@@ -99,7 +102,10 @@ public final class MessageMappingTest {
               eventSubProcess ->
                   eventSubProcess
                       .startEvent()
-                      .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+                      .message(
+                          m ->
+                              m.name(MESSAGE_NAME)
+                                  .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
                       .interrupting(true)
                       .endEvent())
           .startEvent()
@@ -114,7 +120,10 @@ public final class MessageMappingTest {
               eventSubProcess ->
                   eventSubProcess
                       .startEvent()
-                      .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+                      .message(
+                          m ->
+                              m.name(MESSAGE_NAME)
+                                  .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
                       .interrupting(false)
                       .endEvent())
           .startEvent()
