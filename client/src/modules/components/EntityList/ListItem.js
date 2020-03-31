@@ -30,7 +30,7 @@ export default function ListItem({
         </span>
       </div>
       {meta.map((content, idx) => (
-        <div className="meta" key={idx} title={content}>
+        <div className="meta" key={idx} title={content ? content : undefined}>
           {content}
         </div>
       ))}

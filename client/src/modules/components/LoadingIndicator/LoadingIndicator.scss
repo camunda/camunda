@@ -9,13 +9,14 @@
 }
 
 .LoadingIndicator {
-  margin: 5px auto;
+  margin: 5px auto 13px auto;
   width: 22px;
   height: 22px;
 
   &.small {
     width: 10px;
     height: 10px;
+    margin-bottom: 9px;
 
     &:after {
       border-width: 2px;
