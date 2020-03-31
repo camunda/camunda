@@ -339,7 +339,7 @@ public class NettyMessagingService implements ManagedMessagingService {
         logKeyStore(ks, ksLocation, ksPwd);
       }
     } catch (final FileNotFoundException e) {
-      throw new AtomixRuntimeException("Could not load cluster keystore: {}", e.getMessage());
+      throw new AtomixRuntimeException("Could not load cluster keystore: %s", e.getMessage());
     } catch (final Exception e) {
       throw new AtomixRuntimeException("Error loading cluster keystore", e);
     }

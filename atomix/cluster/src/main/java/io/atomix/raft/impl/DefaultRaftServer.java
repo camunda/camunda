@@ -48,7 +48,8 @@ public class DefaultRaftServer implements RaftServer {
 
   protected final RaftContext context;
   private final Logger log;
-  private final AtomicReference<CompletableFuture<RaftServer>> openFutureRef = new AtomicReference<>();
+  private final AtomicReference<CompletableFuture<RaftServer>> openFutureRef =
+      new AtomicReference<>();
   private final AtomicReference<CompletableFuture<Void>> closeFutureRef = new AtomicReference<>();
   private volatile boolean started;
 
@@ -216,29 +217,29 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   private void leaveAfterOpenFinished() {
-    openFutureRef.get().whenComplete(
-        (openResult, openError) -> {
-          if (openError == null) {
-            cluster()
-                .leave()
-                .whenComplete(
-                    (leaveResult, leaveError) -> {
-                      shutdown()
-                          .whenComplete(
-                              (shutdownResult, shutdownError) -> {
-                                context.delete();
-                                closeFutureRef.get().complete(null);
-                              });
-                    });
-          } else {
-            closeFutureRef.get().complete(null);
-          }
-        });
+    openFutureRef
+        .get()
+        .whenComplete(
+            (openResult, openError) -> {
+              if (openError == null) {
+                cluster()
+                    .leave()
+                    .whenComplete(
+                        (leaveResult, leaveError) -> {
+                          shutdown()
+                              .whenComplete(
+                                  (shutdownResult, shutdownError) -> {
+                                    context.delete();
+                                    closeFutureRef.get().complete(null);
+                                  });
+                        });
+              } else {
+                closeFutureRef.get().complete(null);
+              }
+            });
   }
 
-  /**
-   * Starts the server.
-   */
+  /** Starts the server. */
   private CompletableFuture<RaftServer> start(final Supplier<CompletableFuture<Void>> joiner) {
     if (started) {
       return CompletableFuture.completedFuture(this);
@@ -262,19 +263,19 @@ public class DefaultRaftServer implements RaftServer {
               });
     }
 
-    return openFutureRef.get().whenComplete(
-        (result, error) -> {
-          if (error == null) {
-            log.debug("Server started successfully!");
-          } else {
-            log.warn("Failed to start server!");
-          }
-        });
+    return openFutureRef
+        .get()
+        .whenComplete(
+            (result, error) -> {
+              if (error == null) {
+                log.debug("Server started successfully!");
+              } else {
+                log.warn("Failed to start server!");
+              }
+            });
   }
 
-  /**
-   * Default Raft server builder.
-   */
+  /** Default Raft server builder. */
   public static class Builder extends RaftServer.Builder {
 
     public Builder(final MemberId localMemberId) {

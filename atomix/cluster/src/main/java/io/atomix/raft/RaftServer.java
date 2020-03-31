@@ -181,7 +181,7 @@ public interface RaftServer {
       final InetAddress address = InetAddress.getByName("0.0.0.0");
       return builder(MemberId.from(address.getHostName()));
     } catch (final UnknownHostException e) {
-      throw new ConfigurationException("Cannot configure local node", e);
+      throw new ConfigurationException(e, "Cannot configure local node %s", e.getMessage());
     }
   }
 

@@ -71,7 +71,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   private final ThreadContextFactory threadContextFactory;
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
       new CopyOnWriteArraySet<>();
-  private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
   private final Set<Runnable> deferredFailureListeners = new CopyOnWriteArraySet<>();
 
   private RaftServer server;

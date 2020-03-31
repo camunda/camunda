@@ -149,6 +149,11 @@ public abstract class RaftException extends RuntimeException {
     public ConfigurationException(final String message, final Object... args) {
       super(RaftError.Type.CONFIGURATION_ERROR, message, args);
     }
+
+    public ConfigurationException(
+        final Throwable throwable, final String message, final Object... args) {
+      super(RaftError.Type.CONFIGURATION_ERROR, throwable, message, args);
+    }
   }
 
   public static class Unavailable extends RaftException {

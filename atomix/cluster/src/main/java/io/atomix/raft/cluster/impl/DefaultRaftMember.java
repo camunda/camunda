@@ -134,9 +134,7 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
       if (time.isAfter(updated)) {
         this.updated = checkNotNull(time, "time cannot be null");
       }
-      if (typeChangeListeners != null) {
-        typeChangeListeners.forEach(l -> l.accept(type));
-      }
+      typeChangeListeners.forEach(l -> l.accept(type));
     }
     return this;
   }
