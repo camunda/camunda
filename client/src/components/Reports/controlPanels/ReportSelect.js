@@ -9,6 +9,7 @@ import React from 'react';
 import {Select} from 'components';
 import {reportConfig} from 'services';
 import equal from 'deep-equal';
+import update from 'immutability-helper';
 
 import './ReportSelect.scss';
 import {t} from 'translation';
@@ -70,11 +71,20 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
 }
 
 export default React.memo(ReportSelect, (prevProps, nextProps) => {
-  if (prevProps.report.data !== nextProps.report.data) {
+  const prevData = excludeConfig(prevProps.report.data);
+  const nextData = excludeConfig(nextProps.report.data);
+
+  if (!equal(prevData, nextData)) {
     return false;
   }
   return true;
 });
+
+function excludeConfig(data) {
+  return update(data, {
+    configuration: {$set: {distributedBy: data.configuration.distributedBy}}
+  });
+}
 
 function addVariables(options, variables) {
   return options.map(option => {
