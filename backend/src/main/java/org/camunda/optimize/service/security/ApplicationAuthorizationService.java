@@ -84,6 +84,11 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
           result.add(engineContext.getEngineAlias());
         }
       } catch (OptimizeRuntimeException e) {
+        log.error(String.format(
+          "Unable to check user [%s] authorization for engine [%s}",
+          userId,
+          engineContext.getEngineAlias()
+        ));
         failedEngines.add(engineContext);
       }
     }
@@ -105,6 +110,11 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
           result.add(engineContext.getEngineAlias());
         }
       } catch (OptimizeRuntimeException e) {
+        log.error(String.format(
+          "Unable to check group [%s] authorization for engine [%s}",
+          groupId,
+          engineContext.getEngineAlias()
+        ));
         failedEngines.add(engineContext);
       }
     }
@@ -116,20 +126,12 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
     return result;
   }
 
-  private static boolean isUserAuthorizedToAccessOptimizeOnEngine(final String username,
-                                                                  final EngineContext engineContext) {
+  private static boolean isUserAuthorizedToAccessOptimizeOnEngine(
+    final String username,
+    final EngineContext engineContext) throws OptimizeRuntimeException {
     final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
     final List<AuthorizationDto> allAuthorizations;
-    try {
-      allAuthorizations = engineContext.getAllApplicationAuthorizations();
-    } catch (OptimizeRuntimeException e) {
-      log.info(
-        "Could not fetch application authorizations from the Engine [{}] to check User [{}] authorizations.",
-        engineContext.getEngineAlias(),
-        username
-      );
-      throw e;
-    }
+    allAuthorizations = engineContext.getAllApplicationAuthorizations();
     final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(
       engineContext.getEngineAlias(),
       allAuthorizations,
@@ -141,20 +143,12 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
     return resolvedApplicationAuthorizations.isAuthorizedToAccessResource(OPTIMIZE_APPLICATION_RESOURCE_ID);
   }
 
-  private static boolean isGroupAuthorizedToAccessOptimizeOnEngine(final String groupId,
-                                                                   final EngineContext engineContext) {
+  private static boolean isGroupAuthorizedToAccessOptimizeOnEngine(
+    final String groupId,
+    final EngineContext engineContext) throws OptimizeRuntimeException {
     final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
     final List<AuthorizationDto> allAuthorizations;
-    try {
-      allAuthorizations = engineContext.getAllApplicationAuthorizations();
-    } catch (OptimizeRuntimeException e) {
-      log.info(
-        "Could not fetch application authorizations from the Engine [{}] to check Group [{}] authorizations.",
-        engineContext.getEngineAlias(),
-        groupId
-      );
-      throw e;
-    }
+    allAuthorizations = engineContext.getAllApplicationAuthorizations();
     final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(
       engineContext.getEngineAlias(),
       allAuthorizations,
