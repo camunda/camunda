@@ -16,7 +16,7 @@ import * as api from 'modules/api/header';
 import * as Styled from './styled';
 
 User.propTypes = {
-  handleRedirect: PropTypes.func
+  handleRedirect: PropTypes.func,
 };
 
 export default function User({handleRedirect}) {
@@ -24,7 +24,7 @@ export default function User({handleRedirect}) {
   const {firstname, lastname} = storedValue;
   const [user, setUser] = useState({
     firstname,
-    lastname
+    lastname,
   });
 
   useEffect(() => {

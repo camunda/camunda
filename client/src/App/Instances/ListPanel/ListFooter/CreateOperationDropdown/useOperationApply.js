@@ -16,7 +16,7 @@ export default function useOperationApply() {
   const {addAllVisibleIds, addIds} = useInstancesPollContext();
 
   return {
-    applyBatchOperation: operationType => {
+    applyBatchOperation: (operationType) => {
       reset();
 
       const filterIds = query.ids || [];
@@ -34,8 +34,8 @@ export default function useOperationApply() {
       applyBatchOperation(operationType, {
         ...query,
         ids,
-        excludeIds
+        excludeIds,
       });
-    }
+    },
   };
 }

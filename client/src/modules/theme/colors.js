@@ -96,7 +96,7 @@ const Colors = {
 
   // logo
   logoLight: '#666666',
-  logoDark: '#f8f8f8'
+  logoDark: '#f8f8f8',
 };
 
 export default Colors;

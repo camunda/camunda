@@ -21,7 +21,7 @@ import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 class Login extends React.Component {
   static propTypes = {
     location: PropTypes.object.isRequired,
-    clearStateLocally: PropTypes.func.isRequired
+    clearStateLocally: PropTypes.func.isRequired,
   };
 
   state = {
@@ -29,14 +29,14 @@ class Login extends React.Component {
     password: '',
     forceRedirect: false,
     error: null,
-    isLoading: false
+    isLoading: false,
   };
 
   componentDidMount() {
     document.title = PAGE_TITLE.LOGIN;
   }
 
-  handleLogin = async e => {
+  handleLogin = async (e) => {
     e.preventDefault();
     const {username, password} = this.state;
 
@@ -69,7 +69,7 @@ class Login extends React.Component {
         <Redirect
           to={{
             pathname: locationState.referrer,
-            state: {isLoggedIn: true}
+            state: {isLoggedIn: true},
           }}
         />
       );

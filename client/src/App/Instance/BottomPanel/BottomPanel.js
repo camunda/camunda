@@ -20,17 +20,17 @@ export default class BottomPanel extends React.PureComponent {
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
-    ])
+      PropTypes.node,
+    ]),
   };
 
   renderChildren() {
     return React.Children.map(
       this.props.children,
-      child =>
+      (child) =>
         child &&
         React.cloneElement(child, {
-          expandState: this.props.expandState
+          expandState: this.props.expandState,
         })
     );
   }

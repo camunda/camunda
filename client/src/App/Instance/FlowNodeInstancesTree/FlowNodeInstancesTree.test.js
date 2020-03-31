@@ -30,7 +30,7 @@ jest.mock(
 
 const mockOnSelection = jest.fn();
 
-const mountNode = customProps => {
+const mountNode = (customProps) => {
   const mountedNode = mount(
     <ThemeProvider>
       <FlowNodeInstancesTree
@@ -38,7 +38,7 @@ const mountNode = customProps => {
         selectedTreeRowIds={[]}
         onTreeRowSelection={mockOnSelection}
         getFlowNodeDetails={jest.fn()}
-        getNodeWithMetaData={node => node.id}
+        getNodeWithMetaData={(node) => node.id}
         treeDepth={1}
         {...customProps}
       />
@@ -108,7 +108,7 @@ describe('FlowNodeInstancesTree', () => {
     it('should show root element as default selection', () => {
       //Given
       node = mountNode({
-        selectedTreeRowIds: testData.multipleSelectedTreeRowIds
+        selectedTreeRowIds: testData.multipleSelectedTreeRowIds,
       });
       //Then
       const rootNode = node.find(`[data-test="ParentNodeId"]`);
@@ -119,7 +119,7 @@ describe('FlowNodeInstancesTree', () => {
     it('should call the OnSelect method from props with node obj of clicked row', () => {
       //Given
       node = mountNode({
-        selectedTreeRowIds: testData.multipleSelectedTreeRowIds
+        selectedTreeRowIds: testData.multipleSelectedTreeRowIds,
       });
       const StartEventNodeButton = node
         .find(`[data-test="StartEventId"]`)

@@ -11,7 +11,7 @@ const URL = '/api/batch-operations';
 export async function fetchBatchOperations({pageSize, searchAfter}) {
   const response = await post(URL, {
     pageSize,
-    searchAfter
+    searchAfter,
   });
   return await response.json();
 }

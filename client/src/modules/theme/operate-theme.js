@@ -9,14 +9,14 @@ import Colors from './colors';
 const operateTheme = {
   dark: {
     colors: {
-      primary: Colors.uiDark01
-    }
+      primary: Colors.uiDark01,
+    },
   },
   light: {
     colors: {
-      primary: Colors.uiDark02
-    }
-  }
+      primary: Colors.uiDark02,
+    },
+  },
 };
 
 export default operateTheme;

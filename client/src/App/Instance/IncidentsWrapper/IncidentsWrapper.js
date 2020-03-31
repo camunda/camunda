@@ -27,13 +27,13 @@ function IncidentsWrapper(props) {
     flowNodes,
     selectedFlowNodeInstanceIds,
     onIncidentSelection,
-    expandState
+    expandState,
   } = props;
 
   const [isOpen, setIsOpen] = useState(false);
   const [sorting, setSorting] = useState({
     sortBy: 'errorType',
-    sortOrder: SORT_ORDER.DESC
+    sortOrder: SORT_ORDER.DESC,
   });
   const [selectedFlowNodes, setSelectedFlowNodes] = useState([]);
   const [selectedErrorTypes, setSelectedErrorTypes] = useState([]);
@@ -71,8 +71,8 @@ function IncidentsWrapper(props) {
   }
 
   function handleSelection(selectedFilters, updateFilterState) {
-    return id => {
-      let index = selectedFilters.findIndex(item => item === id);
+    return (id) => {
+      let index = selectedFilters.findIndex((item) => item === id);
       let list = [...selectedFilters];
       if (index === -1) {
         list.push(id);
@@ -105,7 +105,7 @@ function IncidentsWrapper(props) {
       return incidents;
     }
 
-    const isSelected = item => {
+    const isSelected = (item) => {
       if (hasSelectedErrorTypes && hasSelectedFlowNodes) {
         return (
           selectedFlowNodes.includes(item.flowNodeId) &&
@@ -121,7 +121,7 @@ function IncidentsWrapper(props) {
       }
     };
 
-    return [...incidents].filter(item => isSelected(item));
+    return [...incidents].filter((item) => isSelected(item));
   }, [incidents, selectedErrorTypes, selectedFlowNodes]);
 
   const sortedIncidents = sortData(
@@ -187,7 +187,7 @@ IncidentsWrapper.propTypes = {
   onIncidentSelection: PropTypes.func.isRequired,
   flowNodes: PropTypes.object,
   errorTypes: PropTypes.object,
-  expandState: PropTypes.string.isRequired
+  expandState: PropTypes.string.isRequired,
 };
 
 export default IncidentsWrapper;

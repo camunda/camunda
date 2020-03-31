@@ -18,7 +18,7 @@ export const EmptyMessage = themed(styled.div`
 
   color: ${themeStyle({
     dark: Colors.darkDiagram,
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   span {

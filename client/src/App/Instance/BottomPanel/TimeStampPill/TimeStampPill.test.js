@@ -19,7 +19,7 @@ import {DataManagerProvider} from 'modules/DataManager';
 
 jest.mock('modules/utils/bpmn');
 
-const renderNode = node => {
+const renderNode = (node) => {
   return mount(
     <ThemeProvider>
       <DataManagerProvider>

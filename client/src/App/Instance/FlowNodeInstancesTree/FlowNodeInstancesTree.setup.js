@@ -8,7 +8,7 @@ import {createFlowNodeInstance} from 'modules/testUtils';
 
 const startEventInstance = createFlowNodeInstance({
   id: 'StartEventId',
-  type: 'START_EVENT'
+  type: 'START_EVENT',
 });
 
 const flowNodeInstances = [
@@ -19,23 +19,23 @@ const flowNodeInstances = [
     children: [
       createFlowNodeInstance({
         id: 'ServiceTaskId',
-        type: 'TASK'
-      })
-    ]
+        type: 'TASK',
+      }),
+    ],
   }),
-  createFlowNodeInstance({id: 'EndEventId', type: 'END_EVENT'})
+  createFlowNodeInstance({id: 'EndEventId', type: 'END_EVENT'}),
 ];
 
 const parentNode = {
   id: 'ParentNodeId',
   type: 'WORKFLOW',
   state: 'ACTIVE',
-  children: flowNodeInstances
+  children: flowNodeInstances,
 };
 
 export const testData = {
   singleSelectedTreeRows: ['ParentNodeId'],
   multipleSelectedTreeRowIds: ['ParentNodeId', 'StartEventId', 'ServiceTaskId'],
   parentNode,
-  startEventInstance
+  startEventInstance,
 };

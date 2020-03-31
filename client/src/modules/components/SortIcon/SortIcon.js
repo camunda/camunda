@@ -23,8 +23,8 @@ export default function SortIcon(props) {
 SortIcon.propTypes = {
   sortOrder: PropTypes.oneOf(Object.values(SORT_ORDER)),
   onClick: PropTypes.func,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
 };
 SortIcon.defaultProps = {
-  disabled: PropTypes.false
+  disabled: PropTypes.false,
 };

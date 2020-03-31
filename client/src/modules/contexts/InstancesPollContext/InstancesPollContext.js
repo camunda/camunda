@@ -10,7 +10,7 @@ import {withData} from 'modules/DataManager';
 import {
   LOADING_STATE,
   SUBSCRIPTION_TOPIC,
-  POLL_TOPICS
+  POLL_TOPICS,
 } from 'modules/constants';
 
 // Creates a context for polling for updates on instances with active operations
@@ -19,8 +19,8 @@ const InstancesPollConsumer = InstancesPollContext.Consumer;
 
 function getCommonItems(list_1 = [], list_2 = []) {
   return list_1.length < list_2.length
-    ? list_1.filter(item => list_2.includes(item))
-    : list_2.filter(item => list_1.includes(item));
+    ? list_1.filter((item) => list_2.includes(item))
+    : list_2.filter((item) => list_1.includes(item));
 }
 
 class InstancesPollProviderComp extends React.Component {
@@ -28,21 +28,21 @@ class InstancesPollProviderComp extends React.Component {
     dataManager: PropTypes.object,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
+      PropTypes.node,
     ]),
     visibleIdsInListPanel: PropTypes.array,
-    filter: PropTypes.object
+    filter: PropTypes.object,
   };
 
   static defaultProps = {
-    visibleIdsInListPanel: []
+    visibleIdsInListPanel: [],
   };
 
   constructor(props) {
     super();
     this.state = {
       active: new Set([]),
-      complete: new Set([])
+      complete: new Set([]),
     };
     this.subscriptions = {
       LOAD_SELECTION_INSTANCES: ({response, state}) => {
@@ -50,9 +50,9 @@ class InstancesPollProviderComp extends React.Component {
           const idsByOperation = {
             active: new Set([]),
             complete: new Set([]),
-            completedInstances: []
+            completedInstances: [],
           };
-          response.workflowInstances.forEach(item => {
+          response.workflowInstances.forEach((item) => {
             item.hasActiveOperation
               ? idsByOperation.active.add(item.id)
               : idsByOperation.complete.add(item.id);
@@ -63,7 +63,7 @@ class InstancesPollProviderComp extends React.Component {
           });
           this.setState(idsByOperation);
         }
-      }
+      },
     };
   }
 
@@ -108,7 +108,7 @@ class InstancesPollProviderComp extends React.Component {
   triggerDataUpdates(completedInstances) {
     const {
       dataManager,
-      filter: {workflow, version}
+      filter: {workflow, version},
     } = this.props;
 
     const completedIdsInSelections = getCommonItems([...this.state.complete]);
@@ -116,50 +116,50 @@ class InstancesPollProviderComp extends React.Component {
     let updateParams = {
       endpoints: [
         {name: SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES},
-        {name: SUBSCRIPTION_TOPIC.LOAD_CORE_STATS}
+        {name: SUBSCRIPTION_TOPIC.LOAD_CORE_STATS},
       ],
-      topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION
+      topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION,
     };
 
     if (workflow && version && version !== 'all') {
       updateParams.endpoints = [
         ...updateParams.endpoints,
-        SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS
+        SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS,
       ];
     }
 
     if (Boolean(completedIdsInSelections.length)) {
       updateParams.staticData = {
-        completedInstances
+        completedInstances,
       };
     }
 
     dataManager.update(updateParams);
   }
 
-  addIds = ids => {
+  addIds = (ids) => {
     const {visibleIdsInListPanel} = this.props;
 
-    this.setState(prevState => {
+    this.setState((prevState) => {
       return {
         active: new Set(
           Array.from(prevState.active)
             .concat(ids)
-            .filter(id => visibleIdsInListPanel.includes(id))
-        )
+            .filter((id) => visibleIdsInListPanel.includes(id))
+        ),
       };
     });
   };
 
-  addAllVisibleIds = deselectedIds => {
+  addAllVisibleIds = (deselectedIds) => {
     const {visibleIdsInListPanel} = this.props;
 
     this.setState({
       active: new Set(
         Array.from(visibleIdsInListPanel).filter(
-          id => !deselectedIds.includes(id)
+          (id) => !deselectedIds.includes(id)
         )
-      )
+      ),
     });
   };
 
@@ -168,11 +168,11 @@ class InstancesPollProviderComp extends React.Component {
    * - by collapsing
    * - by changing the view
    */
-  removeIds = removeIds => {
+  removeIds = (removeIds) => {
     // update the state removing only the ids that are in the List and not in a selection
     // we want to poll for remaining ids in selections, even if they are hidden in ListView
     const remaningIds = [...this.state.active].filter(
-      item =>
+      (item) =>
         removeIds.includes(item) &&
         this.props.visibleIdsInListPanel.includes(item)
     );
@@ -186,7 +186,7 @@ class InstancesPollProviderComp extends React.Component {
       ...this.state,
       addIds: this.addIds,
       removeIds: this.removeIds,
-      addAllVisibleIds: this.addAllVisibleIds
+      addAllVisibleIds: this.addAllVisibleIds,
     };
 
     return (
@@ -197,13 +197,13 @@ class InstancesPollProviderComp extends React.Component {
   }
 }
 
-const withPoll = Component => {
+const withPoll = (Component) => {
   class WithPoll extends React.Component {
     render() {
       const {forwardedRef, ...rest} = this.props;
       return (
         <InstancesPollConsumer>
-          {polling => (
+          {(polling) => (
             <Component ref={forwardedRef} {...rest} polling={polling} />
           )}
         </InstancesPollConsumer>
@@ -214,8 +214,8 @@ const withPoll = Component => {
   WithPoll.propTypes = {
     forwardedRef: PropTypes.oneOfType([
       PropTypes.func,
-      PropTypes.shape({current: PropTypes.instanceOf(Element)})
-    ])
+      PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    ]),
   };
 
   const WithPollWithRef = React.forwardRef((props, ref) => {
@@ -235,5 +235,5 @@ export {
   InstancesPollConsumer,
   InstancesPollProvider,
   withPoll,
-  InstancesPollContext
+  InstancesPollContext,
 };

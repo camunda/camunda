@@ -11,7 +11,7 @@ import {LOADING_STATE} from 'modules/constants';
 
 const mockApi = {
   success: jest.fn(() => Promise.resolve(mockApiData.success)),
-  error: jest.fn(() => Promise.resolve(mockApiData.error))
+  error: jest.fn(() => Promise.resolve(mockApiData.error)),
 };
 
 export const callbackMockOne = jest.fn();
@@ -35,7 +35,7 @@ describe('Publisher', () => {
 
       // then
       expect(publisher.subscriptions).toEqual({
-        [topicFoo]: [callbackMockOne]
+        [topicFoo]: [callbackMockOne],
       });
     });
 
@@ -43,13 +43,13 @@ describe('Publisher', () => {
       // when
       publisher.subscribe({
         [topicFoo]: callbackMockOne,
-        [topicBar]: callbackMockOne
+        [topicBar]: callbackMockOne,
       });
 
       // then
       expect(publisher.subscriptions).toEqual({
         [topicFoo]: [callbackMockOne],
-        [topicBar]: [callbackMockOne]
+        [topicBar]: [callbackMockOne],
       });
     });
 
@@ -60,7 +60,7 @@ describe('Publisher', () => {
 
       // then
       expect(publisher.subscriptions).toEqual({
-        [topicFoo]: [callbackMockOne, callbackMockTwo]
+        [topicFoo]: [callbackMockOne, callbackMockTwo],
       });
     });
   });
@@ -71,7 +71,7 @@ describe('Publisher', () => {
 
       const subscriptions = {
         [topicFoo]: callbackMockOne,
-        [topicBar]: callbackMockTwo
+        [topicBar]: callbackMockTwo,
       };
       publisher.subscribe(subscriptions);
 
@@ -81,7 +81,7 @@ describe('Publisher', () => {
       // then
       expect(publisher.subscriptions).toEqual({
         [topicFoo]: [],
-        [topicBar]: []
+        [topicBar]: [],
       });
     });
 
@@ -112,7 +112,7 @@ describe('Publisher', () => {
       await publisher.pubLoadingStates(topic, mockApi.success);
 
       expect(callback.mock.calls[0][0]).toEqual({
-        state: LOADING_STATE.LOADING
+        state: LOADING_STATE.LOADING,
       });
     });
 
@@ -131,9 +131,9 @@ describe('Publisher', () => {
         [
           {
             state: LOADING_STATE.LOADED,
-            response: mockApiData.success
-          }
-        ]
+            response: mockApiData.success,
+          },
+        ],
       ]);
     });
 
@@ -152,9 +152,9 @@ describe('Publisher', () => {
         [
           {
             state: LOADING_STATE.LOAD_FAILED,
-            response: mockApiData.error
-          }
-        ]
+            response: mockApiData.error,
+          },
+        ],
       ]);
     });
   });

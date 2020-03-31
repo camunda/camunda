@@ -8,7 +8,7 @@ export const LOADING_STATE = {
   OPERATION_SCHEDULED: 'OPERATION_SCHEDULED',
   LOAD_FAILED: 'LOAD_FAILED',
   LOADING: 'LOADING',
-  LOADED: 'LOADED'
+  LOADED: 'LOADED',
 };
 
 export const SUBSCRIPTION_TOPIC = {
@@ -32,25 +32,25 @@ export const SUBSCRIPTION_TOPIC = {
   LOAD_BATCH_OPERATIONS: 'LOAD_BATCH_OPERATIONS',
   CREATE_BATCH_OPERATION: 'CREATE_BATCH_OPERATION',
   LOAD_SEQUENCE_FLOWS: 'LOAD_SEQUENCE_FLOWS',
-  OPERATION_APPLIED: 'OPERATION_APPLIED'
+  OPERATION_APPLIED: 'OPERATION_APPLIED',
 };
 
 export const DIRECTION = {
   UP: 'UP',
   DOWN: 'DOWN',
   RIGHT: 'RIGHT',
-  LEFT: 'LEFT'
+  LEFT: 'LEFT',
 };
 
 export const PANEL_POSITION = {
   LEFT: 'LEFT',
-  RIGHT: 'RIGHT'
+  RIGHT: 'RIGHT',
 };
 
 export const FLOWNODE_TYPE = {
   TASK: 'Task',
   GATEWAY: 'Gateway',
-  EVENT: 'Event'
+  EVENT: 'Event',
 };
 
 export const TYPE = {
@@ -77,12 +77,12 @@ export const TYPE = {
   EVENT_SUBPROCESS: 'EVENT_SUBPROCESS',
 
   WORKFLOW: 'WORKFLOW',
-  MULTI_INSTANCE_BODY: 'MULTI_INSTANCE_BODY'
+  MULTI_INSTANCE_BODY: 'MULTI_INSTANCE_BODY',
 };
 
 export const MULTI_INSTANCE_TYPE = {
   PARALLEL: 'MULTI_PARALLEL',
-  SEQUENTIAL: 'MULTI_SEQUENTIAL'
+  SEQUENTIAL: 'MULTI_SEQUENTIAL',
 };
 
 export const FLOWNODE_TYPE_HANDLE = {
@@ -101,31 +101,31 @@ export const FLOWNODE_TYPE_HANDLE = {
   'bpmn:ServiceTask': TYPE.TASK_SERVICE,
   'bpmn:ReceiveTask': TYPE.TASK_RECEIVE,
   'bpmn:SendTask': TYPE.TASK_SEND,
-  'bpmn:CallActivity': TYPE.TASK_CALL_ACTIVITY
+  'bpmn:CallActivity': TYPE.TASK_CALL_ACTIVITY,
 };
 
 export const FILTER_TYPES = {
   RUNNING: 'running',
-  FINISHED: 'finished'
+  FINISHED: 'finished',
 };
 
 export const FILTER_SELECTION = {
   running: {
     active: true,
-    incidents: true
+    incidents: true,
   },
   incidents: {
     active: false,
-    incidents: true
+    incidents: true,
   },
   active: {
     active: true,
-    incidents: false
+    incidents: false,
   },
   finished: {
     completed: true,
-    canceled: true
-  }
+    canceled: true,
+  },
 };
 
 // values that we read from the url and prefill the inputs
@@ -142,7 +142,7 @@ export const DEFAULT_FILTER_CONTROLLED_VALUES = {
   version: '',
   workflow: '',
   batchOperationId: '',
-  variable: {name: '', value: ''}
+  variable: {name: '', value: ''},
 };
 
 export const DEFAULT_FILTER = FILTER_SELECTION.running;
@@ -155,11 +155,11 @@ export const INSTANCES_LABELS = {
   incidents: 'Incidents',
   finished: 'Finished Instances',
   completed: 'Completed',
-  canceled: 'Canceled'
+  canceled: 'Canceled',
 };
 
 export const CONTEXTUAL_MESSAGE_TYPE = {
-  DROP_SELECTION: 'DROP_SELECTION'
+  DROP_SELECTION: 'DROP_SELECTION',
 };
 
 export const STATE = {
@@ -167,17 +167,17 @@ export const STATE = {
   COMPLETED: 'COMPLETED',
   CANCELED: 'CANCELED',
   INCIDENT: 'INCIDENT',
-  TERMINATED: 'TERMINATED'
+  TERMINATED: 'TERMINATED',
 };
 
 export const SORT_ORDER = {
   ASC: 'asc',
-  DESC: 'desc'
+  DESC: 'desc',
 };
 
 export const DEFAULT_SORTING = {
   sortBy: 'workflowName',
-  sortOrder: SORT_ORDER.DESC
+  sortOrder: SORT_ORDER.DESC,
 };
 
 export const DEFAULT_FIRST_ELEMENT = 0;
@@ -190,13 +190,13 @@ export const PANE_ID = {
   TOP: 'TOP',
   BOTTOM: 'BOTTOM',
   LEFT: 'LEFT',
-  RIGHT: 'RIGHT'
+  RIGHT: 'RIGHT',
 };
 
 export const EXPAND_STATE = {
   DEFAULT: 'DEFAULT',
   EXPANDED: 'EXPANDED',
-  COLLAPSED: 'COLLAPSED'
+  COLLAPSED: 'COLLAPSED',
 };
 
 export const UNNAMED_ACTIVITY = 'Unnamed Activity';
@@ -206,45 +206,45 @@ export const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
 
 export const DROPDOWN_PLACEMENT = {
   TOP: 'top',
-  BOTTOM: 'bottom'
+  BOTTOM: 'bottom',
 };
 
 export const MESSAGES_TYPE = {
-  DROP_SELECTION: 'DROP_SELECTION'
+  DROP_SELECTION: 'DROP_SELECTION',
 };
 
 export const EVENT_TYPE = {
-  CREATED: 'CREATED'
+  CREATED: 'CREATED',
 };
 
 export const EVENT_SOURCE_TYPE = {
-  INCIDENT: 'INCIDENT'
+  INCIDENT: 'INCIDENT',
 };
 
 export const OPERATION_TYPE = {
   RESOLVE_INCIDENT: 'RESOLVE_INCIDENT',
   CANCEL_WORKFLOW_INSTANCE: 'CANCEL_WORKFLOW_INSTANCE',
-  UPDATE_VARIABLE: 'UPDATE_VARIABLE'
+  UPDATE_VARIABLE: 'UPDATE_VARIABLE',
 };
 
 export const BADGE_TYPE = {
   RUNNING_INSTANCES: 'RUNNING_INSTANCES',
   FILTERS: 'FILTERS',
   INCIDENTS: 'INCIDENTS',
-  SELECTIONS: 'SELECTIONS'
+  SELECTIONS: 'SELECTIONS',
 };
 
 export const OPERATION_STATE = {
   SCHEDULED: 'SCHEDULED',
   LOCKED: 'LOCKED',
   SENT: 'SENT',
-  COMPLETED: 'COMPLETED'
+  COMPLETED: 'COMPLETED',
 };
 
 export const ACTIVE_OPERATION_STATES = [
   OPERATION_STATE.SCHEDULED,
   OPERATION_STATE.LOCKED,
-  OPERATION_STATE.SENT
+  OPERATION_STATE.SENT,
 ];
 
 export const PAGE_TITLE = {
@@ -252,12 +252,12 @@ export const PAGE_TITLE = {
   DASHBOARD: 'Camunda Operate: Dashboard',
   INSTANCES: 'Camunda Operate: Instances',
   INSTANCE: (instanceId, workflowName) =>
-    `Camunda Operate: Instance ${instanceId} of Workflow ${workflowName}`
+    `Camunda Operate: Instance ${instanceId} of Workflow ${workflowName}`,
 };
 
 export const PILL_TYPE = {
   TIMESTAMP: 'TIMESTAMP',
-  FILTER: 'FILTER'
+  FILTER: 'FILTER',
 };
 
 export const POPOVER_SIDE = {
@@ -265,7 +265,7 @@ export const POPOVER_SIDE = {
   RIGHT: 'RIGHT',
   BOTTOM: 'BOTTOM',
   LEFT: 'LEFT',
-  BOTTOM_MIRROR: 'BOTTOM_MIRROR'
+  BOTTOM_MIRROR: 'BOTTOM_MIRROR',
 };
 
 export const INCIDENTS_BAR_HEIGHT = 42;
@@ -273,5 +273,5 @@ export const INCIDENTS_BAR_HEIGHT = 42;
 export const POLL_TOPICS = {
   INSTANCE: 'INSTANCE',
   INSTANCES_LIST: 'INSTANCES_LIST',
-  OPERATIONS: 'OPERATIONS'
+  OPERATIONS: 'OPERATIONS',
 };

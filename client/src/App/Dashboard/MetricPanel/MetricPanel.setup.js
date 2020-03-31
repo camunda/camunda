@@ -8,26 +8,26 @@ export const countStoreEmpty = {
   running: 0,
   active: 0,
   withIncidents: 0,
-  isLoaded: true
+  isLoaded: true,
 };
 
 export const countStoreComplete = {
   running: 23,
   active: 12,
   withIncidents: 11,
-  isLoaded: true
+  isLoaded: true,
 };
 
 export const countStoreWithoutIncidents = {
   running: 23,
   active: 12,
   withIncidents: 0,
-  isLoaded: true
+  isLoaded: true,
 };
 
 export const countStoreLoading = {
   running: 0,
   active: 0,
   withIncidents: 0,
-  isLoaded: false
+  isLoaded: false,
 };

@@ -7,11 +7,11 @@
 const baseQuery = {
   running: true,
   incidents: true,
-  active: true
+  active: true,
 };
 
 export const mockUseDataManager = {
-  applyBatchOperation: jest.fn()
+  applyBatchOperation: jest.fn(),
 };
 
 export const mockData = {
@@ -20,98 +20,98 @@ export const mockData = {
     instanceSelectionContext: {
       ids: [],
       excludeIds: [],
-      reset: jest.fn()
+      reset: jest.fn(),
     },
     filterContext: {
-      query: baseQuery
+      query: baseQuery,
     },
     expectedQuery: {
       ...baseQuery,
       ids: [],
-      excludeIds: []
-    }
+      excludeIds: [],
+    },
   },
   // in this case all instances are selected and an id filter is set
   setFilterSelectAll: {
     instanceSelectionContext: {
       ids: [],
       excludeIds: [],
-      reset: jest.fn()
+      reset: jest.fn(),
     },
     filterContext: {
       query: {
         ...baseQuery,
-        ids: ['1']
-      }
+        ids: ['1'],
+      },
     },
     expectedQuery: {
       ...baseQuery,
       ids: ['1'],
-      excludeIds: []
-    }
+      excludeIds: [],
+    },
   },
   // in this case one instance is selected and an id filter is set
   setFilterSelectOne: {
     instanceSelectionContext: {
       ids: ['1'],
       excludeIds: [],
-      reset: jest.fn()
+      reset: jest.fn(),
     },
     filterContext: {
       query: {
         ...baseQuery,
-        ids: ['1', '2']
-      }
+        ids: ['1', '2'],
+      },
     },
     expectedQuery: {
       ...baseQuery,
       ids: ['1'],
-      excludeIds: []
-    }
+      excludeIds: [],
+    },
   },
   // in this case one instance is excluded and an id filter is set
   setFilterExcludeOne: {
     instanceSelectionContext: {
       ids: [],
       excludeIds: ['1'],
-      reset: jest.fn()
+      reset: jest.fn(),
     },
     filterContext: {
       query: {
         ...baseQuery,
-        ids: ['1', '2']
-      }
+        ids: ['1', '2'],
+      },
     },
     expectedQuery: {
       ...baseQuery,
       ids: ['1', '2'],
-      excludeIds: ['1']
-    }
+      excludeIds: ['1'],
+    },
   },
   // in this case all instances are selected and a workflow filter is set
   setWorkflowFilterSelectOne: {
     instanceSelectionContext: {
       ids: ['1'],
       excludeIds: [],
-      reset: jest.fn()
+      reset: jest.fn(),
     },
     filterContext: {
       query: {
         ...baseQuery,
         workflowIds: ['A'],
-        ids: []
-      }
+        ids: [],
+      },
     },
     expectedQuery: {
       ...baseQuery,
       ids: ['1'],
       excludeIds: [],
-      workflowIds: ['A']
-    }
-  }
+      workflowIds: ['A'],
+    },
+  },
 };
 
 export const mockUseInstancesPollContext = {
   addAllVisibleIds: jest.fn(),
-  addIds: jest.fn()
+  addIds: jest.fn(),
 };

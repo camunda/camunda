@@ -8,7 +8,7 @@ import {
   concatTitle,
   concatGroupTitle,
   concatLabel,
-  concatButtonTitle
+  concatButtonTitle,
 } from './service';
 
 describe('service', () => {

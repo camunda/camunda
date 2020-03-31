@@ -6,7 +6,7 @@
 
 export const mockLocalStorageProps = {
   getStateLocally: jest.fn(),
-  storeStateLocally: jest.fn()
+  storeStateLocally: jest.fn(),
 };
 
 export const mockFullFilterWithoutWorkflow = {
@@ -17,7 +17,7 @@ export const mockFullFilterWithoutWorkflow = {
   ids: '424242, 434343',
   errorMessage: 'No data found for query $.foo.',
   startDate: '2018-12-28',
-  endDate: '2018-12-28'
+  endDate: '2018-12-28',
 };
 
 export const mockFullFilterWithWorkflow = {
@@ -30,5 +30,5 @@ export const mockFullFilterWithWorkflow = {
   startDate: '2018-12-28',
   endDate: '2018-12-28',
   workflow: 'demoProcess',
-  version: 1
+  version: 1,
 };

@@ -8,7 +8,7 @@ import {createInstance} from 'modules/testUtils';
 
 export const MOCK_TOPICS = {
   FETCH_STATE_FOO: 'FETCH_STATE_FOO',
-  FETCH_STATE_BAR: 'FETCH_STATE_BAR'
+  FETCH_STATE_BAR: 'FETCH_STATE_BAR',
 };
 
 export const mockWorkflowInstance = createInstance();

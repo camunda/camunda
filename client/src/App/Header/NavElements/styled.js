@@ -12,7 +12,7 @@ import {ReactComponent as Logo} from 'modules/components/Icon/logo-2020-round.sv
 
 const separator = themeStyle({
   dark: 'rgba(246, 252, 251, 0.5)',
-  light: 'rgba(98, 98, 110, 0.25)'
+  light: 'rgba(98, 98, 110, 0.25)',
 });
 export const ListItem = styled.li`
   display: flex;
@@ -24,7 +24,7 @@ export const Label = styled.span`
 export const BrandLabel = themed(styled.span`
   color: ${themeStyle({
     dark: Colors.logoDark,
-    light: Colors.logoLight
+    light: Colors.logoLight,
   })};
 `);
 
@@ -32,7 +32,7 @@ export const LogoIcon = themed(styled(Logo)`
   position: relative;
   color: ${themeStyle({
     dark: Colors.logoDark,
-    light: Colors.logoLight
+    light: Colors.logoLight,
   })};
 
   width: 26px;

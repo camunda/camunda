@@ -16,7 +16,7 @@ import * as Styled from './styled';
 export default function DiagramControls({
   handleZoomReset,
   handleZoomIn,
-  handleZoomOut
+  handleZoomOut,
 }) {
   return (
     <Styled.DiagramControls>
@@ -36,5 +36,5 @@ export default function DiagramControls({
 DiagramControls.propTypes = {
   handleZoomReset: PropTypes.func.isRequired,
   handleZoomIn: PropTypes.func.isRequired,
-  handleZoomOut: PropTypes.func.isRequired
+  handleZoomOut: PropTypes.func.isRequired,
 };

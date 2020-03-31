@@ -24,7 +24,7 @@ const connectionDotStyles = css`
   border-radius: 50%;
   background: ${themeStyle({
     dark: '#65666D',
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
 `;
 
@@ -38,7 +38,7 @@ const connectionLineStyles = css`
     left: -17px;
     background: ${themeStyle({
       dark: '#65666D',
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 

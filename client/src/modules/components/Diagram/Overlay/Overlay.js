@@ -16,7 +16,7 @@ export default class Overlay extends React.PureComponent {
     id: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
     position: PropTypes.object.isRequired,
-    children: PropTypes.node
+    children: PropTypes.node,
   };
 
   constructor(props) {
@@ -49,7 +49,7 @@ export default class Overlay extends React.PureComponent {
 
     this.props.onOverlayAdd(id, type, {
       position,
-      html: this.domElement
+      html: this.domElement,
     });
   };
 

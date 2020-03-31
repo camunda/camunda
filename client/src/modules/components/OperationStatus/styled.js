@@ -19,7 +19,7 @@ export const OperationSpinner = themed(styled(Spinner)`
     ${({selected}) =>
       themeStyle({
         dark: '#ffffff',
-        light: selected ? Colors.selections : Colors.uiLight06
+        light: selected ? Colors.selections : Colors.uiLight06,
       })};
   border-right-color: transparent;
 `);

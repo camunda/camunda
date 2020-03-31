@@ -16,10 +16,10 @@ import CodeModal from './CodeModal';
 const elementMock = {
   addEventListener: jest.fn((event, cb) => {
     //
-  })
+  }),
 };
 
-jest.spyOn(document, 'getElementById').mockImplementation(id => {
+jest.spyOn(document, 'getElementById').mockImplementation((id) => {
   return elementMock;
 });
 

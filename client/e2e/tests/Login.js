@@ -12,7 +12,7 @@ import * as Header from './Header.elements';
 
 fixture('Login').page(config.endpoint);
 
-test('Log in with invalid user account', async t => {
+test('Log in with invalid user account', async (t) => {
   await t
     .expect(Login.passwordInput.getAttribute('type'))
     .eql('password')
@@ -23,7 +23,7 @@ test('Log in with invalid user account', async t => {
     .eql('Username and Password do not match');
 });
 
-test('Log in with valid user account', async t => {
+test('Log in with valid user account', async (t) => {
   await t
     .typeText(Login.usernameInput, 'demo')
     .typeText(Login.passwordInput, 'demo')
@@ -32,7 +32,7 @@ test('Log in with valid user account', async t => {
     .eql('Camunda Operate');
 });
 
-test('Log out', async t => {
+test('Log out', async (t) => {
   await login(t);
 
   await t

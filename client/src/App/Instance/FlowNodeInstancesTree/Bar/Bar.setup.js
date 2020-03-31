@@ -11,9 +11,9 @@ const mockNode = createFlowNodeInstance({
   type: 'START_EVENT',
   id: 'someflowNodeIde',
   name: 'Some Name',
-  typeDetails: {elementType: TYPE.EVENT_START, eventType: undefined}
+  typeDetails: {elementType: TYPE.EVENT_START, eventType: undefined},
 });
 
 export const testData = {
-  mockNode
+  mockNode,
 };

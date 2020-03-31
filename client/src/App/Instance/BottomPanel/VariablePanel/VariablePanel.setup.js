@@ -13,15 +13,15 @@ export const mockProps = {
   isEditable: false,
   isLoading: false,
   onVariableUpdate: jest.fn(),
-  setEditMode: jest.fn()
+  setEditMode: jest.fn(),
 };
 
 export const multipleVariableScopes = {
   ...mockProps,
-  variables: null
+  variables: null,
 };
 
 export const noVariableScopes = {
   ...mockProps,
-  variables: []
+  variables: [],
 };

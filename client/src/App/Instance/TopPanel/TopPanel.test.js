@@ -20,12 +20,12 @@ import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
 import {
   mockProps,
   instanceWithIncident,
-  mockedExpandedPaneId
+  mockedExpandedPaneId,
 } from './TopPanel.setup';
 
 import {
   mockedModules,
-  mockedImportDefinitions
+  mockedImportDefinitions,
 } from '__mocks__/bpmn-js/lib/NavigatedViewer';
 
 import IncidentsWrapper from '../IncidentsWrapper';
@@ -54,7 +54,7 @@ jest.mock('./InstanceHeader', () => {
 });
 
 createMockDataManager();
-const mountTopPanel = props => {
+const mountTopPanel = (props) => {
   return mount(
     <ThemeProvider>
       <DataManagerProvider>
@@ -93,7 +93,7 @@ describe('DiagramPanel', () => {
     // when
     dataManager.publish({
       subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-      state: LOADING_STATE.LOADED
+      state: LOADING_STATE.LOADED,
     });
 
     node.update();
@@ -125,7 +125,7 @@ describe('DiagramPanel', () => {
     // when
     dataManager.publish({
       subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-      state: LOADING_STATE.LOADED
+      state: LOADING_STATE.LOADED,
     });
 
     node.update();
@@ -157,7 +157,7 @@ describe('DiagramPanel', () => {
     // when
     dataManager.publish({
       subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-      state: LOADING_STATE.LOADED
+      state: LOADING_STATE.LOADED,
     });
 
     node.update();

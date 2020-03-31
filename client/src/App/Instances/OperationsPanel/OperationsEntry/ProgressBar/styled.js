@@ -20,7 +20,7 @@ export const Background = themed(styled.div`
   background-color: ${Colors.selections};
   opacity: ${themeStyle({
     dark: '0.2',
-    light: '0.3'
+    light: '0.3',
   })};
   position: absolute;
   height: ${HEIGHT}px;

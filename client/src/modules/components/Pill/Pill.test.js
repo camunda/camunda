@@ -15,7 +15,7 @@ import {PILL_TYPE} from 'modules/constants';
 
 import * as Styled from './styled';
 
-const mountNode = node => {
+const mountNode = (node) => {
   const mountedNode = mount(
     <Router>
       <ThemeProvider>{node}</ThemeProvider>

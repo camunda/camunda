@@ -76,7 +76,7 @@ export const Pill = themed(styled.button`
     opacity: ${({isActive}) =>
       themeStyle({
         dark: 1,
-        light: isActive ? 1 : 0.5
+        light: isActive ? 1 : 0.5,
       })};
     
     ${({isActive}) => isActive && `color: ${Colors.selections}`}
@@ -85,15 +85,15 @@ export const Pill = themed(styled.button`
   &:disabled{
     border: solid 1px ${themeStyle({
       dark: Colors.uiDark05,
-      light: Colors.uiLight03
+      light: Colors.uiLight03,
     })};
     background-color:  ${themeStyle({
       dark: Colors.darkButton03,
-      light: Colors.lightButton04
+      light: Colors.lightButton04,
     })};
     color: ${themeStyle({
       dark: 'rgba(255, 255, 255, 0.5)',
-      light: 'rgba(69, 70, 78, 0.5)'
+      light: 'rgba(69, 70, 78, 0.5)',
     })};
     
   }
@@ -105,7 +105,7 @@ export const Pill = themed(styled.button`
     &:hover ${Count} {
       background-color: ${themeStyle({
         dark: Colors.darkButton02,
-        light: Colors.uiLight06
+        light: Colors.uiLight06,
       })};
 
       ${({isActive}) => isActive && 'background: #fff'}
@@ -113,7 +113,7 @@ export const Pill = themed(styled.button`
       opacity: ${({isActive}) =>
         themeStyle({
           dark: 1,
-          light: isActive ? 1 : 0.55
+          light: isActive ? 1 : 0.55,
         })};
     }
   }

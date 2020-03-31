@@ -32,11 +32,11 @@ export const CompletedIcon = styled(StateCompleted)`
   ${iconPosition};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   opacity: ${themeStyle({
     dark: '0.46',
-    light: '0.4'
+    light: '0.4',
   })};
 `;
 
@@ -44,11 +44,11 @@ export const CanceledIcon = styled(Stop)`
   ${iconPosition};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   opacity: ${themeStyle({
     dark: '0.81',
-    light: '0.75'
+    light: '0.75',
   })};
 `;
 
@@ -61,10 +61,10 @@ export const AliasIcon = styled.div`
 
   background: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   opacity: ${themeStyle({
     dark: '0.46',
-    light: '0.4'
+    light: '0.4',
   })};
 `;

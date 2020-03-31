@@ -18,7 +18,7 @@ import {
   concatGroupTitle,
   concatLabel,
   concatGroupLabel,
-  concatButtonTitle
+  concatButtonTitle,
 } from './service';
 
 export default class InstancesByWorkflow extends React.Component {
@@ -36,17 +36,17 @@ export default class InstancesByWorkflow extends React.Component {
             instancesWithActiveIncidentsCount: PropTypes.number.isRequired,
             name: PropTypes.string,
             version: PropTypes.number.isRequired,
-            workflowId: PropTypes.string.isRequired
+            workflowId: PropTypes.string.isRequired,
           })
-        ).isRequired
+        ).isRequired,
       })
-    )
+    ),
   };
 
   renderIncidentsPerVersion = (workflowName, items) => {
     return (
       <Styled.VersionList>
-        {items.map(item => {
+        {items.map((item) => {
           const name = item.name || item.bpmnProcessId;
           const totalInstancesCount =
             item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
@@ -57,7 +57,7 @@ export default class InstancesByWorkflow extends React.Component {
                   bpmnProcessId: item.bpmnProcessId,
                   versions: [item],
                   hasFinishedInstances: totalInstancesCount === 0,
-                  name
+                  name,
                 })}
                 title={concatTitle(
                   item.name || workflowName,
@@ -85,7 +85,7 @@ export default class InstancesByWorkflow extends React.Component {
     );
   };
 
-  renderIncidentByWorkflow = item => {
+  renderIncidentByWorkflow = (item) => {
     const name = item.workflowName || item.bpmnProcessId;
     const totalInstancesCount =
       item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
@@ -96,7 +96,7 @@ export default class InstancesByWorkflow extends React.Component {
           bpmnProcessId: item.bpmnProcessId,
           versions: item.workflows,
           hasFinishedInstances: totalInstancesCount === 0,
-          name
+          name,
         })}
         title={concatGroupTitle(
           name,

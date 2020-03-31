@@ -49,11 +49,11 @@ export const Button = themed(styled.button`
     disabled
       ? themeStyle({
           dark: 'rgba(255, 255, 255, 0.6)',
-          light: 'rgba(98, 98, 110, 0.6);'
+          light: 'rgba(98, 98, 110, 0.6);',
         })
       : themeStyle({
           dark: 'rgba(255, 255, 255, 0.9)',
-          light: 'rgba(98, 98, 110, 0.9)'
+          light: 'rgba(98, 98, 110, 0.9)',
         })};
 
   background: none;
@@ -70,7 +70,7 @@ export const Button = themed(styled.button`
     vertical-align: text-bottom;
   }
 
-  ${props => props.buttonStyles};
+  ${(props) => props.buttonStyles};
 `);
 
 export const LabelWrapper = styled.div`

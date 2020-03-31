@@ -22,14 +22,14 @@ class SplitPane extends React.Component {
     storeStateLocally: PropTypes.func.isRequired,
     children: twoNodesPropType,
     expandedPaneId: PropTypes.string,
-    titles: PropTypes.shape({top: PropTypes.string, bottom: PropTypes.string})
+    titles: PropTypes.shape({top: PropTypes.string, bottom: PropTypes.string}),
   };
 
   state = {
-    [this.props.expandedPaneId]: null
+    [this.props.expandedPaneId]: null,
   };
 
-  getPaneExpandedState = paneId => {
+  getPaneExpandedState = (paneId) => {
     const {getStateLocally, expandedPaneId} = this.props;
 
     const panelStates = getStateLocally('panelStates');
@@ -53,17 +53,17 @@ class SplitPane extends React.Component {
         paneId,
         expandState,
         handleExpand: this.handleExpand,
-        titles: this.props.titles
+        titles: this.props.titles,
       });
     });
   };
 
-  handleExpand = paneId => {
+  handleExpand = (paneId) => {
     const {getStateLocally, storeStateLocally, expandedPaneId} = this.props;
     const panelStates = getStateLocally('panelStates');
 
     const expandState = {
-      [expandedPaneId]: !panelStates[expandedPaneId] ? paneId : null
+      [expandedPaneId]: !panelStates[expandedPaneId] ? paneId : null,
     };
 
     storeStateLocally(expandState, 'panelStates');

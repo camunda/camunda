@@ -16,14 +16,14 @@ import FilterContext from 'modules/contexts/FilterContext';
 import {
   mockUseDataManager,
   mockData,
-  mockUseInstancesPollContext
+  mockUseInstancesPollContext,
 } from './useOperationApply.setup';
 
 const OPERATION_TYPE = 'DUMMY';
 
 jest.mock('modules/hooks/useDataManager', () => () => mockUseDataManager);
 jest.mock('modules/contexts/InstancesPollContext', () => ({
-  useInstancesPollContext: () => mockUseInstancesPollContext
+  useInstancesPollContext: () => mockUseInstancesPollContext,
 }));
 
 function renderUseOperationApply({instanceSelectionContext, filterContext}) {
@@ -34,7 +34,7 @@ function renderUseOperationApply({instanceSelectionContext, filterContext}) {
           {children}
         </InstanceSelectionContext.Provider>
       </FilterContext.Provider>
-    )
+    ),
   });
 
   result.current.applyBatchOperation(OPERATION_TYPE);

@@ -10,35 +10,35 @@ import {EXPAND_STATE} from 'modules/constants';
 const incidents = [
   createIncident({
     errorType: 'Condition error',
-    flowNodeId: 'flowNodeId_exclusiveGateway'
+    flowNodeId: 'flowNodeId_exclusiveGateway',
   }),
   createIncident({
     errorType: 'Extract value error',
-    flowNodeId: 'flowNodeId_alwaysFailingTask'
-  })
+    flowNodeId: 'flowNodeId_alwaysFailingTask',
+  }),
 ];
 
 const errorTypes = {
   'Condition error': {
     errorType: 'Condition error',
-    count: 1
+    count: 1,
   },
   'Extract value error': {
     errorType: 'Extract value error',
-    count: 1
-  }
+    count: 1,
+  },
 };
 const flowNodes = {
   flowNodeId_exclusiveGateway: {
     flowNodeId: 'flowNodeId_exclusiveGateway',
     flowNodeName: 'flowNodeName_exclusiveGateway',
-    count: 1
+    count: 1,
   },
   flowNodeId_alwaysFailingTask: {
     flowNodeId: 'flowNodeId_alwaysFailingTask',
     flowNodeName: 'flowNodeName_alwaysFailingTask',
-    count: 1
-  }
+    count: 1,
+  },
 };
 
 const defaultProps = {
@@ -51,7 +51,7 @@ const defaultProps = {
   onIncidentSelection: jest.fn(),
   errorTypes: new Map(Object.entries(errorTypes)),
   flowNodes: new Map(Object.entries(flowNodes)),
-  expandState: EXPAND_STATE.DEFAULT
+  expandState: EXPAND_STATE.DEFAULT,
 };
 
 const incidentResolvedProps = {
@@ -62,14 +62,14 @@ const incidentResolvedProps = {
   ),
   flowNodes: new Map(
     Object.entries({
-      flowNodeId_alwaysFailingTask: flowNodes['flowNodeId_alwaysFailingTask']
+      flowNodeId_alwaysFailingTask: flowNodes['flowNodeId_alwaysFailingTask'],
     })
-  )
+  ),
 };
 
 export const testData = {
   props: {
     default: defaultProps,
-    incidentResolved: incidentResolvedProps
-  }
+    incidentResolved: incidentResolvedProps,
+  },
 };

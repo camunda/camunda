@@ -10,10 +10,10 @@ export const INSTANCES_BY_WORKFLOW = 'instancesByWorkflow';
 export const MESSAGES = {
   [INCIDENTS_BY_ERROR]: {
     noData: 'There are no Instances with Incident.',
-    error: 'Incidents by Error Message could not be fetched.'
+    error: 'Incidents by Error Message could not be fetched.',
   },
   [INSTANCES_BY_WORKFLOW]: {
     noData: 'There are no Workflows.',
-    error: 'Instances by Workflow could not be fetched.'
-  }
+    error: 'Instances by Workflow could not be fetched.',
+  },
 };

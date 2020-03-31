@@ -74,13 +74,13 @@ describe('ValidationTextInput', () => {
     const inputNode = node.find('input');
 
     inputNode.simulate('change', {
-      target: {name: 'ErrorMessage', value: 'ERROR'}
+      target: {name: 'ErrorMessage', value: 'ERROR'},
     });
 
     // then
     expect(mocks.onChange.mock.calls[0][0].target).toEqual({
       name: 'ErrorMessage',
-      value: 'ERROR'
+      value: 'ERROR',
     });
     expect(mocks.onFilterChange).toHaveBeenCalled();
   });
@@ -133,7 +133,7 @@ describe('ValidationTextInput', () => {
 
     await act(async () => {
       inputNode.simulate('change', {
-        target: {name: 'ErrorMessage', value: 'This is an error message'}
+        target: {name: 'ErrorMessage', value: 'This is an error message'},
       });
     });
 
@@ -154,7 +154,7 @@ describe('ValidationTextInput', () => {
           onChange={mocks.onChange}
           onFilterChange={mocks.onFilterChange}
           checkIsComplete={mocks.checkIsComplete.mockImplementation(
-            value => value === 'complete'
+            (value) => value === 'complete'
           )}
         >
           <Input />
@@ -170,7 +170,7 @@ describe('ValidationTextInput', () => {
 
     await act(async () => {
       inputNode.simulate('change', {
-        target: {name: 'ErrorMessage', value: 'complete'}
+        target: {name: 'ErrorMessage', value: 'complete'},
       });
     });
 

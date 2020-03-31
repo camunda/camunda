@@ -10,7 +10,7 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {
   mockProps,
   multipleVariableScopes,
-  noVariableScopes
+  noVariableScopes,
 } from './VariablePanel.setup';
 
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
@@ -48,7 +48,7 @@ describe('VariablePanel', () => {
     //given
     const {
       props: {dataManager},
-      subscriptions
+      subscriptions,
     } = node.instance();
 
     //then
@@ -66,12 +66,12 @@ describe('VariablePanel', () => {
 
     const {
       props: {dataManager},
-      subscriptions
+      subscriptions,
     } = root.find('VariablePanel').instance();
 
     dataManager.publish({
       subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-      state: LOADING_STATE.LOADED
+      state: LOADING_STATE.LOADED,
     });
 
     root.update();
@@ -88,12 +88,12 @@ describe('VariablePanel', () => {
 
     const {
       props: {dataManager},
-      subscriptions
+      subscriptions,
     } = root.find('VariablePanel').instance();
 
     dataManager.publish({
       subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-      state: LOADING_STATE.LOAD_FAILED
+      state: LOADING_STATE.LOAD_FAILED,
     });
 
     root.update();
@@ -111,12 +111,7 @@ describe('VariablePanel', () => {
 
       const node = root.find('VariablePanel');
 
-      expect(
-        node
-          .find('Variables')
-          .props()
-          .Placeholder()
-      ).toMatchSnapshot();
+      expect(node.find('Variables').props().Placeholder()).toMatchSnapshot();
     });
 
     it('should show the Message when scope doesnt have variable ', () => {
@@ -125,24 +120,19 @@ describe('VariablePanel', () => {
 
       const {
         props: {dataManager},
-        subscriptions
+        subscriptions,
       } = root.find('VariablePanel').instance();
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-        state: LOADING_STATE.LOADED
+        state: LOADING_STATE.LOADED,
       });
 
       root.update();
 
       const node = root.find('VariablePanel');
 
-      expect(
-        node
-          .find('Variables')
-          .props()
-          .Placeholder()
-      ).toMatchSnapshot();
+      expect(node.find('Variables').props().Placeholder()).toMatchSnapshot();
     });
   });
 
@@ -153,17 +143,17 @@ describe('VariablePanel', () => {
 
       const {
         props: {dataManager},
-        subscriptions
+        subscriptions,
       } = root.find('VariablePanel').instance();
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-        state: LOADING_STATE.LOADED
+        state: LOADING_STATE.LOADED,
       });
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-        state: LOADING_STATE.LOADING
+        state: LOADING_STATE.LOADING,
       });
 
       root.update();
@@ -171,12 +161,7 @@ describe('VariablePanel', () => {
       const node = root.find('VariablePanel');
 
       expect(node.find(SpinnerSkeleton)).toExist();
-      expect(
-        node
-          .find('Variables')
-          .props()
-          .Overlay()
-      ).toMatchSnapshot();
+      expect(node.find('Variables').props().Overlay()).toMatchSnapshot();
     });
   });
 });

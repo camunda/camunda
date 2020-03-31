@@ -14,11 +14,11 @@ describe('withStrippedProps', () => {
     const testProps = {
       onClick: () => {},
       test: 'blue',
-      className: 'main'
+      className: 'main',
     };
 
     // when
-    const Component = props => <div {...props} />;
+    const Component = (props) => <div {...props} />;
     const StrippedComponent = withStrippedProps(['test', 'onClick'])(Component);
     const node = shallow(<StrippedComponent {...testProps} />);
 

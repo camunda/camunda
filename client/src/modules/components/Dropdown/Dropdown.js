@@ -27,20 +27,20 @@ export default class Dropdown extends React.Component {
     /** The options of this dropdown. Each child should be a `Dropdown.Option` instance */
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
+      PropTypes.node,
     ]),
     buttonStyles: PropTypes.array,
     disabled: PropTypes.bool,
     onOpen: PropTypes.func,
     className: PropTypes.string,
-    calculateWidth: PropTypes.func
+    calculateWidth: PropTypes.func,
   };
 
   state = {
     isOpen: false,
     isSubMenuOpen: false,
     isSubmenuFixed: false,
-    isFocused: false
+    isFocused: false,
   };
 
   componentDidMount() {
@@ -51,7 +51,7 @@ export default class Dropdown extends React.Component {
     document.body.removeEventListener('click', this.onClose, true);
   }
 
-  handleKeyPress = evt => {
+  handleKeyPress = (evt) => {
     //The space bar is interpreted as empty evt.key by react;
     if (evt && evt.key !== 'Tab' && evt.key !== 'Enter' && evt.key !== '') {
       evt.preventDefault();
@@ -62,11 +62,11 @@ export default class Dropdown extends React.Component {
     }
   };
 
-  setRef = node => {
+  setRef = (node) => {
     this.container = node;
   };
 
-  handleStateChange = changes => {
+  handleStateChange = (changes) => {
     this.setState(changes);
   };
 
@@ -74,7 +74,7 @@ export default class Dropdown extends React.Component {
     this.setState({
       isOpen: false,
       isSubMenuOpen: false,
-      isSubmenuFixed: false
+      isSubmenuFixed: false,
     });
   };
 
@@ -106,7 +106,7 @@ export default class Dropdown extends React.Component {
           isSubMenuOpen: this.state.isSubMenuOpen,
           isSubmenuFixed: this.state.isSubmenuFixed,
           onStateChange: this.handleStateChange,
-          placement: this.props.placement
+          placement: this.props.placement,
         })
       );
     });
@@ -123,7 +123,7 @@ export default class Dropdown extends React.Component {
     const {placement} = this.props;
     const transitionTiming = {
       enter: 50,
-      exit: 20
+      exit: 20,
     };
     return (
       <Styled.Dropdown ref={this.setRef} className={this.props.className}>
@@ -161,7 +161,7 @@ export default class Dropdown extends React.Component {
 }
 
 Dropdown.defaultProps = {
-  placement: DROPDOWN_PLACEMENT.BOTTOM
+  placement: DROPDOWN_PLACEMENT.BOTTOM,
 };
 
 // export Dropdown-option component

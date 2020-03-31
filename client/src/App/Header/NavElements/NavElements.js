@@ -10,7 +10,7 @@ import Badge from 'modules/components/Badge';
 import * as Styled from './styled.js';
 
 // export default React.memo(function Skeleton(props) {
-export const BrandNavElement = memo(props => (
+export const BrandNavElement = memo((props) => (
   <Styled.ListItem data-test={props.dataTest}>
     <Styled.Brand to={props.to} title={props.title} data-test={props.dataTest}>
       <Styled.LogoIcon />
@@ -23,10 +23,10 @@ BrandNavElement.propTypes = {
   to: PropTypes.string,
   dataTest: PropTypes.string,
   title: PropTypes.string,
-  label: PropTypes.string
+  label: PropTypes.string,
 };
 
-export const LinkElement = memo(props => (
+export const LinkElement = memo((props) => (
   <Styled.ListItem data-test={props.dataTest}>
     <Styled.DashboardLink
       to={props.to}
@@ -44,10 +44,10 @@ LinkElement.propTypes = {
   dataTest: PropTypes.string,
   title: PropTypes.string,
   isActive: PropTypes.bool,
-  label: PropTypes.string
+  label: PropTypes.string,
 };
 
-export const NavElement = memo(props => (
+export const NavElement = memo((props) => (
   <Styled.ListItem data-test={props.dataTest} className={props.className}>
     <Styled.ListLink
       isActive={props.isActive}
@@ -71,5 +71,5 @@ NavElement.propTypes = {
   type: PropTypes.string,
   label: PropTypes.string,
   count: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  className: PropTypes.string
+  className: PropTypes.string,
 };

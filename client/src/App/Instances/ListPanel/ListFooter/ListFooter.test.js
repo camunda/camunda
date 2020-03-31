@@ -26,7 +26,7 @@ const defaultProps = {
   firstElement: 0,
   filterCount: 9,
   dataManager: {},
-  hasContent: true
+  hasContent: true,
 };
 
 describe('ListFooter', () => {
@@ -34,7 +34,7 @@ describe('ListFooter', () => {
 
   const renderFooter = ({
     props: additionalProps,
-    context: additionalContext
+    context: additionalContext,
   } = {}) => {
     const context = {...defaultContext, ...additionalContext};
     const props = {...defaultProps, ...additionalProps};
@@ -69,7 +69,7 @@ describe('ListFooter', () => {
 
   it('should show Dropdown when there is selection', () => {
     const node = renderFooter({
-      context: {getSelectedCount: () => 2}
+      context: {getSelectedCount: () => 2},
     });
 
     const button = node.find(CreateOperationDropdown);
@@ -80,7 +80,7 @@ describe('ListFooter', () => {
   it('should not show Paginator when hasContent is false', () => {
     const node = renderFooter({
       props: {hasContent: false, filterCount: 11},
-      context: {getSelectedCount: () => 2}
+      context: {getSelectedCount: () => 2},
     });
 
     expect(node.find(CreateOperationDropdown).exists()).toBe(false);

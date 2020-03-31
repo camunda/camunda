@@ -26,13 +26,13 @@ export const Overlay = themed(styled.div`
 
   background-image: ${themeStyle({
     dark: `url(${BgDark})`,
-    light: `url(${BgLight})`
+    light: `url(${BgLight})`,
   })};
   background-repeat: repeat-y;
   background-position: fixed;
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
-    light: Colors.uiLight04
+    light: Colors.uiLight04,
   })};
   background-size: 51px;
 `);

@@ -33,7 +33,7 @@ jest.mock('../FlowNodeInstancesTree', () => {
   };
 });
 
-const mountComponent = props => {
+const mountComponent = (props) => {
   createMockDataManager();
   return mount(
     <ThemeProvider>
@@ -83,7 +83,7 @@ describe('FlowNodeInstanceLog', () => {
 
     dataManager.publish({
       subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE],
-      state: LOADING_STATE.LOAD_FAILED
+      state: LOADING_STATE.LOAD_FAILED,
     });
     root.update();
     // then

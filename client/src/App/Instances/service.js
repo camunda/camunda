@@ -33,7 +33,7 @@ export async function fetchDiagramModel(dataManager, workflowId) {
 
 export function getWorkflowByVersionFromFilter({
   filter: {workflow, version},
-  groupedWorkflows
+  groupedWorkflows,
 }) {
   return getWorkflowByVersion(groupedWorkflows[workflow], version);
 }
@@ -41,7 +41,7 @@ export function getWorkflowByVersionFromFilter({
 export function getWorkflowNameFromFilter({filter, groupedWorkflows}) {
   const currentWorkflowByVersion = getWorkflowByVersionFromFilter({
     filter,
-    groupedWorkflows
+    groupedWorkflows,
   });
 
   if (!isEmpty(currentWorkflowByVersion)) {

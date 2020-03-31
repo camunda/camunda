@@ -14,13 +14,13 @@ import * as Instances from './Instances.Elements.js';
 
 fixture('Dashboard')
   .page(config.endpoint)
-  .before(async t => {
+  .before(async (t) => {
     setup();
   });
 
-test.before(async t => {
+test.before(async (t) => {
   await t.wait(20000);
-})('Dashboard statistics', async t => {
+})('Dashboard statistics', async (t) => {
   await login(t);
 
   await t
@@ -32,7 +32,7 @@ test.before(async t => {
     .eql('37');
 });
 
-test('Navigation to Instances View', async t => {
+test('Navigation to Instances View', async (t) => {
   await login(t);
 
   await t

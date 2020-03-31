@@ -12,7 +12,7 @@ import {PILL_TYPE} from 'modules/constants';
 import * as Styled from './styled';
 
 const iconTypes = {
-  [PILL_TYPE.TIMESTAMP]: Styled.Clock
+  [PILL_TYPE.TIMESTAMP]: Styled.Clock,
 };
 function Pill(props) {
   const TargetIcon = iconTypes[props.type] || (() => null);
@@ -41,11 +41,11 @@ Pill.propTypes = {
   count: PropTypes.number,
   grow: PropTypes.bool,
   onClick: PropTypes.func,
-  className: PropTypes.string
+  className: PropTypes.string,
 };
 
 Pill.defaultProps = {
   isActive: false,
-  grow: false
+  grow: false,
 };
 export default React.memo(Pill);

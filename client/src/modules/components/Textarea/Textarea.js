@@ -33,5 +33,5 @@ export default function Textarea({hasAutoSize, ...props}) {
 
 Textarea.propTypes = {
   placeholder: PropTypes.string,
-  hasAutoSize: PropTypes.bool
+  hasAutoSize: PropTypes.bool,
 };

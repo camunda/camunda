@@ -14,12 +14,12 @@ export function getDiagramColors(theme) {
   return {
     defaultFillColor: themeStyle({
       dark: Colors.uiDark02,
-      light: Colors.uiLight04
+      light: Colors.uiLight04,
     })({theme}),
     defaultStrokeColor: themeStyle({
       dark: Colors.darkDiagram,
-      light: Colors.uiLight06
-    })({theme})
+      light: Colors.uiLight06,
+    })({theme}),
   };
 }
 
@@ -73,7 +73,7 @@ export function getPopoverPostion(
     return {
       bottom: -POPOVER_TO_FLOWNODE_SPACE,
       left: flowNodeBBox.width / 2,
-      side: POPOVER_SIDE.BOTTOM
+      side: POPOVER_SIDE.BOTTOM,
     };
   }
 
@@ -86,7 +86,7 @@ export function getPopoverPostion(
     return {
       left: -POPOVER_TO_FLOWNODE_SPACE,
       top: flowNodeBBox.height / 2,
-      side: POPOVER_SIDE.LEFT
+      side: POPOVER_SIDE.LEFT,
     };
   }
 
@@ -99,7 +99,7 @@ export function getPopoverPostion(
     return {
       top: -POPOVER_TO_FLOWNODE_SPACE,
       left: flowNodeBBox.width / 2,
-      side: POPOVER_SIDE.TOP
+      side: POPOVER_SIDE.TOP,
     };
   }
 
@@ -112,7 +112,7 @@ export function getPopoverPostion(
     return {
       top: flowNodeBBox.height / 2,
       right: -POPOVER_TO_FLOWNODE_SPACE,
-      side: POPOVER_SIDE.RIGHT
+      side: POPOVER_SIDE.RIGHT,
     };
   }
 
@@ -120,7 +120,7 @@ export function getPopoverPostion(
   return {
     bottom: POPOVER_TO_FLOWNODE_SPACE,
     left: flowNodeBBox.width / 2,
-    side: POPOVER_SIDE.BOTTOM_MIRROR
+    side: POPOVER_SIDE.BOTTOM_MIRROR,
   };
 }
 

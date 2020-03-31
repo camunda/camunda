@@ -28,7 +28,7 @@ function MultiRow({Component, rowsToDisplay, children, ...props}) {
 MultiRow.propTypes = {
   Component: PropTypes.elementType,
   rowsToDisplay: PropTypes.number,
-  children: PropTypes.node
+  children: PropTypes.node,
 };
 
 export default MultiRow;

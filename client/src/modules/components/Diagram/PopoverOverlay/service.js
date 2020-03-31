@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const beautifyMetadata = metadata => {
+export const beautifyMetadata = (metadata) => {
   if (!metadata) {
     return '';
   }
@@ -29,36 +29,36 @@ export const getBreadcrumbs = ({metadata, selectedFlowNodeName}) => {
     return [
       {
         name: `${selectedFlowNodeName} (Multi Instance)`,
-        hasLink: true
+        hasLink: true,
       },
       {
-        name: metadata.data.activityInstanceId
-      }
+        name: metadata.data.activityInstanceId,
+      },
     ];
   } else if (metadata.isMultiInstanceChild) {
     return [
       {
         name: `${selectedFlowNodeName} (Multi Instance)`,
-        hasLink: true
+        hasLink: true,
       },
       {
         name: selectedFlowNodeName,
         hasLink: true,
-        options: {selectMultiInstanceChildrenOnly: true}
+        options: {selectMultiInstanceChildrenOnly: true},
       },
       {
-        name: metadata.data.activityInstanceId
-      }
+        name: metadata.data.activityInstanceId,
+      },
     ];
   } else {
     return [
       {
         name: selectedFlowNodeName,
-        hasLink: true
+        hasLink: true,
       },
       {
-        name: metadata.data.activityInstanceId
-      }
+        name: metadata.data.activityInstanceId,
+      },
     ];
   }
 };

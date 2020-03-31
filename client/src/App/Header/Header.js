@@ -19,7 +19,7 @@ import {
   FILTER_SELECTION,
   BADGE_TYPE,
   LOADING_STATE,
-  DEFAULT_FILTER
+  DEFAULT_FILTER,
 } from 'modules/constants';
 
 import {isEqual} from 'lodash';
@@ -38,12 +38,12 @@ class Header extends React.Component {
       running: PropTypes.number,
       active: PropTypes.number,
       filterCount: PropTypes.number,
-      withIncidents: PropTypes.number
+      withIncidents: PropTypes.number,
     }),
     location: PropTypes.object,
     isFiltersCollapsed: PropTypes.bool.isRequired,
     expandFilters: PropTypes.func.isRequired,
-    onFilterReset: PropTypes.func
+    onFilterReset: PropTypes.func,
   };
 
   constructor(props) {
@@ -53,12 +53,12 @@ class Header extends React.Component {
       LOAD_INSTANCE: ({state, response}) => {
         if (state === LOADING_STATE.LOADING) {
           this.setState({
-            instance: null
+            instance: null,
           });
         }
         if (state === LOADING_STATE.LOADED) {
           this.setState({
-            instance: response
+            instance: response,
           });
         }
       },
@@ -67,24 +67,24 @@ class Header extends React.Component {
           const {LOAD_INSTANCE} = response;
 
           this.setState({
-            instance: LOAD_INSTANCE
+            instance: LOAD_INSTANCE,
           });
         }
-      }
+      },
     };
     this.state = {
       forceRedirect: false,
       user: {},
       instance: null,
       filter: null,
-      isLoaded: false
+      isLoaded: false,
     };
   }
 
   componentDidMount = () => {
     const {
       countStore: {isLoaded},
-      dataManager
+      dataManager,
     } = this.props;
 
     dataManager.subscribe(this.subscriptions);
@@ -97,7 +97,7 @@ class Header extends React.Component {
   componentDidUpdate = (prevProps, prevState) => {
     const {
       location,
-      countStore: {isLoaded}
+      countStore: {isLoaded},
     } = this.props;
 
     if (prevState.isLoaded !== isLoaded) {
@@ -127,7 +127,7 @@ class Header extends React.Component {
     return {
       isDashboard: () => pathname === DASHBOARD,
       isInstances: () => pathname === INSTANCES,
-      isInstance: () => pathname.includes(INSTANCE)
+      isInstance: () => pathname.includes(INSTANCE),
     };
   }
 
@@ -135,23 +135,23 @@ class Header extends React.Component {
     this.setState({forceRedirect: true});
   };
 
-  getFilterResetProps = type => {
+  getFilterResetProps = (type) => {
     const filters = {
       instances: DEFAULT_FILTER,
       filters: this.state.filter || {},
-      incidents: {incidents: true}
+      incidents: {incidents: true},
     };
     return {
-      onClick: e => {
+      onClick: (e) => {
         e.preventDefault();
         this.props.expandFilters();
         this.props.onFilterReset(filters[type]);
       },
-      to: ' '
+      to: ' ',
     };
   };
 
-  getListLinksProps = type => {
+  getListLinksProps = (type) => {
     if (this.props.onFilterReset) {
       return this.getFilterResetProps(type);
     }
@@ -159,12 +159,12 @@ class Header extends React.Component {
     const queryStrings = {
       filters: this.state.filter ? getFilterQueryString(this.state.filter) : '',
       instances: getFilterQueryString(FILTER_SELECTION.running),
-      incidents: getFilterQueryString({incidents: true})
+      incidents: getFilterQueryString({incidents: true}),
     };
 
     return {
       to: `/instances${queryStrings[type]}`,
-      onClick: this.props.expandFilters
+      onClick: this.props.expandFilters,
     };
   };
 
@@ -180,7 +180,7 @@ class Header extends React.Component {
         incidents:
           currentView.isInstances() &&
           !isRunningInstanceFilter &&
-          isEqual(filter, {incidents: true})
+          isEqual(filter, {incidents: true}),
       };
       return conditions[type];
     }
@@ -188,7 +188,7 @@ class Header extends React.Component {
     // Is 'dashboard' or 'filters' active;
     const conditions = {
       dashboard: currentView.isDashboard(),
-      filters: currentView.isInstances() && !this.props.isFiltersCollapsed
+      filters: currentView.isInstances() && !this.props.isFiltersCollapsed,
     };
 
     return conditions[type];
@@ -204,7 +204,7 @@ class Header extends React.Component {
     const conditions = {
       instances: running,
       filters: filterCount === null ? running : filterCount,
-      incidents: withIncidents
+      incidents: withIncidents,
     };
 
     return conditions[type];
@@ -218,7 +218,7 @@ class Header extends React.Component {
       isActive: this.selectActiveCondition(type),
       title: createTitle(type, count),
       dataTest: 'header-link-' + type,
-      linkProps: this.getListLinksProps(type)
+      linkProps: this.getListLinksProps(type),
     };
   }
 
@@ -305,7 +305,7 @@ const contexts = [
   withCollapsablePanel,
   withSharedState,
   withRouter,
-  withData
+  withData,
 ];
 
 const WrappedHeader = wrapWithContexts(contexts, Header);

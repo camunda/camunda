@@ -11,8 +11,8 @@ const createElement = (type, isFlowNode, id) => {
     id,
     businessObject: {
       $type: type,
-      $instanceOf: () => isFlowNode
-    }
+      $instanceOf: () => isFlowNode,
+    },
   };
 };
 
@@ -45,7 +45,7 @@ describe('flowNodes', () => {
 
       expect(getFlowNodes(elements)).toEqual({
         flowNodes: [Task1],
-        ids: [Task1.id]
+        ids: [Task1.id],
       });
     });
 

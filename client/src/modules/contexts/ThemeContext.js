@@ -12,7 +12,7 @@ import {Colors} from 'modules/theme';
 
 const THEME_NAME = {
   LIGHT: 'light',
-  DARK: 'dark'
+  DARK: 'dark',
 };
 // Create a context for the current theme
 const ThemeContext = React.createContext();
@@ -27,8 +27,8 @@ class ThemeProvider extends React.Component {
     storeStateLocally: PropTypes.func.isRequired,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
-    ])
+      PropTypes.node,
+    ]),
   };
 
   constructor(props) {
@@ -57,13 +57,13 @@ class ThemeProvider extends React.Component {
 
     this.props.storeStateLocally(
       {
-        theme: newTheme
+        theme: newTheme,
       },
       'theme'
     );
 
     this.setState({
-      theme: newTheme
+      theme: newTheme,
     });
   };
 
@@ -83,13 +83,13 @@ class ThemeProvider extends React.Component {
   }
 }
 
-const themed = Component => {
+const themed = (Component) => {
   class Themed extends React.Component {
     render() {
       const {forwardedRef, ...rest} = this.props;
       return (
         <ThemeConsumer>
-          {props => (
+          {(props) => (
             <Component
               ref={forwardedRef}
               {...rest}
@@ -104,8 +104,8 @@ const themed = Component => {
   Themed.propTypes = {
     forwardedRef: PropTypes.oneOfType([
       PropTypes.func,
-      PropTypes.shape({current: PropTypes.instanceOf(Element)})
-    ])
+      PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    ]),
   };
 
   const ThemedWithRef = React.forwardRef((props, ref) => {
@@ -118,7 +118,7 @@ const themed = Component => {
   return ThemedWithRef;
 };
 
-const themeStyle = config => ({theme}) => config[theme];
+const themeStyle = (config) => ({theme}) => config[theme];
 
 const WrappedThemeProvider = withSharedState(ThemeProvider);
 WrappedThemeProvider.WrappedComponent = ThemeProvider;
@@ -127,5 +127,5 @@ export {
   ThemeConsumer,
   WrappedThemeProvider as ThemeProvider,
   themed,
-  themeStyle
+  themeStyle,
 };

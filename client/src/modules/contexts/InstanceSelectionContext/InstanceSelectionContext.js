@@ -13,10 +13,10 @@ const {Provider} = InstanceSelectionContext;
 const MODES = {
   INCLUDE: 'INCLUDE',
   EXCLUDE: 'EXCLUDE',
-  ALL: 'ALL'
+  ALL: 'ALL',
 };
 
-export const useInstanceSelection = totalCount => {
+export const useInstanceSelection = (totalCount) => {
   const [ids, setIds] = useState([]);
   const [isAllChecked, setAllChecked] = useState(false);
   const [mode, setMode] = useState(MODES.INCLUDE);
@@ -32,15 +32,15 @@ export const useInstanceSelection = totalCount => {
     }
   }, [ids, mode, totalCount]);
 
-  const addToIds = id => {
+  const addToIds = (id) => {
     setIds([...ids, id]);
   };
 
-  const removeFromIds = id => {
-    setIds(prevIds => prevIds.filter(prevId => prevId !== id));
+  const removeFromIds = (id) => {
+    setIds((prevIds) => prevIds.filter((prevId) => prevId !== id));
   };
 
-  const isInstanceChecked = id => {
+  const isInstanceChecked = (id) => {
     switch (mode) {
       case MODES.INCLUDE:
         return ids.indexOf(id) >= 0;
@@ -62,7 +62,7 @@ export const useInstanceSelection = totalCount => {
     }
   };
 
-  const handleCheckInstance = id => () => {
+  const handleCheckInstance = (id) => () => {
     if (mode === MODES.ALL) {
       setMode(MODES.EXCLUDE);
       setAllChecked(false);
@@ -75,7 +75,7 @@ export const useInstanceSelection = totalCount => {
     }
   };
 
-  const getSelectedCount = totalCount => {
+  const getSelectedCount = (totalCount) => {
     switch (mode) {
       case MODES.INCLUDE:
         return ids.length;
@@ -100,7 +100,7 @@ export const useInstanceSelection = totalCount => {
     handleCheckInstance,
     getSelectedCount,
     ids: mode === MODES.INCLUDE ? ids : [],
-    excludeIds: mode === MODES.EXCLUDE ? ids : []
+    excludeIds: mode === MODES.EXCLUDE ? ids : [],
   };
 };
 
@@ -113,9 +113,9 @@ const InstanceSelectionProvider = ({children, totalCount}) => {
 InstanceSelectionProvider.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
+    PropTypes.node,
   ]),
-  totalCount: PropTypes.number
+  totalCount: PropTypes.number,
 };
 
 export default InstanceSelectionContext;

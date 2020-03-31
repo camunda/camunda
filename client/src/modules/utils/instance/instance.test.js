@@ -22,19 +22,19 @@ const activeWithIncidents = {
       errorMessage:
         'Could not apply output mappings: Task was completed without payload',
       state: ACTIVE,
-      activityId: 'taskA'
-    }
-  ]
+      activityId: 'taskA',
+    },
+  ],
 };
 
 const mockIncidentInstance = {
   id: '8590375632-2',
-  state: 'INCIDENT'
+  state: 'INCIDENT',
 };
 
 const mockActiveInstance = {
   id: '8590375632-2',
-  state: 'ACTIVE'
+  state: 'ACTIVE',
 };
 
 describe('instance utils', () => {
@@ -51,11 +51,11 @@ describe('instance utils', () => {
   describe('isRunning', () => {
     const mockCompletedInstance = {
       id: '8590375632-2',
-      state: STATE.COMPLETED
+      state: STATE.COMPLETED,
     };
     const mockCanceldInstance = {
       id: '8590375632-2',
-      state: STATE.CANCELED
+      state: STATE.CANCELED,
     };
 
     it('should return true if an instance is running', () => {
@@ -103,7 +103,7 @@ describe('instance utils', () => {
     let mockOperations;
 
     const createMockOperations = (amount, array) =>
-      xTimes(amount)(counter => {
+      xTimes(amount)((counter) => {
         array.push(
           createOperation({startDate: `2018-10-1${counter}T09:20:38.661Z`})
         );

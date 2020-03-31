@@ -9,7 +9,7 @@ import {createRawTreeNode} from 'modules/testUtils';
 const treeNode = createRawTreeNode({
   id: 'activityInstanceOfTaskD',
   activityId: 'taskD',
-  name: 'taskD'
+  name: 'taskD',
 });
 
 export const mockProps = {
@@ -17,13 +17,13 @@ export const mockProps = {
   activityInstancesTree: {},
   getNodeWithMetaData: jest.fn(),
   selectedTreeRowIds: [],
-  onTreeRowSelection: jest.fn()
+  onTreeRowSelection: jest.fn(),
 };
 
 export const dataLoaded = {
   ...mockProps,
   diagramDefinitions: {id: 'Definition1'},
   activityInstancesTree: {
-    children: [treeNode]
-  }
+    children: [treeNode],
+  },
 };

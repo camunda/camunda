@@ -28,10 +28,10 @@ const mockProps = {
   incident: createIncident(),
   onButtonClick: jest.fn(),
   instanceId: 'instance_1',
-  showSpinner: false
+  showSpinner: false,
 };
 
-const mountIncidentOperation = props => {
+const mountIncidentOperation = (props) => {
   createMockDataManager();
   return mount(
     <ThemeProvider>
@@ -69,7 +69,7 @@ describe('IncidentOperation', () => {
 
     dataManager.publish({
       subscription: subscriptions['OPERATION_APPLIED_INSTANCE_instance_1'],
-      state: LOADING_STATE.LOADING
+      state: LOADING_STATE.LOADING,
     });
 
     node.update();
@@ -115,7 +115,7 @@ describe('IncidentOperation', () => {
         mockProps.instanceId,
         {
           operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
-          incidentId: mockProps.incident.id
+          incidentId: mockProps.incident.id,
         }
       );
     });

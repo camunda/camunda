@@ -22,21 +22,21 @@ export default class Pane extends React.Component {
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
+      PropTypes.node,
     ]),
     hasShiftableControls: PropTypes.bool,
-    titles: PropTypes.shape({top: PropTypes.string, bottom: PropTypes.string})
+    titles: PropTypes.shape({top: PropTypes.string, bottom: PropTypes.string}),
   };
 
   static defaultProps = {
     hasShiftableControls: false,
-    titles: {top: 'Top', bottom: 'Bottom'}
+    titles: {top: 'Top', bottom: 'Bottom'},
   };
 
   constructor(props) {
     super(props);
     const {
-      titles: {top, bottom}
+      titles: {top, bottom},
     } = props;
     this.topButtonRef = React.createRef();
     this.topButton = (
@@ -88,7 +88,7 @@ export default class Pane extends React.Component {
   getChildren = () => {
     const {expandState} = this.props;
 
-    const children = Children.map(this.props.children, child =>
+    const children = Children.map(this.props.children, (child) =>
       cloneElement(child, {expandState})
     );
 

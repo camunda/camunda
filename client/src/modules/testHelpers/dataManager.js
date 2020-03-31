@@ -19,10 +19,10 @@ export const mockDataManager = () => {
     ),
     poll: {
       unregister: jest.fn(),
-      register: jest.fn().mockImplementation((name, cb) => cb())
+      register: jest.fn().mockImplementation((name, cb) => cb()),
     },
     update: jest.fn(),
-    subscribe: jest.fn().mockImplementation(subs => {
+    subscribe: jest.fn().mockImplementation((subs) => {
       subscription = subs;
     }),
     subscriptions: jest.fn(() => subscription),
@@ -42,7 +42,7 @@ export const mockDataManager = () => {
     getInstancesByWorkflow: jest.fn(),
     getIncidentsByError: jest.fn(),
     getBatchOperations: jest.fn(),
-    getSequenceFlows: jest.fn()
+    getSequenceFlows: jest.fn(),
   };
 };
 

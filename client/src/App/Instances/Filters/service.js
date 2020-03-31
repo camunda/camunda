@@ -17,12 +17,12 @@ import {sortBy} from 'lodash';
  */
 export const getOptionsForWorkflowName = (workflows = {}) => {
   let options = [];
-  Object.keys(workflows).forEach(item =>
+  Object.keys(workflows).forEach((item) =>
     options.push({value: item, label: workflows[item].name || item})
   );
 
   // return case insensitive alphabetically sorted options by "label"
-  return sortBy(options, item => item.label.toLowerCase());
+  return sortBy(options, (item) => item.label.toLowerCase());
 };
 
 /**
@@ -30,9 +30,9 @@ export const getOptionsForWorkflowName = (workflows = {}) => {
  * used to create options list for workflowIds select based on workflows list
  */
 export function getOptionsForWorkflowVersion(versions = []) {
-  return versions.map(item => ({
+  return versions.map((item) => ({
     value: `${item.version}`,
-    label: `Version ${item.version}`
+    label: `Version ${item.version}`,
   }));
 }
 
@@ -114,7 +114,7 @@ export function checkIsIdValid(ids = '') {
     return false;
   }
 
-  const hasInvalidIds = ids.split(/[,\s]/).some(id => {
+  const hasInvalidIds = ids.split(/[,\s]/).some((id) => {
     return !checkIsSingleIdValid(id.trim());
   });
 
@@ -126,7 +126,7 @@ function checkIsSingleIdComplete(id) {
 }
 
 export function checkIsIdComplete(ids = '') {
-  const hasIncompleteIds = ids.split(/[,\s]/).some(id => {
+  const hasIncompleteIds = ids.split(/[,\s]/).some((id) => {
     return !checkIsSingleIdComplete(id.trim());
   });
 
@@ -162,7 +162,7 @@ export function sanitizeFilter(filter) {
     ids: sanitizeIds,
     variable: sanitizeVariable,
     startDate: sanitizeDate,
-    endDate: sanitizeDate
+    endDate: sanitizeDate,
   };
 
   // only add & sanatize filter when value available
@@ -175,27 +175,27 @@ export function sanitizeFilter(filter) {
     ...addFilter('ids', ids),
     ...addFilter('variable', variable),
     ...addFilter('startDate', startDate),
-    ...addFilter('endDate', endDate)
+    ...addFilter('endDate', endDate),
   });
 }
 
-const sortByFlowNodeLabel = flowNodes => {
-  return sortBy(flowNodes, flowNode => flowNode.label.toLowerCase());
+const sortByFlowNodeLabel = (flowNodes) => {
+  return sortBy(flowNodes, (flowNode) => flowNode.label.toLowerCase());
 };
 
-const addValueAndLabel = bpmnElement => {
+const addValueAndLabel = (bpmnElement) => {
   return {
     ...bpmnElement,
     value: bpmnElement.id,
     label: bpmnElement.name
       ? bpmnElement.name
-      : 'Unnamed' + bpmnElement.$type.split(':')[1].replace(/([A-Z])/g, ' $1')
+      : 'Unnamed' + bpmnElement.$type.split(':')[1].replace(/([A-Z])/g, ' $1'),
   };
 };
 
 /** Needs comment  + tests */
 
-export const sortAndModify = bpmnElements => {
+export const sortAndModify = (bpmnElements) => {
   if (bpmnElements.length < 1) {
     return [];
   }
@@ -203,7 +203,7 @@ export const sortAndModify = bpmnElements => {
   const named = [];
   const unnamed = [];
 
-  bpmnElements.forEach(bpmnElement => {
+  bpmnElements.forEach((bpmnElement) => {
     const enhancedElement = addValueAndLabel(bpmnElement);
 
     if (enhancedElement.name) {

@@ -14,7 +14,7 @@ import {
   concatTitle,
   concatLabel,
   concatGroupTitle,
-  concatButtonTitle
+  concatButtonTitle,
 } from './service';
 
 import * as Styled from './styled';
@@ -32,23 +32,23 @@ export default class IncidentsByError extends React.Component {
             instancesWithActiveIncidentsCount: PropTypes.number.isRequired,
             name: PropTypes.string,
             version: PropTypes.number.isRequired,
-            workflowId: PropTypes.string.isRequired
+            workflowId: PropTypes.string.isRequired,
           })
-        ).isRequired
+        ).isRequired,
       })
-    )
+    ),
   };
 
   renderIncidentsPerWorkflow = (errorMessage, items) => {
     return (
       <Styled.VersionUl>
-        {items.map(item => {
+        {items.map((item) => {
           const name = item.name || item.bpmnProcessId;
           const query = getFilterQueryString({
             workflow: item.bpmnProcessId,
             version: `${item.version}`,
             errorMessage,
-            incidents: true
+            incidents: true,
           });
           const title = concatTitle(
             name,
@@ -81,7 +81,7 @@ export default class IncidentsByError extends React.Component {
   renderIncidentByError = (errorMessage, instancesWithErrorCount) => {
     const query = getFilterQueryString({
       errorMessage: errorMessage,
-      incidents: true
+      incidents: true,
     });
 
     const title = concatGroupTitle(instancesWithErrorCount, errorMessage);

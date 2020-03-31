@@ -34,7 +34,7 @@ let instances = [];
 jest.mock('./ListContext');
 
 const createMockInstances = (amount, array) =>
-  xTimes(amount)(index =>
+  xTimes(amount)((index) =>
     array.push(createInstance({id: index.toString(), state: 'ACTIVE'}))
   );
 
@@ -49,11 +49,11 @@ const mockProps = {
   selectedInstances: {
     all: false,
     excludeIds: [],
-    ids: [0, 10]
+    ids: [0, 10],
   },
   expandState: EXPAND_STATE.DEFAULT,
   sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC},
-  onOperationButtonClick: jest.fn()
+  onOperationButtonClick: jest.fn(),
 };
 
 ListContext.useListContext.mockImplementation(() => {
@@ -67,7 +67,7 @@ ListContext.useListContext.mockImplementation(() => {
     isSelected: () => true,
     handleSelectAll: () => {},
     handleSelectInstance: () => jest.fn(),
-    handleOperationButtonClick: mockProps.onOperationButtonClick
+    handleOperationButtonClick: mockProps.onOperationButtonClick,
   };
 });
 
@@ -158,8 +158,8 @@ describe.skip('List', () => {
           selectedInstances: {
             all: true,
             ids: [],
-            excludeIds: []
-          }
+            excludeIds: [],
+          },
         });
 
         // then
@@ -173,8 +173,8 @@ describe.skip('List', () => {
           selectedInstances: {
             all: false,
             ids: [],
-            excludeIds: []
-          }
+            excludeIds: [],
+          },
         });
 
         // then
@@ -190,14 +190,14 @@ describe.skip('List', () => {
           selectedInstances: {
             all: false,
             excludeIds: [],
-            ids: [selectedInstanceId]
-          }
+            ids: [selectedInstanceId],
+          },
         });
         expect(node.instance().isSelected(selectedInstanceId)).toBe(true);
 
         // when
         node.setProps({
-          selectedInstances: {all: false, excludeIds: [], ids: []}
+          selectedInstances: {all: false, excludeIds: [], ids: []},
         });
 
         // then
@@ -211,8 +211,8 @@ describe.skip('List', () => {
           selectedInstances: {
             all: true,
             ids: [],
-            excludeIds: [selectedInstanceId]
-          }
+            excludeIds: [selectedInstanceId],
+          },
         });
         // then
         expect(node.instance().isSelected(selectedInstanceId)).toBe(false);
@@ -227,9 +227,9 @@ describe.skip('List', () => {
           selectedInstances: {
             all: false,
             ids: [10],
-            excludeIds: []
+            excludeIds: [],
           },
-          onSelectedInstancesUpdate: onSelectedInstancesUpdate
+          onSelectedInstancesUpdate: onSelectedInstancesUpdate,
         });
 
         // when
@@ -240,7 +240,7 @@ describe.skip('List', () => {
         expect(onSelectedInstancesUpdate).toBeCalledWith({
           all: true,
           ids: [],
-          excludeIds: []
+          excludeIds: [],
         });
       });
 
@@ -253,9 +253,9 @@ describe.skip('List', () => {
           selectedInstances: {
             all: true,
             ids: [],
-            excludeIds: [10]
+            excludeIds: [10],
           },
-          onSelectedInstancesUpdate: onSelectedInstancesUpdate
+          onSelectedInstancesUpdate: onSelectedInstancesUpdate,
         });
 
         // when
@@ -267,7 +267,7 @@ describe.skip('List', () => {
         expect(onSelectedInstancesUpdate).toBeCalledWith({
           all: false,
           ids: [],
-          excludeIds: []
+          excludeIds: [],
         });
       });
 
@@ -277,8 +277,8 @@ describe.skip('List', () => {
           selectedInstances: {
             all: true,
             ids: [],
-            excludeIds: []
-          }
+            excludeIds: [],
+          },
         });
 
         // then
@@ -291,8 +291,8 @@ describe.skip('List', () => {
           selectedInstances: {
             all: true,
             ids: [],
-            excludeIds: [10]
-          }
+            excludeIds: [10],
+          },
         });
 
         // then
@@ -415,11 +415,7 @@ describe.skip('List', () => {
     );
 
     // Workflow Definition TH
-    expect(
-      THNodes.at(0)
-        .find('ColumnHeader')
-        .prop('label')
-    ).toBe('Workflow');
+    expect(THNodes.at(0).find('ColumnHeader').prop('label')).toBe('Workflow');
     const CheckboxNode = THNodes.at(0).find(Checkbox);
     expect(CheckboxNode).toHaveLength(1);
     expect(CheckboxNode.prop('isChecked')).toBe(false);

@@ -15,7 +15,7 @@ const getEventFlowNode = (eventType, elementType) => {
   const map = {
     [TYPE.EVENT_TIMER]: Styled[TYPE.EVENT_TIMER + `_${elementType}`],
     [TYPE.EVENT_MESSAGE]: Styled[TYPE.EVENT_MESSAGE + `_${elementType}`],
-    [TYPE.EVENT_ERROR]: Styled[TYPE.EVENT_ERROR + `_${elementType}`]
+    [TYPE.EVENT_ERROR]: Styled[TYPE.EVENT_ERROR + `_${elementType}`],
   };
   return map[eventType];
 };
@@ -35,7 +35,7 @@ const flowNodes = {
   [TYPE.GATEWAY_PARALLEL]: Styled[TYPE.GATEWAY_PARALLEL],
   [TYPE.GATEWAY_EXCLUSIVE]: Styled[TYPE.GATEWAY_EXCLUSIVE],
   //Other
-  [TYPE.EVENT_SUBPROCESS]: Styled[TYPE.EVENT_SUBPROCESS]
+  [TYPE.EVENT_SUBPROCESS]: Styled[TYPE.EVENT_SUBPROCESS],
 };
 
 function getFlowNodeTypeIcon({elementType, eventType, multiInstanceType}) {
@@ -56,7 +56,7 @@ function FlowNodeIcon({types, isSelected, ...props}) {
 FlowNodeIcon.propTypes = {
   types: PropTypes.object.isRequired,
   theme: PropTypes.string.isRequired,
-  isSelected: PropTypes.bool
+  isSelected: PropTypes.bool,
 };
 
 export default themed(FlowNodeIcon);

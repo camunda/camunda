@@ -20,7 +20,7 @@ export default class Poll {
     this._start();
   };
 
-  unregister = topic => {
+  unregister = (topic) => {
     delete this.callbacks[topic];
     if (this.callbacks.length === 0) {
       this._stop();
@@ -28,7 +28,7 @@ export default class Poll {
   };
 
   _fire = () => {
-    Object.values(this.callbacks).forEach(callback => {
+    Object.values(this.callbacks).forEach((callback) => {
       callback();
     });
   };

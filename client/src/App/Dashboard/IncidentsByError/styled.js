@@ -28,7 +28,7 @@ const InstancesBarStyles = css`
     opacity: 1;
     background: ${themeStyle({
       dark: Colors.uiDark05,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 `;

@@ -26,7 +26,7 @@ export const CollapseButton = themed(styled.button`
   border: solid 1px
     ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
 `);
 
@@ -36,28 +36,28 @@ const iconStyle = css`
   object-fit: contain;
   opacity: ${themeStyle({
     dark: 0.5,
-    light: 0.9
+    light: 0.9,
   })};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiDark06
+    light: Colors.uiDark06,
   })};
 
   &:hover {
     opacity: ${themeStyle({
       dark: 0.7,
-      light: 1
+      light: 1,
     })};
   }
 
   &:active {
     opacity: ${themeStyle({
       dark: 1,
-      light: 1
+      light: 1,
     })};
     color: ${themeStyle({
       dark: 0.5,
-      light: Colors.uiDark04
+      light: Colors.uiDark04,
     })};
   }
 `;

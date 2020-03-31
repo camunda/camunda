@@ -67,28 +67,28 @@ export const InstanceAnchor = themed(styled(Link)`
   &:link {
     color: ${themeStyle({
       dark: Colors.darkLinkDefault,
-      light: Colors.lightLinkDefault
+      light: Colors.lightLinkDefault,
     })};
   }
 
   &:hover {
     color: ${themeStyle({
       dark: Colors.darkLinkHover,
-      light: Colors.lightLinkHover
+      light: Colors.lightLinkHover,
     })};
   }
 
   &:active {
     color: ${themeStyle({
       dark: Colors.darkLinkActive,
-      light: Colors.lightLinkActive
+      light: Colors.lightLinkActive,
     })};
   }
 
   &:visited {
     color: ${themeStyle({
       dark: Colors.darkLinkVisited,
-      light: Colors.lightLinkVisited
+      light: Colors.lightLinkVisited,
     })};
   }
 `);

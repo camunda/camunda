@@ -11,7 +11,7 @@ import {Redirect} from 'react-router-dom';
 import {
   flushPromises,
   mockResolvedAsyncFn,
-  mockRejectedAsyncFn
+  mockRejectedAsyncFn,
 } from 'modules/testUtils';
 
 import Login from './Login';
@@ -33,12 +33,12 @@ describe('Login', () => {
       .shallow();
 
     usernameInput = node.findWhere(
-      element =>
+      (element) =>
         element.prop('type') === 'text' && element.prop('name') === 'username'
     );
 
     passwordInput = node.findWhere(
-      element =>
+      (element) =>
         element.prop('type') === 'password' &&
         element.prop('name') === 'password'
     );
@@ -58,7 +58,7 @@ describe('Login', () => {
   it('should render login form by default', () => {
     // given
     const submitInput = node.findWhere(
-      element => element.prop('type') === 'submit'
+      (element) => element.prop('type') === 'submit'
     );
 
     // then
@@ -76,11 +76,11 @@ describe('Login', () => {
 
     // when
     usernameInput.simulate('change', {
-      target: {name: 'username', value: username}
+      target: {name: 'username', value: username},
     });
 
     passwordInput.simulate('change', {
-      target: {name: 'password', value: password}
+      target: {name: 'password', value: password},
     });
 
     // then
@@ -130,7 +130,7 @@ describe('Login', () => {
       expect(RedirectNode).toHaveLength(1);
       expect(RedirectNode.prop('to')).toEqual({
         state: {isLoggedIn: true},
-        pathname: '/'
+        pathname: '/',
       });
       expect(node).toMatchSnapshot();
     });
@@ -164,7 +164,7 @@ describe('Login', () => {
       expect(RedirectNode).toHaveLength(1);
       expect(RedirectNode.prop('to')).toEqual({
         state: {isLoggedIn: true},
-        pathname: '/some/page'
+        pathname: '/some/page',
       });
 
       expect(node).toMatchSnapshot();

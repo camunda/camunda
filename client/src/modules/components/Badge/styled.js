@@ -11,11 +11,11 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 const runningInstancesStyle = css`
   background-color: ${themeStyle({
     light: Colors.uiDark04,
-    dark: Colors.uiLight05
+    dark: Colors.uiLight05,
   })};
   color: ${themeStyle({
     light: '#ffffff',
-    dark: Colors.uiDark04
+    dark: Colors.uiDark04,
   })};
 `;
 
@@ -29,7 +29,7 @@ const incidentsStyle = css`
   color: #ffffff;
 `;
 
-const badgeStyle = props => {
+const badgeStyle = (props) => {
   switch (props.type) {
     case BADGE_TYPE.FILTERS:
       return filtersStyle;
@@ -40,13 +40,13 @@ const badgeStyle = props => {
   }
 };
 
-const opacityStyle = props =>
+const opacityStyle = (props) =>
   props.isActive
     ? ''
     : css`
         opacity: ${themeStyle({
           dark: '0.8',
-          light: '0.7'
+          light: '0.7',
         })};
       `;
 

@@ -9,7 +9,7 @@ import {STATE} from 'modules/constants';
 import {
   getActivityIdToActivityInstancesMap,
   getSelectableFlowNodes,
-  createNodeMetaDataMap
+  createNodeMetaDataMap,
 } from '../service';
 
 import {
@@ -17,7 +17,7 @@ import {
   createRawTreeNode,
   createDefinitions,
   createIncident,
-  createDiagramNode
+  createDiagramNode,
 } from 'modules/testUtils';
 
 const createDiagramNodes = () => {
@@ -25,18 +25,18 @@ const createDiagramNodes = () => {
     StartEvent1234: createDiagramNode({
       $type: 'bpmn:StartEvent',
       name: 'Start the Process',
-      $instanceOf: type => type === 'bpmn:FlowNode'
+      $instanceOf: (type) => type === 'bpmn:FlowNode',
     }),
     Service5678: createDiagramNode({
       $type: 'bpmn:ServiceTask',
       name: 'Do something',
-      $instanceOf: type => type === 'bpmn:FlowNode'
+      $instanceOf: (type) => type === 'bpmn:FlowNode',
     }),
     EndEvent1234: createDiagramNode({
       $type: 'bpmn:EndEvent',
       name: 'End the Process',
-      $instanceOf: type => type === 'bpmn:FlowNode'
-    })
+      $instanceOf: (type) => type === 'bpmn:FlowNode',
+    }),
   };
 };
 
@@ -46,19 +46,19 @@ const createRawTree = () => {
       createRawTreeNode({
         activityId: 'StartEvent1234',
         type: 'START_EVENT',
-        state: STATE.COMPLETED
+        state: STATE.COMPLETED,
       }),
       createRawTreeNode({
         activityId: 'Service5678',
         type: 'SERVICE_TASK',
-        state: STATE.COMPLETED
+        state: STATE.COMPLETED,
       }),
       createRawTreeNode({
         activityId: 'EndEvent1234',
         type: 'End_Event',
-        state: STATE.COMPLETED
-      })
-    ]
+        state: STATE.COMPLETED,
+      }),
+    ],
   };
 };
 
@@ -68,22 +68,22 @@ const mockIncidents = () => {
     incidents: [
       createIncident({
         errorType: 'Condition error',
-        flowNodeId: 'Service5678'
-      })
+        flowNodeId: 'Service5678',
+      }),
     ],
     errorTypes: [
       {
         errorType: 'Condition error',
-        count: 1
-      }
+        count: 1,
+      },
     ],
     flowNodes: [
       {
         flowNodeId: 'Service5678',
         flowNodeName: 'Do something',
-        count: 1
-      }
-    ]
+        count: 1,
+      },
+    ],
   };
 };
 
@@ -99,19 +99,19 @@ export const mockProps = {
   ),
   selection: {
     treeRowIds: [],
-    flowNodeId: null
+    flowNodeId: null,
   },
   getCurrentMetadata: jest.fn(),
   onFlowNodeSelection: jest.fn(),
   onInstanceOperation: jest.fn(),
-  onTreeRowSelection: jest.fn()
+  onTreeRowSelection: jest.fn(),
 };
 
 export const instanceWithIncident = {
   ...mockProps,
   instance: createInstance({
-    state: STATE.INCIDENT
-  })
+    state: STATE.INCIDENT,
+  }),
 };
 
 export const mockedExpandedPaneId = 'myExpandedPaneId';

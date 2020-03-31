@@ -7,11 +7,11 @@
 import {
   isBatchOperationRunning,
   hasRunningBatchOperations,
-  hasBatchOperations
+  hasBatchOperations,
 } from './service';
 import {
   mockOperationFinished,
-  mockOperationRunning
+  mockOperationRunning,
 } from './OperationsPanel.setup';
 
 describe('isBatchOperationRunning', () => {
@@ -38,7 +38,7 @@ describe('hasRunningBatchOperations', () => {
   it('should be true if it contains running operation', () => {
     const hasRunning = hasRunningBatchOperations([
       mockOperationFinished,
-      mockOperationRunning
+      mockOperationRunning,
     ]);
 
     expect(hasRunning).toBe(true);
@@ -47,7 +47,7 @@ describe('hasRunningBatchOperations', () => {
   it('should be false if it only contains finished operations', () => {
     const hasRunning = hasRunningBatchOperations([
       mockOperationFinished,
-      mockOperationFinished
+      mockOperationFinished,
     ]);
 
     expect(hasRunning).toBe(false);

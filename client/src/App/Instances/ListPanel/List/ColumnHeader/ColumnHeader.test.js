@@ -14,7 +14,7 @@ describe('ColumnHeader', () => {
     label: 'Start Time',
     onSort: jest.fn(),
     sortKey: 'startDate',
-    sorting: {}
+    sorting: {},
   };
 
   it('should render a button if the column is sortable', () => {

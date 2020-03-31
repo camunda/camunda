@@ -38,7 +38,7 @@ function CodeEditor({contentEditable, initialValue}) {
 
   function renderCodeLines(content) {
     let htmlString = '';
-    content.split('\n').forEach(lineContent => {
+    content.split('\n').forEach((lineContent) => {
       htmlString = htmlString + returnCodeLine(lineContent);
     });
     return htmlString;
@@ -61,5 +61,5 @@ export default CodeEditor;
 
 CodeEditor.propTypes = {
   contentEditable: PropTypes.bool,
-  initialValue: PropTypes.string
+  initialValue: PropTypes.string,
 };

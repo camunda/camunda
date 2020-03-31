@@ -14,7 +14,7 @@ import TimeStampLabel from './TimeStampLabel';
 
 import * as Styled from './styled';
 
-const renderNode = node => {
+const renderNode = (node) => {
   return mount(
     <ThemeProvider>
       <FlowNodeTimeStampProvider>{node}</FlowNodeTimeStampProvider>

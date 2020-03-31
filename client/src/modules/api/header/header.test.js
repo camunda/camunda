@@ -31,7 +31,7 @@ describe('header api', () => {
       // given
       const successMessage = 'success';
       const successResponse = {
-        json: mockResolvedAsyncFn(successMessage)
+        json: mockResolvedAsyncFn(successMessage),
       };
       wrappers.get = mockResolvedAsyncFn(successResponse);
 

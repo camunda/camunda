@@ -25,15 +25,15 @@ import {MESSAGES, INCIDENTS_BY_ERROR, INSTANCES_BY_WORKFLOW} from './constants';
 
 export class Dashboard extends Component {
   static propTypes = {
-    dataManager: PropTypes.object
+    dataManager: PropTypes.object,
   };
 
   state = {
     counts: {
-      errors: null
+      errors: null,
     },
     instancesByWorkflow: {data: [], error: null, isLoading: true},
-    incidentsByError: {data: [], error: null, isLoading: true}
+    incidentsByError: {data: [], error: null, isLoading: true},
   };
 
   componentDidMount = async () => {
@@ -58,7 +58,7 @@ export class Dashboard extends Component {
         state === LOADING_STATE.LOAD_FAILED
       ) {
         this.setState({
-          instancesByWorkflow: {...response, isLoading: false}
+          instancesByWorkflow: {...response, isLoading: false},
         });
       }
     },
@@ -68,10 +68,10 @@ export class Dashboard extends Component {
         state === LOADING_STATE.LOAD_FAILED
       ) {
         this.setState({
-          incidentsByError: {...response, isLoading: false}
+          incidentsByError: {...response, isLoading: false},
         });
       }
-    }
+    },
   };
 
   renderPanel = (type, state) => {
@@ -92,7 +92,7 @@ export class Dashboard extends Component {
     const {
       instancesByWorkflow,
       incidentsByError,
-      counts: {error: countsError}
+      counts: {error: countsError},
     } = this.state;
 
     return (

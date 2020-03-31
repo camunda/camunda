@@ -33,7 +33,7 @@ export const PointerBody = css`
   margin-right: -7px;
   border-bottom-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
   ${({placement}) =>
     placement === DROPDOWN_PLACEMENT.TOP && 'transform: rotate(180deg)'};
@@ -44,7 +44,7 @@ export const PointerShadow = css`
 
   border-bottom-color: ${themeStyle({
     dark: Colors.uiDark06,
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
 
   ${({placement}) =>
@@ -69,7 +69,7 @@ export const Ul = themed(styled.ul`
   box-shadow: 0 0 2px 0
     ${themeStyle({
       dark: 'rgba(0, 0, 0, 0.6)',
-      light: ' rgba(0, 0, 0, 0.2)'
+      light: ' rgba(0, 0, 0, 0.2)',
     })};
   border: 1px solid
     ${themeStyle({dark: Colors.uiDark06, light: Colors.uiLight05})};
@@ -78,11 +78,11 @@ export const Ul = themed(styled.ul`
   /* Color */
   background-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight02
+    light: Colors.uiLight02,
   })};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 `);
 
@@ -107,7 +107,7 @@ const topPointer = css`
     &:after {
       border-bottom-color: ${themeStyle({
         dark: Colors.uiDark06,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
     }
   }
@@ -116,7 +116,7 @@ const topPointer = css`
     &:after {
       border-bottom-color: ${themeStyle({
         dark: Colors.darkActive,
-        light: Colors.lightActive
+        light: Colors.lightActive,
       })};
     }
   }
@@ -143,7 +143,7 @@ const bottomPointer = css`
     &:after {
       border-bottom-color: ${themeStyle({
         dark: Colors.uiDark06,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
     }
   }
@@ -152,7 +152,7 @@ const bottomPointer = css`
     &:after {
       border-bottom-color: ${themeStyle({
         dark: Colors.darkActive,
-        light: Colors.lightActive
+        light: Colors.lightActive,
       })};
     }
   }
@@ -167,7 +167,7 @@ export const Li = themed(styled.li`
     border-bottom: 1px solid
       ${themeStyle({
         dark: Colors.uiDark06,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
   }
 

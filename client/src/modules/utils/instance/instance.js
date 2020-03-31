@@ -10,7 +10,7 @@ import {STATE} from 'modules/constants';
  * @returns a boolean showing if the current instance has an incident
  * @param {*} instance object with full instance data
  */
-export const isWithIncident = instance => {
+export const isWithIncident = (instance) => {
   return instance.state === STATE.INCIDENT;
 };
 
@@ -18,7 +18,7 @@ export const isWithIncident = instance => {
  * @returns a boolean showing if the current instance is running.
  * @param {*} instance object with full instance data
  */
-export const isRunning = instance => {
+export const isRunning = (instance) => {
   return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
 };
 
@@ -47,7 +47,7 @@ export function getWorkflowName({bpmnProcessId, workflowName}) {
 export function formatGroupedWorkflows(workflows = []) {
   return workflows.reduce((obj, value) => {
     obj[value.bpmnProcessId] = {
-      ...value
+      ...value,
     };
 
     return obj;
@@ -59,5 +59,5 @@ export function formatGroupedWorkflows(workflows = []) {
  * @param {Array} instances array of instance objects
  */
 export function getInstancesWithActiveOperations(instances = []) {
-  return instances.filter(instance => instance.hasActiveOperation);
+  return instances.filter((instance) => instance.hasActiveOperation);
 }

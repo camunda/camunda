@@ -9,7 +9,7 @@ import {mount} from 'enzyme';
 
 import {
   FlowNodeTimeStampProvider,
-  withFlowNodeTimeStampContext
+  withFlowNodeTimeStampContext,
 } from './FlowNodeTimeStampContext';
 
 const Foo = withFlowNodeTimeStampContext(function Foo() {

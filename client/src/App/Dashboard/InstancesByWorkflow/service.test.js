@@ -10,7 +10,7 @@ import {
   concatLabel,
   concatGroupLabel,
   concatButtonTitle,
-  concatUrl
+  concatUrl,
 } from './service';
 
 describe('service', () => {
@@ -120,7 +120,7 @@ describe('service', () => {
         bpmnProcessId: 'Process_1',
         versions: [{version: 1}],
         hasFinishedInstances: true,
-        name: 'Process_1'
+        name: 'Process_1',
       });
 
       expect(url).toMatchSnapshot();
@@ -130,7 +130,7 @@ describe('service', () => {
       const url = concatUrl({
         bpmnProcessId: 'Process_2',
         versions: [{version: 1}, {version: 2}],
-        name: 'Process_2'
+        name: 'Process_2',
       });
 
       expect(url).toMatchSnapshot();

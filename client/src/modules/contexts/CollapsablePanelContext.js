@@ -20,14 +20,14 @@ class CollapsablePanelProvider extends React.Component {
     storeStateLocally: PropTypes.func.isRequired,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
-    ])
+      PropTypes.node,
+    ]),
   };
 
   // we start with both panels not collapsed
   state = {isFiltersCollapsed: false, isOperationsCollapsed: true};
 
-  toggle = function(target) {
+  toggle = function (target) {
     const currentPanelState = this.getCurrentPanelState();
     const expandState = {[target]: !currentPanelState[target]};
 
@@ -40,7 +40,7 @@ class CollapsablePanelProvider extends React.Component {
 
   toggleOperations = () => this.toggle('isOperationsCollapsed');
 
-  expand = function(target) {
+  expand = function (target) {
     const expandState = {[target]: false};
     this.props.storeStateLocally(expandState, 'panelStates');
     // components should be rerendered after panel states changed
@@ -51,15 +51,15 @@ class CollapsablePanelProvider extends React.Component {
 
   expandOperations = () => this.expand('isOperationsCollapsed');
 
-  getCurrentPanelState = function() {
+  getCurrentPanelState = function () {
     const {
       isFiltersCollapsed = false,
-      isOperationsCollapsed = true
+      isOperationsCollapsed = true,
     } = this.props.getStateLocally('panelStates');
 
     return {
       isFiltersCollapsed,
-      isOperationsCollapsed
+      isOperationsCollapsed,
     };
   };
 
@@ -71,7 +71,7 @@ class CollapsablePanelProvider extends React.Component {
       toggleFilters: this.toggleFilters,
       toggleOperations: this.toggleOperations,
       expandFilters: this.expandFilters,
-      expandOperations: this.expandOperations
+      expandOperations: this.expandOperations,
     };
 
     return (
@@ -82,20 +82,20 @@ class CollapsablePanelProvider extends React.Component {
   }
 }
 
-const withCollapsablePanel = Component => {
+const withCollapsablePanel = (Component) => {
   function WithCollapsablePanel(props) {
     return (
       <CollapsablePanelConsumer>
-        {contextValue => <Component {...props} {...contextValue} />}
+        {(contextValue) => <Component {...props} {...contextValue} />}
       </CollapsablePanelConsumer>
     );
   }
 
   WithCollapsablePanel.WrappedComponent = Component;
 
-  WithCollapsablePanel.displayName = `WithCollapsablePanel(${Component.displayName ||
-    Component.name ||
-    'Component'})`;
+  WithCollapsablePanel.displayName = `WithCollapsablePanel(${
+    Component.displayName || Component.name || 'Component'
+  })`;
 
   return WithCollapsablePanel;
 };
@@ -108,5 +108,5 @@ export {
   CollapsablePanelContext as default,
   CollapsablePanelConsumer,
   CollapsablePanelProviderWithSharedState as CollapsablePanelProvider,
-  withCollapsablePanel
+  withCollapsablePanel,
 };

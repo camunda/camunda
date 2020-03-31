@@ -37,14 +37,14 @@ const mockProps = {
       errorType: 'Error A',
       errorMessage: shortError,
       flowNodeName: 'Task A',
-      flowNodeInstanceId: 'flowNodeInstanceIdA'
+      flowNodeInstanceId: 'flowNodeInstanceIdA',
     }),
     createIncident({
       errorType: 'Error B',
       errorMessage: longError,
       flowNodeName: 'Task B',
-      flowNodeInstanceId: id
-    })
+      flowNodeInstanceId: id,
+    }),
   ],
   instanceId: '1',
   onIncidentOperation: jest.fn(),
@@ -52,9 +52,9 @@ const mockProps = {
   selectedFlowNodeInstanceIds: [id],
   sorting: {
     sortBy: 'errorType',
-    sortOrder: SORT_ORDER.DESC
+    sortOrder: SORT_ORDER.DESC,
   },
-  onSort: jest.fn()
+  onSort: jest.fn(),
 };
 
 describe('IncidentsTable', () => {
@@ -77,76 +77,25 @@ describe('IncidentsTable', () => {
 
   it('should render the right column headers', () => {
     expect(node.find(ColumnHeader).length).toEqual(6);
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(0)
-        .text()
-    ).toContain('Incident Type');
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(0)
-        .props().sortKey
-    ).toEqual('errorType');
+    expect(node.find(ColumnHeader).at(0).text()).toContain('Incident Type');
+    expect(node.find(ColumnHeader).at(0).props().sortKey).toEqual('errorType');
 
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(1)
-        .text()
-    ).toContain('Flow Node');
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(1)
-        .props().sortKey
-    ).toEqual('flowNodeName');
+    expect(node.find(ColumnHeader).at(1).text()).toContain('Flow Node');
+    expect(node.find(ColumnHeader).at(1).props().sortKey).toEqual(
+      'flowNodeName'
+    );
 
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(2)
-        .text()
-    ).toContain('Job Id');
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(2)
-        .props().sortKey
-    ).toEqual('jobId');
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(2)
-        .props().disabled
-    ).toBe(false);
+    expect(node.find(ColumnHeader).at(2).text()).toContain('Job Id');
+    expect(node.find(ColumnHeader).at(2).props().sortKey).toEqual('jobId');
+    expect(node.find(ColumnHeader).at(2).props().disabled).toBe(false);
 
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(3)
-        .text()
-    ).toContain('Creation Time');
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(3)
-        .props().sortKey
-    ).toEqual('creationTime');
+    expect(node.find(ColumnHeader).at(3).text()).toContain('Creation Time');
+    expect(node.find(ColumnHeader).at(3).props().sortKey).toEqual(
+      'creationTime'
+    );
 
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(4)
-        .text()
-    ).toContain('Error Message');
-    expect(
-      node
-        .find(ColumnHeader)
-        .at(5)
-        .text()
-    ).toContain('Operations');
+    expect(node.find(ColumnHeader).at(4).text()).toContain('Error Message');
+    expect(node.find(ColumnHeader).at(5).text()).toContain('Operations');
   });
 
   it('should render the right number of rows', () => {
@@ -156,18 +105,11 @@ describe('IncidentsTable', () => {
   });
 
   it('should render the right data in a row', () => {
-    expect(
-      node
-        .find(TBody)
-        .find(TR)
-        .find(TD).length
-    ).toEqual(6 * mockProps.incidents.length);
+    expect(node.find(TBody).find(TR).find(TD).length).toEqual(
+      6 * mockProps.incidents.length
+    );
 
-    const firstRowCells = node
-      .find(TBody)
-      .find(TR)
-      .at(0)
-      .find(TD);
+    const firstRowCells = node.find(TBody).find(TR).at(0).find(TD);
 
     expect(firstRowCells.at(0).text()).toContain(
       mockProps.incidents[0].errorType
@@ -188,16 +130,8 @@ describe('IncidentsTable', () => {
   });
 
   it('should show a more button for long error messages', () => {
-    const firstRowCells = node
-      .find(TBody)
-      .find(TR)
-      .at(0)
-      .find(TD);
-    const secondRowCells = node
-      .find(TBody)
-      .find(TR)
-      .at(1)
-      .find(TD);
+    const firstRowCells = node.find(TBody).find(TR).at(0).find(TD);
+    const secondRowCells = node.find(TBody).find(TR).at(1).find(TD);
 
     expect(firstRowCells.at(4).text()).toContain(
       mockProps.incidents[0].errorMessage
@@ -209,20 +143,11 @@ describe('IncidentsTable', () => {
       mockProps.incidents[1].errorMessage
     );
     expect(secondRowCells.at(4).find(Button)).toExist();
-    expect(
-      secondRowCells
-        .at(4)
-        .find(Button)
-        .text()
-    ).toEqual('More...');
+    expect(secondRowCells.at(4).find(Button).text()).toEqual('More...');
   });
 
   it('should open an modal when clicking on the more button', () => {
-    const secondRowCells = node
-      .find(TBody)
-      .find(TR)
-      .at(1)
-      .find(TD);
+    const secondRowCells = node.find(TBody).find(TR).at(1).find(TD);
     const moreButton = secondRowCells.at(4).find(Button);
 
     // when
@@ -243,10 +168,7 @@ describe('IncidentsTable', () => {
 
   describe('Selection', () => {
     it('should call onIncidentSelection when clicking on a row', () => {
-      const RowNode = node
-        .find(TBody)
-        .find(TR)
-        .at(0);
+      const RowNode = node.find(TBody).find(TR).at(0);
 
       RowNode.simulate('click');
       node.update();
@@ -261,19 +183,12 @@ describe('IncidentsTable', () => {
     });
 
     it('should call onIncidentSelection when deselecting a row', () => {
-      const RowNode = node
-        .find(TBody)
-        .find(TR)
-        .at(1);
+      const RowNode = node.find(TBody).find(TR).at(1);
 
       RowNode.simulate('click');
       node.update();
 
-      node
-        .find(TBody)
-        .find(TR)
-        .at(1)
-        .simulate('click');
+      node.find(TBody).find(TR).at(1).simulate('click');
       node.update();
 
       expect(mockProps.onIncidentSelection).toHaveBeenCalled();
@@ -285,21 +200,9 @@ describe('IncidentsTable', () => {
       );
     });
     it('shoud mark the selected incidents row', () => {
-      expect(
-        node
-          .find(TBody)
-          .find(TR)
-          .at(0)
-          .props().isSelected
-      ).toBe(false);
+      expect(node.find(TBody).find(TR).at(0).props().isSelected).toBe(false);
 
-      expect(
-        node
-          .find(TBody)
-          .find(TR)
-          .at(1)
-          .props().isSelected
-      ).toBe(true);
+      expect(node.find(TBody).find(TR).at(1).props().isSelected).toBe(true);
     });
 
     it('should handle multiple selections', () => {
@@ -311,21 +214,9 @@ describe('IncidentsTable', () => {
           </DataManagerProvider>
         </ThemeProvider>
       );
-      expect(
-        node
-          .find(TBody)
-          .find(TR)
-          .at(0)
-          .props().isSelected
-      ).toBe(true);
+      expect(node.find(TBody).find(TR).at(0).props().isSelected).toBe(true);
 
-      expect(
-        node
-          .find(TBody)
-          .find(TR)
-          .at(1)
-          .props().isSelected
-      ).toBe(true);
+      expect(node.find(TBody).find(TR).at(1).props().isSelected).toBe(true);
 
       mockProps.selectedFlowNodeInstanceIds = [id];
     });
@@ -349,15 +240,15 @@ describe('IncidentsTable', () => {
           errorMessage: shortError,
           flowNodeName: 'Task A',
           flowNodeInstanceId: 'flowNodeInstanceIdA',
-          jobId: null
+          jobId: null,
         }),
         createIncident({
           errorType: 'Error B',
           errorMessage: longError,
           flowNodeName: 'Task B',
           flowNodeInstanceId: id,
-          jobId: null
-        })
+          jobId: null,
+        }),
       ];
       const node = mount(
         <ThemeProvider>

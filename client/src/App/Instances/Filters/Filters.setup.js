@@ -8,7 +8,7 @@ import {getFilterQueryString} from 'modules/utils/filter';
 
 import {
   createFilter,
-  groupedWorkflowsMock as defaultGroupedWorkflowsMock
+  groupedWorkflowsMock as defaultGroupedWorkflowsMock,
 } from 'modules/testUtils';
 
 export const groupedWorkflowsMock = defaultGroupedWorkflowsMock;
@@ -16,11 +16,11 @@ export const groupedWorkflowsMock = defaultGroupedWorkflowsMock;
 // transformed groupedWorkflowsMock in an object structure
 export const workflows = {
   demoProcess: {
-    ...groupedWorkflowsMock[0]
+    ...groupedWorkflowsMock[0],
   },
   orderProcess: {
-    ...groupedWorkflowsMock[1]
-  }
+    ...groupedWorkflowsMock[1],
+  },
 };
 
 export const mockProps = {
@@ -28,8 +28,8 @@ export const mockProps = {
   onFilterReset: jest.fn(),
   selectableFlowNodes: [],
   location: {
-    search: getFilterQueryString({})
-  }
+    search: getFilterQueryString({}),
+  },
 };
 
 export const mockPropsWithEmptyLocationSearch = {
@@ -37,8 +37,8 @@ export const mockPropsWithEmptyLocationSearch = {
   onFilterReset: jest.fn(),
   selectableFlowNodes: [],
   location: {
-    search: ''
-  }
+    search: '',
+  },
 };
 
 export const mockPropsWithSelectableFlowNodes = {
@@ -46,11 +46,11 @@ export const mockPropsWithSelectableFlowNodes = {
   onFilterReset: jest.fn(),
   selectableFlowNodes: [
     {id: 'TaskA', $type: 'bpmn:StartEvent', name: 'task A'},
-    {id: 'TaskB', $type: 'bpmn:EndEvent'}
+    {id: 'TaskB', $type: 'bpmn:EndEvent'},
   ],
   location: {
-    search: getFilterQueryString({})
-  }
+    search: getFilterQueryString({}),
+  },
 };
 
 export const COMPLETE_FILTER = {
@@ -62,19 +62,19 @@ export const COMPLETE_FILTER = {
   workflow: 'demoProcess',
   version: '2',
   activityId: '4',
-  batchOperationId: 'batch-operation-id-example'
+  batchOperationId: 'batch-operation-id-example',
 };
 
 export const mockPropsWithDefaultFilter = {
   ...mockProps,
   location: {
-    search: getFilterQueryString({active: true, incidents: true})
-  }
+    search: getFilterQueryString({active: true, incidents: true}),
+  },
 };
 
 export const mockPropsWithInitFilter = {
   ...mockProps,
   location: {
-    search: getFilterQueryString(COMPLETE_FILTER)
-  }
+    search: getFilterQueryString(COMPLETE_FILTER),
+  },
 };

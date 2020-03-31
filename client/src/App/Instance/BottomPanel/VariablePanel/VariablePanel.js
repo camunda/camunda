@@ -11,7 +11,7 @@ import EmptyPanel from 'modules/components/EmptyPanel';
 import {
   FAILED_PLACEHOLDER,
   MULTI_SCOPE_PLACEHOLDER,
-  EMPTY_PLACEHOLDER
+  EMPTY_PLACEHOLDER,
 } from './constants';
 import {isRunning} from 'modules/utils/instance';
 
@@ -30,14 +30,14 @@ class VariablePanel extends React.Component {
     editMode: PropTypes.string.isRequired,
     isEditable: PropTypes.bool.isRequired,
     onVariableUpdate: PropTypes.func.isRequired,
-    setEditMode: PropTypes.func.isRequired
+    setEditMode: PropTypes.func.isRequired,
   };
 
   constructor(props) {
     super(props);
     this.state = {
       loadingState: LOADING_STATE.LOADING,
-      initialLoad: false
+      initialLoad: false,
     };
 
     this.subscriptions = {
@@ -49,7 +49,7 @@ class VariablePanel extends React.Component {
         }
 
         this.setState({...stateUpdate, loadingState: state});
-      }
+      },
     };
   }
 
@@ -132,7 +132,7 @@ class VariablePanel extends React.Component {
       editMode,
       onVariableUpdate,
       setEditMode,
-      instance
+      instance,
     } = this.props;
 
     const TableReplacement = this.constructTableReplacement();

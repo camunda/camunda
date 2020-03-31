@@ -32,7 +32,7 @@ export const Variables = themed(styled(Panel)`
   border-left: none;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.8)',
-    light: 'rgba(98, 98, 110, 0.8)'
+    light: 'rgba(98, 98, 110, 0.8)',
   })};
 `);
 
@@ -61,7 +61,7 @@ export const Placeholder = themed(styled.span`
   font-size: 14px;
   color: ${themeStyle({
     dark: '#dedede',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   padding: 0 20px;
 `);
@@ -84,9 +84,9 @@ export const TH = themed(styled.th`
 export const TD = themed(styled.td`
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)'
+    light: 'rgba(98, 98, 110, 0.9)',
   })};
-  font-weight: ${props => (props.isBold ? 'bold' : 'normal')};
+  font-weight: ${(props) => (props.isBold ? 'bold' : 'normal')};
 
   padding-top: 5px
   padding-bottom: 5px;
@@ -113,11 +113,11 @@ export const SkeletonTable = styled(Table)`
 const rowWithActiveOperationStyle = css`
   background-color: ${themeStyle({
     dark: 'rgba(91, 94, 99, 0.4)',
-    light: '#e7e9ed'
+    light: '#e7e9ed',
   })};
 
   opacity: ${themeStyle({
-    dark: '0.7'
+    dark: '0.7',
   })};
 `;
 
@@ -127,7 +127,7 @@ export const TR = themed(styled.tr`
 
   border-color: ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
 
   &:first-child {
@@ -157,11 +157,11 @@ export const THead = themed(styled.thead`
     border-bottom: 1px solid
       ${themeStyle({
         dark: Colors.uiDark04,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
     background: ${themeStyle({
       dark: Colors.uiDark02,
-      light: Colors.uiLight04
+      light: Colors.uiLight04,
     })};
     z-index: 2;
     border-top: none;
@@ -300,7 +300,7 @@ export const EditButton = styled(IconButton)`
     svg {
       color: ${themeStyle({
         dark: Colors.uiLight02,
-        light: Colors.uiDark05
+        light: Colors.uiDark05,
       })};
       opacity: 0.5;
     }
@@ -317,7 +317,7 @@ const iconStyle = css`
   object-fit: contain;
   color: ${themeStyle({
     dark: Colors.uiLight02,
-    light: Colors.uiDark04
+    light: Colors.uiDark04,
   })};
 `;
 
@@ -354,7 +354,7 @@ export const CodeLine = themed(styled.p`
   line-height: 14px;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
   font-family: IBMPlexMono;
   font-size: 14px;
@@ -367,13 +367,13 @@ export const CodeLine = themed(styled.p`
     content: counter(line);
     color: ${themeStyle({
       dark: '#ffffff',
-      light: Colors.uiLight06
+      light: Colors.uiLight06,
     })};
     display: inline-block;
     width: 35px;
     opacity: ${themeStyle({
       dark: 0.5,
-      light: 0.65
+      light: 0.65,
     })};
     padding-right: 11px;
     -webkit-user-select: none;
@@ -388,6 +388,6 @@ export const LinesSeparator = themed(styled.span`
   width: 1px;
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
 `);

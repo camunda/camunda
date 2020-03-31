@@ -11,7 +11,7 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 export const Skeleton = themed(styled.div`
   background-color: ${themeStyle({
     dark: 'rgba(0, 0, 0, 0.65)',
-    light: 'rgba(255, 255, 255, 0.75)'
+    light: 'rgba(255, 255, 255, 0.75)',
   })};
 
   z-index: 2;

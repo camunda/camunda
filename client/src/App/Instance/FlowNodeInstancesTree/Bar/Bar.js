@@ -46,7 +46,7 @@ BarComponent.propTypes = {
     type: PropTypes.string.isRequired,
     typeDetails: PropTypes.object.isRequired,
     endDate: PropTypes.string,
-    children: PropTypes.arrayOf(PropTypes.object)
+    children: PropTypes.arrayOf(PropTypes.object),
   }),
-  isSelected: PropTypes.bool
+  isSelected: PropTypes.bool,
 };

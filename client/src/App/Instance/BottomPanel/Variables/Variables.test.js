@@ -14,7 +14,7 @@ import Variables from './Variables';
 
 const MODE = {
   EDIT: 'edit',
-  ADD: 'add'
+  ADD: 'add',
 };
 
 const mockProps = {
@@ -24,7 +24,7 @@ const mockProps = {
   onVariableUpdate: jest.fn(),
   isEditable: true,
   setVariables: jest.fn(),
-  setEditMode: jest.fn()
+  setEditMode: jest.fn(),
 };
 
 function mountNode(props = {}) {
@@ -46,7 +46,7 @@ describe('Variables', () => {
 
     // then
     expect(node.find('tr')).toHaveLength(mockProps.variables.length + 1);
-    mockProps.variables.forEach(variable => {
+    mockProps.variables.forEach((variable) => {
       const row = node.find(`tr[data-test="${variable.name}"]`);
       expect(row).toHaveLength(1);
       const columns = row.find('td');
@@ -109,7 +109,7 @@ describe('Variables', () => {
 
       setProps(node, Variables, {
         ...mockProps,
-        editMode: MODE.ADD
+        editMode: MODE.ADD,
       });
       node.update();
 
@@ -133,7 +133,7 @@ describe('Variables', () => {
 
       setProps(node, Variables, {
         ...mockProps,
-        editMode: MODE.ADD
+        editMode: MODE.ADD,
       });
 
       node
@@ -242,7 +242,7 @@ describe('Variables', () => {
 
       setProps(node, Variables, {
         ...mockProps,
-        editMode: MODE.EDIT
+        editMode: MODE.EDIT,
       });
 
       // then
@@ -266,7 +266,7 @@ describe('Variables', () => {
 
       setProps(node, Variables, {
         ...mockProps,
-        editMode: MODE.EDIT
+        editMode: MODE.EDIT,
       });
       node.update();
 
@@ -295,7 +295,7 @@ describe('Variables', () => {
 
         setProps(node, Variables, {
           ...mockProps,
-          editMode: MODE.EDIT
+          editMode: MODE.EDIT,
         });
         node.update();
 
@@ -318,7 +318,7 @@ describe('Variables', () => {
 
         setProps(node, Variables, {
           ...mockProps,
-          editMode: MODE.EDIT
+          editMode: MODE.EDIT,
         });
         node.update();
 
@@ -338,7 +338,7 @@ describe('Variables', () => {
 
         setProps(node, Variables, {
           ...mockProps,
-          editMode: MODE.EDIT
+          editMode: MODE.EDIT,
         });
         node.update();
 

@@ -41,5 +41,5 @@ OperationStatus.propTypes = {
   operationType: PropTypes.string,
   selected: PropTypes.bool,
   instance: PropTypes.object,
-  forceSpinner: PropTypes.bool
+  forceSpinner: PropTypes.bool,
 };

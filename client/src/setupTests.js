@@ -18,18 +18,18 @@ global.beforeEach(() => {
   localStorage.clear();
 });
 
-global.localStorage = (function() {
+global.localStorage = (function () {
   var store = {};
   return {
-    getItem: function(key) {
+    getItem: function (key) {
       return store[key];
     },
-    setItem: function(key, value) {
+    setItem: function (key, value) {
       store[key] = value.toString();
     },
-    clear: function() {
+    clear: function () {
       store = {};
     },
-    removeItem: jest.fn()
+    removeItem: jest.fn(),
   };
 })();

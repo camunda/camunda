@@ -8,6 +8,6 @@ export default {
   endpoint: `http://localhost:${process.env.PORT}`,
   agentUser: {
     username: 'demo',
-    password: 'demo'
-  }
+    password: 'demo',
+  },
 };

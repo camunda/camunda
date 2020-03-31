@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 import {
   mapify,
   getSelectedFlowNodeName,
-  getFlowNodeStateOverlays
+  getFlowNodeStateOverlays,
 } from './service';
 
 import {withData} from 'modules/DataManager';
@@ -30,7 +30,7 @@ class TopPanel extends React.PureComponent {
       endDate: PropTypes.string,
       state: PropTypes.string.isRequired,
       errorMessage: PropTypes.string,
-      workflowVersion: PropTypes.number
+      workflowVersion: PropTypes.number,
     }),
     incidents: PropTypes.object,
     children: PropTypes.node,
@@ -44,20 +44,20 @@ class TopPanel extends React.PureComponent {
     activityIdToActivityInstanceMap: PropTypes.object,
     onTreeRowSelection: PropTypes.func,
     onFlowNodeSelection: PropTypes.func,
-    getCurrentMetadata: PropTypes.func
+    getCurrentMetadata: PropTypes.func,
   };
 
   constructor(props) {
     super(props);
     this.state = {
-      isLoading: LOADING_STATE.LOADING
+      isLoading: LOADING_STATE.LOADING,
     };
     this.subscriptions = {
       LOAD_STATE_DEFINITIONS: ({state}) => {
         if (state === LOADING_STATE.LOADED) {
           this.setState({isLoading: state});
         }
-      }
+      },
     };
   }
 
@@ -69,10 +69,10 @@ class TopPanel extends React.PureComponent {
     this.props.dataManager.unsubscribe(this.subscriptions);
   }
 
-  addFLowNodeNames = incidents =>
-    incidents.map(incident => this.addFlowNodeName(incident));
+  addFLowNodeNames = (incidents) =>
+    incidents.map((incident) => this.addFlowNodeName(incident));
 
-  addFlowNodeName = object => {
+  addFlowNodeName = (object) => {
     const modifiedObject = {...object};
     const nodeMetaData = this.props.nodeMetaDataMap.get(
       modifiedObject.flowNodeId

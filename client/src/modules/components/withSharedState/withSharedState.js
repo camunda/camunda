@@ -23,7 +23,7 @@ export default function withSharedState(Component) {
       localStorage.removeItem(storageKey);
     };
 
-    getStateLocally = storageKey => {
+    getStateLocally = (storageKey) => {
       return JSON.parse(
         localStorage.getItem(storageKey || 'sharedState') || '{}'
       );
@@ -41,9 +41,9 @@ export default function withSharedState(Component) {
     }
   }
 
-  WithSharedState.displayName = `${Component.displayName ||
-    Component.name ||
-    'Component'}SharedState`;
+  WithSharedState.displayName = `${
+    Component.displayName || Component.name || 'Component'
+  }SharedState`;
 
   WithSharedState.WrappedComponent = Component;
 

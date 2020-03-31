@@ -11,7 +11,7 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {
   mockResolvedAsyncFn,
   mockRejectedAsyncFn,
-  flushPromises
+  flushPromises,
 } from 'modules/testUtils';
 
 import useLocalStorage from 'modules/hooks/useLocalStorage';
@@ -27,7 +27,7 @@ jest.mock('modules/utils/bpmn');
 useLocalStorage.mockImplementation(() => {
   return {
     storedValue: mockUser,
-    setLocalState: jest.fn()
+    setLocalState: jest.fn(),
   };
 });
 
@@ -35,11 +35,11 @@ const defaultConsoleError = console.error;
 const defaultConsoleLog = console.log;
 const mockUser = {
   firstname: 'foo',
-  lastname: 'bar'
+  lastname: 'bar',
 };
 const mockSsoUser = {
   firstname: null,
-  lastname: 'foo bar'
+  lastname: 'foo bar',
 };
 
 describe('User', () => {
@@ -58,7 +58,7 @@ describe('User', () => {
     useLocalStorage.mockImplementation(() => {
       return {
         storedValue: mockUser,
-        setLocalState: jest.fn()
+        setLocalState: jest.fn(),
       };
     });
     const node = mount(
@@ -105,7 +105,7 @@ describe('User', () => {
     useLocalStorage.mockImplementation(() => {
       return {
         storedValue: {},
-        setLocalStorage: jest.fn()
+        setLocalStorage: jest.fn(),
       };
     });
     api.fetchUser = mockRejectedAsyncFn();
@@ -123,7 +123,7 @@ describe('User', () => {
     useLocalStorage.mockImplementation(() => {
       return {
         storedValue: {},
-        setLocalStorage: jest.fn()
+        setLocalStorage: jest.fn(),
       };
     });
     api.fetchUser = mockResolvedAsyncFn(mockUser);

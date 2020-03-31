@@ -22,20 +22,20 @@ import * as Styled from './styled';
 const positions = {
   active: {
     bottom: 9,
-    left: 0
+    left: 0,
   },
   incidents: {
     bottom: 9,
-    right: 0
+    right: 0,
   },
   canceled: {
     top: -16,
-    left: 0
+    left: 0,
   },
   completed: {
     bottom: 1,
-    left: 17
-  }
+    left: 17,
+  },
 };
 
 export default function StatisticOverlay(props) {
@@ -45,7 +45,7 @@ export default function StatisticOverlay(props) {
     onOverlayAdd,
     onOverlayClear,
     isViewerLoaded,
-    theme
+    theme,
   } = props;
 
   if (!statistic[state]) {
@@ -90,12 +90,12 @@ export default function StatisticOverlay(props) {
 
 StatisticOverlay.propTypes = {
   statistic: PropTypes.shape({
-    activityId: PropTypes.string.isRequired
+    activityId: PropTypes.string.isRequired,
   }).isRequired,
   state: PropTypes.oneOf(['active', 'incidents', 'canceled', 'completed'])
     .isRequired,
   onOverlayAdd: PropTypes.func.isRequired,
   onOverlayClear: PropTypes.func.isRequired,
   isViewerLoaded: PropTypes.bool.isRequired,
-  theme: PropTypes.oneOf(['dark', 'light']).isRequired
+  theme: PropTypes.oneOf(['dark', 'light']).isRequired,
 };

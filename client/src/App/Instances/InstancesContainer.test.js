@@ -24,20 +24,20 @@ import {
   DEFAULT_MAX_RESULTS,
   SORT_ORDER,
   INCIDENTS_FILTER,
-  LOADING_STATE
+  LOADING_STATE,
 } from 'modules/constants';
 import {
   mockResolvedAsyncFn,
   flushPromises,
   groupedWorkflowsMock,
-  createMockInstancesObject
+  createMockInstancesObject,
 } from 'modules/testUtils';
 import {parsedDiagram} from 'modules/utils/bpmn';
 
 import {
   mockFullFilterWithoutWorkflow,
   mockFullFilterWithWorkflow,
-  mockLocalStorageProps
+  mockLocalStorageProps,
 } from './InstancesContainer.setup';
 
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
@@ -71,8 +71,8 @@ function getRouterProps(filter = DEFAULT_FILTER) {
   return {
     history: {push: pushMock, listen: () => listenMock, location: {search: ''}},
     location: {
-      search: filterUtils.getFilterQueryString(filter, filter.workflow)
-    }
+      search: filterUtils.getFilterQueryString(filter, filter.workflow),
+    },
   };
 }
 
@@ -116,7 +116,7 @@ describe('InstancesContainer', () => {
       dataManager.getWorkflowXML = jest.fn(() => {
         node.instance().subscriptions['LOAD_STATE_DEFINITIONS']({
           state: LOADING_STATE.LOADED,
-          response: parsedDiagram
+          response: parsedDiagram,
         });
       });
 
@@ -153,7 +153,7 @@ describe('InstancesContainer', () => {
       dataManager.publish({
         subscription: subscriptions['LOAD_STATE_DEFINITIONS'],
         state: LOADING_STATE.LOADED,
-        response: parsedDiagram
+        response: parsedDiagram,
       });
 
       // then
@@ -166,7 +166,7 @@ describe('InstancesContainer', () => {
       active: true,
       completed: true,
       canceled: true,
-      incidents: true
+      incidents: true,
     };
     const initialFilterUrl = {};
     let node;
@@ -199,7 +199,7 @@ describe('InstancesContainer', () => {
       expect(dataManager.getWorkflowInstances).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
-          ...expectedQuery
+          ...expectedQuery,
         })
       );
     });
@@ -215,7 +215,7 @@ describe('InstancesContainer', () => {
       ids: ['424242', '434343'],
       incidents: true,
       running: true,
-      workflowIds: ['1']
+      workflowIds: ['1'],
     };
     let node;
     beforeEach(() => {
@@ -231,7 +231,7 @@ describe('InstancesContainer', () => {
       dataManager.getWorkflowInstances = jest.fn(() => {
         node.instance().subscriptions['LOAD_LIST_INSTANCES']({
           state: LOADING_STATE.LOADED,
-          response: expectedQuery
+          response: expectedQuery,
         });
       });
     });
@@ -270,7 +270,7 @@ describe('InstancesContainer', () => {
       // set some filters
       node.find('Instances').prop('onFilterChange')({
         active: true,
-        incidents: true
+        incidents: true,
       });
 
       // mount again to change router props (for filter url change)
@@ -280,7 +280,7 @@ describe('InstancesContainer', () => {
           {...mockLocalStorageProps}
           {...getRouterProps({
             active: true,
-            incidents: true
+            incidents: true,
           })}
         />
       );
@@ -292,7 +292,7 @@ describe('InstancesContainer', () => {
         expect.objectContaining({
           active: true,
           incidents: true,
-          running: true
+          running: true,
         })
       );
     });
@@ -308,7 +308,7 @@ describe('InstancesContainer', () => {
       expect(dataManager.getWorkflowInstances).toHaveBeenCalled();
       const call = dataManager.getWorkflowInstances.mock.calls[0][0];
       expect(call).toMatchObject({
-        ...expectedQuery
+        ...expectedQuery,
       });
       expect(call.firstResult).toEqual(node.state('firstElement'));
       expect(call.maxResults).toEqual(DEFAULT_MAX_RESULTS);
@@ -325,7 +325,7 @@ describe('InstancesContainer', () => {
       expect(dataManager.getWorkflowInstances).toHaveBeenCalled();
       const call = dataManager.getWorkflowInstances.mock.calls[0][0];
       expect(call).toMatchObject({
-        ...expectedQuery
+        ...expectedQuery,
       });
       expect(call.firstResult).toEqual(node.state('firstElement'));
       expect(call.maxResults).toEqual(DEFAULT_MAX_RESULTS);
@@ -353,7 +353,7 @@ describe('InstancesContainer', () => {
       expect(dataManager.getWorkflowInstances).toHaveBeenCalled();
       const call = dataManager.getWorkflowInstances.mock.calls[0][0];
       expect(call).toMatchObject({
-        ...expectedQuery
+        ...expectedQuery,
       });
       expect(call.maxResults).toEqual(DEFAULT_MAX_RESULTS);
     });
@@ -412,7 +412,7 @@ describe('InstancesContainer', () => {
     );
 
     expect(InstancesNode.prop('filter')).toEqual({
-      ...DEFAULT_FILTER
+      ...DEFAULT_FILTER,
     });
     expect(InstancesNode.props().diagramModel).toEqual({});
   });
@@ -451,7 +451,7 @@ describe('InstancesContainer', () => {
     dataManager.getWorkflowXML = jest.fn(() => {
       node.instance().subscriptions['LOAD_STATE_DEFINITIONS']({
         state: LOADING_STATE.LOADED,
-        response: parsedDiagram
+        response: parsedDiagram,
       });
     });
 
@@ -475,7 +475,7 @@ describe('InstancesContainer', () => {
         {...mockLocalStorageProps}
         {...getRouterProps({
           ...rest,
-          version: 'all'
+          version: 'all',
         })}
       />
     );
@@ -489,7 +489,7 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('filter')).toEqual(
       decodeFields({
         ...rest,
-        version: 'all'
+        version: 'all',
       })
     );
     expect(InstancesNode.prop('diagramModel')).toEqual({});
@@ -530,8 +530,8 @@ describe('InstancesContainer', () => {
         const noFilterRouterProps = {
           history: {push: jest.fn(), location: ''},
           location: {
-            search: ''
-          }
+            search: '',
+          },
         };
 
         mount(
@@ -557,8 +557,8 @@ describe('InstancesContainer', () => {
           history: {push: jest.fn(), location: ''},
           location: {
             search:
-              '?filter={"active": fallse, "errorMessage": "No%20data%20found%20for%20query%20$.foo."'
-          }
+              '?filter={"active": fallse, "errorMessage": "No%20data%20found%20for%20query%20$.foo."',
+          },
         };
         const node = mount(
           <InstancesContainerWrapped
@@ -588,7 +588,7 @@ describe('InstancesContainer', () => {
             {...mockLocalStorageProps}
             {...getRouterProps({
               ...mockFullFilterWithWorkflow,
-              workflow: 'x'
+              workflow: 'x',
             })}
           />
         );
@@ -617,7 +617,7 @@ describe('InstancesContainer', () => {
             {...mockLocalStorageProps}
             {...getRouterProps({
               ...mockFullFilterWithWorkflow,
-              version: 'x'
+              version: 'x',
             })}
           />
         );
@@ -626,7 +626,7 @@ describe('InstancesContainer', () => {
         dataManager.publish({
           subscription: subscriptions['LOAD_STATE_DEFINITIONS'],
           state: LOADING_STATE.LOADED,
-          response: parsedDiagram
+          response: parsedDiagram,
         });
 
         await flushPromises();
@@ -653,7 +653,7 @@ describe('InstancesContainer', () => {
             {...getRouterProps({
               ...mockFullFilterWithWorkflow,
               version: 'all',
-              activityId: 'taskD'
+              activityId: 'taskD',
             })}
           />
         );
@@ -668,7 +668,7 @@ describe('InstancesContainer', () => {
         const {activityId, version, ...rest} = mockFullFilterWithWorkflow;
         expect(parseQueryString(search).filter).toEqual({
           ...rest,
-          version: 'all'
+          version: 'all',
         });
       });
     });
@@ -680,7 +680,7 @@ describe('InstancesContainer', () => {
             {...{dataManager}}
             {...mockLocalStorageProps}
             {...getRouterProps({
-              ...mockFullFilterWithoutWorkflow
+              ...mockFullFilterWithoutWorkflow,
             })}
           />
         );
@@ -708,7 +708,7 @@ describe('InstancesContainer', () => {
         } = mockFullFilterWithWorkflow;
         const validFilterWithVersionAll = {
           ...filterWithoutActivityId,
-          version: 'all'
+          version: 'all',
         };
         const node = mount(
           <InstancesContainerWrapped
@@ -749,7 +749,7 @@ describe('InstancesContainer', () => {
         // change filter without chaning workflow
         const newFilter = {
           ...mockFullFilterWithWorkflow,
-          endDate: '1955-12-28'
+          endDate: '1955-12-28',
         };
         node.find('Instances').prop('onFilterChange')(newFilter);
         await flushPromises();
@@ -777,7 +777,7 @@ describe('InstancesContainer', () => {
         dataManager.getWorkflowXML = jest.fn(() => {
           node.instance().subscriptions['LOAD_STATE_DEFINITIONS']({
             state: LOADING_STATE.LOADED,
-            response: parsedDiagram
+            response: parsedDiagram,
           });
         });
 
@@ -825,7 +825,7 @@ describe('InstancesContainer', () => {
           {
             ...mockFullFilterWithoutWorkflow,
             ...mockFullFilterWithWorkflow,
-            variable: ''
+            variable: '',
           },
           'New demo process'
         )

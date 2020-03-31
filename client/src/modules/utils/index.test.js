@@ -17,7 +17,7 @@ describe('modules/utils/index.js', () => {
     it('should decode text', () => {
       const cases = [
         {encoded: '%25', decoded: '%'},
-        {encoded: '%20', decoded: ' '}
+        {encoded: '%20', decoded: ' '},
       ];
 
       cases.forEach(({encoded, decoded}) => {

@@ -28,11 +28,11 @@ const ExpandButton = React.forwardRef(function ExpandButton(
 
 ExpandButton.propTypes = {
   isExpanded: PropTypes.bool,
-  children: PropTypes.node
+  children: PropTypes.node,
 };
 
 ExpandButton.defaultProps = {
-  isExpanded: false
+  isExpanded: false,
 };
 
 export default ExpandButton;

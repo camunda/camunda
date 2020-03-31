@@ -43,7 +43,7 @@ describe('Authentication', () => {
 
   it('should render children if logged in', async () => {
     node.setProps({
-      location: {...mockLocation, state: {isLoggedIn: true}}
+      location: {...mockLocation, state: {isLoggedIn: true}},
     });
 
     node.update();
@@ -61,7 +61,7 @@ describe('Authentication', () => {
     // given
     const expectedTo = {
       pathname: '/login',
-      state: {referrer: mockLocation.pathname}
+      state: {referrer: mockLocation.pathname},
     };
 
     // when
@@ -79,7 +79,7 @@ describe('Authentication', () => {
     // given
     const expectedTo = {
       pathname: '/login',
-      state: {referrer: mockLocation.pathname}
+      state: {referrer: mockLocation.pathname},
     };
 
     // mock resetState so we can catch the forceRedirect change in state

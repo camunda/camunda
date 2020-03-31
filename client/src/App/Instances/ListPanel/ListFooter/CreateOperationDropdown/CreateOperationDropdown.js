@@ -20,7 +20,7 @@ import useOperationApply from './useOperationApply';
 
 const ACTION_NAMES = {
   [OPERATION_TYPE.RESOLVE_INCIDENT]: 'retry',
-  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: 'cancel'
+  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: 'cancel',
 };
 
 const CreateOperationDropdown = ({label, selectedCount}) => {
@@ -82,7 +82,7 @@ const CreateOperationDropdown = ({label, selectedCount}) => {
 
 CreateOperationDropdown.propTypes = {
   label: PropTypes.string.isRequired,
-  selectedCount: PropTypes.number.isRequired
+  selectedCount: PropTypes.number.isRequired,
 };
 
 export default CreateOperationDropdown;

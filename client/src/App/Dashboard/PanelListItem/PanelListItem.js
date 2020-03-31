@@ -16,6 +16,6 @@ export default function PanelListItem({children, ...props}) {
 PanelListItem.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
-  ])
+    PropTypes.node,
+  ]),
 };

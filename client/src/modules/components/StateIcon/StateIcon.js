@@ -17,7 +17,7 @@ const stateIconsMap = {
   [STATE.ACTIVE]: Styled.ActiveIcon,
   [STATE.COMPLETED]: Styled.CompletedIcon,
   [STATE.CANCELED]: Styled.CanceledIcon,
-  [STATE.TERMINATED]: Styled.CanceledIcon
+  [STATE.TERMINATED]: Styled.CanceledIcon,
 };
 
 function StateIcon({state, ...props}) {
@@ -29,5 +29,5 @@ export default themed(StateIcon);
 
 StateIcon.propTypes = {
   state: PropTypes.oneOf(Object.values(STATE)).isRequired,
-  theme: PropTypes.string.isRequired
+  theme: PropTypes.string.isRequired,
 };

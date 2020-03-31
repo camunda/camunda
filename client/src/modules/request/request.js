@@ -22,9 +22,9 @@ export async function request({url, method, body, query, headers}) {
     body: typeof body === 'string' ? body : JSON.stringify(body),
     headers: {
       'Content-Type': 'application/json',
-      ...headers
+      ...headers,
     },
-    mode: 'cors'
+    mode: 'cors',
   });
 
   if (typeof responseInterceptor === 'function') {

@@ -25,7 +25,7 @@ export const Option = themed(styled.div`
     border-bottom: 1px solid
       ${themeStyle({
         dark: Colors.uiDark06,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
   }
 `);
@@ -48,11 +48,11 @@ export const OptionButton = themed(styled.button`
     disabled
       ? themeStyle({
           dark: 'rgba(255, 255, 255, 0.6)',
-          light: 'rgba(98, 98, 110, 0.6);'
+          light: 'rgba(98, 98, 110, 0.6);',
         })
       : themeStyle({
           dark: 'rgba(255, 255, 255, 0.9)',
-          light: 'rgba(98, 98, 110, 0.9)'
+          light: 'rgba(98, 98, 110, 0.9)',
         })};
 
   /* Text */
@@ -69,14 +69,14 @@ const interactionStyles = css`
   &:hover {
     background: ${themeStyle({
       dark: Colors.uiDark06,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 
   &:active {
     background: ${themeStyle({
       dark: Colors.darkActive,
-      light: Colors.lightActive
+      light: Colors.lightActive,
     })};
   }
 `;

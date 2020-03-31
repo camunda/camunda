@@ -26,7 +26,7 @@ export const ModalRoot = themed(styled.div`
   align-items: center;
   background-color: ${themeStyle({
     dark: 'rgba(0, 0, 0, 0.5)',
-    light: 'rgba(255, 255, 255, 0.7)'
+    light: 'rgba(255, 255, 255, 0.7)',
   })};
 `);
 
@@ -87,13 +87,13 @@ export const ModalContent = themed(styled(Panel)`
   border: 1px solid
     ${themeStyle({
       dark: Colors.uiDark06,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   border-radius: 3px;
   box-shadow: 0 2px 2px 0
     ${themeStyle({
       dark: 'rgba(0, 0, 0, 0.5)',
-      light: 'rgba(0, 0, 0, 0.5)'
+      light: 'rgba(0, 0, 0, 0.5)',
     })};
 `);
 
@@ -105,7 +105,7 @@ export const ModalHeader = themed(styled(Panel.Header)`
   border-bottom: 1px solid
     ${themeStyle({
       dark: Colors.uiDark06,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   border-radius: 3px 3px 0 0;
 `);
@@ -120,25 +120,25 @@ export const CrossButton = themed(styled.button`
   top: 19px;
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   opacity: ${themeStyle({
     dark: 0.5,
-    light: 0.9
+    light: 0.9,
   })};
 
   &:hover {
     opacity: ${themeStyle({
       dark: 0.7,
-      light: 1
+      light: 1,
     })};
   }
 
   &:active {
     color: ${themeStyle({
       dark: '#ffffff',
-      light: Colors.uiDark04
+      light: Colors.uiDark04,
     })};
     opacity: 1;
   }
@@ -158,12 +158,12 @@ export const ModalBody = themed(styled(Panel.Body)`
 
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   background-color: ${themeStyle({
     dark: Colors.uiDark01,
-    light: Colors.uiLight04
+    light: Colors.uiLight04,
   })};
 `);
 
@@ -171,7 +171,7 @@ export const ModalBodyText = themed(styled.div`
   font-size: 13px
   opacity: ${themeStyle({
     dark: '0.9',
-    light: '1'
+    light: '1',
   })}
 `);
 
@@ -183,12 +183,12 @@ export const ModalFooter = themed(styled(Panel.Footer)`
   align-items: center;
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
-    light: Colors.uiLight04
+    light: Colors.uiLight04,
   })};
   border-top: 1px solid
     ${themeStyle({
       dark: Colors.uiDark06,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   border-radius: 0 0 3px 3px;
 

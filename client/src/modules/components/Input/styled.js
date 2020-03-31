@@ -13,7 +13,7 @@ const placeholderStyle = css`
   &::placeholder {
     color: ${themeStyle({
       light: 'rgba(98, 98, 110, 0.9)',
-      dark: 'rgba(255, 255, 255, 0.7)'
+      dark: 'rgba(255, 255, 255, 0.7)',
     })};
     font-style: italic;
   }
@@ -32,17 +32,17 @@ export const Input = themed(styled.input`
   border: solid 1px
     ${themeStyle({
       dark: Colors.uiDark05,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   border-radius: 3px;
 
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
-    light: Colors.uiLight04
+    light: Colors.uiLight04,
   })};
 
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiDark03
+    light: Colors.uiDark03,
   })};
 `);

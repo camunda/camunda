@@ -14,28 +14,28 @@ describe('instance service', () => {
         {
           id: '2251799813695632',
           workflowInstanceId: '2251799813693731',
-          activityId: 'SequenceFlow_0drux68'
+          activityId: 'SequenceFlow_0drux68',
         },
         {
           id: '2251799813693749',
           workflowInstanceId: '2251799813693731',
-          activityId: 'SequenceFlow_0j6tsnn'
+          activityId: 'SequenceFlow_0j6tsnn',
         },
         {
           id: '2251799813695543',
           workflowInstanceId: '2251799813693731',
-          activityId: 'SequenceFlow_1dwqvrt'
+          activityId: 'SequenceFlow_1dwqvrt',
         },
         {
           id: '2251799813695629',
           workflowInstanceId: '2251799813693731',
-          activityId: 'SequenceFlow_1fgekwd'
+          activityId: 'SequenceFlow_1fgekwd',
         },
         {
           id: '2251799813693750',
           workflowInstanceId: '2251799813693731',
-          activityId: 'SequenceFlow_0j6tsnn'
-        }
+          activityId: 'SequenceFlow_0j6tsnn',
+        },
       ];
 
       // when
@@ -47,7 +47,7 @@ describe('instance service', () => {
         'SequenceFlow_0drux68',
         'SequenceFlow_0j6tsnn',
         'SequenceFlow_1dwqvrt',
-        'SequenceFlow_1fgekwd'
+        'SequenceFlow_1fgekwd',
       ]);
     });
 

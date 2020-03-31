@@ -11,7 +11,7 @@ export function get(url, query, options = {}) {
     url,
     query,
     method: 'GET',
-    ...options
+    ...options,
   });
 }
 
@@ -20,7 +20,7 @@ export function post(url, body, options = {}) {
     url,
     body,
     method: 'POST',
-    ...options
+    ...options,
   });
 }
 
@@ -29,7 +29,7 @@ export function put(url, body, options = {}) {
     url,
     body,
     method: 'PUT',
-    ...options
+    ...options,
   });
 }
 
@@ -38,6 +38,6 @@ export function del(url, query, options = {}) {
     url,
     query,
     method: 'DELETE',
-    ...options
+    ...options,
   });
 }

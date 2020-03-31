@@ -20,7 +20,7 @@ import {
   MOCK_TOPICS,
   mockStaticContent,
   customTopic,
-  mockWorkflowInstance
+  mockWorkflowInstance,
 } from './core.setup';
 jest.mock('modules/utils/bpmn');
 
@@ -87,7 +87,7 @@ describe('DataManager', () => {
       expect(cacheUpdateSpy.mock.calls[0]).toEqual([
         topic,
         apiCall,
-        mockParams
+        mockParams,
       ]);
       expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(topic);
       expect(pubLoadingStatesSpy.mock.calls[0][2]).toEqual(mockStaticContent);
@@ -237,7 +237,7 @@ describe('DataManager', () => {
         );
         expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual({
           instanceId: mockWorkflowInstance.id,
-          scopeId: mockScopeId
+          scopeId: mockScopeId,
         });
       });
     });

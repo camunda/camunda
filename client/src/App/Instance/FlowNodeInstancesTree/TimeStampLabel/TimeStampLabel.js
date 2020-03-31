@@ -16,7 +16,7 @@ class TimeStampLabel extends React.PureComponent {
   static propTypes = {
     showTimeStamp: PropTypes.bool.isRequired,
     timeStamp: PropTypes.string,
-    isSelected: PropTypes.bool.isRequired
+    isSelected: PropTypes.bool.isRequired,
   };
 
   render() {

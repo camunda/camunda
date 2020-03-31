@@ -87,8 +87,8 @@ function ProviderWrapper(props) {
 ProviderWrapper.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
-  ])
+    PropTypes.node,
+  ]),
 };
 
 describe('Instances', () => {
@@ -281,7 +281,7 @@ describe('Instances', () => {
       expect(InstancesPollProviderNode).toExist();
 
       expect(InstancesPollProviderNode.props().visibleIdsInListPanel).toEqual(
-        mockProps.workflowInstances.map(x => x.id)
+        mockProps.workflowInstances.map((x) => x.id)
       );
     });
   });
@@ -319,8 +319,8 @@ describe('Instances', () => {
       ...mockProps,
       filter: {
         ...mockProps.filter,
-        activityId: 'foo'
-      }
+        activityId: 'foo',
+      },
     };
     const wrapper = mount(
       <ProviderWrapper>

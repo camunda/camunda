@@ -32,7 +32,7 @@ const sizeStyle = ({size}) => {
   const style = {
     small: smallSizeStyle,
     medium: mediumSizeStyle,
-    large: largeSizeStyle
+    large: largeSizeStyle,
   };
 
   return style[size];
@@ -43,7 +43,7 @@ const getBoxShadow = ({size}) => {
     box-shadow: 0 2px 2px 0
       ${themeStyle({
         dark: 'rgba(0, 0, 0, 0.35)',
-        light: 'rgba(0, 0, 0, 0.08)'
+        light: 'rgba(0, 0, 0, 0.08)',
       })};
   `;
 
@@ -55,29 +55,29 @@ const colorStyle = ({color, size}) => {
     [COLOR.SECONDARY]: css`
       background-color: ${themeStyle({
         dark: Colors.darkButton03,
-        light: Colors.lightButton04
+        light: Colors.lightButton04,
       })};
 
       border: 1px solid
         ${themeStyle({
           dark: Colors.uiDark05,
-          light: Colors.uiLight03
+          light: Colors.uiLight03,
         })};
 
       color: ${themeStyle({
         dark: Colors.uiLight02,
-        light: 'rgba(69, 70, 78, 0.9)'
+        light: 'rgba(69, 70, 78, 0.9)',
       })};
 
       &:hover {
         background-color: ${themeStyle({
           dark: Colors.darkButton04,
-          light: Colors.lightButton05
+          light: Colors.lightButton05,
         })};
 
         border-color: ${themeStyle({
           dark: Colors.darkButton05,
-          light: Colors.uiLight03
+          light: Colors.uiLight03,
         })};
 
         color: ${({theme}) => theme === 'light' && 'rgba(69, 70, 78, 0.9)'};
@@ -86,12 +86,12 @@ const colorStyle = ({color, size}) => {
       &:active {
         background-color: ${themeStyle({
           dark: Colors.darkButton06,
-          light: Colors.lightButton06
+          light: Colors.lightButton06,
         })};
 
         border-color: ${themeStyle({
           dark: Colors.darkButton07,
-          light: Colors.uiLight03
+          light: Colors.uiLight03,
         })};
 
         color: ${({theme}) => theme === 'light' && 'rgba(49, 50, 56, 0.9)'};
@@ -103,7 +103,7 @@ const colorStyle = ({color, size}) => {
 
         color: ${themeStyle({
           dark: 'rgba(247, 248, 250, 0.5)',
-          light: 'rgba(69, 70, 78, 0.5)'
+          light: 'rgba(69, 70, 78, 0.5)',
         })};
       }
     `,
@@ -140,46 +140,46 @@ const colorStyle = ({color, size}) => {
     [COLOR.MAIN]: css`
       color: ${themeStyle({
         dark: Colors.uiLight02,
-        light: 'rgba(69, 70, 78, 0.9)'
+        light: 'rgba(69, 70, 78, 0.9)',
       })};
 
       background-color: ${themeStyle({
         dark: Colors.uiDark05,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
 
       border: 1px solid
         ${themeStyle({
           dark: Colors.uiDark06,
-          light: Colors.uiLight03
+          light: Colors.uiLight03,
         })};
 
       &:hover {
         background-color: ${themeStyle({
           dark: '#6b6f74',
-          light: '#cdd4df'
+          light: '#cdd4df',
         })};
         border-color: ${themeStyle({
           dark: Colors.darkButton02,
-          light: '#9ea9b7'
+          light: '#9ea9b7',
         })};
       }
 
       &:focus {
         border-color: ${themeStyle({
           dark: Colors.uiDark06,
-          light: Colors.uiLight03
+          light: Colors.uiLight03,
         })};
       }
 
       &:active {
         background-color: ${themeStyle({
           dark: Colors.uiDark04,
-          light: Colors.uiLight03
+          light: Colors.uiLight03,
         })};
         border-color: ${themeStyle({
           dark: Colors.uiDark05,
-          light: '#88889a'
+          light: '#88889a',
         })};
       }
 
@@ -188,26 +188,26 @@ const colorStyle = ({color, size}) => {
 
         background-color: ${themeStyle({
           dark: '#34353a',
-          light: '#f1f2f5'
+          light: '#f1f2f5',
         })};
         border-color: ${themeStyle({
           dark: Colors.uiDark05,
-          light: Colors.uiLight03
+          light: Colors.uiLight03,
         })};
         color: ${themeStyle({
           dark: 'rgba(247, 248, 250, 0.5)',
-          light: 'rgba(69, 70, 78, 0.5)'
+          light: 'rgba(69, 70, 78, 0.5)',
         })};
         box-shadow: none;
       }
-    `
+    `,
   };
   return styles[color] || styles[COLOR.MAIN];
 };
 
 export const Button = themed(styled.button`
   border-radius: ${({size}) => (size === SIZE.SMALL ? '11px' : '3px')};
-  ${props => getBoxShadow(props)};
+  ${(props) => getBoxShadow(props)};
   font-family: IBMPlexSans;
   font-weight: 600;
 

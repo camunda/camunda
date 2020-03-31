@@ -11,7 +11,7 @@ export const countStore = {
   running: 0,
   active: 0,
   withIncidents: 0,
-  filterCount: null
+  filterCount: null,
 };
 
 export const countStoreWithCount = {
@@ -19,19 +19,19 @@ export const countStoreWithCount = {
   active: 80,
   withIncidents: 20,
   filterCount: null,
-  isLoaded: true
+  isLoaded: true,
 };
 
 export const location = {
   dashboard: {
-    pathname: PATHNAME.DASHBOARD
+    pathname: PATHNAME.DASHBOARD,
   },
   instances: {
-    pathname: PATHNAME.INSTANCES
+    pathname: PATHNAME.INSTANCES,
   },
   instance: {
-    pathname: PATHNAME.INSTANCE
-  }
+    pathname: PATHNAME.INSTANCE,
+  },
 };
 
 export const mockInstance = createInstance();

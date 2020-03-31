@@ -12,7 +12,7 @@ import SplitPane from 'modules/components/SplitPane';
 const BorderColors = css`
   ${themeStyle({
     dark: Colors.uiDark04,
-    light: Colors.uiLight05
+    light: Colors.uiLight05,
   })};
 `;
 

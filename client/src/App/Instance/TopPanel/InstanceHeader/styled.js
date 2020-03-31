@@ -23,7 +23,7 @@ const pseudoBorder = css`
     border-top: solid 1px
       ${themeStyle({
         dark: Colors.uiDark04,
-        light: Colors.uiLight05
+        light: Colors.uiLight05,
       })};
   }
 `;
@@ -32,7 +32,7 @@ export const SplitPane = themed(styled(SplitPaneComponent.Pane)`
   border-top: none;
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
-    light: Colors.uiLight04
+    light: Colors.uiLight04,
   })};
   ${pseudoBorder}
 `);

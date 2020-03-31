@@ -19,7 +19,7 @@ export const Panel = styled(PanelComponent)`
 export const NodeContainer = themed(styled.div`
   background-image: ${themeStyle({
     dark: `url(${bgBlack})`,
-    light: `url(${bgLight})`
+    light: `url(${bgLight})`,
   })};
 
   position: absolute;
@@ -40,14 +40,14 @@ export const FlowNodeInstanceLog = themed(styled.div`
   border: solid 1px
     ${themeStyle({
       dark: Colors.uiDark04,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   border-top: none;
   border-left: none;
   border-bottom: none;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)'
+    light: 'rgba(98, 98, 110, 0.9)',
   })};
 `);
 

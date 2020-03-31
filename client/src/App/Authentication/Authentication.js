@@ -15,13 +15,13 @@ class Authentication extends React.Component {
     location: PropTypes.shape({
       pathname: PropTypes.string.isRequired,
       state: PropTypes.shape({
-        isLoggedIn: PropTypes.bool
-      })
+        isLoggedIn: PropTypes.bool,
+      }),
     }).isRequired,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
-    ])
+      PropTypes.node,
+    ]),
   };
 
   constructor(props) {
@@ -29,7 +29,7 @@ class Authentication extends React.Component {
 
     // forceRedirect === null indicates the login status was not checked yet
     this.state = {
-      forceRedirect: null
+      forceRedirect: null,
     };
   }
 
@@ -44,11 +44,11 @@ class Authentication extends React.Component {
   requestUserEndpoint = () => {
     // use user endpoint to check for authentication
     return get('/api/authentications/user')
-      .then(response => response.status)
-      .catch(error => error.status);
+      .then((response) => response.status)
+      .catch((error) => error.status);
   };
 
-  checkLoginStatus = status => {
+  checkLoginStatus = (status) => {
     // intercept further responses to check if we get logged out
     setResponseInterceptor(this.interceptResponse);
 
@@ -64,7 +64,7 @@ class Authentication extends React.Component {
     // in order to be able to render the children (i.e. the Routes)
     this.setState(
       {
-        forceRedirect: true
+        forceRedirect: true,
       },
       this.disableForceRedirect
     );
@@ -72,7 +72,7 @@ class Authentication extends React.Component {
 
   disableForceRedirect = () => {
     this.setState({
-      forceRedirect: false
+      forceRedirect: false,
     });
   };
 
@@ -94,7 +94,7 @@ class Authentication extends React.Component {
         <Redirect
           to={{
             pathname: '/login',
-            state: {referrer: this.props.location.pathname}
+            state: {referrer: this.props.location.pathname},
           }}
           push={true}
         />

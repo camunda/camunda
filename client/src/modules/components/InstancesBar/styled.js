@@ -19,7 +19,7 @@ const FONT_STYLES = {
   large: css`
     font-weight: 600;
     font-size: 30px;
-  `
+  `,
 };
 
 export const Wrapper = themed(styled('div')`
@@ -28,7 +28,7 @@ export const Wrapper = themed(styled('div')`
 
   color: ${themeStyle({
     dark: '#fff',
-    light: Colors.uiLight06
+    light: Colors.uiLight06,
   })};
 
   font-family: IBMPlexSans;
@@ -44,7 +44,7 @@ const redTextStyle = css`
 const greyTextStyle = css`
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.badge02
+    light: Colors.badge02,
   })};
 
   opacity: 0.55;
@@ -58,7 +58,7 @@ const greenTextStyle = css`
 export const IncidentsCount = themed(styled.div`
   min-width: 96px;
 
-  ${props => (props.hasIncidents ? redTextStyle : greyTextStyle)}
+  ${(props) => (props.hasIncidents ? redTextStyle : greyTextStyle)}
 `);
 
 export const ActiveCount = themed(styled.div`
@@ -66,7 +66,7 @@ export const ActiveCount = themed(styled.div`
   width: 139px;
   text-align: right;
 
-  ${props => (props.hasActive ? greenTextStyle : greyTextStyle)}
+  ${(props) => (props.hasActive ? greenTextStyle : greyTextStyle)}
 `);
 
 export const Label = themed(styled.div`
@@ -76,7 +76,7 @@ export const Label = themed(styled.div`
 
   opacity: ${themeStyle({
     dark: 0.9,
-    light: 1
+    light: 1,
   })};
 `);
 
@@ -90,7 +90,7 @@ const greyBarStyle = css`
 
   opacity: ${themeStyle({
     dark: 0.9,
-    light: 0.4
+    light: 0.4,
   })};
 `;
 
@@ -102,7 +102,7 @@ export const BarContainer = styled.div`
 `;
 
 export const Bar = themed(styled.div`
-  ${props => (props.hasActive ? greenBarStyle : greyBarStyle)}
+  ${(props) => (props.hasActive ? greenBarStyle : greyBarStyle)}
 `);
 
 export const IncidentsBar = styled.div`

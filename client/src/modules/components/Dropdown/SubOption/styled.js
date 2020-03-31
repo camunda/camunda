@@ -23,7 +23,7 @@ export const OptionButton = themed(styled.button`
   background: none;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)'
+    light: 'rgba(98, 98, 110, 0.9)',
   })};
   /* Text */
   text-align: left;
@@ -34,14 +34,14 @@ export const OptionButton = themed(styled.button`
   &:hover {
     background: ${themeStyle({
       dark: Colors.uiDark06,
-      light: Colors.uiLight05
+      light: Colors.uiLight05,
     })};
   }
 
   &:active {
     background: ${themeStyle({
       dark: Colors.darkActive,
-      light: Colors.lightActive
+      light: Colors.lightActive,
     })};
   }
 `);

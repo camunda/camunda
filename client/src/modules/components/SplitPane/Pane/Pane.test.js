@@ -18,10 +18,10 @@ const SplitPaneHeader = () => <div>Header Content</div>;
 const SplitPaneBody = () => <div>Body Content</div>;
 
 const mockDefaultProps = {
-  handleExpand: jest.fn()
+  handleExpand: jest.fn(),
 };
 
-const mountNode = mockCustomProps => {
+const mountNode = (mockCustomProps) => {
   return mount(
     <ThemeProvider>
       <Pane {...mockDefaultProps} {...mockCustomProps}>
@@ -37,7 +37,7 @@ describe('Pane', () => {
     it('should not render expand buttons', () => {
       // given
       const node = mountNode({
-        expandState: EXPAND_STATE.COLLAPSED
+        expandState: EXPAND_STATE.COLLAPSED,
       });
 
       // then
@@ -51,7 +51,7 @@ describe('Pane', () => {
       // given
       const node = mountNode({
         paneId: PANE_ID.BOTTOM,
-        expandState: EXPAND_STATE.COLLAPSED
+        expandState: EXPAND_STATE.COLLAPSED,
       });
 
       // then
@@ -65,7 +65,7 @@ describe('Pane', () => {
       // given
       const node = mountNode({
         paneId: PANE_ID.BOTTOM,
-        expandState: EXPAND_STATE.DEFAULT
+        expandState: EXPAND_STATE.DEFAULT,
       });
 
       // then
@@ -79,7 +79,7 @@ describe('Pane', () => {
       // given
       const node = mountNode({
         paneId: PANE_ID.BOTTOM,
-        expandState: EXPAND_STATE.EXPANDED
+        expandState: EXPAND_STATE.EXPANDED,
       });
 
       // then
@@ -93,7 +93,7 @@ describe('Pane', () => {
     const mockDefaultProps = {
       handleExpand: jest.fn(),
       resetExpanded: jest.fn(),
-      paneId: PANE_ID.BOTTOM
+      paneId: PANE_ID.BOTTOM,
     };
 
     beforeEach(() => {

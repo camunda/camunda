@@ -9,14 +9,14 @@ export const requestName = 'someName';
 
 export const requests = [
   {name: 'someName', details: {}},
-  {name: 'someOtherName', details: {}}
+  {name: 'someOtherName', details: {}},
 ];
 
 export const requestNames = ['someName', 'someOtherName'];
 
 export const requestDetailsByName = {
   someName: {},
-  someOtherName: {}
+  someOtherName: {},
 };
 
 export const newRequestDetails = {params: {query: {}}, apiCall: jest.fn()};

@@ -15,7 +15,7 @@ export default function IncidentsBanner({
   count,
   onClick,
   isOpen,
-  expandState
+  expandState,
 }) {
   const isOnlyOne = count === 1;
   const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${pluralSuffix(
@@ -43,5 +43,5 @@ IncidentsBanner.propTypes = {
   count: PropTypes.number.isRequired,
   onClick: PropTypes.func,
   isOpen: PropTypes.bool,
-  expandState: PropTypes.string
+  expandState: PropTypes.string,
 };

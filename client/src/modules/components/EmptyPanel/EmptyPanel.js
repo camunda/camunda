@@ -37,7 +37,7 @@ EmptyPanel.propTypes = {
   label: PropTypes.string,
   type: PropTypes.oneOf(['info', 'warning', 'skeleton']),
   rowHeight: PropTypes.number,
-  Skeleton: PropTypes.elementType
+  Skeleton: PropTypes.elementType,
 };
 
 /**
@@ -45,7 +45,7 @@ EmptyPanel.propTypes = {
  * @param {number} rowHeight row height of the data expected to be shown
  * @param {obj} containerRef ref of the parent component
  */
-export const WithRowCount = function({rowHeight, containerRef, ...props}) {
+export const WithRowCount = function ({rowHeight, containerRef, ...props}) {
   const [rows, setRows] = useState(0);
 
   useEffect(() => {
@@ -67,10 +67,10 @@ export const WithRowCount = function({rowHeight, containerRef, ...props}) {
   function renderChildren() {
     return React.Children.map(
       props.children,
-      child =>
+      (child) =>
         child &&
         React.cloneElement(child, {
-          rowsToDisplay: rows
+          rowsToDisplay: rows,
         })
     );
   }

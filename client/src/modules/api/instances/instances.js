@@ -55,13 +55,13 @@ export async function fetchWorkflowInstancesByIds(ids) {
   const payload = parseFilterForRequest({
     ...FILTER_SELECTION.running,
     ...FILTER_SELECTION.finished,
-    ids: ids.join(',')
+    ids: ids.join(','),
   });
 
   const options = {
     firstResult: 0,
     maxResults: ids.length,
-    ...payload
+    ...payload,
   };
   return await fetchWorkflowInstances(options);
 }
@@ -77,7 +77,7 @@ export async function fetchWorkflowInstancesBySelection(payload) {
       canceled: true,
       completed: true,
       finished: true,
-      incidents: true
+      incidents: true,
     };
   }
 

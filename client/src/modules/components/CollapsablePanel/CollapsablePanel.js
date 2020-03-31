@@ -102,7 +102,7 @@ function CollapsablePanel({
 CollapsablePanel.defaultProps = {
   renderHeader: () => '',
   isOverlay: false,
-  verticalLabelOffset: 0
+  verticalLabelOffset: 0,
 };
 
 CollapsablePanel.propTypes = {
@@ -116,10 +116,10 @@ CollapsablePanel.propTypes = {
   isCollapsed: PropTypes.bool.isRequired,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node
+    PropTypes.node,
   ]),
   verticalLabelOffset: PropTypes.number,
-  hasBackgroundColor: PropTypes.bool
+  hasBackgroundColor: PropTypes.bool,
 };
 
 export default CollapsablePanel;

@@ -8,7 +8,7 @@ import React from 'react';
 import * as Styled from './styled';
 import MultiRow from 'modules/components/MultiRow';
 
-export default props => {
+export default (props) => {
   return (
     <Styled.MultiRowContainer>
       <MultiRow Component={Styled.Block} {...props} />

@@ -16,18 +16,18 @@ export class FlowNodeTimeStampProvider extends React.PureComponent {
   static propTypes = {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
-    ])
+      PropTypes.node,
+    ]),
   };
 
   state = {
-    showTimeStamp: false
+    showTimeStamp: false,
   };
 
   handleTimeStampToggle = () => {
-    this.setState(prevState => {
+    this.setState((prevState) => {
       return {
-        showTimeStamp: !prevState.showTimeStamp
+        showTimeStamp: !prevState.showTimeStamp,
       };
     });
   };
@@ -35,7 +35,7 @@ export class FlowNodeTimeStampProvider extends React.PureComponent {
   render() {
     const contextValue = {
       ...this.state,
-      onTimeStampToggle: this.handleTimeStampToggle
+      onTimeStampToggle: this.handleTimeStampToggle,
     };
 
     return (
@@ -46,20 +46,20 @@ export class FlowNodeTimeStampProvider extends React.PureComponent {
   }
 }
 
-export const withFlowNodeTimeStampContext = Component => {
+export const withFlowNodeTimeStampContext = (Component) => {
   function withFlowNodeTimeStampContext(props) {
     return (
       <FlowNodeTimeStampConsumer>
-        {contextValue => <Component {...props} {...contextValue} />}
+        {(contextValue) => <Component {...props} {...contextValue} />}
       </FlowNodeTimeStampConsumer>
     );
   }
 
   withFlowNodeTimeStampContext.WrappedComponent = Component;
 
-  withFlowNodeTimeStampContext.displayName = `withFlowNodeTimeStampContext(${Component.displayName ||
-    Component.name ||
-    'Component'})`;
+  withFlowNodeTimeStampContext.displayName = `withFlowNodeTimeStampContext(${
+    Component.displayName || Component.name || 'Component'
+  })`;
 
   return withFlowNodeTimeStampContext;
 };

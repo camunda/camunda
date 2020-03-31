@@ -19,7 +19,7 @@ import {
   DEFAULT_FIRST_ELEMENT,
   PAGE_TITLE,
   LOADING_STATE,
-  SUBSCRIPTION_TOPIC
+  SUBSCRIPTION_TOPIC,
 } from 'modules/constants';
 
 import {fetchGroupedWorkflows} from 'modules/api/instances';
@@ -28,7 +28,7 @@ import {
   getFilterWithWorkflowIds,
   getFilterQueryString,
   getWorkflowByVersion,
-  parseQueryString
+  parseQueryString,
 } from 'modules/utils/filter';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 
@@ -42,7 +42,7 @@ import {
   hasSortingChanged,
   hasWorkflowChanged,
   hasUrlChanged,
-  hasFilterChanged
+  hasFilterChanged,
 } from './service';
 
 class InstancesContainer extends Component {
@@ -56,8 +56,8 @@ class InstancesContainer extends Component {
       unsubscribe: PropTypes.func,
       getWorkflowXML: PropTypes.func,
       getWorkflowInstances: PropTypes.func,
-      getWorkflowInstancesStatistics: PropTypes.func
-    })
+      getWorkflowInstancesStatistics: PropTypes.func,
+    }),
   };
 
   constructor(props) {
@@ -75,7 +75,7 @@ class InstancesContainer extends Component {
       firstElement: DEFAULT_FIRST_ELEMENT,
       sorting: DEFAULT_SORTING,
       instancesLoaded: false,
-      initialLoad: true
+      initialLoad: true,
     };
     this.subscriptions = {
       LOAD_STATE_DEFINITIONS: ({response, state}) => {
@@ -99,10 +99,10 @@ class InstancesContainer extends Component {
             workflowInstances: response.workflowInstances,
             filterCount: response.totalCount,
             initialLoad: false,
-            instancesLoaded: true
+            instancesLoaded: true,
           });
           this.props.storeStateLocally({
-            filterCount: response.totalCount
+            filterCount: response.totalCount,
           });
         }
       },
@@ -110,17 +110,17 @@ class InstancesContainer extends Component {
         if (state === LOADING_STATE.LOADED) {
           const {
             LOAD_LIST_INSTANCES,
-            LOAD_STATE_STATISTICS
+            LOAD_STATE_STATISTICS,
           } = SUBSCRIPTION_TOPIC;
           this.setState({
             workflowInstances: response[LOAD_LIST_INSTANCES].workflowInstances,
             filterCount: response[LOAD_LIST_INSTANCES].totalCount,
             ...(response[LOAD_STATE_STATISTICS] && {
-              statistics: response[LOAD_STATE_STATISTICS].statistics
-            })
+              statistics: response[LOAD_STATE_STATISTICS].statistics,
+            }),
           });
         }
-      }
+      },
     };
   }
 
@@ -155,7 +155,7 @@ class InstancesContainer extends Component {
 
     this.setState({
       groupedWorkflows: groupedWorkflows,
-      filter: sanitizedFilterfromURL
+      filter: sanitizedFilterfromURL,
     });
   }
 
@@ -211,7 +211,7 @@ class InstancesContainer extends Component {
     this.fetchNewData(filter, prevState);
 
     this.props.storeStateLocally({
-      filter
+      filter,
     });
 
     this.setFilterInURL(filter, this.getWorkflowName(filter.workflow));
@@ -265,7 +265,7 @@ class InstancesContainer extends Component {
       ...this.getQuery(filter, groupedWorkflows),
       sorting,
       firstResult: firstElement,
-      maxResults: DEFAULT_MAX_RESULTS
+      maxResults: DEFAULT_MAX_RESULTS,
     });
   };
 
@@ -301,7 +301,7 @@ class InstancesContainer extends Component {
    */
   shouldResetSorting = ({
     filter = this.state.filter,
-    sorting = this.state.sorting
+    sorting = this.state.sorting,
   }) => {
     const isFinishedInFilter = filter.canceled || filter.completed;
 
@@ -313,17 +313,17 @@ class InstancesContainer extends Component {
     const {history, location} = this.props;
     return history.push({
       pathname: location.pathname,
-      search: getFilterQueryString(filter, workflowName)
+      search: getFilterQueryString(filter, workflowName),
     });
   };
 
-  handleFilterReset = async fallbackFilter => {
+  handleFilterReset = async (fallbackFilter) => {
     if (!isEqual(fallbackFilter, this.state.filter)) {
       await this.setFilter(fallbackFilter);
     }
   };
 
-  handleSortingChange = key => {
+  handleSortingChange = (key) => {
     const currentSorting = this.state.sorting;
 
     let newSorting = {sortBy: key, sortOrder: SORT_ORDER.DESC};
@@ -343,9 +343,9 @@ class InstancesContainer extends Component {
     return this.setState({sorting: newSorting});
   };
 
-  handleFirstElementChange = firstElement => this.setState({firstElement});
+  handleFirstElementChange = (firstElement) => this.setState({firstElement});
 
-  handleInstancesClick = operationId => {
+  handleInstancesClick = (operationId) => {
     this.setState({resetFilters: true, operationId: operationId});
   };
 
@@ -358,7 +358,7 @@ class InstancesContainer extends Component {
         incidents: true,
         completed: true,
         canceled: true,
-        batchOperationId: this.state.operationId
+        batchOperationId: this.state.operationId,
       })
     );
   };
@@ -408,21 +408,21 @@ class InstancesContainer extends Component {
     return filter;
   };
 
-  setFilterFromSelection = async activityId => {
+  setFilterFromSelection = async (activityId) => {
     return this.setFilter({
       ...this.state.filter,
-      activityId: activityId ? activityId : ''
+      activityId: activityId ? activityId : '',
     });
   };
 
-  setFilterFromInput = filter => {
+  setFilterFromInput = (filter) => {
     if (isEqual(this.state.filter, filter)) {
       return;
     }
     this.setFilter(filter);
   };
 
-  setFilter = filter => {
+  setFilter = (filter) => {
     let {workflow, version} = filter;
     const sorting = this.shouldResetSorting({filter})
       ? DEFAULT_SORTING
@@ -434,7 +434,7 @@ class InstancesContainer extends Component {
         diagramModel: {},
         statistics: [],
         firstElement: DEFAULT_FIRST_ELEMENT,
-        sorting
+        sorting,
       });
     }
 
@@ -446,7 +446,7 @@ class InstancesContainer extends Component {
       return this.setState({
         filter,
         firstElement: DEFAULT_FIRST_ELEMENT,
-        sorting
+        sorting,
       });
     }
 

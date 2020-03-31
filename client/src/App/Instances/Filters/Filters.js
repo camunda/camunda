@@ -15,7 +15,7 @@ import Input from 'modules/components/Input';
 import {
   DEFAULT_FILTER,
   FILTER_TYPES,
-  DEFAULT_FILTER_CONTROLLED_VALUES
+  DEFAULT_FILTER_CONTROLLED_VALUES,
 } from 'modules/constants';
 
 import {isEqual, isEmpty} from 'lodash';
@@ -34,7 +34,7 @@ import {
   checkIsIdComplete,
   checkIsIdValid,
   sortAndModify,
-  sanitizeFilter
+  sanitizeFilter,
 } from './service';
 import {parseQueryString} from 'modules/utils/filter';
 import {ALL_VERSIONS_OPTION, DEBOUNCE_DELAY} from './constants';
@@ -56,8 +56,8 @@ class Filters extends React.Component {
       workflow: PropTypes.string.isRequired,
       variable: PropTypes.shape({
         name: PropTypes.string,
-        value: PropTypes.string
-      }).isRequired
+        value: PropTypes.string,
+      }).isRequired,
     }).isRequired,
     onFilterChange: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func.isRequired,
@@ -66,7 +66,7 @@ class Filters extends React.Component {
     onInstanceClick: PropTypes.func,
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.object),
     groupedWorkflows: PropTypes.object,
-    location: PropTypes.object
+    location: PropTypes.object,
   };
 
   state = {
@@ -83,8 +83,8 @@ class Filters extends React.Component {
       version: '',
       workflow: '',
       variable: {name: '', value: ''},
-      batchOperationId: ''
-    }
+      batchOperationId: '',
+    },
   };
 
   componentDidMount = async () => {
@@ -95,7 +95,7 @@ class Filters extends React.Component {
     }
   };
 
-  componentDidUpdate = prevProps => {
+  componentDidUpdate = (prevProps) => {
     const doResetFilterOperation =
       this.props.resetFilters && this.props.afterFilterReset;
 
@@ -124,13 +124,13 @@ class Filters extends React.Component {
     clearTimeout(this.timer);
   };
 
-  waitForTimer = async fct => {
+  waitForTimer = async (fct) => {
     await this.timeout();
     fct();
   };
 
   timeout = () => {
-    const timerPromise = resolve => {
+    const timerPromise = (resolve) => {
       this.resetTimer();
       this.timer = setTimeout(resolve, DEBOUNCE_DELAY);
     };
@@ -143,8 +143,8 @@ class Filters extends React.Component {
       {
         filter: {
           ...this.state.filter,
-          ...filter
-        }
+          ...filter,
+        },
       },
       callback
     );
@@ -170,14 +170,14 @@ class Filters extends React.Component {
       startDate,
       endDate,
       variable,
-      ids
+      ids,
     };
 
     const sanitizedDebouncedFilter = sanitizeFilter(debouncedFilter);
     this.setFilterState({...immediateFilter, ...sanitizedDebouncedFilter});
   }
 
-  handleWorkflowNameChange = event => {
+  handleWorkflowNameChange = (event) => {
     const {value} = event.target;
     const currentWorkflow = this.props.groupedWorkflows[value];
     const version = getLastVersionOfWorkflow(currentWorkflow);
@@ -187,7 +187,7 @@ class Filters extends React.Component {
     );
   };
 
-  handleWorkflowVersionChange = event => {
+  handleWorkflowVersionChange = (event) => {
     const {value} = event.target;
 
     if (value === '') {
@@ -202,13 +202,13 @@ class Filters extends React.Component {
 
     this.setFilterState(
       {
-        [name]: value
+        [name]: value,
       },
       callback
     );
   };
 
-  handleVariableChange = status => {
+  handleVariableChange = (status) => {
     this.setFilterState({variable: status});
   };
 
@@ -243,7 +243,7 @@ class Filters extends React.Component {
       startDate,
       endDate,
       ids,
-      batchOperationId
+      batchOperationId,
     } = this.state.filter;
 
     const {previewVersion, previewName} = this.state;
@@ -347,7 +347,7 @@ class Filters extends React.Component {
               name="activityId"
               placeholder={'Flow Node'}
               options={sortAndModify(this.props.selectableFlowNodes)}
-              onChange={event =>
+              onChange={(event) =>
                 this.handleControlledInputChange(event, this.propagateFilter)
               }
             />
@@ -377,9 +377,9 @@ class Filters extends React.Component {
             type={FILTER_TYPES.RUNNING}
             filter={{
               active,
-              incidents
+              incidents,
             }}
-            onChange={status =>
+            onChange={(status) =>
               this.setFilterState(status, this.propagateFilter)
             }
           />
@@ -387,9 +387,9 @@ class Filters extends React.Component {
             type={FILTER_TYPES.FINISHED}
             filter={{
               completed,
-              canceled
+              canceled,
             }}
-            onChange={status =>
+            onChange={(status) =>
               this.setFilterState(status, this.propagateFilter)
             }
           />
@@ -400,7 +400,7 @@ class Filters extends React.Component {
             size="small"
             disabled={isEqual(this.state.filter, {
               ...DEFAULT_FILTER_CONTROLLED_VALUES,
-              ...DEFAULT_FILTER
+              ...DEFAULT_FILTER,
             })}
             onClick={this.onFilterReset}
           >

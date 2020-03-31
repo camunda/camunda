@@ -20,7 +20,7 @@ const IconButtonThemes = {
       background: {
         // transparent background
         dark: '',
-        light: ''
+        light: '',
       },
       icon: {
         dark: css`
@@ -29,8 +29,8 @@ const IconButtonThemes = {
         light: css`
           color: ${Colors.uiDark04};
           opacity: 0.9;
-        `
-      }
+        `,
+      },
     },
     hover: {
       background: {
@@ -41,7 +41,7 @@ const IconButtonThemes = {
         light: css`
           background: ${Colors.uiLight05};
           opacity: 0.5;
-        `
+        `,
       },
       icon: {
         dark: css`
@@ -50,8 +50,8 @@ const IconButtonThemes = {
         light: css`
           color: ${Colors.uiDark04};
           opacity: 0.9;
-        `
-      }
+        `,
+      },
     },
     active: {
       background: {
@@ -62,7 +62,7 @@ const IconButtonThemes = {
         light: css`
           background: ${Colors.uiLight05};
           opacity: 0.8;
-        `
+        `,
       },
       icon: {
         dark: css`
@@ -70,9 +70,9 @@ const IconButtonThemes = {
         `,
         light: css`
           color: ${Colors.uiDark04};
-        `
-      }
-    }
+        `,
+      },
+    },
   },
   // incidentsBanner is used in the red incidents banner in instance view
   incidentsBanner: {
@@ -85,8 +85,8 @@ const IconButtonThemes = {
         `,
         light: css`
           color: ${Colors.uiLight02};
-        `
-      }
+        `,
+      },
     },
     hover: {
       background: {
@@ -97,7 +97,7 @@ const IconButtonThemes = {
         light: css`
           background: #ffffff;
           opacity: 0.25;
-        `
+        `,
       },
       icon: {
         dark: css`
@@ -105,8 +105,8 @@ const IconButtonThemes = {
         `,
         light: css`
           color: ${Colors.uiLight02};
-        `
-      }
+        `,
+      },
     },
     active: {
       background: {
@@ -117,7 +117,7 @@ const IconButtonThemes = {
         light: css`
           background: #ffffff;
           opacity: 0.4;
-        `
+        `,
       },
       icon: {
         dark: css`
@@ -125,9 +125,9 @@ const IconButtonThemes = {
         `,
         light: css`
           color: ${Colors.uiLight02};
-        `
-      }
-    }
+        `,
+      },
+    },
   },
   // foldable is used in the history tree view
   foldable: {
@@ -141,8 +141,8 @@ const IconButtonThemes = {
         light: css`
           color: ${Colors.uiDark04};
           opacity: 0.9;
-        `
-      }
+        `,
+      },
     },
     hover: {
       background: {
@@ -153,7 +153,7 @@ const IconButtonThemes = {
         light: css`
           background: ${Colors.uiLight05};
           opacity: 0.5;
-        `
+        `,
       },
       icon: {
         dark: css`
@@ -162,8 +162,8 @@ const IconButtonThemes = {
         light: css`
           color: ${Colors.uiDark04};
           opacity: 0.9;
-        `
-      }
+        `,
+      },
     },
     active: {
       background: {
@@ -174,7 +174,7 @@ const IconButtonThemes = {
         light: css`
           background: ${Colors.uiLight05};
           opacity: 0.8;
-        `
+        `,
       },
       icon: {
         dark: css`
@@ -182,10 +182,10 @@ const IconButtonThemes = {
         `,
         light: css`
           color: ${Colors.uiDark04};
-        `
-      }
-    }
-  }
+        `,
+      },
+    },
+  },
 };
 
 export default IconButtonThemes;

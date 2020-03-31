@@ -71,7 +71,7 @@ export const ResetButtonContainer = themed(styled(Panel.Footer)`
   width: 100%;
   box-shadow: ${themeStyle({
     dark: '0px -2px 4px 0px rgba(0,0,0,0.1)',
-    light: '0px -1px 2px 0px rgba(0,0,0,0.1)'
+    light: '0px -1px 2px 0px rgba(0,0,0,0.1)',
   })};
   border-radius: 0;
   margin-top: auto;

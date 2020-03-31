@@ -24,11 +24,11 @@ const iconStyle = css`
   object-fit: contain;
   opacity: ${themeStyle({
     dark: 0.9,
-    light: 0.8
+    light: 0.8,
   })};
   color: ${themeStyle({
     dark: '#ffffff',
-    light: Colors.uiDark02
+    light: Colors.uiDark02,
   })};
 `;
 

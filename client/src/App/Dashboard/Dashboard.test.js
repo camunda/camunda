@@ -16,7 +16,7 @@ import {
   incidentsByError,
   instancesByWorkflow,
   fetchError,
-  emptyData
+  emptyData,
 } from './Dashboard.setup';
 
 import {Dashboard} from './Dashboard';
@@ -44,13 +44,13 @@ const publish = ({node, state, topic, response}) => {
   const dashboard = node.find(Dashboard);
   const {
     subscriptions,
-    props: {dataManager}
+    props: {dataManager},
   } = dashboard.instance();
 
   dataManager.publish({
     subscription: subscriptions[topic],
     state,
-    response
+    response,
   });
 };
 
@@ -98,7 +98,7 @@ describe('Dashboard', () => {
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
         state: LOADING_STATE.LOADED,
-        response: instancesByWorkflow
+        response: instancesByWorkflow,
       });
 
       node.update();
@@ -116,7 +116,7 @@ describe('Dashboard', () => {
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
         state: LOADING_STATE.LOAD_FAILED,
-        response: fetchError
+        response: fetchError,
       });
 
       node.update();
@@ -140,7 +140,7 @@ describe('Dashboard', () => {
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
         state: LOADING_STATE.LOADED,
-        response: emptyData
+        response: emptyData,
       });
 
       node.update();
@@ -164,7 +164,7 @@ describe('Dashboard', () => {
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
         state: LOADING_STATE.LOADED,
-        response: incidentsByError
+        response: incidentsByError,
       });
 
       node.update();
@@ -182,7 +182,7 @@ describe('Dashboard', () => {
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
         state: LOADING_STATE.LOAD_FAILED,
-        response: fetchError
+        response: fetchError,
       });
 
       node.update();
@@ -205,7 +205,7 @@ describe('Dashboard', () => {
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
         state: LOADING_STATE.LOADED,
-        response: emptyData
+        response: emptyData,
       });
 
       node.update();

@@ -12,7 +12,7 @@ import {
   requestName,
   requests,
   requestNames,
-  requestDetailsByName
+  requestDetailsByName,
 } from './cache.setup';
 
 describe('Cache', () => {

@@ -12,32 +12,32 @@ const opacityLabel = {
   dark: {
     default: '0.7',
     active: '0.9',
-    disabled: '0.5'
+    disabled: '0.5',
   },
   light: {
     default: '0.8',
     active: '1',
-    disabled: '0.6'
-  }
+    disabled: '0.6',
+  },
 };
 const opacityIcon = {
   dark: {
     default: '0.6',
     active: '0.9',
-    disabled: '0.3'
+    disabled: '0.3',
   },
   light: {
     default: '0.6',
     active: '1',
-    disabled: '0.3'
-  }
+    disabled: '0.3',
+  },
 };
 
 export const ColumnHeader = themed(
   styled.span`
     color: ${themeStyle({
       dark: '#fff',
-      light: Colors.uiLight06
+      light: Colors.uiLight06,
     })};
 
     cursor: default;
@@ -48,7 +48,7 @@ export const SortColumnHeader = themed(
   styled.button`
     color: ${themeStyle({
       dark: '#fff',
-      light: Colors.uiLight06
+      light: Colors.uiLight06,
     })};
     cursor: ${({disabled}) => (disabled ? 'default' : 'pointer')};
 
@@ -75,7 +75,7 @@ export const Label = themed(
         return active || disabled
           ? opacityLabel.light[disabled ? 'disabled' : 'active']
           : opacityLabel.light.default;
-      }
+      },
     })};
   `
 );
@@ -95,6 +95,6 @@ export const SortIcon = themed(styled(DefaultSortIcon)`
       return active || disabled
         ? opacityIcon.light[disabled ? 'disabled' : 'active']
         : opacityIcon.light.default;
-    }
+    },
   })};
 `);

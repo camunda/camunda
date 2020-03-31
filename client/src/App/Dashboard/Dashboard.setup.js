@@ -6,7 +6,7 @@
 
 import {
   createInstancesByWorkflow,
-  createIncidentsByError
+  createIncidentsByError,
 } from 'modules/testUtils';
 
 export const fetchError = {data: [], error: 'fetchError'};
