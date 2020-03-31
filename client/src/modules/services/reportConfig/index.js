@@ -19,8 +19,14 @@ config.process.update = (type, data, props) => {
 
   changes.configuration = {sorting: {$set: null}};
 
-  if (type !== 'visualization') {
-    changes.configuration.distributedBy = {$set: 'none'};
+  if (type === 'groupBy') {
+    const distributedBy = props.report.data.configuration?.distributedBy;
+    if (
+      (data.type === 'userTasks' && distributedBy === 'userTask') ||
+      (data.type !== 'userTasks' && ['assignee', 'candidateGroup'].includes(distributedBy))
+    ) {
+      changes.configuration.distributedBy = {$set: 'none'};
+    }
   }
 
   if (type === 'view') {
@@ -30,12 +36,10 @@ config.process.update = (type, data, props) => {
       changes.configuration.processPart = {$set: null};
     }
 
-    if (
-      data.entity === 'userTask' &&
-      props.report.data.view &&
-      props.report.data.view.entity !== 'userTask'
-    ) {
+    if (data.entity === 'userTask' && props.report.data.view?.entity !== 'userTask') {
       changes.configuration.hiddenNodes = {$set: {active: false, keys: []}};
+    } else if (data.entity !== 'userTask' && props.report.data.view?.entity === 'userTask') {
+      changes.configuration.distributedBy = {$set: 'none'};
     }
   }
 
