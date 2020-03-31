@@ -33,6 +33,7 @@ import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
@@ -47,8 +48,8 @@ public class DefaultRaftServer implements RaftServer {
 
   protected final RaftContext context;
   private final Logger log;
-  private volatile CompletableFuture<RaftServer> openFuture;
-  private volatile CompletableFuture<Void> closeFuture;
+  private final AtomicReference<CompletableFuture<RaftServer>> openFutureRef = new AtomicReference<>();
+  private final AtomicReference<CompletableFuture<Void>> closeFutureRef = new AtomicReference<>();
   private volatile boolean started;
 
   public DefaultRaftServer(final RaftContext context) {
@@ -156,30 +157,25 @@ public class DefaultRaftServer implements RaftServer {
       return CompletableFuture.completedFuture(null);
     }
 
-    if (closeFuture == null) {
-      synchronized (this) {
-        if (closeFuture == null) {
-          closeFuture = new AtomixFuture<>();
-          if (openFuture == null) {
-            cluster()
-                .leave()
-                .whenComplete(
-                    (leaveResult, leaveError) -> {
-                      shutdown()
-                          .whenComplete(
-                              (shutdownResult, shutdownError) -> {
-                                context.delete();
-                                closeFuture.complete(null);
-                              });
-                    });
-          } else {
-            leaveAfterOpenFinished();
-          }
-        }
+    if (closeFutureRef.compareAndSet(null, new AtomixFuture<>())) {
+      if (openFutureRef.get() == null) {
+        cluster()
+            .leave()
+            .whenComplete(
+                (leaveResult, leaveError) -> {
+                  shutdown()
+                      .whenComplete(
+                          (shutdownResult, shutdownError) -> {
+                            context.delete();
+                            closeFutureRef.get().complete(null);
+                          });
+                });
+      } else {
+        leaveAfterOpenFinished();
       }
     }
 
-    return closeFuture;
+    return closeFutureRef.get();
   }
 
   @Override
@@ -220,7 +216,7 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   private void leaveAfterOpenFinished() {
-    openFuture.whenComplete(
+    openFutureRef.get().whenComplete(
         (openResult, openError) -> {
           if (openError == null) {
             cluster()
@@ -231,46 +227,42 @@ public class DefaultRaftServer implements RaftServer {
                           .whenComplete(
                               (shutdownResult, shutdownError) -> {
                                 context.delete();
-                                closeFuture.complete(null);
+                                closeFutureRef.get().complete(null);
                               });
                     });
           } else {
-            closeFuture.complete(null);
+            closeFutureRef.get().complete(null);
           }
         });
   }
 
-  /** Starts the server. */
+  /**
+   * Starts the server.
+   */
   private CompletableFuture<RaftServer> start(final Supplier<CompletableFuture<Void>> joiner) {
     if (started) {
       return CompletableFuture.completedFuture(this);
     }
 
-    if (openFuture == null) {
-      synchronized (this) {
-        if (openFuture == null) {
-          final CompletableFuture<RaftServer> future = new AtomixFuture<>();
-          openFuture = future;
-          joiner
-              .get()
-              .whenComplete(
-                  (result, error) -> {
-                    if (error == null) {
-                      context.awaitState(
-                          RaftContext.State.READY,
-                          state -> {
-                            started = true;
-                            future.complete(null);
-                          });
-                    } else {
-                      future.completeExceptionally(error);
-                    }
-                  });
-        }
-      }
+    if (openFutureRef.compareAndSet(null, new AtomixFuture<>())) {
+      joiner
+          .get()
+          .whenComplete(
+              (result, error) -> {
+                if (error == null) {
+                  context.awaitState(
+                      RaftContext.State.READY,
+                      state -> {
+                        started = true;
+                        openFutureRef.get().complete(null);
+                      });
+                } else {
+                  openFutureRef.get().completeExceptionally(error);
+                }
+              });
     }
 
-    return openFuture.whenComplete(
+    return openFutureRef.get().whenComplete(
         (result, error) -> {
           if (error == null) {
             log.debug("Server started successfully!");
@@ -280,7 +272,9 @@ public class DefaultRaftServer implements RaftServer {
         });
   }
 
-  /** Default Raft server builder. */
+  /**
+   * Default Raft server builder.
+   */
   public static class Builder extends RaftServer.Builder {
 
     public Builder(final MemberId localMemberId) {
