@@ -113,7 +113,7 @@ abstract class AbstractClientConnection implements ClientConnection {
       return MAX_TIMEOUT_MILLIS;
     }
     return Math.min(
-        Math.max((int) samples.getMax() * TIMEOUT_FACTOR, MIN_TIMEOUT_MILLIS), MAX_TIMEOUT_MILLIS);
+        Math.max((long) samples.getMax() * TIMEOUT_FACTOR, MIN_TIMEOUT_MILLIS), MAX_TIMEOUT_MILLIS);
   }
 
   @Override
