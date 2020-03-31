@@ -15,7 +15,7 @@ function ConfirmOperationModal({
   isVisible,
   bodyText,
   onApplyClick,
-  onCancelClick
+  onCancelClick,
 }) {
   return (
     <Modal onModalClose={onModalClose} isVisible={isVisible} size={SIZES.SMALL}>
@@ -43,7 +43,7 @@ ConfirmOperationModal.propTypes = {
   isVisible: PropTypes.bool.isRequired,
   onApplyClick: PropTypes.func.isRequired,
   onCancelClick: PropTypes.func.isRequired,
-  bodyText: PropTypes.string.isRequired
+  bodyText: PropTypes.string.isRequired,
 };
 
 export default ConfirmOperationModal;

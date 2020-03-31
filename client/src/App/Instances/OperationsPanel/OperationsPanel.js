@@ -25,7 +25,7 @@ function OperationsPanel({
   const {
     batchOperations,
     requestBatchOperations,
-    requestNextBatchOperations
+    requestNextBatchOperations,
   } = useBatchOperations();
 
   useEffect(requestBatchOperations, []);
@@ -40,7 +40,7 @@ function OperationsPanel({
       toggle={toggleOperations}
       hasBackgroundColor
       verticalLabelOffset={27}
-      onScroll={event => {
+      onScroll={(event) => {
         const {target} = event;
 
         if (

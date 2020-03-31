@@ -14,13 +14,13 @@ export const TimeStamp = themed(styled.span`
     isSelected &&
     themeStyle({
       dark: '#fff',
-      light: Colors.uiLight06
+      light: Colors.uiLight06,
     })};
   background: ${({isSelected}) =>
     isSelected
       ? themeStyle({
           dark: 'rgba(247, 248, 250, 0.15)',
-          light: 'rgba(253, 253, 254, 0.55)'
+          light: 'rgba(253, 253, 254, 0.55)',
         })
       : themeStyle({
           dark: Colors.darkScopeLabel,

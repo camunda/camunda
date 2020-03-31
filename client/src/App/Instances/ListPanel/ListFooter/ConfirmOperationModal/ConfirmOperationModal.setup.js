@@ -9,5 +9,5 @@ export const mockProps = {
   onApplyClick: jest.fn(),
   onCancelClick: jest.fn(),
   isVisible: true,
-  bodyText: 'My Content'
+  bodyText: 'My Content',
 };

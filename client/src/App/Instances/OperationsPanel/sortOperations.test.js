@@ -15,7 +15,7 @@ const MOCK_RUNNING_OPERATION = Object.freeze({
   instancesCount: 893,
   operationsTotalCount: 406,
   operationsFinishedCount: 0,
-  sortValues: ['9223372036854775807', '1584973759170']
+  sortValues: ['9223372036854775807', '1584973759170'],
 });
 const MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT = Object.freeze({
   id: '21ac5d59-cdf6-48cd-b467-00c0c8ffeeb3',
@@ -26,7 +26,7 @@ const MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT = Object.freeze({
   instancesCount: 893,
   operationsTotalCount: 406,
   operationsFinishedCount: 406,
-  sortValues: ['1584960415713', '1584960397960']
+  sortValues: ['1584960415713', '1584960397960'],
 });
 const MOCK_FINISHED_OPERATIONS_CANCEL_WORKFLOW_INSTANCE = Object.freeze({
   id: 'b22d5134-64de-4dbb-af9b-a211aaebed47',
@@ -37,7 +37,7 @@ const MOCK_FINISHED_OPERATIONS_CANCEL_WORKFLOW_INSTANCE = Object.freeze({
   instancesCount: 1,
   operationsTotalCount: 1,
   operationsFinishedCount: 1,
-  sortValues: ['1584729077637', '1584729069478']
+  sortValues: ['1584729077637', '1584729069478'],
 });
 
 describe('sortOperations', () => {
@@ -46,12 +46,12 @@ describe('sortOperations', () => {
       sortOperations([
         MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT,
         MOCK_FINISHED_OPERATIONS_CANCEL_WORKFLOW_INSTANCE,
-        MOCK_RUNNING_OPERATION
+        MOCK_RUNNING_OPERATION,
       ])
     ).toEqual([
       MOCK_RUNNING_OPERATION,
       MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT,
-      MOCK_FINISHED_OPERATIONS_CANCEL_WORKFLOW_INSTANCE
+      MOCK_FINISHED_OPERATIONS_CANCEL_WORKFLOW_INSTANCE,
     ]);
   });
 
@@ -59,11 +59,11 @@ describe('sortOperations', () => {
     expect(
       sortOperations([
         MOCK_FINISHED_OPERATIONS_CANCEL_WORKFLOW_INSTANCE,
-        MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT
+        MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT,
       ])
     ).toEqual([
       MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT,
-      MOCK_FINISHED_OPERATIONS_CANCEL_WORKFLOW_INSTANCE
+      MOCK_FINISHED_OPERATIONS_CANCEL_WORKFLOW_INSTANCE,
     ]);
   });
 });
