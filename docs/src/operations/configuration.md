@@ -55,8 +55,8 @@ export SPRING_CONFIG_LOCATION='file:./[path to config file]'
 *Command line argument*
 ```shell script
 ./bin/broker --spring.config.location=file:./[path to config file]
- 
-or 
+
+or
 
 ./bin/gateway --spring.config.location=file:./[path to config file]
 ```
@@ -66,7 +66,7 @@ or
 Rename the configuration file to `application.yml` and place it in the following location:
 ```shell script
 ./config/application.yml
-``` 
+```
 
 *Misc*
 
@@ -94,7 +94,7 @@ If the configuration could be read, Zeebe will log out the effective configurati
 
 In some cases of invalid configuration Zeebe will fail to start with a warning that explains which configuration setting could not be read.
 ```
-17:17:38.796 [] [main] ERROR org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter - 
+17:17:38.796 [] [main] ERROR org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter -
 
 ***************************
 APPLICATION FAILED TO START
@@ -114,3 +114,18 @@ Action:
 Update your application's configuration
 ```
 
+## Logging
+
+Zeebe uses Log4j2 framework for logging. In the distribution and the docker image you can find the default log configuration file in `config/log4j2.xml`.
+
+### Google Stackdriver (JSON) logging
+
+To enable Google Stackdriver compatible JSON logging you can set the environment variable `ZEEBE_LOG_APPENDER=Stackdriver` before starting Zeebe.
+
+### Default logging configuration
+
+* `config/log4j2.xml` (applied by default)
+
+```
+{{#include ../../../dist/src/main/config/log4j2.xml}}
+```

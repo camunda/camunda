@@ -12,6 +12,10 @@
         pattern="${log.pattern}"/>
     </Console>
 
+    <Console name="Stackdriver" target="SYSTEM_OUT">
+      <StackdriverJSONLayout/>
+    </Console>
+
     <RollingFile name="RollingFile" fileName="${log.path}/zeebe.log"
       filePattern="${log.path}/zeebe-%d{yyyy-MM-dd}-%i.log.gz">
       <PatternLayout>
@@ -33,7 +37,7 @@
       <AppenderRef ref="RollingFile"/>
 
       <!-- remove to disable console logging -->
-      <AppenderRef ref="Console"/>
+      <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-Console}"/>
     </Root>
   </Loggers>
 
