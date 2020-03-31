@@ -103,7 +103,7 @@ test('user permissions', async t => {
   await t.click(e.confirmModalButton);
 
   await t
-    .resizeWindow(1150, 600)
+    .resizeWindow(1150, 650)
     .takeElementScreenshot(e.userList, 'homepage/users.png')
     .maximizeWindow();
 

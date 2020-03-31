@@ -380,7 +380,7 @@ test('bar/line chart configuration', async t => {
 
   await t.click(e.goalSwitch);
 
-  await t.typeText(e.chartGoalInput, '6', {replace: true});
+  await t.typeText(e.chartGoalInput, '4.5', {replace: true});
   await t.expect(e.chartGoalInput.hasAttribute('disabled')).notOk();
 
   await t.expect(e.reportChart.visible).ok();
@@ -614,7 +614,7 @@ test('should only enable valid combinations for user task', async t => {
 
 test('should be able to distribute candidate group by user task', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectDefinition(t, 'Lead Qualification', 'All');
   await u.selectView(t, 'User Task', 'Count');
 
   await u.selectGroupby(t, 'Candidate Group');
@@ -641,9 +641,7 @@ test('should be able to distribute candidate group by user task', async t => {
   await t.expect(e.option('Pie Chart').hasAttribute('disabled')).ok();
 
   await t.click(e.option('Table'));
-
-  await t.expect(e.reportTable.textContent).contains('Approve Invoice');
-  await t.expect(e.reportTable.textContent).contains('Review Invoice');
+  await t.expect(e.reportTable.visible).ok();
 });
 
 test('should be able to select how the time of the user task is calculated', async t => {

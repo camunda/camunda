@@ -23,10 +23,11 @@ test('create a dmn js table report', async t => {
 
   await t.hover(Homepage.submenuOption('Decision Report'));
 
-  await t.takeElementScreenshot(
-    Homepage.createNewMenu,
-    'decision/single-report/dmn_report_create.png'
-  );
+  await t
+    .resizeWindow(1400, 700)
+    .takeElementScreenshot(Homepage.entityList, 'decision/single-report/dmn_report_create.png', {
+      crop: {left: 1000, bottom: 300}
+    });
 
   await t.click(Homepage.submenuOption('Decision Report'));
 

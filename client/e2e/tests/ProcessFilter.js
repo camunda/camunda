@@ -71,7 +71,7 @@ test('variable filter modal dependent on variable type', async t => {
   await t.click(Filter.variableFilterTypeaheadOption('dateVar'));
   await t.click(Filter.dateFilterStartInput);
   await t.click(Filter.pickerDate('5'));
-  await t.click(Filter.pickerDate('22'));
+  await t.click(Filter.pickerDate('22')).wait(200);
   await t.click(Filter.dateFilterEndInput);
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-date.png');
@@ -257,7 +257,7 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Report.filterOption('Start Date'));
 
   await t.click(Filter.dateTypeSelect);
-  await t.click(Report.option('Last...'));
+  await t.click(Report.option('This...'));
   await t.click(Filter.unitSelect);
   await t.click(Report.option('month'));
   await t.click(Report.primaryModalButton);
