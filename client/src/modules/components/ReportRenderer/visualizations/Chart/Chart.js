@@ -9,8 +9,9 @@ import ChartRenderer from './ChartRenderer';
 import createDefaultChartConfig from './defaultChart';
 import createCombinedChartConfig from './combinedChart';
 import createTargetLineConfig from './targetLineChart';
+import {themed} from 'theme';
 
-export default function Chart(props) {
+export function Chart(props) {
   const {
     report: {
       combined,
@@ -35,3 +36,5 @@ export default function Chart(props) {
 
   return <ChartRenderer config={createConfig({...props, targetValue})} />;
 }
+
+export default themed(Chart);

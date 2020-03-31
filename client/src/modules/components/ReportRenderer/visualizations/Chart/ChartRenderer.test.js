@@ -15,10 +15,8 @@ const chartData = {
   data: [1, 2]
 };
 
-const {WrappedComponent: ChartComponent} = ChartRenderer;
-
 it('should construct a Chart', () => {
-  shallow(<ChartComponent config={chartData} />);
+  shallow(<ChartRenderer config={chartData} />);
 
   expect(Chart).toHaveBeenCalled();
 });
@@ -26,7 +24,7 @@ it('should construct a Chart', () => {
 it('should use the provided type for the ChartRenderer', () => {
   Chart.mockClear();
 
-  shallow(<ChartComponent config={chartData} />);
+  shallow(<ChartRenderer config={chartData} />);
 
   expect(Chart.mock.calls[0][1].type).toBe('visualization_type');
 });

@@ -6,9 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-
-import Chart from './Chart';
-
+import {Chart} from './Chart';
 import createDefaultChartConfig from './defaultChart';
 import createCombinedChartConfig from './combinedChart';
 import createTargetLineConfig from './targetLineChart';
