@@ -7,26 +7,27 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.r
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByNone;
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewRawData;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RawProcessInstanceDataGroupByNoneCmd
-  implements Command<SingleProcessReportDefinitionDto> {
+public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<RawDataProcessReportResultDto> {
 
-  private final ProcessReportCmdExecutionPlan<RawDataProcessReportResultDto> executionPlan;
-
-  @Autowired
   public RawProcessInstanceDataGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
-    this.executionPlan = builder.createExecutionPlan()
+    super(builder);
+  }
+
+  @Override
+  protected ProcessReportCmdExecutionPlan<RawDataProcessReportResultDto> buildExecutionPlan(
+    final ReportCmdExecutionPlanBuilder builder) {
+    return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewRawData.class)
       .groupBy(ProcessGroupByNone.class)
@@ -36,13 +37,9 @@ public class RawProcessInstanceDataGroupByNoneCmd
   }
 
   @Override
-  public SingleProcessRawDataReportResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public SingleProcessRawDataReportResult evaluate(
+    final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     final RawDataProcessReportResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessRawDataReportResult(evaluate, commandContext.getReportDefinition());
-  }
-
-  @Override
-  public String createCommandKey() {
-    return executionPlan.generateCommandKey();
   }
 }

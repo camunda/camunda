@@ -16,8 +16,8 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
-public class AutomaticIntervalSelectionGroupByEndDateReportEvaluationIT
-  extends AbstractAutomaticIntervalSelectionGroupByDateReportEvaluationIT {
+public class AutomaticIntervalSelectionGroupByEndProcessInstanceDateReportEvaluationIT
+  extends AbstractAutomaticIntervalSelectionGroupByProcessInstanceDateReportEvaluationIT {
 
   @Override
   protected ProcessReportDataDto getGroupByStartDateReportData(String key, String version) {

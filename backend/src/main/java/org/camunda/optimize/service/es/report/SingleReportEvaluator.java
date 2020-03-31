@@ -42,19 +42,19 @@ public class SingleReportEvaluator {
     );
   }
 
-  <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(CommandContext<T> commandContext)
+  <T extends ReportDefinitionDto<?>> ReportEvaluationResult<?, T> evaluate(CommandContext<T> commandContext)
     throws OptimizeException {
     Command<T> evaluationCommand = extractCommandWithValidation(commandContext.getReportDefinition());
     return evaluationCommand.evaluate(commandContext);
   }
 
-  private <T extends ReportDefinitionDto> Command<T> extractCommandWithValidation(T reportDefinition) {
+  private <T extends ReportDefinitionDto<?>> Command<T> extractCommandWithValidation(T reportDefinition) {
     ValidationHelper.validate(reportDefinition.getData());
     return extractCommand(reportDefinition);
   }
 
   @SuppressWarnings(value = "unchecked")
-  <T extends ReportDefinitionDto> Command<T> extractCommand(T reportDefinition) {
+  <T extends ReportDefinitionDto<?>> Command<T> extractCommand(T reportDefinition) {
     return commandSuppliers.getOrDefault(reportDefinition.getData().createCommandKey(), notSupportedCommand);
   }
 }

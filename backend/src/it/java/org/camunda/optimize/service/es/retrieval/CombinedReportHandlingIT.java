@@ -78,6 +78,8 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_IN
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -95,6 +97,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   private static final String END_EVENT = "endEvent";
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String TEST_REPORT_NAME = "My foo report";
+  public static final String USER_TASK_ID = "userTask";
 
   @RegisterExtension
   @Order(4)
@@ -1025,7 +1028,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   @Test
-  public void canEvaluateUnsavedCombinedReportWithStartAndEndDateGroupedReports() throws SQLException {
+  public void canEvaluateUnsavedCombinedReportWithGroupedByProcessInstanceStartAndEndDateReports() throws SQLException {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
@@ -1057,6 +1060,59 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(resultData1.size(), is(1));
 
     final ReportMapResultDto result2 = resultMap.get(singleReportId2)
+      .getResult();
+    final List<MapResultEntryDto> resultData2 = result2.getData();
+    assertThat(resultData2, is(CoreMatchers.notNullValue()));
+    assertThat(resultData2.size(), is(3));
+  }
+
+  @Test
+  public void canEvaluateUnsavedCombinedReportWithGroupedByUserTaskStartAndEndDateReports() {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
+    engineDatabaseExtension.changeUserTaskStartDate(engineDto.getId(), USER_TASK_ID, now.minusDays(2L));
+
+    engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final ProcessReportDataDto groupedByEndDateReportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE)
+      .build();
+    String groupedByEndDateReportId = createNewSingleMapReport(groupedByEndDateReportData);
+    final ProcessReportDataDto groupedByStartDateReportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE)
+      .build();
+    String groupedByStartDateReportId = createNewSingleMapReport(groupedByStartDateReportData);
+
+    // when
+    final AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateUnsavedCombined(
+      createCombinedReportData(groupedByEndDateReportId, groupedByStartDateReportId));
+
+    // then
+    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
+      .getData();
+    assertThat(resultMap, is(CoreMatchers.notNullValue()));
+    assertThat(resultMap.keySet(), contains(groupedByEndDateReportId, groupedByStartDateReportId));
+
+    final ReportMapResultDto result1 = resultMap.get(groupedByEndDateReportId)
+      .getResult();
+    final List<MapResultEntryDto> resultData1 = result1.getData();
+    assertThat(resultData1, is(CoreMatchers.notNullValue()));
+    assertThat(resultData1.size(), is(1));
+
+    final ReportMapResultDto result2 = resultMap.get(groupedByStartDateReportId)
       .getResult();
     final List<MapResultEntryDto> resultData2 = result2.getData();
     assertThat(resultData2, is(CoreMatchers.notNullValue()));
@@ -1295,7 +1351,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent("startEvent")
-      .userTask("userTask")
+      .userTask(USER_TASK_ID)
       .endEvent()
       .done();
     return engineIntegrationExtension.deployAndStartProcess(processModel);

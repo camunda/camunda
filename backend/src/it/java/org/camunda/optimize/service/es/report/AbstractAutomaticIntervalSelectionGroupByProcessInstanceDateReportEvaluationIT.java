@@ -46,7 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 
-public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluationIT extends AbstractIT {
+public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDateReportEvaluationIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)

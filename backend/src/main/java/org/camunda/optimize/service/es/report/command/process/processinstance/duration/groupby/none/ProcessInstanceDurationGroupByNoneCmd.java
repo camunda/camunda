@@ -5,30 +5,29 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none;
 
-import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByNone;
 import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewInstanceDuration;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-public class ProcessInstanceDurationGroupByNoneCmd implements Command<SingleProcessReportDefinitionDto> {
+public class ProcessInstanceDurationGroupByNoneCmd extends ProcessCmd<NumberResultDto> {
 
-  private final ProcessReportCmdExecutionPlan<NumberResultDto> executionPlan;
-
-  @Autowired
   public ProcessInstanceDurationGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
-    this.executionPlan = builder.createExecutionPlan()
+    super(builder);
+  }
+
+  @Override
+  protected ProcessReportCmdExecutionPlan<NumberResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+    return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewInstanceDuration.class)
       .groupBy(ProcessGroupByNone.class)
@@ -41,10 +40,5 @@ public class ProcessInstanceDurationGroupByNoneCmd implements Command<SingleProc
   public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     final NumberResultDto evaluate = this.executionPlan.evaluate(commandContext);
     return new SingleProcessNumberReportResult(evaluate, commandContext.getReportDefinition());
-  }
-
-  @Override
-  public String createCommandKey() {
-    return executionPlan.generateCommandKey();
   }
 }

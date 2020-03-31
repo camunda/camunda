@@ -5,30 +5,29 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable;
 
-import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByVariable;
 import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewInstanceDurationOnProcessPart;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-public class ProcessInstanceDurationOnProcessPartGroupByVariableCmd implements Command<SingleProcessReportDefinitionDto> {
+public class ProcessInstanceDurationOnProcessPartGroupByVariableCmd extends ProcessCmd<ReportMapResultDto> {
 
-  private final ProcessReportCmdExecutionPlan<ReportMapResultDto> executionPlan;
-
-  @Autowired
   public ProcessInstanceDurationOnProcessPartGroupByVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
-    this.executionPlan = builder.createExecutionPlan()
+    super(builder);
+  }
+
+  @Override
+  protected ProcessReportCmdExecutionPlan<ReportMapResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+    return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewInstanceDurationOnProcessPart.class)
       .groupBy(ProcessGroupByVariable.class)
@@ -43,8 +42,4 @@ public class ProcessInstanceDurationOnProcessPartGroupByVariableCmd implements C
     return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
   }
 
-  @Override
-  public String createCommandKey() {
-    return this.executionPlan.generateCommandKey();
-  }
 }

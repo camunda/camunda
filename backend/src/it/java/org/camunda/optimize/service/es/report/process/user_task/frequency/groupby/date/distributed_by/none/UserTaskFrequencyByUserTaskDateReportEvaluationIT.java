@@ -155,7 +155,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
     changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
-  
+
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -460,7 +460,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
   public void filterWorks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
@@ -486,7 +486,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
   public void automaticIntervalSelection_simpleSetup() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto3 =
@@ -516,7 +517,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
   public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
     //given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto3 =
@@ -587,16 +589,19 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
   public void automaticIntervalSelection_combinedReportsWithDistinctRanges() {
     // given
     ZonedDateTime now = ZonedDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(1), now.plusDays(3));
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(4), now.plusDays(6));
+    ProcessDefinitionEngineDto processDefinition1 = deployOneUserTaskDefinition();
+    startProcessInstancesWithUserTaskDateInDayRange(processDefinition1, now.plusDays(1), now.plusDays(3));
+    ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
+    startProcessInstancesWithUserTaskDateInDayRange(processDefinition2, now.plusDays(4), now.plusDays(6));
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    ProcessReportDataDto reportData = createReportData(processDefinition1, GroupByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+    reportData = createReportData(processDefinition2, GroupByDateUnit.AUTOMATIC);
+    singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
@@ -612,16 +617,19 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
   public void automaticIntervalSelection_combinedReportsWithOneIncludingRange() {
     // given
     ZonedDateTime now = ZonedDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(1), now.plusDays(6));
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(3), now.plusDays(5));
+    ProcessDefinitionEngineDto processDefinition1 = deployOneUserTaskDefinition();
+    startProcessInstancesWithUserTaskDateInDayRange(processDefinition1, now.plusDays(1), now.plusDays(6));
+    ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
+    startProcessInstancesWithUserTaskDateInDayRange(processDefinition2, now.plusDays(3), now.plusDays(5));
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    ProcessReportDataDto reportData = createReportData(processDefinition1, GroupByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+    reportData = createReportData(processDefinition2, GroupByDateUnit.AUTOMATIC);
+    singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
@@ -637,17 +645,19 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
   public void automaticIntervalSelection_combinedReportsWithIntersectingRange() {
     // given
     ZonedDateTime now = ZonedDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(1), now.plusDays(4));
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(3), now.plusDays(6));
-
+    ProcessDefinitionEngineDto processDefinition1 = deployOneUserTaskDefinition();
+    startProcessInstancesWithUserTaskDateInDayRange(processDefinition1, now.plusDays(1), now.plusDays(4));
+    ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
+    startProcessInstancesWithUserTaskDateInDayRange(processDefinition2, now.plusDays(4), now.plusDays(6));
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    ProcessReportDataDto reportData = createReportData(processDefinition1, GroupByDateUnit.AUTOMATIC);
     singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+    reportData = createReportData(processDefinition2, GroupByDateUnit.AUTOMATIC);
+    singleProcessReportDefinitionDto.setData(reportData);
     final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
@@ -683,9 +693,9 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
       .isLessThan(localDateTimeToString(endTotal));
   }
 
-  private void startProcessInstancesInDayRange(ProcessDefinitionEngineDto processDefinition,
-                                               ZonedDateTime min,
-                                               ZonedDateTime max) {
+  private void startProcessInstancesWithUserTaskDateInDayRange(ProcessDefinitionEngineDto processDefinition,
+                                                               ZonedDateTime min,
+                                                               ZonedDateTime max) {
     ProcessInstanceEngineDto procInstMin = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto procInstMax = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     changeUserTaskDate(procInstMin, USER_TASK_1, min.toOffsetDateTime());
@@ -727,7 +737,11 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
 
   protected ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
                                                   final GroupByDateUnit groupByDateUnit) {
-    return createReportData(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), groupByDateUnit);
+    return createReportData(
+      processDefinition.getKey(),
+      String.valueOf(processDefinition.getVersion()),
+      groupByDateUnit
+    );
   }
 
   private void finishAllUserTasks(final ProcessInstanceEngineDto processInstanceDto1) {

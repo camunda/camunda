@@ -17,7 +17,9 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.aggregations.metrics.Stats;
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -64,5 +66,9 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   @Override
   protected Supplier<ProcessReportDataDto> getDataDtoSupplier() {
     return ProcessReportDataDto::new;
+  }
+
+  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ProcessReportDataDto reportData) {
+    return groupByPart.calculateDateRangeForAutomaticGroupByDate(reportData, setupBaseQuery(reportData));
   }
 }

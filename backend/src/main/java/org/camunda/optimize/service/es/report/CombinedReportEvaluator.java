@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
-import org.camunda.optimize.service.es.report.command.ProcessGroupByDateCmd;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.search.aggregations.metrics.Stats;
@@ -61,12 +60,9 @@ public class CombinedReportEvaluator {
     singleReportDefinitions
       .forEach(
         reportDefinition -> {
-          Command command = singleReportEvaluator.extractCommand(reportDefinition);
-          if (command instanceof ProcessGroupByDateCmd) {
-            Optional<Stats> stat =
-              ((ProcessGroupByDateCmd) command).calculateGroupByDateRange(reportDefinition.getData());
-            stat.ifPresent(calculator::addStat);
-          }
+          Command<?> command = singleReportEvaluator.extractCommand(reportDefinition);
+          Optional<Stats> stat = command.calculateDateRangeForAutomaticGroupByDate(reportDefinition);
+          stat.ifPresent(calculator::addStat);
         }
       );
     Optional<Range<OffsetDateTime>> dateHistogramIntervalForCombinedReport = calculator.calculateInterval();
@@ -108,7 +104,7 @@ public class CombinedReportEvaluator {
     }
 
     @Override
-    <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(final CommandContext<T> commandContext) throws
+    <T extends ReportDefinitionDto<?>> ReportEvaluationResult<?, T> evaluate(final CommandContext<T> commandContext) throws
                                                                                                                   OptimizeException {
       commandContext.setDateIntervalRange(dateIntervalRange);
       return super.evaluate(commandContext);

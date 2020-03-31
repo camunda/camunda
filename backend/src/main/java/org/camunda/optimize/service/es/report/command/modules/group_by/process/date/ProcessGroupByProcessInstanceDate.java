@@ -67,8 +67,9 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
     this.dateTimeFormatter = dateTimeFormatter;
   }
 
-  public Optional<Stats> calculateGroupByDateRange(final ProcessReportDataDto reportData,
-                                                   final BoolQueryBuilder baseQuery) {
+  @Override
+  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ProcessReportDataDto reportData,
+                                                                   final BoolQueryBuilder baseQuery) {
     if (reportData.getGroupBy().getValue() instanceof DateGroupByValueDto) {
       DateGroupByValueDto groupByDate = (DateGroupByValueDto) reportData.getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {

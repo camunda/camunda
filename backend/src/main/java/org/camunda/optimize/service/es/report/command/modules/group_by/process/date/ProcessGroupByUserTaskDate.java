@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
@@ -102,6 +101,19 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   private final ConfigurationService configurationService;
 
   @Override
+  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ProcessReportDataDto reportData,
+                                                                   final BoolQueryBuilder baseQuery) {
+    if (reportData.getGroupBy().getValue() instanceof DateGroupByValueDto) {
+      DateGroupByValueDto groupByDate = (DateGroupByValueDto) reportData.getGroupBy().getValue();
+      if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
+        Stats minMaxStats = getMinMaxStats(reportData, baseQuery, getDateField());
+        return Optional.of(minMaxStats);
+      }
+    }
+    return Optional.empty();
+  }
+
+  @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     final GroupByDateUnit unit = getGroupByDateUnit(context.getReportData());
@@ -132,15 +144,10 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     );
 
     final NestedAggregationBuilder groupByUserTaskDateAggregation =
-      wrapInNestedUserTaskAggregation(context, bucketLimitedHistogramAggregation);
+      wrapInNestedUserTaskAggregation(context.getReportData(), bucketLimitedHistogramAggregation);
 
     return Collections.singletonList(groupByUserTaskDateAggregation);
   }
-
-  private FlowNodeExecutionState getFlowNodeExecutionState(final ExecutionContext<ProcessReportDataDto> context) {
-    return context.getReportConfiguration().getFlowNodeExecutionState();
-  }
-
 
   private BoolQueryBuilder createLimitFilterQuery(final GroupByDateUnit unit,
                                                   final OffsetDateTime endDate) {
@@ -176,7 +183,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       .format(OPTIMIZE_DATE_FORMAT)
       .size(1);
     final NestedAggregationBuilder groupByUserTaskDateAggregation =
-      wrapInNestedUserTaskAggregation(context, mostRecentDateAggregation);
+      wrapInNestedUserTaskAggregation(context.getReportData(), mostRecentDateAggregation);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
@@ -203,7 +210,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     return Optional.empty();
   }
 
-  private NestedAggregationBuilder wrapInNestedUserTaskAggregation(final ExecutionContext<ProcessReportDataDto> context,
+  private NestedAggregationBuilder wrapInNestedUserTaskAggregation(final ProcessReportDataDto reportData,
                                                                    final AggregationBuilder aggregationToWrap) {
     return nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
@@ -211,7 +218,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
           FILTERED_USER_TASKS_AGGREGATION,
           addExecutionStateFilter(
             boolQuery(),
-            getFlowNodeExecutionState(context),
+            reportData.getConfiguration().getFlowNodeExecutionState(),
             USER_TASKS + "." + USER_TASK_END_DATE
           )
         )
@@ -269,7 +276,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
           FILTERED_USER_TASKS_AGGREGATION,
           addExecutionStateFilter(
             boolQuery(),
-            getFlowNodeExecutionState(context),
+            context.getReportConfiguration().getFlowNodeExecutionState(),
             USER_TASKS + "." + USER_TASK_END_DATE
           )
         ).subAggregation(
@@ -306,7 +313,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   private Optional<AggregationBuilder> createIntervalAggregation(final ExecutionContext<ProcessReportDataDto> context,
                                                                  final QueryBuilder query,
                                                                  final String field) {
-    Stats stats = getMinMaxStats(context, query, field);
+    Stats stats = getMinMaxStats(context.getReportData(), query, field);
     if (stats.getCount() > 1) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);
@@ -316,7 +323,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     }
   }
 
-  private Stats getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
+  private Stats getMinMaxStats(final ProcessReportDataDto reportData,
                                final QueryBuilder query,
                                final String field) {
 
@@ -325,7 +332,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       .field(field)
       .format(OPTIMIZE_DATE_FORMAT);
     final NestedAggregationBuilder statsAgg =
-      wrapInNestedUserTaskAggregation(context, minMaxOfUserTaskDate);
+      wrapInNestedUserTaskAggregation(reportData, minMaxOfUserTaskDate);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)

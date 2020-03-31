@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by;
 
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -14,9 +15,11 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -54,5 +57,14 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
                                          final ExecutionContext<Data> executionContext);
 
   protected abstract void addGroupByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);
+
+  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ProcessReportDataDto reportData,
+                                                                   final BoolQueryBuilder baseQuery) {
+    // this method is only needed for group by date reports with
+    // automatic unit generation since we need to calculate the
+    // total range for a combined report to be able to use the same
+    // interval for all reports in a combined report.
+    return Optional.empty();
+  }
 
 }

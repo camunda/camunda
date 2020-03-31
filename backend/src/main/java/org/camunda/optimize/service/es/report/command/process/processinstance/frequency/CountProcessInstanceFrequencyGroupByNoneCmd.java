@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.f
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
@@ -20,14 +20,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CountProcessInstanceFrequencyGroupByNoneCmd
-  implements Command<SingleProcessReportDefinitionDto> {
+public class CountProcessInstanceFrequencyGroupByNoneCmd extends ProcessCmd<NumberResultDto> {
 
-  private final ProcessReportCmdExecutionPlan<NumberResultDto> executionPlan;
+
+  public CountProcessInstanceFrequencyGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
+    super(builder);
+  }
 
   @Autowired
-  public CountProcessInstanceFrequencyGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
-    this.executionPlan = builder.createExecutionPlan()
+  protected ProcessReportCmdExecutionPlan<NumberResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+    return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewCountInstanceFrequency.class)
       .groupBy(ProcessGroupByNone.class)
@@ -42,8 +44,4 @@ public class CountProcessInstanceFrequencyGroupByNoneCmd
     return new SingleProcessNumberReportResult(evaluate, commandContext.getReportDefinition());
   }
 
-  @Override
-  public String createCommandKey() {
-    return executionPlan.generateCommandKey();
-  }
 }
