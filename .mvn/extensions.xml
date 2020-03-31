@@ -1,0 +1,12 @@
+<extensions xmlns="http://maven.apache.org/EXTENSIONS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/EXTENSIONS/1.0.0 http://maven.apache.org/xsd/core-extensions-1.0.0.xsd">
+  <!--
+       Maven Incremental Module Builder https://github.com/khmarbaise/incremental-module-builder
+       Usage: mvn -b incremental install
+  -->
+  <extension>
+    <groupId>com.soebes.maven.extensions</groupId>
+    <artifactId>incremental-module-builder</artifactId>
+    <version>0.2.0</version>
+  </extension>
+</extensions>

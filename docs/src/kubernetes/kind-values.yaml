@@ -1,0 +1,40 @@
+---
+zeebe-cluster: 
+  elasticsearch: 
+    imageTag: 6.8.3 
+# Permit co-located instances for solitary minikube virtual machines.
+    antiAffinity: "soft"
+
+# Shrink default JVM heap.
+    esJavaOpts: "-Xmx128m -Xms128m"
+
+# Allocate smaller chunks of memory per pod.
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "512M"
+      limits:
+        cpu: "1000m"
+        memory: "512M"
+
+# Request smaller persistent volumes.
+    volumeClaimTemplate:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 100M
+    extraInitContainers: |
+      - name: create
+        image: busybox:1.28
+        command: ['mkdir', '/usr/share/elasticsearch/data/nodes/']  
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: elasticsearch-master
+      - name: file-permissions
+        image: busybox:1.28
+        command: ['chown', '-R', '1000:1000', '/usr/share/elasticsearch/']
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: elasticsearch-master
+          

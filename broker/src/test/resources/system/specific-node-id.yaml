@@ -1,0 +1,4 @@
+zeebe:
+  broker:
+    cluster:
+      nodeId: 123

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1jguk1q" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.7.0">
+  <bpmn:process id="Process_0mlfhcs" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Order Placed">
+      <bpmn:outgoing>SequenceFlow_0vrnwa0</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="ServiceTask_055pnes" name="Collect Money">
+      <bpmn:incoming>SequenceFlow_0vrnwa0</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_038rbmr</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0vrnwa0" sourceRef="StartEvent_1" targetRef="ServiceTask_055pnes" />
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_1bjvoc7" name="Money collected">
+      <bpmn:incoming>SequenceFlow_038rbmr</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1t1rq12</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_038rbmr" sourceRef="ServiceTask_055pnes" targetRef="IntermediateCatchEvent_1bjvoc7" />
+    <bpmn:serviceTask id="ServiceTask_11hc2up" name="Fetch Items">
+      <bpmn:incoming>SequenceFlow_1t1rq12</bpmn:incoming>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1t1rq12" sourceRef="IntermediateCatchEvent_1bjvoc7" targetRef="ServiceTask_11hc2up" />
+    <bpmn:boundaryEvent id="BoundaryEvent_0cl8fia" name="Order Canceled" attachedToRef="ServiceTask_055pnes">
+      <bpmn:outgoing>SequenceFlow_1uvctnj</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="EndEvent_0sljo5k">
+      <bpmn:incoming>SequenceFlow_1uvctnj</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1uvctnj" sourceRef="BoundaryEvent_0cl8fia" targetRef="EndEvent_0sljo5k" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0mlfhcs">
+      <bpmndi:BPMNShape id="StartEvent_0dvveir_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="165" y="142" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_055pnes_di" bpmnElement="ServiceTask_055pnes">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0vrnwa0_di" bpmnElement="SequenceFlow_0vrnwa0">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_1bjvoc7_di" bpmnElement="IntermediateCatchEvent_1bjvoc7">
+        <dc:Bounds x="472" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="450" y="142" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_038rbmr_di" bpmnElement="SequenceFlow_038rbmr">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="472" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_11hc2up_di" bpmnElement="ServiceTask_11hc2up">
+        <dc:Bounds x="570" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1t1rq12_di" bpmnElement="SequenceFlow_1t1rq12">
+        <di:waypoint x="508" y="117" />
+        <di:waypoint x="570" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BoundaryEvent_0cl8fia_di" bpmnElement="BoundaryEvent_0cl8fia">
+        <dc:Bounds x="322" y="139" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="351" y="182" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0sljo5k_di" bpmnElement="EndEvent_0sljo5k">
+        <dc:Bounds x="412" y="222" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1uvctnj_di" bpmnElement="SequenceFlow_1uvctnj">
+        <di:waypoint x="340" y="175" />
+        <di:waypoint x="340" y="240" />
+        <di:waypoint x="412" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

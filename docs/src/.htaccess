@@ -1,0 +1,7 @@
+# Redirect to https
+RewriteEngine on
+RewriteCond %{SERVER_PORT} !^443$
+RewriteRule (.*) https://%{SERVER_NAME}/$1 [R=301,L]
+
+# disable directory listing
+Options -Indexes

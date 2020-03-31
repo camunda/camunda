@@ -1,0 +1,48 @@
+version: "3.7"
+
+services:
+  zeebe:
+    image: camunda/zeebe:SNAPSHOT
+    ports:
+      - "26500:26500"
+    environment:
+        ZEEBE_METRICS_HTTP_SERVER: "true"
+
+  starter:
+    build:
+      context: .
+      target: starter
+    image: gcr.io/zeebe-io/starter:zeebe
+    links:
+      - zeebe
+    environment:
+      JAVA_OPTIONS: "-Dapp.brokerUrl=zeebe:26500"
+
+  worker:
+    build:
+      context: .
+      target: worker
+    image: gcr.io/zeebe-io/worker:zeebe
+    links:
+      - zeebe
+    environment:
+      JAVA_OPTIONS: "-Dapp.brokerUrl=zeebe:26500"
+
+  all-in-one:
+    build:
+      context: .
+      target: all-in-one
+    image: gcr.io/zeebe-io/all-in-one:zeebe
+    links:
+      - zeebe
+    environment:
+      JAVA_OPTIONS: "-Dapp.brokerUrl=zeebe:26500"
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    links:
+      - zeebe
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"

@@ -1,0 +1,3 @@
+# Broker 1
+[cluster]
+partitionsCount = -1

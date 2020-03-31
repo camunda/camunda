@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_09vptul" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.7.0">
+  <bpmn:process id="Process_1hwnzna" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>SequenceFlow_0y8b0i3</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0y8b0i3" sourceRef="StartEvent_1" targetRef="Task_01slnob" />
+    <bpmn:callActivity id="Task_01slnob" name="A">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="child-process-id" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0y8b0i3</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0frpbbf</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="IntermediateThrowEvent_056pdos" name="cancel" attachedToRef="Task_01slnob">
+      <bpmn:outgoing>SequenceFlow_00i211x</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_00i211x" sourceRef="IntermediateThrowEvent_056pdos" targetRef="Task_1s56ipv" />
+    <bpmn:serviceTask id="Task_1s56ipv" name="B">
+      <bpmn:incoming>SequenceFlow_00i211x</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0of6leg</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_0ipnrqx">
+      <bpmn:incoming>SequenceFlow_0of6leg</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0of6leg" sourceRef="Task_1s56ipv" targetRef="EndEvent_0ipnrqx" />
+    <bpmn:endEvent id="EndEvent_0ghejes">
+      <bpmn:incoming>SequenceFlow_0frpbbf</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0frpbbf" sourceRef="Task_01slnob" targetRef="EndEvent_0ghejes" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1hwnzna">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0y8b0i3_di" bpmnElement="SequenceFlow_0y8b0i3">
+        <di:waypoint x="188" y="117" />
+        <di:waypoint x="320" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="CallActivity_1qqbdsc_di" bpmnElement="Task_01slnob">
+        <dc:Bounds x="320" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_04a8bbw_di" bpmnElement="IntermediateThrowEvent_056pdos">
+        <dc:Bounds x="402" y="139" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="434" y="173" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_00i211x_di" bpmnElement="SequenceFlow_00i211x">
+        <di:waypoint x="420" y="175" />
+        <di:waypoint x="420" y="240" />
+        <di:waypoint x="490" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1tge42g_di" bpmnElement="Task_1s56ipv">
+        <dc:Bounds x="490" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0ipnrqx_di" bpmnElement="EndEvent_0ipnrqx">
+        <dc:Bounds x="672" y="222" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0of6leg_di" bpmnElement="SequenceFlow_0of6leg">
+        <di:waypoint x="590" y="240" />
+        <di:waypoint x="672" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0ghejes_di" bpmnElement="EndEvent_0ghejes">
+        <dc:Bounds x="672" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0frpbbf_di" bpmnElement="SequenceFlow_0frpbbf">
+        <di:waypoint x="420" y="117" />
+        <di:waypoint x="672" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

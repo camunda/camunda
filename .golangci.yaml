@@ -1,0 +1,17 @@
+linters:
+  enable:  
+  - gofmt
+  - golint
+  - misspell
+  - dupl
+  - unused
+  - gosec
+  - gocritic
+
+issues:
+ exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - dupl
+        - gosec

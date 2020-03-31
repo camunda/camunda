@@ -1,0 +1,49 @@
+version: '3'
+
+volumes:
+    broker_1: {}
+    broker_2: {}
+    broker_3: {}
+
+services:
+
+    broker-1:
+        image: camunda/zeebe:${ZEEBE_VERSION:-latest}
+        ports:
+            - 26500:26500
+        environment:
+            - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+            - ZEEBE_BROKER_CLUSTER_NODEID=0
+            - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=3
+            - ZEEBE_BROKER_CLUSTER_CLUSTERSIZE=3
+            - ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR=3
+        volumes:
+            - broker_1:/usr/local/zeebe/data
+
+    broker-2:
+        image: camunda/zeebe:${ZEEBE_VERSION:-latest}
+        ports:
+            - 26510:26500
+        environment:
+            - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+            - ZEEBE_BROKER_CLUSTER_NODEID=1
+            - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=3
+            - ZEEBE_BROKER_CLUSTER_CLUSTERSIZE=3
+            - ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR=3
+            - ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS=broker-1:26502
+        volumes:
+            - broker_2:/usr/local/zeebe/data
+
+    broker-3:
+        image: camunda/zeebe:${ZEEBE_VERSION:-latest}
+        ports:
+            - 26520:26500
+        environment:
+            - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+            - ZEEBE_BROKER_CLUSTER_NODEID=2
+            - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=3
+            - ZEEBE_BROKER_CLUSTER_CLUSTERSIZE=3
+            - ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR=3
+            - ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS=broker-1:26502
+        volumes:
+            - broker_3:/usr/local/zeebe/data

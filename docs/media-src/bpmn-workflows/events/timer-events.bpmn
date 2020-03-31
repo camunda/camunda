@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0a9d1mk" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.7.0">
+  <bpmn:process id="Process_0ogtga3" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Every 2 hours">
+      <bpmn:outgoing>SequenceFlow_0r153h7</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression" />
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="ServiceTask_125ngdo" name="check inbox">
+      <bpmn:incoming>SequenceFlow_0r153h7</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0yy7vda</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0r153h7" sourceRef="StartEvent_1" targetRef="ServiceTask_125ngdo" />
+    <bpmn:sequenceFlow id="SequenceFlow_0yy7vda" sourceRef="ServiceTask_125ngdo" targetRef="ExclusiveGateway_11m9vm0" />
+    <bpmn:boundaryEvent id="BoundaryEvent_0ycsmte" name="max 5 min" attachedToRef="ServiceTask_125ngdo">
+      <bpmn:outgoing>SequenceFlow_1rezx0m</bpmn:outgoing>
+      <bpmn:timerEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="ExclusiveGateway_11m9vm0">
+      <bpmn:incoming>SequenceFlow_1rezx0m</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_0yy7vda</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1y93mg0</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_1rezx0m" sourceRef="BoundaryEvent_0ycsmte" targetRef="ExclusiveGateway_11m9vm0" />
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_1ylbwld" name="10 min coffee break">
+      <bpmn:incoming>SequenceFlow_1y93mg0</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_152o1w0</bpmn:outgoing>
+      <bpmn:timerEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="ServiceTask_1qpq8e3" name="handle most important topic">
+      <bpmn:incoming>SequenceFlow_152o1w0</bpmn:incoming>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1y93mg0" sourceRef="ExclusiveGateway_11m9vm0" targetRef="IntermediateCatchEvent_1ylbwld" />
+    <bpmn:sequenceFlow id="SequenceFlow_152o1w0" sourceRef="IntermediateCatchEvent_1ylbwld" targetRef="ServiceTask_1qpq8e3" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0ogtga3">
+      <bpmndi:BPMNShape id="StartEvent_0dngjma_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="163" y="142" width="69" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_125ngdo_di" bpmnElement="ServiceTask_125ngdo">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0r153h7_di" bpmnElement="SequenceFlow_0r153h7">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0yy7vda_di" bpmnElement="SequenceFlow_0yy7vda">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="455" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BoundaryEvent_0ycsmte_di" bpmnElement="BoundaryEvent_0ycsmte">
+        <dc:Bounds x="352" y="139" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="384" y="173" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_11m9vm0_di" bpmnElement="ExclusiveGateway_11m9vm0" isMarkerVisible="true">
+        <dc:Bounds x="455" y="92" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1rezx0m_di" bpmnElement="SequenceFlow_1rezx0m">
+        <di:waypoint x="370" y="175" />
+        <di:waypoint x="370" y="210" />
+        <di:waypoint x="480" y="210" />
+        <di:waypoint x="480" y="142" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_14be1um_di" bpmnElement="IntermediateCatchEvent_1ylbwld">
+        <dc:Bounds x="562" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="548" y="142" width="66" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1qpq8e3_di" bpmnElement="ServiceTask_1qpq8e3">
+        <dc:Bounds x="660" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1y93mg0_di" bpmnElement="SequenceFlow_1y93mg0">
+        <di:waypoint x="505" y="117" />
+        <di:waypoint x="562" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_152o1w0_di" bpmnElement="SequenceFlow_152o1w0">
+        <di:waypoint x="598" y="117" />
+        <di:waypoint x="660" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

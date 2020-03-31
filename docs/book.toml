@@ -1,0 +1,22 @@
+[book]
+title = "Zeebe Documentation"
+description = "Zeebe is an orchestration engine for distributed microservices"
+
+[preprocessor.commit-hash]
+command = "./preprocessors/commit-hash.py"
+
+[output.html]
+additional-css = ["custom.css"]
+additional-js = ["highlight.protobuf.js"]
+git-repository-url = "https://github.com/zeebe-io/zeebe/tree/develop/docs"
+
+[output.html.fold]
+enable = true
+level = 0
+
+[output.linkcheck]
+exclude = [ "localhost" ]
+
+# enable the following line to check external links, this will increase
+# the build time
+#follow-web-links = true

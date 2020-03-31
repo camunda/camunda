@@ -1,0 +1,11 @@
+{
+  "key": 2251799813685250,
+  "workflows": [
+    {
+      "bpmnProcessId": "process",
+      "version": 1,
+      "workflowKey": 2251799813685249,
+      "resourceName": "testdata/model.bpmn"
+    }
+  ]
+}

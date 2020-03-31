@@ -1,0 +1,9 @@
+{
+  "extends": [
+    "config:base"
+  ],
+
+  "ignoreDeps": ["docker/engine"],
+
+  "postUpdateOptions": ["gomodTidy"]
+}

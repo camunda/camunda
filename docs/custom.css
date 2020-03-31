@@ -1,0 +1,28 @@
+.implemented svg [fill="#333333"] {
+ fill:#df8a13
+}
+.implemented svg [stroke="#333333"] {
+ stroke:#df8a13
+}
+.bpmn-symbol-container {
+    float: left;
+    margin-right: 15px;
+    margin-bottom: 15px;
+}
+
+.bpmn-symbol-group {
+    overflow: auto;
+}
+
+.bpmn-symbol-container,.implemented svg {
+ position:relative;
+ overflow:hidden
+}
+
+.bpmn-symbol-link
+{
+  padding: 7px;
+  right: 0px;
+  position: absolute;
+  background-color: rgba(238,238,238,.75);
+}

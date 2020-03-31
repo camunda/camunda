@@ -1,0 +1,38 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
+ */
+package io.zeebe.msgpack;
+
+import io.zeebe.msgpack.property.LongProperty;
+
+public final class DefaultValuesPOJO extends UnpackedObject {
+
+  protected final LongProperty defaultValueProperty;
+  protected final LongProperty noDefaultValueProperty = new LongProperty("noDefaultValueProp");
+
+  public DefaultValuesPOJO(final long defaultValue) {
+    defaultValueProperty = new LongProperty("defaultValueProp", defaultValue);
+
+    this.declareProperty(defaultValueProperty).declareProperty(noDefaultValueProperty);
+  }
+
+  public long getDefaultValueProperty() {
+    return defaultValueProperty.getValue();
+  }
+
+  public void setDefaultValueProperty(final long value) {
+    this.defaultValueProperty.setValue(value);
+  }
+
+  public long getNoDefaultValueProperty() {
+    return noDefaultValueProperty.getValue();
+  }
+
+  public void setNoDefaultValueProperty(final long value) {
+    this.noDefaultValueProperty.setValue(value);
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "index_patterns": [
+    "zeebe-record_job_*"
+  ],
+  "order": 20,
+  "settings": {
+    "number_of_shards": 3
+  },
+  "aliases": {
+    "zeebe-record-job": {}
+  },
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "type": {
+              "type": "keyword"
+            },
+            "elementId": {
+              "type": "text"
+            },
+            "elementInstanceKey": {
+              "type": "long"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "workflowDefinitionVersion": {
+              "type": "integer"
+            },
+            "workflowInstanceKey": {
+              "type": "long"
+            },
+            "workflowKey": {
+              "type": "long"
+            },
+            "customHeaders": {
+              "dynamic": true,
+              "type": "object"
+            },
+            "worker": {
+              "type": "keyword"
+            },
+            "retries": {
+              "type": "long"
+            },
+            "deadline": {
+              "type": "long"
+            },
+            "variables": {
+              "enabled": false
+            },
+            "errorMessage": {
+              "type": "text"
+            },
+            "errorCode": {
+              "type": "text"
+            }
+          }
+        }
+      }
+    }
+  }
+}

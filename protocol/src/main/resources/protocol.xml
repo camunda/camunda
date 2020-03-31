@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+  xmlns:xi="http://www.w3.org/2001/XInclude" package="io.zeebe.protocol.record"
+  id="0" version="${protocol.version}" semanticVersion="${project.version}"
+  description="Zeebe Protocol" byteOrder="littleEndian">
+
+  <xi:include href="common-types.xml"/>
+
+  <types>
+    <enum name="errorCode" encodingType="uint8" semanticType="String"
+      description="The error code of an error">
+      <validValue name="INTERNAL_ERROR">0</validValue>
+      <validValue name="PARTITION_LEADER_MISMATCH">1</validValue>
+      <validValue name="UNSUPPORTED_MESSAGE">2</validValue>
+      <validValue name="INVALID_CLIENT_VERSION">3</validValue>
+      <validValue name="MALFORMED_REQUEST">4</validValue>
+      <validValue name="INVALID_MESSAGE_TEMPLATE">5</validValue>
+      <validValue name="INVALID_DEPLOYMENT_PARTITION">6</validValue>
+      <validValue name="WORKFLOW_NOT_FOUND">7</validValue>
+      <validValue name="RESOURCE_EXHAUSTED">8</validValue>
+    </enum>
+
+    <enum name="ValueType" encodingType="uint8" description="The type of a record value">
+      <validValue name="JOB">0</validValue>
+      <validValue name="DEPLOYMENT">4</validValue>
+      <validValue name="WORKFLOW_INSTANCE">5</validValue>
+      <validValue name="INCIDENT">6</validValue>
+      <validValue name="MESSAGE">10</validValue>
+      <validValue name="MESSAGE_SUBSCRIPTION">11</validValue>
+      <validValue name="WORKFLOW_INSTANCE_SUBSCRIPTION">12</validValue>
+      <validValue name="JOB_BATCH">14</validValue>
+      <validValue name="TIMER">15</validValue>
+      <validValue name="MESSAGE_START_EVENT_SUBSCRIPTION">16</validValue>
+      <validValue name="VARIABLE">17</validValue>
+      <validValue name="VARIABLE_DOCUMENT">18</validValue>
+      <validValue name="WORKFLOW_INSTANCE_CREATION">19</validValue>
+      <validValue name="ERROR">20</validValue>
+      <validValue name="WORKFLOW_INSTANCE_RESULT">21</validValue>
+    </enum>
+
+    <enum name="RecordType" encodingType="uint8">
+      <validValue name="EVENT">0</validValue>
+      <validValue name="COMMAND">1</validValue>
+      <validValue name="COMMAND_REJECTION">2</validValue>
+    </enum>
+
+    <enum name="RejectionType" encodingType="uint8">
+      <validValue name="INVALID_ARGUMENT">0</validValue>
+      <validValue name="NOT_FOUND">1</validValue>
+      <validValue name="ALREADY_EXISTS">2</validValue>
+      <validValue name="INVALID_STATE">3</validValue>
+      <validValue name="PROCESSING_ERROR">4</validValue>
+    </enum>
+
+    <enum name="PartitionRole" encodingType="uint8">
+      <validValue name="LEADER">0</validValue>
+      <validValue name="FOLLOWER">1</validValue>
+    </enum>
+  </types>
+
+  <!-- L1 General Messages 0 - 99 -->
+
+  <sbe:message name="ErrorResponse" id="10" description="Standard error response">
+    <field name="errorCode" id="1" type="errorCode"/>
+    <data name="errorData" id="2" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="ExecuteCommandRequest" id="20">
+    <field name="partitionId" id="1" type="uint16"/>
+    <field name="key" id="4" type="uint64"/>
+    <field name="valueType" id="5" type="ValueType"/>
+    <field name="intent" id="6" type="uint8"/>
+    <data name="value" id="7" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="ExecuteCommandResponse" id="21">
+    <field name="partitionId" id="1" type="uint16"/>
+    <field name="key" id="2" type="uint64"/>
+    <field name="recordType" id="3" type="RecordType"/>
+    <field name="valueType" id="4" type="ValueType"/>
+    <field name="intent" id="5" type="uint8"/>
+    <!-- populated when RecordType is COMMAND_REJECTION -->
+    <field name="rejectionType" id="6" type="RejectionType"/>
+    <data name="value" id="7" type="varDataEncoding"/>
+    <!-- populated when RecordType is COMMAND_REJECTION; UTF-8-encoded String -->
+    <data name="rejectionReason" id="8" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- L2 Common Messages 200 - 399 -->
+
+  <sbe:message name="RecordMetadata" id="200" description="Descriptor for Record Metadata">
+    <field name="recordType" id="1" type="RecordType"/>
+    <field name="requestStreamId" id="2" type="int32"/>
+    <field name="requestId" id="3" type="uint64"/>
+    <field name="protocolVersion" id="4" type="uint16"/>
+    <field name="valueType" id="5" type="ValueType"/>
+    <field name="intent" id="6" type="uint8"/>
+    <!-- populated when RecordType is COMMAND_REJECTION -->
+    <field name="rejectionType" id="7" type="RejectionType"/>
+    <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
+    <data name="rejectionReason" id="8" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="BrokerInfo" id="201" description="Broker topology information">
+    <field name="nodeId" id="1" type="int32"/>
+    <field name="partitionsCount" id="2" type="int32"/>
+    <field name="clusterSize" id="3" type="int32"/>
+    <field name="replicationFactor" id="4" type="int32"/>
+    <group name="addresses" id="5">
+      <data name="apiName" id="6" type="varDataEncoding"/>
+      <data name="address" id="7" type="varDataEncoding"/>
+    </group>
+    <group name="partitionRoles" id="8">
+      <field name="partitionId" id="9" type="int32"/>
+      <field name="role" id="10" type="PartitionRole"/>
+    </group>
+    <group name="partitionLeaderTerms" id="11">
+      <field name="partitionId" id="12" type="int32"/>
+      <field name="term" id="13" type="int64"/>
+    </group>
+    <data name="version" id="14" type="varDataEncoding"/>
+  </sbe:message>
+
+</sbe:messageSchema>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_07ep31f" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.8.0">
+  <bpmn:collaboration id="message-single-instance">
+    <bpmn:participant id="Participant_0401xdf" processRef="Process_0uz6tug" />
+    <bpmn:participant id="Participant_10wuzi9" processRef="Process_0dccold" />
+    <bpmn:messageFlow id="MessageFlow_1xi2qr2" sourceRef="Task_1lmi6p2" targetRef="StartEvent_1" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_0uz6tug" isExecutable="true">
+    <bpmn:serviceTask id="Task_0t7m3x6" name="A">
+      <bpmn:outgoing>SequenceFlow_0fswpsq</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0fswpsq" sourceRef="Task_0t7m3x6" targetRef="Task_1lmi6p2" />
+    <bpmn:serviceTask id="Task_1lmi6p2" name="B">
+      <bpmn:incoming>SequenceFlow_0fswpsq</bpmn:incoming>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmn:process id="Process_0dccold" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>SequenceFlow_15cqsk5</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_0ik0cp5" name="C">
+      <bpmn:incoming>SequenceFlow_15cqsk5</bpmn:incoming>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_15cqsk5" sourceRef="StartEvent_1" targetRef="Task_0ik0cp5" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="message-single-instance">
+      <bpmndi:BPMNShape id="Participant_0401xdf_di" bpmnElement="Participant_0401xdf" isHorizontal="true">
+        <dc:Bounds x="150" y="120" width="570" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_0e5ac35_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="422" y="352" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_15zyr41_di" bpmnElement="Participant_10wuzi9" isHorizontal="true">
+        <dc:Bounds x="150" y="300" width="570" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0i4c7nx_di" bpmnElement="Task_1lmi6p2">
+        <dc:Bounds x="390" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="MessageFlow_1xi2qr2_di" bpmnElement="MessageFlow_1xi2qr2">
+        <di:waypoint x="440" y="220" />
+        <di:waypoint x="440" y="352" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_15cqsk5_di" bpmnElement="SequenceFlow_15cqsk5">
+        <di:waypoint x="458" y="370" />
+        <di:waypoint x="540" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0wxs96j_di" bpmnElement="Task_0ik0cp5">
+        <dc:Bounds x="540" y="330" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0eeiqr3_di" bpmnElement="Task_0t7m3x6">
+        <dc:Bounds x="210" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0fswpsq_di" bpmnElement="SequenceFlow_0fswpsq">
+        <di:waypoint x="310" y="180" />
+        <di:waypoint x="390" y="180" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

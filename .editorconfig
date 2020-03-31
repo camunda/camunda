@@ -1,0 +1,17 @@
+
+[*]
+indent_style = space
+charset = utf-8
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.xml]
+indent_size = 2
+
+[*.html]
+indent_size = 2
+
+[*.md]
+indent_size = 2
+
