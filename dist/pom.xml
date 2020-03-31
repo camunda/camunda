@@ -134,7 +134,7 @@
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <extraJvmArguments>
-            -Xms128m -Dlog4j.configurationFile=../config/log4j2.xml
+            -Xms128m
             --illegal-access=deny
           </extraJvmArguments>
           <repositoryLayout>flat</repositoryLayout>
