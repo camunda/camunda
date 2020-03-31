@@ -28,7 +28,6 @@
       <artifactId>atomix-storage</artifactId>
       <groupId>io.zeebe</groupId>
     </dependency>
-
     <dependency>
       <artifactId>netty-transport</artifactId>
       <groupId>io.netty</groupId>

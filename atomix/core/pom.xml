@@ -39,14 +39,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-util</artifactId>
-    </dependency>
-    <dependency>
-      <artifactId>zeebe-test-util</artifactId>
-      <groupId>io.zeebe</groupId>
-    </dependency>
-    <dependency>
       <artifactId>atomix-cluster</artifactId>
       <groupId>io.zeebe</groupId>
     </dependency>
@@ -77,13 +69,21 @@
       <artifactId>hamcrest</artifactId>
       <groupId>org.hamcrest</groupId>
       <scope>test</scope>
-      <version>2.2</version>
     </dependency>
     <dependency>
       <artifactId>junit</artifactId>
       <groupId>junit</groupId>
       <scope>test</scope>
-      <version>4.13</version>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <artifactId>zeebe-test-util</artifactId>
+      <groupId>io.zeebe</groupId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <modelVersion>4.0.0</modelVersion>

@@ -27,12 +27,10 @@
     <dependency>
       <artifactId>atomix-utils</artifactId>
       <groupId>io.zeebe</groupId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <artifactId>simpleclient</artifactId>
       <groupId>io.prometheus</groupId>
-      <version>${prometheus.client.version}</version>
     </dependency>
 
     <dependency>
