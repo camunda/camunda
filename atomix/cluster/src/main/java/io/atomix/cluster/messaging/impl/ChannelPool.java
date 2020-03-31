@@ -129,7 +129,8 @@ class ChannelPool {
                           completeFuture(future, recursiveResult, recursiveError);
                         });
               } else {
-                currentFuture.whenComplete(
+                // LGTM false positive https://github.com/Semmle/ql/issues/3176
+                currentFuture.whenComplete( // lgtm [java/dereferenced-value-may-be-null]
                     (recursiveResult, recursiveError) -> {
                       completeFuture(future, recursiveResult, recursiveError);
                     });
