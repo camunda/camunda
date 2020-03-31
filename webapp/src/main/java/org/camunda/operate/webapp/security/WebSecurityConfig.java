@@ -24,6 +24,7 @@ import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -74,11 +75,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   };  
 
   @Override
-  protected UserDetailsService userDetailsService() {
-    return userDetailsService;
-  }
-  
-  @Override
   public void configure(HttpSecurity http) throws Exception {
     if(operateProperties.isCsrfPreventionEnabled()){
       cookieCSRFTokenRepository.setCookieName(X_CSRF_TOKEN);
@@ -108,6 +104,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .deleteCookies(COOKIE_JSESSIONID,X_CSRF_TOKEN)
       .and()
       .exceptionHandling().authenticationEntryPoint(this::failureHandler);
+  }
+
+  @Override
+  public void configure(AuthenticationManagerBuilder builder)
+      throws Exception {
+    builder.userDetailsService(userDetailsService);
   }
 
   private void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {

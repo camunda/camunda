@@ -19,8 +19,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -30,13 +28,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Profile("!" + SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 public class ElasticSearchUserDetailsService implements UserDetailsService {
 
-  private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
-
-  private static final String ACT_ADMIN_ROLE = "ACTRADMIN";
-
-  private static final String USER_ROLE = "USER";
-
   private static final Logger logger = LoggerFactory.getLogger(ElasticSearchUserDetailsService.class);
+
+  private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
+  private static final String ACT_ADMIN_ROLE = "ACTRADMIN";
+  private static final String USER_ROLE = "USER";
+  private static final String USER_DEFAULT_FIRSTNAME = "Demo";
+  private static final String USER_DEFAULT_LASTNAME = "user";
 
   @Autowired
   private UserStorage userStorage;
@@ -64,20 +62,22 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
     }
   }
 
-  private ElasticSearchUserDetailsService addUserWith(String username,String password,String role) {
+  private ElasticSearchUserDetailsService addUserWith(String username, String password, String role) {
     logger.info("Create user in ElasticSearch for username {}",username);
     String passwordEncoded = passwordEncoder.encode(password);
-    userStorage.create(UserEntity.from(username, passwordEncoded, role));
+    userStorage.create(UserEntity.from(username, passwordEncoded, role)
+      .setFirstname(USER_DEFAULT_FIRSTNAME)
+      .setLastname(USER_DEFAULT_LASTNAME));
     return this;
   }
   
   @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+  public User loadUserByUsername(String username) throws UsernameNotFoundException {
     try {
       UserEntity userEntity = userStorage.getByName(username);
-      return new User(userEntity.getUsername(), userEntity.getPassword(),true,
-          true, true,
-          true, toAuthorities(userEntity.getRole()));
+      return new User(userEntity.getUsername(), userEntity.getPassword(), toAuthorities(userEntity.getRole()))
+          .setFirstname(userEntity.getFirstname())
+          .setLastname(userEntity.getLastname());
     }catch(NotFoundException e) {
       throw new UsernameNotFoundException(String.format("User with username '%s' not found.",username),e);
     }
