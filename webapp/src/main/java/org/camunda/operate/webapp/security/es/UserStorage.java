@@ -14,7 +14,6 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.security.sso.SSOWebSecurityConfig;
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;

@@ -32,6 +32,12 @@
 			},
 			"username": {
 				"type": "keyword"
+			},
+			"firstname": {
+				"type": "keyword"
+			},
+			"lastname": {
+				"type": "keyword"
 			}
 		}
 	}

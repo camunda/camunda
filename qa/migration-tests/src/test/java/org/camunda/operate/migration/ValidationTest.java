@@ -12,12 +12,14 @@ import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.SequenceFlowEntity;
+import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
+import org.camunda.operate.es.schema.indices.UserIndex;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.es.reader.IncidentStatisticsReader;
@@ -186,6 +188,14 @@ public class ValidationTest {
         config.getIncidentCount() - maxNotRunning,
         (long) config.getIncidentCount()
      );
+  }
+
+	@Test
+	public void testUsers() throws IOException {
+		final List<UserEntity> users = entityReader.getEntitiesFor("user", UserEntity.class);
+		assertThat(users.size()).isEqualTo(2);
+		assertThat(users).extracting(UserIndex.FIRSTNAME).containsOnly("Demo");
+		assertThat(users).extracting(UserIndex.LASTNAME).containsOnly("user");
   }
 
 	protected long getAggregationCountFor(SearchResponse response, String aggregationName) {

@@ -19,6 +19,8 @@ import com.auth0.jwt.interfaces.Claim;
 @Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 public class SSOUserService extends AbstractUserService {
 
+  private static final String EMPTY = "";
+
   @Autowired
   private SSOWebSecurityConfig configuration;
 
@@ -35,6 +37,9 @@ public class SSOUserService extends AbstractUserService {
     if (claims.containsKey(configuration.getNameKey())) {
       name = claims.get(configuration.getNameKey()).asString();
     }
-    return UserDto.fromName(name);
+    return new UserDto()
+        .setFirstname(EMPTY)
+        .setLastname(name)
+        .setCanLogout(false);
   }
 }
