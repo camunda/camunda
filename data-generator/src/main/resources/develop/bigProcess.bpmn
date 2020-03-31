@@ -12,14 +12,14 @@
     <bpmn:sequenceFlow id="SequenceFlow_0wumr00" sourceRef="StartEvent_1" targetRef="taskA" />
     <bpmn:sequenceFlow id="SequenceFlow_0j3eksh" sourceRef="taskA" targetRef="ExclusiveGateway_0cjcl1k" />
     <bpmn:sequenceFlow id="SequenceFlow_1jeebm1" name="yes" sourceRef="ExclusiveGateway_0cjcl1k" targetRef="taskB">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">i&lt;=loopCardinality</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=i&lt;=loopCardinality</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1gi2xny" sourceRef="taskB" targetRef="taskA" />
     <bpmn:endEvent id="EndEvent_02f1al1">
       <bpmn:incoming>SequenceFlow_07u0xkc</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_07u0xkc" name="no" sourceRef="ExclusiveGateway_0cjcl1k" targetRef="EndEvent_02f1al1">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">i&gt;loopCardinality</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=i&gt;loopCardinality</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:serviceTask id="taskA" name="Task A">
       <bpmn:extensionElements>
@@ -37,7 +37,7 @@
       <bpmn:outgoing>SequenceFlow_1gi2xny</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics>
         <bpmn:extensionElements>
-          <zeebe:loopCharacteristics inputCollection="clients" inputElement="client" />
+          <zeebe:loopCharacteristics inputCollection="=clients" inputElement="client" />
         </bpmn:extensionElements>
       </bpmn:multiInstanceLoopCharacteristics>
     </bpmn:serviceTask>

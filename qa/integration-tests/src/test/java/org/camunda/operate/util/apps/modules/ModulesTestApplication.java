@@ -6,7 +6,7 @@
 package org.camunda.operate.util.apps.modules;
 
 import org.camunda.operate.Application;
-import org.camunda.operate.TestApplication;
+import org.camunda.operate.util.TestApplication;
 import org.camunda.operate.data.DataGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

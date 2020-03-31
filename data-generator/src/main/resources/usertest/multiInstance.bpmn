@@ -26,7 +26,7 @@
       <bpmn:outgoing>SequenceFlow_0pynv0i</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics isSequential="true">
         <bpmn:extensionElements>
-          <zeebe:loopCharacteristics inputCollection="items" inputElement="item" />
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
         </bpmn:extensionElements>
       </bpmn:multiInstanceLoopCharacteristics>
     </bpmn:serviceTask>
@@ -35,7 +35,7 @@
       <bpmn:outgoing>SequenceFlow_0lfp9em</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics>
         <bpmn:extensionElements>
-          <zeebe:loopCharacteristics inputCollection="items" inputElement="item" />
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
         </bpmn:extensionElements>
       </bpmn:multiInstanceLoopCharacteristics>
       <bpmn:startEvent id="startFilterMap" name="Start&#10;Filter-Map">

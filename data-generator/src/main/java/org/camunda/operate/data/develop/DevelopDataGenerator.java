@@ -384,7 +384,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       }
 
       if (version == 3) {
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "complexProcess", "{\"goUp\": " + random.nextInt(10) + "}"));
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "complexProcess", "{\"goUp\": " + random.nextInt(5) + "}"));
       }
 
     }

@@ -98,7 +98,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance model = Bpmn.createExecutableProcess(processId)
         .startEvent()
           .serviceTask("taskA")
-          .zeebeTaskType("taskA")
+          .zeebeJobType("taskA")
         .endEvent().done();
 
     final Long workflowKey = deployWorkflow(model,"emptyNameProcess.bpmn");
@@ -248,7 +248,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final BpmnModelInstance modelInstance =
       Bpmn.createExecutableProcess(processId)
         .startEvent("start")
-          .serviceTask(activityId).zeebeTaskType(activityId)
+          .serviceTask(activityId).zeebeJobType(activityId)
         .endEvent()
       .done();
     deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
@@ -300,7 +300,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final BpmnModelInstance modelInstance =
       Bpmn.createExecutableProcess(processId)
         .startEvent("start")
-        .serviceTask(activityId).zeebeTaskType(activityId)
+        .serviceTask(activityId).zeebeJobType(activityId)
         .endEvent()
         .done();
     deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");

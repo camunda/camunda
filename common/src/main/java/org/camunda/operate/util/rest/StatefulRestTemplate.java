@@ -97,7 +97,7 @@ public class StatefulRestTemplate extends RestTemplate {
 
   private ResponseEntity<?> saveCSRFTokenWhenAvailable(ResponseEntity<?> response) {
     List<String> csrfHeaders = response.getHeaders().get("X-CSRF-TOKEN");
-    if(!csrfHeaders.isEmpty()) {
+    if (csrfHeaders != null && !csrfHeaders.isEmpty()) {
       csrfToken = csrfHeaders.get(0);
     }
     return response;

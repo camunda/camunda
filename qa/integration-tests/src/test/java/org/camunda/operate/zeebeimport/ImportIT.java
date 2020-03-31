@@ -8,8 +8,10 @@ package org.camunda.operate.zeebeimport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
@@ -157,7 +159,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
-        .serviceTask("task1").zeebeTaskType("task1")
+        .serviceTask("task1").zeebeJobType("task1")
       .endEvent()
       .done();
     deployWorkflow(workflow, "demoProcess_v_1.bpmn");
@@ -193,7 +195,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
-        .serviceTask("task1").zeebeTaskType("task1")
+        .serviceTask("task1").zeebeJobType("task1")
       .endEvent()
       .done();
     deployWorkflow(workflow, "demoProcess_v_1.bpmn");
@@ -300,12 +302,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
         .exclusiveGateway(activityId)
-        .sequenceFlowId("s1").condition("foo < 5")
-          .serviceTask("task1").zeebeTaskType("task1")
+        .sequenceFlowId("s1").condition("=foo < 5")
+          .serviceTask("task1").zeebeJobType("task1")
           .endEvent()
         .moveToLastGateway()
-        .sequenceFlowId("s2").condition("foo >= 5")
-          .serviceTask("task2").zeebeTaskType("task2")
+        .sequenceFlowId("s2").condition("=foo >= 5")
+          .serviceTask("task2").zeebeJobType("task2")
           .endEvent()
       .done();
     final String resourceName = processId + ".bpmn";
@@ -364,12 +366,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
         .exclusiveGateway(activityId)
-        .sequenceFlowId("s1").condition("foo < 5")
-          .serviceTask("task1").zeebeTaskType("task1")
+        .sequenceFlowId("s1").condition("=foo < 5")
+          .serviceTask("task1").zeebeJobType("task1")
           .endEvent()
         .moveToLastGateway()
-        .sequenceFlowId("s2").condition("foo >= 5")
-          .serviceTask("task2").zeebeTaskType("task2")
+        .sequenceFlowId("s2").condition("=foo >= 5")
+          .serviceTask("task2").zeebeJobType("task2")
           .endEvent()
       .done();
     final String resourceName = processId + ".bpmn";
@@ -420,12 +422,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
         .exclusiveGateway(activityId)
-        .sequenceFlowId("s1").condition("foo < 5")
-          .serviceTask("task1").zeebeTaskType("task1")
+        .sequenceFlowId("s1").condition("=foo < 5")
+          .serviceTask("task1").zeebeJobType("task1")
           .endEvent()
         .moveToLastGateway()
-        .sequenceFlowId("s2").condition("foo >= 5")
-          .serviceTask("task2").zeebeTaskType("task2")
+        .sequenceFlowId("s2").condition("=foo >= 5")
+          .serviceTask("task2").zeebeJobType("task2")
           .endEvent()
       .done();
     final String resourceName = processId + ".bpmn";
@@ -455,11 +457,11 @@ public class ImportIT extends OperateZeebeIntegrationTest {
       .startEvent()
       .eventBasedGateway(activityId)
       .intermediateCatchEvent(
-        "msg-1", i -> i.message(m -> m.name("msg-1").zeebeCorrelationKey("key1")))
+        "msg-1", i -> i.message(m -> m.name("msg-1").zeebeCorrelationKey("=key1")))
       .endEvent()
       .moveToLastGateway()
       .intermediateCatchEvent(
-        "msg-2", i -> i.message(m -> m.name("msg-2").zeebeCorrelationKey("key2")))
+        "msg-2", i -> i.message(m -> m.name("msg-2").zeebeCorrelationKey("=key2")))
       .endEvent()
       .done();
     final String resourceName = processId + ".bpmn";
@@ -560,6 +562,46 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(activity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
+  }
+
+  @Test
+  public void testMessageEventPassed() {
+    // having
+    final OffsetDateTime testStartTime = OffsetDateTime.now();
+
+    String processId = "eventProcess";
+    deployWorkflow("messageEventProcess_v_1.bpmn");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
+    sleepFor(1000);
+
+    //when
+    sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+
+    //assert activity instance tree
+    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
+    assertThat(tree.getChildren()).hasSize(3);
+    final ActivityInstanceDto activity = tree.getChildren().get(1);
+    assertThat(activity.getState()).isEqualTo(ActivityState.COMPLETED);
+    assertThat(activity.getEndDate()).isNotNull();
+    assertThat(activity.getEndDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+
+  }
+
+  private void sendMessages(String messageName, String payload, int count, String correlationKey) {
+    for (int i = 0; i<count; i++) {
+      zeebeClient.newPublishMessageCommand()
+          .messageName(messageName)
+          .correlationKey(correlationKey)
+          .variables(payload)
+          .timeToLive(Duration.ofSeconds(30))
+          .messageId(UUID.randomUUID().toString())
+          .send().join();
+    }
+  }
+  private void sendMessages(String messageName, String payload, int count) {
+    sendMessages(messageName, payload, count, String.valueOf(5));
   }
 
   @Test

@@ -44,17 +44,17 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
-        .serviceTask("task1").zeebeTaskType("task1")
+        .serviceTask("task1").zeebeJobType("task1")
         .subProcess("subProcess")
-          .zeebeInput("var1", "subprocessVarIn")
+          .zeebeInput("=var1", "subprocessVarIn")
         .embeddedSubProcess()
         .startEvent()
-          .serviceTask("task2").zeebeTaskType("task2")
-          .zeebeInput("subprocessVarIn", "taskVarIn")
-          .zeebeOutput("taskVarOut", "varOut")
+          .serviceTask("task2").zeebeJobType("task2")
+          .zeebeInput("=subprocessVarIn", "taskVarIn")
+          .zeebeOutput("=taskVarOut", "varOut")
         .endEvent()
         .subProcessDone()
-        .serviceTask("task3").zeebeTaskType("task3")
+        .serviceTask("task3").zeebeJobType("task3")
       .endEvent()
       .done();
     deployWorkflow(workflow, processId + ".bpmn");

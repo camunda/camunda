@@ -236,6 +236,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     int attempts = 0;
     while (!completeJobHandler.isTaskCompleted() && attempts < 10) {
       sleepFor(200);
+      attempts++;
     }
     if (attempts == 10) {
       logger.debug("Could not complete the task {} for workflow instance id {}", jobType, workflowInstanceKey);

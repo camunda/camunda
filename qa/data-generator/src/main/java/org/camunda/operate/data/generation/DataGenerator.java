@@ -131,13 +131,13 @@ public class DataGenerator {
   private BpmnModelInstance createModel(String bpmnProcessId) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
     .startEvent("start")
-      .serviceTask("task1").zeebeTaskType("task1")
+      .serviceTask("task1").zeebeJobType("task1")
         .zeebeInput("var1", "varIn")
         .zeebeOutput("varOut", "var2")
-      .serviceTask("task2").zeebeTaskType("task2")
-      .serviceTask("task3").zeebeTaskType("task3")
-      .serviceTask("task4").zeebeTaskType("task4")
-      .serviceTask("task5").zeebeTaskType("task5")
+      .serviceTask("task2").zeebeJobType("task2")
+      .serviceTask("task3").zeebeJobType("task3")
+      .serviceTask("task4").zeebeJobType("task4")
+      .serviceTask("task5").zeebeJobType("task5")
     .endEvent()
     .done();
   }

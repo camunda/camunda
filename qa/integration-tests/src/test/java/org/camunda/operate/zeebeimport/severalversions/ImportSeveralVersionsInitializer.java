@@ -158,7 +158,7 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   private BpmnModelInstance createModel() {
     return Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
         .startEvent("start")
-        .serviceTask("task1").zeebeTaskType(JOB_TYPE)
+        .serviceTask("task1").zeebeJobType(JOB_TYPE)
         .endEvent()
         .done();
   }

@@ -17,7 +17,6 @@ import java.util.function.Predicate;
 
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
