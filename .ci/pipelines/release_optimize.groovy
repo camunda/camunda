@@ -13,8 +13,10 @@ static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 static String PUBLIC_DOCKER_IMAGE() { return "registry.camunda.cloud/optimize-ee/optimize" }
 
-static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME() {
-  return isStagingJenkins() ? 'stage-downloads-camunda-cloud-enterprise-release' : 'downloads-camunda-cloud-enterprise-release'
+static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME(boolean pushChanges) {
+  return (!pushChanges || isStagingJenkins()) ?
+    'stage-downloads-camunda-cloud-enterprise-release' :
+    'downloads-camunda-cloud-enterprise-release'
 }
 
 static boolean isStagingJenkins() {
@@ -231,12 +233,9 @@ pipeline {
       }
     }
     stage('Upload to DownloadCenter storage bucket') {
-      when {
-        // Only perform upload when PUSH_CHANGES is set or we're on a stage jenkins (Stage has a separate bucket)
-        expression { params.PUSH_CHANGES == true || isStagingJenkins() }
-      }
       environment {
-        TARGET_PATH = "${DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME()}/optimize/${params.RELEASE_VERSION}/"
+        // Use stage bucket when doing test release or when on a staging Jenkins
+        TARGET_PATH = "${DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME(params.PUSH_CHANGES)}/optimize/${params.RELEASE_VERSION}/"
       }
       steps {
         container('gcloud') {
