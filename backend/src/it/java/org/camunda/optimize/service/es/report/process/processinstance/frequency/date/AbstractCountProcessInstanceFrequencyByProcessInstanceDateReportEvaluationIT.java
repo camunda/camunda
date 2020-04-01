@@ -514,7 +514,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
   public void countGroupedByMonth() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(3);
-    OffsetDateTime now = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime now = OffsetDateTime.parse("2019-06-15T12:00:00+01:00").truncatedTo(ChronoUnit.DAYS);
     updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.MONTHS);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
