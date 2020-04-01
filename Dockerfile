@@ -21,6 +21,10 @@ VOLUME ${ZB_HOME}/data
 
 COPY docker/utils/startup.sh /usr/local/bin
 
+### Set execution flag (otherwise, if image is built in a Windows environment, the start scripts won't be executable)
+RUN chmod +x ${ZB_HOME}/bin/broker
+RUN chmod +x ${ZB_HOME}/bin/gateway
+
 RUN apt-get --purge remove -y --auto-remove curl
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
