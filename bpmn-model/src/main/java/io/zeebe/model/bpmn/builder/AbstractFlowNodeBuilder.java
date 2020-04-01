@@ -76,14 +76,17 @@ public abstract class AbstractFlowNodeBuilder<
       getCurrentSequenceFlowBuilder().name(name);
     }
     final ConditionExpression conditionExpression = createInstance(ConditionExpression.class);
-    final String zeebeExpression = asZeebeExpression(condition);
-    conditionExpression.setTextContent(zeebeExpression);
+    conditionExpression.setTextContent(condition);
     getCurrentSequenceFlowBuilder().condition(conditionExpression);
     return myself;
   }
 
   public B condition(final String condition) {
     return condition(null, condition);
+  }
+
+  public B conditionExpression(final String conditionExpression) {
+    return condition(null, asZeebeExpression(conditionExpression));
   }
 
   protected void connectTarget(final FlowNode target) {

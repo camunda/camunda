@@ -89,7 +89,9 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
               t ->
                   t.zeebeJobType(JOB_TYPE)
                       .multiInstance(
-                          m -> m.parallel().zeebeInputCollection(INPUT_COLLECTION_VARIABLE)))
+                          m ->
+                              m.parallel()
+                                  .zeebeInputCollectionExpression(INPUT_COLLECTION_VARIABLE)))
           .serviceTask("task-after", t -> t.zeebeJobType("nope"))
           .done();
 

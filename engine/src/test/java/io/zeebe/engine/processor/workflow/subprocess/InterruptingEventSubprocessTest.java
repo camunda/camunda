@@ -82,7 +82,8 @@ public class InterruptingEventSubprocessTest {
       },
       {
         "message",
-        eventSubprocess(s -> s.message(b -> b.name(messageName).zeebeCorrelationKey("key"))),
+        eventSubprocess(
+            s -> s.message(b -> b.name(messageName).zeebeCorrelationKeyExpression("key"))),
         eventTrigger(
             key -> {
               RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
@@ -327,7 +328,7 @@ public class InterruptingEventSubprocessTest {
             "message-event-subprocess",
             s ->
                 s.startEvent()
-                    .message(m -> m.name("other-message").zeebeCorrelationKey("key"))
+                    .message(m -> m.name("other-message").zeebeCorrelationKeyExpression("key"))
                     .endEvent())
         .eventSubProcess(
             "timer-event-subprocess",

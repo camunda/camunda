@@ -44,7 +44,9 @@ public class ZeebeMultiInstanceLoopCharacteristicsValidationTest
             .startEvent()
             .serviceTask(
                 "task",
-                t -> t.zeebeJobType("test").multiInstance(b -> b.zeebeInputCollection(null)))
+                t ->
+                    t.zeebeJobType("test")
+                        .multiInstance(b -> b.zeebeInputCollectionExpression(null)))
             .done(),
         singletonList(
             expect(
@@ -59,7 +61,8 @@ public class ZeebeMultiInstanceLoopCharacteristicsValidationTest
                 t ->
                     t.zeebeJobType("test")
                         .multiInstance(
-                            b -> b.zeebeInputCollection("xs").zeebeOutputCollection("ys")))
+                            b ->
+                                b.zeebeInputCollectionExpression("xs").zeebeOutputCollection("ys")))
             .done(),
         singletonList(
             expect(
@@ -73,7 +76,10 @@ public class ZeebeMultiInstanceLoopCharacteristicsValidationTest
                 "task",
                 t ->
                     t.zeebeJobType("test")
-                        .multiInstance(b -> b.zeebeInputCollection("xs").zeebeOutputElement("y")))
+                        .multiInstance(
+                            b ->
+                                b.zeebeInputCollectionExpression("xs")
+                                    .zeebeOutputElementExpression("y")))
             .done(),
         singletonList(
             expect(

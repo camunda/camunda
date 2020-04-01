@@ -241,7 +241,7 @@ public class ErrorEventTest {
             .subProcess(
                 "subprocess",
                 s ->
-                    s.multiInstance(m -> m.zeebeInputCollection("items"))
+                    s.multiInstance(m -> m.zeebeInputCollectionExpression("items"))
                         .embeddedSubProcess()
                         .eventSubProcess("error-subprocess", eventSubprocess)
                         .startEvent()

@@ -50,12 +50,15 @@ public final class EventSubscriptionIncidentTest {
       Bpmn.createExecutableProcess(WF_RECEIVE_TASK_ID)
           .startEvent()
           .receiveTask("task")
-          .message(m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1))
+          .message(
+              m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_1))
           .boundaryEvent(
               MESSAGE_NAME_2,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
+                      m ->
+                          m.name(MESSAGE_NAME_2)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_2)))
           .endEvent()
           .done();
   private static final String WF_RECEIVE_TASK_2_ID = "wf-receive-task-2";
@@ -63,12 +66,15 @@ public final class EventSubscriptionIncidentTest {
       Bpmn.createExecutableProcess(WF_RECEIVE_TASK_2_ID)
           .startEvent()
           .receiveTask("task")
-          .message(m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2))
+          .message(
+              m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_2))
           .boundaryEvent(
               MESSAGE_NAME_1,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
+                      m ->
+                          m.name(MESSAGE_NAME_1)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_1)))
           .endEvent()
           .done();
   private static final String WF_EVENT_BASED_GATEWAY_ID = "wf-event-based-gateway";
@@ -80,14 +86,18 @@ public final class EventSubscriptionIncidentTest {
               MESSAGE_NAME_1,
               i ->
                   i.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
+                      m ->
+                          m.name(MESSAGE_NAME_1)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_1)))
           .endEvent()
           .moveToLastGateway()
           .intermediateCatchEvent(
               MESSAGE_NAME_2,
               i ->
                   i.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
+                      m ->
+                          m.name(MESSAGE_NAME_2)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_2)))
           .endEvent()
           .done();
   private static final String WF_EVENT_BASED_GATEWAY_2_ID = "wf-event-based-gateway-2";
@@ -99,14 +109,18 @@ public final class EventSubscriptionIncidentTest {
               MESSAGE_NAME_2,
               i ->
                   i.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
+                      m ->
+                          m.name(MESSAGE_NAME_2)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_2)))
           .endEvent()
           .moveToLastGateway()
           .intermediateCatchEvent(
               MESSAGE_NAME_1,
               i ->
                   i.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
+                      m ->
+                          m.name(MESSAGE_NAME_1)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_1)))
           .endEvent()
           .done();
   private static final String WF_BOUNDARY_EVENT_ID = "wf-boundary-event";
@@ -118,14 +132,18 @@ public final class EventSubscriptionIncidentTest {
               MESSAGE_NAME_1,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
+                      m ->
+                          m.name(MESSAGE_NAME_1)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_1)))
           .endEvent()
           .moveToActivity("task")
           .boundaryEvent(
               MESSAGE_NAME_2,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
+                      m ->
+                          m.name(MESSAGE_NAME_2)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_2)))
           .endEvent()
           .done();
   private static final String WF_BOUNDARY_EVENT_2_ID = "wf-boundary-event-2";
@@ -137,14 +155,18 @@ public final class EventSubscriptionIncidentTest {
               MESSAGE_NAME_2,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
+                      m ->
+                          m.name(MESSAGE_NAME_2)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_2)))
           .endEvent()
           .moveToActivity("task")
           .boundaryEvent(
               MESSAGE_NAME_1,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
+                      m ->
+                          m.name(MESSAGE_NAME_1)
+                              .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE_1)))
           .endEvent()
           .done();
 

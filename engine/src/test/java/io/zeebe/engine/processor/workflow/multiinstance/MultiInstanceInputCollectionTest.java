@@ -49,7 +49,7 @@ public final class MultiInstanceInputCollectionTest {
                   t.zeebeJobType("test")
                       .multiInstance(
                           b ->
-                              b.zeebeInputCollection(INPUT_COLLECTION)
+                              b.zeebeInputCollectionExpression(INPUT_COLLECTION)
                                   .zeebeInputElement(INPUT_ELEMENT)))
           .endEvent()
           .done();

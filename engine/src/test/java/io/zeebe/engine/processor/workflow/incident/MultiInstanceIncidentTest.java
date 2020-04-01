@@ -46,7 +46,7 @@ public final class MultiInstanceIncidentTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
   private String jobType;
 
-  private static BpmnModelInstance createWorkflow(String jobType) {
+  private static BpmnModelInstance createWorkflow(final String jobType) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .serviceTask(
@@ -55,9 +55,9 @@ public final class MultiInstanceIncidentTest {
                 t.zeebeJobType(jobType)
                     .multiInstance(
                         b ->
-                            b.zeebeInputCollection(INPUT_COLLECTION)
+                            b.zeebeInputCollectionExpression(INPUT_COLLECTION)
                                 .zeebeInputElement(INPUT_ELEMENT)
-                                .zeebeOutputElement("sum(undefined_var)")
+                                .zeebeOutputElementExpression("sum(undefined_var)")
                                 .zeebeOutputCollection("results")))
         .endEvent()
         .done();

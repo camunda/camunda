@@ -58,7 +58,10 @@ public final class MessageCorrelationTest {
             Bpmn.createExecutableProcess("process")
                 .startEvent()
                 .intermediateCatchEvent(CATCH_EVENT_ELEMENT_ID)
-                .message(c -> c.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_KEY_VARIABLE))
+                .message(
+                    c ->
+                        c.name(MESSAGE_NAME)
+                            .zeebeCorrelationKeyExpression(CORRELATION_KEY_VARIABLE))
                 .endEvent()
                 .done());
   }
