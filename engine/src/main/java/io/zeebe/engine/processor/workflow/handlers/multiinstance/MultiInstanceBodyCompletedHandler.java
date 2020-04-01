@@ -12,7 +12,6 @@ import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Optional;
@@ -27,7 +26,6 @@ public final class MultiInstanceBodyCompletedHandler extends AbstractMultiInstan
 
   private final MsgPackReader variableReader = new MsgPackReader();
   private final MsgPackWriter variableWriter = new MsgPackWriter();
-  private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
 
   private final ExpandableArrayBuffer variableBuffer = new ExpandableArrayBuffer();
   private final DirectBuffer resultBuffer = new UnsafeBuffer(0, 0);

@@ -83,12 +83,6 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-msgpack-json-path</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
         <artifactId>zeebe-msgpack-value</artifactId>
         <version>${project.version}</version>
       </dependency>
