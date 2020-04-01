@@ -21,10 +21,12 @@ import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport;
 import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport.Scope;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -32,7 +34,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.core.env.Environment;
 
 public class StandaloneGateway {
-
+  private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
   private final GatewayCfg gatewayCfg;
@@ -123,6 +125,12 @@ public class StandaloneGateway {
     public void run(final String... args) throws Exception {
       final GatewayCfg gatewayCfg = configuration;
       gatewayCfg.init();
+
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Version: {}", VersionUtil.getVersion());
+        LOG.info("Starting standalone gateway with configuration {}", gatewayCfg.toJson());
+      }
+
       new StandaloneGateway(gatewayCfg).run();
     }
   }
