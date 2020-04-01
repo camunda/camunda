@@ -9,9 +9,10 @@ import equal from 'deep-equal';
 
 import BranchControlPanel from './BranchControlPanel';
 import {BPMNDiagram, MessageBox} from 'components';
+import {getOptimizeVersion} from 'config';
 
 import {loadFrequencyData} from './service';
-import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
+import {incompatibleFilters, containsSuspensionFilter, loadProcessDefinitionXml} from 'services';
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
 
@@ -34,12 +35,33 @@ export default class BranchAnalysis extends React.Component {
       hoveredNode: null,
       gateway: null,
       endEvent: null,
+      optimizeVersion: 'latest',
       xml: null
     };
   }
 
+  async componentDidMount() {
+    const version = (await getOptimizeVersion()).split('.');
+    version.length = 2;
+
+    this.setState({
+      optimizeVersion: version.join('.')
+    });
+  }
+
   render() {
-    const {xml, config, hoveredControl, hoveredNode, gateway, endEvent, data} = this.state;
+    const {
+      xml,
+      config,
+      hoveredControl,
+      hoveredNode,
+      gateway,
+      endEvent,
+      data,
+      optimizeVersion
+    } = this.state;
+
+    const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/update/2.7-to-3.0/#suspension-filter`;
 
     return (
       <div className="BranchAnalysis">
@@ -56,6 +78,14 @@ export default class BranchAnalysis extends React.Component {
         />
         {config.filter && incompatibleFilters(config.filter) && (
           <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
+        )}
+        {config.filter && containsSuspensionFilter(config.filter) && (
+          <MessageBox
+            type="warning"
+            dangerouslySetInnerHTML={{
+              __html: t('common.filter.suspensionFilterWarning', {docsLink})
+            }}
+          />
         )}
         <div className="content">
           <div className="BranchAnalysis__diagram">

@@ -13,9 +13,11 @@ import moment from 'moment';
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {ReportRenderer, LoadingIndicator, MessageBox, EntityNameForm} from 'components';
+import {getOptimizeVersion} from 'config';
 
 import {
   incompatibleFilters,
+  containsSuspensionFilter,
   updateEntity,
   createEntity,
   evaluateReport,
@@ -36,8 +38,18 @@ export default withRouter(
         redirect: '',
         conflict: null,
         originalData: this.props.report,
+        optimizeVersion: 'latest',
         report: this.props.report
       };
+
+      async componentDidMount() {
+        const version = (await getOptimizeVersion()).split('.');
+        version.length = 2;
+
+        this.setState({
+          optimizeVersion: version.join('.')
+        });
+      }
 
       showSaveError = name => {
         this.setState({
@@ -188,12 +200,14 @@ export default withRouter(
       closeConflictModal = () => this.setState({conflict: null});
 
       render() {
-        const {report, loadingReportData, conflict, redirect} = this.state;
+        const {report, loadingReportData, conflict, redirect, optimizeVersion} = this.state;
         const {name, lastModifier, lastModified, data, combined, reportType} = report;
 
         if (redirect) {
           return <Redirect to={redirect} />;
         }
+
+        const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/update/2.7-to-3.0/#suspension-filter`;
 
         return (
           <div className="Report">
@@ -232,6 +246,15 @@ export default withRouter(
 
             {data?.filter && incompatibleFilters(data.filter) && (
               <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
+            )}
+
+            {data?.filter && containsSuspensionFilter(data.filter) && (
+              <MessageBox
+                type="warning"
+                dangerouslySetInnerHTML={{
+                  __html: t('common.filter.suspensionFilterWarning', {docsLink})
+                }}
+              />
             )}
 
             {data?.groupBy?.type === 'endDate' &&

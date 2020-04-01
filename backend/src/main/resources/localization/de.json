@@ -721,7 +721,8 @@
         "executing": "wartend oder in Ausführung",
         "previewLabel": "Das ist der Filter, der gerade erstellt wird: "
       },
-      "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."
+      "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
+      "suspensionFilterWarning": "Bitte beachten Sie die Einschränkungen der Suspensions-Filter, die in der <a href='{docsLink}'>Optimize Dokumentation</a> beschrieben sind."
     },
     "definitionSelection": {
       "latest": "Neueste",

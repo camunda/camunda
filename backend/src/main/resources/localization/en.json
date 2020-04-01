@@ -721,7 +721,8 @@
         "executing": "pending or executing",
         "previewLabel": "This is the filter you are about to create: "
       },
-      "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
+      "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other",
+      "suspensionFilterWarning": "Please note the limitations of the Suspension Filter described in the <a href='{docsLink}'>Optimize documentation</a>."
     },
     "definitionSelection": {
       "latest": "Latest",
