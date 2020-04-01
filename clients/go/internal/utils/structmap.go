@@ -38,6 +38,11 @@ func MapMarshal(iface interface{}, tag string, omitempty, omitminus bool) map[st
 
 func MapStructMarshal(value reflect.Value, tag string, omitempty, omitminus bool) map[string]interface{} {
 	m := make(map[string]interface{})
+
+	if !value.IsValid() {
+		return m
+	}
+
 	typeof := value.Type()
 	for i := 0; i < typeof.NumField(); i++ {
 		fieldType := typeof.Field(i)
