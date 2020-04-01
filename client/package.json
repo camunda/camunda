@@ -44,7 +44,7 @@
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^10.0.0",
     "jest-styled-components": "^6.3.4",
-    "lint-staged": "^9.5.0",
+    "lint-staged": "^10.1.1",
     "prettier": "^2.0.2",
     "react-scripts": "3.4.1",
     "react-test-renderer": "^16.13.1"
@@ -52,8 +52,7 @@
   "lint-staged": {
     "{src,e2e}/**/*.js": [
       "eslint",
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   },
   "proxy": "http://localhost:8080",
