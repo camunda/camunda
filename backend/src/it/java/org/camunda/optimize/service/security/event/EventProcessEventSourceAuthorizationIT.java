@@ -37,6 +37,11 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
     // given
     final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
     final String eventProcessMappingId = eventProcessMapping.getId();
+    elasticSearchIntegrationTestExtension.addProcessDefinitionToElasticsearch(
+      PROCESS_DEF_KEY,
+      null,
+      "1"
+    );
     final EventSourceEntryDto eventSourceEntry = createSimpleCamundaEventSourceEntry(PROCESS_DEF_KEY);
     eventProcessMapping.getEventSources().add(eventSourceEntry);
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY);

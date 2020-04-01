@@ -161,9 +161,9 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
                .build())
       .build());
 
-    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryForDeployedProcessWithBusinessKey(
+    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
       processInstanceEngineDto);
-    List<EventSourceEntryDto> secondEventSource = createExternalEventSource();
+    List<EventSourceEntryDto> secondEventSource = createExternalEventSourceAsList();
 
     createAndPublishEventMapping(mappingsForEventProcess, Stream.of(firstEventSource, secondEventSource).flatMap(
       Collection::stream).collect(Collectors.toList()));
@@ -178,9 +178,10 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
-        assertProcessInstance(processInstanceDto,
-                              processInstanceEngineDto.getBusinessKey(),
-                              Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
+        assertProcessInstance(
+          processInstanceDto,
+          processInstanceEngineDto.getBusinessKey(),
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
         List<SimpleProcessVariableDto> expectedVariabes = extractExpectedEngineVariables(variableTypeToVariableMap);
         expectedVariabes.add(expectedExternalEventVariable());
@@ -217,7 +218,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
       .flatMap(entry -> entry.getValue().entrySet().stream()
         .map(variableProperties ->
                new SimpleProcessVariableDto(variableProperties.getKey(), variableProperties.getKey(),
-                                            entry.getKey().getId(), variableProperties.getValue().toString(), 1)))
+                                            entry.getKey().getId(), variableProperties.getValue().toString(), 1
+               )))
       .collect(Collectors.toList());
   }
 

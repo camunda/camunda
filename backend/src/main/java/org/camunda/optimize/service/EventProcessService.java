@@ -86,6 +86,7 @@ public class EventProcessService {
   );
 
   private final EngineDefinitionAuthorizationService definitionAuthorizationService;
+  private final EventProcessDefinitionService eventProcessDefinitionService;
   private final ReportService reportService;
   private final ReportRelationService reportRelationService;
   private final CollectionWriter collectionWriter;
@@ -303,10 +304,28 @@ public class EventProcessService {
       throw new OptimizeValidationException("Sources for an event based process cannot be null");
     }
     validateAccessToCamundaEventSourcesOrFail(userId, eventProcessMappingDto);
+    validateNoEventProcessesAsEventSource(eventProcessMappingDto);
     validateNoDuplicateCamundaEventSources(eventProcessMappingDto);
     validateNoDuplicateExternalEventSources(eventProcessMappingDto);
   }
 
+  private void validateNoEventProcessesAsEventSource(final EventProcessMappingDto eventProcessMappingDto) {
+    List<EventSourceEntryDto> eventProcessEventSources = eventProcessMappingDto.getEventSources()
+      .stream()
+      .filter(eventSource -> eventSource.getType().equals(EventSourceType.CAMUNDA))
+      .filter(eventSource ->
+                eventProcessDefinitionService
+                  .getEventProcessDefinitionByKey(eventSource.getProcessDefinitionKey())
+                  .isPresent())
+      .collect(toList());
+    if (!eventProcessEventSources.isEmpty()) {
+      final String errorMessage = String.format(
+        "The following event sources are not permitted as they are event processes themselves: %s",
+        eventProcessEventSources
+      );
+      throw new OptimizeConflictException(errorMessage);
+    }
+  }
 
   private boolean validateEventSourceAuthorisation(final String userId, final EventSourceEntryDto eventSource) {
     return eventSource.getType().equals(EventSourceType.EXTERNAL)

@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
@@ -100,6 +101,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
@@ -640,6 +642,38 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       EVENT_PROCESS_DEFINITION_INDEX_NAME, eventProcessDefinitionDto.getId(), eventProcessDefinitionDto
     );
     return eventProcessDefinitionDto;
+  }
+
+  public ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
+                                                                          final String name,
+                                                                          final String version) {
+    final String versionValue = Optional.ofNullable(version).orElse("1");
+    final ProcessDefinitionOptimizeDto processDefinitionDto = ProcessDefinitionOptimizeDto.builder()
+      .id(key + "-" + version)
+      .key(key)
+      .name(name)
+      .version(versionValue)
+      .bpmn20Xml(key + versionValue)
+      .build();
+    addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME, processDefinitionDto.getId(), processDefinitionDto
+    );
+    return processDefinitionDto;
+  }
+
+  public List<ProcessDefinitionOptimizeDto> addProcessDefinitionForEachVersionDtoToElasticsearch(final String key,
+                                                                                                 final String name,
+                                                                                                 final List<String> versions) {
+    List<ProcessDefinitionOptimizeDto> processDefinitions = new ArrayList<>();
+    for (String version : versions) {
+      final ProcessDefinitionOptimizeDto processDefinitionDto = addProcessDefinitionToElasticsearch(
+        key,
+        name,
+        version
+      );
+      processDefinitions.add(processDefinitionDto);
+    }
+    return processDefinitions;
   }
 
   public void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos) {

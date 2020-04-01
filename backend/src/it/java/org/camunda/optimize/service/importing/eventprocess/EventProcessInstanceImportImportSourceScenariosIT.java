@@ -374,9 +374,9 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         .build()
     );
 
-    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryForDeployedProcessWithBusinessKey(
+    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
       firstProcessInstanceEngineDto);
-    List<EventSourceEntryDto> secondEventSource = createCamundaEventSourceEntryForDeployedProcessWithBusinessKey(
+    List<EventSourceEntryDto> secondEventSource = createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
       secondProcessInstanceEngineDto);
 
     createAndPublishEventMapping(mappingsForEventProcess, Stream.of(firstEventSource, secondEventSource).flatMap(
@@ -423,9 +423,9 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         .build()
     );
 
-    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryForDeployedProcessWithBusinessKey(
+    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
       processInstanceEngineDto);
-    List<EventSourceEntryDto> secondEventSource = createExternalEventSource();
+    List<EventSourceEntryDto> secondEventSource = createExternalEventSourceAsList();
 
     createAndPublishEventMapping(mappingsForEventProcess, Stream.of(firstEventSource, secondEventSource).flatMap(
       Collection::stream).collect(Collectors.toList()));
@@ -453,7 +453,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
     final List<EventSourceEntryDto> eventSource =
-      createCamundaEventSourceEntryForDeployedProcessWithVersions(
+      createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
         processInstanceEngineDto,
         Collections.singletonList("versionNotSameAsInstance")
       );
@@ -564,11 +564,6 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         .done(),
       Collections.emptyMap(), businessKey, null
     );
-  }
-
-  private List<EventSourceEntryDto> createCamundaEventSourceEntryForDeployedProcessWithVersions(final ProcessInstanceEngineDto processInstanceEngineDto,
-                                                                                                final List<String> versions) {
-    return createCamundaEventSourceEntryForDeployedProcess(processInstanceEngineDto, null, versions);
   }
 
   @SneakyThrows

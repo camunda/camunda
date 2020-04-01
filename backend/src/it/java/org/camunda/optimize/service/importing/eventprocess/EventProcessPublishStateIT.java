@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.MappedEventType;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
@@ -42,7 +41,9 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.event.EventSourceType.CAMUNDA;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
 
 public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
@@ -177,7 +178,10 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
                 Instant.ofEpochMilli(0L),
                 ZoneId.systemDefault()
               ))
-              .lastEventForSourceAtTimeOfPublishTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0L), ZoneId.systemDefault()))
+              .lastEventForSourceAtTimeOfPublishTimestamp(OffsetDateTime.ofInstant(
+                Instant.ofEpochMilli(0L),
+                ZoneId.systemDefault()
+              ))
               .lastImportedEventTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0L), ZoneId.systemDefault()))
               .eventSource(convertToEventSourceEntryDto(storedEventProcessMapping.getEventSources().get(0)))
               .build()))
@@ -389,8 +393,15 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       deployAndStartProcessWithVariables(Maps.newHashMap(tracingVariable, "value"));
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
 
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), timeBaseLine.minusSeconds(60));
-    updateActivityStartEndTimestampInEngine(BPMN_START_EVENT_ID, timeBaseLine.minusSeconds(60), processInstanceEngineDto);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      processInstanceEngineDto.getId(),
+      timeBaseLine.minusSeconds(60)
+    );
+    updateActivityStartEndTimestampInEngine(
+      BPMN_START_EVENT_ID,
+      timeBaseLine.minusSeconds(60),
+      processInstanceEngineDto
+    );
     updateActivityStartEndTimestampInEngine(USER_TASK_ID_ONE, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
     updateActivityStartEndTimestampInEngine(BPMN_END_EVENT_ID, timeBaseLine, processInstanceEngineDto);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), timeBaseLine);
@@ -400,9 +411,12 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
     final String eventProcessMappingId = createEventProcessMappingWithMappingsAndEventSources(
       ImmutableMap.of(
-        BPMN_START_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
-        USER_TASK_ID_ONE, buildCamundaEventMapping(processInstanceEngineDto, USER_TASK_ID_ONE, MappedEventType.END),
-        BPMN_END_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
+        BPMN_START_EVENT_ID,
+        buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
+        USER_TASK_ID_ONE,
+        buildCamundaEventMapping(processInstanceEngineDto, USER_TASK_ID_ONE, MappedEventType.END),
+        BPMN_END_EVENT_ID,
+        buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
       ),
       Collections.singletonList(
         camundaEventSource().toBuilder()
@@ -449,7 +463,8 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void eventProcessCamundaEventSourceLastEventTimestampGetsUpdatedEvenIfNoFetchedEventsCanBeCorrelated() throws SQLException {
+  public void eventProcessCamundaEventSourceLastEventTimestampGetsUpdatedEvenIfNoFetchedEventsCanBeCorrelated()
+    throws SQLException {
     // given
     final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();
     final String tracingVariable = "key";
@@ -457,8 +472,15 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       deployAndStartProcessWithVariables(Maps.newHashMap(tracingVariable, "value"));
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
 
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), timeBaseLine.minusSeconds(60));
-    updateActivityStartEndTimestampInEngine(BPMN_START_EVENT_ID, timeBaseLine.minusSeconds(60), processInstanceEngineDto);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      processInstanceEngineDto.getId(),
+      timeBaseLine.minusSeconds(60)
+    );
+    updateActivityStartEndTimestampInEngine(
+      BPMN_START_EVENT_ID,
+      timeBaseLine.minusSeconds(60),
+      processInstanceEngineDto
+    );
     updateActivityStartEndTimestampInEngine(USER_TASK_ID_ONE, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
     updateActivityStartEndTimestampInEngine(BPMN_END_EVENT_ID, timeBaseLine, processInstanceEngineDto);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), timeBaseLine);
@@ -468,9 +490,12 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
     final String eventProcessMappingId = createEventProcessMappingWithMappingsAndEventSources(
       ImmutableMap.of(
-        BPMN_START_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
-        USER_TASK_ID_ONE, buildCamundaEventMapping(processInstanceEngineDto, USER_TASK_ID_ONE, MappedEventType.END),
-        BPMN_END_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
+        BPMN_START_EVENT_ID,
+        buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
+        USER_TASK_ID_ONE,
+        buildCamundaEventMapping(processInstanceEngineDto, USER_TASK_ID_ONE, MappedEventType.END),
+        BPMN_END_EVENT_ID,
+        buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
       ),
       Collections.singletonList(
         camundaEventSource().toBuilder()
@@ -496,7 +521,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // then no events have been correlated
     assertThat(getEventProcessInstancesFromElasticsearchForProcessMappingId(publishState.getId())).isEmpty();
     // then the import source last imported timestamp reflects the latest imported event
-    assertThat(publishState.getEventImportSources().get(0).getLastImportedEventTimestamp()).isEqualTo(timeBaseLine.toString());
+    assertThat(publishState.getEventImportSources()
+                 .get(0)
+                 .getLastImportedEventTimestamp()).isEqualTo(timeBaseLine.toString());
   }
 
   @Test
@@ -567,8 +594,15 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       deployAndStartProcessWithVariables(Maps.newHashMap(tracingVariable, "value"));
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
 
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), timeBaseLine.minusSeconds(60));
-    updateActivityStartEndTimestampInEngine(BPMN_START_EVENT_ID, timeBaseLine.minusSeconds(60), processInstanceEngineDto);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      processInstanceEngineDto.getId(),
+      timeBaseLine.minusSeconds(60)
+    );
+    updateActivityStartEndTimestampInEngine(
+      BPMN_START_EVENT_ID,
+      timeBaseLine.minusSeconds(60),
+      processInstanceEngineDto
+    );
     updateActivityStartEndTimestampInEngine(USER_TASK_ID_ONE, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
     updateActivityStartEndTimestampInEngine(BPMN_END_EVENT_ID, timeBaseLine, processInstanceEngineDto);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), timeBaseLine);
@@ -593,9 +627,12 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
     final String eventProcessMappingId = createEventProcessMappingWithMappingsAndEventSources(
       ImmutableMap.of(
-        BPMN_START_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
-        USER_TASK_ID_ONE, buildExternalEventMapping(USER_TASK_ID_ONE, MappedEventType.END),
-        BPMN_END_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
+        BPMN_START_EVENT_ID,
+        buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
+        USER_TASK_ID_ONE,
+        buildExternalEventMapping(USER_TASK_ID_ONE, MappedEventType.END),
+        BPMN_END_EVENT_ID,
+        buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
       ),
       Arrays.asList(
         camundaEventSource().toBuilder()
@@ -603,7 +640,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
           .tracedByBusinessKey(false)
           .traceVariable(tracingVariable)
           .build(),
-        externalEventSource()
+        createExternalEventSourceEntry()
       )
     );
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
@@ -616,8 +653,8 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
 
-    // when the second import cycle completes only the first event for each source have been considered, which we use as the starting
-    // timestamps and which get ignored for publish progress calculations - so the average will be zero
+    // when the second import cycle completes only the first event for each source have been considered, which we use
+    // as the starting timestamps and which get ignored for publish progress calculations - so the average will be zero
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
@@ -625,24 +662,26 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
 
-    // when the third import cycle completes another event considered for publish progress has been ingested for each source so the
-    // publish progress is updated accordingly
+    // when the third import cycle completes another event considered for publish progress has been ingested for each
+    // source so the publish progress is updated accordingly
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
-      // The camunda event source is 50% published and the external event source is 33.3% published, so the average is taken
+      // The camunda event source is 50% published and the external event source is 33.3% published, so the average
+      // is taken
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 41.6);
 
-    // when the fourth import cycle completes another event considered for publish progress has been ingested for each source so the
-    // publish progress is updated accordingly
+    // when the fourth import cycle completes another event considered for publish progress has been ingested for
+    // each source so the publish progress is updated accordingly
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
-      // The camunda event source is 100% published and the external event source is 66.6% published, so the average is taken
+      // The camunda event source is 100% published and the external event source is 66.6% published, so the average
+      // is taken
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 83.3D);
 
     // when the fifth import cycle completes the status is updated to Published as all events have been processed
@@ -655,15 +694,33 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 100.0D);
   }
 
-  private void updateActivityStartEndTimestampInEngine(final String activityId, final OffsetDateTime firstEventTimestamp,
+  private void updateActivityStartEndTimestampInEngine(final String activityId,
+                                                       final OffsetDateTime firstEventTimestamp,
                                                        final ProcessInstanceEngineDto processInstanceEngineDto) throws
                                                                                                                 SQLException {
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceEngineDto.getId(), activityId, firstEventTimestamp);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceEngineDto.getId(), activityId, firstEventTimestamp);
+    engineDatabaseExtension.changeActivityInstanceStartDate(
+      processInstanceEngineDto.getId(),
+      activityId,
+      firstEventTimestamp
+    );
+    engineDatabaseExtension.changeActivityInstanceEndDate(
+      processInstanceEngineDto.getId(),
+      activityId,
+      firstEventTimestamp
+    );
   }
 
   private String createEventProcessMappingWithMappingsAndEventSources(Map<String, EventMappingDto> eventMappings,
                                                                       List<EventSourceEntryDto> eventSourceEntries) {
+    for (EventSourceEntryDto eventSource : eventSourceEntries) {
+      if (eventSource.getType().equals(CAMUNDA)) {
+        elasticSearchIntegrationTestExtension.addProcessDefinitionToElasticsearch(
+          eventSource.getProcessDefinitionKey(),
+          null,
+          "1"
+        );
+      }
+    }
     final EventProcessMappingDto eventProcessMappingDto =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
         eventMappings,
@@ -712,27 +769,19 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
   private static Stream<List<EventSourceEntryDto>> eventSourceEntryTypeCombinations() {
     return Stream.of(
-      Collections.singletonList(externalEventSource()),
+      Collections.singletonList(createExternalEventSourceEntry()),
       Collections.singletonList(camundaEventSource()),
-      Arrays.asList(externalEventSource(), camundaEventSource())
+      Arrays.asList(createExternalEventSourceEntry(), camundaEventSource())
     );
   }
 
   private static EventSourceEntryDto camundaEventSource() {
     return EventSourceEntryDto.builder()
-      .type(EventSourceType.CAMUNDA)
+      .type(CAMUNDA)
       .eventScope(EventScopeType.ALL)
       .tracedByBusinessKey(true)
       .processDefinitionKey(RandomStringUtils.randomAlphabetic(10))
       .versions(Collections.singletonList("ALL"))
       .build();
   }
-
-  private static EventSourceEntryDto externalEventSource() {
-    return EventSourceEntryDto.builder()
-      .type(EventSourceType.EXTERNAL)
-      .eventScope(EventScopeType.ALL)
-      .build();
-  }
-
 }

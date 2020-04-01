@@ -11,8 +11,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
@@ -30,6 +28,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 
 public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventProcessIT {
@@ -208,7 +207,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         .xml(xml)
         .eventSources(ImmutableList.of(
           createSimpleCamundaEventSourceEntry(definitionKey1, ALL_VERSIONS),
-          EventSourceEntryDto.builder().type(EventSourceType.EXTERNAL).build()
+          createExternalEventSourceEntry()
         ))
         .build()
     );
@@ -263,7 +262,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         .xml(xml)
         .eventSources(ImmutableList.of(
           createSimpleCamundaEventSourceEntry(definitionKey, ALL_VERSIONS),
-          EventSourceEntryDto.builder().type(EventSourceType.EXTERNAL).build()
+          createExternalEventSourceEntry()
         ))
         .build()
     );
@@ -314,7 +313,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         .xml(xml)
         .eventSources(ImmutableList.of(
           createSimpleCamundaEventSourceEntry(definitionKey, "1"),
-          EventSourceEntryDto.builder().type(EventSourceType.EXTERNAL).build()
+          createExternalEventSourceEntry()
         ))
         .build()
     );
@@ -367,7 +366,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         .xml(xml)
         .eventSources(ImmutableList.of(
           createSimpleCamundaEventSourceEntry(definitionKey, "1", tenant1),
-          EventSourceEntryDto.builder().type(EventSourceType.EXTERNAL).build()
+          createExternalEventSourceEntry()
         ))
         .build()
     );

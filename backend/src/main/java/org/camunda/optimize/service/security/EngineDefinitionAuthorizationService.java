@@ -180,19 +180,6 @@ public class EngineDefinitionAuthorizationService
     );
   }
 
-  public boolean isUserAuthorizedToSeeDecisionDefinition(final String identityId,
-                                                         final IdentityType identityType,
-                                                         final String definitionKey,
-                                                         final List<String> tenantIds) {
-    return isAuthorizedToSeeDefinition(
-      identityId,
-      identityType,
-      definitionKey,
-      DefinitionType.DECISION,
-      tenantIds
-    );
-  }
-
   public List<String> filterAuthorizedTenantsForDefinition(final String identityId,
                                                            final IdentityType identityType,
                                                            final String definitionKey,
@@ -305,9 +292,11 @@ public class EngineDefinitionAuthorizationService
                                             final String engineAlias) {
     switch (definitionType) {
       case PROCESS:
-        return processDefinitionReader.getProcessDefinitionByKeyAndEngineOmitXml(definitionKey, engineAlias).isPresent();
+        return processDefinitionReader.getProcessDefinitionByKeyAndEngineOmitXml(definitionKey, engineAlias)
+          .isPresent();
       case DECISION:
-        return decisionDefinitionReader.getDecisionDefinitionByKeyAndEngineOmitXml(definitionKey, engineAlias).isPresent();
+        return decisionDefinitionReader.getDecisionDefinitionByKeyAndEngineOmitXml(definitionKey, engineAlias)
+          .isPresent();
       default:
         throw new OptimizeRuntimeException("Unsupported definition type: " + definitionType);
     }

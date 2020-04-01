@@ -20,9 +20,9 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -101,7 +101,6 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String STARTED_EVENT = "startedEvent";
   protected static final String FINISHED_EVENT = "finishedEvent";
   protected static final String START_EVENT_TYPE = "startEvent";
-  protected static final String INTERMEDIATE_CATCH_EVENT_TYPE = "intermediateCatchEvent";
   protected static final String END_EVENT_TYPE = "endEvent";
   protected static final String EXCLUSIVE_GATEWAY_TYPE = "exclusiveGateway";
   protected static final String PARALLEL_GATEWAY_TYPE = "parallelGateway";
@@ -195,8 +194,8 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   protected EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
-                                                                   final EventMappingDto intermediateEventMapping,
-                                                                   final EventMappingDto endEventMapping) {
+                                                                     final EventMappingDto intermediateEventMapping,
+                                                                     final EventMappingDto endEventMapping) {
     final Map<String, EventMappingDto> eventMappings = new HashMap<>();
     Optional.ofNullable(startEventMapping)
       .ifPresent(mapping -> eventMappings.put(BPMN_START_EVENT_ID, mapping));
@@ -267,7 +266,10 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .size(1);
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
       .getOptimizeElasticClient()
-      .search(new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(searchSourceBuilder), RequestOptions.DEFAULT);
+      .search(
+        new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(searchSourceBuilder),
+        RequestOptions.DEFAULT
+      );
 
     EventProcessPublishStateDto result = null;
     if (searchResponse.getHits().getTotalHits().value > 0) {
@@ -431,8 +433,12 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final ProcessInstanceEngineDto processInstanceEngineDto,
     final Map<String, EventMappingDto> eventMappings,
     final String traceVariable) {
-    final List<EventSourceEntryDto> eventSourceEntryDtos = createCamundaEventSourceEntryForDeployedProcess(
-      processInstanceEngineDto, traceVariable, null);
+    final List<EventSourceEntryDto> eventSourceEntryDtos =
+      createCamundaEventSourceEntryAsListForDeployedProcessWithTraceVariable(
+        processInstanceEngineDto,
+        traceVariable,
+        Collections.singletonList("1")
+      );
     createAndPublishEventMapping(eventMappings, eventSourceEntryDtos);
   }
 
@@ -449,29 +455,74 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
   }
 
-  protected List<EventSourceEntryDto> createExternalEventSource() {
-    return Collections.singletonList(org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto.builder()
-                                       .type(EventSourceType.EXTERNAL)
-                                       .eventScope(EventScopeType.ALL)
-                                       .build());
+  protected List<EventSourceEntryDto> createExternalEventSourceAsList() {
+    return Collections.singletonList(eventProcessClient.createExternalEventSourceEntry());
   }
 
-  protected List<EventSourceEntryDto> createCamundaEventSourceEntryForDeployedProcessWithBusinessKey(final ProcessInstanceEngineDto processInstanceEngineDto) {
-    return createCamundaEventSourceEntryForDeployedProcess(processInstanceEngineDto, null, null);
+  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+    final ProcessInstanceEngineDto processInstanceEngineDto) {
+    return createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+      processInstanceEngineDto,
+      null
+    );
   }
 
-  protected List<EventSourceEntryDto> createCamundaEventSourceEntryForDeployedProcess(final ProcessInstanceEngineDto processInstanceEngineDto,
-                                                                                      final String traceVariable,
-                                                                                      final List<String> versions) {
-    return Collections.singletonList(EventSourceEntryDto.builder()
-                                       .type(EventSourceType.CAMUNDA)
-                                       .eventScope(EventScopeType.ALL)
-                                       .tracedByBusinessKey(traceVariable == null)
-                                       .traceVariable(traceVariable)
-                                       .versions(Optional.ofNullable(versions).orElse(Collections.singletonList("ALL")))
-                                       .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-                                       .tenants(Collections.singletonList(processInstanceEngineDto.getTenantId()))
-                                       .build());
+  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+    final ProcessInstanceEngineDto processInstanceEngineDto,
+    final List<String> versions) {
+    return Collections.singletonList(addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      processInstanceEngineDto.getProcessDefinitionKey(),
+      processInstanceEngineDto.getProcessDefinitionKey(),
+      processInstanceEngineDto.getTenantId(),
+      null,
+      versions
+    ));
+  }
+
+  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessWithTraceVariable(
+    final ProcessInstanceEngineDto processInstanceEngineDto,
+    final String traceVariable,
+    final List<String> versions) {
+    return Collections.singletonList(addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      processInstanceEngineDto.getProcessDefinitionKey(),
+      processInstanceEngineDto.getProcessDefinitionKey(),
+      processInstanceEngineDto.getTenantId(),
+      traceVariable,
+      versions
+    ));
+  }
+
+  protected EventSourceEntryDto addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+    final String processDefinitionKey) {
+    return addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      processDefinitionKey,
+      processDefinitionKey,
+      null,
+      null,
+      null
+    );
+  }
+
+  protected EventSourceEntryDto addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+    final String processDefinitionKey,
+    final String processDefinitionName,
+    final String tenantId,
+    final String traceVariable,
+    final List<String> versions) {
+    elasticSearchIntegrationTestExtension.addProcessDefinitionForEachVersionDtoToElasticsearch(
+      processDefinitionKey,
+      processDefinitionName,
+      Optional.ofNullable(versions).orElse(Collections.singletonList("1"))
+    );
+    return EventSourceEntryDto.builder()
+      .type(EventSourceType.CAMUNDA)
+      .eventScope(EventScopeType.ALL)
+      .tracedByBusinessKey(traceVariable == null)
+      .traceVariable(traceVariable)
+      .versions(Optional.ofNullable(versions).orElse(Collections.singletonList("ALL")))
+      .processDefinitionKey(processDefinitionKey)
+      .tenants(Collections.singletonList(tenantId))
+      .build();
   }
 
   protected Map<String, EventMappingDto> createMappingsForEventProcess(final ProcessInstanceEngineDto processInstanceEngineDto,
