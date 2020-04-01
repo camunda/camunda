@@ -441,7 +441,7 @@ public class LogProxySession<S> implements ProxySession<S> {
         final Method method = eventMethods.get(event.type());
         if (method != null) {
           try {
-            method.invoke(client, (Object[]) decode(event.value()));
+            method.invoke(client, (Object[]) super.decode(event.value()));
           } catch (final IllegalAccessException | InvocationTargetException e) {
             log.warn("Failed to handle event", e);
           }
