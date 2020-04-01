@@ -49,7 +49,6 @@ public class DefinitionRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @Path("/")
   public List<DefinitionWithTenantsDto> getDefinitions(@Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getDefinitions(userId);
@@ -58,9 +57,9 @@ public class DefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{type}")
-  public List<? extends DefinitionOptimizeDto> getDefinitions(@Context ContainerRequestContext requestContext,
-                                                              @PathParam("type") DefinitionType type,
-                                                              @QueryParam("includeXml") boolean includeXml) {
+  public List<DefinitionOptimizeDto> getDefinitions(@Context ContainerRequestContext requestContext,
+                                                    @PathParam("type") DefinitionType type,
+                                                    @QueryParam("includeXml") boolean includeXml) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getFullyImportedProcessDefinitions(type, userId, includeXml);
   }
@@ -136,7 +135,10 @@ public class DefinitionRestService {
     switch (type) {
       case PROCESS:
         final ProcessDefinitionOptimizeDto processDef = (ProcessDefinitionOptimizeDto) definitionDto.get();
-        final Response.ResponseBuilder processResponse = Response.ok(processDef.getBpmn20Xml(), MediaType.APPLICATION_XML);
+        final Response.ResponseBuilder processResponse = Response.ok(
+          processDef.getBpmn20Xml(),
+          MediaType.APPLICATION_XML
+        );
         if (processDef.getIsEventBased()) {
           addNoStoreCacheHeader(processResponse);
         }
@@ -154,7 +156,8 @@ public class DefinitionRestService {
   }
 
   private void logAndThrowNotFoundException(@PathParam("type") final DefinitionType type,
-                                            @QueryParam("key") final String key, @QueryParam("version") final String version) {
+                                            @QueryParam("key") final String key,
+                                            @QueryParam("version") final String version) {
     String notFoundErrorMessage = "Could not find xml for definition with key [" + key + "]," +
       " version [" + version + "] or type [" + type + "]." +
       " It is possible that is hasn't been imported yet.";

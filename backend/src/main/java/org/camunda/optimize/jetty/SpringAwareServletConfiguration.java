@@ -163,7 +163,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
   private void initGzipHandler(ServletContextHandler context) {
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setCompressionLevel(9);
-    gzipHandler.setMinGzipSize(0);
+    gzipHandler.setMinGzipSize(23);
     gzipHandler.setIncludedMimeTypes(COMPRESSED_MIME_TYPES);
     gzipHandler.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
     gzipHandler.setIncludedPaths("/*");
