@@ -10,13 +10,17 @@ static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 static String MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
+static String PUBLIC_DOCKER_REGISTRY(boolean pushChanges) {
+  return (pushChanges && !isStagingJenkins()) ?
+    'registry.camunda.cloud' : 'stage.registry.camunda.cloud'
+}
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
-static String PUBLIC_DOCKER_IMAGE() { return "registry.camunda.cloud/optimize-ee/optimize" }
+static String PUBLIC_DOCKER_IMAGE(boolean pushChanges) { return "${PUBLIC_DOCKER_REGISTRY(pushChanges)}/optimize-ee/optimize" }
 
 static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME(boolean pushChanges) {
-  return (!pushChanges || isStagingJenkins()) ?
-    'stage-downloads-camunda-cloud-enterprise-release' :
-    'downloads-camunda-cloud-enterprise-release'
+  return (pushChanges && !isStagingJenkins()) ?
+    'downloads-camunda-cloud-enterprise-release' :
+    'stage-downloads-camunda-cloud-enterprise-release'
 }
 
 static boolean isStagingJenkins() {
@@ -249,11 +253,9 @@ pipeline {
       }
     }
     stage('Docker Image') {
-      when {
-        expression { params.PUSH_CHANGES == true }
-      }
       environment {
         VERSION = "${params.RELEASE_VERSION}"
+        PUSH_CHANGES = "${params.PUSH_CHANGES}"
         GCR_REGISTRY = credentials('docker-registry-ci3')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
         MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
@@ -264,7 +266,7 @@ pipeline {
             sh("""
             cp \$MAVEN_SETTINGS_XML settings.xml
             echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-            echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
+            echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize ${PUBLIC_DOCKER_REGISTRY(params.PUSH_CHANGES)} --password-stdin
 
             docker build -t ${PROJECT_DOCKER_IMAGE()}:${VERSION} \
               --build-arg SKIP_DOWNLOAD=true \
@@ -272,14 +274,16 @@ pipeline {
               --build-arg SNAPSHOT=false \
               .
 
-            docker push ${PROJECT_DOCKER_IMAGE()}:${VERSION}
+            if [ "${PUSH_CHANGES}" = true ]; then
+              docker push ${PROJECT_DOCKER_IMAGE()}:${VERSION}
+            fi
 
-            docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${PUBLIC_DOCKER_IMAGE()}:${VERSION}
-            docker push ${PUBLIC_DOCKER_IMAGE()}:${VERSION}
+            docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:${VERSION}
+            docker push ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:${VERSION}
 
             if [ "${MAJOR_OR_MINOR}" = true ]; then
-              docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${PUBLIC_DOCKER_IMAGE()}:latest
-              docker push ${PUBLIC_DOCKER_IMAGE()}:latest
+              docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:latest
+              docker push ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:latest
             fi
           """)
           }
