@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.0</version>
   </parent>
 
   <artifactId>upgrade-es-schema-tests</artifactId>
@@ -182,7 +182,7 @@
                 <echo message="Optimize has benn booted up." />
 
                 <echo message="Waiting for Optimize Import to finish..." />
-                <sleep seconds="5"/>
+                <sleep seconds="5" />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
@@ -327,7 +327,7 @@
                 </exec>
 
                 <echo message="Waiting for Optimize Import to finish..." />
-                <sleep seconds="5"/>
+                <sleep seconds="5" />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
