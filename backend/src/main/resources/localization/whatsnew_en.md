@@ -16,5 +16,5 @@ To continually enhance the granularity of Reports we have added a number of addi
 
 ## Alerts to External Systems
 
-Easily send Alerts to external systems by adding system to the configuration.
+Easily send Alerts to external systems by adding the system to the configuration.
 The added systems will then be selectable in the Alert set up form for all users.  
