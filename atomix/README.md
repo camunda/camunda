@@ -1,48 +1,39 @@
-# [Atomix][Website]
+# Atomix
 
-![Atomix](http://atomix.io/assets/img/logos/atomix-medium.png)
+This module contains code of a hard fork of [Atomix](https://github.com/atomix/atomix).
+The fork was adjusted to our needs, which means we reduced it to a level that it only contains code
+which we really use and need. For example this contains: a RAFT implementation (with storage),
+a SWIM implementation, a usable transport implementation and some glue code.
 
-## [Website][Website] | [Javadoc][Javadoc] | [Slack][Slack] | [Google Group][Google Group]
+In the next sub section we will explain why we go the way of doing a hard fork and integrate it into our repository.
 
-[![Build Status](https://travis-ci.org/atomix/atomix.svg?branch=master)](https://travis-ci.org/atomix/atomix)
-[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=io.atomix%3Aatomix-parent&metric=alert_status)](https://sonarcloud.io/dashboard?id=io.atomix%3Aatomix-parent)
-[![Coverage Status](https://coveralls.io/repos/github/atomix/atomix/badge.svg?branch=master)](https://coveralls.io/github/atomix/atomix?branch=master)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.atomix/atomix/badge.svg?cache=foo)](https://maven-badges.herokuapp.com/maven-central/io.atomix/atomix)
-[![Javadocs](http://www.javadoc.io/badge/io.atomix/atomix.svg)](https://atomix.io/docs/latest/api/)
+## Summary
 
-**A reactive Java framework for building fault-tolerant distributed systems**
+To be a bit more transparent we want to explain shortly why we did this, why we went this path, what are the pro's and con's.
 
-Please see the [website][Website] for full documentation.
+When we started to use Atomix, we just used it as a normal dependency. Very quick we found some issues which we needed to fix, so we created PR's against the base repository.
+In the corresponding base repository was not much activity, which means it took a while to merge the first PR's
+We started to merge our PR's in our fork and released our own versions, such that we can make still progress. We saw that during working with atomix and fixing more and more bugs, that our PR's haven't been merged upstream. Also we found out that they moved away from the original code base and rewrote everything in GO.
 
-Atomix 3.0 is a fully featured framework for building fault-tolerant distributed systems. It provides a set of high-level primitives commonly needed for building scalable and fault-tolerant distributed systems. These primitives include:
-* Cluster management and failure detection
-* Direct and publish-subscribe messaging
-* Distributed coordination primitives built on a novel implementation of the [Raft][Raft] consensus protocol
-* Scalable data primitives built on a multi-primary protocol
-* Synchronous and asynchronous Java APIs
-* Standalone agent
-* REST API
+This was then the point we decided that we can change more and more the code base to our needs. We did that and fixed a lot of bugs in atomix during that time. But we always had the problem that when we fixed or changed something in atomix we needed to release a new version to use it in Zeebe. Sometimes it happens that we just released the newest version of atomix on the day we wanted to released Zeebe, which sometimes broke the build, because we haven't tested it before, with our code base. We switched to using snapshot versions, which improved this a bit. But if we then changed something it could happen that we broke develop and other branches in the Zeebe Repo. It was not easy to develop and test, since if you did a change in atomix you needed to build this locally, build then Zeebe locally and then run tests or a benchmark.
 
-## Acknowledgements
+In order to avoid broken builds (develop etc.) and improve the development cycle we decided to merge the Atomix repo into ours.
 
-Atomix is developed as part of the [ONOS][ONOS] project at the [Open Networking Foundation
- * Copyright © 2020 camunda services GmbH (info@camunda.com)][ONF]. Atomix project thanks ONF for its ongoing support!
+**Pros:**
+ * we have the benefit of one build (everything is build together) - it doesn't break another branch
+ * shorter development cycle, we can easily test changes in Atomix in a Zeebe branch
+ * easier to create new benchmarks
+ * Atomix tests are run more often - which might lead also to new bugs
+ * we can easily use our tools and plugins (LGTM, sonarcloud, licensecheck, checkstyle etc.)
+ * make release process easier
 
-![ONF](https://3vf60mmveq1g8vzn48q2o71a-wpengine.netdna-ssl.com/wp-content/uploads/2017/06/onf-logo.jpg)
+**Cons:**
+ * More flaky tests in the beginning
+ * Longer build time
 
-----
+We removed half of their code base, because we don't need it.
+We changed the code style to our style, which makes it also much easier to develop.
+Furthermore we now have added our copyright to their files, since we changed most of them already.
 
-YourKit supports open source projects with its full-featured Java Profiler.
-YourKit, LLC is the creator of [YourKit Java Profiler](https://www.yourkit.com/java/profiler/)
-and [YourKit .NET Profiler](https://www.yourkit.com/.net/profiler/),
-innovative and intelligent tools for profiling Java and .NET applications.
-
-![YourKit](https://www.yourkit.com/images/yklogo.png)
-
-[Website]: https://atomix.io
-[Slack]: https://join.slack.com/t/atomixio/shared_invite/enQtNDgzNjA5MjMyMDUxLTVmMThjZDcxZDE3ZmU4ZGYwZTc2MGJiYjVjMjFkOWMyNmVjYTc5YjExYTZiOWFjODlkYmE2MjNjYzZhNjU2MjY
-[Google Group]: https://groups.google.com/forum/#!forum/atomixio
-[Javadoc]: http://atomix.io/docs/latest/api/
-[Raft]: https://raft.github.io/
-[ONF]: https://www.opennetworking.org/
-[ONOS]: http://onosproject.org/
+Please do not touch the copyright headers, we need to keep their copyright on their files.
+On new files we create, we will have our License headers with out copyright.
