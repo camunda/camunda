@@ -50,7 +50,7 @@ spec:
       - mountPath: /etc/vault-output
         name: vault-output
     - name: init-sysctl
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.8
       command:
       - "sh"
       args:
@@ -63,7 +63,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/config_new/
         name: configdir
     - name: init-plugins
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.8
       command:
       - "sh"
       args:
@@ -102,7 +102,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.8
       env:
         - name: ES_JAVA_OPTS
           value: '-Xms512m -Xmx512m'
