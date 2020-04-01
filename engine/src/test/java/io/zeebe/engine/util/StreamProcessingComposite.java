@@ -12,6 +12,7 @@ import static io.zeebe.engine.util.Records.workflowInstance;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
@@ -20,6 +21,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import java.util.function.Consumer;
 
 public class StreamProcessingComposite {
 
@@ -43,9 +45,15 @@ public class StreamProcessingComposite {
   }
 
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
+    return startTypedStreamProcessor(factory, r -> {});
+  }
+
+  public StreamProcessor startTypedStreamProcessor(
+      final StreamProcessorTestFactory factory, final Consumer<TypedRecord> onProcessedListener) {
     return startTypedStreamProcessor(
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
+          processingContext.onProcessedListener(onProcessedListener);
           return factory.build(
               TypedRecordProcessors.processors(zeebeState.getKeyGenerator()), processingContext);
         });
