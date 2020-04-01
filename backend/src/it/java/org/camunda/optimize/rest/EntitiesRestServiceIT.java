@@ -117,6 +117,32 @@ public class EntitiesRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getEntities_emptyDefinitionKeyIsHandledAsEmptyReport() {
+    // this is a regression test that could occur for old empty reports
+    // see https://jira.camunda.com/browse/OPT-3496
+
+    // given
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setName("empty");
+    // an empty string definition key caused trouble
+    singleProcessReportDefinitionDto.getData().setProcessDefinitionKey("");
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
+      .execute(Response.Status.OK.getStatusCode());
+
+    // when (default user)
+    final List<EntityDto> defaultUserEntities = getEntities();
+
+    // then
+    assertThat(defaultUserEntities.size(), is(1));
+    assertThat(
+      defaultUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
+      containsInAnyOrder(singleProcessReportDefinitionDto.getName())
+    );
+  }
+
+  @Test
   public void getEntities_ReturnsMyUsersDashboards() {
     //given
     addDashboardToOptimize("A Dashboard");

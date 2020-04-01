@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -74,7 +75,7 @@ public class DefinitionAuthorizationService {
                                                 final DefinitionType type,
                                                 final String definitionKey,
                                                 final List<String> tenantIds) {
-    if (definitionKey == null) {
+    if (StringUtils.isBlank(definitionKey)) {
       return true;
     }
     switch (type) {
