@@ -31,7 +31,6 @@ import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.KeepAliveRequest;
 import io.atomix.raft.protocol.KeepAliveResponse;
-import io.atomix.raft.protocol.LeaderHeartbeatRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.MetadataRequest;
@@ -180,8 +179,4 @@ public interface RaftRole extends Managed<RaftRole> {
    * @return A completable future to be completed with the request response.
    */
   CompletableFuture<QueryResponse> onQuery(QueryRequest request);
-
-  default void onLeaderHeartbeat(final LeaderHeartbeatRequest request) {
-    // default just accepts it
-  }
 }

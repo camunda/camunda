@@ -48,7 +48,6 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<AppendRequest, CompletableFuture<AppendResponse>> appendHandler;
-  private Consumer<LeaderHeartbeatRequest> leaderHeartbeatRequestConsumer;
 
   public TestRaftServerProtocol(
       final MemberId memberId,
@@ -339,23 +338,6 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
     resetListeners.remove(sessionId.id());
   }
 
-  @Override
-  public void leaderHeartbeat(final MemberId memberId, final LeaderHeartbeatRequest heartbeat) {
-    getServer(memberId).thenAccept(l -> l.leaderHeartbeat(heartbeat));
-  }
-
-  @Override
-  public void registerLeaderHeartbeatHandler(
-      final Consumer<LeaderHeartbeatRequest> leaderHeartbeatRequestConsumer,
-      final Executor executor) {
-    this.leaderHeartbeatRequestConsumer = (r) -> leaderHeartbeatRequestConsumer.accept(r);
-  }
-
-  @Override
-  public void unregisterLeaderHeartbeatHandler() {
-    leaderHeartbeatRequestConsumer = null;
-  }
-
   private CompletableFuture<TestRaftServerProtocol> getServer(final MemberId memberId) {
     final TestRaftServerProtocol server = server(memberId);
     if (server != null) {
@@ -363,15 +345,6 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
     } else {
       return Futures.exceptionalFuture(new ConnectException());
     }
-  }
-
-  private void leaderHeartbeat(final LeaderHeartbeatRequest request) {
-
-    if (leaderHeartbeatRequestConsumer == null) {
-      throw new IllegalStateException("No heartbeat consumer registered!");
-    }
-
-    leaderHeartbeatRequestConsumer.accept(request);
   }
 
   private CompletableFuture<TestRaftClientProtocol> getClient(final MemberId memberId) {

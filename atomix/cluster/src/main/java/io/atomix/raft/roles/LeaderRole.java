@@ -43,7 +43,6 @@ import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.KeepAliveRequest;
 import io.atomix.raft.protocol.KeepAliveResponse;
-import io.atomix.raft.protocol.LeaderHeartbeatRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.MetadataRequest;
@@ -98,7 +97,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private Scheduled appendTimer;
   private long configuring;
   private boolean transferring;
-  private Scheduled heartbeatTimer;
   private CompletableFuture<Void> commitInitialEntriesFuture;
 
   public LeaderRole(final RaftContext context) {
@@ -872,11 +870,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       log.trace("Cancelling append timer");
       appendTimer.cancel();
     }
-
-    if (heartbeatTimer != null) {
-      log.trace("Cancelling heartbeat timer");
-      heartbeatTimer.cancel();
-    }
   }
 
   /** Ensures the local server is not the leader. */
@@ -991,11 +984,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     appendTimer =
         raft.getThreadContext()
             .schedule(Duration.ZERO, raft.getHeartbeatInterval(), this::appendMembers);
-
-    log.trace("Starting heartbeat timer on fix rate of {}", raft.getHeartbeatInterval());
-    heartbeatTimer =
-        raft.getHeartbeatThread()
-            .schedule(Duration.ZERO, raft.getHeartbeatInterval(), this::sendHeartbeats);
   }
 
   /**
@@ -1006,32 +994,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     raft.checkThread();
     if (isRunning()) {
       appender.appendEntries();
-    }
-  }
-
-  private void sendHeartbeats() {
-    raft.checkHeartbeatThread();
-    if (isRunning()) {
-
-      // If there are no other active members in the cluster, simply complete the heartbeat
-      // operation.
-      if (raft.getCluster().getRemoteMemberStates().isEmpty()) {
-        return;
-      }
-
-      final DefaultRaftMember leader = raft.getLeader();
-
-      final LeaderHeartbeatRequest heartbeat =
-          LeaderHeartbeatRequest.builder()
-              .withTerm(raft.getTerm())
-              .withLeader(leader.memberId())
-              .withCommitIndex(raft.getCommitIndex())
-              .build();
-      for (final RaftMemberContext member : raft.getCluster().getRemoteMemberStates()) {
-        final MemberId memberId = member.getMember().memberId();
-        log.trace("Sending {} to {}", heartbeat, memberId);
-        raft.getProtocol().leaderHeartbeat(memberId, heartbeat);
-      }
     }
   }
 
