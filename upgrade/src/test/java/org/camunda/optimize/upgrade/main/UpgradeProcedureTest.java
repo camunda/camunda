@@ -28,10 +28,12 @@ public class UpgradeProcedureTest {
     // when
     underTest.performUpgrade();
 
-    // then
+    // then the validation and execution happens in the expected order
     InOrder inOrder = inOrder(mockedValidationService, mockedExecutionPlan);
-    //following will make sure that firstMock was called before secondMock
+    // The validation order matters since we first need to ensure that the ES client
+    // is able to communicate to ElasticSearch before using it to retrieve the schema version.
     inOrder.verify(mockedValidationService).validateESVersion(any(), any());
+    inOrder.verify(mockedValidationService).validateSchemaVersions("2.5.0", "2.6.0");
     inOrder.verify(mockedExecutionPlan).execute();
   }
 

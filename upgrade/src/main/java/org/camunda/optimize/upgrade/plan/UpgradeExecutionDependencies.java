@@ -17,7 +17,7 @@ public class UpgradeExecutionDependencies {
 
   protected final ConfigurationService configurationService;
   protected final OptimizeIndexNameService indexNameService;
-  protected final OptimizeElasticsearchClient prefixAwareClient;
+  protected final OptimizeElasticsearchClient esClient;
   protected final ObjectMapper objectMapper;
   protected final ElasticsearchMetadataService metadataService;
 

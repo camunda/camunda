@@ -100,7 +100,7 @@ public abstract class AbstractUpgradeIT {
     if (upgradeDependencies == null) {
       upgradeDependencies = UpgradeUtil.createUpgradeDependencies();
       objectMapper = upgradeDependencies.getObjectMapper();
-      prefixAwareClient = upgradeDependencies.getPrefixAwareClient();
+      prefixAwareClient = upgradeDependencies.getEsClient();
       indexNameService = upgradeDependencies.getIndexNameService();
       metadataService = upgradeDependencies.getMetadataService();
     }

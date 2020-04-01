@@ -21,16 +21,16 @@ public class UpgradeValidationService {
   private static final Logger logger = LoggerFactory.getLogger(UpgradeValidationService.class);
 
   private ElasticsearchMetadataService metadataService;
-  private OptimizeElasticsearchClient prefixAwareClient;
+  private OptimizeElasticsearchClient esClient;
 
   public UpgradeValidationService(final ElasticsearchMetadataService metadataService,
-                                  final OptimizeElasticsearchClient prefixAwareClient) {
+                                  final OptimizeElasticsearchClient esClient) {
     this.metadataService = metadataService;
-    this.prefixAwareClient = prefixAwareClient;
+    this.esClient = esClient;
   }
 
   public void validateSchemaVersions(final String fromVersion, final String toVersion) {
-    final String schemaVersion = metadataService.readMetadata(prefixAwareClient)
+    final String schemaVersion = metadataService.readMetadata(esClient)
       .orElseThrow(() -> new UpgradeRuntimeException("No Optimize Metadata present."))
       .getSchemaVersion();
 

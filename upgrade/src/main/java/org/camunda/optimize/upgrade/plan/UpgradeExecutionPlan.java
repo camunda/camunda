@@ -60,7 +60,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     final OptimizeIndexNameService indexNameService = upgradeDependencies.getIndexNameService();
 
     metadataService = upgradeDependencies.getMetadataService();
-    prefixAwareClient = upgradeDependencies.getPrefixAwareClient();
+    prefixAwareClient = upgradeDependencies.getEsClient();
     schemaManager = new ElasticSearchSchemaManager(
       metadataService,
       configurationService,

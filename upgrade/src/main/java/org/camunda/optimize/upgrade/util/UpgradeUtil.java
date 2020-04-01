@@ -35,7 +35,7 @@ public class UpgradeUtil {
       ConfigurationServiceBuilder.createDefaultConfiguration()
     ).createOptimizeMapper();
     OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService);
-    OptimizeElasticsearchClient client = new OptimizeElasticsearchClient(
+    OptimizeElasticsearchClient esClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
       indexNameService
     );
@@ -43,7 +43,7 @@ public class UpgradeUtil {
     return new UpgradeExecutionDependencies(
       configurationService,
       indexNameService,
-      client,
+      esClient,
       objectMapper,
       metadataService
     );
