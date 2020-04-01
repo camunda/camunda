@@ -15,31 +15,32 @@
  */
 package io.zeebe.client.impl;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 public final class ZeebeClientCredentials {
 
-  @JsonProperty("access_token")
+  @JsonAlias({"accesstoken", "access_token"})
   private String accessToken;
 
-  @JsonProperty("expires_in")
-  private long expiresIn;
+  private ZonedDateTime expiry;
 
-  @JsonProperty("token_type")
+  @JsonAlias({"tokentype", "token_type"})
   private String tokenType;
-
-  @JsonProperty("scope")
-  private String scope;
 
   public ZeebeClientCredentials() {}
 
   public ZeebeClientCredentials(
-      final String accessToken, final long expiresIn, final String tokenType, final String scope) {
+      final String accessToken, final ZonedDateTime expiry, final String tokenType) {
     this.accessToken = accessToken;
-    this.expiresIn = expiresIn;
+    this.expiry = expiry;
     this.tokenType = tokenType;
-    this.scope = scope;
   }
 
   public String getAccessToken() {
@@ -50,9 +51,29 @@ public final class ZeebeClientCredentials {
     return tokenType;
   }
 
+  @JsonSetter("expiry")
+  public void setExpiry(final String expiry) {
+    this.expiry = ZonedDateTime.parse(expiry);
+  }
+
+  @JsonSetter("expires_in")
+  public void setExpiresIn(final String expiresIn) {
+    this.expiry = ZonedDateTime.now().plusSeconds(Long.parseLong(expiresIn));
+  }
+
+  @JsonGetter("expiry")
+  public String getExpiry() {
+    return expiry.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+  }
+
+  @JsonIgnore
+  public boolean isValid() {
+    return expiry.toInstant().isAfter(Instant.now());
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(accessToken, expiresIn, tokenType, scope);
+    return Objects.hash(accessToken, expiry, tokenType);
   }
 
   @Override
@@ -63,9 +84,6 @@ public final class ZeebeClientCredentials {
 
     final ZeebeClientCredentials other = (ZeebeClientCredentials) o;
 
-    return accessToken.equals(other.accessToken)
-        && expiresIn == other.expiresIn
-        && tokenType.equals(other.tokenType)
-        && scope.equals(other.scope);
+    return accessToken.equals(other.accessToken) && tokenType.equals(other.tokenType);
   }
 }

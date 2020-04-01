@@ -23,4 +23,9 @@
     <className>io/zeebe/client/api/response/JobEvent</className>
     <differenceType>8001</differenceType>
   </difference>
+  <difference>
+    <className>io/zeebe/client/impl/ZeebeClientCredentials</className>
+    <method>ZeebeClientCredentials(java.lang.String, long, java.lang.String, java.lang.String)</method>
+    <differenceType>7004</differenceType>
+  </difference>
 </differences>

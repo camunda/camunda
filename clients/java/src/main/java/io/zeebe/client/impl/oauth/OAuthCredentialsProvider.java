@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.impl.oauth;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.io.CharStreams;
@@ -30,17 +30,21 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class OAuthCredentialsProvider implements CredentialsProvider {
-  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  private static final ObjectMapper JSON_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   private static final ObjectReader CREDENTIALS_READER =
       JSON_MAPPER.readerFor(ZeebeClientCredentials.class);
   private static final Logger LOG = LoggerFactory.getLogger(OAuthCredentialsProvider.class);
@@ -48,7 +52,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
   private final URL authorizationServerUrl;
-  private final String jsonPayload;
+  private final String payload;
   private final String endpoint;
   private final OAuthCredentialsCache credentialsCache;
 
@@ -57,11 +61,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
     endpoint = builder.getAudience();
-    try {
-      jsonPayload = createJsonPayload(builder);
-    } catch (JsonProcessingException e) {
-      throw new UncheckedIOException(e);
-    }
+    payload = createParams(builder);
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
   }
 
@@ -72,9 +72,14 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       loadCredentials();
     }
 
-    headers.put(
-        HEADER_AUTH_KEY,
-        String.format("%s %s", credentials.getTokenType(), credentials.getAccessToken()));
+    String type = credentials.getTokenType();
+    if (type == null || type.isEmpty()) {
+      throw new IOException(
+          String.format("Expected valid token type but was absent or invalid '%s'", type));
+    }
+
+    type = Character.toUpperCase(type.charAt(0)) + type.substring(1);
+    headers.put(HEADER_AUTH_KEY, String.format("%s %s", type, credentials.getAccessToken()));
   }
 
   /**
@@ -103,7 +108,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       cachedCredentials = Optional.empty();
     }
 
-    if (cachedCredentials.isPresent()) {
+    if (cachedCredentials.isPresent() && cachedCredentials.get().isValid()) {
       credentials = cachedCredentials.get();
     } else {
       refreshCredentials();
@@ -120,36 +125,46 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
     credentialsCache.put(endpoint, fetchedCredentials).writeCache();
 
-    if (fetchedCredentials.equals(credentials)) {
-      return false;
+    if (credentials == null || !credentials.isValid() || !fetchedCredentials.equals(credentials)) {
+      credentials = fetchedCredentials;
+      LOG.debug("Refreshed credentials.");
+
+      return true;
     }
 
-    credentials = fetchedCredentials;
-    LOG.debug("Refreshed credentials.");
-    return true;
+    return false;
   }
 
-  private static String createJsonPayload(final OAuthCredentialsProviderBuilder builder)
-      throws JsonProcessingException {
+  private static String createParams(final OAuthCredentialsProviderBuilder builder) {
     final Map<String, String> payload = new HashMap<>();
     payload.put("client_id", builder.getClientId());
     payload.put("client_secret", builder.getClientSecret());
     payload.put("audience", builder.getAudience());
     payload.put("grant_type", "client_credentials");
 
-    return JSON_MAPPER.writeValueAsString(payload);
+    return payload.entrySet().stream()
+        .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
+        .collect(Collectors.joining("&"));
+  }
+
+  private static String encode(final String param) {
+    try {
+      return URLEncoder.encode(param, StandardCharsets.UTF_8.name());
+    } catch (UnsupportedEncodingException e) {
+      throw new UncheckedIOException("Failed while encoding OAuth request parameters: ", e);
+    }
   }
 
   private ZeebeClientCredentials fetchCredentials() throws IOException {
     final HttpURLConnection connection =
         (HttpURLConnection) authorizationServerUrl.openConnection();
     connection.setRequestMethod("POST");
-    connection.setRequestProperty("Content-Type", "application/json");
+    connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
     connection.setRequestProperty("Accept", "application/json");
     connection.setDoOutput(true);
 
     try (final OutputStream os = connection.getOutputStream()) {
-      final byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
+      final byte[] input = payload.getBytes(StandardCharsets.UTF_8);
       os.write(input, 0, input.length);
     }
 
