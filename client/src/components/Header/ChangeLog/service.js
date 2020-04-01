@@ -5,9 +5,13 @@
  */
 
 import {get, put} from 'request';
+import {getOptimizeVersion} from 'config';
 
 export async function getMarkdownText(localeCode) {
-  const response = await get(`api/localization/whatsnew`, {localeCode});
+  const response = await get(`api/localization/whatsnew`, {
+    version: await getOptimizeVersion(),
+    localeCode
+  });
 
   return await response.text();
 }
