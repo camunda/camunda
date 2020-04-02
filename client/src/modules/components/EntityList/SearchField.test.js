@@ -32,11 +32,20 @@ it('should call the onChange handler when writing in the input field', () => {
   expect(spy).toHaveBeenCalledWith('new value');
 });
 
-it('should reset the input when clicking the cloe button', () => {
+it('should reset the input when clicking the close button', () => {
   const spy = jest.fn();
   const node = shallow(<SearchField value="content" onChange={spy} />);
 
   node.find(Button).simulate('click');
+
+  expect(spy).toHaveBeenCalledWith('');
+});
+
+it('should reset the input when pressing escape', () => {
+  const spy = jest.fn();
+  const node = shallow(<SearchField value="content" onChange={spy} />);
+
+  node.find(Input).simulate('keydown', {key: 'Escape'});
 
   expect(spy).toHaveBeenCalledWith('');
 });

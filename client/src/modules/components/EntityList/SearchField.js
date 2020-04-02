@@ -31,6 +31,12 @@ export default function SearchField({value, onChange = () => {}}) {
         value={value}
         placeholder={t('home.search.name')}
         onChange={evt => onChange(evt.target.value)}
+        onKeyDown={({key}) => {
+          if (key === 'Escape') {
+            setOpen(false);
+            onChange('');
+          }
+        }}
         ref={input}
       />
     </div>
