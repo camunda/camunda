@@ -187,7 +187,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
       return closeFuture;
     }
 
-    actor.call(
+    actor.run(
         () ->
             closeAppender()
                 .onComplete(
@@ -288,18 +288,24 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
                     .onComplete(
                         (v, t) -> {
                           if (t != null) {
-                            appenderFuture.completeExceptionally(t);
+                            onOpenAppenderFailed(t);
                           } else {
                             appenderFuture.complete(appender);
                             appender.addFailureListener(this);
                           }
                         });
               } else {
-                appenderFuture.completeExceptionally(throwable);
+                onOpenAppenderFailed(throwable);
               }
             });
 
     return appenderOpenFuture;
+  }
+
+  private void onOpenAppenderFailed(final Throwable error) {
+    LOG.error("Unexpected error when opening appender", error);
+    appenderFuture.completeExceptionally(error);
+    onFailure();
   }
 
   private int determineInitialPartitionId() {
@@ -331,17 +337,23 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
   @Override
   public void onFailure() {
-    if (failureListener != null) {
-      failureListener.onFailure();
-    }
-    closeAsync();
+    actor.run(
+        () -> {
+          if (failureListener != null) {
+            failureListener.onFailure();
+          }
+          closeAsync();
+        });
   }
 
   @Override
   public void onRecovered() {
-    if (failureListener != null) {
-      failureListener.onRecovered();
-    }
+    actor.run(
+        () -> {
+          if (failureListener != null) {
+            failureListener.onRecovered();
+          }
+        });
   }
 
   @FunctionalInterface

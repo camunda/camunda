@@ -8,10 +8,13 @@
 package io.zeebe.broker;
 
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.util.sched.future.ActorFuture;
 
 /**
  * Can be implemented and used to react on partition role changes, like on Leader on Actor should be
- * started and on Follower one should be removed.
+ * started and on Follower one should be removed. If this listener performs actions that are
+ * critical to the progress of a partition, it is expected to complete the future exceptionally on a
+ * failure. Otherwise the future should complete normally.
  */
 public interface PartitionListener {
 
@@ -22,8 +25,9 @@ public interface PartitionListener {
    * @param partitionId the corresponding partition id
    * @param term the current term
    * @param logStream the corresponding log stream
+   * @return future that should be completed by the listener
    */
-  void onBecomingFollower(int partitionId, long term, LogStream logStream);
+  ActorFuture<Void> onBecomingFollower(int partitionId, long term, LogStream logStream);
 
   /**
    * Is called by the {@link io.zeebe.broker.system.partitions.ZeebePartition} on becoming partition
@@ -32,6 +36,7 @@ public interface PartitionListener {
    * @param partitionId the corresponding partition id
    * @param term the current term
    * @param logStream the corresponding log stream
+   * @return future that should be completed by the listener
    */
-  void onBecomingLeader(int partitionId, long term, LogStream logStream);
+  ActorFuture<Void> onBecomingLeader(int partitionId, long term, LogStream logStream);
 }

@@ -15,6 +15,8 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 
 public final class SubscriptionApiCommandMessageHandlerService extends Actor
@@ -44,29 +46,36 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
   }
 
   @Override
-  public void onBecomingFollower(
+  public ActorFuture<Void> onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    actor.submit(() -> leaderPartitions.remove(partitionId));
+    return actor.call(
+        () -> {
+          leaderPartitions.remove(partitionId);
+          return null;
+        });
   }
 
   @Override
-  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingLeader(
+      final int partitionId, final long term, final LogStream logStream) {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     actor.submit(
-        () -> {
-          logStream
-              .newLogStreamRecordWriter()
-              .onComplete(
-                  (recordWriter, error) -> {
-                    if (error == null) {
-                      leaderPartitions.put(partitionId, recordWriter);
-                    } else {
-                      // TODO https://github.com/zeebe-io/zeebe/issues/3499
-                      Loggers.SYSTEM_LOGGER.error(
-                          "Unexpected error on retrieving write buffer for partition {}",
-                          partitionId,
-                          error);
-                    }
-                  });
-        });
+        () ->
+            logStream
+                .newLogStreamRecordWriter()
+                .onComplete(
+                    (recordWriter, error) -> {
+                      if (error == null) {
+                        leaderPartitions.put(partitionId, recordWriter);
+                        future.complete(null);
+                      } else {
+                        Loggers.SYSTEM_LOGGER.error(
+                            "Unexpected error on retrieving write buffer for partition {}",
+                            partitionId,
+                            error);
+                        future.completeExceptionally(error);
+                      }
+                    }));
+    return future;
   }
 }

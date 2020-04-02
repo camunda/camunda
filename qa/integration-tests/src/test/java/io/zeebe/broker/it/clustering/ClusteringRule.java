@@ -46,6 +46,8 @@ import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -670,14 +672,17 @@ public final class ClusteringRule extends ExternalResource {
     }
 
     @Override
-    public void onBecomingFollower(
-        final int partitionId, final long term, final LogStream logStream) {}
+    public ActorFuture<Void> onBecomingFollower(
+        final int partitionId, final long term, final LogStream logStream) {
+      return CompletableActorFuture.completed(null);
+    }
 
     @Override
-    public void onBecomingLeader(
+    public ActorFuture<Void> onBecomingLeader(
         final int partitionId, final long term, final LogStream logStream) {
       logstreams.put(partitionId, logStream);
       latch.countDown();
+      return CompletableActorFuture.completed(null);
     }
 
     void awaitLeaders() throws InterruptedException {

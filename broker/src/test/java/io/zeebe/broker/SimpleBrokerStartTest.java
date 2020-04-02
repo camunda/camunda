@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -68,13 +70,16 @@ public final class SimpleBrokerStartTest {
     broker.addPartitionListener(
         new PartitionListener() {
           @Override
-          public void onBecomingFollower(
-              final int partitionId, final long term, final LogStream logStream) {}
+          public ActorFuture<Void> onBecomingFollower(
+              final int partitionId, final long term, final LogStream logStream) {
+            return CompletableActorFuture.completed(null);
+          }
 
           @Override
-          public void onBecomingLeader(
+          public ActorFuture<Void> onBecomingLeader(
               final int partitionId, final long term, final LogStream logStream) {
             leaderLatch.countDown();
+            return CompletableActorFuture.completed(null);
           }
         });
 
