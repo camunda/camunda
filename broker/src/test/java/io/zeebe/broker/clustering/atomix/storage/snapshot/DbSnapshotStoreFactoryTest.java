@@ -9,7 +9,7 @@ package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.protocols.raft.storage.snapshot.Snapshot;
+import io.atomix.raft.storage.snapshot.Snapshot;
 import io.atomix.utils.time.WallClockTimestamp;
 import java.util.ArrayList;
 import org.agrona.IoUtil;

@@ -7,8 +7,8 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import io.atomix.protocols.raft.RaftFailureListener;
-import io.atomix.protocols.raft.partition.RaftPartition;
+import io.atomix.raft.RaftFailureListener;
+import io.atomix.raft.partition.RaftPartition;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitorable;
 import io.zeebe.util.health.HealthStatus;

@@ -11,7 +11,7 @@ import static io.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
-import io.atomix.protocols.raft.partition.RaftPartitionGroup;
+import io.atomix.raft.partition.RaftPartitionGroup;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
 import io.zeebe.logstreams.log.LogStream;

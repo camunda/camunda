@@ -9,14 +9,14 @@ package io.zeebe.logstreams.util;
 
 import static org.mockito.Mockito.spy;
 
-import io.atomix.protocols.raft.partition.impl.RaftNamespaces;
-import io.atomix.protocols.raft.storage.RaftStorage;
-import io.atomix.protocols.raft.storage.log.RaftLog;
-import io.atomix.protocols.raft.storage.log.RaftLogReader;
-import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
-import io.atomix.protocols.raft.storage.system.MetaStore;
-import io.atomix.protocols.raft.zeebe.ZeebeEntry;
-import io.atomix.protocols.raft.zeebe.ZeebeLogAppender;
+import io.atomix.raft.partition.impl.RaftNamespaces;
+import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.storage.snapshot.SnapshotStore;
+import io.atomix.raft.storage.system.MetaStore;
+import io.atomix.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;

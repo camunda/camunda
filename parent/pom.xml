@@ -38,7 +38,6 @@
     <version.agrona>1.4.1</version.agrona>
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.15.0</version.assertj>
-    <version.atomix>3.2.0-SNAPSHOT</version.atomix>
     <version.camunda>7.12.0</version.camunda>
     <version.commons-lang>3.10</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
@@ -81,6 +80,11 @@
     <version.feel-scala>1.11.0</version.feel-scala>
     <version.spring-framework>5.2.5.RELEASE</version.spring-framework>
     <version.spring-boot>2.2.6.RELEASE</version.spring-boot>
+    <version.spring-boot>2.2.5.RELEASE</version.spring-boot>
+    <version.classgraph>4.8.65</version.classgraph>
+    <version.concurrentunit>0.4.6</version.concurrentunit>
+    <version.config>1.4.0</version.config>
+    <version.kryo>4.0.2</version.kryo>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
@@ -106,6 +110,8 @@
     <plugin.version.spotbugs>4.0.0</plugin.version.spotbugs>
     <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
     <plugin.version.clirr>2.8</plugin.version.clirr>
+    <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
+    <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
 
 
     <!-- maven extensions -->
@@ -268,42 +274,6 @@
         <groupId>org.rocksdb</groupId>
         <artifactId>rocksdbjni</artifactId>
         <version>${version.rocksdbjni}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>atomix</artifactId>
-        <version>${version.atomix}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>atomix-cluster</artifactId>
-        <version>${version.atomix}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>atomix-primitive</artifactId>
-        <version>${version.atomix}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>atomix-utils</artifactId>
-        <version>${version.atomix}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>atomix-raft</artifactId>
-        <version>${version.atomix}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>atomix-storage</artifactId>
-        <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
@@ -576,7 +546,6 @@
         <version>${version.spring-framework}</version>
       </dependency>
 
-
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot</artifactId>
@@ -586,6 +555,34 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-autoconfigure</artifactId>
         <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <artifactId>guava-testlib</artifactId>
+        <groupId>com.google.guava</groupId>
+        <scope>test</scope>
+        <version>${version.guava}</version>
+      </dependency>
+      <dependency>
+        <artifactId>concurrentunit</artifactId>
+        <groupId>net.jodah</groupId>
+        <scope>test</scope>
+        <version>${version.concurrentunit}</version>
+      </dependency>
+      <dependency>
+        <artifactId>kryo</artifactId>
+        <groupId>com.esotericsoftware</groupId>
+        <version>${version.kryo}</version>
+      </dependency>
+      <dependency>
+        <artifactId>config</artifactId>
+        <groupId>com.typesafe</groupId>
+        <version>${version.config}</version>
+      </dependency>
+      <dependency>
+        <artifactId>classgraph</artifactId>
+        <groupId>io.github.classgraph</groupId>
+        <version>${version.classgraph}</version>
       </dependency>
 
     </dependencies>
@@ -999,7 +996,7 @@
             <dependency>
               <groupId>org.apache.maven.shared</groupId>
               <artifactId>maven-dependency-analyzer</artifactId>
-              <version>1.11.1</version>
+              <version>${plugin.version.dependency-analyzer}</version>
             </dependency>
           </dependencies>
 
@@ -1028,7 +1025,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>${plugin.version.maven-jar}</version>
           <configuration>
             <useDefaultManifestFile>false</useDefaultManifestFile>
           </configuration>

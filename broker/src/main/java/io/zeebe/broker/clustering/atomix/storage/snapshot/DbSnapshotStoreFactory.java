@@ -7,8 +7,8 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
-import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
-import io.atomix.protocols.raft.storage.snapshot.SnapshotStoreFactory;
+import io.atomix.raft.storage.snapshot.SnapshotStore;
+import io.atomix.raft.storage.snapshot.SnapshotStoreFactory;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.io.UncheckedIOException;

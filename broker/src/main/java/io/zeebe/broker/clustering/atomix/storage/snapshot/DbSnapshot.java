@@ -7,10 +7,10 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
-import io.atomix.protocols.raft.storage.snapshot.Snapshot;
-import io.atomix.protocols.raft.storage.snapshot.SnapshotChunkReader;
-import io.atomix.protocols.raft.storage.snapshot.impl.SnapshotReader;
-import io.atomix.protocols.raft.storage.snapshot.impl.SnapshotWriter;
+import io.atomix.raft.storage.snapshot.Snapshot;
+import io.atomix.raft.storage.snapshot.SnapshotChunkReader;
+import io.atomix.raft.storage.snapshot.impl.SnapshotReader;
+import io.atomix.raft.storage.snapshot.impl.SnapshotWriter;
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;

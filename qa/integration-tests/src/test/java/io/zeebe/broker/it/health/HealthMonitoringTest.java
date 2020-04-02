@@ -13,7 +13,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.primitive.partition.PartitionId;
-import io.atomix.protocols.raft.partition.RaftPartition;
+import io.atomix.raft.partition.RaftPartition;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.it.clustering.ClusteringRule;
