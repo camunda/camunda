@@ -4,6 +4,7 @@
   > .ProcessView,
   > .ProcessEdit {
     > .header {
+      padding: 36px 20px 0;
       margin-bottom: 1em;
 
       .head {
@@ -37,6 +38,10 @@
           margin-right: 0;
         }
       }
+    }
+
+    > .BPMNDiagram {
+      margin: 0 20px;
     }
   }
 }

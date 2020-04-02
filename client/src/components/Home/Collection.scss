@@ -2,12 +2,12 @@
 
 .Collection {
   height: 100%;
-  position: relative;
+  display: flex;
+  flex-direction: column;
 
   > .header {
     height: 135px;
     border-bottom: 1px solid $silver-darken-87;
-    margin: -36px -20px 0;
     position: relative;
     padding: 30px 63px;
 
@@ -113,11 +113,7 @@
   }
 
   > .content {
-    position: absolute;
-    bottom: -36px;
-    left: -20px;
-    right: -20px;
-    top: 135px;
     overflow: auto;
+    flex: 1;
   }
 }

@@ -2,10 +2,10 @@
 
 .Home {
   height: 100%;
-  position: relative;
+  display: flex;
+  flex-direction: column;
 
   .welcomeMessage {
-    margin: -36px -20px 0;
     height: 110px;
     border-bottom: 1px solid $silver-darken-87;
     line-height: 110px;
@@ -13,15 +13,10 @@
     opacity: 0.8;
     font-size: 19px;
     padding-left: 66px;
-    position: relative;
   }
 
   > .content {
-    position: absolute;
-    bottom: -36px;
-    left: -20px;
-    right: -20px;
-    top: 110px;
     overflow: auto;
+    flex: 1;
   }
 }
