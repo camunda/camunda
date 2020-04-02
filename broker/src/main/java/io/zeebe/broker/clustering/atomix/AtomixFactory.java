@@ -111,7 +111,7 @@ public final class AtomixFactory {
             .withDataDirectory(raftDirectory)
             .withStateMachineFactory(
                 (raftContext, threadContext, threadContextFactory) ->
-                    new ZeebeRaftStateMachine(raftContext, threadContext))
+                    new ZeebeRaftStateMachine(raftContext))
             .withSnapshotStoreFactory(new DbSnapshotStoreFactory())
             .withFlushOnCommit();
 
