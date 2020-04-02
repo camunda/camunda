@@ -56,12 +56,16 @@ class FeelToMessagePackTransformer {
           value match {
             case entryVal: Val => writeValue(entryVal)
             case entryBuffer: DirectBuffer => writer.writeRaw(entryBuffer)
-            case other => LOGGER.warn("No FEEL to MessagePack transformation for '{}'. Ignoring context entry with key '{}'.", other, key)
+            case other => {
+              writer.writeNil()
+              LOGGER.warn("No FEEL to MessagePack transformation for '{}'. Using 'null' for context entry with key '{}'.", other, key)
+            }
           }
         }
       }
       case other => {
-        LOGGER.warn("No FEEL to MessagePack transformation for '{}'. Ignoring value.", other)
+        writer.writeNil()
+        LOGGER.warn("No FEEL to MessagePack transformation for '{}'. Using 'null' instead.", other)
       }
     }
   }

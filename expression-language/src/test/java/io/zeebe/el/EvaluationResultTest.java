@@ -38,8 +38,8 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isEqualTo("x");
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
-    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"x\""));
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"x\""));
   }
 
   @Test
@@ -50,8 +50,8 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getNumber()).isEqualTo(1L);
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getBoolean()).isNull();
-    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("1"));
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("1"));
   }
 
   @Test
@@ -62,8 +62,8 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getBoolean()).isTrue();
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
-    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("true"));
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("true"));
   }
 
   @Test
@@ -74,8 +74,8 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
-    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("null"));
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("null"));
   }
 
   @Test
@@ -86,9 +86,9 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
-    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("[1,2,3]"));
     assertThat(evaluationResult.getList())
         .isEqualTo(List.of(asMsgPack("1"), asMsgPack("2"), asMsgPack("3")));
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("[1,2,3]"));
   }
 
   @Test
@@ -99,8 +99,80 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
-    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack(Map.of("x", 1)));
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack(Map.of("x", 1)));
+  }
+
+  @Test
+  public void dateExpression() {
+    final var evaluationResult = evaluateExpression("=date(\"2020-04-02\")");
+
+    assertThat(evaluationResult.getType()).isNull();
+    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getBoolean()).isNull();
+    assertThat(evaluationResult.getNumber()).isNull();
+    assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("null"));
+  }
+
+  @Test
+  public void timeExpression() {
+    final var evaluationResult = evaluateExpression("=time(\"14:00:00\")");
+
+    assertThat(evaluationResult.getType()).isNull();
+    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getBoolean()).isNull();
+    assertThat(evaluationResult.getNumber()).isNull();
+    assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("null"));
+  }
+
+  @Test
+  public void dateTimeExpression() {
+    final var evaluationResult = evaluateExpression("=date and time(\"2020-04-02T14:00:00\")");
+
+    assertThat(evaluationResult.getType()).isNull();
+    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getBoolean()).isNull();
+    assertThat(evaluationResult.getNumber()).isNull();
+    assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("null"));
+  }
+
+  @Test
+  public void durationExpression() {
+    final var evaluationResult = evaluateExpression("=duration(\"P5D\")");
+
+    assertThat(evaluationResult.getType()).isNull();
+    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getBoolean()).isNull();
+    assertThat(evaluationResult.getNumber()).isNull();
+    assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("null"));
+  }
+
+  @Test
+  public void listWithDateExpression() {
+    final var evaluationResult = evaluateExpression("=[date(\"2020-04-02\")]");
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.ARRAY);
+    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getBoolean()).isNull();
+    assertThat(evaluationResult.getNumber()).isNull();
+    assertThat(evaluationResult.getList()).isEqualTo(List.of(asMsgPack("null")));
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("[null]"));
+  }
+
+  @Test
+  public void contextWithDateExpression() {
+    final var evaluationResult = evaluateExpression("={x:date(\"2020-04-02\")}");
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.OBJECT);
+    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getBoolean()).isNull();
+    assertThat(evaluationResult.getNumber()).isNull();
+    assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("{'x':null}"));
   }
 
   private EvaluationResult evaluateExpression(final String expression) {
