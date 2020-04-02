@@ -142,7 +142,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
               Integer.parseInt(properties.getProperty(ClientProperties.DEFAULT_JOB_TIMEOUT))));
     }
     if (properties.containsKey(ClientProperties.DEFAULT_JOB_POLL_INTERVAL)) {
-      defaultJobTimeout(
+      defaultJobPollInterval(
           Duration.ofMillis(
               Integer.parseInt(
                   properties.getProperty(ClientProperties.DEFAULT_JOB_POLL_INTERVAL))));
