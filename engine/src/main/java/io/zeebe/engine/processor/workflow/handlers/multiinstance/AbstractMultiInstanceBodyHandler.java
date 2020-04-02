@@ -15,7 +15,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -35,7 +34,6 @@ public abstract class AbstractMultiInstanceBodyHandler
   protected final ExpressionProcessor expressionProcessor;
 
   private final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup;
-  private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
 
   private final MutableDirectBuffer loopCounterVariableBuffer =
       new UnsafeBuffer(new byte[Long.BYTES + 1]);

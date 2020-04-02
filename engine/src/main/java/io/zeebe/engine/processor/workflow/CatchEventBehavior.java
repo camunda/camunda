@@ -22,7 +22,6 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
 import io.zeebe.model.bpmn.util.time.Timer;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.intent.TimerIntent;
@@ -41,7 +40,6 @@ public final class CatchEventBehavior {
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final int partitionsCount;
 
-  private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
   private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
   private final TimerRecord timerRecord = new TimerRecord();
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
