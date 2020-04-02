@@ -322,6 +322,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final String varName = "a";
     final String newVarValue = "\"newValue\"";
     postUpdateVariableOperation(workflowInstanceKey, varName, newVarValue);
+    elasticsearchTestRule.refreshOperateESIndices();
 
     //then variable with new value is returned
     List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, workflowInstanceKey);
@@ -380,6 +381,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final String newVar2Name = "newVar2";
     final String newVar2Value = "\"newValue2\"";
     postUpdateVariableOperation(workflowInstanceKey, newVar2Name, newVar2Value);
+    elasticsearchTestRule.refreshOperateESIndices();
 
     //then new variables are returned
     List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, workflowInstanceKey);
@@ -420,6 +422,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final String newVar2Name = "newVar2";
     final String newVar2Value = "\"newValue2\"";
     postUpdateVariableOperation(workflowInstanceKey, taskAId, newVar2Name, newVar2Value);
+    elasticsearchTestRule.refreshOperateESIndices();
 
     //then new variables are returned
     List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, taskAId);
