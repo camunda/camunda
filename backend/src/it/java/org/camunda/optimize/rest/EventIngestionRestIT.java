@@ -154,6 +154,25 @@ public class EventIngestionRestIT extends AbstractIT {
   }
 
   @Test
+  public void ingestEventBatch_customSecretUsingBearerScheme() {
+    // given
+    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+
+    final String customSecret = "mySecret";
+    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setAccessToken(customSecret);
+
+    // when
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestEventBatch(Collections.singletonList(eventDto), IngestionRestService.BEARER_PREFIX + customSecret)
+      .execute();
+
+    // then
+    assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+
+    assertEventDtosArePersisted(Collections.singletonList(eventDto));
+  }
+
+  @Test
   public void ingestEventBatch_notAuthorized() {
     // given
     final List<CloudEventDto> eventDtos = IntStream.range(0, 2)
