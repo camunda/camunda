@@ -163,7 +163,8 @@ pipeline {
                 set -o pipefail
 
                 bash .ci/pipelines/event_import_performance/create-and-publish-event-process.sh ${NAMESPACE} .ci/pipelines/event_import_performance/invoiceEventProcessMapping.json
-                
+
+                curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
                 # assert expected counts
                 NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-event-process-instance-*/_count' | jq '.count') || true
                 EXPECTED_NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES=\$(curl -s -H 'Content-Type: application/json' -XPOST 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_doc/_count' -d '{"query":{"bool":{"must":[{"term":{"processDefinitionKey":"invoice"}}],"must_not":[],"should":[]}}}' | jq '.count') || true
