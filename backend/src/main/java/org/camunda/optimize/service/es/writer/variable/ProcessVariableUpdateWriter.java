@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
@@ -21,7 +22,6 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
@@ -61,18 +62,68 @@ public class ProcessVariableUpdateWriter {
   protected final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
-  public void importVariables(List<ProcessVariableDto> variables) {
+  public List<ImportRequestDto> generateVariableUpdateImports(List<ProcessVariableDto> variables) {
     String importItemName = "variables";
-    log.debug("Writing [{}] {} to ES.", variables.size(), importItemName);
+    log.debug("Creating imports for {} [{}].", variables.size(), importItemName);
 
     Map<String, List<OptimizeDto>> processInstanceIdToVariables = groupVariablesByProcessInstanceIds(variables);
 
-    ElasticsearchWriterUtil.doBulkRequestWithMap(
-      esClient,
-      importItemName,
-      processInstanceIdToVariables,
-      this::addImportVariablesRequest
-    );
+    return processInstanceIdToVariables.entrySet().stream()
+      .map(entry -> ImportRequestDto.builder()
+        .importName(importItemName)
+        .esClient(esClient)
+        .request(createUpdateRequestForProcessInstanceVariables(entry))
+        .build())
+      .filter(update -> Objects.nonNull(update.getRequest()))
+      .collect(Collectors.toList());
+  }
+
+  private UpdateRequest createUpdateRequestForProcessInstanceVariables(
+    final Map.Entry<String, List<OptimizeDto>> processInstanceIdToVariables) {
+    if (!(processInstanceIdToVariables.getValue().stream().allMatch(dto -> dto instanceof ProcessVariableDto))) {
+      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
+    }
+    final List<ProcessVariableDto> variablesWithAllInformation =
+      (List<ProcessVariableDto>) (List<?>) processInstanceIdToVariables
+        .getValue();
+    final String processInstanceId = processInstanceIdToVariables.getKey();
+
+    List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWithAllInformation);
+    Map<String, Object> params = buildParameters(variables);
+
+    final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
+
+    if (variablesWithAllInformation.isEmpty()) {
+      //all is lost, no variables to persist, should have crashed before.
+      return null;
+    }
+    final ProcessVariableDto firstVariable = variablesWithAllInformation.get(0);
+    String newEntryIfAbsent = null;
+    try {
+      newEntryIfAbsent = getNewProcessInstanceRecordString(
+        processInstanceId,
+        firstVariable.getEngineAlias(),
+        firstVariable.getTenantId(),
+        variables
+      );
+    } catch (JsonProcessingException e) {
+      String reason = String.format(
+        "Error while processing JSON for activity instances with ID [%s].",
+        processInstanceId
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (newEntryIfAbsent != null) {
+      return new UpdateRequest()
+        .index(PROCESS_INSTANCE_INDEX_NAME)
+        .id(processInstanceId)
+        .script(updateScript)
+        .upsert(newEntryIfAbsent, XContentType.JSON)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    }
+    return null;
   }
 
   public void deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(final String processDefinitionKey,
@@ -209,50 +260,4 @@ public class ProcessVariableUpdateWriter {
     );
   }
 
-  private void addImportVariablesRequest(BulkRequest addVariablesToProcessInstanceBulkRequest,
-                                         Map.Entry<String, List<OptimizeDto>> processVariableEntry) {
-    if (!(processVariableEntry.getValue().stream().allMatch(dto -> dto instanceof ProcessVariableDto))) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    final List<ProcessVariableDto> variablesWithAllInformation = (List<ProcessVariableDto>) (List<?>) processVariableEntry.getValue();
-    final String processInstanceId = processVariableEntry.getKey();
-
-    List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWithAllInformation);
-    Map<String, Object> params = buildParameters(variables);
-
-    final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
-
-    if (variablesWithAllInformation.isEmpty()) {
-      //all is lost, no variables to persist, should have crashed before.
-      return;
-    }
-    final ProcessVariableDto firstVariable = variablesWithAllInformation.get(0);
-    String newEntryIfAbsent = null;
-    try {
-      newEntryIfAbsent = getNewProcessInstanceRecordString(
-        processInstanceId,
-        firstVariable.getEngineAlias(),
-        firstVariable.getTenantId(),
-        variables
-      );
-    } catch (JsonProcessingException e) {
-      String reason = String.format(
-        "Error while processing JSON for activity instances with ID [%s].",
-        processInstanceId
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (newEntryIfAbsent != null) {
-      UpdateRequest request = new UpdateRequest()
-        .index(PROCESS_INSTANCE_INDEX_NAME)
-        .id(processInstanceId)
-        .script(updateScript)
-        .upsert(newEntryIfAbsent, XContentType.JSON)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      addVariablesToProcessInstanceBulkRequest.add(request);
-    }
-  }
 }

@@ -8,11 +8,13 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
@@ -57,21 +60,24 @@ public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWrite
     this.dateTimeFormatter = dateTimeFormatter;
   }
 
-  public void importProcessInstances(List<ProcessInstanceDto> processInstances) {
+  public List<ImportRequestDto> generateProcessInstanceImports(List<ProcessInstanceDto> processInstances) {
     String importItemName = "completed process instances";
-    log.debug("Writing [{}] {} to ES", processInstances.size(), importItemName);
+    log.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
-      esClient,
-      importItemName,
-      processInstances,
-      (request, dto) -> addImportProcessInstanceRequest(
-        request,
-        dto,
-        PRIMITIVE_UPDATABLE_FIELDS,
-        objectMapper
-      )
-    );
+    return processInstances.stream()
+      .map(key -> ImportRequestDto.builder()
+        .importName(importItemName)
+        .esClient(esClient)
+        .request(createImportRequestForProcessInstance(key))
+        .build())
+      .collect(Collectors.toList());
+  }
+
+  private UpdateRequest createImportRequestForProcessInstance(final ProcessInstanceDto processInstanceDto) {
+    if (processInstanceDto.getEndDate() == null) {
+      log.warn("End date should not be null for completed process instances!");
+    }
+    return createImportRequestForProcessInstance(processInstanceDto, PRIMITIVE_UPDATABLE_FIELDS);
   }
 
   public void deleteProcessInstancesByProcessDefinitionKeyAndEndDateOlderThan(final String processDefinitionKey,

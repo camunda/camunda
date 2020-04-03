@@ -9,8 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
-import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
+import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -25,7 +26,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.groupingByConcurrent;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ASSIGNEE_OPERATION_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ASSIGNEE_OPERATION_USER_ID;
@@ -53,7 +53,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
     this.esClient = esClient;
   }
 
-  public void importIdentityLinkLogs(final List<IdentityLinkLogEntryDto> identityLinkLogs) throws Exception {
+  public void importIdentityLinkLogs(final List<IdentityLinkLogEntryDto> identityLinkLogs) {
     String importItemName = "identity link logs";
     log.debug("Writing [{}] {} to ES.", identityLinkLogs.size(), importItemName);
 
@@ -78,20 +78,23 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
       ));
     }
 
-    final Map<String, List<UserTaskInstanceDto>> userTasksByProcessInstance = new HashMap<>();
+    final Map<String, List<UserTaskInstanceDto>> processInstanceIdToUserTasks = new HashMap<>();
     for (UserTaskInstanceDto userTask : userTaskInstances) {
-      if (!userTasksByProcessInstance.containsKey(userTask.getProcessInstanceId())) {
-        userTasksByProcessInstance.put(userTask.getProcessInstanceId(), new ArrayList<>());
+      if (!processInstanceIdToUserTasks.containsKey(userTask.getProcessInstanceId())) {
+        processInstanceIdToUserTasks.put(userTask.getProcessInstanceId(), new ArrayList<>());
       }
-      userTasksByProcessInstance.get(userTask.getProcessInstanceId()).add(userTask);
+      processInstanceIdToUserTasks.get(userTask.getProcessInstanceId()).add(userTask);
     }
 
-    ElasticsearchWriterUtil.doBulkRequestWithMap(
-      esClient,
-      importItemName,
-      userTasksByProcessInstance,
-      this::addImportUserTaskToRequest
-    );
+    final List<ImportRequestDto> importRequests = processInstanceIdToUserTasks.entrySet().stream()
+      .map(entry -> ImportRequestDto.builder()
+        .importName(importItemName)
+        .esClient(esClient)
+        .request(createUserTaskUpdateImportRequest(entry))
+        .build())
+      .collect(Collectors.toList());
+
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk(importItemName, importRequests);
   }
 
   private List<CandidateGroupOperationDto> mapToCandidateGroupOperationDtos(List<IdentityLinkLogEntryDto> identityLinkLogs) {

@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 @Getter
 @ToString
@@ -18,7 +19,7 @@ import lombok.experimental.FieldNameConstants;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode
-public class BusinessKeyDto {
+public class BusinessKeyDto implements OptimizeDto {
 
   private String processInstanceId;
   private String businessKey;

@@ -8,15 +8,13 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
@@ -45,24 +43,8 @@ public class RunningUserTaskInstanceWriter extends AbstractUserTaskWriter<UserTa
     this.esClient = esClient;
   }
 
-  public void importUserTaskInstances(final List<UserTaskInstanceDto> userTaskInstances) throws Exception {
-    String importItemName = "running user task instances";
-    log.debug("Writing [{}] {} to ES.", userTaskInstances.size(), importItemName);
-
-    Map<String, List<UserTaskInstanceDto>> userTaskToProcessInstance = new HashMap<>();
-    for (UserTaskInstanceDto userTask : userTaskInstances) {
-      if (!userTaskToProcessInstance.containsKey(userTask.getProcessInstanceId())) {
-        userTaskToProcessInstance.put(userTask.getProcessInstanceId(), new ArrayList<>());
-      }
-      userTaskToProcessInstance.get(userTask.getProcessInstanceId()).add(userTask);
-    }
-
-    ElasticsearchWriterUtil.doBulkRequestWithMap(
-      esClient,
-      importItemName,
-      userTaskToProcessInstance,
-      this::addImportUserTaskToRequest
-    );
+  public List<ImportRequestDto> generateUserTaskImports(final List<UserTaskInstanceDto> userTaskInstances) {
+    return super.generateUserTaskImports("running user task instances", esClient, userTaskInstances);
   }
 
   protected String createInlineUpdateScript() {

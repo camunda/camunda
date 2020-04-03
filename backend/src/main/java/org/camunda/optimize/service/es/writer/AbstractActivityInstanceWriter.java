@@ -7,13 +7,13 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
@@ -41,10 +42,7 @@ public abstract class AbstractActivityInstanceWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void importActivityInstancesToProcessInstances(List<FlowNodeEventDto> activityInstances) {
-    String importItemName = "activity instances";
-    log.debug("Writing [{}] {} to ES.", activityInstances.size(), importItemName);
-
+  public List<ImportRequestDto> generateActivityInstanceImports(List<FlowNodeEventDto> activityInstances) {
     Map<String, List<OptimizeDto>> processInstanceToEvents = new HashMap<>();
     for (FlowNodeEventDto e : activityInstances) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
@@ -53,16 +51,19 @@ public abstract class AbstractActivityInstanceWriter {
       processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
     }
 
-    ElasticsearchWriterUtil.doBulkRequestWithMap(
-      esClient,
-      importItemName,
-      processInstanceToEvents,
-      this::addActivityInstancesToProcessInstanceRequest
-    );
+    String importItemName = "activity instances";
+    log.debug("Creating imports for {} [{}].", activityInstances.size(), importItemName);
+
+    return processInstanceToEvents.entrySet().stream()
+      .map(entry -> ImportRequestDto.builder()
+               .importName(importItemName)
+               .esClient(esClient)
+               .request(createImportRequestForActivityInstance(entry))
+               .build())
+      .collect(Collectors.toList());
   }
 
-  private void addActivityInstancesToProcessInstanceRequest(BulkRequest addEventToProcessInstanceBulkRequest,
-                                                            Map.Entry<String, List<OptimizeDto>> activityInstanceEntry) {
+  private UpdateRequest createImportRequestForActivityInstance(Map.Entry<String, List<OptimizeDto>> activityInstanceEntry) {
     if (!activityInstanceEntry.getValue().stream().allMatch(dto -> dto instanceof FlowNodeEventDto)) {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
@@ -85,14 +86,12 @@ public abstract class AbstractActivityInstanceWriter {
         .setEngine(e.getEngineAlias())
         .setEvents(simpleEvents);
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-      final UpdateRequest request = new UpdateRequest()
+      return new UpdateRequest()
         .index(PROCESS_INSTANCE_INDEX_NAME)
         .id(activityInstanceId)
         .script(updateScript)
         .upsert(newEntryIfAbsent, XContentType.JSON)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      addEventToProcessInstanceBulkRequest.add(request);
     } catch (IOException e) {
       String reason = String.format(
         "Error while processing JSON for activity instances with ID [%s].",

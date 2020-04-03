@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
@@ -91,14 +92,38 @@ public class ElasticsearchWriterUtil {
   }
 
   static String createUpdateFieldsScript(final Set<String> fieldKeys) {
-    return createUpdateFieldsScript("ctx._source", fieldKeys);
-  }
-
-  static String createUpdateFieldsScript(final String fieldPath, final Set<String> fieldKeys) {
     return fieldKeys
       .stream()
-      .map(fieldKey -> String.format("%s.%s = params.%s;\n", fieldPath, fieldKey, fieldKey))
+      .map(fieldKey -> String.format("%s.%s = params.%s;\n", "ctx._source", fieldKey, fieldKey))
       .collect(Collectors.joining());
+  }
+
+  public static void executeImportRequestsAsBulk(String bulkRequestName, List<ImportRequestDto> importRequestDtos) {
+    final Map<OptimizeElasticsearchClient, List<ImportRequestDto>> esClientToImportRequests = importRequestDtos.stream()
+      .collect(groupingBy(ImportRequestDto::getEsClient));
+    esClientToImportRequests.forEach((esClient, requestList) -> {
+      if (requestList.isEmpty()) {
+        log.warn("No requests supplied, cannot create bulk request");
+      } else {
+        final BulkRequest bulkRequest = new BulkRequest();
+        final Map<String, List<ImportRequestDto>> requestsByType = requestList.stream()
+          .collect(groupingBy(ImportRequestDto::getImportName));
+        requestsByType.forEach((type, requests) -> {
+          log.debug("Adding [{}] requests of type {} to bulk request", requests.size(), type);
+          requests.forEach(importRequest -> {
+            if (importRequest.getRequest() != null) {
+              bulkRequest.add(importRequest.getRequest());
+            } else {
+              log.warn(
+                "Cannot add request to bulk as no request was provided. Import type [{}]",
+                importRequest.getImportName()
+              );
+            }
+          });
+        });
+        doBulkRequest(esClient, bulkRequest, bulkRequestName);
+      }
+    });
   }
 
   public static <T> void doBulkRequestWithList(OptimizeElasticsearchClient esClient,
@@ -110,19 +135,6 @@ public class ElasticsearchWriterUtil {
     } else {
       final BulkRequest bulkRequest = new BulkRequest();
       entityCollection.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
-      doBulkRequest(esClient, bulkRequest, importItemName);
-    }
-  }
-
-  public static <T extends OptimizeDto> void doBulkRequestWithMap(OptimizeElasticsearchClient esClient,
-                                                                  String importItemName,
-                                                                  Map<String, List<T>> dtoMap,
-                                                                  BiConsumer<BulkRequest, Map.Entry<String, List<T>>> addDtoToRequestConsumer) {
-    if (dtoMap.isEmpty()) {
-      log.warn("Cannot import empty map of {}.", importItemName);
-    } else {
-      final BulkRequest bulkRequest = new BulkRequest();
-      dtoMap.entrySet().forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
       doBulkRequest(esClient, bulkRequest, importItemName);
     }
   }
@@ -145,12 +157,7 @@ public class ElasticsearchWriterUtil {
       updateResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
       checkBulkByScrollResponse(updateResponse, updateItemName, "updating");
     } catch (IOException e) {
-      String reason =
-        String.format(
-          "Could not update %s with [%s].",
-          updateItemName,
-          updateItemIdentifier
-        );
+      String reason = String.format("Could not update %s with [%s].", updateItemName, updateItemIdentifier);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -177,32 +184,26 @@ public class ElasticsearchWriterUtil {
       deleteResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
       checkBulkByScrollResponse(deleteResponse, deletedItemName, "deleting");
     } catch (IOException e) {
-      String reason =
-        String.format("Could not delete %s with %s.", deletedItemName, deletedItemIdentifier);
+      String reason = String.format("Could not delete %s with %s.", deletedItemName, deletedItemIdentifier);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-
     log.debug("Deleted [{}] {} with {}.", deleteResponse.getDeleted(), deletedItemName, deletedItemIdentifier);
-
     return deleteResponse.getDeleted() > 0L;
   }
 
-  private void doBulkRequest(OptimizeElasticsearchClient esClient,
-                             BulkRequest bulkRequest,
-                             String itemName) {
+  private void doBulkRequest(OptimizeElasticsearchClient esClient, BulkRequest bulkRequest, String itemName) {
     try {
       BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
       if (bulkResponse.hasFailures()) {
-        String errorMessage = String.format(
+        throw new OptimizeRuntimeException(String.format(
           "There were failures while writing %s with message: %s",
           itemName,
           bulkResponse.buildFailureMessage()
-        );
-        throw new OptimizeRuntimeException(errorMessage);
+        ));
       }
     } catch (IOException e) {
-      String reason = String.format("There were errors while writing {}.", itemName);
+      String reason = String.format("There were errors while writing %s.", itemName);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -212,13 +213,13 @@ public class ElasticsearchWriterUtil {
                                          String itemName,
                                          String verb) {
     if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
-      String errorMessage = String.format(
+      throw new OptimizeRuntimeException(String.format(
         "There were failures while %s %s with message: %s",
         verb,
         itemName,
         bulkByScrollResponse.getBulkFailures()
-      );
-      throw new OptimizeRuntimeException(errorMessage);
+      ));
     }
   }
+
 }

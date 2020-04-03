@@ -59,7 +59,7 @@ public class DecisionDefinitionWriter {
       esClient,
       importItemName,
       decisionDefinitionOptimizeDtos,
-      (request, dto) -> addImportDecisionDefinitionXmlRequest(request, dto)
+      this::addImportDecisionDefinitionXmlRequest
     );
   }
 

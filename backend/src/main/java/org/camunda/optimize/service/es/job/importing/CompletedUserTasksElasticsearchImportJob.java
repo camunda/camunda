@@ -5,9 +5,11 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 
 import java.util.List;
 
@@ -21,7 +23,8 @@ public class CompletedUserTasksElasticsearchImportJob extends ElasticsearchImpor
   }
 
   @Override
-  protected void persistEntities(List<UserTaskInstanceDto> newOptimizeEntities) throws Exception {
-    completedUserTaskInstanceWriter.importUserTaskInstances(newOptimizeEntities);
+  protected void persistEntities(List<UserTaskInstanceDto> newOptimizeEntities) {
+    final List<ImportRequestDto> importRequests = completedUserTaskInstanceWriter.generateUserTaskImports(newOptimizeEntities);
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk("Completed user tasks", importRequests);
   }
 }

@@ -5,11 +5,14 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class VariableUpdateElasticsearchImportJob extends ElasticsearchImportJob<ProcessVariableDto> {
@@ -26,9 +29,11 @@ public class VariableUpdateElasticsearchImportJob extends ElasticsearchImportJob
   }
 
   @Override
-  protected void persistEntities(List<ProcessVariableDto> variableUpdates) throws Exception {
-    variableWriter.importVariables(variableUpdates);
-    camundaEventService.importVariableUpdateInstances(variableUpdates);
+  protected void persistEntities(List<ProcessVariableDto> variableUpdates) {
+    List<ImportRequestDto> importBulks = new ArrayList<>();
+    importBulks.addAll(variableWriter.generateVariableUpdateImports(variableUpdates));
+    importBulks.addAll(camundaEventService.generateVariableUpdateImports(variableUpdates));
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk("Variable updates", importBulks);
   }
 
 }

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.script.Script;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
@@ -46,21 +48,17 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
     this.esClient = esClient;
   }
 
-  public void importProcessInstances(List<ProcessInstanceDto> processInstanceDtos) {
+  public List<ImportRequestDto> generateProcessInstanceImports(List<ProcessInstanceDto> processInstanceDtos) {
     String importItemName = "running process instances";
-    log.debug("Writing [{}] {} to ES.", processInstanceDtos.size(), importItemName);
+    log.debug("Creating imports for {} [{}].", processInstanceDtos.size(), importItemName);
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
-      esClient,
-      importItemName,
-      processInstanceDtos,
-      (request, dto) -> addImportProcessInstanceRequest(
-        request,
-        dto,
-        PRIMITIVE_UPDATABLE_FIELDS,
-        objectMapper
-      )
-    );
+    return processInstanceDtos.stream()
+      .map(instance -> ImportRequestDto.builder()
+        .importName(importItemName)
+        .esClient(esClient)
+        .request(createImportRequestForProcessInstance(instance, PRIMITIVE_UPDATABLE_FIELDS))
+        .build())
+      .collect(Collectors.toList());
   }
 
   public void importProcessInstancesFromUserOperationLogs(List<ProcessInstanceDto> processInstanceDtos) {

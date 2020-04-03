@@ -21,7 +21,7 @@ public class IdentityLinkLogElasticsearchImportJob extends ElasticsearchImportJo
   }
 
   @Override
-  protected void persistEntities(List<IdentityLinkLogEntryDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(List<IdentityLinkLogEntryDto> newOptimizeEntities) {
     identityLinkLogWriter.importIdentityLinkLogs(newOptimizeEntities);
   }
 }

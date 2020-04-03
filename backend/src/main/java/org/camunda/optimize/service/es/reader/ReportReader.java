@@ -254,26 +254,6 @@ public class ReportReader {
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), CombinedReportDefinitionDto.class, objectMapper);
   }
 
-  private <T extends ReportDefinitionDto> List<T> getPrivateReportDefinitionDtos(final List<String> reportIds,
-                                                                                 final Class<T> reportType,
-                                                                                 final String[] indices) {
-    if (reportIds.isEmpty()) {
-      return Collections.emptyList();
-    }
-    final String[] reportIdsAsArray = reportIds.toArray(new String[0]);
-    QueryBuilder qb = boolQuery().mustNot(existsQuery(COLLECTION_ID))
-      .must((QueryBuilders.idsQuery().addIds(reportIdsAsArray)));
-    final SearchResponse searchResponse = performGetReportRequestOmitXml(
-      qb,
-      indices,
-      reportIdsAsArray.length
-    );
-    return mapResponseToReportList(searchResponse, reportType).stream()
-      // make sure that the order of the reports corresponds to the one from the single report ids list
-      .sorted(Comparator.comparingInt(a -> reportIds.indexOf(a.getId())))
-      .collect(Collectors.toList());
-  }
-
   private <T extends ReportDefinitionDto> List<T> getReportDefinitionDtos(final List<String> reportIds,
                                                                           final Class<T> reportType,
                                                                           final String[] indices) {

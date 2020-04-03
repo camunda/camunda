@@ -5,11 +5,14 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CompletedProcessInstanceElasticsearchImportJob extends ElasticsearchImportJob<ProcessInstanceDto> {
@@ -26,8 +29,10 @@ public class CompletedProcessInstanceElasticsearchImportJob extends Elasticsearc
   }
 
   @Override
-  protected void persistEntities(List<ProcessInstanceDto> processInstances) {
-    completedProcessInstanceWriter.importProcessInstances(processInstances);
-    camundaEventService.importCompletedProcessInstances(processInstances);
+  protected void persistEntities(List<ProcessInstanceDto> completedProcessInstances) {
+    List<ImportRequestDto> imports = new ArrayList<>();
+    imports.addAll(completedProcessInstanceWriter.generateProcessInstanceImports(completedProcessInstances));
+    imports.addAll(camundaEventService.generateCompletedProcessInstanceImports(completedProcessInstances));
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk("Completed process instances", imports);
   }
 }

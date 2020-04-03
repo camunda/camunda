@@ -8,6 +8,8 @@ package org.camunda.optimize.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
@@ -22,6 +24,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,64 +50,81 @@ public class CamundaEventImportService {
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
 
-  public void importRunningActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> runningActivityInstances) {
+  public List<ImportRequestDto> generateRunningCamundaActivityEventsImports(
+    List<FlowNodeEventDto> runningActivityInstances) {
     final String engineAlias = runningActivityInstances.get(0).getEngineAlias();
     if (shouldImport(engineAlias)) {
-      importEngineEntityToCamundaActivityEvents(
-        runningActivityInstances, this::convertRunningActivityToCamundaActivityEvents
+      return generateCamundaActivityEventsImports(
+        runningActivityInstances,
+        this::convertRunningActivityToCamundaActivityEvents
       );
     }
+    return Collections.emptyList();
   }
 
-  public void importCompletedActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> completedActivityInstances) {
+  public List<ImportRequestDto> generateCompletedCamundaActivityEventsImports(
+    List<FlowNodeEventDto> completedActivityInstances) {
     final String engineAlias = completedActivityInstances.get(0).getEngineAlias();
     if (shouldImport(engineAlias)) {
-      importEngineEntityToCamundaActivityEvents(
-        completedActivityInstances, this::convertCompletedActivityToCamundaActivityEvents
+      return generateCamundaActivityEventsImports(
+        completedActivityInstances,
+        this::convertCompletedActivityToCamundaActivityEvents
       );
     }
+    return Collections.emptyList();
   }
 
-  public void importRunningProcessInstances(List<ProcessInstanceDto> runningProcessInstances) {
+  public List<ImportRequestDto> generateRunningProcessInstanceImports(
+    List<ProcessInstanceDto> runningProcessInstances) {
     final String engineAlias = runningProcessInstances.get(0).getEngine();
     if (shouldImport(engineAlias)) {
-      importEngineEntityToCamundaActivityEvents(
-        runningProcessInstances, this::convertRunningProcessInstanceToCamundaActivityEvents
+      final List<ImportRequestDto> imports =
+        generateCamundaActivityEventsImports(
+        runningProcessInstances,
+        this::convertRunningProcessInstanceToCamundaActivityEvents
       );
-      businessKeyWriter.importBusinessKeysForProcessInstances(runningProcessInstances);
+      imports.addAll(businessKeyWriter.generateBusinessKeyImports(runningProcessInstances));
+      return imports;
     }
+    return Collections.emptyList();
   }
 
-  public void importCompletedProcessInstances(List<ProcessInstanceDto> completedProcessInstances) {
+  public List<ImportRequestDto> generateCompletedProcessInstanceImports(List<ProcessInstanceDto> completedProcessInstances) {
     final String engineAlias = completedProcessInstances.get(0).getEngine();
     if (shouldImport(engineAlias)) {
-      importEngineEntityToCamundaActivityEvents(
-        completedProcessInstances, this::convertCompletedProcessInstanceToCamundaActivityEvents
-      );
-      businessKeyWriter.importBusinessKeysForProcessInstances(completedProcessInstances);
+      final List<ImportRequestDto> imports =
+        generateCamundaActivityEventsImports(
+          completedProcessInstances,
+          this::convertCompletedProcessInstanceToCamundaActivityEvents
+        );
+      imports.addAll(businessKeyWriter.generateBusinessKeyImports(completedProcessInstances));
+      return imports;
     }
+    return Collections.emptyList();
   }
 
-  public void importVariableUpdateInstances(final List<ProcessVariableDto> variableUpdates) {
+  public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variableUpdates) {
     final String engineAlias = variableUpdates.get(0).getEngineAlias();
     if (shouldImport(engineAlias)) {
-      variableUpdateInstanceWriter.importVariableUpdatesToVariableUpdateInstances(variableUpdates);
+      return variableUpdateInstanceWriter.generateVariableUpdateImports(variableUpdates);
     }
+    return Collections.emptyList();
+  }
+
+  private <T extends OptimizeDto> List<ImportRequestDto> generateCamundaActivityEventsImports(
+    final List<T> importedEntities,
+    final Function<T, Stream<CamundaActivityEventDto>> activityEventExtractor) {
+
+    final List<CamundaActivityEventDto> camundaActivityEventDtos = importedEntities
+      .stream()
+      .flatMap(activityEventExtractor)
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+    return camundaActivityEventWriter.generateImportRequests(camundaActivityEventDtos);
   }
 
   private boolean shouldImport(final String engineAlias) {
     return configurationService.getConfiguredEngines().get(engineAlias).isEventImportEnabled();
-  }
-
-  private <T> void importEngineEntityToCamundaActivityEvents(List<T> activitiesToImport,
-                                                             Function<T, Stream<CamundaActivityEventDto>> eventExtractor) {
-
-    final List<CamundaActivityEventDto> camundaActivityEventDtos = activitiesToImport
-      .stream()
-      .flatMap(eventExtractor)
-      .filter(Objects::nonNull)
-      .collect(Collectors.toList());
-    camundaActivityEventWriter.importCamundaActivityEvents(camundaActivityEventDtos);
   }
 
   private Stream<CamundaActivityEventDto> convertRunningActivityToCamundaActivityEvents(FlowNodeEventDto flowNodeEventDto) {

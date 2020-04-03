@@ -43,7 +43,6 @@ public abstract class AbstractProcessInstanceWriter<T extends OptimizeDto> {
       primitiveUpdatableFields,
       procInst
     );
-
     addImportProcessInstanceRequest(bulkRequest, optimizeDto, updateScript, objectMapper);
   }
 
@@ -55,28 +54,40 @@ public abstract class AbstractProcessInstanceWriter<T extends OptimizeDto> {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
     ProcessInstanceDto procInst = (ProcessInstanceDto) optimizeDto;
+    final UpdateRequest updateRequest = createUpdateRequest(procInst, updateScript, objectMapper);
+    bulkRequest.add(updateRequest);
+  }
 
+  protected UpdateRequest createImportRequestForProcessInstance(final ProcessInstanceDto processInstanceDto,
+                                                                final Set<String> primitiveUpdateableFields) {
+    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+      primitiveUpdateableFields,
+      processInstanceDto
+    );
+    return createUpdateRequest(processInstanceDto, updateScript, objectMapper);
+  }
+
+  private UpdateRequest createUpdateRequest(final ProcessInstanceDto processInstanceDto,
+                                            final Script updateScript,
+                                            final ObjectMapper objectMapper) {
     String newEntryIfAbsent = "";
     try {
-      newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
+      newEntryIfAbsent = objectMapper.writeValueAsString(processInstanceDto);
     } catch (JsonProcessingException e) {
       String reason =
         String.format(
           "Error while processing JSON for process instance DTO with ID [%s].",
-          procInst.getProcessInstanceId()
+          processInstanceDto.getProcessInstanceId()
         );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-
-    UpdateRequest request = new UpdateRequest()
+    return new UpdateRequest()
       .index(PROCESS_INSTANCE_INDEX_NAME)
-      .id(procInst.getProcessInstanceId())
+      .id(processInstanceDto.getProcessInstanceId())
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-    bulkRequest.add(request);
   }
 
 }

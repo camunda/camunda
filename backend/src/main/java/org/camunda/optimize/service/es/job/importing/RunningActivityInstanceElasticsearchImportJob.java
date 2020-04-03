@@ -5,30 +5,34 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class RunningActivityInstanceElasticsearchImportJob extends ElasticsearchImportJob<FlowNodeEventDto> {
 
   private RunningActivityInstanceWriter runningActivityInstanceWriter;
-  private CamundaEventImportService camundaEventService;
+  private CamundaEventImportService camundaEventImportService;
 
   public RunningActivityInstanceElasticsearchImportJob(RunningActivityInstanceWriter runningActivityInstanceWriter,
-                                                       CamundaEventImportService camundaEventService,
+                                                       CamundaEventImportService camundaEventImportService,
                                                        Runnable callback) {
-
     super(callback);
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
-    this.camundaEventService = camundaEventService;
+    this.camundaEventImportService = camundaEventImportService;
   }
 
   @Override
   protected void persistEntities(List<FlowNodeEventDto> runningActivityInstances) {
-    runningActivityInstanceWriter.importActivityInstancesToProcessInstances(runningActivityInstances);
-    camundaEventService.importRunningActivityInstancesToCamundaActivityEvents(runningActivityInstances);
+    final List<ImportRequestDto> importBulks = new ArrayList<>();
+    importBulks.addAll(runningActivityInstanceWriter.generateActivityInstanceImports(runningActivityInstances));
+    importBulks.addAll(camundaEventImportService.generateRunningCamundaActivityEventsImports(runningActivityInstances));
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk("Running activity instances", importBulks);
   }
 }

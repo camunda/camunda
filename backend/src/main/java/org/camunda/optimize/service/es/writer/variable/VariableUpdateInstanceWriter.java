@@ -9,17 +9,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
@@ -31,37 +32,45 @@ public class VariableUpdateInstanceWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void importVariableUpdatesToVariableUpdateInstances(List<ProcessVariableDto> variableUpdates) {
-    String importItemName = "variable instances";
-    log.debug("Writing [{}] {} to ES.", variableUpdates.size(), importItemName);
+  public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variableUpdates) {
+    final List<VariableUpdateInstanceDto> variableUpdateInstances = variableUpdates.stream()
+      .map(this::convertToVariableUpdateInstance)
+      .collect(Collectors.toList());
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
-      esClient,
-      importItemName,
-      variableUpdates,
-      this::addVariableUpdateToVariableUpdatesInstances
-    );
+    String importItemName = "variable instances";
+    log.debug("Creating imports for {} [{}].", variableUpdates.size(), importItemName);
+
+    return variableUpdateInstances.stream()
+      .map(this::createIndexRequestForVariableUpdate)
+      .filter(Optional::isPresent)
+      .map(request -> ImportRequestDto.builder()
+        .importName(importItemName)
+        .esClient(esClient)
+        .request(request.get())
+        .build())
+      .collect(Collectors.toList());
   }
 
-  private void addVariableUpdateToVariableUpdatesInstances(BulkRequest addVariableUpdateInstancesBulkRequest,
-                                                           ProcessVariableDto variableUpdate) {
-    VariableUpdateInstanceDto variableUpdateInstanceDto = VariableUpdateInstanceDto.builder()
-      .instanceId(variableUpdate.getId())
-      .name(variableUpdate.getName())
-      .type(variableUpdate.getType())
-      .value(variableUpdate.getValue())
-      .processInstanceId(variableUpdate.getProcessInstanceId())
-      .tenantId(variableUpdate.getTenantId())
-      .timestamp(variableUpdate.getTimestamp())
+  private VariableUpdateInstanceDto convertToVariableUpdateInstance(final ProcessVariableDto processVariable) {
+    return VariableUpdateInstanceDto.builder()
+      .instanceId(processVariable.getId())
+      .name(processVariable.getName())
+      .type(processVariable.getType())
+      .value(processVariable.getValue())
+      .processInstanceId(processVariable.getProcessInstanceId())
+      .tenantId(processVariable.getTenantId())
+      .timestamp(processVariable.getTimestamp())
       .build();
+  }
 
+  private Optional<IndexRequest> createIndexRequestForVariableUpdate(VariableUpdateInstanceDto variableUpdateInstanceDto) {
     try {
-      final IndexRequest request = new IndexRequest(VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
+      return Optional.of(new IndexRequest(VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
         .id(IdGenerator.getNextId())
-        .source(objectMapper.writeValueAsString(variableUpdateInstanceDto), XContentType.JSON);
-      addVariableUpdateInstancesBulkRequest.add(request);
+        .source(objectMapper.writeValueAsString(variableUpdateInstanceDto), XContentType.JSON));
     } catch (JsonProcessingException e) {
       log.warn("Could not serialize Variable Instance: {}", variableUpdateInstanceDto, e);
+      return Optional.empty();
     }
   }
 

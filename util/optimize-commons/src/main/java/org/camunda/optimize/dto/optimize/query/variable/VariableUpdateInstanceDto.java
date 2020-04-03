@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.time.OffsetDateTime;
 
@@ -18,7 +19,7 @@ import java.time.OffsetDateTime;
 @FieldNameConstants
 @Builder
 @Getter
-public class VariableUpdateInstanceDto {
+public class VariableUpdateInstanceDto implements OptimizeDto {
 
   private String instanceId;
   private String name;

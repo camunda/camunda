@@ -9,16 +9,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
@@ -31,35 +31,38 @@ public class BusinessKeyWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void importBusinessKeysForProcessInstances(List<ProcessInstanceDto> processInstanceDtos) {
+  public List<ImportRequestDto> generateBusinessKeyImports(List<ProcessInstanceDto> processInstanceDtos) {
     List<BusinessKeyDto> businessKeysToSave = processInstanceDtos.stream()
       .map(this::extractBusinessKey)
       .distinct()
       .collect(Collectors.toList());
 
     String importItemName = "business keys";
-    log.debug("Writing [{}] {} to ES.", businessKeysToSave.size(), importItemName);
+    log.debug("Creating imports for {} [{}].", businessKeysToSave.size(), importItemName);
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
-      esClient,
-      importItemName,
-      businessKeysToSave.stream().distinct().collect(Collectors.toList()),
-      this::addBusinessKeyBulkRequest
-    );
+    return businessKeysToSave.stream()
+      .map(this::createIndexRequestForBusinessKey)
+      .filter(Optional::isPresent)
+      .map(request -> ImportRequestDto.builder()
+          .importName(importItemName)
+          .esClient(esClient)
+          .request(request.get())
+          .build())
+      .collect(Collectors.toList());
   }
 
   private BusinessKeyDto extractBusinessKey(final ProcessInstanceDto processInstance) {
     return new BusinessKeyDto(processInstance.getProcessInstanceId(), processInstance.getBusinessKey());
   }
 
-  private void addBusinessKeyBulkRequest(BulkRequest addBusinessKeysBulkRequest, BusinessKeyDto businessKeyDto) {
+  private Optional<IndexRequest> createIndexRequestForBusinessKey(BusinessKeyDto businessKeyDto) {
     try {
-      final IndexRequest request = new IndexRequest(BUSINESS_KEY_INDEX_NAME)
+      return Optional.of(new IndexRequest(BUSINESS_KEY_INDEX_NAME)
         .id(businessKeyDto.getProcessInstanceId())
-        .source(objectMapper.writeValueAsString(businessKeyDto), XContentType.JSON);
-      addBusinessKeysBulkRequest.add(request);
+        .source(objectMapper.writeValueAsString(businessKeyDto), XContentType.JSON));
     } catch (JsonProcessingException e) {
       log.warn("Could not serialize Business Key: {}", businessKeyDto, e);
+      return Optional.empty();
     }
   }
 

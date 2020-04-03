@@ -10,18 +10,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,18 +46,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final ObjectMapper objectMapper;
-
-  @SuppressWarnings("unchecked")
-  protected List<Map<String, String>> mapToParameterSet(final List<UserTaskInstanceDto> userTaskInstanceDtos) {
-    return userTaskInstanceDtos.stream()
-      .map(userTaskInstanceDto -> (Map<String, String>) objectMapper.convertValue(userTaskInstanceDto, Map.class))
-      .collect(Collectors.toList());
-  }
-
-  protected Script createUpdateScript(List<UserTaskInstanceDto> userTasks) {
-    final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(USER_TASKS, mapToParameterSet(userTasks));
-    return createDefaultScript(createInlineUpdateScript(), scriptParameters);
-  }
 
   protected abstract String createInlineUpdateScript();
 
@@ -115,12 +105,8 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
     // @formatter:on
   }
 
-  protected void addImportUserTaskToRequest(final BulkRequest bulkRequest,
-                                            Map.Entry<String, List<T>> activityInstanceEntry) {
-    if (!activityInstanceEntry.getValue().stream().allMatch(dto -> dto instanceof UserTaskInstanceDto)) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    final List<UserTaskInstanceDto> userTasks = (List<UserTaskInstanceDto>) (List<?>) activityInstanceEntry.getValue();
+  protected UpdateRequest createUserTaskUpdateImportRequest(final Map.Entry<String, List<UserTaskInstanceDto>> activityInstanceEntry) {
+    final List<UserTaskInstanceDto> userTasks = activityInstanceEntry.getValue();
     final String activityInstanceId = activityInstanceEntry.getKey();
 
     final Script updateScript = createUpdateScript(userTasks);
@@ -131,7 +117,7 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
       .setProcessInstanceId(firstUserTaskInstance.getProcessInstanceId())
       .setEngine(firstUserTaskInstance.getEngine())
       .setUserTasks(userTasks);
-    String newEntryIfAbsent = null;
+    String newEntryIfAbsent;
     try {
       newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
     } catch (JsonProcessingException e) {
@@ -143,14 +129,46 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    UpdateRequest request = new UpdateRequest()
+    return new UpdateRequest()
       .index(PROCESS_INSTANCE_INDEX_NAME)
       .id(activityInstanceId)
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+  }
 
-    bulkRequest.add(request);
+  protected List<ImportRequestDto> generateUserTaskImports(final String importItemName,
+                                                           final OptimizeElasticsearchClient esClient,
+                                                           final List<UserTaskInstanceDto> userTaskInstances) {
+    log.debug("Writing [{}] {} to ES.", userTaskInstances.size(), importItemName);
+
+    Map<String, List<UserTaskInstanceDto>> userTaskToProcessInstance = new HashMap<>();
+    for (UserTaskInstanceDto userTask : userTaskInstances) {
+      if (!userTaskToProcessInstance.containsKey(userTask.getProcessInstanceId())) {
+        userTaskToProcessInstance.put(userTask.getProcessInstanceId(), new ArrayList<>());
+      }
+      userTaskToProcessInstance.get(userTask.getProcessInstanceId()).add(userTask);
+    }
+
+    return userTaskToProcessInstance.entrySet().stream()
+      .map(entry -> ImportRequestDto.builder()
+        .importName(importItemName)
+        .esClient(esClient)
+        .request(createUserTaskUpdateImportRequest(entry))
+        .build())
+      .collect(Collectors.toList());
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Map<String, String>> mapToParameterSet(final List<UserTaskInstanceDto> userTaskInstanceDtos) {
+    return userTaskInstanceDtos.stream()
+      .map(userTaskInstanceDto -> (Map<String, String>) objectMapper.convertValue(userTaskInstanceDto, Map.class))
+      .collect(Collectors.toList());
+  }
+
+  private Script createUpdateScript(List<UserTaskInstanceDto> userTasks) {
+    final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(USER_TASKS, mapToParameterSet(userTasks));
+    return createDefaultScript(createInlineUpdateScript(), scriptParameters);
   }
 
 }
