@@ -31,7 +31,6 @@ import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
-import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
@@ -110,8 +109,6 @@ public class ElasticsearchTestRule extends TestWatcher {
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
   protected boolean failed = false;
-  
-  private int waitingRound = 1;
 
   private String indexPrefix;
 
@@ -188,7 +185,7 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   public void processRecordsAndWaitFor(Collection<RecordsReader> readers,Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
     long shouldImportCount = 0;
-    int maxRounds = 50;
+    int waitingRound = 0, maxRounds = 50;
     boolean found = predicate.test(arguments);
     long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
@@ -212,7 +209,7 @@ public class ElasticsearchTestRule extends TestWatcher {
           sleepFor(500);
           shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
         } catch (Exception e) {
-          waitingRound = 1;
+          waitingRound = 0;
           testImportListener.resetCounters();
           shouldImportCount = 0;
           logger.error(e.getMessage(), e);
@@ -227,13 +224,13 @@ public class ElasticsearchTestRule extends TestWatcher {
         waitingRound++;
       }
     }
+    long finishedTime = System.currentTimeMillis() - start;
+    
     if(found) {
-      logger.debug("Conditions met in round {} ({} ms).", waitingRound--, System.currentTimeMillis()-start);
-    }
-    waitingRound = 1;
-    testImportListener.resetCounters();
-    if (waitingRound >=  maxRounds) {
-      throw new OperateRuntimeException("Timeout exception");
+      logger.debug("Conditions met in round {} ({} ms).", waitingRound,finishedTime );
+    }else {
+      //throw new OperateRuntimeException(String.format("Conditions not met after %s rounds (%s ms).", waitingRound, finishedTime));
+      logger.debug("Conditions not met after %s rounds (%s ms).", waitingRound, finishedTime);
     }
   }
 
