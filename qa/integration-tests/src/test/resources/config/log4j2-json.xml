@@ -4,14 +4,14 @@
     <Property name="LOG_PATTERN">%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint} %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c{1.}}{cyan} %clr{:}{faint} %m%n%xwEx</Property>
   </Properties>
   <Appenders>
-	 <Console name="StackdriverJSONConsole" target="SYSTEM_OUT" follow="true">
+	 <Console name="Stackdriver" target="SYSTEM_OUT" follow="true">
         <StackdriverJSONLayout/>
       </Console>
   </Appenders>
   <Loggers>
     <Logger name="org.camunda.operate" level="debug" />
     <Root level="info">
-      <AppenderRef ref="StackdriverJSONConsole"/>
+      <AppenderRef ref="Stackdriver"/>
     </Root>
   </Loggers>
 </Configuration>
