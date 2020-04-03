@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate;
+package org.camunda.operate.util;
 
 import org.camunda.operate.zeebeimport.ImportBatch;
 import org.camunda.operate.zeebeimport.ImportListener;

@@ -3,8 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate;
+package org.camunda.operate.util;
 
+import org.camunda.operate.Application;
 import org.camunda.operate.data.DataGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

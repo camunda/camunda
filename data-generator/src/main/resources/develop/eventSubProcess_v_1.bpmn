@@ -79,12 +79,12 @@
   </bpmn:process>
   <bpmn:message id="Message_03ggk3d" name="interruptWorkflow">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="clientId" />
+      <zeebe:subscription correlationKey="=clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_1nvz8ri" name="continueWorkflow">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="clientId" />
+      <zeebe:subscription correlationKey="=clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

@@ -34,6 +34,7 @@ import io.zeebe.client.ClientProperties;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.zeebe.util.SocketUtil;
 
 public class OperateZeebeRule extends TestWatcher {
 
@@ -154,9 +155,14 @@ public class OperateZeebeRule extends TestWatcher {
 
   private Properties newClientProperties() {
     final Properties properties = new Properties();
-    properties.put(
-      ClientProperties.BROKER_CONTACTPOINT,
-      getBrokerConfig().getGateway().getNetwork().toSocketAddress().toString());
+    try {
+      properties.put(ClientProperties.BROKER_CONTACTPOINT, SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
+    } catch (Throwable th) {
+      // TODO remove this after Zeebe 0.23.0 is released
+      properties.put(
+          ClientProperties.BROKER_CONTACTPOINT,
+          getBrokerConfig().getGateway().getNetwork().toSocketAddress().toString());
+    }
     properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
     properties.setProperty(ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
     return properties;

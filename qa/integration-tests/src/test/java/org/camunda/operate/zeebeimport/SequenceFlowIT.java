@@ -36,9 +36,9 @@ public class SequenceFlowIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
         .sequenceFlowId("sf1")
-        .serviceTask("task1").zeebeTaskType("task1")
+        .serviceTask("task1").zeebeJobType("task1")
         .sequenceFlowId("sf2")
-        .serviceTask("task2").zeebeTaskType("task2")
+        .serviceTask("task2").zeebeJobType("task2")
       .endEvent()
       .done();
     deployWorkflow(workflow, processId + ".bpmn");

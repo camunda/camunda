@@ -6,7 +6,7 @@
 package org.camunda.operate.it;
 
 import org.assertj.core.api.Assertions;
-import org.camunda.operate.TestApplication;
+import org.camunda.operate.util.TestApplication;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.EmbeddedZeebeConfigurer;
 import org.camunda.operate.webapp.rest.HealthCheckRestService;

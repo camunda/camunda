@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import org.camunda.operate.TestApplication;
+import org.camunda.operate.util.TestApplication;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
@@ -75,8 +75,8 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
-          .serviceTask("task1").zeebeTaskType("task1")
-          .serviceTask("task2").zeebeTaskType("task2")
+          .serviceTask("task1").zeebeJobType("task1")
+          .serviceTask("task2").zeebeJobType("task2")
         .endEvent().done();
     deployWorkflow(workflow, "demoProcess_v_1.bpmn");
 

@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.it;
+package org.camunda.operate.util;
 
 import static org.camunda.operate.util.CollectionUtil.filter;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -25,11 +25,6 @@ import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.exceptions.ArchiverException;
-import org.camunda.operate.util.ConversionUtils;
-import org.camunda.operate.util.ElasticsearchTestRule;
-import org.camunda.operate.util.MockMvcTestRule;
-import org.camunda.operate.util.TestUtil;
-import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
@@ -135,7 +130,7 @@ public class OperateTester {
   public OperateTester createAndDeploySimpleWorkflow(String processId,String activityId) {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
-        .serviceTask(activityId).zeebeTaskType(activityId)
+        .serviceTask(activityId).zeebeJobType(activityId)
         .endEvent()
         .done();
     workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflow,processId+".bpmn");

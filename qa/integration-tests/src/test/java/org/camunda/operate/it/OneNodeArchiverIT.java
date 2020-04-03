@@ -141,7 +141,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   private void deployProcessWithOneActivity(String processId, String activityId) {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
-        .serviceTask(activityId).zeebeTaskType(activityId)
+        .serviceTask(activityId).zeebeJobType(activityId)
         .endEvent()
         .done();
     deployWorkflow(workflow, processId + ".bpmn");

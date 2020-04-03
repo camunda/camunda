@@ -7,7 +7,7 @@ package org.camunda.operate.zeebeimport;
 
 import java.util.function.Predicate;
 
-import org.camunda.operate.TestApplication;
+import org.camunda.operate.util.TestApplication;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.apps.idempotency.ZeebeImportIdempotencyTestConfig;
 import org.camunda.operate.zeebe.ImportValueType;

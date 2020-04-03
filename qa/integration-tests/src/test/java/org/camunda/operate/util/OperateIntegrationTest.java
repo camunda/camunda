@@ -15,7 +15,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.operate.TestApplication;
 import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
 import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.property.OperateProperties;
@@ -27,7 +26,6 @@ import org.junit.runner.RunWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;

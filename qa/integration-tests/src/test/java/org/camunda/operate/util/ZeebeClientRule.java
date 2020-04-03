@@ -12,6 +12,7 @@ import org.junit.rules.ExternalResource;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.test.EmbeddedBrokerRule;
+import io.zeebe.util.SocketUtil;
 
 public class ZeebeClientRule extends ExternalResource {
 
@@ -27,7 +28,7 @@ public class ZeebeClientRule extends ExternalResource {
     final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
       config -> {
-        config.brokerContactPoint(brokerRule.getGatewayAddress().toString());
+        config.brokerContactPoint(SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
         configurator.accept(config);
       });
   }
