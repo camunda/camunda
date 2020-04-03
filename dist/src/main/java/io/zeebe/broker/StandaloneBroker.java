@@ -39,7 +39,8 @@ public class StandaloneBroker implements CommandLineRunner {
 
     final LegacyConfigurationSupport legacyConfigSupport =
         new LegacyConfigurationSupport(Scope.BROKER);
-    legacyConfigSupport.checkForLegacyTomlConfigurationArgument(args, "broker.cfg.yaml");
+    legacyConfigSupport.checkForLegacyTomlConfigurationArgument(
+        args, "broker.standalone.yaml.template");
     legacyConfigSupport.checkForLegacyEnvironmentVariables();
 
     SpringApplication.run(StandaloneBroker.class, args);

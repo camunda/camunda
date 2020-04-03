@@ -4,7 +4,7 @@ Zeebe supports transport layer security between the gateway and all of the offic
 
 ## Gateway
 
-Transport layer security in the gateway is disabled by default. This means that if you are just experimenting with Zeebe or in development, there is no configuration needed. However, if you want to enable authentication you can configure Zeebe in the `security` section of the configuration files. The following configurations are present in both `gateway.cfg.yaml` and `zeebe.cfg.yaml`, the file you should edit depends on whether you are using a standalone gateway or an embedded gateway.  
+Transport layer security in the gateway is disabled by default. This means that if you are just experimenting with Zeebe or in development, there is no configuration needed. However, if you want to enable authentication you can configure Zeebe in the `security` section of the configuration files. The following configurations are present in both `gateway.yaml.template` and `broker.standalone.yaml.template`, the file you should edit depends on whether you are using a standalone gateway or an embedded gateway.
 
 ```yaml
 ...
@@ -25,7 +25,7 @@ Additionally, as you can see in the configuration file, each value can also be c
 
 ## Clients
 
-Unlike the gateway, TLS is enabled by default in all of Zeebe's supported clients. The following sections will show how to disable or properly configure each client. 
+Unlike the gateway, TLS is enabled by default in all of Zeebe's supported clients. The following sections will show how to disable or properly configure each client.
 
 > **Note:** Disabling TLS should only be done for testing or development. During production deployments, clients and gateways should be properly configured to establish secure connections.
 
@@ -39,7 +39,7 @@ public class SecureClient {
     public static void main(final String[] args) {
         final ZeebeClient client = ZeebeClient.newClientBuilder().caCertificatePath("path/to/certificate").build();
 
-        // continue...  
+        // continue...
     }
 }
 ```
@@ -52,7 +52,7 @@ public class InsecureClient {
     public static void main(final String[] args) {
         final ZeebeClient client = ZeebeClient.newClientBuilder().usePlaintext().build();
 
-        // continue...  
+        // continue...
     }
 }
 ```
@@ -89,7 +89,7 @@ import (
 
 
 func main(){
-	client, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{UsePlaintextConnection: true})		  
+	client, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{UsePlaintextConnection: true})
 
   // continue...
 }
