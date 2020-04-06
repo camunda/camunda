@@ -31,7 +31,6 @@ import io.atomix.core.profile.ConsensusProfile;
 import io.atomix.core.profile.ConsensusProfileConfig;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
-import io.atomix.utils.memory.MemorySize;
 import java.time.Duration;
 import java.util.Arrays;
 import org.junit.Test;
@@ -97,16 +96,6 @@ public class AtomixConfigTest {
     assertEquals("foo", messaging.getTlsConfig().getKeyStorePassword());
     assertEquals("truststore.jks", messaging.getTlsConfig().getTrustStore());
     assertEquals("bar", messaging.getTlsConfig().getTrustStorePassword());
-
-    final RaftPartitionGroupConfig managementGroup =
-        (RaftPartitionGroupConfig) config.getManagementGroup();
-    assertEquals(RaftPartitionGroup.TYPE, managementGroup.getType());
-    assertEquals(1, managementGroup.getPartitions());
-    assertEquals(Duration.ofSeconds(5), managementGroup.getElectionTimeout());
-    assertEquals(Duration.ofMillis(500), managementGroup.getHeartbeatInterval());
-    assertEquals(Duration.ofSeconds(10), managementGroup.getDefaultSessionTimeout());
-    assertEquals(
-        new MemorySize(1024 * 1024 * 16), managementGroup.getStorageConfig().getSegmentSize());
 
     final RaftPartitionGroupConfig groupOne =
         (RaftPartitionGroupConfig) config.getPartitionGroups().get("one");

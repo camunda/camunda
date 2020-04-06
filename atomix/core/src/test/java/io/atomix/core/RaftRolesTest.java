@@ -15,6 +15,7 @@
  */
 package io.atomix.core;
 
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -285,7 +286,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
         nodeIds,
         builder -> {
           final RaftPartitionGroup partitionGroup =
-              RaftPartitionGroup.builder("system")
+              RaftPartitionGroup.builder("normal")
                   .withNumPartitions(partitionCount)
                   .withPartitionSize(memberIds.size())
                   .withMembers(memberIds)
@@ -293,15 +294,16 @@ public final class RaftRolesTest extends AbstractAtomixTest {
                       new File(new File(atomixRule.getDataDir(), "log"), "" + nodeId))
                   .build();
 
-          final Atomix atomix = builder.withManagementGroup(partitionGroup).build();
+          final Atomix atomix = builder.withPartitionGroups(partitionGroup).build();
 
           final DefaultPartitionService partitionService =
               (DefaultPartitionService) atomix.getPartitionService();
-          final RaftPartitionGroup raftPartitionGroup =
-              (RaftPartitionGroup) partitionService.getSystemPartitionGroup();
 
-          // when
-          raftPartitionGroup.getPartitions().forEach(partitionConsumer);
+          partitionService.getPartitionGroups().stream()
+              .findFirst()
+              .ifPresent(
+                  raftPartitionGroup ->
+                      raftPartitionGroup.getPartitions().forEach(partitionConsumer));
           return atomix;
         });
   }

@@ -135,37 +135,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
   }
 
   /**
-   * Sets the system management partition group.
-   *
-   * <p>The system management group must be configured for stateful instances. This group will be
-   * used to store primitive and transaction metadata and coordinate primary elections for
-   * replication protocols.
-   *
-   * <pre>{@code
-   * Atomix atomix = Atomix.builder()
-   *   .withManagementGroup(RaftPartitionGroup.builder("system")
-   *     .withNumPartitions(1)
-   *     .build())
-   *   .build();
-   *
-   * }</pre>
-   *
-   * <p>The configured partition group is replicated on whichever nodes define them in this
-   * configuration. That is, this node will participate in whichever partition group is provided to
-   * this method.
-   *
-   * <p>The management group can also be configured in {@code atomix.conf} under the {@code
-   * management-group} key.
-   *
-   * @param systemManagementGroup the system management partition group
-   * @return the Atomix builder
-   */
-  public AtomixBuilder withManagementGroup(final ManagedPartitionGroup systemManagementGroup) {
-    config.setManagementGroup(systemManagementGroup.config());
-    return this;
-  }
-
-  /**
    * Sets the primitive partition groups.
    *
    * <p>The primitive partition groups represent partitions that are directly accessible to

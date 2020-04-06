@@ -30,11 +30,8 @@ import java.util.Map;
 
 /** Atomix configuration. */
 public class AtomixConfig implements Config {
-  private static final String MANAGEMENT_GROUP_NAME = "system";
-
   private ClusterConfig cluster = new ClusterConfig();
   private boolean enableShutdownHook;
-  private PartitionGroupConfig managementGroup;
   private Map<String, PartitionGroupConfig<?>> partitionGroups = new HashMap<>();
   private Map<String, PrimitiveConfig> primitiveDefaults = new HashMap<>();
   private Map<String, PrimitiveConfig> primitives = new HashMap<>();
@@ -79,27 +76,6 @@ public class AtomixConfig implements Config {
    */
   public AtomixConfig setEnableShutdownHook(final boolean enableShutdownHook) {
     this.enableShutdownHook = enableShutdownHook;
-    return this;
-  }
-
-  /**
-   * Returns the system management partition group.
-   *
-   * @return the system management partition group
-   */
-  public PartitionGroupConfig<?> getManagementGroup() {
-    return managementGroup;
-  }
-
-  /**
-   * Sets the system management partition group.
-   *
-   * @param managementGroup the system management partition group
-   * @return the Atomix configuration
-   */
-  public AtomixConfig setManagementGroup(final PartitionGroupConfig<?> managementGroup) {
-    managementGroup.setName(MANAGEMENT_GROUP_NAME);
-    this.managementGroup = managementGroup;
     return this;
   }
 
