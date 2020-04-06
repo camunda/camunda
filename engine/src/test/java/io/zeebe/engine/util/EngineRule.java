@@ -125,6 +125,7 @@ public final class EngineRule extends ExternalResource {
   protected void after() {
     subscriptionHandlerExecutor.shutdown();
     environmentRule = null;
+    subscriptionHandlers.clear();
   }
 
   public void start() {
