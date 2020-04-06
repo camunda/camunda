@@ -16,8 +16,10 @@ import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.el.ResultType;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
-import io.zeebe.engine.state.instance.VariablesState;
+import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.protocol.record.value.ErrorType;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -26,16 +28,18 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ExpressionProcessor {
 
+  private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> null;
+
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
   private final VariableStateEvaluationContext evaluationContext;
 
   public ExpressionProcessor(
-      final ExpressionLanguage expressionLanguage, final VariablesState variablesState) {
+      final ExpressionLanguage expressionLanguage, final VariablesLookup lookup) {
     this.expressionLanguage = expressionLanguage;
 
-    evaluationContext = new VariableStateEvaluationContext(variablesState);
+    evaluationContext = new VariableStateEvaluationContext(lookup);
   }
 
   /**
@@ -56,6 +60,31 @@ public final class ExpressionProcessor {
             result -> typeCheck(result, ResultType.STRING, ErrorType.EXTRACT_VALUE_ERROR, context))
         .map(EvaluationResult::getString)
         .map(this::wrapResult);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as string. If the evaluation fails or the
+   * result is not a string then an exception is thrown.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return the evaluation result as string
+   * @throws EvaluationException if expression evaluation failed
+   */
+  public String evaluateStringExpression(final Expression expression, final long scopeKey) {
+
+    final var evaluationResult = evaluateExpression(expression, scopeKey);
+    if (evaluationResult.isFailure()) {
+      throw new EvaluationException(evaluationResult.getFailureMessage());
+    }
+    if (!evaluationResult.getType().equals(ResultType.STRING)) {
+      throw new EvaluationException(
+          String.format(
+              "Expected result of the expression '%s' to be '%s', but was '%s'.",
+              evaluationResult.getExpression(), ResultType.STRING, evaluationResult.getType()));
+    }
+    return evaluationResult.getString();
   }
 
   /**
@@ -93,6 +122,74 @@ public final class ExpressionProcessor {
         .flatMap(
             result -> typeCheck(result, ResultType.BOOLEAN, ErrorType.EXTRACT_VALUE_ERROR, context))
         .map(EvaluationResult::getBoolean);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as an Interval. If the evaluation fails
+   * or the result is not an interval then an exception is thrown.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return the evaluation result as interval
+   * @throws EvaluationException if expression evaluation failed
+   */
+  public Interval evaluateIntervalExpression(final Expression expression, final long scopeKey) {
+    final var result = evaluateExpression(expression, scopeKey);
+    if (result.isFailure()) {
+      throw new EvaluationException(result.getFailureMessage());
+    }
+    switch (result.getType()) {
+      case DURATION:
+        return new Interval(result.getDuration());
+      case PERIOD:
+        return new Interval(result.getPeriod());
+      case STRING:
+        try {
+          return Interval.parse(result.getString());
+        } catch (DateTimeParseException e) {
+          throw new EvaluationException(
+              String.format(
+                  "Expected result of the expression '%s' to be parsed to a duration, but was '%s'",
+                  expression.getExpression(), result.getString()),
+              e);
+        }
+      default:
+        final var expected = List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
+        throw new EvaluationException(
+            String.format(
+                "Expected result of the expression '%s' to be one of '%s', but was '%s'",
+                expression.getExpression(), expected, result.getType()));
+    }
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as ZonedDateTime. If the evaluation fails
+   * or the result is not a ZonedDateTime then an exception is thrown.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return the evaluation result as ZonedDateTime
+   * @throws EvaluationException if expression evaluation failed
+   */
+  public ZonedDateTime evaluateDateTimeExpression(
+      final Expression expression, final Long scopeKey) {
+    final var result = evaluateExpression(expression, scopeKey);
+    if (result.isFailure()) {
+      throw new EvaluationException(result.getFailureMessage());
+    }
+    if (result.getType() == ResultType.DATE_TIME) {
+      return result.getDateTime();
+    }
+    if (result.getType() == ResultType.STRING) {
+      return ZonedDateTime.parse(result.getString());
+    }
+    final var expected = List.of(ResultType.DATE_TIME, ResultType.STRING);
+    throw new EvaluationException(
+        String.format(
+            "Expected result of the expression '%s' to be one of '%s', but was '%s'",
+            expression.getExpression(), expected, result.getType()));
   }
 
   /**
@@ -198,14 +295,43 @@ public final class ExpressionProcessor {
   private EvaluationResult evaluateExpression(
       final Expression expression, final long variableScopeKey) {
 
-    evaluationContext.variableScopeKey = variableScopeKey;
+    final EvaluationContext context;
+    if (variableScopeKey < 0) {
+      context = EMPTY_EVALUATION_CONTEXT;
+    } else {
+      evaluationContext.variableScopeKey = variableScopeKey;
+      context = evaluationContext;
+    }
 
-    return expressionLanguage.evaluateExpression(expression, evaluationContext);
+    return expressionLanguage.evaluateExpression(expression, context);
   }
 
   private DirectBuffer wrapResult(final String result) {
     resultView.wrap(result.getBytes());
     return resultView;
+  }
+
+  public static final class EvaluationException extends RuntimeException {
+
+    public EvaluationException(final String message) {
+      super(message);
+    }
+
+    public EvaluationException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+
+    public EvaluationException(final Throwable cause) {
+      super(cause);
+    }
+
+    public EvaluationException(
+        final String message,
+        final Throwable cause,
+        final boolean enableSuppression,
+        final boolean writableStackTrace) {
+      super(message, cause, enableSuppression, writableStackTrace);
+    }
   }
 
   protected static final class CorrelationKeyResultHandler
@@ -243,12 +369,12 @@ public final class ExpressionProcessor {
 
     private final DirectBuffer variableNameBuffer = new UnsafeBuffer();
 
-    private final VariablesState variablesState;
+    private final VariablesLookup lookup;
 
     private long variableScopeKey;
 
-    public VariableStateEvaluationContext(final VariablesState variablesState) {
-      this.variablesState = variablesState;
+    public VariableStateEvaluationContext(final VariablesLookup lookup) {
+      this.lookup = lookup;
     }
 
     @Override
@@ -257,7 +383,13 @@ public final class ExpressionProcessor {
 
       variableNameBuffer.wrap(variableName.getBytes());
 
-      return variablesState.getVariable(variableScopeKey, variableNameBuffer);
+      return lookup.getVariable(variableScopeKey, variableNameBuffer);
     }
+  }
+
+  @FunctionalInterface
+  public interface VariablesLookup {
+
+    DirectBuffer getVariable(final long scopeKey, final DirectBuffer name);
   }
 }

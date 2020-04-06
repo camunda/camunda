@@ -13,11 +13,14 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.EventHandle;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.TimerInstance;
+import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
+import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.TimerIntent;
@@ -36,10 +39,14 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   private final CatchEventBehavior catchEventBehavior;
   private final WorkflowState workflowState;
   private final EventHandle eventHandle;
+  private final ExpressionProcessor expressionProcessor;
 
   public TriggerTimerProcessor(
-      final ZeebeState zeebeState, final CatchEventBehavior catchEventBehavior) {
+      final ZeebeState zeebeState,
+      final CatchEventBehavior catchEventBehavior,
+      final ExpressionProcessor expressionProcessor) {
     this.catchEventBehavior = catchEventBehavior;
+    this.expressionProcessor = expressionProcessor;
     workflowState = zeebeState.getWorkflowState();
 
     eventHandle =
@@ -123,12 +130,16 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
   private void rescheduleTimer(
       final TimerRecord record, final TypedStreamWriter writer, final ExecutableCatchEvent event) {
-    if (event.getTimer() == null) {
+    final Timer timer;
+    try {
+      timer = event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
+    } catch (Exception e) {
       final String message =
           String.format(
-              "Expected to reschedule repeating timer for element with id '%s', but no timer definition was found",
+              "Expected to reschedule repeating timer for element with id '%s', but an exception occurred",
               BufferUtil.bufferAsString(event.getId()));
-      throw new IllegalStateException(message);
+      throw new IllegalStateException(message, e);
+      // todo(#4208): raise incident instead of throwing an exception
     }
 
     int repetitions = record.getRepetitions();
@@ -136,14 +147,14 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       repetitions--;
     }
 
-    final RepeatingInterval timer =
-        new RepeatingInterval(repetitions, event.getTimer().getInterval());
+    final Interval interval = timer.getInterval();
+    final Timer repeatingInterval = new RepeatingInterval(repetitions, interval);
     catchEventBehavior.subscribeToTimerEvent(
         record.getElementInstanceKey(),
         record.getWorkflowInstanceKey(),
         record.getWorkflowKey(),
         event.getId(),
-        timer,
+        repeatingInterval,
         writer);
   }
 }

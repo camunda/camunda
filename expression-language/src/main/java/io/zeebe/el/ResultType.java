@@ -13,7 +13,9 @@ public enum ResultType {
   BOOLEAN,
   NUMBER,
   STRING,
-
+  DURATION,
+  PERIOD,
+  DATE_TIME,
   ARRAY,
   OBJECT
 }

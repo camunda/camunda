@@ -8,18 +8,19 @@
 package io.zeebe.el.impl.feel
 
 import org.camunda.feel.context.Context.StaticContext
-import org.camunda.feel.context.{Context, CustomFunctionProvider}
-import org.camunda.feel.syntaxtree.{ValContext, ValError, ValFunction, ValNull}
+import org.camunda.feel.context.{Context, FunctionProvider}
+import org.camunda.feel.syntaxtree._
 
-class FeelFunctionProvider extends CustomFunctionProvider {
+class FeelFunctionProvider extends FunctionProvider {
 
   override lazy val functionNames: Iterable[String] = functions.keys
 
-  override def getFunction(name: String): Option[ValFunction] = functions.get(name)
-
-  private val functions: Map[String, ValFunction] = Map(
-    "appendTo" -> appendFunction
+  private val functions: Map[String, List[ValFunction]] = Map(
+    "appendTo" -> List(appendFunction),
+    "cycle" -> List(cycleFunction, cycleInfiniteFunction)
   )
+
+  override def getFunctions(name: String): List[ValFunction] = functions.getOrElse(name, Nil)
 
   private def appendFunction = ValFunction(
     params = List("x", "y"),
@@ -30,7 +31,8 @@ class FeelFunctionProvider extends CustomFunctionProvider {
       case List(ValError(_), y: ValContext) => y // ignore variable not found error
       case List(e: ValError, _) => e
       case List(_, e: ValError) => e
-      case args => ValError(s"expected two contexts but found '$args'")
+      case List(x, y) => ValError(s"append function expected two context parameters, but found '$x', '$y'")
+      case args => ValError(s"append function expected two context parameters, but found '$args'")
     }
   )
 
@@ -40,4 +42,30 @@ class FeelFunctionProvider extends CustomFunctionProvider {
     ValContext(StaticContext(variables = mergedVariables))
   }
 
+  private def cycleFunction = ValFunction(
+    params = List("repetitions", "interval"),
+    invoke = {
+      case List(ValNull, ValDayTimeDuration(duration)) => ValString("R/%s".format(duration))
+      case List(ValNull, ValYearMonthDuration(duration)) => ValString("R/%s".format(duration))
+      case List(ValNumber(repetitions), ValDayTimeDuration(duration)) =>
+        ValString("R%d/%S".format(repetitions.toInt, duration))
+      case List(ValNumber(repetitions), ValYearMonthDuration(duration)) =>
+        ValString("R%d/%S".format(repetitions.toInt, duration))
+      case List(e: ValError, _) => e
+      case List(_, e: ValError) => e
+      case List(x, y) => ValError(s"cycle function expected a repetitions (number) and an interval (duration) parameter, but found '$x' and '$y'")
+      case args => ValError(s"cycle function expected a repetitions (number) and an interval (duration) parameter, but found '$args'")
+    }
+  )
+
+  private def cycleInfiniteFunction = ValFunction(
+    params = List("interval"),
+    invoke = {
+      case List(ValDayTimeDuration(duration)) => ValString("R/%s".format(duration))
+      case List(ValYearMonthDuration(duration)) => ValString("R/%s".format(duration))
+      case List(e: ValError) => e
+      case List(x) => ValError(s"cycle function expected an interval (duration) parameter, but found '$x'")
+      case args => ValError(s"cycle function expected an interval (duration) parameter, but found '$args'")
+    }
+  )
 }

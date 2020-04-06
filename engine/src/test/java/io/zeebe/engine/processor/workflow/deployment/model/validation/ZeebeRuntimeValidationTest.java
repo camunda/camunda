@@ -12,9 +12,13 @@ import static org.junit.Assert.fail;
 
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.el.ExpressionLanguageFactory;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor.VariablesLookup;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
+import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -41,26 +45,24 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public final class ZeebeRuntimeValidationTest {
 
+  public static final String INVALID_TIMER_START_EVENT_EXPRESSION_MESSAGE =
+      "Expected a valid timer expression for start event, but encountered the following error: ";
   private static final String INVALID_EXPRESSION = "?!";
   private static final String INVALID_EXPRESSION_MESSAGE =
       "failed to parse expression '?!': [1.2] failure: end of input expected\n"
           + "\n"
           + "?!\n"
           + " ^";
-
   private static final String STATIC_EXPRESSION = "x";
   private static final String STATIC_EXPRESSION_MESSAGE =
       "Expected expression but found static value 'x'. An expression must start with '=' (e.g. '=x').";
-
   private static final String MISSING_EXPRESSION_MESSAGE = "Expected expression but not found.";
-
   private static final String MISSING_PATH_EXPRESSION_MESSAGE =
       "Expected path expression but not found.";
-
   private static final String INVALID_PATH_EXPRESSION = "a ? b";
   private static final String INVALID_PATH_EXPRESSION_MESSAGE =
       "Expected path expression 'a ? b' but doesn't match the pattern '[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*'.";
-
+  private static final String VALID_TIMER_DURATION_EXPRESSION = "\"PT1H\"";
   public BpmnModelInstance modelInstance;
 
   @Parameter(0)
@@ -310,6 +312,29 @@ public final class ZeebeRuntimeValidationTest {
             .done(),
         Arrays.asList(expect(ZeebeCalledElement.class, INVALID_EXPRESSION_MESSAGE))
       },
+      {
+        // timer start event expression is not supported
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .timerWithCycleExpression(INVALID_EXPRESSION)
+            .done(),
+        Arrays.asList(
+            expect(TimerEventDefinition.class, INVALID_EXPRESSION_MESSAGE),
+            expect(
+                StartEvent.class,
+                INVALID_TIMER_START_EVENT_EXPRESSION_MESSAGE + INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        // valid timer start event expression does not evaluate to correct timer type
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .timerWithCycleExpression(VALID_TIMER_DURATION_EXPRESSION)
+            .done(),
+        Arrays.asList(
+            expect(
+                StartEvent.class,
+                INVALID_TIMER_START_EVENT_EXPRESSION_MESSAGE + "Repetition spec must start with R"))
+      },
     };
   }
 
@@ -317,8 +342,11 @@ public final class ZeebeRuntimeValidationTest {
     final ModelWalker walker = new ModelWalker(model);
     final ExpressionLanguage expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage();
+    final VariablesLookup emptyLookup = (name, scopeKey) -> null;
+    final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =
-        new ValidationVisitor(ZeebeRuntimeValidators.getValidators(expressionLanguage));
+        new ValidationVisitor(
+            ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
     walker.walk(visitor);
 
     return visitor.getValidationResult();

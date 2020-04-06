@@ -8,7 +8,10 @@
 package io.zeebe.engine.processor.workflow.deployment.model.validation;
 
 import io.zeebe.el.ExpressionLanguage;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
+import io.zeebe.engine.processor.workflow.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
+import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -22,7 +25,7 @@ import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 public final class ZeebeRuntimeValidators {
 
   public static final Collection<ModelElementValidator<?>> getValidators(
-      final ExpressionLanguage expressionLanguage) {
+      final ExpressionLanguage expressionLanguage, final ExpressionProcessor expressionProcessor) {
     return List.of(
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
@@ -68,6 +71,29 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
             .hasValidExpression(
                 ZeebeCalledElement::getProcessId, expression -> expression.isMandatory())
-            .build(expressionLanguage));
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(TimerEventDefinition.class)
+            .hasValidExpression(
+                definition ->
+                    definition.getTimeDate() != null
+                        ? definition.getTimeDate().getTextContent()
+                        : null,
+                ExpressionVerification::isOptional)
+            .hasValidExpression(
+                definition ->
+                    definition.getTimeDuration() != null
+                        ? definition.getTimeDuration().getTextContent()
+                        : null,
+                ExpressionVerification::isOptional)
+            .hasValidExpression(
+                definition ->
+                    definition.getTimeCycle() != null
+                        ? definition.getTimeCycle().getTextContent()
+                        : null,
+                ExpressionVerification::isOptional)
+            .build(expressionLanguage),
+        // ----------------------------------------
+        new ProcessTimerStartEventExpressionValidator(expressionLanguage, expressionProcessor));
   }
 }

@@ -50,17 +50,23 @@ public final class EngineProcessors {
     addDistributeDeploymentProcessors(
         actor, zeebeState, typedRecordProcessors, deploymentDistributor);
 
+    final var variablesState =
+        zeebeState.getWorkflowState().getElementInstanceState().getVariablesState();
     final var expressionProcessor =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(),
-            zeebeState.getWorkflowState().getElementInstanceState().getVariablesState());
+            ExpressionLanguageFactory.createExpressionLanguage(), variablesState::getVariable);
 
     final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(
             zeebeState, expressionProcessor, subscriptionCommandSender, partitionsCount);
 
     addDeploymentRelatedProcessorAndServices(
-        catchEventBehavior, partitionId, zeebeState, typedRecordProcessors, deploymentResponder);
+        catchEventBehavior,
+        partitionId,
+        zeebeState,
+        typedRecordProcessors,
+        deploymentResponder,
+        expressionProcessor);
     addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors);
 
     final BpmnStepProcessor stepProcessor =
@@ -116,12 +122,13 @@ public final class EngineProcessors {
       final int partitionId,
       final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
-      final DeploymentResponder deploymentResponder) {
+      final DeploymentResponder deploymentResponder,
+      final ExpressionProcessor expressionProcessor) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
-          typedRecordProcessors, zeebeState, catchEventBehavior);
+          typedRecordProcessors, zeebeState, catchEventBehavior, expressionProcessor);
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(
           typedRecordProcessors, workflowState, deploymentResponder, partitionId);

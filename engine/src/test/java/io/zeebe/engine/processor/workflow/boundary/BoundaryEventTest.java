@@ -48,7 +48,7 @@ public final class BoundaryEventTest {
           .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("timer")
           .cancelActivity(true)
-          .timerWithDuration("PT0.1S")
+          .timerWithDurationExpression("duration(\"PT0.1S\")")
           .endEvent("end1")
           .moveToNode("timer")
           .endEvent("end2")
@@ -61,7 +61,7 @@ public final class BoundaryEventTest {
           .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("event")
           .cancelActivity(false)
-          .timerWithCycle("R/PT1S")
+          .timerWithCycleExpression("cycle(duration(\"PT1S\"))")
           .endEvent()
           .done();
 

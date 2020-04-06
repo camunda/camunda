@@ -7,6 +7,9 @@
  */
 package io.zeebe.el;
 
+import java.time.Duration;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -56,6 +59,27 @@ public interface EvaluationResult {
    * @return the evaluation result, or {@code null} if it is not a number
    */
   Number getNumber();
+
+  /**
+   * Use {@link #getType()} to check if the result is of the type {@link ResultType#DURATION}.
+   *
+   * @return the evaluation result, or {@code null} if it is not a duration
+   */
+  Duration getDuration();
+
+  /**
+   * Use {@link #getType()} to check if the result is of the type {@link ResultType#PERIOD}.
+   *
+   * @return the evaluation result, or {@code null} if it is not a period
+   */
+  Period getPeriod();
+
+  /**
+   * Use {@link #getType()} to check if the result is of the type {@link ResultType#DATE_TIME}.
+   *
+   * @return the evaluation result, or {@code null} if it is not a date time
+   */
+  ZonedDateTime getDateTime();
 
   /**
    * Use {@link #getType()} to check if the result is of the type {@link ResultType#ARRAY}.

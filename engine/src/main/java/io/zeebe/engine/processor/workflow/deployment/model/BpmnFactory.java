@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.deployment.model;
 
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.el.ExpressionLanguageFactory;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.BpmnTransformer;
 import io.zeebe.engine.processor.workflow.deployment.transform.BpmnValidator;
 
@@ -18,8 +19,8 @@ public final class BpmnFactory {
     return new BpmnTransformer(createExpressionLanguage());
   }
 
-  public static BpmnValidator createValidator() {
-    return new BpmnValidator(createExpressionLanguage());
+  public static BpmnValidator createValidator(final ExpressionProcessor expressionProcessor) {
+    return new BpmnValidator(createExpressionLanguage(), expressionProcessor);
   }
 
   private static ExpressionLanguage createExpressionLanguage() {

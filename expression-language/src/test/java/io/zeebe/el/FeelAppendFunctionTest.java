@@ -100,7 +100,7 @@ public class FeelAppendFunctionTest {
     assertThat(evaluationResult.isFailure()).isTrue();
     assertThat(evaluationResult.getFailureMessage())
         .startsWith(
-            "failed to evaluate expression 'appendTo(x,y)': expected two contexts but found");
+            "failed to evaluate expression 'appendTo(x,y)': append function expected two context parameters, but found");
   }
 
   @Test
@@ -111,7 +111,7 @@ public class FeelAppendFunctionTest {
     assertThat(evaluationResult.isFailure()).isTrue();
     assertThat(evaluationResult.getFailureMessage())
         .startsWith(
-            "failed to evaluate expression 'appendTo(x,y)': expected two contexts but found");
+            "failed to evaluate expression 'appendTo(x,y)': append function expected two context parameters, but found");
   }
 
   private EvaluationResult evaluateExpression(

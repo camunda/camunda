@@ -67,7 +67,8 @@ public final class WorkflowEventProcessors {
 
     addMessageStreamProcessors(
         typedRecordProcessors, subscriptionState, subscriptionCommandSender, zeebeState);
-    addTimerStreamProcessors(typedRecordProcessors, timerChecker, zeebeState, catchEventBehavior);
+    addTimerStreamProcessors(
+        typedRecordProcessors, timerChecker, zeebeState, catchEventBehavior, expressionProcessor);
     addVariableDocumentStreamProcessors(typedRecordProcessors, zeebeState);
     addWorkflowInstanceCreationStreamProcessors(typedRecordProcessors, zeebeState);
 
@@ -124,7 +125,8 @@ public final class WorkflowEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final DueDateTimerChecker timerChecker,
       final ZeebeState zeebeState,
-      final CatchEventBehavior catchEventOutput) {
+      final CatchEventBehavior catchEventOutput,
+      final ExpressionProcessor expressionProcessor) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
 
     typedRecordProcessors
@@ -133,7 +135,7 @@ public final class WorkflowEventProcessors {
         .onCommand(
             ValueType.TIMER,
             TimerIntent.TRIGGER,
-            new TriggerTimerProcessor(zeebeState, catchEventOutput))
+            new TriggerTimerProcessor(zeebeState, catchEventOutput, expressionProcessor))
         .onCommand(ValueType.TIMER, TimerIntent.CANCEL, new CancelTimerProcessor(workflowState))
         .withListener(timerChecker);
   }
