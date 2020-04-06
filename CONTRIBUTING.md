@@ -3,19 +3,6 @@
 We would love you to contribute to this project. You can do so in various ways.
 
 
-## File bugs or feature requests
-
-[File bugs](https://app.camunda.com/jira/) you found in the code or [features](https://app.camunda.com/jira/) you would like to see in the future in our [issue tracker](https://app.camunda.com/jira/).
-
-* Register yourself on our [issue tracker](https://app.camunda.com/jira/)
-* Search the list of open issues first, your bug or feature may have already been reported
-* When filing a bug
-  * Be concise
-  * Qualify steps to reproduce a problem
-  * Specify environment you found the bug in (library version etc.)
-  * If possible, attach a test case that reproduces the problem
-
-
 ## Coding styles
 
 * tabs as spaces / tab size 2 (all files)
@@ -133,13 +120,10 @@ Makes commit logs way more readable. See the work you did during a commit as a w
 
 __Example:__ You write a test for the function #foo. You commit the test. You use the commit message _add test for #foo_. Why? Because that is what the commit solves.
 
-##### How to categorize commits which are direct follow ups to merges?
-Use `chore(merge): <what>`.
-
 ##### I want to commit a micro change. What should I do?
 Ask yourself, why it is only a micro change. Use feat = _docs_, _style_ or _chore_ depending on the change of your merge. Please see next question if you consider commiting work in progress.
 
 ##### I want to commit work in progress. What should I do?
-Do not do it or do it (except for locally) or do it on a non public branch (ie. non master / develop ...) if you need to share the stuff you do.
+Do not do it or do it on a non public branch (ie. non master / develop ...) if you need to share the stuff you do.
 
 When you finished your work, [squash](http://gitready.com/advanced/2009/02/10/squashing-commits-with-rebase.html) the changes to commits with reasonable commit messages and push them on a public branch.
