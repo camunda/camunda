@@ -64,7 +64,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1584614330956,
+  "iteration": 1586154330555,
   "links": [],
   "panels": [
     {
@@ -2510,7 +2510,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 38
           },
           "id": 33,
           "legend": {
@@ -2611,7 +2611,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 38
           },
           "id": 98,
           "legend": {
@@ -2722,7 +2722,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 46
           },
           "id": 64,
           "legend": {
@@ -2817,7 +2817,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 46
           },
           "id": 35,
           "legend": {
@@ -2906,7 +2906,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 54
           },
           "id": 37,
           "legend": {
@@ -3001,7 +3001,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 54
           },
           "id": 40,
           "legend": {
@@ -3090,7 +3090,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 28
+            "y": 62
           },
           "id": 39,
           "legend": {
@@ -3564,11 +3564,12 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the time (latency) between writing the command on the dispatcher and processing it.",
           "gridPos": {
-            "h": 9,
+            "h": 7,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 6
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3628,11 +3629,12 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the time (latency) between writing the event on the dispatcher and processing it.",
           "gridPos": {
-            "h": 9,
+            "h": 7,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 6
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3655,6 +3657,201 @@
             }
           ],
           "title": "Processing Latency (Event)",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the execution time of a process instance. This means the time (latency) between creating the instance and completing it.",
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 13
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 132,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "options": {},
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Processing Execution Time",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the time (latency) between creating the job and activating it.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 21
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 133,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "options": {},
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_job_activation_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Job Activation Time",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the complete lifetime of an job. This means the time (latency) between creating the job and completing it.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 21
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 135,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "options": {},
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_job_life_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Job Life Time",
           "tooltip": {
             "show": true,
             "showHistogram": false
@@ -4101,7 +4298,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 82
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4166,7 +4363,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 82
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4226,7 +4423,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 88
           },
           "id": 79,
           "legend": {
@@ -4317,7 +4514,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 88
           },
           "id": 114,
           "legend": {
@@ -4409,7 +4606,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 95
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4474,7 +4671,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 95
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4540,7 +4737,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 102
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4601,7 +4798,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 102
           },
           "id": 72,
           "legend": {
@@ -4694,7 +4891,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 35
+            "y": 110
           },
           "id": 95,
           "legend": {
@@ -5164,5 +5361,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 1
+  "version": 2
 }
