@@ -4,17 +4,26 @@ Zeebe can be configured through configuration files, environment variables or a 
 
 The configuration will be applied during startup of Zeebe. It is not possible to change the configuration at runtime.
 
+## Default Configuration
+The default configuration is located in `config/application.yaml`. This configuration contains the most common configuration settings for a standalone broker
+
+> **Note**
+>
+> The default configuration is not suitable for a standalone gateway node. If you want to run a standalone gateway node, please have a look at `/config/gateway.yaml.template`
+
+
 ## Configuration file templates
 We provide templates that contain all possible configuration settings, along with explanations for each setting:
-* [Broker Configuration Template](/appendix/broker-config-template.md)
+* [Broker Configuration Templates](/appendix/broker-config-template.md)
 * [Gateway Configuration Template](/appendix/gateway-config-template.md)
 
 Note that these templates also include the corresponding environment variables to use for every setting.
 
+
 ## Editing the configuration
 You can either start from scratch or start from the configuration templates listed above.
 
-If you use the configuration template and want to uncomment certain lines, make sure to also uncomment their parent elements:
+If you use a configuration template and want to uncomment certain lines, make sure to also uncomment their parent elements:
 
 ```yaml
 Valid Configuration
@@ -45,14 +54,26 @@ When it comes to editing individual settings two data types are worth mentioning
   * Machine friendly format: either duration in milliseconds as long, or [ISO-8601 Duration](ttps://en.wikipedia.org/wiki/ISO_8601#Durations) format (e.g. `PT15S`)
 
 ## Passing configuration file to Zeebe
-The configuration file can be specified through an environment variable, as a command line argument when launching Zeebe, or via conventions.
+
+The configuration file can be passed to Zeebe either by adhering to naming conventions, or by explicitly specifying the configuration file through an environment variable or via a command line argument when launching Zeebe.
+
+*Naming conventions*
+
+Rename the configuration file to `application.yaml` and place it in the following location:
+```shell script
+./config/application.yaml
+```
 
 *Environment Variable*
+
+Rename the configuration file to `*.yaml` and set an environment variable to point to the configuration file:
 ```shell script
 export SPRING_CONFIG_LOCATION='file:./[path to config file]'
 ```
 
 *Command line argument*
+
+Rename the configuration file to `*.yaml` and add a command line argument to point to the configuration file:
 ```shell script
 ./bin/broker --spring.config.location=file:./[path to config file]
 
@@ -61,12 +82,6 @@ or
 ./bin/gateway --spring.config.location=file:./[path to config file]
 ```
 
-*Conventions*
-
-Rename the configuration file to `application.yml` and place it in the following location:
-```shell script
-./config/application.yml
-```
 
 *Misc*
 

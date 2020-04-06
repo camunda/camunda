@@ -113,7 +113,7 @@ public final class LegacyConfigurationSupport {
    * prints out a warning.
    */
   public void checkForLegacyTomlConfigurationArgument(
-      final String[] args, final String configFileName) {
+      final String[] args, final String configTemplateFileName) {
     if (args.length == 1 && args[0].endsWith(".toml")) {
       final String configFileArgument = args[0];
       Loggers.LEGACY_LOGGER.warn(
@@ -121,13 +121,12 @@ public final class LegacyConfigurationSupport {
               + configFileArgument
               + " which appears to be a TOML configuration file.");
       Loggers.LEGACY_LOGGER.info(
-          "TOML configuration files are no longer supported. Please specify a YAML configuration file"
-              + "and set it via environment variable \"SPRING_CONFIG_LOCATION\" (e.g. "
-              + "\"export SPRING_CONFIG_LOCATION='file:./config/"
-              + configFileName
+          "TOML configuration files are no longer supported. Please use a YAML configuration file"
+              + " based on "
+              + configTemplateFileName
               + "'\").");
       Loggers.LEGACY_LOGGER.info(
-          "The ./config/ folder contains a configuration file template. Alternatively, you can also use environment variables.");
+          "The ./config/ folder contains configuration file templates. Alternatively, you can also use environment variables to configure Zeebe.");
     }
   }
 

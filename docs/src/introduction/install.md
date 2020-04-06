@@ -1,6 +1,6 @@
 # Install
 
-This page guides you through the initial installation of the Zeebe broker and Zeebe Modeler for development purposes. 
+This page guides you through the initial installation of the Zeebe broker and Zeebe Modeler for development purposes.
 
 If you're looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/) as well.
 
@@ -49,11 +49,11 @@ all data which should be persisted.
 
 ### Configuration
 
-The Zeebe configuration is located at `/usr/local/zeebe/config/zeebe.cfg.yaml`.
+The Zeebe configuration is located at `/usr/local/zeebe/config/application.yaml`.
 The logging configuration is located at `/usr/local/zeebe/config/log4j2.xml`.
 
 The configuration of the docker image can also be changed by using environment
-variables. The configuration template file also contains information on the environment
+variables. The configuration template files also contains information on the environment
 variables to use for each configuration setting.
 
 Available environment variables:
@@ -165,6 +165,6 @@ bash
 
 ## Install the Zeebe Modeler
 
-The Zeebe Modeler is an open-source desktop BPMN modeling application created specifically for Zeebe. 
+The Zeebe Modeler is an open-source desktop BPMN modeling application created specifically for Zeebe.
 
 [You can download the most recent Zeebe Modeler release here.](https://github.com/zeebe-io/zeebe-modeler/releases)

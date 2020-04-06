@@ -1,24 +1,19 @@
-# Zeebe broker configuration file
+# Zeebe Standalone Broker configuration file (with embedded gateway)
+
 # ! ! ! ! ! ! ! ! ! !
-# In order to activate the settings in this file, please set the following environment variable:
-# export SPRING_CONFIG_LOCATION='file:./config/zeebe.cfg.yaml'
-#
-# Alternatively, you can also pass it as a command line argument:
-# ./bin/broker --spring.config.location=file:./config/zeebe.cfg.yaml
+# In order to activate the settings in this file, please choose one of the following ways:
+# a) rename this file to application.yaml
+# b) remove the *.template suffix and
+#      Set the following environment variable: export SPRING_CONFIG_LOCATION='file:./config/broker.standalone.yaml'
+#      Alternatively, you can also pass it as a command line argument: ./bin/broker --spring.config.location=file:./config/broker.standalone.yaml
 # ! ! ! ! ! ! ! ! ! !
 
 # Overview -------------------------------------------
 
 # This file contains a complete list of available configuration options.
 
-# Default values:
-#
-# When the default value is used for a configuration option, the option is
-# commented out. You can learn the default value from this file
-
-# The only deviation from the rule above is the exporters section.
-# By default no exporters are configured. This file shows default/example values for configuring
-# several exporters. To enable an exporter please uncomment the whole block and overwrite the settings.
+# This file shows example values for configuring several exporters. To enable an exporter
+# please uncomment the whole block and overwrite the settings.
 
 # Conventions:
 #
@@ -132,16 +127,16 @@
       # commandApi:
         # Overrides the host used for gateway-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_HOST.
-        # host: localhost
+        # host: 0.0.0.0
 
         # Sets the port used for gateway-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT.
-        # port = 26501
+        # port: 26501
 
       # internalApi:
         # Overrides the host used for internal broker-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_HOST.
-        # host: localhost
+        # host: 0.0.0.0
 
         # Sets the port used for internal broker-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT.
@@ -150,11 +145,11 @@
       # monitoringApi:
         # Overrides the host used for exposing monitoring information
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MONITORINGAPI_HOST.
-        # host: localhost
+        # host: 0.0.0.0
 
         # Sets the port used for exposing monitoring information
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT.
-        # port = 9600
+        # port: 9600
 
     # data:
       # This section allows to configure Zeebe's data storage. Data is stored in

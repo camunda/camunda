@@ -110,7 +110,8 @@ public class StandaloneGateway {
 
     final LegacyConfigurationSupport legacyConfigurationSupport =
         new LegacyConfigurationSupport(Scope.GATEWAY);
-    legacyConfigurationSupport.checkForLegacyTomlConfigurationArgument(args, "broker.cfg.yaml");
+    legacyConfigurationSupport.checkForLegacyTomlConfigurationArgument(
+        args, "gateway.yaml.template");
 
     SpringApplication.run(Launcher.class, args);
   }
