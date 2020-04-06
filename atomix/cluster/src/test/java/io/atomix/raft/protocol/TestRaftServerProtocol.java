@@ -17,12 +17,14 @@
 package io.atomix.raft.protocol;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.session.SessionId;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.net.ConnectException;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -48,6 +50,7 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<AppendRequest, CompletableFuture<AppendResponse>> appendHandler;
+  private final Set<MemberId> partitions = Sets.newCopyOnWriteArraySet();
 
   public TestRaftServerProtocol(
       final MemberId memberId,
@@ -56,6 +59,22 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
       final ThreadContext context) {
     super(servers, clients, context);
     servers.put(memberId, this);
+  }
+
+  public void disconnect(final MemberId target) {
+    partitions.add(target);
+  }
+
+  public void reconnect(final MemberId target) {
+    partitions.remove(target);
+  }
+
+  @Override
+  TestRaftServerProtocol server(final MemberId memberId) {
+    if (partitions.contains(memberId)) {
+      return null;
+    }
+    return super.server(memberId);
   }
 
   @Override
