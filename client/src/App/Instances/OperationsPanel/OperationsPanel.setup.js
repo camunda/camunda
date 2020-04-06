@@ -33,9 +33,14 @@ const mockProps = {
   onInstancesClick: jest.fn(),
 };
 
+const mockUnsubscribe = jest.fn();
+const mockSubscribe = jest.fn();
+
 export {
   mockOperationRunning,
   mockExistingOperationFinished,
   mockOperationFinished,
   mockProps,
+  mockUnsubscribe,
+  mockSubscribe,
 };

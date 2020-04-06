@@ -16,6 +16,8 @@ import {
   mockOperationFinished,
   mockOperationRunning,
   mockExistingOperationFinished,
+  mockSubscribe,
+  mockUnsubscribe,
 } from './OperationsPanel.setup';
 
 jest.mock('modules/hooks/useSubscription');
@@ -23,11 +25,7 @@ jest.mock('modules/hooks/useDataManager');
 
 describe('useBatchOperations', () => {
   beforeEach(() => {
-    useSubscription.mockReturnValue({
-      subscribe: jest.fn(),
-      unsubscribe: jest.fn(),
-    });
-
+    jest.clearAllMocks();
     useDataManager.mockReturnValue({
       poll: {
         register: jest.fn(),
@@ -37,11 +35,12 @@ describe('useBatchOperations', () => {
     });
   });
 
-  afterEach(() => {
-    jest.resetAllMocks();
-  });
-
   it('should subscribe to data manager updates on first render', () => {
+    mockSubscribe.mockReturnValue(mockUnsubscribe);
+    useSubscription.mockReturnValue({
+      subscribe: mockSubscribe,
+    });
+
     // when
     const {result} = renderHook(() => useBatchOperations(), {});
 
@@ -66,13 +65,14 @@ describe('useBatchOperations', () => {
   it('should register for polling when there running operations', () => {
     // given
     // simulate a publish after subscribing
-    useSubscription().subscribe.mockImplementation(
-      (topic, stateHooks, callback) => {
+    useSubscription.mockReturnValue({
+      subscribe: (topic, stateHooks, callback) => {
         if (topic === SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS) {
           callback([mockOperationRunning]);
         }
-      }
-    );
+        return mockUnsubscribe;
+      },
+    });
 
     // when
     const {result} = renderHook(() => useBatchOperations(), {});
@@ -82,16 +82,17 @@ describe('useBatchOperations', () => {
     expect(useDataManager().poll.register).toHaveBeenCalledTimes(1);
   });
 
-  it.skip('should not register for polling when there no running operations', () => {
+  it('should not register for polling when there no running operations', () => {
     // given
     // simulate a publish after subscribing
-    useSubscription().subscribe.mockImplementation(
-      (topic, stateHooks, callback) => {
+    useSubscription.mockReturnValue({
+      subscribe: (topic, stateHooks, callback) => {
         if (topic === SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS) {
           callback([mockOperationFinished]);
         }
-      }
-    );
+        return mockUnsubscribe;
+      },
+    });
 
     // when
     const {result} = renderHook(() => useBatchOperations(), {});
@@ -104,13 +105,14 @@ describe('useBatchOperations', () => {
   it('should register for polling when operations change from finished to running', () => {
     // given
     let publish;
-    useSubscription().subscribe.mockImplementation(
-      (topic, stateHooks, callback) => {
+    useSubscription.mockReturnValue({
+      subscribe: (topic, stateHooks, callback) => {
         if (topic === SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS) {
           publish = callback;
         }
-      }
-    );
+        return mockUnsubscribe;
+      },
+    });
     const {result} = renderHook(() => useBatchOperations(), {});
 
     // when
@@ -127,16 +129,17 @@ describe('useBatchOperations', () => {
     expect(useDataManager().poll.register).toHaveBeenCalledTimes(1);
   });
 
-  it.skip('should unregister from polling when operations change from running to finished', async () => {
+  it('should unregister from polling when operations change from running to finished', async () => {
     // given
     let publish;
-    useSubscription().subscribe.mockImplementation(
-      (topic, stateHooks, callback) => {
+    useSubscription.mockReturnValue({
+      subscribe: (topic, stateHooks, callback) => {
         if (topic === SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS) {
           publish = callback;
         }
-      }
-    );
+        return mockUnsubscribe;
+      },
+    });
     const {result} = renderHook(() => useBatchOperations(), {});
 
     // when
@@ -156,7 +159,7 @@ describe('useBatchOperations', () => {
     expect(useDataManager().poll.unregister).toHaveBeenCalledTimes(2);
   });
 
-  it.skip('should unregister from polling on unmount', () => {
+  it('should unregister from polling on unmount', () => {
     // given
     const {unmount} = renderHook(() => useBatchOperations(), {});
 
@@ -171,13 +174,14 @@ describe('useBatchOperations', () => {
     // given
     let publish;
 
-    useSubscription().subscribe.mockImplementation(
-      (topic, stateHooks, callback) => {
+    useSubscription.mockReturnValue({
+      subscribe: (topic, stateHooks, callback) => {
         if (topic === SUBSCRIPTION_TOPIC.CREATE_BATCH_OPERATION) {
           publish = callback;
         }
-      }
-    );
+        return mockUnsubscribe;
+      },
+    });
 
     const {result} = renderHook(() => useBatchOperations(), {});
 
@@ -195,13 +199,14 @@ describe('useBatchOperations', () => {
     // given
     let publish;
 
-    useSubscription().subscribe.mockImplementation(
-      (topic, stateHooks, callback) => {
+    useSubscription.mockReturnValue({
+      subscribe: (topic, stateHooks, callback) => {
         if (topic === SUBSCRIPTION_TOPIC.OPERATION_APPLIED) {
           publish = callback;
         }
-      }
-    );
+        return mockUnsubscribe;
+      },
+    });
 
     const {result} = renderHook(() => useBatchOperations(), {});
 
@@ -213,5 +218,40 @@ describe('useBatchOperations', () => {
     // then
 
     expect(result.current.batchOperations).toEqual([mockOperationRunning]);
+  });
+
+  it('should unsubscribe on unmounting', () => {
+    // given
+    mockSubscribe.mockReturnValue(mockUnsubscribe);
+
+    useSubscription.mockReturnValue({
+      subscribe: mockSubscribe,
+    });
+
+    const {unmount} = renderHook(() => useBatchOperations(), {});
+
+    // when
+    act(() => {
+      unmount();
+    });
+
+    // then
+    expect(mockSubscribe).toHaveBeenCalledTimes(3);
+    expect(mockSubscribe).toHaveBeenCalledWith(
+      'LOAD_BATCH_OPERATIONS',
+      'LOADED',
+      expect.any(Function)
+    );
+    expect(mockSubscribe).toHaveBeenCalledWith(
+      'CREATE_BATCH_OPERATION',
+      'LOADED',
+      expect.any(Function)
+    );
+    expect(mockSubscribe).toHaveBeenCalledWith(
+      'OPERATION_APPLIED',
+      'LOADED',
+      expect.any(Function)
+    );
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(3);
   });
 });

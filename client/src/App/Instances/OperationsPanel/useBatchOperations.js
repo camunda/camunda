@@ -62,7 +62,7 @@ function reducer(state, action) {
  */
 export default function useBatchOperations() {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
-  const {subscribe, unsubscribe} = useSubscription();
+  const {subscribe} = useSubscription();
   const dataManager = useDataManager();
 
   const requestBatchOperations = useCallback(() => {
@@ -82,23 +82,21 @@ export default function useBatchOperations() {
 
   // Subscribe to updates on batch operations
   const subscribeToOperations = useCallback(() => {
-    subscribe(
+    const unsubscribeLoadBatchOperations = subscribe(
       SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS,
       LOADING_STATE.LOADED,
       (payload) => {
         dispatch({type: ACTIONS.LOAD, payload});
       }
     );
-
-    subscribe(
+    const unsubscribeCreateBatchOperations = subscribe(
       SUBSCRIPTION_TOPIC.CREATE_BATCH_OPERATION,
       LOADING_STATE.LOADED,
       (payload) => {
         dispatch({type: ACTIONS.PREPEND, payload});
       }
     );
-
-    subscribe(
+    const unsubscribeOperationApplied = subscribe(
       SUBSCRIPTION_TOPIC.OPERATION_APPLIED,
       LOADING_STATE.LOADED,
       (payload) => {
@@ -108,12 +106,13 @@ export default function useBatchOperations() {
         });
       }
     );
-
     return () => {
-      unsubscribe();
+      unsubscribeLoadBatchOperations();
+      unsubscribeCreateBatchOperations();
+      unsubscribeOperationApplied();
       dataManager.poll.unregister(POLL_TOPICS.OPERATIONS);
     };
-  }, [subscribe, unsubscribe, dataManager.poll]);
+  }, [subscribe, dataManager.poll]);
 
   useEffect(subscribeToOperations, []);
 

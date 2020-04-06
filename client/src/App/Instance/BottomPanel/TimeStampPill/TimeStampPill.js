@@ -17,18 +17,23 @@ function TimeStampPill(props) {
   const {showTimeStamp, onTimeStampToggle} = props;
   const [isTreeLoaded, setIsTreeLoaded] = useState(false);
   const [isDefLoaded, setIsDefLoaded] = useState(false);
-  const {subscribe, unsubscribe} = useSubscription();
+  const {subscribe} = useSubscription();
 
   useEffect(() => {
-    subscribe(SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE, LOADING_STATE.LOADED, () =>
-      setIsTreeLoaded(true)
+    const unsubscribeInstanceTree = subscribe(
+      SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE,
+      LOADING_STATE.LOADED,
+      () => setIsTreeLoaded(true)
     );
-    subscribe(
+    const unsubscribeDefinitions = subscribe(
       SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS,
       LOADING_STATE.LOADED,
       () => setIsDefLoaded(true)
     );
-    return () => unsubscribe();
+    return () => {
+      unsubscribeInstanceTree();
+      unsubscribeDefinitions();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
