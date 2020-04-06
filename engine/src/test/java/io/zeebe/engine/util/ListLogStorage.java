@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.util;
 
-import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.io.IOException;
@@ -22,7 +21,7 @@ import org.agrona.DirectBuffer;
 public class ListLogStorage implements LogStorage {
 
   private final ConcurrentNavigableMap<Long, Integer> positionIndexMapping;
-  private final List<ZeebeEntry> entries;
+  private final List<Entry> entries;
   private LongConsumer positionListener;
 
   public ListLogStorage() {
@@ -50,8 +49,8 @@ public class ListLogStorage implements LogStorage {
           return OP_RESULT_NO_DATA;
         }
 
-        final var zeebeEntry = entries.get(index);
-        final var data = zeebeEntry.data();
+        final var entry = entries.get(index);
+        final var data = entry.getData();
         readBuffer.wrap(data, data.position(), data.remaining());
 
         return address + 1;
@@ -89,16 +88,14 @@ public class ListLogStorage implements LogStorage {
       final ByteBuffer blockBuffer,
       final AppendListener listener) {
     try {
-      final var zeebeEntry =
-          new ZeebeEntry(
-              0, System.currentTimeMillis(), lowestPosition, highestPosition, blockBuffer);
-      entries.add(zeebeEntry);
+      final var entry = new Entry(lowestPosition, highestPosition, blockBuffer);
+      entries.add(entry);
       final var index = entries.size();
       positionIndexMapping.put(lowestPosition, index);
       listener.onWrite(index);
 
       if (positionListener != null) {
-        positionListener.accept(zeebeEntry.highestPosition());
+        positionListener.accept(entry.getHighestPosition());
       }
       listener.onCommit(index);
     } catch (final Exception e) {
@@ -126,4 +123,28 @@ public class ListLogStorage implements LogStorage {
 
   @Override
   public void flush() throws Exception {}
+
+  private static final class Entry {
+    private final long lowestPosition;
+    private final long highestPosition;
+    private final ByteBuffer data;
+
+    public Entry(final long lowestPosition, final long highestPosition, final ByteBuffer data) {
+      this.lowestPosition = lowestPosition;
+      this.highestPosition = highestPosition;
+      this.data = data;
+    }
+
+    public long getLowestPosition() {
+      return lowestPosition;
+    }
+
+    public long getHighestPosition() {
+      return highestPosition;
+    }
+
+    public ByteBuffer getData() {
+      return data;
+    }
+  }
 }
