@@ -16,7 +16,6 @@ import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.el.ResultType;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
-import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.protocol.record.value.ErrorType;
 import java.time.ZonedDateTime;
@@ -37,10 +36,10 @@ public final class ExpressionProcessor {
   private final VariableStateEvaluationContext evaluationContext;
 
   public ExpressionProcessor(
-      final ExpressionLanguage expressionLanguage, final VariablesState variablesState) {
+      final ExpressionLanguage expressionLanguage, final VariablesLookup lookup) {
     this.expressionLanguage = expressionLanguage;
 
-    evaluationContext = new VariableStateEvaluationContext(variablesState);
+    evaluationContext = new VariableStateEvaluationContext(lookup);
   }
 
   /**
@@ -370,12 +369,12 @@ public final class ExpressionProcessor {
 
     private final DirectBuffer variableNameBuffer = new UnsafeBuffer();
 
-    private final VariablesState variablesState;
+    private final VariablesLookup lookup;
 
     private long variableScopeKey;
 
-    public VariableStateEvaluationContext(final VariablesState variablesState) {
-      this.variablesState = variablesState;
+    public VariableStateEvaluationContext(final VariablesLookup lookup) {
+      this.lookup = lookup;
     }
 
     @Override
@@ -384,7 +383,13 @@ public final class ExpressionProcessor {
 
       variableNameBuffer.wrap(variableName.getBytes());
 
-      return variablesState.getVariable(variableScopeKey, variableNameBuffer);
+      return lookup.getVariable(variableScopeKey, variableNameBuffer);
     }
+  }
+
+  @FunctionalInterface
+  public interface VariablesLookup {
+
+    DirectBuffer getVariable(final long scopeKey, final DirectBuffer name);
   }
 }

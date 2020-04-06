@@ -121,6 +121,21 @@ public class EvaluationResultTest {
   }
 
   @Test
+  public void localDateTimeExpression() {
+    final var evaluationResult = evaluateExpression("=date and time(\"2020-04-01T10:31:10\")");
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.DATE_TIME);
+    assertThat(evaluationResult.getDuration()).isNull();
+    assertThat(evaluationResult.getPeriod()).isNull();
+    assertThat(evaluationResult.getDateTime())
+        .isEqualTo(LocalDateTime.of(2020, 4, 1, 10, 31, 10).atZone(ZoneId.systemDefault()));
+    assertThat(evaluationResult.getBoolean()).isNull();
+    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getNumber()).isNull();
+    assertThat(evaluationResult.getList()).isNull();
+  }
+
+  @Test
   public void nullExpression() {
     final var evaluationResult = evaluateExpression("=null");
 

@@ -52,7 +52,7 @@ public final class TransformingDeploymentCreateProcessor
       final ExpressionProcessor expressionProcessor) {
     this.workflowState = zeebeState.getWorkflowState();
     this.keyGenerator = zeebeState.getKeyGenerator();
-    this.deploymentTransformer = new DeploymentTransformer(zeebeState);
+    this.deploymentTransformer = new DeploymentTransformer(zeebeState, expressionProcessor);
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
   }

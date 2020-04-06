@@ -50,10 +50,11 @@ public final class EngineProcessors {
     addDistributeDeploymentProcessors(
         actor, zeebeState, typedRecordProcessors, deploymentDistributor);
 
+    final var variablesState =
+        zeebeState.getWorkflowState().getElementInstanceState().getVariablesState();
     final var expressionProcessor =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(),
-            zeebeState.getWorkflowState().getElementInstanceState().getVariablesState());
+            ExpressionLanguageFactory.createExpressionLanguage(), variablesState::getVariable);
 
     final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(

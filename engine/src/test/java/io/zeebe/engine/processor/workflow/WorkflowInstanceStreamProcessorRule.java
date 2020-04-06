@@ -103,10 +103,12 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
           actor = processingContext.getActor();
           workflowState = zeebeState.getWorkflowState();
 
+          final var variablesState =
+              zeebeState.getWorkflowState().getElementInstanceState().getVariablesState();
           final ExpressionProcessor expressionProcessor =
               new ExpressionProcessor(
                   ExpressionLanguageFactory.createExpressionLanguage(),
-                  zeebeState.getWorkflowState().getElementInstanceState().getVariablesState());
+                  variablesState::getVariable);
 
           WorkflowEventProcessors.addWorkflowProcessors(
               zeebeState,

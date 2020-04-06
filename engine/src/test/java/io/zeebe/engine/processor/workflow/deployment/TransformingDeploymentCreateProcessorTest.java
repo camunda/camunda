@@ -67,10 +67,11 @@ public final class TransformingDeploymentCreateProcessorTest {
           final var zeebeState = processingContext.getZeebeState();
           workflowState = zeebeState.getWorkflowState();
 
+          final var variablesState = workflowState.getElementInstanceState().getVariablesState();
           final ExpressionProcessor expressionProcessor =
               new ExpressionProcessor(
                   ExpressionLanguageFactory.createExpressionLanguage(),
-                  zeebeState.getWorkflowState().getElementInstanceState().getVariablesState());
+                  variablesState::getVariable);
 
           DeploymentEventProcessors.addTransformingDeploymentProcessor(
               typedRecordProcessors,
