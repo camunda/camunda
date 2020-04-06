@@ -46,7 +46,7 @@ public class AdjustGroupByInUserTaskReportsIT extends AbstractUpgradeIT {
     // when
     upgradePlan.execute();
     List<SingleProcessReportDefinitionDto> allProcessReports =
-      getAllProcessReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName());
+      getAllDocumentsOfIndex(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
 
     // then
     assertThat(allProcessReports.size()).isEqualTo(EXPECTED_NUMBER_OF_PROCESS_REPORTS);

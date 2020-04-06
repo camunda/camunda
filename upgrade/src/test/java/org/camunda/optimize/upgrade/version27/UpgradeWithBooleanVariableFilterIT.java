@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UpgradeWithBooleanVariableFilterIT extends AbstractUpgradeIT {
   @BeforeEach
@@ -39,7 +39,7 @@ public class UpgradeWithBooleanVariableFilterIT extends AbstractUpgradeIT {
     // when
     upgradePlan.execute();
     List<SingleProcessReportDefinitionDto> allProcessReports =
-      getAllProcessReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName());
+      getAllDocumentsOfIndex(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
 
     List<SingleProcessReportDefinitionDto> reportsWithFilter = allProcessReports.stream().filter(r -> !r.getData().getFilter().isEmpty())
       .collect(Collectors.toList());

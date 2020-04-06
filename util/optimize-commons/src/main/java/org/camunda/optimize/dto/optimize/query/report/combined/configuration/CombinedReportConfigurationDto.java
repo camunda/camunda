@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.combined.configuration;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportTargetValueDto;
@@ -18,7 +19,11 @@ public class CombinedReportConfigurationDto {
   private Boolean pointMarkers = true;
   private Boolean hideRelativeValue = false;
   private Boolean hideAbsoluteValue = false;
+  // needed to ensure the name is serialized properly, see https://stackoverflow.com/a/30207335
+  @JsonProperty("yLabel")
   private String yLabel = "";
+  // needed to ensure the name is serialized properly, see https://stackoverflow.com/a/30207335
+  @JsonProperty("xLabel")
   private String xLabel = "";
   private Boolean alwaysShowRelative = false;
   private Boolean alwaysShowAbsolute = false;

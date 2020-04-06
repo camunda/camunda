@@ -13,7 +13,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -22,6 +21,8 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -49,8 +50,8 @@ import org.junit.jupiter.api.BeforeEach;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
@@ -61,6 +62,8 @@ public abstract class AbstractUpgradeIT {
 
   protected static final MetadataIndex METADATA_INDEX = new MetadataIndex();
   protected static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
+  protected static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
+  protected static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
 
   protected static final EventIndexV1 EVENT_INDEX_V1 = new EventIndexV1();
   protected static final EventSequenceCountIndexV1 EVENT_SEQUENCE_COUNT_INDEX_V1 = new EventSequenceCountIndexV1();
@@ -168,7 +171,7 @@ public abstract class AbstractUpgradeIT {
   }
 
   @SneakyThrows
-  protected List<SingleProcessReportDefinitionDto> getAllProcessReports(String indexName) {
+  protected <T> List<T> getAllDocumentsOfIndex(final String indexName, final Class<T> valueType) {
     final SearchResponse searchResponse = prefixAwareClient.search(
       new SearchRequest(indexName).source(new SearchSourceBuilder().size(10000)),
       RequestOptions.DEFAULT
@@ -178,13 +181,13 @@ public abstract class AbstractUpgradeIT {
       .map(doc -> {
         try {
           return objectMapper.readValue(
-            doc.getSourceAsString(), SingleProcessReportDefinitionDto.class
+            doc.getSourceAsString(), valueType
           );
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
       })
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
 }

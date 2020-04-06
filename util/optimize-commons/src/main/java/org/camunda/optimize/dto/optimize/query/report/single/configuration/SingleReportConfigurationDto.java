@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -13,8 +14,6 @@ import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
@@ -38,7 +37,11 @@ public class SingleReportConfigurationDto implements Combinable {
   private Integer precision = null;
   private Boolean hideRelativeValue = false;
   private Boolean hideAbsoluteValue = false;
+  // needed to ensure the name is serialized properly, see https://stackoverflow.com/a/30207335
+  @JsonProperty("yLabel")
   private String yLabel = "";
+  // needed to ensure the name is serialized properly, see https://stackoverflow.com/a/30207335
+  @JsonProperty("xLabel")
   private String xLabel = "";
   private Boolean alwaysShowRelative = false;
   private Boolean alwaysShowAbsolute = false;
