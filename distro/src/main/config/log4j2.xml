@@ -7,13 +7,14 @@
     <Console name="Console" target="SYSTEM_OUT" follow="true">
       <PatternLayout pattern="${LOG_PATTERN}"/>
     </Console>
-
+	<Console name="Stackdriver" target="SYSTEM_OUT" follow="true">
+      <StackdriverJSONLayout/>
+    </Console>
   </Appenders>
   <Loggers>
     <Logger name="org.camunda.operate" level="info" />
-
     <Root level="info">
-      <AppenderRef ref="Console"/>
+      <AppenderRef ref="${env:OPERATE_LOG_APPENDER:-Console}"/>
     </Root>
   </Loggers>
 </Configuration>
