@@ -1,2 +1,10 @@
-/package.json
-*.md
+node_modules/
+build/
+target/
+coverage/
+**/*.bpmn
+**/*.snap
+**/*.svg
+**/*.xml
+src/fonts/
+yarn.lock

@@ -1,4 +1,5 @@
 # Purpose
+
 When extending other React components, styled-components passes all the props to
 the DOM element returned by the extended component.
 By wrapping the component with withStrippedProps HOC, you specify the props you don't
@@ -7,6 +8,7 @@ want to pe passed down to the DOM element.
 ## How to use
 
 Import the utility in your styled.js file
+
 ```
 import withStrippedProps from 'modules/utils/withStrippedProps';
 ```
