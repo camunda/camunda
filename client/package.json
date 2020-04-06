@@ -44,7 +44,7 @@
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^10.0.0",
     "jest-styled-components": "^6.3.4",
-    "lint-staged": "^10.1.1",
+    "lint-staged": "^10.1.2",
     "prettier": "^2.0.2",
     "react-scripts": "3.4.1",
     "react-test-renderer": "^16.13.1"
