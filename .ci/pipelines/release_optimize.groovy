@@ -17,6 +17,9 @@ static String PUBLIC_DOCKER_REGISTRY(boolean pushChanges) {
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 static String PUBLIC_DOCKER_IMAGE(boolean pushChanges) { return "${PUBLIC_DOCKER_REGISTRY(pushChanges)}/optimize-ee/optimize" }
 
+ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
+
 static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME(boolean pushChanges) {
   return (pushChanges && !isStagingJenkins()) ?
     'downloads-camunda-cloud-enterprise-release' :
@@ -47,6 +50,8 @@ String calculatePreviousVersion(releaseVersion) {
 
 static String mavenDindAgent(env) {
   return """---
+apiVersion: v1
+kind: Pod
 metadata:
   labels:
     agent: optimize-ci-build
@@ -54,21 +59,21 @@ spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
   tolerations:
-    - key: "${NODE_POOL()}"
-      operator: "Exists"
-      effect: "NoSchedule"
+  - key: "${NODE_POOL()}"
+    operator: "Exists"
+    effect: "NoSchedule"
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
     command: ["cat"]
     tty: true
     env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      - name: TZ
-        value: Europe/Berlin
+    - name: LIMITS_CPU
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+    - name: TZ
+      value: Europe/Berlin
     resources:
       limits:
         cpu: 4
@@ -101,6 +106,104 @@ spec:
       requests:
         cpu: 1
         memory: 512Mi
+"""
+}
+
+static String smoketestPodSpec(params, String cambpmVersion, String esVersion) {
+  return """---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+  - key: "${NODE_POOL()}"
+    operator: "Exists"
+    effect: "NoSchedule"
+  imagePullSecrets:
+  - name: registry-camunda-cloud-secret
+  containers:
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+    - name: LIMITS_CPU
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+    - name: TZ
+      value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 4
+        memory: 3Gi
+      requests:
+        cpu: 4
+        memory: 3Gi
+  - name: optimize
+    image: ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:${params.RELEASE_VERSION}
+    imagePullPolicy: Always
+    env:
+    - name: JAVA_OPTS
+      value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
+    - name: OPTIMIZE_CAMUNDABPM_REST_URL
+      value: http://cambpm:8080/engine-rest
+    - name: OPTIMIZE_ELASTICSEARCH_HOST
+      value: localhost
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 1
+        memory: 2Gi
+  - name: cambpm
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}
+    tty: true
+    env:
+    - name: JAVA_OPTS
+      value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
+    - name: TZ
+      value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 1
+        memory: 2Gi
+  - name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
+    securityContext:
+      privileged: true
+      capabilities:
+        add: ["IPC_LOCK", "SYS_RESOURCE"]
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 1
+        memory: 2Gi
+    env:
+      - name: ES_NODE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ES_JAVA_OPTS
+        value: "-Xms1g -Xmx1g"
+      - name: bootstrap.memory_lock
+        value: true
+      - name: discovery.type
+        value: single-node
+      - name: http.port
+        value: 9200
+      - name: cluster.name
+        value: elasticsearch
 """
 }
 
@@ -199,6 +302,12 @@ pipeline {
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
 
+        script {
+          def mavenProps = readMavenPom().getProperties()
+          env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+          env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+        }
+
         container('maven') {
           sh ('''
             # install git and ssh
@@ -287,6 +396,26 @@ pipeline {
             fi
           """)
           }
+        }
+      }
+    }
+    stage('Smoketest Docker Image') {
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build_smoke_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml smoketestPodSpec(params, env.CAMBPM_VERSION, env.ES_VERSION)
+        }
+      }
+      steps {
+        container('maven') {
+          sh("""#!/bin/bash -eux
+          echo Giving Optimize some time to start up
+          sleep 60
+          echo Smoke testing if Optimize can be reached
+          curl -q http://localhost:8090/api/status | grep -q connectionStatus
+          """)
         }
       }
     }
