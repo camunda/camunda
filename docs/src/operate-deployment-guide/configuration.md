@@ -144,51 +144,31 @@ that can be further adjusted to your needs.
     <Console name="Console" target="SYSTEM_OUT" follow="true">
       <PatternLayout pattern="${LOG_PATTERN}"/>
     </Console>
-
+	<Console name="Stackdriver" target="SYSTEM_OUT" follow="true">
+      <StackdriverJSONLayout/>
+    </Console>
   </Appenders>
   <Loggers>
     <Logger name="org.camunda.operate" level="info" />
     <Root level="info">
-      <AppenderRef ref="Console"/>
+      <AppenderRef ref="${env:OPERATE_LOG_APPENDER:-Console}"/>
     </Root>
   </Loggers>
 </Configuration>
 ```
+### JSON logging configuration
 
-## JSON logging configuration
-
-* `config/log4j2-json.xml` - this one is specifically configured for usage with Stackdriver in Google Cloud 
+This one is specifically configured for usage with Stackdriver in Google Cloud 
 environment. The logs will be written in JSON format to make them better searchable in Google Cloud Logging UI.  
-
-```
-<?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN" monitorInterval="30">
-  <Properties>
-    <Property name="LOG_PATTERN">%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint} %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c{1.}}{cyan} %clr{:}{faint} %m%n%xwEx</Property>
-  </Properties>
-  <Appenders>
-	 <Console name="StackdriverJSONConsole" target="SYSTEM_OUT" follow="true">
-        <StackdriverJSONLayout/>
-      </Console>
-  </Appenders>
-  <Loggers>
-    <Logger name="org.camunda.operate" level="debug" />
-    <Root level="info">
-      <AppenderRef ref="StackdriverJSONConsole"/>
-    </Root>
-  </Loggers>
-</Configuration>
-```
-
 ## Enable Logging configuration
 
-You can enable one of the logging configurations by specifying which logging configuration file should be used like this:
+You can enable one of the logging configurations by setting the environment variable ```OPERATE_LOG_APPENDER``` like this:
 
 ```
-JAVA_OPTS=-Dlogging.config=file:/usr/local/operate/config/log4j2-json.xml
+OPERATE_LOG_APPENDER=Stackdriver
 ```
 
-You need to specify the path of the logging configuration file you want to use.
+Default logging appender is Console.
 
 # An example of application.yml file
 
