@@ -59,7 +59,7 @@ services:
       - 8000:8000
     restart: always
     volumes:
-      - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yml
+      - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
 
   generator:
     container_name: generator
