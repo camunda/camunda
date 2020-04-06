@@ -109,7 +109,6 @@ public class RaftContext implements AutoCloseable {
   private final Set<Runnable> failureListeners = new CopyOnWriteArraySet<>();
   private final LoadMonitor loadMonitor;
   private final RaftRoleMetrics raftRoleMetrics;
-  private final SingleThreadContext heartBeatThread;
   private final MetaStore meta;
   private final RaftLog raftLog;
   private final RaftLogWriter logWriter;
@@ -164,8 +163,6 @@ public class RaftContext implements AutoCloseable {
     final String baseThreadName = String.format("raft-server-%s-%s", localMemberId.id(), name);
     this.threadContext =
         new SingleThreadContext(namedThreads(baseThreadName, log), this::onUncaughtException);
-    this.heartBeatThread =
-        new SingleThreadContext(namedThreads(baseThreadName + "-heartbeat", log));
     this.loadContext = new SingleThreadContext(namedThreads(baseThreadName + "-load", log));
     this.stateContext = new SingleThreadContext(namedThreads(baseThreadName + "-state", log));
 
@@ -255,8 +252,6 @@ public class RaftContext implements AutoCloseable {
         request -> runOnContextIfReady(() -> role.onCommand(request), CommandResponse::builder));
     protocol.registerQueryHandler(
         request -> runOnContextIfReady(() -> role.onQuery(request), QueryResponse::builder));
-    protocol.registerLeaderHeartbeatHandler(
-        request -> runOnHeartbeatContext(() -> role.onLeaderHeartbeat(request)), heartBeatThread);
   }
 
   private <R extends RaftResponse> CompletableFuture<R> runOnContextIfReady(
@@ -291,10 +286,6 @@ public class RaftContext implements AutoCloseable {
                   });
         });
     return future;
-  }
-
-  public void runOnHeartbeatContext(final Runnable runnable) {
-    heartBeatThread.execute(runnable);
   }
 
   public MemberId localMemberId() {
@@ -454,10 +445,6 @@ public class RaftContext implements AutoCloseable {
     final ComposableFuture<Void> future = new ComposableFuture<>();
     threadContext.execute(() -> stateMachine.compact().whenComplete(future));
     return future;
-  }
-
-  public void checkHeartbeatThread() {
-    heartBeatThread.checkThread();
   }
 
   /** Attempts to become the leader. */
@@ -805,10 +792,6 @@ public class RaftContext implements AutoCloseable {
    */
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = checkNotNull(heartbeatInterval, "heartbeatInterval cannot be null");
-  }
-
-  public ThreadContext getHeartbeatThread() {
-    return heartBeatThread;
   }
 
   /**

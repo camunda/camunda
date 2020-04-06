@@ -352,18 +352,4 @@ public interface RaftServerProtocol {
    * @param sessionId the session ID for which to unregister the listener
    */
   void unregisterResetListener(SessionId sessionId);
-
-  void leaderHeartbeat(MemberId memberId, LeaderHeartbeatRequest heartbeat);
-
-  /**
-   * Registers an leader heartbeat callback.
-   *
-   * @param leaderHeartbeatRequestConsumer the consumer to add
-   * @param executor the executor with which to execute the listener
-   */
-  void registerLeaderHeartbeatHandler(
-      Consumer<LeaderHeartbeatRequest> leaderHeartbeatRequestConsumer, Executor executor);
-
-  /** Unregisters the leader heartbeat request handler. */
-  void unregisterLeaderHeartbeatHandler();
 }
