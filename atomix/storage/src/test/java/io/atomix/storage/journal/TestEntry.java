@@ -19,6 +19,7 @@ package io.atomix.storage.journal;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 import io.atomix.utils.misc.ArraySizeHashPrinter;
+import java.util.Arrays;
 
 /**
  * Test entry.
@@ -38,6 +39,23 @@ public class TestEntry {
 
   public byte[] bytes() {
     return bytes;
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(bytes);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TestEntry testEntry = (TestEntry) o;
+    return Arrays.equals(bytes, testEntry.bytes);
   }
 
   @Override

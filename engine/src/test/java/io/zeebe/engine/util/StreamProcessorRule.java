@@ -113,7 +113,12 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessor(factory);
+    return streamProcessingComposite.startTypedStreamProcessor(factory, r -> {});
+  }
+
+  public StreamProcessor startTypedStreamProcessor(
+      final StreamProcessorTestFactory factory, final Consumer<TypedRecord> onProcessedListener) {
+    return streamProcessingComposite.startTypedStreamProcessor(factory, onProcessedListener);
   }
 
   public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {

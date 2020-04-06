@@ -602,6 +602,9 @@ public class SegmentedJournal<E> implements Journal<E> {
     for (final SegmentedJournalReader reader : readers) {
       if (reader.getNextIndex() >= index) {
         reader.reset(index);
+      } else {
+        // This is not thread safe https://github.com/zeebe-io/zeebe/issues/4198
+        reader.reset(reader.getNextIndex());
       }
     }
   }

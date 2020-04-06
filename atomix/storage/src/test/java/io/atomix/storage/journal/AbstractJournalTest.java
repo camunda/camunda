@@ -30,7 +30,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -88,6 +91,7 @@ public abstract class AbstractJournalTest {
         .withNamespace(NAMESPACE)
         .withStorageLevel(storageLevel())
         .withMaxSegmentSize(maxSegmentSize)
+        .withMaxEntrySize(64)
         .withJournalIndexFactory(() -> index)
         .build();
   }
@@ -414,6 +418,61 @@ public abstract class AbstractJournalTest {
     assertTrue(committedReader.hasNext());
     assertEquals(entriesPerSegment * 5 + 1, committedReader.getNextIndex());
     assertEquals(entriesPerSegment * 5 + 1, committedReader.next().index());
+  }
+
+  @Test
+  public void shouldNotReadTruncatedEntries() throws IOException {
+    // given
+    final int totalWrites = 10;
+    int commitPosition = 6;
+    final Map<Integer, TestEntry> written = new HashMap<>();
+    try (final Journal<TestEntry> journal = createJournal()) {
+      final JournalWriter<TestEntry> writer = journal.writer();
+      final JournalReader<TestEntry> reader = journal.openReader(1, Mode.COMMITS);
+
+      int writerIndex;
+      for (writerIndex = 1; writerIndex <= totalWrites - 2; writerIndex++) {
+        final TestEntry entry = getTestEntry(16);
+        assertEquals(writerIndex, writer.append(entry).index());
+        written.put(writerIndex, entry);
+      }
+
+      writer.commit(commitPosition);
+
+      int readerIndex;
+      for (readerIndex = 1; readerIndex <= commitPosition; readerIndex++) {
+        assertTrue(reader.hasNext());
+        final Indexed<TestEntry> entry = reader.next();
+        assertEquals(readerIndex, entry.index());
+        assertEquals(entry.entry(), written.get(readerIndex));
+      }
+      assertFalse(reader.hasNext());
+
+      // when
+      writer.truncate(commitPosition + 1);
+
+      for (writerIndex = commitPosition + 2; writerIndex <= totalWrites; writerIndex++) {
+        final TestEntry entry = getTestEntry(32);
+        assertEquals(writerIndex, writer.append(entry).index());
+        written.put(writerIndex, entry);
+      }
+
+      commitPosition = totalWrites;
+      writer.commit(commitPosition);
+
+      for (; readerIndex <= commitPosition; readerIndex++) {
+        assertTrue("Expected to find entry at index " + readerIndex, reader.hasNext());
+        final Indexed<TestEntry> entry = reader.next();
+        assertEquals(readerIndex, entry.index());
+        assertEquals(entry.entry(), written.get(readerIndex));
+      }
+    }
+  }
+
+  private TestEntry getTestEntry(final int size) {
+    final byte[] bytes = new byte[size];
+    ThreadLocalRandom.current().nextBytes(bytes);
+    return new TestEntry(bytes);
   }
 
   @Before
