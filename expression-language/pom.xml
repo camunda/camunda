@@ -9,7 +9,7 @@
   </parent>
 
   <groupId>io.zeebe</groupId>
-  <artifactId>expression-language</artifactId>
+  <artifactId>zeebe-expression-language</artifactId>
 
   <name>Zeebe Expression Language</name>
 
