@@ -15,7 +15,6 @@
  */
 package io.atomix.core;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -169,7 +168,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
               final Map<Integer, RaftServer.Role> roleMap = nodeRoles.get(0);
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  (role) -> {
+                  (role, term) -> {
                     final Integer partitionId = partition.id().id();
                     roleMap.put(partitionId, role);
 
@@ -194,7 +193,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
               final Map<Integer, RaftServer.Role> roleMap = nodeRoles.get(1);
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  (role) -> {
+                  (role, term) -> {
                     final Integer partitionId = partition.id().id();
                     roleMap.put(partitionId, role);
 
@@ -219,7 +218,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
               final Map<Integer, RaftServer.Role> roleMap = nodeRoles.get(2);
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  (role) -> {
+                  (role, term) -> {
                     final Integer partitionId = partition.id().id();
                     roleMap.put(partitionId, role);
 
@@ -235,7 +234,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
 
     // then
     CompletableFuture.allOf(nodeOneFuture, nodeTwoFuture, nodeThreeFuture).join();
-    latch.await(15, TimeUnit.SECONDS);
+    assertTrue(latch.await(15, TimeUnit.SECONDS));
 
     // expect normal leaders are not the leaders this time
     assertEquals(Role.FOLLOWER, nodeRoles.get(0).get(1));
