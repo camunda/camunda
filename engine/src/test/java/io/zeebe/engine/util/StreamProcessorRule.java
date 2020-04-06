@@ -103,6 +103,10 @@ public final class StreamProcessorRule implements TestRule {
             .around(new FailedTestRecordPrinter());
   }
 
+  public ActorSchedulerRule getActorSchedulerRule() {
+    return actorSchedulerRule;
+  }
+
   @Override
   public Statement apply(final Statement base, final Description description) {
     return chain.apply(base, description);

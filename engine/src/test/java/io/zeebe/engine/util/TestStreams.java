@@ -52,6 +52,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -232,7 +233,7 @@ public final class TestStreams {
             .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(factory)
             .build();
-    streamProcessor.openAsync().join();
+    streamProcessor.openAsync().join(15, TimeUnit.SECONDS);
 
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(
@@ -241,7 +242,7 @@ public final class TestStreams {
             currentSnapshotController,
             stream.getAsyncLogStream(),
             snapshotInterval);
-    actorScheduler.submitActor(asyncSnapshotDirector).join();
+    actorScheduler.submitActor(asyncSnapshotDirector).join(15, TimeUnit.SECONDS);
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =
