@@ -172,6 +172,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     phase = Phase.FAILED;
     closeFuture = CompletableActorFuture.completed(null);
     isOpened.set(false);
+    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
     tearDown();
   }
 
