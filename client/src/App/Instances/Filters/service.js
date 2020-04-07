@@ -55,7 +55,7 @@ export function getLastVersionOfWorkflow(workflow = {}) {
   return version;
 }
 
-export function checkIsDateComplete(date) {
+export function isDateComplete(date) {
   const trimmedDate = trimValue(date);
 
   if (trimmedDate === '') {
@@ -69,7 +69,7 @@ export function checkIsDateComplete(date) {
   return !!trimmedDate.match(/^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/);
 }
 
-export function checkIsDateValid(date) {
+export function isDateValid(date) {
   const trimmedDate = trimValue(date);
 
   if (trimmedDate === '') {
@@ -77,6 +77,28 @@ export function checkIsDateValid(date) {
   }
 
   return !!trimmedDate.match(/^[ \d:-]+$/);
+}
+
+export function isBatchOperationIdComplete(batchOperationId) {
+  const trimmedBatchOperationId = trimValue(batchOperationId);
+
+  if (trimmedBatchOperationId === '') {
+    return true;
+  }
+
+  return /[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}/.test(
+    trimmedBatchOperationId
+  );
+}
+
+export function isBatchOperationIdValid(batchOperationId) {
+  const trimmedBatchOperationId = trimValue(batchOperationId);
+
+  if (trimmedBatchOperationId === '') {
+    return true;
+  }
+
+  return /^[a-f0-9-]{1,36}$/.test(trimmedBatchOperationId);
 }
 
 function isValidJson(value) {
@@ -88,26 +110,26 @@ function isValidJson(value) {
   return true;
 }
 
-export function checkIsVariableNameComplete(variable) {
+export function isVariableNameComplete(variable) {
   variable = trimVariable(variable);
   return !(variable.name === '' && variable.value !== '');
 }
 
-export function checkIsVariableValueComplete(variable) {
+export function isVariableValueComplete(variable) {
   variable = trimVariable(variable);
   return !(variable.name !== '' && variable.value === '');
 }
 
-export function checkIsVariableValueValid(variable) {
+export function isVariableValueValid(variable) {
   variable = trimVariable(variable);
   return variable.value === '' || isValidJson(variable.value);
 }
 
-function checkIsSingleIdValid(id) {
+function isSingleIdValid(id) {
   return Boolean(id.match(/^\d{0,19}$/));
 }
 
-export function checkIsIdValid(ids = '') {
+export function isIdValid(ids = '') {
   const hasInvalidCharacter = !Boolean(ids.match(/^[\d,\s]*$/));
 
   if (hasInvalidCharacter) {
@@ -115,31 +137,31 @@ export function checkIsIdValid(ids = '') {
   }
 
   const hasInvalidIds = ids.split(/[,\s]/).some((id) => {
-    return !checkIsSingleIdValid(id.trim());
+    return !isSingleIdValid(id.trim());
   });
 
   return !hasInvalidIds;
 }
 
-function checkIsSingleIdComplete(id) {
+function isSingleIdComplete(id) {
   return id === '' || Boolean(id.match(/^\d{16,}$/));
 }
 
-export function checkIsIdComplete(ids = '') {
+export function isIdComplete(ids = '') {
   const hasIncompleteIds = ids.split(/[,\s]/).some((id) => {
-    return !checkIsSingleIdComplete(id.trim());
+    return !isSingleIdComplete(id.trim());
   });
 
-  return checkIsIdValid(ids) && !hasIncompleteIds;
+  return isIdValid(ids) && !hasIncompleteIds;
 }
 
 function sanitizeVariable(variable) {
   if (!variable) return;
   if (
     variable.name !== '' &&
-    checkIsVariableNameComplete(variable) &&
-    checkIsVariableValueComplete(variable) &&
-    checkIsVariableValueValid(variable)
+    isVariableNameComplete(variable) &&
+    isVariableValueComplete(variable) &&
+    isVariableValueValid(variable)
   ) {
     return variable;
   } else {
@@ -148,21 +170,26 @@ function sanitizeVariable(variable) {
 }
 
 function sanitizeDate(date) {
-  return checkIsDateComplete(date) || date === '' ? date : '';
+  return isDateComplete(date) || date === '' ? date : '';
 }
 
 function sanitizeIds(ids = '') {
-  return checkIsIdComplete(ids) ? ids : '';
+  return isIdComplete(ids) ? ids : '';
+}
+
+function sanitizeBatchOperationId(operationId = '') {
+  return isBatchOperationIdComplete(operationId) ? operationId : '';
 }
 
 export function sanitizeFilter(filter) {
-  const {variable, startDate, endDate, ids} = filter;
+  const {variable, startDate, endDate, ids, batchOperationId} = filter;
 
   const sanatizeFcts = {
     ids: sanitizeIds,
     variable: sanitizeVariable,
     startDate: sanitizeDate,
     endDate: sanitizeDate,
+    batchOperationId: sanitizeBatchOperationId,
   };
 
   // only add & sanatize filter when value available
@@ -176,6 +203,7 @@ export function sanitizeFilter(filter) {
     ...addFilter('variable', variable),
     ...addFilter('startDate', startDate),
     ...addFilter('endDate', endDate),
+    ...addFilter('batchOperationId', batchOperationId),
   });
 }
 

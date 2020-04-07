@@ -335,6 +335,22 @@ describe('modules/utils/filter.js', () => {
     });
   });
 
+  describe('fieldParser.batchOperationId()', () => {
+    it('should return null if consists of empty strings', () => {
+      const value = '   ';
+      const output = fieldParser.batchOperationId('batchOperationId', value);
+
+      expect(output).toBe(null);
+    });
+    it('should return value if it does not consist of empty strings', () => {
+      const value = 'd3584781-5980-4568-8e47-2d99abcf48f1';
+      const output = fieldParser.batchOperationId('batchOperationId', value);
+
+      expect(output).not.toBe(null);
+      expect(output.batchOperationId).toBe(value);
+    });
+  });
+
   describe('getFilterWithWorkflowIds', () => {
     it('should return the same filter if no workflow or version is provided', () => {
       const filter = {

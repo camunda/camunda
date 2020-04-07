@@ -5,157 +5,153 @@
  */
 
 import {
-  checkIsDateComplete,
-  checkIsDateValid,
+  isDateComplete,
+  isDateValid,
   sanitizeFilter,
-  checkIsVariableNameComplete,
-  checkIsVariableValueComplete,
-  checkIsIdComplete,
+  isVariableNameComplete,
+  isVariableValueComplete,
+  isIdComplete,
+  isBatchOperationIdComplete,
+  isBatchOperationIdValid,
 } from './service';
 import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
 
 describe('Filters/service', () => {
-  describe('checkIsDateComplete', () => {
+  describe('isDateComplete', () => {
     it('should return true for YYYY-MM-DD', () => {
-      expect(checkIsDateComplete('2019-01-01')).toBe(true);
+      expect(isDateComplete('2019-01-01')).toBe(true);
     });
 
     it('should return true for YYYY-MM-DD HH:mm', () => {
-      expect(checkIsDateComplete('2019-03-01 12:59')).toBe(true);
+      expect(isDateComplete('2019-03-01 12:59')).toBe(true);
     });
 
     it('should return true for YYYY-MM-DD HH:mm:ss', () => {
-      expect(checkIsDateComplete('2019-03-12 12:59:30')).toBe(true);
+      expect(isDateComplete('2019-03-12 12:59:30')).toBe(true);
     });
 
     it('should return true for empty string', () => {
-      expect(checkIsDateComplete('')).toBe(true);
+      expect(isDateComplete('')).toBe(true);
     });
 
     it('should return false for YYY', () => {
-      expect(checkIsDateComplete('201')).toBe(false);
+      expect(isDateComplete('201')).toBe(false);
     });
 
     it('should return false for YYYY-M', () => {
-      expect(checkIsDateComplete('2019-0')).toBe(false);
+      expect(isDateComplete('2019-0')).toBe(false);
     });
 
     it('should return false for YYYY-MM-D', () => {
-      expect(checkIsDateComplete('2019-03-1')).toBe(false);
+      expect(isDateComplete('2019-03-1')).toBe(false);
     });
 
     it('should return false for YYYY-MM-DD HH', () => {
-      expect(checkIsDateComplete('2019-03-12 12')).toBe(false);
+      expect(isDateComplete('2019-03-12 12')).toBe(false);
     });
 
     it('should return false for invalid characters', () => {
-      expect(checkIsDateComplete('ABCD-EF-GH')).toBe(false);
+      expect(isDateComplete('ABCD-EF-GH')).toBe(false);
     });
 
     it('should return true for date with whitespaces', () => {
-      expect(checkIsDateComplete('     2019-03-12 12:59:30     ')).toBe(true);
+      expect(isDateComplete('     2019-03-12 12:59:30     ')).toBe(true);
     });
 
     it('should return true for only whitespace', () => {
-      expect(checkIsDateComplete('     ')).toBe(true);
+      expect(isDateComplete('     ')).toBe(true);
     });
 
     it('should return false for invalid date in correct format', () => {
-      expect(checkIsDateComplete('2019-99-99')).toBe(false);
+      expect(isDateComplete('2019-99-99')).toBe(false);
     });
   });
 
-  describe('checkIsDateValid', () => {
+  describe('isDateValid', () => {
     it('should return true for YYYY-MM-DD HH:mm:ss', () => {
-      expect(checkIsDateValid('2019-03-12 12:59:30')).toBe(true);
+      expect(isDateValid('2019-03-12 12:59:30')).toBe(true);
     });
 
     it('should return true for empty string', () => {
-      expect(checkIsDateValid('')).toBe(true);
+      expect(isDateValid('')).toBe(true);
     });
 
     it('should return false for invalid characters', () => {
-      expect(checkIsDateValid('ABCD-EF-GH')).toBe(false);
+      expect(isDateValid('ABCD-EF-GH')).toBe(false);
     });
 
     it('should return true for date with whitespaces', () => {
-      expect(checkIsDateValid('     2019-03-12 12:59:30     ')).toBe(true);
+      expect(isDateValid('     2019-03-12 12:59:30     ')).toBe(true);
     });
 
     it('should return true for only whitespace', () => {
-      expect(checkIsDateValid('     ')).toBe(true);
+      expect(isDateValid('     ')).toBe(true);
     });
   });
 
-  describe('checkIsVariableNameComplete', () => {
+  describe('isVariableNameComplete', () => {
     it('should be complete when both input fields have content ', () => {
       const variable = {name: 'fancyName', value: 'coolValue'};
-      expect(checkIsVariableNameComplete(variable)).toBe(true);
+      expect(isVariableNameComplete(variable)).toBe(true);
     });
     it('should be complete when both input fields are empty', () => {
       const variable = {name: '', value: ''};
-      expect(checkIsVariableNameComplete(variable)).toBe(true);
+      expect(isVariableNameComplete(variable)).toBe(true);
     });
     it('should be complete, if name is set and value is empty', () => {
       const variable = {name: 'fancyName', value: ''};
-      expect(checkIsVariableNameComplete(variable)).toBe(true);
+      expect(isVariableNameComplete(variable)).toBe(true);
     });
     it('should not be complete, if only name is empty', () => {
       const variable = {name: '', value: 'coolValue'};
-      expect(checkIsVariableNameComplete(variable)).toBe(false);
+      expect(isVariableNameComplete(variable)).toBe(false);
     });
   });
 
-  describe('checkIsVariableValueComplete', () => {
+  describe('isVariableValueComplete', () => {
     it('should be complete when both input fields have content ', () => {
       const variable = {name: 'fancyName', value: 'coolValue'};
-      expect(checkIsVariableValueComplete(variable)).toBe(true);
+      expect(isVariableValueComplete(variable)).toBe(true);
     });
     it('should be complete when both input fields are empty', () => {
       const variable = {name: '', value: ''};
-      expect(checkIsVariableValueComplete(variable)).toBe(true);
+      expect(isVariableValueComplete(variable)).toBe(true);
     });
     it('should be complete, if only name is empty', () => {
       const variable = {name: '', value: 'coolValue'};
-      expect(checkIsVariableValueComplete(variable)).toBe(true);
+      expect(isVariableValueComplete(variable)).toBe(true);
     });
     it('should not be complete, if only value is empty', () => {
       const variable = {name: 'fancyName', value: ''};
-      expect(checkIsVariableValueComplete(variable)).toBe(false);
+      expect(isVariableValueComplete(variable)).toBe(false);
     });
   });
 
-  describe('checkIsIdComplete', () => {
+  describe('isIdComplete', () => {
     it('should be complete on only white spaces', () => {
-      expect(checkIsIdComplete('')).toBe(true);
-      expect(checkIsIdComplete('      ')).toBe(true);
-      expect(checkIsIdComplete('\r\n')).toBe(true);
+      expect(isIdComplete('')).toBe(true);
+      expect(isIdComplete('      ')).toBe(true);
+      expect(isIdComplete('\r\n')).toBe(true);
     });
 
     it('should be complete on 16 digit ids', () => {
-      expect(checkIsIdComplete('1234039287523094')).toBe(true);
-      expect(checkIsIdComplete('1234039287523094, 1234039287523095')).toBe(
-        true
-      );
+      expect(isIdComplete('1234039287523094')).toBe(true);
+      expect(isIdComplete('1234039287523094, 1234039287523095')).toBe(true);
     });
 
     it('should be complete on 16-19 digit ids', () => {
-      expect(checkIsIdComplete('12340392875230941')).toBe(true);
-      expect(checkIsIdComplete('12340392875230941, 12340392875230942')).toBe(
-        true
-      );
-      expect(checkIsIdComplete('12340392875230941 12340392875230942')).toBe(
-        true
-      );
+      expect(isIdComplete('12340392875230941')).toBe(true);
+      expect(isIdComplete('12340392875230941, 12340392875230942')).toBe(true);
+      expect(isIdComplete('12340392875230941 12340392875230942')).toBe(true);
     });
 
     it('should be complete when containing white spaces', () => {
+      expect(isIdComplete('1234039287523094,        1234039287523095')).toBe(
+        true
+      );
+      expect(isIdComplete('    1234039287523094     ')).toBe(true);
       expect(
-        checkIsIdComplete('1234039287523094,        1234039287523095')
-      ).toBe(true);
-      expect(checkIsIdComplete('    1234039287523094     ')).toBe(true);
-      expect(
-        checkIsIdComplete(`1234039287523094
+        isIdComplete(`1234039287523094
 
 
         1234039287523094`)
@@ -163,17 +159,15 @@ describe('Filters/service', () => {
     });
 
     it('should be incomplete on <16 digits', () => {
-      expect(checkIsIdComplete('123')).toBe(false);
-      expect(checkIsIdComplete('       123      ')).toBe(false);
-      expect(checkIsIdComplete('1234039287523094, 123')).toBe(false);
+      expect(isIdComplete('123')).toBe(false);
+      expect(isIdComplete('       123      ')).toBe(false);
+      expect(isIdComplete('1234039287523094, 123')).toBe(false);
     });
 
     it('should be incomplete when containing non digit characters', () => {
-      expect(checkIsIdComplete('ABC')).toBe(false);
-      expect(checkIsIdComplete('1234039287523094, ABCABCABCABCABC')).toBe(
-        false
-      );
-      expect(checkIsIdComplete('123123123123123\n')).toBe(false);
+      expect(isIdComplete('ABC')).toBe(false);
+      expect(isIdComplete('1234039287523094, ABCABCABCABCABC')).toBe(false);
+      expect(isIdComplete('123123123123123\n')).toBe(false);
     });
   });
 
@@ -228,6 +222,25 @@ describe('Filters/service', () => {
       expect(sanitizedFilter).toEqual({startDate, endDate});
     });
 
+    it('should return empty object when batch operation id is incomplete', () => {
+      const sanitizedFilter = sanitizeFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        batchOperationId: 'test',
+      });
+
+      expect(sanitizedFilter).toEqual({});
+    });
+
+    it('should return object when batch operation id is complete', () => {
+      const batchOperationId = '8d5aeb73-193b-4bec-a237-8ff71ac1d713';
+      const sanitizedFilter = sanitizeFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        batchOperationId,
+      });
+
+      expect(sanitizedFilter).toEqual({batchOperationId});
+    });
+
     it('should pass through values which don´t need to be santitized', () => {
       const filter = {
         active: true,
@@ -247,6 +260,125 @@ describe('Filters/service', () => {
       });
 
       expect(sanitizedFilter).toEqual(filter);
+    });
+  });
+
+  describe('isBatchOperationIdComplete', () => {
+    it('should return true for valid format', () => {
+      expect(
+        isBatchOperationIdComplete('8d5aeb73-193b-4bec-a237-8ff71ac1d713')
+      ).toBe(true);
+    });
+
+    it('should return false for invalid format', () => {
+      expect(
+        isBatchOperationIdComplete('193b-4bec-8d5aeb73-a237-8ff71ac1d713')
+      ).toBe(false);
+      expect(
+        isBatchOperationIdComplete('8d5aeb732193b24bec2a23728ff71ac1d713')
+      ).toBe(false);
+      expect(
+        isBatchOperationIdComplete('------------------------------------')
+      ).toBe(false);
+      expect(
+        isBatchOperationIdComplete('111111111111111111111111111111111111')
+      ).toBe(false);
+      expect(
+        isBatchOperationIdComplete('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+      ).toBe(false);
+    });
+
+    it('should return false for invalid characters', () => {
+      [
+        '!',
+        '@',
+        '#',
+        '$',
+        '%',
+        '^',
+        '&',
+        '*',
+        '(',
+        ')',
+        '_',
+        '=',
+        '+',
+        '[',
+        ']',
+        '{',
+        '}',
+        "'",
+        '"',
+        ';',
+        ':',
+        ',',
+        '.',
+        '<',
+        '>',
+        '?',
+        '/',
+        '\\',
+        '|',
+        '`',
+        '~',
+      ].forEach(([input]) => {
+        expect(isBatchOperationIdValid(`${input}`)).toEqual(false);
+      });
+    });
+  });
+
+  describe('isBatchOperationIdValid', () => {
+    it('should return true for valid characters', () => {
+      expect(isBatchOperationIdValid('1')).toBe(true);
+      expect(isBatchOperationIdValid('a')).toBe(true);
+      expect(isBatchOperationIdValid('-')).toBe(true);
+    });
+
+    it('should check max length correctly', () => {
+      expect(
+        isBatchOperationIdValid('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+      ).toBe(true);
+      expect(
+        isBatchOperationIdValid('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+      ).toBe(false);
+    });
+
+    it('should return false for invalid characters', () => {
+      [
+        '!',
+        '@',
+        '#',
+        '$',
+        '%',
+        '^',
+        '&',
+        '*',
+        '(',
+        ')',
+        '_',
+        '=',
+        '+',
+        '[',
+        ']',
+        '{',
+        '}',
+        "'",
+        '"',
+        ';',
+        ':',
+        ',',
+        '.',
+        '<',
+        '>',
+        '?',
+        '/',
+        '\\',
+        '|',
+        '`',
+        '~',
+      ].forEach(([input]) => {
+        expect(isBatchOperationIdValid(input)).toBe(false);
+      });
     });
   });
 });

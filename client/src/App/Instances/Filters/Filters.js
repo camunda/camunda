@@ -26,15 +26,17 @@ import {
   getOptionsForWorkflowVersion,
   addAllVersionsOption,
   getLastVersionOfWorkflow,
-  checkIsDateComplete,
-  checkIsDateValid,
-  checkIsVariableNameComplete,
-  checkIsVariableValueComplete,
-  checkIsVariableValueValid,
-  checkIsIdComplete,
-  checkIsIdValid,
+  isDateComplete,
+  isDateValid,
+  isVariableNameComplete,
+  isVariableValueComplete,
+  isVariableValueValid,
+  isIdComplete,
+  isIdValid,
   sortAndModify,
   sanitizeFilter,
+  isBatchOperationIdComplete,
+  isBatchOperationIdValid,
 } from './service';
 import {parseQueryString} from 'modules/utils/filter';
 import {ALL_VERSIONS_OPTION, DEBOUNCE_DELAY} from './constants';
@@ -161,6 +163,7 @@ class Filters extends React.Component {
       endDate,
       variable,
       ids,
+      batchOperationId,
       // fields that are evaluated immediately will be overwritten by props
       ...immediateFilter
     } = filter;
@@ -171,6 +174,7 @@ class Filters extends React.Component {
       endDate,
       variable,
       ids,
+      batchOperationId,
     };
 
     const sanitizedDebouncedFilter = sanitizeFilter(debouncedFilter);
@@ -292,8 +296,8 @@ class Filters extends React.Component {
               name="ids"
               placeholder="Instance Id(s) separated by space or comma"
               onChange={this.handleControlledInputChange}
-              checkIsComplete={checkIsIdComplete}
-              checkIsValid={checkIsIdValid}
+              checkIsComplete={isIdComplete}
+              checkIsValid={isIdValid}
               onFilterChange={() => this.waitForTimer(this.propagateFilter)}
             >
               <Styled.Textarea />
@@ -316,8 +320,8 @@ class Filters extends React.Component {
               name="startDate"
               placeholder="Start Date yyyy-mm-dd hh:mm:ss"
               onChange={this.handleControlledInputChange}
-              checkIsComplete={checkIsDateComplete}
-              checkIsValid={checkIsDateValid}
+              checkIsComplete={isDateComplete}
+              checkIsValid={isDateValid}
               onFilterChange={() => this.waitForTimer(this.propagateFilter)}
             >
               <Input />
@@ -329,8 +333,8 @@ class Filters extends React.Component {
               name="endDate"
               placeholder="End Date yyyy-mm-dd hh:mm:ss"
               onChange={this.handleControlledInputChange}
-              checkIsComplete={checkIsDateComplete}
-              checkIsValid={checkIsDateValid}
+              checkIsComplete={isDateComplete}
+              checkIsValid={isDateValid}
               onFilterChange={() => this.waitForTimer(this.propagateFilter)}
             >
               <Input />
@@ -357,9 +361,9 @@ class Filters extends React.Component {
               variable={variable}
               onFilterChange={() => this.waitForTimer(this.propagateFilter)}
               onChange={this.handleVariableChange}
-              checkIsNameComplete={checkIsVariableNameComplete}
-              checkIsValueComplete={checkIsVariableValueComplete}
-              checkIsValueValid={checkIsVariableValueValid}
+              checkIsNameComplete={isVariableNameComplete}
+              checkIsValueComplete={isVariableValueComplete}
+              checkIsValueValid={isVariableValueValid}
             />
           </Styled.Field>
           <Styled.Field>
@@ -369,6 +373,8 @@ class Filters extends React.Component {
               placeholder="Operation Id"
               onChange={this.handleControlledInputChange}
               onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+              checkIsComplete={isBatchOperationIdComplete}
+              checkIsValid={isBatchOperationIdValid}
             >
               <Input />
             </Styled.ValidationTextInput>

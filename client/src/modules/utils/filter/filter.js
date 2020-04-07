@@ -100,6 +100,9 @@ export const fieldParser = {
   variable: (name, value) => {
     return {[name]: trimVariable(value)};
   },
+  batchOperationId: (name, value) => {
+    return trimValue(value) === '' ? null : {[name]: value};
+  },
 };
 
 function defaultFieldParser(name, value) {

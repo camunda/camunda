@@ -1580,7 +1580,10 @@ describe('Filters', () => {
         .find('input');
 
       field.simulate('change', {
-        target: {value: 'asd', name: 'batchOperationId'},
+        target: {
+          value: '8d5aeb73-193b-4bec-a237-8ff71ac1d713',
+          name: 'batchOperationId',
+        },
       });
 
       jest.advanceTimersByTime(DEBOUNCE_DELAY);
@@ -1591,7 +1594,7 @@ describe('Filters', () => {
       expect(field.prop('placeholder')).toEqual('Operation Id');
       expect(field.prop('value')).toEqual('');
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        batchOperationId: 'asd',
+        batchOperationId: '8d5aeb73-193b-4bec-a237-8ff71ac1d713',
       });
     });
 
@@ -1655,7 +1658,9 @@ describe('Filters', () => {
         .filterWhere((n) => n.props().name === 'batchOperationId');
 
       // then
-      expect(field.props().value).toEqual('batch-operation-id-example');
+      expect(field.props().value).toEqual(
+        '8d5aeb73-193b-4bec-a237-8ff71ac1d713'
+      );
     });
 
     it('should update state when input receives text', () => {
@@ -1679,7 +1684,7 @@ describe('Filters', () => {
     it('should call onFilterChange with the right batch operation id', async () => {
       // given
       jest.useFakeTimers();
-      const batchOperationId = 'lorem ipsum';
+      const batchOperationId = '8d5aeb73-193b-4bec-a237-8ff71ac1d713';
       const node = shallow(
         <Filters.WrappedComponent
           groupedWorkflows={workflows}

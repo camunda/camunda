@@ -62,7 +62,7 @@ export const COMPLETE_FILTER = {
   workflow: 'demoProcess',
   version: '2',
   activityId: '4',
-  batchOperationId: 'batch-operation-id-example',
+  batchOperationId: '8d5aeb73-193b-4bec-a237-8ff71ac1d713',
 };
 
 export const mockPropsWithDefaultFilter = {
