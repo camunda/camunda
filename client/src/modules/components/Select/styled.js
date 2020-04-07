@@ -39,7 +39,7 @@ export const Select = themed(styled.select`
     light: Colors.uiDark06,
   })};
 
-  font-family: IBMPlexSans;
+  font-family: IBMPlexSans, Arial;
   font-size: 13px;
 
   box-shadow: ${({theme}) =>
