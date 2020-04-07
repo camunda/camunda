@@ -353,7 +353,7 @@ abstract class AbstractAppender implements AutoCloseable {
   }
 
   /** Builds a configure request for the given member. */
-  protected ConfigureRequest buildConfigureRequest(final RaftMemberContext member) {
+  protected ConfigureRequest buildConfigureRequest() {
     final DefaultRaftMember leader = raft.getLeader();
     return ConfigureRequest.builder()
         .withTerm(raft.getTerm())
