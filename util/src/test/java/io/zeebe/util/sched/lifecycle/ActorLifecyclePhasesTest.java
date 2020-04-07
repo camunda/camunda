@@ -18,6 +18,7 @@ import static org.assertj.core.util.Lists.newArrayList;
 
 import io.zeebe.util.TestUtil;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -264,6 +265,39 @@ public final class ActorLifecyclePhasesTest {
                 () -> {
                   throw new RuntimeException("foo");
                 });
+          }
+
+          @Override
+          public void handleFailure(final Exception failure) {
+            invocations.incrementAndGet();
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(invocations.get()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldHandleFailureWhenExceptionOnFutureContinuation() {
+    // given
+    final AtomicInteger invocations = new AtomicInteger();
+    final ActorFuture<Void> future = new CompletableActorFuture();
+
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarted() {
+            super.onActorStarted();
+            this.actor.runOnCompletion(
+                future,
+                (v, t) -> {
+                  throw new RuntimeException("foo");
+                });
+            this.actor.run(() -> future.complete(null));
           }
 
           @Override
