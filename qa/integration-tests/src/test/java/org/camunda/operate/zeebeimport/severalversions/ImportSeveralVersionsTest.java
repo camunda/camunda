@@ -18,6 +18,7 @@ import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
+@Ignore
 public class ImportSeveralVersionsTest extends OperateIntegrationTest {
 
   @Rule
