@@ -14,43 +14,50 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
-public final class FileSnapshotConsumer implements SnapshotConsumer {
+final class FileSnapshotConsumer implements SnapshotConsumer {
 
   private final SnapshotStorage storage;
   private final Logger logger;
 
-  public FileSnapshotConsumer(final SnapshotStorage storage, final Logger logger) {
+  FileSnapshotConsumer(final SnapshotStorage storage, final Logger logger) {
     this.storage = storage;
     this.logger = logger;
   }
 
   @Override
   public boolean consumeSnapshotChunk(final SnapshotChunk chunk) {
-    return writeChunkToDisk(chunk, storage);
+    try {
+      return writeChunkToDisk(chunk, storage);
+    } catch (final IOException e) {
+      logger.error("Failed to write snapshot chunk {} to disk", chunk, e);
+      return false;
+    }
   }
 
   @Override
   public boolean completeSnapshot(final String snapshotId) {
-    return storage.commitSnapshot(storage.getPendingDirectoryFor(snapshotId));
+    return storage.getPendingDirectoryFor(snapshotId).flatMap(storage::commitSnapshot).isPresent();
   }
 
   @Override
   public void invalidateSnapshot(final String snapshotId) {
-    final var pendingDirectory = storage.getPendingDirectoryFor(snapshotId);
+    storage.getPendingDirectoryFor(snapshotId).ifPresent(this::deletePendingSnapshot);
+  }
+
+  private void deletePendingSnapshot(final Path pendingDirectory) {
     try {
       if (Files.exists(pendingDirectory)) {
         FileUtil.deleteFolder(pendingDirectory);
       }
     } catch (final IOException e) {
-      logger.debug("Could not delete temporary snapshot directory {}", pendingDirectory, e);
+      logger.error("Could not delete temporary snapshot directory {}", pendingDirectory, e);
     }
   }
 
-  private boolean writeChunkToDisk(
-      final SnapshotChunk snapshotChunk, final SnapshotStorage storage) {
+  private boolean writeChunkToDisk(final SnapshotChunk snapshotChunk, final SnapshotStorage storage)
+      throws IOException {
     final String snapshotId = snapshotChunk.getSnapshotId();
     final String chunkName = snapshotChunk.getChunkName();
 
@@ -73,8 +80,14 @@ public final class FileSnapshotConsumer implements SnapshotConsumer {
       return false;
     }
 
-    final var tmpSnapshotDirectory = storage.getPendingDirectoryFor(snapshotId);
-    IoUtil.ensureDirectoryExists(tmpSnapshotDirectory.toFile(), "Temporary snapshot directory");
+    final var optionalPath = storage.getPendingDirectoryFor(snapshotId);
+    if (optionalPath.isEmpty()) {
+      logger.warn("Failed to obtain pending snapshot directory for snapshot ID {}", snapshotId);
+      return false;
+    }
+
+    final var tmpSnapshotDirectory = optionalPath.get();
+    FileUtil.ensureDirectoryExists(tmpSnapshotDirectory);
 
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);
     if (Files.exists(snapshotFile)) {
@@ -87,15 +100,9 @@ public final class FileSnapshotConsumer implements SnapshotConsumer {
   }
 
   private boolean writeReceivedSnapshotChunk(
-      final SnapshotChunk snapshotChunk, final Path snapshotFile) {
-    try {
-      Files.write(snapshotFile, snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
-      logger.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
-      return true;
-    } catch (final IOException ioe) {
-      logger.error(
-          "Unexpected error occurred on writing snapshot chunk to '{}'.", snapshotFile, ioe);
-      return false;
-    }
+      final SnapshotChunk snapshotChunk, final Path snapshotFile) throws IOException {
+    Files.write(snapshotFile, snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
+    logger.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
+    return true;
   }
 }

@@ -19,6 +19,8 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
@@ -54,9 +56,9 @@ public final class CommandApiService extends Actor implements PartitionListener 
   }
 
   @Override
-  public void onBecomingFollower(
+  public ActorFuture<Void> onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    actor.call(
+    return actor.call(
         () -> {
           requestHandler.removePartition(logStream);
           cleanLeadingPartition(partitionId);
@@ -64,7 +66,9 @@ public final class CommandApiService extends Actor implements PartitionListener 
   }
 
   @Override
-  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingLeader(
+      final int partitionId, final long term, final LogStream logStream) {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     actor.call(
         () -> {
           leadPartitions.add(partitionId);
@@ -79,21 +83,17 @@ public final class CommandApiService extends Actor implements PartitionListener 
                       final var requestLimiter = this.limiter.getLimiter(partitionId);
                       requestHandler.addPartition(partitionId, recordWriter, requestLimiter);
                       serverTransport.subscribe(partitionId, requestHandler);
-
+                      future.complete(null);
                     } else {
-                      // TODO https://github.com/zeebe-io/zeebe/issues/3499
-                      // the best would be to return a future onBecomingLeader
-                      // when one of these futures failed we need to stop the partition installation
-                      // and
-                      // step down
-                      // because then otherwise we are not correctly installed
                       Loggers.SYSTEM_LOGGER.error(
                           "Error on retrieving write buffer from log stream {}",
                           partitionId,
                           error);
+                      future.completeExceptionally(error);
                     }
                   });
         });
+    return future;
   }
 
   private void cleanLeadingPartition(final int partitionId) {

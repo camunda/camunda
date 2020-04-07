@@ -82,7 +82,7 @@ public final class WorkflowInstanceTokenTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeTaskType("task"))
+                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .done())
         .deploy();
 
@@ -104,10 +104,10 @@ public final class WorkflowInstanceTokenTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .parallelGateway()
-                .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
+                .serviceTask("task-1", t -> t.zeebeJobType("task-1"))
                 .endEvent("end-1")
                 .moveToLastGateway()
-                .serviceTask("task-2", t -> t.zeebeTaskType("task-2"))
+                .serviceTask("task-2", t -> t.zeebeJobType("task-2"))
                 .endEvent("end-2")
                 .done())
         .deploy();
@@ -131,11 +131,11 @@ public final class WorkflowInstanceTokenTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .parallelGateway("fork")
-                .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
+                .serviceTask("task-1", t -> t.zeebeJobType("task-1"))
                 .parallelGateway("join")
                 .endEvent("end")
                 .moveToNode("fork")
-                .serviceTask("task-2", t -> t.zeebeTaskType("task-2"))
+                .serviceTask("task-2", t -> t.zeebeJobType("task-2"))
                 .connectTo("join")
                 .done())
         .deploy();
@@ -159,11 +159,12 @@ public final class WorkflowInstanceTokenTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .parallelGateway()
-                .serviceTask("task", t -> t.zeebeTaskType("task"))
+                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .endEvent("end-1")
                 .moveToLastGateway()
                 .intermediateCatchEvent(
-                    "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("key")))
+                    "catch",
+                    e -> e.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
                 .endEvent("end-2")
                 .done())
         .deploy();
@@ -192,7 +193,7 @@ public final class WorkflowInstanceTokenTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .parallelGateway()
-                .serviceTask("task", t -> t.zeebeTaskType("task"))
+                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .endEvent("end-1")
                 .moveToLastGateway()
                 .intermediateCatchEvent("catch", e -> e.timerWithDuration("PT0.1S"))
@@ -219,7 +220,7 @@ public final class WorkflowInstanceTokenTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .parallelGateway()
-                .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
+                .serviceTask("task-1", t -> t.zeebeJobType("task-1"))
                 .endEvent("end-1")
                 .moveToLastGateway()
                 .subProcess(
@@ -227,7 +228,7 @@ public final class WorkflowInstanceTokenTest {
                     s ->
                         s.embeddedSubProcess()
                             .startEvent()
-                            .serviceTask("task-2", t -> t.zeebeTaskType("task-2"))
+                            .serviceTask("task-2", t -> t.zeebeJobType("task-2"))
                             .endEvent("end-sub"))
                 .endEvent("end-2")
                 .done())
@@ -252,16 +253,18 @@ public final class WorkflowInstanceTokenTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .parallelGateway()
-                .serviceTask("task", t -> t.zeebeTaskType("task"))
+                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .endEvent("end-1")
                 .moveToLastGateway()
                 .eventBasedGateway("gateway")
                 .intermediateCatchEvent(
-                    "catch-1", e -> e.message(m -> m.name("msg-1").zeebeCorrelationKey("key")))
+                    "catch-1",
+                    e -> e.message(m -> m.name("msg-1").zeebeCorrelationKeyExpression("key")))
                 .endEvent("end-2")
                 .moveToNode("gateway")
                 .intermediateCatchEvent(
-                    "catch-2", e -> e.message(m -> m.name("msg-2").zeebeCorrelationKey("key")))
+                    "catch-2",
+                    e -> e.message(m -> m.name("msg-2").zeebeCorrelationKeyExpression("key")))
                 .endEvent("end-3")
                 .done())
         .deploy();
@@ -289,7 +292,7 @@ public final class WorkflowInstanceTokenTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeTaskType("task"))
+                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .endEvent("end-1")
                 .moveToActivity("task")
                 .boundaryEvent("timeout", b -> b.cancelActivity(true).timerWithDuration("PT0.1S"))
@@ -318,11 +321,11 @@ public final class WorkflowInstanceTokenTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
+                .serviceTask("task-1", t -> t.zeebeJobType("task-1"))
                 .endEvent("end-1")
                 .moveToActivity("task-1")
                 .boundaryEvent("timeout", b -> b.cancelActivity(false).timerWithCycle("R1/PT0.1S"))
-                .serviceTask("task-2", t -> t.zeebeTaskType("task-2"))
+                .serviceTask("task-2", t -> t.zeebeJobType("task-2"))
                 .endEvent("end-2")
                 .done())
         .deploy();
@@ -353,11 +356,12 @@ public final class WorkflowInstanceTokenTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .parallelGateway()
-                .serviceTask("task", t -> t.zeebeTaskType("task"))
+                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .endEvent("end-1")
                 .moveToLastGateway()
                 .intermediateCatchEvent(
-                    "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("key")))
+                    "catch",
+                    e -> e.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
                 .endEvent("end-2")
                 .done())
         .deploy();
@@ -394,10 +398,11 @@ public final class WorkflowInstanceTokenTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .parallelGateway()
-                .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
+                .serviceTask("task-1", t -> t.zeebeJobType("task-1"))
                 .endEvent("end-1")
                 .moveToLastGateway()
-                .serviceTask("task-2", t -> t.zeebeTaskType("task-2").zeebeOutput("result", "r"))
+                .serviceTask(
+                    "task-2", t -> t.zeebeJobType("task-2").zeebeOutputExpression("result", "r"))
                 .endEvent("end-2")
                 .done())
         .deploy();
@@ -435,7 +440,7 @@ public final class WorkflowInstanceTokenTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .parallelGateway()
-                .serviceTask("task", t -> t.zeebeTaskType("task"))
+                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .endEvent("end-1")
                 .moveToLastGateway()
                 .exclusiveGateway("gateway")
@@ -443,7 +448,7 @@ public final class WorkflowInstanceTokenTest {
                 .endEvent("end-2")
                 .moveToNode("gateway")
                 .sequenceFlowId("to-end-3")
-                .condition("x < 21")
+                .conditionExpression("x < 21")
                 .endEvent("end-3")
                 .done())
         .deploy();

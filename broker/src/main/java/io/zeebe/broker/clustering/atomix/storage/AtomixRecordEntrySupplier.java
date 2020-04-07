@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.clustering.atomix.storage;
 
-import io.atomix.protocols.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.protocol.record.Record;
 import java.util.Optional;

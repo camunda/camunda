@@ -7,23 +7,33 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import com.google.gson.GsonBuilder;
+import static io.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.util.Environment;
-import java.util.ArrayList;
-import java.util.List;
+import io.zeebe.util.exception.UncheckedExecutionException;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
+@Component
+@ConfigurationProperties(prefix = "zeebe.broker")
 public final class BrokerCfg {
+
+  protected static final String ENV_DEBUG_EXPORTER = "ZEEBE_DEBUG";
 
   private NetworkCfg network = new NetworkCfg();
   private ClusterCfg cluster = new ClusterCfg();
   private ThreadsCfg threads = new ThreadsCfg();
   private DataCfg data = new DataCfg();
-  private List<ExporterCfg> exporters = new ArrayList<>();
+  private Map<String, ExporterCfg> exporters = new HashMap<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
 
-  private String stepTimeout = "5m";
+  private Duration stepTimeout = Duration.ofMinutes(5);
 
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
@@ -31,22 +41,23 @@ public final class BrokerCfg {
 
   public void init(final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
-    network.init(this, brokerBase, environment);
-    cluster.init(this, brokerBase, environment);
-    threads.init(this, brokerBase, environment);
-    data.init(this, brokerBase, environment);
-    exporters.forEach(e -> e.init(this, brokerBase, environment));
-    gateway.init(this, brokerBase, environment);
-    backpressure.init(this, brokerBase, environment);
+    network.init(this, brokerBase);
+    cluster.init(this, brokerBase);
+    threads.init(this, brokerBase);
+    data.init(this, brokerBase);
+    exporters.values().forEach(e -> e.init(this, brokerBase));
+    gateway.init(this, brokerBase);
+    backpressure.init(this, brokerBase);
   }
 
   private void applyEnvironment(final Environment environment) {
     environment
-        .get(EnvironmentConstants.ENV_DEBUG_EXPORTER)
+        .get(ENV_DEBUG_EXPORTER)
         .ifPresent(
             value ->
-                exporters.add(DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
-    environment.get(EnvironmentConstants.ENV_STEP_TIMEOUT).ifPresent(this::setStepTimeout);
+                exporters.put(
+                    DebugLogExporter.defaultExporterId(),
+                    DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
   }
 
   public NetworkCfg getNetwork() {
@@ -81,11 +92,11 @@ public final class BrokerCfg {
     this.data = logs;
   }
 
-  public List<ExporterCfg> getExporters() {
+  public Map<String, ExporterCfg> getExporters() {
     return exporters;
   }
 
-  public void setExporters(final List<ExporterCfg> exporters) {
+  public void setExporters(final Map<String, ExporterCfg> exporters) {
     this.exporters = exporters;
   }
 
@@ -107,11 +118,11 @@ public final class BrokerCfg {
     return this;
   }
 
-  public String getStepTimeout() {
+  public Duration getStepTimeout() {
     return stepTimeout;
   }
 
-  public void setStepTimeout(final String stepTimeout) {
+  public void setStepTimeout(final Duration stepTimeout) {
     this.stepTimeout = stepTimeout;
   }
 
@@ -139,6 +150,10 @@ public final class BrokerCfg {
   }
 
   public String toJson() {
-    return new GsonBuilder().setPrettyPrinting().create().toJson(this);
+    try {
+      return getDefaultJsonObjectWriter().writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      throw new UncheckedExecutionException("Writing to JSON failed", e);
+    }
   }
 }

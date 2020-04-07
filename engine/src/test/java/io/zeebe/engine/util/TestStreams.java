@@ -119,13 +119,23 @@ public final class TestStreams {
       throw new UncheckedIOException(e);
     }
 
+    return createLogStream(name, partitionId, segments);
+  }
+
+  public SyncLogStream createLogStream(
+      final String name, final int partitionId, final File segmentsDir) {
     final AtomixLogStorageRule logStorageRule =
         new AtomixLogStorageRule(dataDirectory, partitionId);
     logStorageRule.open(
         b ->
-            b.withDirectory(segments)
+            b.withDirectory(segmentsDir)
                 .withMaxEntrySize(4 * 1024 * 1024)
                 .withMaxSegmentSize(128 * 1024 * 1024));
+    return createLogStream(name, partitionId, logStorageRule);
+  }
+
+  public SyncLogStream createLogStream(
+      final String name, final int partitionId, final AtomixLogStorageRule logStorageRule) {
     final var logStream =
         SyncLogStream.builder()
             .withLogName(name)
@@ -139,7 +149,6 @@ public final class TestStreams {
     logContextMap.put(name, logContext);
     closeables.manage(logContext);
     closeables.manage(() -> logContextMap.remove(name));
-
     return logStream;
   }
 
@@ -234,7 +243,7 @@ public final class TestStreams {
             currentSnapshotController,
             stream.getAsyncLogStream(),
             snapshotInterval);
-    actorScheduler.submitActor(asyncSnapshotDirector);
+    actorScheduler.submitActor(asyncSnapshotDirector).join();
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =
@@ -371,7 +380,6 @@ public final class TestStreams {
 
     @Override
     public void close() {
-      logStreamWriter.close();
       logStream.close();
       logStorageRule.close();
     }

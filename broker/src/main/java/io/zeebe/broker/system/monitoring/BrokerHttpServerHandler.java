@@ -34,6 +34,7 @@ public final class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter 
 
   private static final String BROKER_READY_STATUS_URI = "/ready";
   private static final String METRICS_URI = "/metrics";
+  private static final String BROKER_HEALTH_STATUS_URI = "/health";
 
   private final CollectorRegistry metricsRegistry;
   private final BrokerHealthCheckService brokerHealthCheckService;
@@ -73,6 +74,8 @@ public final class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter 
       response = getReadyStatus();
     } else if (METRICS_URI.equals(queryStringDecoder.path())) {
       response = getMetrics(queryStringDecoder);
+    } else if (BROKER_HEALTH_STATUS_URI.equals(queryStringDecoder.path())) {
+      response = getHealthStatus();
     } else {
       response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
     }
@@ -84,6 +87,18 @@ public final class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter 
     final boolean brokerReady = brokerHealthCheckService.isBrokerReady();
     final DefaultFullHttpResponse response;
     if (brokerReady) {
+      response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+    } else {
+      response =
+          new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.SERVICE_UNAVAILABLE);
+    }
+    return response;
+  }
+
+  private DefaultFullHttpResponse getHealthStatus() {
+    final boolean brokerHealthy = brokerHealthCheckService.isBrokerHealthy();
+    final DefaultFullHttpResponse response;
+    if (brokerHealthy) {
       response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
     } else {
       response =

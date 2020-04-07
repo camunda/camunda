@@ -10,7 +10,6 @@ package io.zeebe.engine.state.instance;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbBuffer;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
@@ -43,9 +42,9 @@ public class VariablesState {
   private final DirectBuffer resultView = new UnsafeBuffer(0, 0);
 
   // (child scope key) => (parent scope key)
-  private final ColumnFamily<DbLong, DbLong> childParentColumnFamily;
-  private final DbLong parentKey;
+  private final ColumnFamily<DbLong, ParentScopeKey> childParentColumnFamily;
   private final DbLong childKey;
+  private final ParentScopeKey parentKey = new ParentScopeKey();
 
   // (scope key, variable name) => (variable value)
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, VariableInstance>
@@ -55,8 +54,8 @@ public class VariablesState {
   private final DbString variableName;
 
   // (scope key) => (temporaryVariables)
-  private final ColumnFamily<DbLong, DbBuffer> temporaryVariableStoreColumnFamily;
-  private final DbBuffer temporaryVariables = new DbBuffer();
+  private final ColumnFamily<DbLong, TemporaryVariables> temporaryVariableStoreColumnFamily;
+  private final TemporaryVariables temporaryVariables = new TemporaryVariables();
 
   private final VariableInstance newVariable = new VariableInstance();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
@@ -78,7 +77,6 @@ public class VariablesState {
       final KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
 
-    parentKey = new DbLong();
     childKey = new DbLong();
     childParentColumnFamily =
         zeebeDb.createColumnFamily(
@@ -221,6 +219,46 @@ public class VariablesState {
     return variablesColumnFamily.get(scopeKeyVariableNameKey);
   }
 
+  /**
+   * Find the variable with the given name. If the variable is not present in the given scope then
+   * it looks in the parent scope and continues until it is found.
+   *
+   * @param scopeKey the key of the variable scope to start from
+   * @param name the name of the variable
+   * @return the value of the variable, or {@code null} if it is not present in the variable scope
+   */
+  public DirectBuffer getVariable(final long scopeKey, final DirectBuffer name) {
+    return getVariable(scopeKey, name, 0, name.capacity());
+  }
+
+  /**
+   * Find the variable with the given name. If the variable is not present in the given scope then
+   * it looks in the parent scope and continues until it is found.
+   *
+   * @param scopeKey the key of the variable scope to start from
+   * @param name the buffer that contains the name of the variable
+   * @param nameOffset the offset of name in the buffer
+   * @param nameLength the length of the name in the buffer
+   * @return the value of the variable, or {@code null} if it is not present in the variable scope
+   */
+  public DirectBuffer getVariable(
+      final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
+
+    long currentScopeKey = scopeKey;
+    do {
+      final VariableInstance variable =
+          getVariableLocal(currentScopeKey, name, nameOffset, nameLength);
+
+      if (variable != null) {
+        return variable.getValue();
+      }
+
+      currentScopeKey = getParent(currentScopeKey);
+    } while (currentScopeKey >= 0);
+
+    return null;
+  }
+
   public void setVariablesFromDocument(
       final long scopeKey, final long workflowKey, final DirectBuffer document) {
     // 1. index entries in the document
@@ -284,8 +322,8 @@ public class VariablesState {
   private long getParent(final long childKey) {
     this.childKey.wrapLong(childKey);
 
-    final DbLong parentKey = childParentColumnFamily.get(this.childKey);
-    return parentKey != null ? parentKey.getValue() : NO_PARENT;
+    final ParentScopeKey parentKey = childParentColumnFamily.get(this.childKey);
+    return parentKey != null ? parentKey.get() : NO_PARENT;
   }
 
   public DirectBuffer getVariablesAsDocument(final long scopeKey) {
@@ -421,7 +459,7 @@ public class VariablesState {
 
   public void createScope(final long childKey, final long parentKey) {
     this.childKey.wrapLong(childKey);
-    this.parentKey.wrapLong(parentKey);
+    this.parentKey.set(parentKey);
 
     childParentColumnFamily.put(this.childKey, this.parentKey);
   }
@@ -444,15 +482,15 @@ public class VariablesState {
 
   public void setTemporaryVariables(final long scopeKey, final DirectBuffer variables) {
     this.scopeKey.wrapLong(scopeKey);
-    temporaryVariables.wrapBuffer(variables);
+    temporaryVariables.set(variables);
     temporaryVariableStoreColumnFamily.put(this.scopeKey, temporaryVariables);
   }
 
   public DirectBuffer getTemporaryVariables(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
-    final DbBuffer variables = temporaryVariableStoreColumnFamily.get(this.scopeKey);
+    final TemporaryVariables variables = temporaryVariableStoreColumnFamily.get(this.scopeKey);
 
-    return variables == null ? null : variables.getValue();
+    return variables == null || variables.get().byteArray() == null ? null : variables.get();
   }
 
   public void removeTemporaryVariables(final long scopeKey) {

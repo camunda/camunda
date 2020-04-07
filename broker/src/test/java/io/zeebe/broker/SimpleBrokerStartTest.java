@@ -11,7 +11,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import org.junit.Before;
@@ -33,7 +36,7 @@ public final class SimpleBrokerStartTest {
   public void shouldFailToStartBrokerWithSmallTimeout() {
     // given
     final var brokerCfg = new BrokerCfg();
-    brokerCfg.setStepTimeout("1ms");
+    brokerCfg.setStepTimeout(Duration.ofMillis(1));
 
     final var broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
 
@@ -45,10 +48,10 @@ public final class SimpleBrokerStartTest {
   }
 
   @Test
-  public void shouldFailToCreateBrokerWithInvalidTimeout() {
+  public void shouldFailToCreateBrokerWithSmallSnapshotPeriod() {
     // given
     final var brokerCfg = new BrokerCfg();
-    brokerCfg.setStepTimeout("invalid");
+    brokerCfg.getData().setSnapshotPeriod(Duration.ofMillis(1));
 
     // when
     final var catchedThrownBy =
@@ -67,11 +70,16 @@ public final class SimpleBrokerStartTest {
     broker.addPartitionListener(
         new PartitionListener() {
           @Override
-          public void onBecomingFollower(int partitionId, long term, LogStream logStream) {}
+          public ActorFuture<Void> onBecomingFollower(
+              final int partitionId, final long term, final LogStream logStream) {
+            return CompletableActorFuture.completed(null);
+          }
 
           @Override
-          public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+          public ActorFuture<Void> onBecomingLeader(
+              final int partitionId, final long term, final LogStream logStream) {
             leaderLatch.countDown();
+            return CompletableActorFuture.completed(null);
           }
         });
 

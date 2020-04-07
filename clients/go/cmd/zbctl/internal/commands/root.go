@@ -54,6 +54,11 @@ It is designed for regular maintenance jobs such as:
 	* activating, completing or failing jobs
 	* update variables and retries
 	* view cluster status`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// silence help here instead of as a parameter because we only want to suppress it on a 'Zeebe' error and not if
+		// parsing args fails
+		cmd.SilenceUsage = true
+	},
 	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 		if client != nil {
 			return client.Close()
@@ -198,10 +203,10 @@ func keyArg(key *int64) cobra.PositionalArgs {
 	}
 }
 
-func printJson(value interface{}) error {
-	valueJson, err := json.MarshalIndent(value, "", "  ")
+func printJSON(value interface{}) error {
+	valueJSON, err := json.MarshalIndent(value, "", "  ")
 	if err == nil {
-		fmt.Println(string(valueJson))
+		fmt.Println(string(valueJSON))
 	}
 	return err
 }

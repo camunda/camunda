@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
+import io.zeebe.el.Expression;
+import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
@@ -19,13 +21,12 @@ import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
-import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
+
   @Override
   public Class<CatchEvent> getType() {
     return CatchEvent.class;
@@ -55,7 +56,9 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
           context, executableElement, (MessageEventDefinition) eventDefinition);
 
     } else if (eventDefinition instanceof TimerEventDefinition) {
-      transformTimerEventDefinition(executableElement, (TimerEventDefinition) eventDefinition);
+      final var expressionLanguage = context.getExpressionLanguage();
+      final var timerDefinition = (TimerEventDefinition) eventDefinition;
+      transformTimerEventDefinition(expressionLanguage, executableElement, timerDefinition);
 
     } else if (eventDefinition instanceof ErrorEventDefinition) {
       transformErrorEventDefinition(
@@ -74,22 +77,35 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
   }
 
   private void transformTimerEventDefinition(
+      final ExpressionLanguage expressionLanguage,
       final ExecutableCatchEventElement executableElement,
       final TimerEventDefinition timerEventDefinition) {
-    final Timer timer;
 
+    final Expression expression;
     if (timerEventDefinition.getTimeDuration() != null) {
       final String duration = timerEventDefinition.getTimeDuration().getTextContent();
-      timer = new RepeatingInterval(1, Interval.parse(duration));
+      expression = expressionLanguage.parseExpression(duration);
+      executableElement.setTimerFactory(
+          (expressionProcessor, scopeKey) ->
+              new RepeatingInterval(
+                  1, expressionProcessor.evaluateIntervalExpression(expression, scopeKey)));
+
     } else if (timerEventDefinition.getTimeCycle() != null) {
       final String cycle = timerEventDefinition.getTimeCycle().getTextContent();
-      timer = RepeatingInterval.parse(cycle);
-    } else {
-      final String timeDate = timerEventDefinition.getTimeDate().getTextContent();
-      timer = TimeDateTimer.parse(timeDate);
-    }
+      expression = expressionLanguage.parseExpression(cycle);
+      executableElement.setTimerFactory(
+          (expressionProcessor, scopeKey) ->
+              RepeatingInterval.parse(
+                  expressionProcessor.evaluateStringExpression(expression, scopeKey)));
 
-    executableElement.setTimer(timer);
+    } else if (timerEventDefinition.getTimeDate() != null) {
+      final String timeDate = timerEventDefinition.getTimeDate().getTextContent();
+      expression = expressionLanguage.parseExpression(timeDate);
+      executableElement.setTimerFactory(
+          (expressionProcessor, scopeKey) ->
+              new TimeDateTimer(
+                  expressionProcessor.evaluateDateTimeExpression(expression, scopeKey)));
+    }
   }
 
   private void transformErrorEventDefinition(

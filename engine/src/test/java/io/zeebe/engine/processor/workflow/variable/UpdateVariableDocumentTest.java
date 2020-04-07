@@ -112,7 +112,7 @@ public final class UpdateVariableDocumentTest {
       final String processId, final String taskId, final String type) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
-        .serviceTask(taskId, b -> b.zeebeTaskType(type))
+        .serviceTask(taskId, b -> b.zeebeJobType(type))
         .endEvent()
         .done();
   }

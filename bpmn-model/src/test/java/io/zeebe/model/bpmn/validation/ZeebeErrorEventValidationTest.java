@@ -34,7 +34,7 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("type"))
+            .serviceTask("task", t -> t.zeebeJobType("type"))
             .boundaryEvent("catch", b -> b.error(""))
             .endEvent()
             .done(),
@@ -43,7 +43,7 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("type"))
+            .serviceTask("task", t -> t.zeebeJobType("type"))
             .boundaryEvent("catch", b -> b.errorEventDefinition())
             .endEvent()
             .done(),
@@ -52,7 +52,7 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("type"))
+            .serviceTask("task", t -> t.zeebeJobType("type"))
             .boundaryEvent("catch", b -> b.error("ERROR").cancelActivity(false))
             .endEvent()
             .done(),
@@ -62,7 +62,7 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("type"))
+            .serviceTask("task", t -> t.zeebeJobType("type"))
             .boundaryEvent("catch-1", b -> b.error("ERROR").endEvent())
             .moveToActivity("task")
             .boundaryEvent("catch-2", b -> b.error("ERROR").endEvent())
@@ -93,7 +93,7 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
                 s ->
                     s.embeddedSubProcess()
                         .startEvent()
-                        .serviceTask("task", t -> t.zeebeTaskType("type"))
+                        .serviceTask("task", t -> t.zeebeJobType("type"))
                         .boundaryEvent("catch", b -> b.error(""))
                         .endEvent())
             .done(),

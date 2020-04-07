@@ -10,7 +10,6 @@ package io.zeebe.engine.state;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
 
 public final class NextValueManager {
@@ -19,9 +18,9 @@ public final class NextValueManager {
 
   private final long initialValue;
 
-  private final ColumnFamily<DbString, DbLong> nextValueColumnFamily;
+  private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
   private final DbString nextValueKey;
-  private final DbLong nextValue;
+  private final NextValue nextValue = new NextValue();
 
   public NextValueManager(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -38,7 +37,6 @@ public final class NextValueManager {
     this.initialValue = initialValue;
 
     nextValueKey = new DbString();
-    nextValue = new DbLong();
     nextValueColumnFamily =
         zeebeDb.createColumnFamily(columnFamily, dbContext, nextValueKey, nextValue);
   }
@@ -46,15 +44,15 @@ public final class NextValueManager {
   public long getNextValue(final String key) {
     nextValueKey.wrapString(key);
 
-    final DbLong zbLong = nextValueColumnFamily.get(nextValueKey);
+    final NextValue readValue = nextValueColumnFamily.get(nextValueKey);
 
     long previousKey = initialValue;
-    if (zbLong != null) {
-      previousKey = zbLong.getValue();
+    if (readValue != null) {
+      previousKey = readValue.get();
     }
 
     final long nextKey = previousKey + 1;
-    nextValue.wrapLong(nextKey);
+    nextValue.set(nextKey);
     nextValueColumnFamily.put(nextValueKey, nextValue);
 
     return nextKey;

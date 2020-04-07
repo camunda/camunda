@@ -52,11 +52,4 @@ public interface SynchronousLogStream extends AutoCloseable {
 
   /** @return a new created log stream batch writer */
   LogStreamBatchWriter newLogStreamBatchWriter();
-
-  /**
-   * Triggers deletion of data from the log stream, where the given position is used as upper bound.
-   *
-   * @param position the position as upper bound
-   */
-  void delete(long position);
 }

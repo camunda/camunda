@@ -78,6 +78,7 @@ func handle(jobClient worker.JobClient, job entities.Job) {
 	variables := job.Variables
 	log.Println("Activated job", key, "with variables", variables)
 
+	// #nosec 204
 	command := exec.Command(createWorkerHandlerArgs[0], createWorkerHandlerArgs[1:]...)
 
 	// capture stdout and stderr for completing/failing job
@@ -88,26 +89,36 @@ func handle(jobClient worker.JobClient, job entities.Job) {
 	// get stdin of handler command and send variables
 	stdin, err := command.StdinPipe()
 	if err != nil {
-		log.Fatal("Failed to get stdin for command", createWorkerHandlerFlag, err)
+		failJob(jobClient, job, fmt.Sprintf("failed to get stdin for command '%s': %s", createWorkerHandlerFlag, err.Error()))
+		return
 	}
-	io.WriteString(stdin, variables)
-	stdin.Close()
+
+	_, err = io.WriteString(stdin, variables)
+	if err != nil {
+		failJob(jobClient, job, fmt.Sprintf("failed to write to stdin for command '%s': %s", createWorkerHandlerFlag, err.Error()))
+		return
+	}
+
+	err = stdin.Close()
+	if err != nil {
+		log.Printf("failed to close stdin for command '%s': %s", createWorkerHandlerFlag, err.Error())
+	}
 
 	// start and wait for handler command to finish
 	err = command.Start()
 	if err != nil {
-		log.Fatal("Failed to start command", createWorkerHandlerFlag, err)
+		failJob(jobClient, job, fmt.Sprintf("failed to start command '%s': %s", createWorkerHandlerFlag, err.Error()))
 	}
 
 	if command.Wait() == nil {
-		variables := string(stdout.Bytes())
+		variables := stdout.String()
 		if len(variables) < 2 {
 			// use empty variables if non was returned
 			variables = "{}"
 		}
 		completeJob(jobClient, job, variables)
 	} else {
-		failJob(jobClient, job, string(stderr.Bytes()))
+		failJob(jobClient, job, stderr.String())
 	}
 }
 

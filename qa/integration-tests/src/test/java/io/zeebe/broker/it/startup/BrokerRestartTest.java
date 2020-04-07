@@ -13,7 +13,10 @@ import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.response.PublishMessageResponse;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,7 +60,7 @@ public class BrokerRestartTest {
     publishMessage(2).join();
   }
 
-  private ZeebeFuture<Void> publishMessage(final int key) {
+  private ZeebeFuture<PublishMessageResponse> publishMessage(final int key) {
     return clientRule
         .getClient()
         .newPublishMessageCommand()
@@ -75,15 +78,17 @@ public class BrokerRestartTest {
     }
 
     @Override
-    public void onBecomingFollower(
+    public ActorFuture<Void> onBecomingFollower(
         final int partitionId, final long term, final LogStream logStream) {
       this.logStream = logStream;
+      return CompletableActorFuture.completed(null);
     }
 
     @Override
-    public void onBecomingLeader(
+    public ActorFuture<Void> onBecomingLeader(
         final int partitionId, final long term, final LogStream logStream) {
       this.logStream = logStream;
+      return CompletableActorFuture.completed(null);
     }
   }
 }

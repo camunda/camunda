@@ -8,12 +8,11 @@
 package io.zeebe.engine.processor.workflow.handlers.element;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
 import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
-import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.ErrorType;
 
 /**
  * Applies input mappings in the scope.
@@ -23,12 +22,13 @@ import io.zeebe.protocol.record.value.ErrorType;
 public class ElementActivatingHandler<T extends ExecutableFlowNode> extends AbstractHandler<T> {
   private final IOMappingHelper ioMappingHelper;
 
-  public ElementActivatingHandler() {
-    this(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+  public ElementActivatingHandler(final ExpressionProcessor expressionProcessor) {
+    this(WorkflowInstanceIntent.ELEMENT_ACTIVATED, expressionProcessor);
   }
 
-  public ElementActivatingHandler(final WorkflowInstanceIntent nextState) {
-    this(nextState, new IOMappingHelper());
+  public ElementActivatingHandler(
+      final WorkflowInstanceIntent nextState, final ExpressionProcessor expressionProcessor) {
+    this(nextState, new IOMappingHelper(expressionProcessor));
   }
 
   public ElementActivatingHandler(
@@ -39,14 +39,7 @@ public class ElementActivatingHandler<T extends ExecutableFlowNode> extends Abst
 
   @Override
   protected boolean handleState(final BpmnStepContext<T> context) {
-    try {
-      ioMappingHelper.applyInputMappings(context);
-      return true;
-    } catch (final MappingException e) {
-      context.raiseIncident(ErrorType.IO_MAPPING_ERROR, e.getMessage());
-    }
-
-    return false;
+    return ioMappingHelper.applyInputMappings(context);
   }
 
   @Override

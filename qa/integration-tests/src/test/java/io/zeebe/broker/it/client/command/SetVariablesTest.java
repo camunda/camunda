@@ -22,6 +22,7 @@ import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -49,7 +50,7 @@ public final class SetVariablesTest {
         CLIENT_RULE.deployWorkflow(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeTaskType("test"))
+                .serviceTask("task", t -> t.zeebeJobType("test"))
                 .done());
   }
 
@@ -105,7 +106,7 @@ public final class SetVariablesTest {
         CLIENT_RULE.getClient().newSetVariablesCommand(workflowInstanceKey).variables("[]").send();
 
     // then
-    assertThatThrownBy(() -> command.join())
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
             "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
@@ -132,8 +133,31 @@ public final class SetVariablesTest {
             "Expected to update variables for element with key '%d', but no such element was found",
             workflowInstanceKey);
 
-    assertThatThrownBy(() -> command.join())
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(expectedMessage);
+  }
+
+  @Test
+  public void shouldRejectIfPartitionNotFound() {
+    // given
+
+    // when
+    final int workflowInstanceKey = 0;
+    final var command =
+        CLIENT_RULE
+            .getClient()
+            .newSetVariablesCommand(workflowInstanceKey)
+            .variables(Map.of("foo", "bar"))
+            .requestTimeout(Duration.ofSeconds(60))
+            .send();
+
+    // then
+    final String expectedMessage =
+        "Expected to execute command, but this command refers to an element that doesn't exist.";
+    assertThatThrownBy(command::join)
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining(expectedMessage)
+        .hasRootCauseMessage("NOT_FOUND: " + expectedMessage);
   }
 }

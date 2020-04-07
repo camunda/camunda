@@ -525,4 +525,10 @@ public class ActorControl {
 
     return thread;
   }
+
+  /** Mark actor as failed. This sets the lifecycle phase to 'FAILED' and discards all jobs. */
+  public void fail() {
+    ensureCalledFromWithinActor("fail()");
+    task.fail();
+  }
 }

@@ -60,6 +60,12 @@ public final class LongPollingActivateJobsHandler extends Actor {
     return "GatewayLongPollingJobHandler";
   }
 
+  @Override
+  protected void onActorStarted() {
+    brokerClient.subscribeJobAvailableNotification(JOBS_AVAILABLE_TOPIC, this::onNotification);
+    actor.runAtFixedRate(Duration.ofMillis(probeTimeoutMillis), this::probe);
+  }
+
   public void activateJobs(
       final ActivateJobsRequest request,
       final StreamObserver<ActivateJobsResponse> responseObserver) {
@@ -94,12 +100,6 @@ public final class LongPollingActivateJobsHandler extends Actor {
           response -> onResponse(request, response),
           remainingAmount -> onCompleted(request, remainingAmount));
     }
-  }
-
-  @Override
-  protected void onActorStarted() {
-    brokerClient.subscribeJobAvailableNotification(JOBS_AVAILABLE_TOPIC, this::onNotification);
-    actor.runAtFixedRate(Duration.ofMillis(probeTimeoutMillis), this::probe);
   }
 
   private void onNotification(final String jobType) {
@@ -164,9 +164,12 @@ public final class LongPollingActivateJobsHandler extends Actor {
     }
     if (!request.isTimedOut()) {
       LOG.trace(
-          "Jobs of type {} not available. Blocking request {}",
+          "Worker '{}' asked for '{}' jobs of type '{}', but none are available. This request will"
+              + " be kept open until a new job of this type is created or until timeout of '{}'.",
+          request.getWorker(),
+          request.getMaxJobsToActivate(),
           request.getType(),
-          request.getRequest());
+          request.getLongPollingTimeout(longPollingTimeout));
       state.blockRequest(request);
       if (!request.hasScheduledTimer()) {
         addTimeOut(state, request);

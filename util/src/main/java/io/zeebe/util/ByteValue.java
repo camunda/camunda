@@ -7,132 +7,38 @@
  */
 package io.zeebe.util;
 
-import static io.zeebe.util.ByteUnit.BYTES;
-import static io.zeebe.util.ByteUnit.KILOBYTES;
-import static io.zeebe.util.ByteUnit.MEGABYTES;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public final class ByteValue {
-  private static final Pattern PATTERN =
-      Pattern.compile("(\\d+)([K|M|G]?)", Pattern.CASE_INSENSITIVE);
+  private static final int CONVERSION_FACTOR_KB = 1024;
+  private static final int CONVERSION_FACTOR_MB = CONVERSION_FACTOR_KB * 1024;
+  private static final int CONVERSION_FACTOR_GB = CONVERSION_FACTOR_MB * 1024;
 
-  private final ByteUnit unit;
-  private final long value;
-
-  public ByteValue(final long value, final ByteUnit unit) {
-    this.value = value;
-    this.unit = unit;
+  /**
+   * Converts the {@code value} kilobytes into bytes
+   *
+   * @param value value in kilobytes
+   * @return {@code value} converted into bytes
+   */
+  public static long ofKilobytes(final long value) {
+    return value * CONVERSION_FACTOR_KB;
   }
 
-  public ByteValue(final String humanReadable) {
-    final Matcher matcher = PATTERN.matcher(humanReadable);
-
-    if (!matcher.matches()) {
-      final String err =
-          String.format(
-              "Illegal byte value '%s'. Must match '%s'. Valid examples: 100M, 4K, ...",
-              humanReadable, PATTERN.pattern());
-      throw new IllegalArgumentException(err);
-    }
-
-    final String valueString = matcher.group(1);
-    value = Long.parseLong(valueString);
-
-    final String unitString = matcher.group(2).toUpperCase();
-
-    unit = ByteUnit.getUnit(unitString);
+  /**
+   * Converts the {@code value} megabytes into bytes
+   *
+   * @param value value in megabytes
+   * @return {@code value} converted into bytes
+   */
+  public static long ofMegabytes(final long value) {
+    return value * CONVERSION_FACTOR_MB;
   }
 
-  public static ByteValue ofBytes(final long value) {
-    return new ByteValue(value, BYTES).normalize();
-  }
-
-  public static ByteValue ofKilobytes(final long value) {
-    return new ByteValue(value, ByteUnit.KILOBYTES);
-  }
-
-  public static ByteValue ofMegabytes(final long value) {
-    return new ByteValue(value, ByteUnit.MEGABYTES);
-  }
-
-  public static ByteValue ofGigabytes(final long value) {
-    return new ByteValue(value, ByteUnit.GIGABYTES);
-  }
-
-  public ByteUnit getUnit() {
-    return unit;
-  }
-
-  public long getValue() {
-    return value;
-  }
-
-  public ByteValue normalize() {
-    if (toGigabytesValue().getValue() > 0) {
-      return toGigabytesValue();
-    } else if (toMegabytesValue().getValue() > 0) {
-      return toMegabytesValue();
-    } else if (toKilobytesValue().getValue() > 0) {
-      return toKilobytesValue();
-    } else {
-      return this;
-    }
-  }
-
-  public long toBytes() {
-    return unit.toBytes(value);
-  }
-
-  public ByteValue toBytesValue() {
-    return new ByteValue(unit.toBytes(value), BYTES);
-  }
-
-  public ByteValue toKilobytesValue() {
-    return new ByteValue(unit.toKilobytes(value), KILOBYTES);
-  }
-
-  public ByteValue toMegabytesValue() {
-    return new ByteValue(unit.toMegabytes(value), MEGABYTES);
-  }
-
-  public ByteValue toGigabytesValue() {
-    return new ByteValue(unit.toGigabytes(value), ByteUnit.GIGABYTES);
-  }
-
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((unit == null) ? 0 : unit.hashCode());
-    result = prime * result + (int) (value ^ (value >>> 32));
-    return result;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final ByteValue other = (ByteValue) obj;
-    if (unit != other.unit) {
-      return false;
-    }
-    if (value != other.value) {
-      return false;
-    }
-    return true;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%d%s", value, unit.metric());
+  /**
+   * Converts the {@code value} gigabytes into bytes
+   *
+   * @param value value in gigabytes
+   * @return {@code value} converted into bytes
+   */
+  public static long ofGigabytes(final long value) {
+    return value * CONVERSION_FACTOR_GB;
   }
 }

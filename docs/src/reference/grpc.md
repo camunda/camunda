@@ -67,14 +67,14 @@ message ActivateJobsRequest {
   // the name of the worker activating the jobs, mostly used for logging purposes
   string worker = 2;
   // a job returned after this call will not be activated by another call until the
-  // timeout has been reached
+  // timeout (in ms) has been reached
   int64 timeout = 3;
   // the maximum jobs to activate by this request
   int32 maxJobsToActivate = 4;
   // a list of variables to fetch as the job variables; if empty, all visible variables at
   // the time of activation for the scope of the job will be returned
   repeated string fetchVariable = 5;
-  // The request will be completed when at least one job is activated or after the requestTimeout.
+  // The request will be completed when at least one job is activated or after the requestTimeout (in ms).
   // if the requestTimeout = 0, a default timeout is used.
   // if the requestTimeout < 0, long polling is disabled and the request is completed immediately, even when no job is activated.
   int64 requestTimeout = 6;
@@ -130,7 +130,7 @@ Returned if:
 
   - type is blank (empty string, null)
   - worker is blank (empty string, null)
-  - timeout less than 1
+  - timeout less than 1 (ms)
   - amount is less than 1
 
 
@@ -262,7 +262,7 @@ Note that only workflows with none start events can be started through this comm
 ```protobuf
 message CreateWorkflowInstanceRequest {
    CreateWorkflowInstanceRequest request = 1;
-   // timeout in milliseconds. the request will be closed if the workflow is not completed before
+   // timeout (in ms). the request will be closed if the workflow is not completed before
    // the requestTimeout.
    // if requestTimeout = 0, uses the generic requestTimeout configured in the gateway.
    int64 requestTimeout = 2;

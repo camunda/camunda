@@ -42,7 +42,7 @@ public final class CreateDeploymentTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("test"))
+            .serviceTask("task", t -> t.zeebeJobType("test"))
             .endEvent()
             .done();
 

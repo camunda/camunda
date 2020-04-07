@@ -11,6 +11,7 @@ import io.zeebe.engine.processor.workflow.message.command.MessageHeaderDecoder;
 import io.zeebe.engine.processor.workflow.message.command.MessageHeaderEncoder;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
+import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -72,6 +73,14 @@ public abstract class SbeBufferWriterReader<
 
     return headerDecoder.schemaId() == getBodyDecoder().sbeSchemaId()
         && headerDecoder.templateId() == getBodyDecoder().sbeTemplateId();
+  }
+
+  public ByteBuffer toByteBuffer() {
+    final ByteBuffer byteBuffer = ByteBuffer.allocate(getLength());
+    final MutableDirectBuffer buffer = new UnsafeBuffer(byteBuffer);
+    write(buffer, 0);
+
+    return byteBuffer;
   }
 
   public byte[] toBytes() {

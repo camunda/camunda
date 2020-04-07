@@ -64,7 +64,7 @@ func (cmd *CompleteJobCommand) VariablesFromStringer(variables fmt.Stringer) (Di
 }
 
 func (cmd *CompleteJobCommand) VariablesFromObject(variables interface{}) (DispatchCompleteJobCommand, error) {
-	value, err := cmd.mixin.AsJson("variables", variables, false)
+	value, err := cmd.mixin.AsJSON("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (cmd *CompleteJobCommand) VariablesFromObject(variables interface{}) (Dispa
 }
 
 func (cmd *CompleteJobCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchCompleteJobCommand, error) {
-	value, err := cmd.mixin.AsJson("variables", variables, true)
+	value, err := cmd.mixin.AsJSON("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (cmd *CompleteJobCommand) Send(ctx context.Context) (*pb.CompleteJobRespons
 func NewCompleteJobCommand(gateway pb.GatewayClient, pred retryPredicate) CompleteJobCommandStep1 {
 	return &CompleteJobCommand{
 		Command: Command{
-			mixin:       utils.NewJsonStringSerializer(),
+			mixin:       utils.NewJSONStringSerializer(),
 			gateway:     gateway,
 			shouldRetry: pred,
 		},

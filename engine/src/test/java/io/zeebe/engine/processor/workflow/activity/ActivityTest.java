@@ -39,13 +39,16 @@ public final class ActivityTest {
           .startEvent()
           .serviceTask(
               "task",
-              b -> b.zeebeTaskType("type").zeebeInput("foo", "bar").zeebeOutput("bar", "oof"))
+              b ->
+                  b.zeebeJobType("type")
+                      .zeebeInputExpression("foo", "bar")
+                      .zeebeOutputExpression("bar", "oof"))
           .endEvent()
           .done();
   private static final BpmnModelInstance WITH_BOUNDARY_EVENTS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("timer1")
           .timerWithDuration("PT10S")
           .endEvent()
@@ -193,14 +196,14 @@ public final class ActivityTest {
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task1", b -> b.zeebeTaskType("type1").zeebeTaskHeader("key", testValue))
+            .serviceTask("task1", b -> b.zeebeJobType("type1").zeebeTaskHeader("key", testValue))
             .endEvent("end")
             .moveToActivity("task1")
-            .serviceTask("task2", b -> b.zeebeTaskType("type2").zeebeTaskHeader(testValue, "value"))
+            .serviceTask("task2", b -> b.zeebeJobType("type2").zeebeTaskHeader(testValue, "value"))
             .connectTo("end")
             .moveToActivity("task1")
             .serviceTask(
-                "task3", b -> b.zeebeTaskType("type3").zeebeTaskHeader(testValue, testValue))
+                "task3", b -> b.zeebeJobType("type3").zeebeTaskHeader(testValue, testValue))
             .connectTo("end")
             .done();
 

@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-variable_*"
+    "zeebe-record_variable_*"
   ],
   "order": 20,
   "aliases": {

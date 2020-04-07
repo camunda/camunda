@@ -17,6 +17,10 @@ package io.zeebe.model.bpmn.builder;
 
 public interface ZeebeVariablesMappingBuilder<B> {
 
+  B zeebeInputExpression(String sourceExpression, String target);
+
+  B zeebeOutputExpression(String sourceExpression, String target);
+
   B zeebeInput(String source, String target);
 
   B zeebeOutput(String source, String target);

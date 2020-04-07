@@ -25,6 +25,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.util.SocketUtil;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
@@ -49,7 +50,10 @@ public final class GrpcClientRule extends ExternalResource {
       final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
         config -> {
-          config.brokerContactPoint(brokerRule.getGatewayAddress().toString()).usePlaintext();
+          config
+              .brokerContactPoint(
+                  io.zeebe.util.SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()))
+              .usePlaintext();
           configurator.accept(config);
         });
   }
@@ -58,7 +62,8 @@ public final class GrpcClientRule extends ExternalResource {
     this(
         config ->
             config
-                .brokerContactPoint(clusteringRule.getGatewayAddress().toString())
+                .brokerContactPoint(
+                    SocketUtil.toHostAndPortString(clusteringRule.getGatewayAddress()))
                 .usePlaintext());
   }
 
@@ -161,7 +166,7 @@ public final class GrpcClientRule extends ExternalResource {
         .serviceTask(
             "task",
             t -> {
-              t.zeebeTaskType(jobType);
+              t.zeebeJobType(jobType);
               taskBuilderConsumer.accept(t);
             })
         .endEvent("end")

@@ -37,10 +37,13 @@ it should be flushed (regardless of size) can be controlled by configuration.
 
 For example:
 
-```toml
-  [exporters.args.bulk]
-  delay = 5
-  size = 1_000
+```yaml
+...  
+  exporters:
+    elasticsearch:
+      args:
+        delay: 5
+        size: 1000
 ```
 
 With the above example, the exporter would aggregate records and flush them to Elasticsearch
@@ -63,30 +66,34 @@ records (e.g. only job and workflow values).
 
 For example:
 
-```toml
-#  [exporters.args.index]
-#  prefix = "zeebe-record"
-#  createTemplate = true
-#
-#  command = false
-#  event = true
-#  rejection = false
-#
-#  deployment = false
-#  incident = true
-#  job = false
-#  jobBatch = false
-#  message = false
-#  messageSubscription = false
-#  workflowInstance = false
-#  workflowInstanceSubscription = false
+```yaml
+...
+  exporters:
+    elasticsearch:
+      args:
+        index:
+          prefix: zeebe-record
+          createTemplate: true
+          
+          command: false
+          event: true
+          rejection: false
+          
+          deployment: false
+          incident: true
+          job: false
+          jobBatch: false
+          message: false
+          messageSubscription: false
+          workflowInstance: false
+          workflowInstanceSubscription: false
 ```
 
 The given example would only export incident events, and nothing else.
 
 More specifically, each option configures the following:
 
-* `prefix` (`string`): this prefix will be appended to every index created by the exporter.
+* `prefix` (`string`): this prefix will be appended to every index created by the exporter; must not contain `_` (underscore).
 * `createTemplate` (`boolean`): if true, missing indexes will be created as needed.
 * `command` (`boolean`): if true, command records will be exported; if false, ignored.
 * `event` (`boolean`): if true, event records will be exported; if false, ignored.
@@ -102,32 +109,50 @@ More specifically, each option configures the following:
 
 Here is a complete, default configuration example:
 
-```toml
-#[[exporters]]
-#id = "elasticsearch"
-#className = "io.zeebe.exporter.ElasticsearchExporter"
-#
-#  [exporters.args]
-#  url = "http://localhost:9200"
-#
-#  [exporters.args.bulk]
-#  delay = 5
-#  size = 1_000
-#
-#  [exporters.args.index]
-#  prefix = "zeebe-record"
-#  createTemplate = true
-#
-#  command = false
-#  event = true
-#  rejection = false
-#
-#  deployment = true
-#  incident = true
-#  job = true
-#  jobBatch = false
-#  message = false
-#  messageSubscription = false
-#  workflowInstance = true
-#  workflowInstanceSubscription = false
+```yaml
+...
+  exporters:
+    elasticsearch:
+      # Elasticsearch Exporter ----------
+      # An example configuration for the elasticsearch exporter:
+      #
+      # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_..."
+      #
+      
+      className: io.zeebe.exporter.ElasticsearchExporter
+     
+      args:
+        url: http://localhost:9200
+     
+        bulk:
+          delay: 5
+          size: 1000
+     
+        authentication:
+          username: elastic
+          password: changeme
+     
+        index:
+          prefix: zeebe-record
+          createTemplate: true
+     
+          command: false
+          event: true
+          rejection: false
+     
+          deployment: true
+          error: true
+          incident: true
+          job: true
+          jobBatch: false
+          message: false
+          messageSubscription: false
+          variable: true
+          variableDocument: true
+          workflowInstance: true
+          workflowInstanceCreation: false
+          workflowInstanceSubscription: false
+     
+          ignoreVariablesAbove: 32677
+
 ```

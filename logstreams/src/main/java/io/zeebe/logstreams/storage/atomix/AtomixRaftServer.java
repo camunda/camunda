@@ -7,15 +7,13 @@
  */
 package io.zeebe.logstreams.storage.atomix;
 
-import io.atomix.protocols.raft.partition.impl.RaftPartitionServer;
-import io.atomix.protocols.raft.storage.log.RaftLogReader;
-import io.atomix.protocols.raft.zeebe.ZeebeLogAppender;
+import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.journal.JournalReader.Mode;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
-public final class AtomixRaftServer
-    implements AtomixLogCompactor, AtomixReaderFactory, AtomixAppenderSupplier {
+public final class AtomixRaftServer implements AtomixReaderFactory, AtomixAppenderSupplier {
   private final RaftPartitionServer server;
 
   AtomixRaftServer(final RaftPartitionServer server) {
@@ -25,12 +23,6 @@ public final class AtomixRaftServer
   @Override
   public Optional<ZeebeLogAppender> getAppender() {
     return server.getAppender();
-  }
-
-  @Override
-  public CompletableFuture<Void> compact(final long index) {
-    server.setCompactableIndex(index);
-    return server.snapshot();
   }
 
   @Override

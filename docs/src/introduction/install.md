@@ -1,6 +1,6 @@
 # Install
 
-This page guides you through the initial installation of the Zeebe broker and Zeebe Modeler for development purposes. 
+This page guides you through the initial installation of the Zeebe broker and Zeebe Modeler for development purposes.
 
 If you're looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/) as well.
 
@@ -33,7 +33,7 @@ Docker configurations for starting a single Zeebe broker using `docker-compose`,
 You can run Zeebe with Docker:
 
 ```bash
-docker run --name zeebe -p 26500:26500 camunda/zeebe:latest
+docker run --name zeebe -p 26500-26502:26500-26502 camunda/zeebe:latest
 ```
 
 ### Exposed Ports
@@ -49,20 +49,18 @@ all data which should be persisted.
 
 ### Configuration
 
-The Zeebe configuration is located at `/usr/local/zeebe/conf/zeebe.cfg.toml`.
-The logging configuration is located at `/usr/local/zeebe/conf/log4j2.xml`.
+The Zeebe configuration is located at `/usr/local/zeebe/config/application.yaml`.
+The logging configuration is located at `/usr/local/zeebe/config/log4j2.xml`.
 
 The configuration of the docker image can also be changed by using environment
-variables.
+variables. The configuration template files also contains information on the environment
+variables to use for each configuration setting.
 
 Available environment variables:
 
  - `ZEEBE_LOG_LEVEL`: Sets the log level of the Zeebe Logger (default: `info`).
- - `ZEEBE_HOST`: Sets the host address to bind to instead of the IP of the container.
- - `BOOTSTRAP`: Sets the replication factor of the `internal-system` partition.
- - `ZEEBE_CONTACT_POINTS`: Sets the contact points of other brokers in a cluster setup.
- - `DEPLOY_ON_KUBERNETES`: If set to `true`, it applies some configuration changes in order to run Zeebe
- in a Kubernetes environment.
+ - `ZEEBE_BROKER_NETWORK_HOST`: Sets the host address to bind to instead of the IP of the container.
+ - `ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS`: Sets the contact points of other brokers in a cluster setup.
 
 ### Mac and Windows users
 
@@ -160,7 +158,6 @@ Once the Zeebe broker has started, it should produce the following output:
 
 ```
 bash
-23:39:13.167 [] [main] INFO  io.zeebe.util.config - Reading configuration for class class io.zeebe.broker.system.configuration.BrokerCfg from file conf/zeebe.cfg.toml
 23:39:13.246 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
 23:39:13.270 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
 23:39:13.273 [] [main] INFO  io.zeebe.broker.system - Starting broker with configuration {
@@ -168,6 +165,6 @@ bash
 
 ## Install the Zeebe Modeler
 
-The Zeebe Modeler is an open-source desktop BPMN modeling application created specifically for Zeebe. 
+The Zeebe Modeler is an open-source desktop BPMN modeling application created specifically for Zeebe.
 
 [You can download the most recent Zeebe Modeler release here.](https://github.com/zeebe-io/zeebe-modeler/releases)

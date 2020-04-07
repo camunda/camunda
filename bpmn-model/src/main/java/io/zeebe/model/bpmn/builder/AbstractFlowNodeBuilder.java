@@ -85,6 +85,10 @@ public abstract class AbstractFlowNodeBuilder<
     return condition(null, condition);
   }
 
+  public B conditionExpression(final String conditionExpression) {
+    return condition(null, asZeebeExpression(conditionExpression));
+  }
+
   protected void connectTarget(final FlowNode target) {
     // check if compensation was started
     if (isBoundaryEventWithStartedCompensation()) {

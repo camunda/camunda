@@ -31,7 +31,7 @@ public final class ActorFrameworkIntegrationTest {
     final Dispatcher dispatcher =
         Dispatchers.create("default")
             .actorScheduler(actorSchedulerRule.get())
-            .bufferSize(ByteValue.ofMegabytes(10))
+            .bufferSize((int) ByteValue.ofMegabytes(10))
             .build();
 
     actorSchedulerRule.submitActor(new Consumer(dispatcher));
@@ -47,7 +47,7 @@ public final class ActorFrameworkIntegrationTest {
     final Dispatcher dispatcher =
         Dispatchers.create("default")
             .actorScheduler(actorSchedulerRule.get())
-            .bufferSize(ByteValue.ofMegabytes(10))
+            .bufferSize((int) ByteValue.ofMegabytes(10))
             .build();
 
     actorSchedulerRule.submitActor(new PeekingConsumer(dispatcher));

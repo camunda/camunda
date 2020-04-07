@@ -5,9 +5,11 @@ kind: Kustomization
 namespace: zeebe-chaos-test
 
 resources:
-  - zeebe.yaml
-  - starter.yaml
+  - statefulset.yaml
+  - configmap.yaml
+  - service.yaml
   - worker.yaml
+
 
 patchesStrategicMerge:
   - zeebe_statefulset_tolerations.yml

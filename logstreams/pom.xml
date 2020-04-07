@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Logstreams</name>
   <artifactId>zeebe-logstreams</artifactId>
-  <version>0.22.3-SNAPSHOT</version>
+  <version>0.24.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.22.3-SNAPSHOT</version>
+    <version>0.24.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -70,11 +70,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>atomix-raft</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>atomix-storage</artifactId>
     </dependency>
 
@@ -86,6 +81,11 @@
     <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>atomix-cluster</artifactId>
+      <version>0.24.0-SNAPSHOT</version>
     </dependency>
   </dependencies>
 

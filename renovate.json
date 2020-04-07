@@ -3,5 +3,7 @@
     "config:base"
   ],
 
-  "ignoreDeps": ["docker/engine"]
+  "ignoreDeps": ["docker/engine"],
+
+  "postUpdateOptions": ["gomodTidy"]
 }

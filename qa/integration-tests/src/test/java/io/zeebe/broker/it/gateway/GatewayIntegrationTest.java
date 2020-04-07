@@ -8,7 +8,6 @@
 package io.zeebe.broker.it.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.core.StringContains.containsString;
 
 import io.atomix.cluster.AtomixCluster;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -21,7 +20,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCrea
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import java.util.concurrent.ExecutionException;
+import java.time.Duration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,7 +47,7 @@ public final class GatewayIntegrationTest {
         .setHost("0.0.0.0")
         .setPort(SocketUtil.getNextAddress().getPort())
         .setContactPoint(internalApi.toString())
-        .setRequestTimeout("3s");
+        .setRequestTimeout(Duration.ofSeconds(3));
     configuration.init();
 
     final ControlledActorClock clock = new ControlledActorClock();
@@ -75,21 +74,5 @@ public final class GatewayIntegrationTest {
     assertThat(error.getType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(error.getReason())
         .isEqualTo("Expected at least a bpmnProcessId or a key greater than -1, but none given");
-  }
-
-  @Test
-  public void shouldThrowExceptionIfPartitionNotFoundResponse() {
-    // given
-
-    // then
-    exception.expect(ExecutionException.class);
-    exception.expectMessage(containsString("Request timed out after PT3S"));
-    // when no one is subscribed to that partition, then the client retries. After the timeout
-    // the retry loop will be canceled and the future completed.
-
-    // when
-    final var createWFRequest = new BrokerCreateWorkflowInstanceRequest();
-    createWFRequest.setPartitionId(0);
-    client.sendRequest(createWFRequest).join();
   }
 }

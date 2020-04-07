@@ -7,9 +7,9 @@
  */
 package io.zeebe.engine.processor.workflow;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
+import io.zeebe.el.Expression;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
@@ -22,13 +22,11 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
 import io.zeebe.model.bpmn.util.time.Timer;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.HashMap;
 import java.util.List;
@@ -38,19 +36,22 @@ import org.agrona.DirectBuffer;
 public final class CatchEventBehavior {
 
   private final ZeebeState state;
+  private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final int partitionsCount;
 
-  private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
   private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
   private final TimerRecord timerRecord = new TimerRecord();
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
+  private final Map<DirectBuffer, Timer> evaluatedTimers = new HashMap<>();
 
   public CatchEventBehavior(
       final ZeebeState state,
+      final ExpressionProcessor exporessionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount) {
     this.state = state;
+    this.expressionProcessor = exporessionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.partitionsCount = partitionsCount;
   }
@@ -74,9 +75,10 @@ public final class CatchEventBehavior {
         new MessageCorrelationKeyContext(variablesSupplier, context.getValue().getFlowScopeKey());
 
     // collect all message correlation keys from their respective variables, as this might fail and
-    // we might need to raise an incident
+    // we might need to raise an incident. This works the same for timers
     final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
         extractMessageCorrelationKeys(events, elementContext, scopeContext);
+    final Map<DirectBuffer, Timer> evaluatedTimers = evaluateTimers(events, context.getKey());
 
     // if all subscriptions are valid then open the subscriptions
     for (final ExecutableCatchEvent event : events) {
@@ -86,7 +88,7 @@ public final class CatchEventBehavior {
             context.getValue().getWorkflowInstanceKey(),
             context.getValue().getWorkflowKey(),
             event.getId(),
-            event.getTimer(),
+            evaluatedTimers.get(event.getId()),
             context.getOutput().getStreamWriter());
       } else if (event.isMessage()) {
         subscribeToMessageEvent(context, event, extractedCorrelationKeys.get(event.getId()));
@@ -209,34 +211,13 @@ public final class CatchEventBehavior {
     return true;
   }
 
-  private DirectBuffer extractCorrelationKey(
+  private String extractCorrelationKey(
       final ExecutableMessage message, final MessageCorrelationKeyContext context) {
-    final QueryResults results =
-        queryProcessor.process(message.getCorrelationKey(), context.getVariablesAsDocument());
-    final String errorMessage;
 
-    if (results.size() == 1) {
-      final QueryResult result = results.getSingleResult();
-      if (result.isString()) {
-        return result.getString();
-      }
+    final Expression correlationKeyExpression = message.getCorrelationKeyExpression();
 
-      if (result.isLong()) {
-        return result.getLongAsString();
-      }
-
-      errorMessage = "the value must be either a string or a number";
-    } else if (results.size() > 1) {
-      errorMessage = "multiple values found";
-    } else {
-      errorMessage = "no value found";
-    }
-
-    final String expression = bufferAsString(message.getCorrelationKey().getExpression());
-    final String failureMessage =
-        String.format(
-            "Failed to extract the correlation-key by '%s': %s", expression, errorMessage);
-    throw new MessageCorrelationKeyException(context, failureMessage);
+    return expressionProcessor.evaluateMessageCorrelationKeyExpression(
+        correlationKeyExpression, context);
   }
 
   private boolean sendCloseMessageSubscriptionCommand(
@@ -278,12 +259,26 @@ public final class CatchEventBehavior {
             event.getElementType() == BpmnElementType.BOUNDARY_EVENT
                 ? scopeContext
                 : elementContext;
-        final DirectBuffer correlationKey = extractCorrelationKey(event.getMessage(), context);
+        final String correlationKey = extractCorrelationKey(event.getMessage(), context);
 
-        extractedCorrelationKeys.put(event.getId(), cloneBuffer(correlationKey));
+        extractedCorrelationKeys.put(event.getId(), BufferUtil.wrapString(correlationKey));
       }
     }
 
     return extractedCorrelationKeys;
+  }
+
+  private Map<DirectBuffer, Timer> evaluateTimers(
+      final List<ExecutableCatchEvent> events, final long key) {
+    evaluatedTimers.clear();
+
+    for (final ExecutableCatchEvent event : events) {
+      if (event.isTimer()) {
+        final var timer = event.getTimerFactory().apply(expressionProcessor, key);
+        evaluatedTimers.put(event.getId(), timer);
+      }
+    }
+
+    return evaluatedTimers;
   }
 }

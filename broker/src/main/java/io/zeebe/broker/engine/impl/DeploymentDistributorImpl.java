@@ -290,7 +290,7 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
     final boolean pendingDeploymentExists = pendingDeploymentDistribution != null;
 
     if (pendingDeploymentExists) {
-      final long remainingPartitions = pendingDeploymentDistribution.decrementCount();
+      final long remainingPartitions = pendingDeploymentDistribution.decrementDistributionCount();
       deploymentsState.putPendingDeployment(deploymentKey, pendingDeploymentDistribution);
 
       LOG.trace(

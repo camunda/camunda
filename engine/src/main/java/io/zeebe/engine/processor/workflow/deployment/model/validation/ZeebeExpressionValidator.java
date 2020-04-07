@@ -7,11 +7,12 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.validation;
 
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
-import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
+import io.zeebe.el.ExpressionLanguage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -19,28 +20,20 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     implements ModelElementValidator<T> {
 
+  private static final Pattern PATH_PATTERN =
+      Pattern.compile("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*");
+
+  private final ExpressionLanguage expressionLanguage;
   private final Class<T> elementType;
-  private final List<Function<T, String>> expressionSuppliers;
+  private final List<Verification<T>> verifications;
 
   private ZeebeExpressionValidator(
-      final Class<T> elementType, final List<Function<T, String>> expressionSuppliers) {
+      final ExpressionLanguage expressionLanguage,
+      final Class<T> elementType,
+      final List<Verification<T>> verifications) {
+    this.expressionLanguage = expressionLanguage;
     this.elementType = elementType;
-    this.expressionSuppliers = expressionSuppliers;
-  }
-
-  private void validatePathQuery(
-      final String jsonPath, final ValidationResultCollector resultCollector) {
-    if (jsonPath == null || jsonPath.isEmpty()) {
-      return;
-    }
-
-    final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
-    final JsonPathQuery compiledQuery = queryCompiler.compile(jsonPath);
-
-    if (!compiledQuery.isValid()) {
-      resultCollector.addError(
-          0, String.format("JSON path query is invalid: %s", compiledQuery.getErrorReason()));
-    }
+    this.verifications = verifications;
   }
 
   @Override
@@ -51,10 +44,10 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   @Override
   public void validate(final T element, final ValidationResultCollector validationResultCollector) {
 
-    expressionSuppliers.forEach(
-        supplier -> {
-          final var expression = supplier.apply(element);
-          validatePathQuery(expression, validationResultCollector);
+    verifications.forEach(
+        verification -> {
+          final String expression = verification.expressionSupplier.apply(element);
+          verification.assertion.verify(expression, expressionLanguage, validationResultCollector);
         });
   }
 
@@ -63,23 +56,123 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     return new ZeebeExpressionValidator.Builder<>(elementType);
   }
 
+  private static void verifyPath(
+      final String expression,
+      final ExpressionLanguage expressionLanguage,
+      final ValidationResultCollector resultCollector) {
+
+    if (expression == null || expression.isEmpty()) {
+      resultCollector.addError(0, "Expected path expression but not found.");
+      return;
+    }
+
+    final var matcher = PATH_PATTERN.matcher(expression);
+
+    if (!matcher.matches()) {
+      resultCollector.addError(
+          0,
+          String.format(
+              "Expected path expression '%s' but doesn't match the pattern '%s'.",
+              expression, PATH_PATTERN));
+    }
+  }
+
   public static class Builder<T extends ModelElementInstance> {
 
     private final Class<T> elementType;
-    private final List<Function<T, String>> expressionSuppliers = new ArrayList<>();
+    private final List<Verification<T>> verifications = new ArrayList<>();
 
     public Builder(final Class<T> elementType) {
       this.elementType = elementType;
     }
 
-    public Builder<T> hasValidPathExpression(final Function<T, String> expressionSupplier) {
-      expressionSuppliers.add(expressionSupplier);
+    public Builder<T> hasValidExpression(
+        final Function<T, String> expressionSupplier,
+        final Consumer<ExpressionVerification> expressionVerification) {
+
+      final var expressionV = new ExpressionVerification();
+      expressionVerification.accept(expressionV);
+
+      verifications.add(new Verification<>(expressionSupplier, expressionV.build()));
       return this;
     }
 
-    public ZeebeExpressionValidator<T> build() {
-
-      return new ZeebeExpressionValidator<>(elementType, expressionSuppliers);
+    public Builder<T> hasValidPath(final Function<T, String> expressionSupplier) {
+      verifications.add(
+          new Verification<>(expressionSupplier, ZeebeExpressionValidator::verifyPath));
+      return this;
     }
+
+    public ZeebeExpressionValidator<T> build(final ExpressionLanguage expressionLanguage) {
+
+      return new ZeebeExpressionValidator<>(expressionLanguage, elementType, verifications);
+    }
+  }
+
+  public static final class ExpressionVerification {
+
+    private boolean isNonStatic = false;
+    private boolean isMandatory = false;
+
+    public ExpressionVerification isNonStatic() {
+      isNonStatic = true;
+      return this;
+    }
+
+    public ExpressionVerification isMandatory() {
+      isMandatory = true;
+      return this;
+    }
+
+    public ExpressionVerification isOptional() {
+      isMandatory = false;
+      return this;
+    }
+
+    private Assertion build() {
+      return ((expression, expressionLanguage, resultCollector) -> {
+        if (expression == null) {
+          if (isMandatory) {
+            resultCollector.addError(0, "Expected expression but not found.");
+          }
+          return;
+        }
+
+        final var parseResult = expressionLanguage.parseExpression(expression);
+
+        if (!parseResult.isValid()) {
+          resultCollector.addError(0, parseResult.getFailureMessage());
+          return;
+        }
+
+        if (parseResult.isStatic() && isNonStatic) {
+          resultCollector.addError(
+              0,
+              String.format(
+                  "Expected expression but found static value '%s'. An expression must start with '=' (e.g. '=%s').",
+                  expression, expression));
+        }
+      });
+    }
+  }
+
+  private static final class Verification<T> {
+
+    private final Function<T, String> expressionSupplier;
+    private final Assertion assertion;
+
+    private Verification(final Function<T, String> expressionSupplier, final Assertion assertion) {
+      this.expressionSupplier = expressionSupplier;
+      this.assertion = assertion;
+    }
+  }
+
+  @FunctionalInterface
+  private interface Assertion {
+
+    void verify(
+        String expression,
+        ExpressionLanguage expressionLanguage,
+        ValidationResultCollector resultCollector);
   }
 }

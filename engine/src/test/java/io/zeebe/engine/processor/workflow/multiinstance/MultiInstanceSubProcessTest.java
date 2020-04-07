@@ -45,7 +45,7 @@ public final class MultiInstanceSubProcessTest {
       workflow(b -> b.sequenceFlowId("sub-process-to-end"));
 
   private static final BpmnModelInstance SERVICE_TASK_SUB_PROCESS =
-      workflow(b -> b.serviceTask(TASK_ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE)));
+      workflow(b -> b.serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE)));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -60,7 +60,7 @@ public final class MultiInstanceSubProcessTest {
                 s ->
                     s.multiInstance(
                         b ->
-                            b.zeebeInputCollection(INPUT_COLLECTION)
+                            b.zeebeInputCollectionExpression(INPUT_COLLECTION)
                                 .zeebeInputElement(INPUT_ELEMENT)))
             .embeddedSubProcess()
             .startEvent("sub-process-start");
@@ -226,7 +226,7 @@ public final class MultiInstanceSubProcessTest {
         workflow(
             b ->
                 b.intermediateCatchEvent()
-                    .message(m -> m.name("message").zeebeCorrelationKey(INPUT_ELEMENT)));
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression(INPUT_ELEMENT)));
 
     ENGINE.deployment().withXmlResource(workflow).deploy();
 

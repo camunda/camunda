@@ -8,6 +8,7 @@
 package io.zeebe.engine.processor.workflow.handlers.servicetask;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableServiceTask;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandler;
 import io.zeebe.msgpack.value.DocumentValue;
@@ -15,19 +16,23 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public final class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
     extends ElementActivatedHandler<T> {
 
   private final JobRecord jobCommand = new JobRecord();
+  private final ExpressionProcessor expressionProcessor;
 
-  public ServiceTaskElementActivatedHandler() {
-    this(null);
+  public ServiceTaskElementActivatedHandler(ExpressionProcessor expressionProcessor) {
+    this(expressionProcessor, null);
   }
 
-  public ServiceTaskElementActivatedHandler(final WorkflowInstanceIntent nextState) {
+  public ServiceTaskElementActivatedHandler(
+      final ExpressionProcessor expressionProcessor, final WorkflowInstanceIntent nextState) {
     super(nextState);
+    this.expressionProcessor = expressionProcessor;
   }
 
   @Override
@@ -36,8 +41,17 @@ public final class ServiceTaskElementActivatedHandler<T extends ExecutableServic
       final WorkflowInstanceRecord value = context.getValue();
       final ExecutableServiceTask serviceTask = context.getElement();
 
-      populateJobFromTask(context, value, serviceTask);
-      context.getCommandWriter().appendNewCommand(JobIntent.CREATE, jobCommand);
+      final Optional<DirectBuffer> optJobType =
+          expressionProcessor.evaluateStringExpression(serviceTask.getType(), context);
+
+      final Optional<Long> optRetries =
+          expressionProcessor.evaluateLongExpression(serviceTask.getRetries(), context);
+
+      if (optJobType.isPresent() && optRetries.isPresent()) {
+        populateJobFromTask(
+            context, value, optJobType.get(), optRetries.get().intValue(), serviceTask);
+        context.getCommandWriter().appendNewCommand(JobIntent.CREATE, jobCommand);
+      }
 
       return true;
     }
@@ -48,13 +62,15 @@ public final class ServiceTaskElementActivatedHandler<T extends ExecutableServic
   private void populateJobFromTask(
       final BpmnStepContext<T> context,
       final WorkflowInstanceRecord value,
+      final DirectBuffer jobType,
+      final int retries,
       final ExecutableServiceTask serviceTask) {
     final DirectBuffer headers = serviceTask.getEncodedHeaders();
 
     jobCommand.reset();
     jobCommand
-        .setType(serviceTask.getType())
-        .setRetries(serviceTask.getRetries())
+        .setType(jobType)
+        .setRetries(retries)
         .setVariables(DocumentValue.EMPTY_DOCUMENT)
         .setCustomHeaders(headers)
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())

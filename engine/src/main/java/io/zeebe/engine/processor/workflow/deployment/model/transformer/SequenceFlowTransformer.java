@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
+import io.zeebe.el.Expression;
+import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
@@ -15,8 +17,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelE
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-import io.zeebe.msgpack.el.CompiledJsonCondition;
-import io.zeebe.msgpack.el.JsonConditionFactory;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 
@@ -32,7 +32,7 @@ public final class SequenceFlowTransformer implements ModelElementTransformer<Se
     final ExecutableSequenceFlow sequenceFlow =
         workflow.getElementById(element.getId(), ExecutableSequenceFlow.class);
 
-    compileCondition(element, sequenceFlow);
+    parseCondition(element, sequenceFlow, context.getExpressionLanguage());
     connectWithFlowNodes(element, workflow, sequenceFlow);
     bindLifecycle(sequenceFlow);
   }
@@ -63,14 +63,16 @@ public final class SequenceFlowTransformer implements ModelElementTransformer<Se
     sequenceFlow.setSource(source);
   }
 
-  private void compileCondition(
-      final SequenceFlow element, final ExecutableSequenceFlow sequenceFlow) {
+  private void parseCondition(
+      final SequenceFlow element,
+      final ExecutableSequenceFlow sequenceFlow,
+      final ExpressionLanguage expressionLanguage) {
+
     final ConditionExpression conditionExpression = element.getConditionExpression();
     if (conditionExpression != null) {
-      final String rawExpression = conditionExpression.getTextContent();
-      final CompiledJsonCondition compiledExpression =
-          JsonConditionFactory.createCondition(rawExpression);
-      sequenceFlow.setCondition(compiledExpression);
+      final String condition = conditionExpression.getTextContent();
+      final Expression parsedCondition = expressionLanguage.parseExpression(condition);
+      sequenceFlow.setCondition(parsedCondition);
     }
   }
 }

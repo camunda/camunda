@@ -7,96 +7,76 @@
  */
 package io.zeebe.engine.state.instance;
 
-import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
-
 import io.zeebe.db.DbValue;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.EnumProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.ObjectProperty;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class IndexedRecord implements DbValue {
+public final class IndexedRecord extends UnpackedObject implements DbValue {
+  private final LongProperty keyProp = new LongProperty("key", 0L);
+  private final EnumProperty<WorkflowInstanceIntent> stateProp =
+      new EnumProperty<>("state", WorkflowInstanceIntent.class);
+  private final ObjectProperty<WorkflowInstanceRecord> valueProp =
+      new ObjectProperty<>("workflowInstanceRecord", new WorkflowInstanceRecord());
 
-  private final WorkflowInstanceRecord value = new WorkflowInstanceRecord();
-  private long key;
-  private WorkflowInstanceIntent state;
-
-  IndexedRecord() {}
+  IndexedRecord() {
+    declareProperty(keyProp).declareProperty(stateProp).declareProperty(valueProp);
+  }
 
   public IndexedRecord(
       final long key,
       final WorkflowInstanceIntent instanceState,
       final WorkflowInstanceRecord record) {
-    this.key = key;
-    this.state = instanceState;
+    this();
+    keyProp.setValue(key);
+    stateProp.setValue(instanceState);
     setValue(record);
   }
 
   public long getKey() {
-    return key;
+    return keyProp.getValue();
+  }
+
+  public IndexedRecord setKey(final long key) {
+    keyProp.setValue(key);
+    return this;
   }
 
   public WorkflowInstanceIntent getState() {
-    return state;
+    return stateProp.getValue();
   }
 
-  public void setState(final WorkflowInstanceIntent state) {
-    this.state = state;
+  public IndexedRecord setState(final WorkflowInstanceIntent state) {
+    stateProp.setValue(state);
+    return this;
   }
 
   public WorkflowInstanceRecord getValue() {
-    return value;
+    return valueProp.getValue();
   }
 
-  public void setValue(final WorkflowInstanceRecord value) {
+  public IndexedRecord setValue(final WorkflowInstanceRecord value) {
     final MutableDirectBuffer valueBuffer = new UnsafeBuffer(0, 0);
     final int encodedLength = value.getLength();
     valueBuffer.wrap(new byte[encodedLength]);
 
     value.write(valueBuffer, 0);
-    this.value.wrap(valueBuffer, 0, encodedLength);
+    valueProp.getValue().wrap(valueBuffer, 0, encodedLength);
+
+    return this;
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    final int startOffset = offset;
-    key = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    final short stateIdx = buffer.getShort(offset, ZB_DB_BYTE_ORDER);
-    state = WorkflowInstanceIntent.values()[stateIdx];
-    offset += Short.BYTES;
-
-    final int currentLength = offset - startOffset;
-    final DirectBuffer clonedBuffer =
-        BufferUtil.cloneBuffer(buffer, offset, length - currentLength);
-    value.wrap(clonedBuffer);
-  }
-
-  @Override
-  public int getLength() {
-    return Long.BYTES + Short.BYTES + value.getLength();
-  }
-
-  @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    final int startOffset = offset;
-
-    buffer.putLong(offset, key, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putShort(offset, state.value(), ZB_DB_BYTE_ORDER);
-    offset += Short.BYTES;
-
-    assert (offset - startOffset) == getLength() - value.getLength()
-        : "End offset differs with getLength()";
-    value.write(buffer, offset);
-  }
-
-  @Override
-  public String toString() {
-    return "IndexedRecord{" + "key=" + key + ", state=" + state + ", value=" + value + '}';
+    final byte[] bytes = new byte[length];
+    final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
+    buffer.getBytes(offset, bytes, 0, length);
+    super.wrap(mutableBuffer, 0, length);
   }
 }

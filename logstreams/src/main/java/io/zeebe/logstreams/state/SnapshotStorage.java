@@ -24,27 +24,28 @@ public interface SnapshotStorage extends AutoCloseable {
    * and therefore should be cached if it needs to be reused.
    *
    * @param snapshotPosition the position to use
-   * @return a pending snapshot
+   * @return a pending snapshot, or nothing if no snapshot metadata could be created from the
+   *     position
    */
-  Snapshot getPendingSnapshotFor(long snapshotPosition);
+  Optional<Snapshot> getPendingSnapshotFor(long snapshotPosition);
 
   /**
    * Returns an existing, temporary working directory for a snapshot with the given ID; primarily
    * used during replication of snapshots to preserver the snapshot ID.
    *
    * @param id the snapshot ID
-   * @return an existing path
+   * @return an existing path, or nothing if snapshot metadata cannot be extracted from the given ID
    */
-  Path getPendingDirectoryFor(String id);
+  Optional<Path> getPendingDirectoryFor(String id);
 
   /**
    * Commits to the snapshot to the underlying store, making it permanently accessible. This may
    * trigger further side effects, such as deleting old snapshots, compacting, etc.
    *
    * @param snapshot the snapshot to commit
-   * @return true if committed, false otherwise
+   * @return the committed snapshot
    */
-  default boolean commitSnapshot(final Snapshot snapshot) {
+  default Optional<Snapshot> commitSnapshot(final Snapshot snapshot) {
     return commitSnapshot(snapshot.getPath());
   }
 
@@ -53,9 +54,9 @@ public interface SnapshotStorage extends AutoCloseable {
    * trigger further side effects, such as deleting old snapshots, compacting, etc.
    *
    * @param snapshotPath the path to the snapshot to commit
-   * @return true if committed, false otherwise
+   * @return the committed snapshot
    */
-  boolean commitSnapshot(Path snapshotPath);
+  Optional<Snapshot> commitSnapshot(Path snapshotPath);
 
   /**
    * Returns the latest snapshot if any.

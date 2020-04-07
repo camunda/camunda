@@ -16,6 +16,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -57,20 +59,25 @@ public final class TestSnapshotStorage implements SnapshotStorage {
   }
 
   @Override
-  public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
-    return new SnapshotImpl(getPendingDirectoryFor(String.valueOf(snapshotPosition)));
+  public Optional<Snapshot> getPendingSnapshotFor(final long snapshotPosition) {
+    final var pendingDirectory =
+        getPendingDirectoryFor(snapshotPosition + "_" + System.currentTimeMillis());
+    return pendingDirectory.map(SnapshotImpl::new);
   }
 
   @Override
-  public Path getPendingDirectoryFor(final String id) {
-    return pendingDirectory.resolve(id);
+  public Optional<Path> getPendingDirectoryFor(final String id) {
+    return Optional.of(pendingDirectory.resolve(id));
   }
 
   @Override
-  public boolean commitSnapshot(final Path snapshotPath) {
-    final var id = snapshotPath.getFileName().toString();
-    if (exists(id)) {
-      return true;
+  public Optional<Snapshot> commitSnapshot(final Path snapshotPath) {
+    final var existingSnapshot =
+        snapshots.stream()
+            .filter(s -> s.getPath().getFileName().equals(snapshotPath.getFileName()))
+            .findFirst();
+    if (existingSnapshot.isPresent()) {
+      return existingSnapshot;
     }
 
     final var destination = snapshotsDirectory.resolve(snapshotPath.getFileName());
@@ -82,8 +89,9 @@ public final class TestSnapshotStorage implements SnapshotStorage {
       throw new UncheckedIOException(e);
     }
 
-    snapshots.add(new SnapshotImpl(destination));
-    return true;
+    final var committedSnapshot = new SnapshotImpl(destination);
+    snapshots.add(committedSnapshot);
+    return Optional.of(committedSnapshot);
   }
 
   @Override
@@ -136,16 +144,18 @@ public final class TestSnapshotStorage implements SnapshotStorage {
 
   private static final class SnapshotImpl implements Snapshot {
     private final Path path;
-    private final long position;
+    private final long compactionBound;
 
     private SnapshotImpl(final Path path) {
       this.path = path;
-      this.position = Long.valueOf(path.getFileName().toString());
+      final var snapshotDir = path.getFileName().toString();
+      final var parts = snapshotDir.split("_");
+      this.compactionBound = Long.valueOf(parts[0]);
     }
 
     @Override
-    public long getPosition() {
-      return position;
+    public long getCompactionBound() {
+      return compactionBound;
     }
 
     @Override
@@ -154,8 +164,32 @@ public final class TestSnapshotStorage implements SnapshotStorage {
     }
 
     @Override
+    public int compareTo(final Snapshot other) {
+      return Comparator.comparing(Snapshot::getCompactionBound)
+          .thenComparing(Snapshot::getPath)
+          .compare(this, other);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(path);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final SnapshotImpl snapshot = (SnapshotImpl) o;
+      return path.equals(snapshot.path);
+    }
+
+    @Override
     public String toString() {
-      return "SnapshotImpl{" + "path=" + path + ", position=" + position + '}';
+      return "SnapshotImpl{" + "path=" + path + ", compactionBound=" + compactionBound + '}';
     }
   }
 }

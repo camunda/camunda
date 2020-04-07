@@ -7,36 +7,93 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.validation;
 
+import io.zeebe.el.ExpressionLanguage;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
+import io.zeebe.engine.processor.workflow.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
+import io.zeebe.model.bpmn.instance.ConditionExpression;
+import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public final class ZeebeRuntimeValidators {
 
-  public static final Collection<ModelElementValidator<?>> VALIDATORS =
-      List.of(
-          ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
-              .hasValidPathExpression(ZeebeInput::getSource)
-              .hasValidPathExpression(ZeebeInput::getTarget)
-              .build(),
-          ZeebeExpressionValidator.verifyThat(ZeebeOutput.class)
-              .hasValidPathExpression(ZeebeOutput::getSource)
-              .hasValidPathExpression(ZeebeOutput::getTarget)
-              .build(),
-          ZeebeExpressionValidator.verifyThat(ZeebeSubscription.class)
-              .hasValidPathExpression(ZeebeSubscription::getCorrelationKey)
-              .build(),
-          ZeebeExpressionValidator.verifyThat(ZeebeLoopCharacteristics.class)
-              .hasValidPathExpression(ZeebeLoopCharacteristics::getInputCollection)
-              .hasValidPathExpression(ZeebeLoopCharacteristics::getOutputElement)
-              .build(),
-          ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
-              .hasValidPathExpression(ZeebeCalledElement::getProcessIdExpression)
-              .build(),
-          new SequenceFlowValidator());
+  public static final Collection<ModelElementValidator<?>> getValidators(
+      final ExpressionLanguage expressionLanguage, final ExpressionProcessor expressionProcessor) {
+    return List.of(
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
+            .hasValidExpression(
+                ZeebeInput::getSource, expression -> expression.isNonStatic().isMandatory())
+            .hasValidPath(ZeebeInput::getTarget)
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeOutput.class)
+            .hasValidExpression(
+                ZeebeOutput::getSource, expression -> expression.isNonStatic().isMandatory())
+            .hasValidPath(ZeebeOutput::getTarget)
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeSubscription.class)
+            .hasValidExpression(
+                ZeebeSubscription::getCorrelationKey,
+                expression -> expression.isNonStatic().isMandatory())
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeLoopCharacteristics.class)
+            .hasValidExpression(
+                ZeebeLoopCharacteristics::getInputCollection,
+                expression -> expression.isNonStatic().isMandatory())
+            .hasValidExpression(
+                ZeebeLoopCharacteristics::getOutputElement,
+                expression -> expression.isNonStatic().isOptional())
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ConditionExpression.class)
+            .hasValidExpression(
+                ConditionExpression::getTextContent,
+                expression -> expression.isNonStatic().isMandatory())
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeTaskDefinition.class)
+            .hasValidExpression(
+                ZeebeTaskDefinition::getType, expression -> expression.isMandatory())
+            .hasValidExpression(
+                ZeebeTaskDefinition::getRetries, expression -> expression.isMandatory())
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
+            .hasValidExpression(
+                ZeebeCalledElement::getProcessId, expression -> expression.isMandatory())
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(TimerEventDefinition.class)
+            .hasValidExpression(
+                definition ->
+                    definition.getTimeDate() != null
+                        ? definition.getTimeDate().getTextContent()
+                        : null,
+                ExpressionVerification::isOptional)
+            .hasValidExpression(
+                definition ->
+                    definition.getTimeDuration() != null
+                        ? definition.getTimeDuration().getTextContent()
+                        : null,
+                ExpressionVerification::isOptional)
+            .hasValidExpression(
+                definition ->
+                    definition.getTimeCycle() != null
+                        ? definition.getTimeCycle().getTextContent()
+                        : null,
+                ExpressionVerification::isOptional)
+            .build(expressionLanguage),
+        // ----------------------------------------
+        new ProcessTimerStartEventExpressionValidator(expressionLanguage, expressionProcessor));
+  }
 }

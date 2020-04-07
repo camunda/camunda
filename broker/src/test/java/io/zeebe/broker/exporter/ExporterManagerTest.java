@@ -33,15 +33,17 @@ public final class ExporterManagerTest {
 
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().done();
+
+  private static final String TEST_EXPORTER_ID = "test-exporter";
+
   private ExporterCfg exporterCfg;
   private final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
           brokerCfg -> {
             exporterCfg = new ExporterCfg();
             exporterCfg.setClassName(TestExporter.class.getName());
-            exporterCfg.setId("test-exporter");
 
-            brokerCfg.getExporters().add(exporterCfg);
+            brokerCfg.getExporters().put(TEST_EXPORTER_ID, exporterCfg);
           });
   public final CommandApiRule clientRule = new CommandApiRule(brokerRule::getAtomix);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
@@ -88,7 +90,7 @@ public final class ExporterManagerTest {
     testClient.publishMessage("msg", "123", DocumentValue.EMPTY_DOCUMENT).getKey();
 
     TestExporter.RECORDS.clear();
-    brokerRule.getBrokerCfg().getExporters().add(exporterCfg);
+    brokerRule.getBrokerCfg().getExporters().put(TEST_EXPORTER_ID, exporterCfg);
     brokerRule.restartBroker();
 
     // then

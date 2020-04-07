@@ -49,12 +49,12 @@ public final class MessageStartEventTest {
 
     customizer.accept(startEventBuilder);
 
-    return startEventBuilder.serviceTask("task", t -> t.zeebeTaskType("test")).done();
+    return startEventBuilder.serviceTask("task", t -> t.zeebeJobType("test")).done();
   }
 
   private static BpmnModelInstance multipleStartEvents() {
     final var process = Bpmn.createExecutableProcess("wf");
-    process.startEvent().message(MESSAGE_NAME_1).serviceTask("task", t -> t.zeebeTaskType("test"));
+    process.startEvent().message(MESSAGE_NAME_1).serviceTask("task", t -> t.zeebeJobType("test"));
     process.startEvent().message(MESSAGE_NAME_2).connectTo("task");
 
     return process.done();
@@ -137,7 +137,7 @@ public final class MessageStartEventTest {
     // given
     engine
         .deployment()
-        .withXmlResource(singleStartEvent(startEvent -> startEvent.zeebeOutput("x", "y")))
+        .withXmlResource(singleStartEvent(startEvent -> startEvent.zeebeOutputExpression("x", "y")))
         .deploy();
 
     // when
@@ -244,7 +244,9 @@ public final class MessageStartEventTest {
                 .startEvent()
                 .message(MESSAGE_NAME_1)
                 .intermediateCatchEvent(
-                    "catch", e -> e.message(m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey("key")))
+                    "catch",
+                    e ->
+                        e.message(m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKeyExpression("key")))
                 .endEvent()
                 .done())
         .deploy();
@@ -591,7 +593,7 @@ public final class MessageStartEventTest {
         .withVariables(Map.of("x", 1))
         .publish();
 
-    final var messageTTL = Duration.ofSeconds(1);
+    final var messageTTL = Duration.ofSeconds(10);
 
     engine
         .message()

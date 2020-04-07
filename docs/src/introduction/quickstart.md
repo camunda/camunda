@@ -46,7 +46,6 @@ To start a Zeebe broker use the `broker` or `broker.bat` file located in the
 ./bin/broker
 ```
 ```
-23:39:13.167 [] [main] INFO  io.zeebe.util.config - Reading configuration for class class io.zeebe.broker.system.configuration.BrokerCfg from file conf/zeebe.cfg.toml
 23:39:13.246 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
 23:39:13.270 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
 23:39:13.273 [] [main] INFO  io.zeebe.broker.system - Starting broker with configuration {

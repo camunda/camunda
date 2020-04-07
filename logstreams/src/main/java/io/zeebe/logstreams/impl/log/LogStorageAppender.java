@@ -23,14 +23,20 @@ import io.zeebe.logstreams.impl.backpressure.NoopAppendLimiter;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorage.AppendListener;
 import io.zeebe.util.Environment;
+import io.zeebe.util.health.FailureListener;
+import io.zeebe.util.health.HealthMonitorable;
+import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 /** Consume the write buffer and append the blocks to the distributedlog. */
-public final class LogStorageAppender extends Actor {
+public final class LogStorageAppender extends Actor implements HealthMonitorable {
 
   public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final Map<String, AlgorithmCfg> ALGORITHM_CFG =
@@ -44,6 +50,8 @@ public final class LogStorageAppender extends Actor {
   private final AppendBackpressureMetrics appendBackpressureMetrics;
   private final Environment env;
   private final LoggedEventImpl positionReader = new LoggedEventImpl();
+  private FailureListener failureListener;
+  private final ActorFuture<Void> closeFuture;
 
   public LogStorageAppender(
       final String name,
@@ -56,13 +64,13 @@ public final class LogStorageAppender extends Actor {
     this.logStorage = logStorage;
     this.writeBufferSubscription = writeBufferSubscription;
     this.maxAppendBlockSize = maxBlockSize;
-
     appendBackpressureMetrics = new AppendBackpressureMetrics(partitionId);
 
     final boolean isBackpressureEnabled =
         env.getBool(BackpressureConstants.ENV_BP_APPENDER).orElse(true);
     appendEntryLimiter =
         isBackpressureEnabled ? initBackpressure(partitionId) : initNoBackpressure(partitionId);
+    closeFuture = new CompletableActorFuture<>();
   }
 
   private AppendLimiter initBackpressure(final int partitionId) {
@@ -131,6 +139,30 @@ public final class LogStorageAppender extends Actor {
     actor.consume(writeBufferSubscription, this::onWriteBufferAvailable);
   }
 
+  @Override
+  protected void onActorClosed() {
+    closeFuture.complete(null);
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    if (actor.isClosed()) {
+      return closeFuture;
+    }
+    super.closeAsync();
+    return closeFuture;
+  }
+
+  @Override
+  protected void handleFailure(final Exception failure) {
+    onFailure(failure);
+  }
+
+  @Override
+  public void onActorFailed() {
+    closeFuture.complete(null);
+  }
+
   private void onWriteBufferAvailable() {
     final BlockPeek blockPeek = new BlockPeek();
     if (writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true) > 0) {
@@ -151,6 +183,24 @@ public final class LogStorageAppender extends Actor {
     } while (offset < view.capacity());
 
     return positions;
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return actor.isClosed() ? HealthStatus.UNHEALTHY : HealthStatus.HEALTHY;
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    actor.run(() -> this.failureListener = failureListener);
+  }
+
+  private void onFailure(final Throwable error) {
+    LOG.error("Actor {} failed in phase {}.", name, actor.getLifecyclePhase(), error);
+    actor.fail();
+    if (failureListener != null) {
+      failureListener.onFailure();
+    }
   }
 
   private static final class Positions {
@@ -176,6 +226,11 @@ public final class LogStorageAppender extends Actor {
     @Override
     public void onWriteError(final Throwable error) {
       LOG.error("Failed to append block with last event position {}.", positions.highest, error);
+      if (error instanceof NoSuchElementException) {
+        // Not a failure. It is probably during transition to follower.
+        return;
+      }
+      actor.run(() -> onFailure(error));
     }
 
     @Override
@@ -187,6 +242,7 @@ public final class LogStorageAppender extends Actor {
     public void onCommitError(final long address, final Throwable error) {
       LOG.error("Failed to commit block with last event position {}.", positions.highest, error);
       releaseBackPressure();
+      actor.run(() -> onFailure(error));
     }
 
     private void releaseBackPressure() {

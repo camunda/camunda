@@ -9,6 +9,7 @@ package io.zeebe.util.sched.lifecycle;
 
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSING;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.FAILED;
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
 import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
@@ -18,6 +19,7 @@ import static org.assertj.core.util.Lists.newArrayList;
 import io.zeebe.util.TestUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Rule;
@@ -246,5 +248,59 @@ public final class ActorLifecyclePhasesTest {
 
     // then
     assertThat(actor.phases).isEqualTo(FULL_LIFECYCLE);
+  }
+
+  @Test
+  public void shouldActorSpecificHandleException() {
+    // given
+    final AtomicInteger invocations = new AtomicInteger();
+
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarted() {
+            super.onActorStarted();
+            this.actor.run(
+                () -> {
+                  throw new RuntimeException("foo");
+                });
+          }
+
+          @Override
+          public void handleFailure(final Exception failure) {
+            invocations.incrementAndGet();
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(invocations.get()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldNotExecuteNextJobsOnFail() {
+    // given
+    final AtomicInteger invocations = new AtomicInteger();
+
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarted() {
+            super.onActorStarted();
+            this.actor.submit(actor::fail);
+            this.actor.submit(invocations::incrementAndGet);
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(invocations.get()).isEqualTo(0);
+    assertThat(actor.phases).isEqualTo(List.of(STARTING, STARTED, FAILED));
   }
 }

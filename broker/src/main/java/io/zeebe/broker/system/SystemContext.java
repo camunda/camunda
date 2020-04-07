@@ -7,16 +7,14 @@
  */
 package io.zeebe.broker.system;
 
+import static io.zeebe.engine.processor.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.ThreadsCfg;
-import io.zeebe.util.DurationUtil;
-import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.io.InputStream;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
@@ -29,28 +27,12 @@ public final class SystemContext {
       "Node id %s needs to be non negative and smaller then cluster size %s.";
   private static final String REPLICATION_FACTOR_ERROR_MSG =
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
+  private static final String SNAPSHOT_PERIOD_ERROR_MSG =
+      "Snapshot period %s needs to be larger then or equals to one minute.";
   protected final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
   private Duration stepTimeout;
-
-  public SystemContext(String configFileLocation, final String basePath, final ActorClock clock) {
-    if (!Paths.get(configFileLocation).isAbsolute()) {
-      configFileLocation =
-          Paths.get(basePath, configFileLocation).normalize().toAbsolutePath().toString();
-    }
-
-    brokerCfg = TomlConfigurationReader.read(configFileLocation, BrokerCfg.class);
-
-    initSystemContext(clock, basePath);
-  }
-
-  public SystemContext(
-      final InputStream configStream, final String basePath, final ActorClock clock) {
-    brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
-
-    initSystemContext(clock, basePath);
-  }
 
   public SystemContext(final BrokerCfg brokerCfg, final String basePath, final ActorClock clock) {
     this.brokerCfg = brokerCfg;
@@ -59,12 +41,12 @@ public final class SystemContext {
   }
 
   private void initSystemContext(final ActorClock clock, final String basePath) {
-    LOG.debug("Initializing configuration with base path {}", basePath);
+    LOG.debug("Initializing system with base path {}", basePath);
 
     brokerCfg.init(basePath);
     validateConfiguration();
 
-    stepTimeout = DurationUtil.parse(brokerCfg.getStepTimeout());
+    stepTimeout = brokerCfg.getStepTimeout();
 
     final var cluster = brokerCfg.getCluster();
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());
@@ -92,6 +74,13 @@ public final class SystemContext {
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
       throw new IllegalArgumentException(
           String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
+    }
+
+    final var dataCfg = brokerCfg.getData();
+
+    final var snapshotPeriod = dataCfg.getSnapshotPeriod();
+    if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
+      throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
     }
   }
 

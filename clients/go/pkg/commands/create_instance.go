@@ -89,7 +89,7 @@ func (cmd *CreateInstanceCommand) VariablesFromStringer(variables fmt.Stringer) 
 }
 
 func (cmd *CreateInstanceCommand) VariablesFromObject(variables interface{}) (CreateInstanceCommandStep3, error) {
-	value, err := cmd.mixin.AsJson("variables", variables, false)
+	value, err := cmd.mixin.AsJSON("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (cmd *CreateInstanceCommand) VariablesFromObject(variables interface{}) (Cr
 }
 
 func (cmd *CreateInstanceCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (CreateInstanceCommandStep3, error) {
-	value, err := cmd.mixin.AsJson("variables", variables, true)
+	value, err := cmd.mixin.AsJSON("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (cmd *CreateInstanceWithResultCommand) Send(ctx context.Context) (*pb.Creat
 func NewCreateInstanceCommand(gateway pb.GatewayClient, pred retryPredicate) CreateInstanceCommandStep1 {
 	return &CreateInstanceCommand{
 		Command: Command{
-			mixin:       utils.NewJsonStringSerializer(),
+			mixin:       utils.NewJSONStringSerializer(),
 			gateway:     gateway,
 			shouldRetry: pred,
 		},

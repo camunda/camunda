@@ -15,20 +15,26 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.util.LangUtil;
+import io.zeebe.util.health.FailureListener;
+import io.zeebe.util.health.HealthMonitorable;
+import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
-public class StreamProcessor extends Actor {
+public class StreamProcessor extends Actor implements HealthMonitorable {
+  static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
+  static final long UNSET_POSITION = -1L;
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
-
   private final ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
@@ -50,6 +56,8 @@ public class StreamProcessor extends Actor {
   private CompletableActorFuture<Void> openFuture;
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
   private final String actorName;
+  private FailureListener failureListener;
+  private volatile long lastTickTime;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     this.actorScheduler = processorBuilder.getActorScheduler();
@@ -84,6 +92,103 @@ public class StreamProcessor extends Actor {
         logStream.newLogStreamBatchWriter(), this::onRetrievingWriter);
   }
 
+  @Override
+  protected void onActorStarted() {
+    try {
+      LOG.debug("Recovering state of partition {} from snapshot", partitionId);
+      snapshotPosition = recoverFromSnapshot();
+
+      initProcessors();
+    } catch (final Throwable e) {
+      onFailure(e);
+      LangUtil.rethrowUnchecked(e);
+    }
+
+    try {
+      processingStateMachine = new ProcessingStateMachine(processingContext, this::isOpened);
+      openFuture.complete(null);
+
+      final ReProcessingStateMachine reProcessingStateMachine =
+          new ReProcessingStateMachine(processingContext);
+
+      healthCheckTick();
+      final ActorFuture<Void> recoverFuture =
+          reProcessingStateMachine.startRecover(snapshotPosition);
+
+      actor.runOnCompletion(
+          recoverFuture,
+          (v, throwable) -> {
+            if (throwable != null) {
+              LOG.error("Unexpected error on recovery happens.", throwable);
+              onFailure(throwable);
+            } else {
+              onRecovered();
+            }
+          });
+    } catch (final RuntimeException e) {
+      onFailure(e);
+      throw e;
+    }
+  }
+
+  @Override
+  protected void onActorClosing() {
+    tearDown();
+  }
+
+  @Override
+  protected void onActorClosed() {
+    closeFuture.complete(null);
+    LOG.debug("Closed stream processor controller {}.", getName());
+  }
+
+  @Override
+  protected void onActorCloseRequested() {
+    if (!isFailed()) {
+      lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onClose);
+    }
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    if (isOpened.compareAndSet(true, false)) {
+      closeFuture = new CompletableActorFuture<>();
+      actor.close();
+    }
+    return closeFuture;
+  }
+
+  @Override
+  protected void handleFailure(final Exception failure) {
+    LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), failure);
+    if (this.failureListener != null) {
+      this.failureListener.onFailure();
+    }
+    actor.fail();
+  }
+
+  @Override
+  public void onActorFailed() {
+    phase = Phase.FAILED;
+    closeFuture = CompletableActorFuture.completed(null);
+    isOpened.set(false);
+    tearDown();
+  }
+
+  private void tearDown() {
+    processingContext.getLogStreamReader().close();
+
+    if (onCommitPositionUpdatedCondition != null) {
+      logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
+      onCommitPositionUpdatedCondition = null;
+    }
+  }
+
+  private void healthCheckTick() {
+    lastTickTime = ActorClock.currentTimeMillis();
+    actor.runDelayed(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
+  }
+
   private void onRetrievingWriter(
       final LogStreamBatchWriter batchWriter, final Throwable errorOnReceivingWriter) {
 
@@ -109,68 +214,6 @@ public class StreamProcessor extends Actor {
     } else {
       LOG.error("Unexpected error on retrieving reader from log stream.", errorOnReceivingReader);
       actor.close();
-    }
-  }
-
-  @Override
-  protected void onActorStarted() {
-    try {
-      LOG.debug("Recovering state of partition {} from snapshot", partitionId);
-      snapshotPosition = recoverFromSnapshot();
-
-      initProcessors();
-    } catch (final Throwable e) {
-      onFailure(e);
-      LangUtil.rethrowUnchecked(e);
-    }
-
-    try {
-      processingStateMachine = new ProcessingStateMachine(processingContext, this::isOpened);
-      openFuture.complete(null);
-
-      final ReProcessingStateMachine reProcessingStateMachine =
-          new ReProcessingStateMachine(processingContext);
-
-      final ActorFuture<Void> recoverFuture =
-          reProcessingStateMachine.startRecover(snapshotPosition);
-
-      actor.runOnCompletion(
-          recoverFuture,
-          (v, throwable) -> {
-            if (throwable != null) {
-              LOG.error("Unexpected error on recovery happens.", throwable);
-              onFailure(throwable);
-            } else {
-              onRecovered();
-            }
-          });
-    } catch (final RuntimeException e) {
-      onFailure(e);
-      throw e;
-    }
-  }
-
-  @Override
-  protected void onActorClosing() {
-    processingContext.getLogStreamReader().close();
-    processingContext.getLogStreamWriter().close();
-
-    if (onCommitPositionUpdatedCondition != null) {
-      logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
-      onCommitPositionUpdatedCondition = null;
-    }
-  }
-
-  @Override
-  protected void onActorClosed() {
-    closeFuture.complete(null);
-    LOG.debug("Closed stream processor controller {}.", getName());
-  }
-
-  @Override
-  protected void onActorCloseRequested() {
-    if (!isFailed()) {
-      lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onClose);
     }
   }
 
@@ -232,20 +275,14 @@ public class StreamProcessor extends Actor {
     actor.submit(processingStateMachine::readNextEvent);
   }
 
-  public ActorFuture<Void> closeAsync() {
-    if (isOpened.compareAndSet(true, false)) {
-      closeFuture = new CompletableActorFuture<>();
-      actor.close();
-    }
-    return closeFuture;
-  }
-
   private void onFailure(final Throwable throwable) {
-    phase = Phase.FAILED;
-    openFuture.completeExceptionally(throwable);
-    closeFuture = new CompletableActorFuture<>();
-    isOpened.set(false);
-    actor.close();
+    actor.fail();
+    if (!openFuture.isDone()) {
+      openFuture.completeExceptionally(throwable);
+    }
+    if (failureListener != null) {
+      failureListener.onFailure();
+    }
   }
 
   public boolean isOpened() {
@@ -266,6 +303,29 @@ public class StreamProcessor extends Actor {
 
   public ActorFuture<Long> getLastWrittenPositionAsync() {
     return actor.call(processingStateMachine::getLastWrittenEventPosition);
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    if (actor.isClosed()) {
+      return HealthStatus.UNHEALTHY;
+    }
+
+    if (!processingStateMachine.isMakingProgress()) {
+      return HealthStatus.UNHEALTHY;
+    }
+
+    // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
+    if (ActorClock.currentTimeMillis() - lastTickTime > HEALTH_CHECK_TICK_DURATION.toMillis() * 2) {
+      return HealthStatus.UNHEALTHY;
+    } else {
+      return HealthStatus.HEALTHY;
+    }
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    actor.run(() -> this.failureListener = failureListener);
   }
 
   private enum Phase {

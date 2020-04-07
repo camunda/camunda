@@ -40,12 +40,14 @@ public final class MappingIncidentTest {
   private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
+          .serviceTask(
+              "failingTask", t -> t.zeebeJobType("test").zeebeInputExpression("foo", "foo"))
           .done();
   private static final BpmnModelInstance WORKFLOW_OUTPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeOutput("foo", "foo"))
+          .serviceTask(
+              "failingTask", t -> t.zeebeJobType("test").zeebeOutputExpression("foo", "foo"))
           .done();
   private static final Map<String, Object> VARIABLES = Maps.of(entry("foo", "bar"));
   private static final String VARIABLES_JSON =
@@ -100,13 +102,14 @@ public final class MappingIncidentTest {
     final IncidentRecordValue incidentEventValue = incidentEvent.getValue();
     Assertions.assertThat(incidentEventValue)
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowKey(workflowKey)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
+
+    assertThat(incidentEventValue.getErrorMessage()).contains("no variable found for name 'foo'");
   }
 
   @Test
@@ -120,9 +123,9 @@ public final class MappingIncidentTest {
                 .serviceTask(
                     "service",
                     t ->
-                        t.zeebeTaskType("external")
-                            .zeebeInput("notExisting", "nullVal")
-                            .zeebeInput("string", "existing"))
+                        t.zeebeJobType("external")
+                            .zeebeInputExpression("notExisting", "nullVal")
+                            .zeebeInputExpression("string", "existing"))
                 .endEvent()
                 .done())
         .deploy();
@@ -150,12 +153,14 @@ public final class MappingIncidentTest {
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasErrorMessage("No data found for query notExisting.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("service")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
+
+    assertThat(incidentEvent.getValue().getErrorMessage())
+        .contains("no variable found for name 'notExisting'");
   }
 
   @Test
@@ -199,12 +204,14 @@ public final class MappingIncidentTest {
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
+
+    assertThat(incidentEvent.getValue().getErrorMessage())
+        .contains("no variable found for name 'foo'");
   }
 
   @Test
@@ -258,12 +265,14 @@ public final class MappingIncidentTest {
 
     Assertions.assertThat(incidentResolvedEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
+
+    assertThat(incidentEvent.getValue().getErrorMessage())
+        .contains("no variable found for name 'foo'");
   }
 
   @Test
@@ -319,12 +328,14 @@ public final class MappingIncidentTest {
 
     Assertions.assertThat(incidentResolvedEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
+
+    assertThat(incidentResolvedEvent.getValue().getErrorMessage())
+        .contains("no variable found for name 'foo'");
   }
 
   @Test
@@ -335,7 +346,10 @@ public final class MappingIncidentTest {
             .startEvent()
             .serviceTask(
                 "failingTask",
-                t -> t.zeebeTaskType("external").zeebeInput("foo", "foo").zeebeInput("bar", "bar"))
+                t ->
+                    t.zeebeJobType("external")
+                        .zeebeInputExpression("foo", "foo")
+                        .zeebeInputExpression("bar", "bar"))
             .done();
 
     ENGINE.deployment().withXmlResource(modelInstance).deploy();
@@ -354,7 +368,8 @@ public final class MappingIncidentTest {
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
-    Assertions.assertThat(incidentEvent.getValue()).hasErrorMessage("No data found for query foo.");
+    assertThat(incidentEvent.getValue().getErrorMessage())
+        .contains("no variable found for name 'foo'");
 
     // when
     ENGINE.variables().ofScope(failureEvent.getKey()).withDocument(VARIABLES).update();
@@ -374,12 +389,14 @@ public final class MappingIncidentTest {
 
     Assertions.assertThat(secondIncidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasErrorMessage("No data found for query bar.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
+
+    assertThat(secondIncidentEvent.getValue().getErrorMessage())
+        .contains("no variable found for name 'bar'");
   }
 
   @Test
@@ -426,12 +443,14 @@ public final class MappingIncidentTest {
     assertThat(secondResolvedIncident.getKey()).isGreaterThan(firstIncident.getKey());
     Assertions.assertThat(secondResolvedIncident.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
+
+    assertThat(secondResolvedIncident.getValue().getErrorMessage())
+        .contains("no variable found for name 'foo'");
   }
 
   @Test
@@ -511,12 +530,14 @@ public final class MappingIncidentTest {
 
     Assertions.assertThat(incidentResolvedEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(incidentResolvedEvent.getValue().getElementInstanceKey())
         .hasVariableScopeKey(incidentResolvedEvent.getValue().getElementInstanceKey());
+
+    assertThat(incidentResolvedEvent.getValue().getErrorMessage())
+        .contains("no variable found for name 'foo'");
   }
 
   @Test
@@ -555,11 +576,13 @@ public final class MappingIncidentTest {
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(incidentEvent.getValue().getElementInstanceKey())
         .hasVariableScopeKey(incidentEvent.getValue().getElementInstanceKey());
+
+    assertThat(incidentEvent.getValue().getErrorMessage())
+        .contains("no variable found for name 'foo'");
   }
 }

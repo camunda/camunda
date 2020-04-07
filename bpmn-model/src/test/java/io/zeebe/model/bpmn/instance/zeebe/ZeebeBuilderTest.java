@@ -42,8 +42,8 @@ public class ZeebeBuilderTest {
             .serviceTask(
                 "foo",
                 b ->
-                    b.zeebeTaskType("taskType")
-                        .zeebeTaskRetries(5)
+                    b.zeebeJobType("taskType")
+                        .zeebeJobRetries("5")
                         .zeebeTaskHeader("foo", "f")
                         .zeebeTaskHeader("bar", "b"))
             .endEvent()
@@ -57,7 +57,7 @@ public class ZeebeBuilderTest {
     final ZeebeTaskDefinition taskDefinition =
         getExtensionElement(serviceTask, ZeebeTaskDefinition.class);
     assertThat(taskDefinition.getType()).isEqualTo("taskType");
-    assertThat(taskDefinition.getRetries()).isEqualTo(5);
+    assertThat(taskDefinition.getRetries()).isEqualTo("5");
 
     final ZeebeTaskHeaders taskHeaders = getExtensionElement(serviceTask, ZeebeTaskHeaders.class);
     final Collection<ZeebeHeader> headerCollection = taskHeaders.getHeaders();
@@ -75,8 +75,8 @@ public class ZeebeBuilderTest {
             .serviceTask(
                 "foo",
                 b ->
-                    b.zeebeInput("inputSource", "inputTarget")
-                        .zeebeOutput("outputSource", "outputTarget"))
+                    b.zeebeInputExpression("inputSource", "inputTarget")
+                        .zeebeOutputExpression("outputSource", "outputTarget"))
             .endEvent()
             .done();
 
@@ -89,11 +89,11 @@ public class ZeebeBuilderTest {
 
     final Collection<ZeebeInput> inputs = ioMapping.getInputs();
     assertThat(inputs).hasSize(1);
-    assertThat(inputs).element(0).matches(input("inputSource", "inputTarget"));
+    assertThat(inputs).element(0).matches(mapping("=inputSource", "inputTarget"));
 
     final Collection<ZeebeOutput> outputs = ioMapping.getOutputs();
     assertThat(outputs).hasSize(1);
-    assertThat(outputs).element(0).matches(output("outputSource", "outputTarget"));
+    assertThat(outputs).element(0).matches(mapping("=outputSource", "outputTarget"));
   }
 
   @Test
@@ -103,7 +103,7 @@ public class ZeebeBuilderTest {
         Bpmn.createExecutableProcess()
             .startEvent()
             .intermediateCatchEvent("catch")
-            .message(b -> b.name("messageName").zeebeCorrelationKey("correlationKey"))
+            .message(b -> b.name("messageName").zeebeCorrelationKeyExpression("correlationKey"))
             .endEvent()
             .done();
 
@@ -124,7 +124,7 @@ public class ZeebeBuilderTest {
     assertThat(message.getName()).isEqualTo("messageName");
 
     final ZeebeSubscription subscription = getExtensionElement(message, ZeebeSubscription.class);
-    assertThat(subscription.getCorrelationKey()).isEqualTo("correlationKey");
+    assertThat(subscription.getCorrelationKey()).isEqualTo("=correlationKey");
   }
 
   @Test
@@ -134,7 +134,7 @@ public class ZeebeBuilderTest {
         Bpmn.createExecutableProcess()
             .startEvent()
             .receiveTask("catch")
-            .message(b -> b.name("messageName").zeebeCorrelationKey("correlationKey"))
+            .message(b -> b.name("messageName").zeebeCorrelationKeyExpression("correlationKey"))
             .endEvent()
             .done();
 
@@ -148,10 +148,9 @@ public class ZeebeBuilderTest {
     assertThat(message.getName()).isEqualTo("messageName");
 
     final ZeebeSubscription subscription = getExtensionElement(message, ZeebeSubscription.class);
-    assertThat(subscription.getCorrelationKey()).isEqualTo("correlationKey");
+    assertThat(subscription.getCorrelationKey()).isEqualTo("=correlationKey");
   }
 
-  @SuppressWarnings("unchecked")
   private <T extends BpmnModelElementInstance> T getExtensionElement(
       final BaseElement element, final Class<T> typeClass) {
     final T extensionElement =
@@ -164,11 +163,7 @@ public class ZeebeBuilderTest {
     return h -> key.equals(h.getKey()) && value.equals(h.getValue());
   }
 
-  private static Predicate<ZeebeInput> input(final String source, final String target) {
-    return h -> source.equals(h.getSource()) && target.equals(h.getTarget());
-  }
-
-  private static Predicate<ZeebeOutput> output(final String source, final String target) {
+  private static Predicate<ZeebeMapping> mapping(final String source, final String target) {
     return h -> source.equals(h.getSource()) && target.equals(h.getTarget());
   }
 }

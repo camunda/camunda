@@ -7,19 +7,22 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
-import io.atomix.protocols.raft.storage.snapshot.SnapshotListener;
-import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
+import io.atomix.raft.storage.snapshot.SnapshotListener;
+import io.atomix.raft.storage.snapshot.SnapshotStore;
+import io.atomix.raft.zeebe.ZeebeEntry;
+import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
 import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotStorage;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -27,74 +30,49 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener {
+
   private static final Logger LOGGER = new ZbLogger(AtomixSnapshotStorage.class);
 
   private final Path runtimeDirectory;
+  private final Path pendingDirectory;
   private final AtomixRecordEntrySupplier entrySupplier;
   private final SnapshotStore store;
-  private final int maxSnapshotCount;
   private final Set<SnapshotDeletionListener> deletionListeners;
   private final SnapshotMetrics metrics;
 
   public AtomixSnapshotStorage(
       final Path runtimeDirectory,
+      final Path pendingDirectory,
       final SnapshotStore store,
       final AtomixRecordEntrySupplier entrySupplier,
-      final int maxSnapshotCount,
       final SnapshotMetrics metrics) {
     this.runtimeDirectory = runtimeDirectory;
+    this.pendingDirectory = pendingDirectory;
     this.entrySupplier = entrySupplier;
     this.store = store;
-    this.maxSnapshotCount = maxSnapshotCount;
     this.metrics = metrics;
 
     this.deletionListeners = new CopyOnWriteArraySet<>();
     this.store.addListener(this);
-
     observeExistingSnapshots();
   }
 
   @Override
-  public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
+  public Optional<Snapshot> getPendingSnapshotFor(final long snapshotPosition) {
     final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
-    if (optionalIndexed.isPresent()) {
-      final var indexed = optionalIndexed.get();
-      final var pending =
-          store.newPendingSnapshot(
-              indexed.index(),
-              indexed.entry().term(),
-              WallClockTimestamp.from(System.currentTimeMillis()));
-      final var pendingPath = pending.getPath();
-      final var realPath =
-          pendingPath.resolveSibling(
-              String.format("%s-%d", pendingPath.getFileName(), snapshotPosition));
-      return new SnapshotImpl(snapshotPosition, realPath);
-    } else {
-      LOGGER.debug(
-          "No previous entry found for position {}, cannot take snapshot", snapshotPosition);
-    }
-
-    return null;
+    return optionalIndexed.map(this::getSnapshot);
   }
 
   @Override
-  public Path getPendingDirectoryFor(final String id) {
+  public Optional<Path> getPendingDirectoryFor(final String id) {
     final var optionalMeta = DbSnapshotMetadata.ofFileName(id);
-    if (optionalMeta.isPresent()) {
-      final var metadata = optionalMeta.get();
-      return getPendingDirectoryFor(
-          metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp(), metadata.getPosition());
-    }
-
-    return null;
+    return optionalMeta.map(this::getPendingDirectoryFor);
   }
 
   @Override
-  public boolean commitSnapshot(final Path snapshotPath) {
-    // in the case of DbSnapshot instances, we expect the path to always contain all the metadata
-    try (final var created = store.newSnapshot(-1, -1, null, snapshotPath)) {
-      return created != null;
-    }
+  public Optional<Snapshot> commitSnapshot(final Path snapshotPath) {
+    final var metadata = DbSnapshotMetadata.ofPath(snapshotPath);
+    return metadata.flatMap(m -> createNewCommittedSnapshot(snapshotPath, m));
   }
 
   @Override
@@ -145,54 +123,57 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
 
   @Override
   public void onNewSnapshot(
-      final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
-      final SnapshotStore store) {
-    final var snapshots = store.getSnapshots();
+      final io.atomix.raft.storage.snapshot.Snapshot snapshot, final SnapshotStore store) {
     metrics.incrementSnapshotCount();
     observeSnapshotSize(snapshot);
 
-    if (snapshots.size() >= maxSnapshotCount) {
-      // by the condition it's guaranteed there be a snapshot after skipping maxSnapshotCount - 1
-      @SuppressWarnings("squid:S3655")
-      final var oldest =
-          snapshots.stream()
-              .sorted(Comparator.reverseOrder())
-              .skip(maxSnapshotCount - 1L)
-              .findFirst()
-              .get();
+    LOGGER.debug("Purging snapshots older than {}", snapshot);
+    store.purgeSnapshots(snapshot);
+    purgePendingSnapshots(snapshot.index());
 
-      LOGGER.info(
-          "Max snapshot count reached ({}), purging snapshots older than {}",
-          snapshots.size(),
-          oldest);
-      store.purgeSnapshots(oldest);
-
-      final var optionalConverted = toSnapshot(oldest.getPath());
-      if (optionalConverted.isPresent()) {
-        final var converted = optionalConverted.get();
-        deletionListeners.forEach(listener -> listener.onSnapshotsDeleted(converted));
-      }
+    final var optionalConverted = toSnapshot(snapshot.getPath());
+    if (optionalConverted.isPresent()) {
+      final var converted = optionalConverted.get();
+      // TODO #4067(@korthout): rename onSnapshotsDeleted, because it doesn't always delete
+      deletionListeners.forEach(listener -> listener.onSnapshotsDeleted(converted));
     }
   }
 
   @Override
   public void onSnapshotDeletion(
-      final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
-      final SnapshotStore store) {
+      final io.atomix.raft.storage.snapshot.Snapshot snapshot, final SnapshotStore store) {
     metrics.decrementSnapshotCount();
     LOGGER.debug("Snapshot {} removed from store {}", snapshot, store);
   }
 
-  private Path getPendingDirectoryFor(
-      final long index, final long term, final WallClockTimestamp timestamp, final long position) {
-    final var pending = store.newPendingSnapshot(index, term, timestamp);
-    final var pendingPath = pending.getPath();
-    return pendingPath.resolveSibling(String.format("%s-%d", pendingPath.getFileName(), position));
+  private Optional<Snapshot> createNewCommittedSnapshot(
+      final Path snapshotPath, final DbSnapshotMetadata metadata) {
+    try (final var created =
+        store.newSnapshot(
+            metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp(), snapshotPath)) {
+      return Optional.of(new SnapshotImpl(metadata.getIndex(), created.getPath()));
+    } catch (final UncheckedIOException e) {
+      LOGGER.error("Failed to commit pending snapshot {} located at {}", metadata, snapshotPath, e);
+      return Optional.empty();
+    }
+  }
+
+  private Path getPendingDirectoryFor(final DbSnapshotMetadata metadata) {
+    return pendingDirectory.resolve(metadata.getFileName());
+  }
+
+  private Path getPendingDirectoryFor(final Indexed<ZeebeEntry> entry) {
+    final var metadata =
+        new DbSnapshotMetadata(
+            entry.index(),
+            entry.entry().term(),
+            WallClockTimestamp.from(System.currentTimeMillis()));
+    return getPendingDirectoryFor(metadata);
   }
 
   private Optional<Snapshot> toSnapshot(final Path path) {
     return DbSnapshotMetadata.ofPath(path)
-        .map(metadata -> new SnapshotImpl(metadata.getPosition(), path));
+        .map(metadata -> new SnapshotImpl(metadata.getIndex(), path));
   }
 
   private void observeExistingSnapshots() {
@@ -205,8 +186,12 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
     metrics.setSnapshotCount(snapshots.size());
   }
 
-  private void observeSnapshotSize(
-      final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot) {
+  private Snapshot getSnapshot(final Indexed<ZeebeEntry> indexed) {
+    final var pending = getPendingDirectoryFor(indexed);
+    return new SnapshotImpl(indexed.index(), pending);
+  }
+
+  private void observeSnapshotSize(final io.atomix.raft.storage.snapshot.Snapshot snapshot) {
     try (final var contents = Files.newDirectoryStream(snapshot.getPath())) {
       var totalSize = 0L;
 
@@ -219,8 +204,39 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
       }
 
       metrics.observeSnapshotSize(totalSize);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.warn("Failed to observe size for snapshot {}", snapshot, e);
+    }
+  }
+
+  private void purgePendingSnapshots(final long cutoffIndex) {
+    LOGGER.debug(
+        "Search for orphaned snapshots below oldest valid snapshot with index {} in {}",
+        cutoffIndex,
+        pendingDirectory);
+
+    try (final var pendingSnapshots = Files.newDirectoryStream(pendingDirectory)) {
+      for (final var pendingSnapshot : pendingSnapshots) {
+        purgePendingSnapshot(cutoffIndex, pendingSnapshot);
+      }
+    } catch (final IOException e) {
+      LOGGER.warn(
+          "Failed to delete orphaned snapshots, could not list pending directory {}",
+          pendingDirectory);
+    }
+  }
+
+  private void purgePendingSnapshot(final long cutoffIndex, final Path pendingSnapshot) {
+    final var optionalMetadata = DbSnapshotMetadata.ofPath(pendingSnapshot);
+    if (optionalMetadata.isPresent() && optionalMetadata.get().getIndex() < cutoffIndex) {
+      try {
+        FileUtil.deleteFolder(pendingSnapshot);
+        LOGGER.debug("Deleted orphaned snapshot {}", pendingSnapshot);
+      } catch (final IOException e) {
+        LOGGER.warn(
+            "Failed to delete orphaned snapshot {}, risk using unnecessary disk space",
+            pendingSnapshot);
+      }
     }
   }
 }

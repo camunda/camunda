@@ -8,16 +8,13 @@
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
-import io.atomix.protocols.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.storage.snapshot.SnapshotStore;
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
 import io.zeebe.logstreams.state.Snapshot;
@@ -28,8 +25,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
+import org.agrona.IoUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,37 +38,38 @@ import org.junit.rules.TemporaryFolder;
 public final class AtomixSnapshotStorageTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private Path snapshotsDirectory;
   private Path pendingDirectory;
   private SnapshotStore store;
-  private AtomixSnapshotStorage storage;
+  private AtomixSnapshotStorage snapshotStorage;
   private AtomixRecordEntrySupplier entrySupplier;
 
   @Before
   public void setUp() throws Exception {
-    snapshotsDirectory = temporaryFolder.newFolder("snapshots").toPath();
-    pendingDirectory = temporaryFolder.newFolder("pending").toPath();
+    final var snapshotsDirectory = temporaryFolder.newFolder("snapshots").toPath();
+    final var raftPendingDirectory = temporaryFolder.getRoot().toPath().resolve("pending");
+    pendingDirectory = temporaryFolder.newFolder("pushed-pending").toPath();
     entrySupplier = mock(AtomixRecordEntrySupplier.class);
     store =
-        new DbSnapshotStore(snapshotsDirectory, pendingDirectory, new ConcurrentSkipListMap<>());
+        new DbSnapshotStore(
+            snapshotsDirectory, raftPendingDirectory, new ConcurrentSkipListMap<>());
   }
 
   @After
-  public void tearDown() throws Exception {
-    Optional.ofNullable(storage).ifPresent(SnapshotStorage::close);
+  public void tearDown() {
+    Optional.ofNullable(snapshotStorage).ifPresent(SnapshotStorage::close);
     Optional.ofNullable(store).ifPresent(SnapshotStore::close);
   }
 
   @Test
   public void shouldGetPendingSnapshotForPositions() {
     // given
-    final var storage = newStorage(1);
+    final var storage = newStorage();
     when(entrySupplier.getIndexedEntry(1)).thenReturn(Optional.of(newEntry(1)));
     when(entrySupplier.getIndexedEntry(2)).thenReturn(Optional.of(newEntry(2)));
 
     // when
-    final var first = storage.getPendingSnapshotFor(1);
-    final var second = storage.getPendingSnapshotFor(2);
+    final var first = storage.getPendingSnapshotFor(1).orElseThrow();
+    final var second = storage.getPendingSnapshotFor(2).orElseThrow();
 
     // then
     assertThat(first.getPath()).doesNotExist();
@@ -82,24 +82,24 @@ public final class AtomixSnapshotStorageTest {
   @Test
   public void shouldReturnNullIfNoEntryForPosition() {
     // given
-    final var storage = newStorage(1);
+    final var storage = newStorage();
     when(entrySupplier.getIndexedEntry(1)).thenReturn(Optional.empty());
 
     // when
     final var snapshot = storage.getPendingSnapshotFor(1);
 
     // then
-    assertThat(snapshot).isNull();
+    assertThat(snapshot).isEmpty();
   }
 
   @Test
   public void shouldGetPendingDirectoryForId() {
     // given
-    final var id = "1-1-1-1";
-    final var storage = newStorage(1);
+    final var id = "1-1-1";
+    final var storage = newStorage();
 
     // when
-    final var directory = storage.getPendingDirectoryFor(id);
+    final var directory = storage.getPendingDirectoryFor(id).orElseThrow();
 
     // then
     assertThat(directory).doesNotExist();
@@ -108,22 +108,62 @@ public final class AtomixSnapshotStorageTest {
   }
 
   @Test
-  public void shouldReturnNullIfIdIsNotMetadata() {
+  public void shouldDeleteOrphanedPendingSnapshotsOnNewSnapshot() {
+    // given
+    final var storage = newStorage();
+    final var toDelete = pendingDirectory.resolve("1-1-1");
+    final var snapshotDirectory = pendingDirectory.resolve("2-2-2");
+    final var toKeep = pendingDirectory.resolve("3-3-3");
+    IoUtil.ensureDirectoryExists(toDelete.toFile(), "to delete directory");
+    IoUtil.ensureDirectoryExists(snapshotDirectory.toFile(), "snapshot directory");
+    IoUtil.ensureDirectoryExists(toKeep.toFile(), "to keep directory");
+
+    // when
+    storage.commitSnapshot(snapshotDirectory);
+
+    // then
+    assertThat(toDelete).doesNotExist();
+    assertThat(toKeep).exists();
+  }
+
+  @Test
+  public void shouldDeleteOrphanedPendingSnapshotsEvenIfOneIsNotASnapshot() {
+    // given
+    final var storage = newStorage();
+    // given
+    final var orphanedSnapshots =
+        List.of(pendingDirectory.resolve("1-1-1"), pendingDirectory.resolve("2-2-2"));
+    final var snapshotDirectory = pendingDirectory.resolve("3-3-3");
+    final var evilFolder = pendingDirectory.resolve("not a snapshot");
+    orphanedSnapshots.forEach(p -> IoUtil.ensureDirectoryExists(p.toFile(), ""));
+    IoUtil.ensureDirectoryExists(evilFolder.toFile(), "not a snapshot folder");
+    IoUtil.ensureDirectoryExists(snapshotDirectory.toFile(), "to keep directory");
+
+    // when
+    storage.commitSnapshot(snapshotDirectory);
+
+    // then
+    orphanedSnapshots.forEach(s -> assertThat(s).doesNotExist());
+    assertThat(evilFolder).exists();
+  }
+
+  @Test
+  public void shouldReturnEmptyIfIdIsNotMetadata() {
     // given
     final var id = "foo";
-    final var storage = newStorage(1);
+    final var storage = newStorage();
 
     // when
     final var directory = storage.getPendingDirectoryFor(id);
 
     // then
-    assertThat(directory).isNull();
+    assertThat(directory).isEmpty();
   }
 
   @Test
   public void shouldCommitPendingSnapshot() throws IOException {
     // given
-    final var storage = newStorage(1);
+    final var storage = newStorage();
 
     // when
     final var snapshot = newPendingSnapshot(1);
@@ -141,7 +181,7 @@ public final class AtomixSnapshotStorageTest {
   @Test
   public void shouldGetLatestSnapshot() throws IOException {
     // given
-    final var storage = newStorage(1);
+    final var storage = newStorage();
 
     // when
     final var snapshot = newCommittedSnapshot(1);
@@ -149,47 +189,46 @@ public final class AtomixSnapshotStorageTest {
     // then
     assertThat(storage.getLatestSnapshot())
         .isPresent()
-        .map(Snapshot::getPosition)
-        .hasValue(snapshot.getPosition());
+        .map(Snapshot::getCompactionBound)
+        .hasValue(snapshot.getCompactionBound());
   }
 
   @Test
   public void shouldNotifyDeletionListenersOnMaxSnapshotCount() throws IOException {
     // given
-    final var maxCount = 2;
     final var listener = mock(SnapshotDeletionListener.class);
-    final var storage = newStorage(maxCount);
+    final var storage = newStorage();
     storage.addDeletionListener(listener);
 
-    // when - then
+    // when the first snapshot then try to delete snapshots older than first
     final var first = newCommittedSnapshot(1);
-    verify(listener, never()).onSnapshotsDeleted(any());
+    verify(listener).onSnapshotsDeleted(eq(first));
 
-    // when - then
+    // when the second snapshot then all snapshots up to that snapshot are deleted
     final var second = newCommittedSnapshot(2);
-    verify(listener, times(1)).onSnapshotsDeleted(eq(first));
-    assertThat(storage.getSnapshots()).hasSize(maxCount).containsExactly(first, second);
+    verify(listener).onSnapshotsDeleted(eq(second));
+    assertThat(storage.getSnapshots()).hasSize(1).containsExactly(second);
   }
 
   private Snapshot newPendingSnapshot(final long position) {
     when(entrySupplier.getIndexedEntry(position)).thenReturn(Optional.of(newEntry(position)));
-    return storage.getPendingSnapshotFor(position);
+    return snapshotStorage.getPendingSnapshotFor(position).orElseThrow();
   }
 
   private Snapshot newCommittedSnapshot(final long position) throws IOException {
     final var snapshot = newPendingSnapshot(position);
     Files.createDirectories(snapshot.getPath());
-    storage.commitSnapshot(snapshot.getPath());
+    snapshotStorage.commitSnapshot(snapshot.getPath());
 
-    return storage.getLatestSnapshot().get();
+    return snapshotStorage.getLatestSnapshot().orElseThrow();
   }
 
-  private AtomixSnapshotStorage newStorage(final int maxSnapshotsCount) {
+  private AtomixSnapshotStorage newStorage() {
     final var runtimeDirectory = temporaryFolder.getRoot().toPath().resolve("runtime");
-    storage =
+    snapshotStorage =
         new AtomixSnapshotStorage(
-            runtimeDirectory, store, entrySupplier, maxSnapshotsCount, new SnapshotMetrics(0));
-    return storage;
+            runtimeDirectory, pendingDirectory, store, entrySupplier, new SnapshotMetrics(0));
+    return snapshotStorage;
   }
 
   private Indexed<ZeebeEntry> newEntry(final long index) {

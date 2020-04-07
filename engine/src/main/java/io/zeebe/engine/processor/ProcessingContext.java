@@ -100,50 +100,61 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   @Override
-  public int getMaxFragmentSize() {
-    return maxFragmentSize;
-  }
-
   public ActorControl getActor() {
     return actor;
   }
 
+  @Override
   public EventFilter getEventFilter() {
     return eventFilter;
   }
 
+  @Override
   public LogStream getLogStream() {
     return logStream;
   }
 
+  @Override
   public LogStreamReader getLogStreamReader() {
     return logStreamReader;
   }
 
+  @Override
+  public int getMaxFragmentSize() {
+    return maxFragmentSize;
+  }
+
+  @Override
   public TypedStreamWriter getLogStreamWriter() {
     return logStreamWriter;
   }
 
+  @Override
   public RecordValues getRecordValues() {
     return recordValues;
   }
 
+  @Override
   public RecordProcessorMap getRecordProcessorMap() {
     return recordProcessorMap;
   }
 
+  @Override
   public ZeebeState getZeebeState() {
     return zeebeState;
   }
 
+  @Override
   public DbContext getDbContext() {
     return dbContext;
   }
 
+  @Override
   public CommandResponseWriter getCommandResponseWriter() {
     return commandResponseWriter;
   }
 
+  @Override
   public BooleanSupplier getAbortCondition() {
     return abortCondition;
   }

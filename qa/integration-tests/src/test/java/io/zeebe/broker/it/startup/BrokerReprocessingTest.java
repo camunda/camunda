@@ -68,27 +68,27 @@ public final class BrokerReprocessingTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
-          .serviceTask("task", t -> t.zeebeTaskType("foo"))
+          .serviceTask("task", t -> t.zeebeJobType("foo"))
           .endEvent("end")
           .done();
   private static final BpmnModelInstance WORKFLOW_TWO_TASKS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
-          .serviceTask("task1", t -> t.zeebeTaskType("foo"))
-          .serviceTask("task2", t -> t.zeebeTaskType("bar"))
+          .serviceTask("task1", t -> t.zeebeJobType("foo"))
+          .serviceTask("task2", t -> t.zeebeJobType("bar"))
           .endEvent("end")
           .done();
   private static final BpmnModelInstance WORKFLOW_INCIDENT =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
-          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
+          .serviceTask("task", t -> t.zeebeJobType("test").zeebeInputExpression("foo", "foo"))
           .endEvent("end")
           .done();
   private static final BpmnModelInstance WORKFLOW_MESSAGE =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch-event")
-          .message(m -> m.name("order canceled").zeebeCorrelationKey("orderId"))
+          .message(m -> m.name("order canceled").zeebeCorrelationKeyExpression("orderId"))
           .sequenceFlowId("to-end")
           .endEvent()
           .done();

@@ -15,6 +15,7 @@ import static org.junit.Assert.assertNotNull;
 
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.SynchronousLogStream;
+import io.zeebe.test.util.TestUtil;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -90,6 +91,26 @@ public final class LogStreamTest {
     // then
     assertThatThrownBy(() -> logStream.newLogStreamRecordWriter()).hasMessage("Actor is closed");
     assertThatThrownBy(() -> logStream.newLogStreamBatchWriter()).hasMessage("Actor is closed");
+  }
+
+  @Test
+  public void shouldIncreasePositionOnRestart() {
+    // given
+    final LogStreamRecordWriter writer = logStream.newLogStreamRecordWriter();
+    writer.value(wrapString("value")).tryWrite();
+    writer.value(wrapString("value")).tryWrite();
+    writer.value(wrapString("value")).tryWrite();
+    final long positionBeforeClose = writer.value(wrapString("value")).tryWrite();
+    TestUtil.waitUntil(() -> logStream.getCommitPosition() >= positionBeforeClose);
+
+    // when
+    logStream.close();
+    logStreamRule.createLogStream();
+    final LogStreamRecordWriter newWriter = logStreamRule.getLogStream().newLogStreamRecordWriter();
+    final long positionAfterReOpen = newWriter.value(wrapString("value")).tryWrite();
+
+    // then
+    assertThat(positionAfterReOpen).isGreaterThan(positionBeforeClose);
   }
 
   static long writeEvent(final SynchronousLogStream logStream) {

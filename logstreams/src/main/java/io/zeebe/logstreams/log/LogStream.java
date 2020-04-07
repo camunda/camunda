@@ -8,6 +8,7 @@
 package io.zeebe.logstreams.log;
 
 import io.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
+import io.zeebe.util.health.HealthMonitorable;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
 
@@ -18,7 +19,7 @@ import io.zeebe.util.sched.future.ActorFuture;
  *
  * <p>To read events, the {@link LogStream#newLogStreamReader()} ()} can be used.
  */
-public interface LogStream extends AutoCloseable {
+public interface LogStream extends AutoCloseable, HealthMonitorable {
 
   /** @return a new default LogStream builder */
   static LogStreamBuilder builder() {
@@ -61,13 +62,6 @@ public interface LogStream extends AutoCloseable {
    *     writer
    */
   ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter();
-
-  /**
-   * Triggers deletion of data from the log stream, where the given position is used as upper bound.
-   *
-   * @param position the position as upper bound
-   */
-  void delete(long position);
 
   /**
    * Registers for on commit updates.

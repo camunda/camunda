@@ -99,13 +99,13 @@ func TestActivateJobsCommand(t *testing.T) {
 
 	var expectedJobs []entities.Job
 	for _, job := range response1.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{*job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
 	}
 	for _, job := range response2.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{*job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
 	}
 	for _, job := range response3.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{*job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
 	}
 
 	gomock.InOrder(
@@ -132,9 +132,9 @@ func TestActivateJobsCommand(t *testing.T) {
 		t.Error("Failed to receive all jobs: ", jobs, expectedJobs)
 	}
 
-	for i := range jobs {
-		if !reflect.DeepEqual(jobs[i], expectedJobs[i]) {
-			t.Error("Failed to receive job: ", jobs[i], expectedJobs[i])
+	for i, job := range jobs {
+		if !reflect.DeepEqual(job, expectedJobs[i]) {
+			t.Error("Failed to receive job: ", job, expectedJobs[i])
 		}
 	}
 }

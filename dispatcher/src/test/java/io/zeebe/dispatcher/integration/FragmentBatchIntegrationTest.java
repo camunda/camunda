@@ -45,7 +45,7 @@ public final class FragmentBatchIntegrationTest {
   public void init() {
     dispatcher =
         Dispatchers.create("default")
-            .bufferSize(ByteValue.ofKilobytes(32))
+            .bufferSize((int) ByteValue.ofKilobytes(32))
             .actorScheduler(actorSchedulerRule.get())
             .build();
 

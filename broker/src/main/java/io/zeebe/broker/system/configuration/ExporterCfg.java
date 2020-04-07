@@ -7,17 +7,14 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import io.zeebe.util.Environment;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Exporter component configuration. To be expanded eventually to allow enabling/disabling
  * exporters, and other general configuration.
  */
 public final class ExporterCfg implements ConfigurationEntry {
-  /** locally unique ID of the exporter */
-  private String id;
-
   /**
    * path to the JAR file containing the exporter class
    *
@@ -32,8 +29,7 @@ public final class ExporterCfg implements ConfigurationEntry {
   private Map<String, Object> args;
 
   @Override
-  public void init(
-      final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
     if (isExternal()) {
       jarPath = ConfigurationUtil.toAbsolutePath(jarPath, brokerBase);
     }
@@ -41,14 +37,6 @@ public final class ExporterCfg implements ConfigurationEntry {
 
   public boolean isExternal() {
     return !isEmpty(jarPath);
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(final String id) {
-    this.id = id;
   }
 
   public String getJarPath() {
@@ -82,9 +70,6 @@ public final class ExporterCfg implements ConfigurationEntry {
   @Override
   public String toString() {
     return "ExporterCfg{"
-        + "id='"
-        + id
-        + '\''
         + ", jarPath='"
         + jarPath
         + '\''
@@ -94,5 +79,24 @@ public final class ExporterCfg implements ConfigurationEntry {
         + ", args="
         + args
         + '}';
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ExporterCfg that = (ExporterCfg) o;
+    return Objects.equals(jarPath, that.jarPath)
+        && Objects.equals(className, that.className)
+        && Objects.equals(args, that.args);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(jarPath, className, args);
   }
 }

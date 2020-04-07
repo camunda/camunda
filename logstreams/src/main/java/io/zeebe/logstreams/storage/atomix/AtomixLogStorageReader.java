@@ -7,8 +7,8 @@
  */
 package io.zeebe.logstreams.storage.atomix;
 
-import io.atomix.protocols.raft.storage.log.RaftLogReader;
-import io.atomix.protocols.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
@@ -17,14 +17,28 @@ import org.agrona.DirectBuffer;
 
 public final class AtomixLogStorageReader implements LogStorageReader {
   private final RaftLogReader reader;
+  private final ZeebeIndexMapping zeebeIndexMapping;
 
-  public AtomixLogStorageReader(final RaftLogReader reader) {
+  public AtomixLogStorageReader(
+      final ZeebeIndexMapping zeebeIndexMapping, final RaftLogReader reader) {
     this.reader = reader;
+    this.zeebeIndexMapping = zeebeIndexMapping;
   }
 
   @Override
   public boolean isEmpty() {
-    return reader.isEmpty();
+    if (!reader.isEmpty()) {
+      // although seemingly inefficient, the log will contain mostly ZeebeEntry entries and a few
+      // InitialEntry, so this should be rather fast in practice
+      reader.reset();
+      while (reader.hasNext()) {
+        if (reader.next().type() == ZeebeEntry.class) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   @Override
@@ -87,8 +101,8 @@ public final class AtomixLogStorageReader implements LogStorageReader {
    */
   @Override
   public long lookUpApproximateAddress(final long position) {
-    var low = reader.getFirstIndex();
-    var high = reader.getLastIndex();
+    final var low = reader.getFirstIndex();
+    final var high = reader.getLastIndex();
 
     if (position == Long.MIN_VALUE) {
       final var optionalEntry = findEntry(reader.getFirstIndex());
@@ -105,32 +119,15 @@ public final class AtomixLogStorageReader implements LogStorageReader {
       return low;
     }
 
-    // binary search over index range, assuming we have no missing indexes
-    boolean atLeastOneZeebeEntry = false;
-    while (low <= high) {
-      final var pivotIndex = (low + high) >>> 1;
-      final var pivotEntry = findEntry(pivotIndex);
-
-      if (pivotEntry.isPresent()) {
-        final Indexed<ZeebeEntry> entry = pivotEntry.get();
-        // using the entry index to reset high/low can lead to infinite loops as `findEntry`
-        // actually seeks to the next entry
-        if (position < entry.entry().lowestPosition()) {
-          high = pivotIndex - 1;
-        } else if (position > entry.entry().highestPosition()) {
-          low = pivotIndex + 1;
-        } else {
-          return entry.index();
-        }
-        atLeastOneZeebeEntry = true;
-      } else {
-        high = pivotIndex - 1;
-      }
+    final var index = zeebeIndexMapping.lookupPosition(position);
+    final long result;
+    if (index == -1) {
+      result = low;
+    } else {
+      result = index;
     }
 
-    return atLeastOneZeebeEntry
-        ? Math.max(high, reader.getFirstIndex())
-        : LogStorage.OP_RESULT_NO_DATA;
+    return result;
   }
 
   @Override

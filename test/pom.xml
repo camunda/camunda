@@ -8,14 +8,14 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.22.3-SNAPSHOT</version>
+    <version>0.24.0-SNAPSHOT</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath>../parent</relativePath>
   </parent>
 
   <build>
     <plugins>
-      <plugin> 
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
       </plugin>
@@ -60,12 +60,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-transport</artifactId>
-    </dependency>
-
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-util</artifactId>
     </dependency>
 
@@ -80,11 +74,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.moandjiezana.toml</groupId>
-      <artifactId>toml4j</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
     </dependency>
@@ -93,6 +82,16 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+
   </dependencies>
 
 </project>

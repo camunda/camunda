@@ -9,6 +9,7 @@ package io.zeebe.gateway;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
 import io.zeebe.gateway.cmd.BrokerErrorException;
@@ -16,6 +17,7 @@ import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
 import io.zeebe.gateway.cmd.GrpcStatusException;
 import io.zeebe.gateway.cmd.GrpcStatusExceptionImpl;
+import io.zeebe.gateway.cmd.PartitionNotFoundException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
@@ -55,6 +57,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.MsgpackPropertyException;
+import io.zeebe.util.VersionUtil;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -249,7 +252,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
           .setPartitionsCount(topology.getPartitionsCount())
           .setReplicationFactor(topology.getReplicationFactor());
 
-      final String gatewayVersion = getClass().getPackage().getImplementationVersion();
+      final String gatewayVersion = VersionUtil.getVersion();
       if (gatewayVersion != null && !gatewayVersion.isBlank()) {
         topologyResponseBuilder.setGatewayVersion(gatewayVersion);
       }
@@ -301,6 +304,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       return;
     }
 
+    suppressCancelledException(grpcRequest, streamObserver);
     brokerClient.sendRequest(
         brokerRequest,
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
@@ -320,11 +324,20 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       return;
     }
 
+    suppressCancelledException(grpcRequest, streamObserver);
     brokerClient.sendRequest(
         brokerRequest,
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
         error -> streamObserver.onError(convertThrowable(error)),
         timeout);
+  }
+
+  private <GrpcRequestT, GrpcResponseT> void suppressCancelledException(
+      final GrpcRequestT grpcRequest, final StreamObserver<GrpcResponseT> streamObserver) {
+    final ServerCallStreamObserver<GrpcResponseT> serverObserver =
+        (ServerCallStreamObserver<GrpcResponseT>) streamObserver;
+    serverObserver.setOnCancelHandler(
+        () -> Loggers.GATEWAY_LOGGER.trace("gRPC {} request cancelled", grpcRequest.getClass()));
   }
 
   private <BrokerResponseT, GrpcResponseT> void consumeResponse(
@@ -375,6 +388,8 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
               "Time out between gateway and broker: " + cause.getMessage());
     } else if (cause instanceof GrpcStatusException) {
       status = ((GrpcStatusException) cause).getGrpcStatus();
+    } else if (cause instanceof PartitionNotFoundException) {
+      status = Status.NOT_FOUND.augmentDescription(cause.getMessage());
     } else {
       status = status.augmentDescription("Unexpected error occurred during the request processing");
     }
@@ -391,7 +406,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     return convertedThrowable;
   }
 
-  public static Status mapBrokerErrorToStatus(final BrokerError error) {
+  private static Status mapBrokerErrorToStatus(final BrokerError error) {
     switch (error.getCode()) {
       case WORKFLOW_NOT_FOUND:
         return Status.NOT_FOUND.augmentDescription(error.getMessage());
@@ -405,7 +420,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
   }
 
-  public static Status mapRejectionToStatus(final BrokerRejection rejection) {
+  private static Status mapRejectionToStatus(final BrokerRejection rejection) {
     final String description =
         String.format(
             "Command rejected with code '%s': %s", rejection.getIntent(), rejection.getReason());

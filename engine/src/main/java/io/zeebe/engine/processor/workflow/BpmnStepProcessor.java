@@ -34,10 +34,11 @@ public final class BpmnStepProcessor implements TypedRecordProcessor<WorkflowIns
   public BpmnStepProcessor(
       final WorkflowEngineState state,
       final ZeebeState zeebeState,
+      final ExpressionProcessor exporessionProcessor,
       final CatchEventBehavior catchEventBehavior) {
     this.state = state;
     this.workflowState = state.getWorkflowState();
-    this.stepHandlers = new BpmnStepHandlers(zeebeState, catchEventBehavior);
+    this.stepHandlers = new BpmnStepHandlers(zeebeState, exporessionProcessor, catchEventBehavior);
 
     final EventOutput eventOutput = new EventOutput(state, zeebeState.getKeyGenerator());
     this.context = new BpmnStepContext<>(workflowState, eventOutput);

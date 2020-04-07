@@ -11,8 +11,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.core.Atomix;
-import io.atomix.protocols.raft.partition.RaftPartition;
-import io.atomix.protocols.raft.partition.RaftPartitionGroup;
+import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
@@ -38,6 +38,7 @@ import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.zeebe.broker.system.monitoring.BrokerHttpServer;
 import io.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.zeebe.broker.system.partitions.ZeebePartition;
+import io.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
 import io.zeebe.engine.processor.ProcessingContext;
@@ -45,18 +46,22 @@ import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.storage.atomix.ZeebeIndexAdapter;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.LogUtil;
+import io.zeebe.util.SocketUtil;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -65,18 +70,12 @@ import org.slf4j.Logger;
 public final class Broker implements AutoCloseable {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private static final String VERSION;
 
   private static final CollectorRegistry METRICS_REGISTRY = CollectorRegistry.defaultRegistry;
 
   static {
     // enable hotspot prometheus metric collection
     DefaultExports.initialize();
-  }
-
-  static {
-    final String version = Broker.class.getPackage().getImplementationVersion();
-    VERSION = version != null ? version : "development";
   }
 
   private final SystemContext brokerContext;
@@ -92,18 +91,12 @@ public final class Broker implements AutoCloseable {
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
   private ServerTransport serverTransport;
-
-  public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
-    this(new SystemContext(configFileLocation, basePath, clock));
-  }
+  private BrokerHealthCheckService healthCheckService;
+  private Map<Integer, ZeebeIndexAdapter> partitionIndexes;
 
   public Broker(final SystemContext systemContext) {
     this.brokerContext = systemContext;
     this.partitionListeners = new ArrayList<>();
-  }
-
-  public Broker(final InputStream configStream, final String basePath, final ActorClock clock) {
-    this(new SystemContext(configStream, basePath, clock));
   }
 
   public Broker(final BrokerCfg cfg, final String basePath, final ActorClock clock) {
@@ -116,20 +109,33 @@ public final class Broker implements AutoCloseable {
 
   public synchronized CompletableFuture<Broker> start() {
     if (startFuture == null) {
+      logBrokerStart();
+
       startFuture = new CompletableFuture<>();
       LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), this::internalStart);
     }
     return startFuture;
   }
 
+  private void logBrokerStart() {
+    if (LOG.isInfoEnabled()) {
+      final BrokerCfg brokerCfg = getConfig();
+      LOG.info("Version: {}", VersionUtil.getVersion());
+      LOG.info(
+          "Starting broker {} with configuration {}",
+          brokerCfg.getCluster().getNodeId(),
+          brokerCfg.toJson());
+    }
+  }
+
   private void internalStart() {
-    final BrokerCfg brokerCfg = getConfig();
     final StartProcess startProcess = initStart();
 
     try {
       closeProcess = startProcess.start();
       startFuture.complete(this);
     } catch (final Exception bootStrapException) {
+      final BrokerCfg brokerCfg = getConfig();
       LOG.error(
           "Failed to start broker {}!", brokerCfg.getCluster().getNodeId(), bootStrapException);
 
@@ -147,13 +153,8 @@ public final class Broker implements AutoCloseable {
     final ClusterCfg clusterCfg = brokerCfg.getCluster();
     final BrokerInfo localBroker =
         new BrokerInfo(
-            clusterCfg.getNodeId(), networkCfg.getCommandApi().getAdvertisedAddress().toString());
-
-    if (LOG.isInfoEnabled()) {
-      LOG.info("Version: {}", VERSION);
-      LOG.info(
-          "Starting broker {} with configuration {}", localBroker.getNodeId(), brokerCfg.toJson());
-    }
+            clusterCfg.getNodeId(),
+            SocketUtil.toHostAndPortString(networkCfg.getCommandApi().getAdvertisedAddress()));
 
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
@@ -175,7 +176,7 @@ public final class Broker implements AutoCloseable {
     }
     startContext.addStep("cluster services", () -> atomix.start().join());
     startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
-    startContext.addStep("metric's server", () -> metricsServerStep(networkCfg, localBroker));
+    startContext.addStep("metric's server", () -> monitoringServerStep(networkCfg, localBroker));
     startContext.addStep(
         "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep(
@@ -193,6 +194,22 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
+
+    final var partitionGroup =
+        (RaftPartitionGroup)
+            atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
+
+    partitionIndexes = new HashMap<>();
+    final var logIndexDensity = brokerCfg.getData().getLogIndexDensity();
+    partitionGroup.getPartitions().stream()
+        .map(RaftPartition.class::cast)
+        .forEach(
+            raftPartition -> {
+              final var zeebeIndex = ZeebeIndexAdapter.ofDensity(logIndexDensity);
+              partitionIndexes.put(raftPartition.id().id(), zeebeIndex);
+              raftPartition.setJournalIndexFactory(() -> zeebeIndex);
+            });
+
     return () ->
         atomix.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
@@ -260,10 +277,9 @@ public final class Broker implements AutoCloseable {
     return topologyManager;
   }
 
-  private AutoCloseable metricsServerStep(
+  private AutoCloseable monitoringServerStep(
       final NetworkCfg networkCfg, final BrokerInfo localBroker) {
-    final BrokerHealthCheckService healthCheckService =
-        new BrokerHealthCheckService(localBroker, atomix);
+    healthCheckService = new BrokerHealthCheckService(localBroker, atomix);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
 
@@ -301,20 +317,29 @@ public final class Broker implements AutoCloseable {
     final StartProcess partitionStartProcess = new StartProcess("Broker-" + nodeId + " partitions");
 
     for (final RaftPartition owningPartition : owningPartitions) {
+      final var partitionId = owningPartition.id().id();
       partitionStartProcess.addStep(
-          "partition " + owningPartition.id().id(),
+          "partition " + partitionId,
           () -> {
+            final var messagingService =
+                new AtomixPartitionMessagingService(
+                    atomix.getCommunicationService(),
+                    atomix.getMembershipService(),
+                    owningPartition.members());
             final ZeebePartition zeebePartition =
                 new ZeebePartition(
                     localBroker,
                     owningPartition,
                     partitionListeners,
-                    atomix.getEventService(),
+                    messagingService,
                     scheduler,
                     brokerCfg,
                     commandHandler,
+                    partitionIndexes.get(partitionId),
                     createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler));
             scheduleActor(zeebePartition);
+            healthCheckService.registerMonitoredPartition(
+                owningPartition.id().id(), zeebePartition);
             return zeebePartition;
           });
     }

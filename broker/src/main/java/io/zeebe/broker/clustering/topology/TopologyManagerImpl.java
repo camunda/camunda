@@ -18,7 +18,9 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.LogUtil;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -45,7 +47,7 @@ public final class TopologyManagerImpl extends Actor
         .setPartitionsCount(clusterCfg.getPartitionsCount())
         .setReplicationFactor(clusterCfg.getReplicationFactor());
 
-    final String version = getClass().getPackage().getImplementationVersion();
+    final String version = VersionUtil.getVersion();
     if (version != null && !version.isBlank()) {
       localBroker.setVersion(version);
     }
@@ -54,14 +56,15 @@ public final class TopologyManagerImpl extends Actor
   }
 
   @Override
-  public void onBecomingFollower(
+  public ActorFuture<Void> onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    setFollower(partitionId);
+    return setFollower(partitionId);
   }
 
   @Override
-  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
-    setLeader(term, partitionId);
+  public ActorFuture<Void> onBecomingLeader(
+      final int partitionId, final long term, final LogStream logStream) {
+    return setLeader(term, partitionId);
   }
 
   @Override
@@ -80,8 +83,8 @@ public final class TopologyManagerImpl extends Actor
         .forEach(m -> event(new ClusterMembershipEvent(Type.MEMBER_ADDED, m)));
   }
 
-  public void setLeader(final long term, final int partitionId) {
-    actor.call(
+  public ActorFuture<Void> setLeader(final long term, final int partitionId) {
+    return actor.call(
         () -> {
           partitionLeaders.put(partitionId, localBroker);
           localBroker.setLeaderForPartition(partitionId, term);
@@ -90,8 +93,8 @@ public final class TopologyManagerImpl extends Actor
         });
   }
 
-  public void setFollower(final int partitionId) {
-    actor.call(
+  public ActorFuture<Void> setFollower(final int partitionId) {
+    return actor.call(
         () -> {
           removeIfLeader(localBroker, partitionId);
           localBroker.setFollowerForPartition(partitionId);

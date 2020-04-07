@@ -7,6 +7,8 @@
  */
 package io.zeebe.gateway;
 
+import static java.lang.Runtime.getRuntime;
+
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.core.Atomix;
@@ -17,14 +19,22 @@ import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.util.TomlConfigurationReader;
+import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport;
+import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport.Scope;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.core.env.Environment;
 
 public class StandaloneGateway {
-
+  private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
   private final GatewayCfg gatewayCfg;
@@ -87,33 +97,42 @@ public class StandaloneGateway {
   }
 
   public static void main(final String[] args) throws Exception {
-    final GatewayCfg gatewayCfg = initConfiguration(args);
-    gatewayCfg.init();
-    new StandaloneGateway(gatewayCfg).run();
+    System.setProperty("spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
+
+    getRuntime()
+        .addShutdownHook(
+            new Thread("Gateway close thread") {
+              @Override
+              public void run() {
+                LogManager.shutdown();
+              }
+            });
+
+    final LegacyConfigurationSupport legacyConfigurationSupport =
+        new LegacyConfigurationSupport(Scope.GATEWAY);
+    legacyConfigurationSupport.checkForLegacyTomlConfigurationArgument(
+        args, "gateway.yaml.template");
+
+    SpringApplication.run(Launcher.class, args);
   }
 
-  private static GatewayCfg initConfiguration(final String[] args) {
-    if (args.length >= 1) {
-      String configFileLocation = args[0];
+  @SpringBootApplication
+  public static class Launcher implements CommandLineRunner {
 
-      if (!Paths.get(configFileLocation).isAbsolute()) {
-        configFileLocation =
-            Paths.get(getBasePath(), configFileLocation).toAbsolutePath().normalize().toString();
+    @Autowired GatewayCfg configuration;
+    @Autowired Environment springEnvironment;
+
+    @Override
+    public void run(final String... args) throws Exception {
+      final GatewayCfg gatewayCfg = configuration;
+      gatewayCfg.init();
+
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Version: {}", VersionUtil.getVersion());
+        LOG.info("Starting standalone gateway with configuration {}", gatewayCfg.toJson());
       }
 
-      return TomlConfigurationReader.read(configFileLocation, GatewayCfg.class);
-    } else {
-      return new GatewayCfg();
+      new StandaloneGateway(gatewayCfg).run();
     }
-  }
-
-  private static String getBasePath() {
-    String basePath = System.getProperty("basedir");
-
-    if (basePath == null) {
-      basePath = Paths.get(".").toAbsolutePath().normalize().toString();
-    }
-
-    return basePath;
   }
 }

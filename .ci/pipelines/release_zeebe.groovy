@@ -15,9 +15,9 @@ metadata:
     agent: zeebe-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: slaves-stable
+    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-stable
   tolerations:
-    - key: "slaves-stable"
+    - key: "agents-n1-standard-32-netssd-stable"
       operator: "Exists"
       effect: "NoSchedule"
   containers:
@@ -36,10 +36,10 @@ spec:
       resources:
         limits:
           cpu: 2
-          memory: 1Gi
+          memory: 16Gi
         requests:
           cpu: 2
-          memory: 1Gi
+          memory: 16Gi
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
@@ -88,7 +88,6 @@ spec:
 
                 container('maven') {
                     sh '.ci/scripts/release/prepare.sh'
-                    sh '.ci/scripts/release/changelog.sh'
                     sh '.ci/scripts/release/compat-update.sh'
                 }
             }

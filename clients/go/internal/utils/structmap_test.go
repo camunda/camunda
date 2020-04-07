@@ -294,6 +294,27 @@ func TestMapStructMarshal(t *testing.T) {
 	if res["C"].(map[string]interface{})["Foo"].(string) != "bar" {
 		t.Fatal("map nested map string fail")
 	}
+
+}
+
+func TestMapStructMarshalWithNil(t *testing.T) {
+	res := MapStructMarshal(reflect.ValueOf(struct {
+		A *struct{}
+	}{}), "json", true, true)
+
+	if m := res["A"].(map[string]interface{}); len(m) != 0 {
+		t.Fatal("unexpected value instead of empty map")
+	}
+}
+
+func TestMapMapMarshalWithNil(t *testing.T) {
+	res := MapStructMarshal(reflect.ValueOf(struct {
+		A map[string]interface{}
+	}{}), "json", true, true)
+
+	if m := res["A"].(map[string]interface{}); len(m) != 0 {
+		t.Fatal("unexpected value instead of empty map")
+	}
 }
 
 func TestMapStructMarshal_Tagged(t *testing.T) {
@@ -505,9 +526,7 @@ func TestMapMarshal_EmbeddedTagged(t *testing.T) {
 	}
 	if v, ok := res["inner"]; !ok {
 		t.Fatal("inner struct is missing")
-	} else {
-		if v, ok := v.(map[string]interface{})["bar"]; !ok || v != "bar" {
-			t.Fatal("bar member of inner struct is missing or invalid")
-		}
+	} else if v, ok := v.(map[string]interface{})["bar"]; !ok || v != "bar" {
+		t.Fatal("bar member of inner struct is missing or invalid")
 	}
 }

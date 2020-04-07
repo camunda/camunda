@@ -32,25 +32,11 @@ public final class ServerResponseImpl implements ServerResponse {
     return writer(writerAdapter.wrap(buffer, offset, length));
   }
 
-  public ServerResponseImpl setPartitionId(final int partitionId) {
-    this.partitionId = partitionId;
-    return this;
-  }
-
-  public int getPartitionId() {
-    return partitionId;
-  }
-
   public ServerResponseImpl reset() {
     partitionId = -1;
     writer = null;
     requestId = -1;
 
-    return this;
-  }
-
-  public ServerResponseImpl setRequestId(final long requestId) {
-    this.requestId = requestId;
     return this;
   }
 
@@ -71,5 +57,19 @@ public final class ServerResponseImpl implements ServerResponse {
   @Override
   public long getRequestId() {
     return requestId;
+  }
+
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public ServerResponseImpl setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  public ServerResponseImpl setRequestId(final long requestId) {
+    this.requestId = requestId;
+    return this;
   }
 }

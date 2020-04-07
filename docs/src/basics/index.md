@@ -1,4 +1,4 @@
-# Overview
+# Zeebe Basics
 
 This section provides an overview of Zeebe's core concepts. Understanding them helps to successfully build workflow applications.
 

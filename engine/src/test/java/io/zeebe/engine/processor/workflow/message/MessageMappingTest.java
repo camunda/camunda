@@ -48,31 +48,31 @@ public final class MessageMappingTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .done();
 
   private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("catch")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .done();
 
   private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("catch")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .endEvent()
           .done();
 
   private static final BpmnModelInstance NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("catch", b -> b.cancelActivity(false))
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .endEvent()
           .done();
 
@@ -83,7 +83,10 @@ public final class MessageMappingTest {
           .id("gateway")
           .intermediateCatchEvent(
               "catch",
-              c -> c.message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE)))
+              c ->
+                  c.message(
+                      m ->
+                          m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE)))
           .sequenceFlowId("to-end1")
           .endEvent("end1")
           .moveToLastGateway()
@@ -99,11 +102,14 @@ public final class MessageMappingTest {
               eventSubProcess ->
                   eventSubProcess
                       .startEvent()
-                      .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+                      .message(
+                          m ->
+                              m.name(MESSAGE_NAME)
+                                  .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
                       .interrupting(true)
                       .endEvent())
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType("type"))
+          .serviceTask("task", t -> t.zeebeJobType("type"))
           .endEvent()
           .done();
 
@@ -114,11 +120,14 @@ public final class MessageMappingTest {
               eventSubProcess ->
                   eventSubProcess
                       .startEvent()
-                      .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+                      .message(
+                          m ->
+                              m.name(MESSAGE_NAME)
+                                  .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
                       .interrupting(false)
                       .endEvent())
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType("type"))
+          .serviceTask("task", t -> t.zeebeJobType("type"))
           .endEvent()
           .done();
 
@@ -212,7 +221,7 @@ public final class MessageMappingTest {
   @Test
   public void shouldMapMessageVariablesIntoInstanceVariables() {
     // given
-    deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
+    deployWorkflowWithMapping(e -> e.zeebeOutputExpression("foo", MESSAGE_NAME));
 
     // when
     final long workflowInstanceKey =

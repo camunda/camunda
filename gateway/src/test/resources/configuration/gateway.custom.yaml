@@ -1,0 +1,27 @@
+zeebe:
+  gateway:
+    network:
+      host: 192.168.0.1
+      port: 123
+
+    cluster:
+      contactPoint: foobar:1234
+      maxMessageSize: 4G
+      requestTimeout: 123h
+      clusterName: testCluster
+      memberId: testMember
+      host: 1.2.3.4
+      port: 12321
+
+    threads:
+      managementThreads: 100
+
+    monitoring:
+      enabled: true
+      host: monitoringHost
+      port: 1234
+
+    security:
+      enabled: true
+      privateKeyPath: privateKeyPath
+      certificateChainPath: certificateChainPath

@@ -11,9 +11,10 @@ Zeebe implements the [Gossip protocol](https://en.wikipedia.org/wiki/Gossip_prot
 
 The cluster is bootstrapped using a set of well-known bootstrap brokers, to which the other ones can connect. To achieve this, each broker must have at least one bootstrap broker as its initial contact point in their configuration:
 
-```toml
-[network.gossip]
-initialContactPoints = [ "node1.mycluster.loc:26502" ]
+```yaml
+...
+  cluster:
+    initialContactPoints: [ node1.mycluster.loc:26502 ]
 ```
 
 When a broker is connected to the cluster for the first time, it fetches the topology from the initial contact points and then starts gossiping with the other brokers. Brokers keep cluster topology locally across restarts.

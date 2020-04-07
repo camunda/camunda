@@ -109,9 +109,9 @@ public final class CreateWorkflowInstanceWithResultTest {
                 b -> {
                   b.embeddedSubProcess()
                       .startEvent()
-                      .serviceTask("task", t -> t.zeebeTaskType(jobType))
+                      .serviceTask("task", t -> t.zeebeJobType(jobType))
                       .endEvent();
-                  b.zeebeInput("x", "y");
+                  b.zeebeInputExpression("x", "y");
                 })
             .endEvent()
             .done();
@@ -182,7 +182,7 @@ public final class CreateWorkflowInstanceWithResultTest {
                 .serviceTask(
                     "task",
                     t -> {
-                      t.zeebeTaskType(jobType);
+                      t.zeebeJobType(jobType);
                     })
                 .endEvent("end")
                 .done());

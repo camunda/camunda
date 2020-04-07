@@ -1,0 +1,83 @@
+# Zeebe Standalone Broker configuration file (with embedded gateway)
+
+# This file is based on broker.standalone.yaml.template but stripped down to contain only a limited
+# set of configuration options. These are a good starting point to get to know Zeebe.
+# For advanced configuration options, have a look at the templates in this folder.
+
+# !!! Note that this configuration is not suitable for running a standalone gateway. !!!
+# If you want to run a standalone gateway node, please have a look at gateway.yaml.template
+
+# ----------------------------------------------------
+# Byte sizes
+# For buffers and others must be specified as strings and follow the following
+# format: "10U" where U (unit) must be replaced with KB = Kilobytes, MB = Megabytes or GB = Gigabytes.
+# If unit is omitted then the default unit is simply bytes.
+# Example:
+# sendBufferSize = "16MB" (creates a buffer of 16 Megabytes)
+#
+# Time units
+# Timeouts, intervals, and the likes, must be specified either in the standard ISO-8601 format used
+# by java.time.Duration, or as strings with the following format: "VU", where:
+#   - V is a numerical value (e.g. 1, 5, 10, etc.)
+#   - U is the unit, one of: ms = Millis, s = Seconds, m = Minutes, or h = Hours
+#
+# Paths:
+# Relative paths are resolved relative to the installation directory of the broker.
+# ----------------------------------------------------
+
+zeebe:
+  broker:
+    gateway:
+      # Enable the embedded gateway to start on broker startup.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_ENABLE.
+      enable: true
+
+      network:
+        # Sets the port the embedded gateway binds to.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_NETWORK_PORT.
+        port: 26500
+
+      security:
+        # Enables TLS authentication between clients and the gateway
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED.
+        enabled: false
+
+    network:
+      # Controls the default host the broker should bind to. Can be overwritten on a
+      # per binding basis for client, management and replication
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_HOST.
+      host: 0.0.0.0
+
+    data:
+      # Specify a list of directories in which data is stored.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORIES.
+      directories: [ data ]
+      # The size of data log segment files.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
+      logSegmentSize: 512MB
+      # How often we take snapshots of streams (time unit)
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
+      snapshotPeriod: 15m
+
+    cluster:
+      # Specifies the Zeebe cluster size.
+      # This can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_CLUSTERSIZE.
+      clusterSize: 1
+      # Controls the replication factor, which defines the count of replicas per partition.
+      # This can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR.
+      replicationFactor: 1
+      # Controls the number of partitions, which should exist in the cluster.
+      # This can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT.
+      partitionsCount: 1
+
+    threads:
+      # Controls the number of non-blocking CPU threads to be used.
+      # WARNING: You should never specify a value that is larger than the number of physical cores
+      # available. Good practice is to leave 1-2 cores for ioThreads and the operating
+      # system (it has to run somewhere). For example, when running Zeebe on a machine
+      # which has 4 cores, a good value would be 2.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
+      cpuThreadCount: 2
+      # Controls the number of io threads to be used.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_IOTHREADCOUNT
+      ioThreadCount: 2

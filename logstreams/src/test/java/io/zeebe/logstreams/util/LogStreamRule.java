@@ -7,7 +7,7 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.atomix.protocols.raft.storage.RaftStorage.Builder;
+import io.atomix.raft.storage.RaftStorage.Builder;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -61,25 +61,13 @@ public final class LogStreamRule extends ExternalResource {
     return new LogStreamRule(temporaryFolder, true, b -> {});
   }
 
-  public static LogStreamRule createRuleWithoutStarting(final TemporaryFolder temporaryFolder) {
-    return new LogStreamRule(temporaryFolder, false, b -> {});
-  }
-
-  public SynchronousLogStream startLogStreamWithStorageConfiguration(
-      final UnaryOperator<Builder> builder) {
-    logStorageRule = new AtomixLogStorageRule(temporaryFolder);
-    this.logStorageRule.open(builder);
-    startLogStream();
-    return logStream;
-  }
-
   @Override
   protected void before() {
     actorSchedulerRule = new ActorSchedulerRule(clock);
     actorSchedulerRule.before();
 
     if (shouldStartByDefault) {
-      startLogStream();
+      createLogStream();
     }
   }
 
@@ -90,7 +78,7 @@ public final class LogStreamRule extends ExternalResource {
     actorSchedulerRule.after();
   }
 
-  private void startLogStream() {
+  public void createLogStream() {
     final ActorScheduler actorScheduler = actorSchedulerRule.get();
 
     if (logStorageRule == null) {

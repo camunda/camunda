@@ -10,18 +10,16 @@ package io.zeebe.broker.logstreams.state;
 import io.zeebe.broker.exporter.stream.ExportersState;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.LastProcessedPositionState;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.ZeebeState;
 import java.nio.file.Path;
 import org.slf4j.Logger;
 
 public class StatePositionSupplier {
 
-  private final int partitionId;
   private final Logger logger;
 
-  public StatePositionSupplier(final int partitionId, final Logger log) {
-    this.partitionId = partitionId;
+  public StatePositionSupplier(final Logger log) {
     this.logger = log;
   }
 
@@ -30,40 +28,53 @@ public class StatePositionSupplier {
     long exportedPosition = -1;
 
     try (final var db = open(directory)) {
-      processedPosition = getLastProcessedPosition(db);
-      exportedPosition = getMinimumExportedPosition(db);
+      processedPosition = getLastProcessedPosition(directory, db);
+      exportedPosition = getMinimumExportedPosition(directory, db);
     } catch (final Exception e) {
       logger.error(
-          "Unexpected error occurred while obtaining the processed and exported position for partition {}",
-          partitionId,
+          "Unexpected error occurred while obtaining the processed and exported position from the snapshot {}",
+          directory,
           e);
     }
 
     return Math.min(processedPosition, exportedPosition);
   }
 
-  private long getMinimumExportedPosition(final ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public long getLastProcessedPosition(final Path directory) {
+    long processedPosition = -1;
+
+    try (final var db = open(directory)) {
+      processedPosition = getLastProcessedPosition(directory, db);
+    } catch (final Exception e) {
+      logger.error(
+          "Unexpected error occurred while obtaining the processed position from the given snapshot {}",
+          directory,
+          e);
+    }
+
+    return processedPosition;
+  }
+
+  private long getMinimumExportedPosition(
+      final Path directory, final ZeebeDb<ZbColumnFamilies> zeebeDb) {
     final ExportersState exporterState = new ExportersState(zeebeDb, zeebeDb.createContext());
 
     if (exporterState.hasExporters()) {
       final long lowestPosition = exporterState.getLowestPosition();
-
-      logger.debug(
-          "The lowest exported position for partition {} is {}", partitionId, lowestPosition);
+      logger.debug("The lowest exported position for snapshot {} is {}", directory, lowestPosition);
 
       return lowestPosition;
     } else {
-      logger.debug("No exporters present in snapshot for partition {}", partitionId);
+      logger.debug("No exporters present in snapshot {}", directory);
       return Long.MAX_VALUE;
     }
   }
 
-  private long getLastProcessedPosition(final ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    final ZeebeState processorState = new ZeebeState(partitionId, zeebeDb, zeebeDb.createContext());
-    final long lowestPosition = processorState.getLastSuccessfulProcessedRecordPosition();
-
-    logger.debug("The last processed position for partition {} is {}", partitionId, lowestPosition);
-
+  private long getLastProcessedPosition(
+      final Path directory, final ZeebeDb<ZbColumnFamilies> zeebeDb) {
+    final var lastProcessedState = new LastProcessedPositionState(zeebeDb, zeebeDb.createContext());
+    final long lowestPosition = lastProcessedState.getPosition();
+    logger.debug("The last processed position for snapshot {} is {}", directory, lowestPosition);
     return lowestPosition;
   }
 

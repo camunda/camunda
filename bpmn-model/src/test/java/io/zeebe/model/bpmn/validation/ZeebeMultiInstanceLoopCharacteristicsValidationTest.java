@@ -32,7 +32,7 @@ public class ZeebeMultiInstanceLoopCharacteristicsValidationTest
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("test").multiInstance())
+            .serviceTask("task", t -> t.zeebeJobType("test").multiInstance())
             .done(),
         singletonList(
             expect(
@@ -43,7 +43,10 @@ public class ZeebeMultiInstanceLoopCharacteristicsValidationTest
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
-                "task", t -> t.zeebeTaskType("test").multiInstance(b -> b.zeebeInputCollection("")))
+                "task",
+                t ->
+                    t.zeebeJobType("test")
+                        .multiInstance(b -> b.zeebeInputCollectionExpression(null)))
             .done(),
         singletonList(
             expect(
@@ -56,9 +59,10 @@ public class ZeebeMultiInstanceLoopCharacteristicsValidationTest
             .serviceTask(
                 "task",
                 t ->
-                    t.zeebeTaskType("test")
+                    t.zeebeJobType("test")
                         .multiInstance(
-                            b -> b.zeebeInputCollection("xs").zeebeOutputCollection("ys")))
+                            b ->
+                                b.zeebeInputCollectionExpression("xs").zeebeOutputCollection("ys")))
             .done(),
         singletonList(
             expect(
@@ -71,8 +75,11 @@ public class ZeebeMultiInstanceLoopCharacteristicsValidationTest
             .serviceTask(
                 "task",
                 t ->
-                    t.zeebeTaskType("test")
-                        .multiInstance(b -> b.zeebeInputCollection("xs").zeebeOutputElement("y")))
+                    t.zeebeJobType("test")
+                        .multiInstance(
+                            b ->
+                                b.zeebeInputCollectionExpression("xs")
+                                    .zeebeOutputElementExpression("y")))
             .done(),
         singletonList(
             expect(

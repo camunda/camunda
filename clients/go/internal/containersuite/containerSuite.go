@@ -16,11 +16,6 @@ package containersuite
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
-	"time"
-
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/suite"
@@ -31,6 +26,10 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io/ioutil"
+	"os"
+	"strings"
+	"time"
 )
 
 type zeebeWaitStrategy struct {
@@ -121,7 +120,10 @@ func sanitizeDockerLogs(log string) string {
 }
 
 func (s zeebeWaitStrategy) waitForTopology(zbClient zbc.Client) error {
-	res, err := zbClient.NewTopologyCommand().Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	res, err := zbClient.NewTopologyCommand().Send(ctx)
 	for (err != nil && status.Code(err) == codes.Unavailable) || !isStable(res) {
 		time.Sleep(s.waitTime)
 
@@ -130,11 +132,7 @@ func (s zeebeWaitStrategy) waitForTopology(zbClient zbc.Client) error {
 		res, err = zbClient.NewTopologyCommand().Send(ctx)
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return zbClient.Close()
+	return err
 }
 
 func isStable(res *pb.TopologyResponse) bool {
@@ -155,7 +153,6 @@ type ContainerSuite struct {
 	WaitTime time.Duration
 	// ContainerImage is the ID of docker image to be used
 	ContainerImage string
-
 	// GatewayAddress is the contact point of the spawned Zeebe container specified in the format 'host:port'
 	GatewayAddress string
 

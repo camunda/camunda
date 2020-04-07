@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration status="WARN" shutdownHook="disable">
 
   <Properties>
     <Property name="log.path">${sys:app.home}/logs</Property>
@@ -10,6 +10,10 @@
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout
         pattern="${log.pattern}"/>
+    </Console>
+
+    <Console name="Stackdriver" target="SYSTEM_OUT">
+      <StackdriverJSONLayout/>
     </Console>
 
     <RollingFile name="RollingFile" fileName="${log.path}/zeebe.log"
@@ -33,7 +37,7 @@
       <AppenderRef ref="RollingFile"/>
 
       <!-- remove to disable console logging -->
-      <AppenderRef ref="Console"/>
+      <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-Console}"/>
     </Root>
   </Loggers>
 

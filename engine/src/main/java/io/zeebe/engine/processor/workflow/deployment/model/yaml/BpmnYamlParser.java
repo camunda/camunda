@@ -92,7 +92,7 @@ public final class BpmnYamlParser {
 
           addTask(gatewayBuilder, flow.getDefaultCase());
         } else {
-          gatewayBuilder.condition(flow.getCondition());
+          gatewayBuilder.conditionExpression(flow.getCondition());
 
           addTask(gatewayBuilder, flow.getNext());
         }
@@ -125,10 +125,10 @@ public final class BpmnYamlParser {
       final AbstractFlowNodeBuilder<?, ?> builder, final YamlTask task) {
     final String id = task.getId();
     final String taskType = task.getType();
-    final int taskRetries = task.getRetries();
+    final String taskRetries = task.getRetries();
 
     final ServiceTaskBuilder serviceTaskBuilder =
-        builder.serviceTask(id).zeebeTaskType(taskType).zeebeTaskRetries(taskRetries);
+        builder.serviceTask(id).zeebeJobType(taskType).zeebeJobRetries(taskRetries);
 
     for (final Entry<String, String> header : task.getHeaders().entrySet()) {
       serviceTaskBuilder.zeebeTaskHeader(header.getKey(), header.getValue());
@@ -142,11 +142,12 @@ public final class BpmnYamlParser {
   private void addInputOutputMappingToTask(
       final YamlTask task, final ServiceTaskBuilder serviceTaskBuilder) {
     for (final YamlMapping inputMapping : task.getInputs()) {
-      serviceTaskBuilder.zeebeInput(inputMapping.getSource(), inputMapping.getTarget());
+      serviceTaskBuilder.zeebeInputExpression(inputMapping.getSource(), inputMapping.getTarget());
     }
 
     for (final YamlMapping outputMapping : task.getOutputs()) {
-      serviceTaskBuilder.zeebeOutput(outputMapping.getSource(), outputMapping.getTarget());
+      serviceTaskBuilder.zeebeOutputExpression(
+          outputMapping.getSource(), outputMapping.getTarget());
     }
   }
 }

@@ -12,11 +12,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import java.io.IOException;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -24,37 +24,50 @@ import org.junit.Test;
 public final class BrokerHttpServerTest {
 
   @ClassRule public static final EmbeddedBrokerRule RULE = new EmbeddedBrokerRule();
-
-  private static String baseUrl;
+  private static String host;
+  private static int port;
 
   @BeforeClass
   public static void setUp() {
     final SocketBindingCfg monitoringApi = RULE.getBrokerCfg().getNetwork().getMonitoringApi();
-    baseUrl = String.format("http://%s:%d", monitoringApi.getHost(), monitoringApi.getPort());
+    host = monitoringApi.getHost();
+    port = monitoringApi.getPort();
   }
 
   @Test
-  public void shouldGetMetrics() throws IOException {
-    final String url = baseUrl + "/metrics";
+  public void shouldGetMetrics() throws IOException, InterruptedException {
+    // when
+    final String path = "metrics";
+    final var response = sendRequest(host, port, path);
 
-    try (final CloseableHttpClient client = HttpClients.createDefault()) {
-      final HttpGet request = new HttpGet(url);
-      try (final CloseableHttpResponse response = client.execute(request)) {
-        assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
-        assertThat(EntityUtils.toString(response.getEntity())).contains("jvm_info");
-      }
-    }
+    // then
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.body()).contains("jvm_info");
   }
 
   @Test
-  public void shouldGetReadyStatus() throws IOException {
-    final String url = baseUrl + "/ready";
+  public void shouldGetReadyStatus() throws IOException, InterruptedException {
+    // when
+    final String path = "ready";
+    final var response = sendRequest(host, port, path);
+    // then
+    assertThat(response.statusCode()).isEqualTo(204);
+  }
 
-    try (final CloseableHttpClient client = HttpClients.createDefault()) {
-      final HttpGet request = new HttpGet(url);
-      try (final CloseableHttpResponse response = client.execute(request)) {
-        assertThat(response.getStatusLine().getStatusCode()).isEqualTo(204);
-      }
-    }
+  @Test
+  public void shouldGetHealthStatus() throws IOException, InterruptedException {
+    // when
+    final String path = "health";
+    final var response = sendRequest(host, port, path);
+    // then
+    assertThat(response.statusCode()).isEqualTo(204);
+  }
+
+  private HttpResponse<String> sendRequest(final String host, final int port, final String path)
+      throws IOException, InterruptedException {
+    final var uri = URI.create(String.format("http://%s:%d/%s", host, port, path));
+    final var client = HttpClient.newHttpClient();
+    final var request = HttpRequest.newBuilder(uri).build();
+    return client.send(request, BodyHandlers.ofString());
   }
 }

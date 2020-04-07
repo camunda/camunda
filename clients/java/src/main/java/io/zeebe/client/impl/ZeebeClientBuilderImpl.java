@@ -39,8 +39,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
-  private static final String ILLEGAL_KEEP_ALIVE_FMT =
-      "Keep alive must be expressed as a positive integer followed by either s (seconds), m (minutes) or h (hours) but got instead '%s' instead.";
+
+  private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String brokerContactPoint = "0.0.0.0:26500";
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
@@ -53,7 +53,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = Duration.ofSeconds(45);
-  private final List interceptors = new ArrayList();
 
   @Override
   public String getBrokerContactPoint() {
@@ -116,7 +115,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
-  public List getInterceptors() {
+  public List<ClientInterceptor> getInterceptors() {
     return interceptors;
   }
 
@@ -143,7 +142,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
               Integer.parseInt(properties.getProperty(ClientProperties.DEFAULT_JOB_TIMEOUT))));
     }
     if (properties.containsKey(ClientProperties.DEFAULT_JOB_POLL_INTERVAL)) {
-      defaultJobTimeout(
+      defaultJobPollInterval(
           Duration.ofMillis(
               Integer.parseInt(
                   properties.getProperty(ClientProperties.DEFAULT_JOB_POLL_INTERVAL))));
@@ -318,6 +317,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   private static void appendProperty(
       final StringBuilder sb, final String propertyName, final Object value) {
-    sb.append(propertyName + ": " + value + "\n");
+    sb.append(propertyName).append(": ").append(value).append("\n");
   }
 }

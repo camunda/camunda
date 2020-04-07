@@ -14,7 +14,7 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.util.ByteValue;
+import io.zeebe.util.SocketUtil;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
@@ -22,30 +22,31 @@ import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.springframework.util.unit.DataSize;
 
 public final class RestoreTest {
-  private static final int ATOMIX_SEGMENT_SIZE = (int) ByteValue.ofMegabytes(2).toBytes();
-  private static final int LARGE_PAYLOAD_BYTESIZE = (int) ByteValue.ofKilobytes(32).toBytes();
+  private static final DataSize ATOMIX_SEGMENT_SIZE = DataSize.ofMegabytes(2);
+  private static final DataSize LARGE_PAYLOAD_BYTESIZE = DataSize.ofKilobytes(32);
   private static final String LARGE_PAYLOAD =
-      "{\"blob\": \"" + getRandomBase64Bytes(LARGE_PAYLOAD_BYTESIZE) + "\"}";
+      "{\"blob\": \"" + getRandomBase64Bytes(LARGE_PAYLOAD_BYTESIZE.toBytes()) + "\"}";
 
-  private static final int SNAPSHOT_PERIOD_MIN = 5;
+  private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
   private final ClusteringRule clusteringRule =
       new ClusteringRule(
           1,
           3,
           3,
           cfg -> {
-            cfg.getData().setMaxSnapshots(1);
-            cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD_MIN + "m");
-            cfg.getData().setRaftSegmentSize(ByteValue.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
-            cfg.getNetwork().setMaxMessageSize(ByteValue.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
+            cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
+            cfg.getData().setLogSegmentSize(ATOMIX_SEGMENT_SIZE);
+            cfg.getNetwork().setMaxMessageSize(ATOMIX_SEGMENT_SIZE);
           });
   private final GrpcClientRule clientRule =
       new GrpcClientRule(
           config ->
               config
-                  .brokerContactPoint(clusteringRule.getGatewayAddress().toString())
+                  .brokerContactPoint(
+                      SocketUtil.toHostAndPortString(clusteringRule.getGatewayAddress()))
                   .defaultRequestTimeout(Duration.ofMinutes(1))
                   .usePlaintext());
 
@@ -67,24 +68,24 @@ public final class RestoreTest {
 
     // when
     final long firstWorkflowKey = clientRule.deployWorkflow(firstWorkflow);
-    clusteringRule.getClock().addTime(Duration.ofMinutes(SNAPSHOT_PERIOD_MIN));
-    clusteringRule.waitForValidSnapshotAtBroker(getLeader());
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    clusteringRule.waitForSnapshotAtBroker(getLeader());
 
     final long secondWorkflowKey = clientRule.deployWorkflow(secondWorkflow);
 
     writeManyEventsUntilAtomixLogIsCompactable();
-    clusteringRule.waitForValidSnapshotAtBroker(
+    clusteringRule.waitForSnapshotAtBroker(
         clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
     clusteringRule.restartBroker(2);
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(2));
+    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(2));
 
     clusteringRule.stopBroker(1);
 
     final long thirdWorkflowKey = clientRule.deployWorkflow(thirdWorkflow);
 
     writeManyEventsUntilAtomixLogIsCompactable();
-    clusteringRule.waitForValidSnapshotAtBroker(
+    clusteringRule.waitForSnapshotAtBroker(
         clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
     clusteringRule.restartBroker(1);
@@ -131,7 +132,8 @@ public final class RestoreTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
     final long workflowKey = clientRule.deployWorkflow(workflow);
-    final int requiredInstances = Math.floorDiv(ATOMIX_SEGMENT_SIZE, LARGE_PAYLOAD_BYTESIZE) + 1;
+    final int requiredInstances =
+        (int) Math.floorDiv(ATOMIX_SEGMENT_SIZE.toBytes(), LARGE_PAYLOAD_BYTESIZE.toBytes()) + 1;
     IntStream.range(0, requiredInstances)
         .forEach(i -> clientRule.createWorkflowInstance(workflowKey, LARGE_PAYLOAD));
   }

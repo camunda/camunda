@@ -7,7 +7,7 @@
  */
 package io.zeebe.logstreams.storage.atomix;
 
-import io.atomix.protocols.raft.partition.RaftPartition;
+import io.atomix.raft.partition.RaftPartition;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.nio.ByteBuffer;
@@ -15,28 +15,29 @@ import java.util.NoSuchElementException;
 
 public class AtomixLogStorage implements LogStorage {
   private final AtomixReaderFactory readerFactory;
-  private final AtomixLogCompactor logCompacter;
   private final AtomixAppenderSupplier appenderSupplier;
 
   private boolean opened;
+  private final ZeebeIndexMapping zeebeIndexMapping;
 
   public AtomixLogStorage(
+      final ZeebeIndexMapping zeebeIndexMapping,
       final AtomixReaderFactory readerFactory,
-      final AtomixLogCompactor logCompacter,
       final AtomixAppenderSupplier appenderSupplier) {
+    this.zeebeIndexMapping = zeebeIndexMapping;
     this.readerFactory = readerFactory;
-    this.logCompacter = logCompacter;
     this.appenderSupplier = appenderSupplier;
   }
 
-  public static AtomixLogStorage ofPartition(final RaftPartition partition) {
+  public static AtomixLogStorage ofPartition(
+      final ZeebeIndexMapping zeebeIndexMapping, final RaftPartition partition) {
     final var server = new AtomixRaftServer(partition.getServer());
-    return new AtomixLogStorage(server, server, server);
+    return new AtomixLogStorage(zeebeIndexMapping, server, server);
   }
 
   @Override
   public LogStorageReader newReader() {
-    return new AtomixLogStorageReader(readerFactory.create());
+    return new AtomixLogStorageReader(zeebeIndexMapping, readerFactory.create());
   }
 
   @Override
@@ -57,11 +58,6 @@ public class AtomixLogStorage implements LogStorage {
           new NoSuchElementException(
               "Expected an appender, but none found, most likely we are not the leader"));
     }
-  }
-
-  @Override
-  public void delete(final long index) {
-    logCompacter.compact(index);
   }
 
   @Override

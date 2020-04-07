@@ -15,8 +15,9 @@ import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
 import io.atomix.core.AtomixBuilder;
-import io.atomix.protocols.raft.partition.RaftPartitionGroup;
-import io.atomix.protocols.raft.partition.RaftPartitionGroup.Builder;
+import io.atomix.core.AtomixConfig;
+import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotStoreFactory;
@@ -24,7 +25,6 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.util.ByteValue;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -57,7 +57,7 @@ public final class AtomixFactory {
             .build();
 
     final AtomixBuilder atomixBuilder =
-        Atomix.builder()
+        Atomix.builder(new AtomixConfig())
             .withClusterId(clusterCfg.getClusterName())
             .withMemberId(localMemberId)
             .withMembershipProtocol(membershipProtocol)
@@ -109,26 +109,27 @@ public final class AtomixFactory {
             .withPartitionSize(clusterCfg.getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
-            .withStateMachineFactory(ZeebeRaftStateMachine::new)
+            .withStateMachineFactory(
+                (raftContext, threadContext, threadContextFactory) ->
+                    new ZeebeRaftStateMachine(raftContext))
             .withSnapshotStoreFactory(new DbSnapshotStoreFactory())
             .withFlushOnCommit();
 
     // by default, the Atomix max entry size is 1 MB
-    final ByteValue maxMessageSize = networkCfg.getMaxMessageSize();
-    partitionGroupBuilder.withMaxEntrySize((int) maxMessageSize.toBytes());
+    final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
+    partitionGroupBuilder.withMaxEntrySize(maxMessageSize);
 
-    Optional.ofNullable(dataCfg.getRaftSegmentSize())
-        .map(ByteValue::new)
+    Optional.ofNullable(dataCfg.getLogSegmentSizeInBytes())
         .ifPresent(
             segmentSize -> {
-              if (segmentSize.toBytes() < maxMessageSize.toBytes()) {
+              if (segmentSize < maxMessageSize) {
                 throw new IllegalArgumentException(
                     String.format(
                         "Expected the raft segment size greater than the max message size of %s, but was %s.",
                         maxMessageSize, segmentSize));
               }
 
-              partitionGroupBuilder.withSegmentSize(segmentSize.toBytes());
+              partitionGroupBuilder.withSegmentSize(segmentSize);
             });
 
     return partitionGroupBuilder.build();

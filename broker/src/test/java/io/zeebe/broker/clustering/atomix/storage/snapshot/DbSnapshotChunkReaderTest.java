@@ -9,7 +9,7 @@ package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.protocols.raft.storage.snapshot.SnapshotChunk;
+import io.atomix.raft.storage.snapshot.SnapshotChunk;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;

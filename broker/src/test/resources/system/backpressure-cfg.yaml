@@ -1,0 +1,6 @@
+zeebe:
+  broker:
+    backpressure:
+      enabled: true
+      algorithm: gradient
+      useWindowed: false

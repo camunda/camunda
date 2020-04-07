@@ -253,7 +253,7 @@ public final class CreateDeploymentTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
     assertThat(rejectedDeployment.getRejectionReason())
         .contains("Element: flow2 > conditionExpression")
-        .contains("ERROR: Condition expression is invalid");
+        .contains("ERROR: failed to parse expression");
   }
 
   @Test
@@ -540,7 +540,7 @@ public final class CreateDeploymentTest {
     final BpmnModelInstance definition3 =
         Bpmn.createExecutableProcess("process2")
             .startEvent()
-            .serviceTask("task", (t) -> t.zeebeTaskType("j").zeebeTaskHeader("k", "v"))
+            .serviceTask("task", (t) -> t.zeebeJobType("j").zeebeTaskHeader("k", "v"))
             .done();
 
     // when
@@ -559,6 +559,31 @@ public final class CreateDeploymentTest {
         .hasRejectionReason(
             "Expected to deploy new resources, but encountered the following errors:\n"
                 + "Duplicated process id in resources 'p2.bpmn' and 'p3.bpmn'");
+  }
+
+  @Test
+  public void shouldRejectDeploymentWithInvalidTimerStartEventExpression() {
+    // given
+    final BpmnModelInstance definition =
+        Bpmn.createExecutableProcess("process1")
+            .startEvent("start-event-1")
+            .timerWithCycleExpression("INVALID_CYCLE_EXPRESSION")
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> deploymentRejection =
+        ENGINE.deployment().withXmlResource("p1.bpmn", definition).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(deploymentRejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to deploy new resources, but encountered the following errors:\n"
+                + "'p1.bpmn': - Element: start-event-1\n"
+                + "    - ERROR: Expected a valid timer expression for start event, "
+                + "but encountered the following error: failed to evaluate expression "
+                + "'INVALID_CYCLE_EXPRESSION': no variable found for name "
+                + "'INVALID_CYCLE_EXPRESSION'\n");
   }
 
   private DeployedWorkflow findWorkflow(

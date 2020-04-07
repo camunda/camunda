@@ -76,7 +76,7 @@ public final class FailingSnapshotChunkReplicationTest {
     final List<SnapshotChunk> replicatedChunks = replicator.replicatedChunks;
     assertThat(replicatedChunks.size()).isGreaterThan(0);
 
-    final var snapshotDirectory = receiverStorage.getPendingDirectoryFor("1");
+    final var snapshotDirectory = receiverStorage.getPendingDirectoryFor("1").orElseThrow();
     assertThat(snapshotDirectory).doesNotExist();
     assertThat(receiverStorage.exists("1")).isFalse();
   }
@@ -97,7 +97,10 @@ public final class FailingSnapshotChunkReplicationTest {
     final List<SnapshotChunk> replicatedChunks = replicator.replicatedChunks;
     assertThat(replicatedChunks.size()).isGreaterThan(0);
 
-    final var snapshotDirectory = receiverStorage.getPendingDirectoryFor("1");
+    final var snapshotDirectory =
+        receiverStorage
+            .getPendingDirectoryFor(replicatedChunks.get(0).getSnapshotId())
+            .orElseThrow();
     assertThat(snapshotDirectory).exists();
     final var files = Files.list(snapshotDirectory).collect(Collectors.toList());
     assertThat(files)
@@ -106,7 +109,7 @@ public final class FailingSnapshotChunkReplicationTest {
             replicatedChunks.subList(0, 2).stream()
                 .map(SnapshotChunk::getChunkName)
                 .toArray(String[]::new));
-    assertThat(receiverStorage.exists("1")).isFalse();
+    assertThat(receiverStorage.exists(replicatedChunks.get(0).getSnapshotId())).isFalse();
   }
 
   private final class FlakyReplicator implements SnapshotReplication {

@@ -7,34 +7,21 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
-import io.zeebe.util.buffer.BufferUtil;
-import java.util.Optional;
-import org.agrona.DirectBuffer;
+import io.zeebe.el.Expression;
 
 public class ExecutableCallActivity extends ExecutableActivity {
 
-  private Optional<DirectBuffer> calledElementProcessId = Optional.empty();
-  private Optional<JsonPathQuery> calledElementProcessIdExpression = Optional.empty();
+  private Expression calledElementProcessId;
 
   public ExecutableCallActivity(final String id) {
     super(id);
   }
 
-  public Optional<DirectBuffer> getCalledElementProcessId() {
+  public Expression getCalledElementProcessId() {
     return calledElementProcessId;
   }
 
-  public void setCalledElementProcessId(final String calledElementProcessId) {
-    this.calledElementProcessId = Optional.of(BufferUtil.wrapString(calledElementProcessId));
-  }
-
-  public Optional<JsonPathQuery> getCalledElementProcessIdExpression() {
-    return calledElementProcessIdExpression;
-  }
-
-  public void setCalledElementProcessIdExpression(
-      final JsonPathQuery calledElementProcessIdExpression) {
-    this.calledElementProcessIdExpression = Optional.of(calledElementProcessIdExpression);
+  public void setCalledElementProcessId(final Expression calledElementProcessIdExpression) {
+    calledElementProcessId = calledElementProcessIdExpression;
   }
 }

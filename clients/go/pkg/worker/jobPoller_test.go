@@ -119,7 +119,7 @@ func (suite *JobPollerSuite) TestShouldNotPollAfterIntervalIfNotThreshold() {
 	// when
 	go suite.poller.poll(&suite.waitGroup)
 
-	// then one job is received after inital poll and no further poll
+	// then one job is received after initial poll and no further poll
 	suite.consumeJob()
 }
 
@@ -158,7 +158,7 @@ func (suite *JobPollerSuite) TestShouldNotPollAfterJobIsFinishedIfNotThreshold()
 	// when
 	go suite.poller.poll(&suite.waitGroup)
 
-	// then one job is received after inital poll and no further poll
+	// then one job is received after initial poll and no further poll
 	suite.completeJob()
 }
 

@@ -7,10 +7,10 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
-import io.atomix.protocols.raft.storage.snapshot.Snapshot;
-import io.atomix.protocols.raft.storage.snapshot.SnapshotChunkReader;
-import io.atomix.protocols.raft.storage.snapshot.impl.SnapshotReader;
-import io.atomix.protocols.raft.storage.snapshot.impl.SnapshotWriter;
+import io.atomix.raft.storage.snapshot.Snapshot;
+import io.atomix.raft.storage.snapshot.SnapshotChunkReader;
+import io.atomix.raft.storage.snapshot.impl.SnapshotReader;
+import io.atomix.raft.storage.snapshot.impl.SnapshotWriter;
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
@@ -30,16 +30,6 @@ public final class DbSnapshot implements Snapshot {
 
   private final Path directory;
   private final DbSnapshotMetadata metadata;
-
-  public DbSnapshot(
-      final Path directory,
-      final long index,
-      final long term,
-      final WallClockTimestamp timestamp,
-      final long position) {
-    this.directory = directory;
-    this.metadata = new DbSnapshotMetadata(index, term, timestamp, position);
-  }
 
   DbSnapshot(final Path directory, final DbSnapshotMetadata metadata) {
     this.directory = directory;

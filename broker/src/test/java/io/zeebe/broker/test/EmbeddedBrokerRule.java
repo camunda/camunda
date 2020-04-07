@@ -27,16 +27,18 @@ import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +52,7 @@ import org.slf4j.Logger;
 
 public final class EmbeddedBrokerRule extends ExternalResource {
 
-  public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
+  public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.yaml";
   public static final int INSTALL_TIMEOUT = 5;
   public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.MINUTES;
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
@@ -161,7 +163,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     return broker.getAtomix();
   }
 
-  public SocketAddress getGatewayAddress() {
+  public InetSocketAddress getGatewayAddress() {
     return brokerCfg.getGateway().getNetwork().toSocketAddress();
   }
 
@@ -192,7 +194,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         if (configStream == null) {
           brokerCfg = new BrokerCfg();
         } else {
-          brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
+          brokerCfg =
+              new TestConfigurationFactory()
+                  .create(null, "zeebe.broker", configStream, BrokerCfg.class);
         }
         configureBroker(brokerCfg);
       } catch (final IOException e) {
@@ -278,13 +282,16 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     }
 
     @Override
-    public void onBecomingFollower(
-        final int partitionId, final long term, final LogStream logStream) {}
+    public ActorFuture<Void> onBecomingFollower(
+        final int partitionId, final long term, final LogStream logStream) {
+      return CompletableActorFuture.completed(null);
+    }
 
     @Override
-    public void onBecomingLeader(
+    public ActorFuture<Void> onBecomingLeader(
         final int partitionId, final long term, final LogStream logStream) {
       latch.countDown();
+      return CompletableActorFuture.completed(null);
     }
   }
 }

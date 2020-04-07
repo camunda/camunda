@@ -52,7 +52,7 @@ public final class WorkflowInstanceStreamProcessorTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
           .sequenceFlowId("flow1")
-          .serviceTask("task", b -> b.zeebeTaskType("taskType"))
+          .serviceTask("task", b -> b.zeebeJobType("taskType"))
           .sequenceFlowId("flow2")
           .endEvent("end")
           .done();
@@ -62,7 +62,7 @@ public final class WorkflowInstanceStreamProcessorTest {
           .subProcess("subProcess")
           .embeddedSubProcess()
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("taskType"))
+          .serviceTask("task", b -> b.zeebeJobType("taskType"))
           .endEvent()
           .subProcessDone()
           .endEvent()
@@ -72,12 +72,13 @@ public final class WorkflowInstanceStreamProcessorTest {
           .startEvent()
           .intermediateCatchEvent(
               "catch-event",
-              c -> c.message(m -> m.name("order canceled").zeebeCorrelationKey("orderId")))
+              c ->
+                  c.message(m -> m.name("order canceled").zeebeCorrelationKeyExpression("orderId")))
           .done();
   private static final BpmnModelInstance TIMER_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task1", b -> b.zeebeTaskType("type"))
+          .serviceTask("task1", b -> b.zeebeJobType("type"))
           .boundaryEvent("timer1")
           .cancelActivity(true)
           .timerWithDuration("PT1S")
@@ -458,7 +459,7 @@ public final class WorkflowInstanceStreamProcessorTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("timer1")
             .timerWithDuration("PT1S")
             .endEvent("timer1End")

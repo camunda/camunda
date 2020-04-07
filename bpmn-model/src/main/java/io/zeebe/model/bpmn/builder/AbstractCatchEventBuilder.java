@@ -102,6 +102,10 @@ public abstract class AbstractCatchEventBuilder<
     return myself;
   }
 
+  public B timerWithDateExpression(final String timerDate) {
+    return timerWithDate(asZeebeExpression(timerDate));
+  }
+
   /**
    * Sets an event definition for the timer with a time date.
    *
@@ -123,6 +127,16 @@ public abstract class AbstractCatchEventBuilder<
   /**
    * Sets an event definition for the timer with a time duration.
    *
+   * @param timerDuration the duration of the timer (as feel expression, without the '=' prefix)
+   * @return the builder object
+   */
+  public B timerWithDurationExpression(final String timerDuration) {
+    return timerWithDuration(asZeebeExpression(timerDuration));
+  }
+
+  /**
+   * Sets an event definition for the timer with a time duration.
+   *
    * @param timerDuration the time duration of the timer
    * @return the builder object
    */
@@ -136,6 +150,16 @@ public abstract class AbstractCatchEventBuilder<
     element.getEventDefinitions().add(timerEventDefinition);
 
     return myself;
+  }
+
+  /**
+   * Sets an event definition for the timer with a time cycle.
+   *
+   * @param timerCycle the time cycle of the timer (as feel expression, without the '=' prefix)
+   * @return the builder object
+   */
+  public B timerWithCycleExpression(final String timerCycle) {
+    return timerWithCycle(asZeebeExpression(timerCycle));
   }
 
   /**
@@ -190,6 +214,18 @@ public abstract class AbstractCatchEventBuilder<
   public B condition(final String condition) {
     conditionalEventDefinition().condition(condition);
     return myself;
+  }
+
+  @Override
+  public B zeebeInputExpression(final String sourceExpression, final String target) {
+    final String expression = asZeebeExpression(sourceExpression);
+    return zeebeInput(expression, target);
+  }
+
+  @Override
+  public B zeebeOutputExpression(final String sourceExpression, final String target) {
+    final String expression = asZeebeExpression(sourceExpression);
+    return zeebeOutput(expression, target);
   }
 
   @Override

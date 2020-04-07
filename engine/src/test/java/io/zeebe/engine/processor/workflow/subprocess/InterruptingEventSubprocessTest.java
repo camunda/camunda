@@ -82,7 +82,8 @@ public class InterruptingEventSubprocessTest {
       },
       {
         "message",
-        eventSubprocess(s -> s.message(b -> b.name(messageName).zeebeCorrelationKey("key"))),
+        eventSubprocess(
+            s -> s.message(b -> b.name(messageName).zeebeCorrelationKeyExpression("key"))),
         eventTrigger(
             key -> {
               RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
@@ -165,11 +166,11 @@ public class InterruptingEventSubprocessTest {
         withEventSubprocess(builder)
             .startEvent("start_proc")
             .parallelGateway("fork")
-            .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
+            .serviceTask("task-1", t -> t.zeebeJobType("task-1"))
             .sequenceFlowId("task-1-to-join")
             .parallelGateway("join")
             .moveToNode("fork")
-            .serviceTask("task-2", t -> t.zeebeTaskType(JOB_TYPE))
+            .serviceTask("task-2", t -> t.zeebeJobType(JOB_TYPE))
             .sequenceFlowId("task-2-to-join")
             .connectTo("join")
             .endEvent("end_proc")
@@ -215,7 +216,7 @@ public class InterruptingEventSubprocessTest {
                 .embeddedSubProcess()
                 .eventSubProcess("event_sub_proc", eventSubprocess)
                 .startEvent("sub_start")
-                .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
                 .endEvent("sub_end");
 
     final BpmnModelInstance workflow =
@@ -327,7 +328,7 @@ public class InterruptingEventSubprocessTest {
             "message-event-subprocess",
             s ->
                 s.startEvent()
-                    .message(m -> m.name("other-message").zeebeCorrelationKey("key"))
+                    .message(m -> m.name("other-message").zeebeCorrelationKeyExpression("key"))
                     .endEvent())
         .eventSubProcess(
             "timer-event-subprocess",
@@ -413,7 +414,7 @@ public class InterruptingEventSubprocessTest {
   private static BpmnModelInstance workflow(final ProcessBuilder processBuilder) {
     return processBuilder
         .startEvent("start_proc")
-        .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+        .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
         .endEvent("end_proc")
         .done();
   }
@@ -443,7 +444,7 @@ public class InterruptingEventSubprocessTest {
                 .eventSubProcess("event_sub_proc")
                 .startEvent("event_sub_start")
                 .interrupting(true))
-        .serviceTask("event_sub_task", t -> t.zeebeTaskType(jobType))
+        .serviceTask("event_sub_task", t -> t.zeebeJobType(jobType))
         .endEvent("event_sub_end");
 
     return workflow;

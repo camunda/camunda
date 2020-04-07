@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow;
 
+import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processor.ProcessingContext;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.deployment.DeploymentCreatedProcessor;
@@ -49,16 +50,32 @@ public final class EngineProcessors {
     addDistributeDeploymentProcessors(
         actor, zeebeState, typedRecordProcessors, deploymentDistributor);
 
+    final var variablesState =
+        zeebeState.getWorkflowState().getElementInstanceState().getVariablesState();
+    final var expressionProcessor =
+        new ExpressionProcessor(
+            ExpressionLanguageFactory.createExpressionLanguage(), variablesState::getVariable);
+
     final CatchEventBehavior catchEventBehavior =
-        new CatchEventBehavior(zeebeState, subscriptionCommandSender, partitionsCount);
+        new CatchEventBehavior(
+            zeebeState, expressionProcessor, subscriptionCommandSender, partitionsCount);
 
     addDeploymentRelatedProcessorAndServices(
-        catchEventBehavior, partitionId, zeebeState, typedRecordProcessors, deploymentResponder);
+        catchEventBehavior,
+        partitionId,
+        zeebeState,
+        typedRecordProcessors,
+        deploymentResponder,
+        expressionProcessor);
     addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors);
 
     final BpmnStepProcessor stepProcessor =
         addWorkflowProcessors(
-            zeebeState, typedRecordProcessors, subscriptionCommandSender, catchEventBehavior);
+            zeebeState,
+            expressionProcessor,
+            typedRecordProcessors,
+            subscriptionCommandSender,
+            catchEventBehavior);
 
     final JobErrorThrownProcessor jobErrorThrownProcessor =
         addJobProcessors(
@@ -86,12 +103,14 @@ public final class EngineProcessors {
 
   private static BpmnStepProcessor addWorkflowProcessors(
       final ZeebeState zeebeState,
+      final ExpressionProcessor expressionProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior) {
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getWorkflowState());
     return WorkflowEventProcessors.addWorkflowProcessors(
         zeebeState,
+        expressionProcessor,
         typedRecordProcessors,
         subscriptionCommandSender,
         catchEventBehavior,
@@ -103,12 +122,13 @@ public final class EngineProcessors {
       final int partitionId,
       final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
-      final DeploymentResponder deploymentResponder) {
+      final DeploymentResponder deploymentResponder,
+      final ExpressionProcessor expressionProcessor) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
-          typedRecordProcessors, zeebeState, catchEventBehavior);
+          typedRecordProcessors, zeebeState, catchEventBehavior, expressionProcessor);
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(
           typedRecordProcessors, workflowState, deploymentResponder, partitionId);

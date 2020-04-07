@@ -14,6 +14,7 @@ import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.response.Topology;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.zeebe.util.SocketUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -30,7 +31,8 @@ public final class SecurityTest {
       new GrpcClientRule(
           cfg ->
               configureClientForTls(
-                  cfg.brokerContactPoint(clusteringRule.getGatewayAddress().toString())));
+                  cfg.brokerContactPoint(
+                      SocketUtil.toHostAndPortString(clusteringRule.getGatewayAddress()))));
 
   @Rule
   public RuleChain ruleChain =

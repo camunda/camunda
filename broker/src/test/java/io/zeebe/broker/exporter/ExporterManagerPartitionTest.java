@@ -29,6 +29,7 @@ import org.junit.rules.RuleChain;
 public final class ExporterManagerPartitionTest {
 
   private static final int PARTITIONS = 3;
+  private static final String TEST_EXPORTER_ID = "test-exporter";
 
   public final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
@@ -37,9 +38,8 @@ public final class ExporterManagerPartitionTest {
 
             final ExporterCfg exporterCfg = new ExporterCfg();
             exporterCfg.setClassName(TestExporter.class.getName());
-            exporterCfg.setId("test-exporter");
 
-            brokerCfg.getExporters().add(exporterCfg);
+            brokerCfg.getExporters().put(TEST_EXPORTER_ID, exporterCfg);
           });
 
   public final CommandApiRule clientRule = new CommandApiRule(brokerRule::getAtomix);

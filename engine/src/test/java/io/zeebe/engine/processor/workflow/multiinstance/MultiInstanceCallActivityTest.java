@@ -43,7 +43,8 @@ public final class MultiInstanceCallActivityTest {
               CALL_ACTIVITY_ID,
               c ->
                   c.zeebeProcessId(PROCESS_ID_CHILD)
-                      .multiInstance(b -> b.zeebeInputCollection(INPUT_COLLECTION_VARIABLE)))
+                      .multiInstance(
+                          b -> b.zeebeInputCollectionExpression(INPUT_COLLECTION_VARIABLE)))
           .endEvent()
           .done();
 
@@ -58,7 +59,7 @@ public final class MultiInstanceCallActivityTest {
     final var childWorkflow =
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType(jobType))
+            .serviceTask("task", t -> t.zeebeJobType(jobType))
             .endEvent()
             .done();
 

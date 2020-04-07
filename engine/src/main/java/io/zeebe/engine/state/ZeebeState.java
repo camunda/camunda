@@ -7,11 +7,8 @@
  */
 package io.zeebe.engine.state;
 
-import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbLong;
-import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.TypedRecord;
@@ -33,12 +30,10 @@ import org.slf4j.Logger;
 
 public class ZeebeState {
 
-  private static final String LAST_PROCESSED_EVENT_KEY = "LAST_PROCESSED_EVENT_KEY";
   private static final String BLACKLIST_INSTANCE_MESSAGE =
       "Blacklist workflow instance {}, due to previous errors.";
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
-  private static final long NO_EVENTS_PROCESSED = -1L;
 
   private final KeyState keyState;
   private final WorkflowState workflowState;
@@ -50,10 +45,8 @@ public class ZeebeState {
   private final WorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
   private final IncidentState incidentState;
   private final BlackList blackList;
+  private final LastProcessedPositionState lastProcessedPositionState;
 
-  private final DbString lastProcessedEventKey;
-  private final DbLong lastProcessedEventPosition;
-  private final ColumnFamily<DbString, DbLong> lastProcessedRecordPositionColumnFamily;
   private final int partitionId;
 
   public ZeebeState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
@@ -73,13 +66,7 @@ public class ZeebeState {
     workflowInstanceSubscriptionState = new WorkflowInstanceSubscriptionState(zeebeDb, dbContext);
     incidentState = new IncidentState(zeebeDb, dbContext, partitionId);
     blackList = new BlackList(zeebeDb, dbContext);
-
-    lastProcessedEventKey = new DbString();
-    lastProcessedEventKey.wrapString(LAST_PROCESSED_EVENT_KEY);
-    lastProcessedEventPosition = new DbLong();
-    lastProcessedRecordPositionColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEFAULT, dbContext, lastProcessedEventKey, lastProcessedEventPosition);
+    lastProcessedPositionState = new LastProcessedPositionState(zeebeDb, dbContext);
   }
 
   public DeploymentsState getDeploymentState() {
@@ -163,13 +150,11 @@ public class ZeebeState {
   }
 
   public void markAsProcessed(final long position) {
-    lastProcessedEventPosition.wrapLong(position);
-    lastProcessedRecordPositionColumnFamily.put(lastProcessedEventKey, lastProcessedEventPosition);
+    lastProcessedPositionState.setPosition(position);
   }
 
   public long getLastSuccessfulProcessedRecordPosition() {
-    final DbLong position = lastProcessedRecordPositionColumnFamily.get(lastProcessedEventKey);
-    return position != null ? position.getValue() : NO_EVENTS_PROCESSED;
+    return lastProcessedPositionState.getPosition();
   }
 
   public int getPartitionId() {

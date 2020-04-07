@@ -7,24 +7,21 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
+import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.FlowNode;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
-import io.zeebe.msgpack.mapping.Mapping;
-import io.zeebe.msgpack.mapping.MappingBuilder;
-import io.zeebe.msgpack.mapping.Mappings;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import java.util.Collection;
+import java.util.Optional;
 
 public final class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
 
-  private final MappingBuilder mappingBuilder = new MappingBuilder();
+  private final VariableMappingTransformer variableMappingTransformer =
+      new VariableMappingTransformer();
 
   @Override
   public Class<FlowNode> getType() {
@@ -37,7 +34,7 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
     final ExecutableFlowNode element =
         workflow.getElementById(flowNode.getId(), ExecutableFlowNode.class);
 
-    transformIoMappings(flowNode, element);
+    transformIoMappings(flowNode, element, context.getExpressionLanguage());
     bindLifecycle(element);
   }
 
@@ -57,21 +54,28 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
         WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ELEMENT_TERMINATED);
   }
 
-  private void transformIoMappings(final FlowNode element, final ExecutableFlowNode flowNode) {
-    final ZeebeIoMapping ioMapping = element.getSingleExtensionElement(ZeebeIoMapping.class);
+  private void transformIoMappings(
+      final FlowNode element,
+      final ExecutableFlowNode flowNode,
+      final ExpressionLanguage expressionLanguage) {
 
-    if (ioMapping != null) {
-      final Collection<ZeebeInput> inputs = ioMapping.getInputs();
-      inputs.forEach(i -> mappingBuilder.mapping(i.getSource(), i.getTarget()));
+    final var ioMapping =
+        Optional.ofNullable(element.getSingleExtensionElement(ZeebeIoMapping.class));
 
-      final Mapping[] inputMappings = mappingBuilder.build();
+    ioMapping
+        .map(ZeebeIoMapping::getInputs)
+        .filter(mappings -> !mappings.isEmpty())
+        .map(
+            mappings ->
+                variableMappingTransformer.transformInputMappings(mappings, expressionLanguage))
+        .ifPresent(flowNode::setInputMappings);
 
-      final Collection<ZeebeOutput> outputs = ioMapping.getOutputs();
-      outputs.forEach(o -> mappingBuilder.mapping(o.getSource(), o.getTarget()));
-      final Mapping[] outputMappings = mappingBuilder.build();
-
-      flowNode.setInputMappings(new Mappings(inputMappings));
-      flowNode.setOutputMappings(new Mappings(outputMappings));
-    }
+    ioMapping
+        .map(ZeebeIoMapping::getOutputs)
+        .filter(mappings -> !mappings.isEmpty())
+        .map(
+            mappings ->
+                variableMappingTransformer.transformOutputMappings(mappings, expressionLanguage))
+        .ifPresent(flowNode::setOutputMappings);
   }
 }

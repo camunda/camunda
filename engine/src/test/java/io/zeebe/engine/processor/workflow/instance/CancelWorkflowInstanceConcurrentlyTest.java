@@ -50,18 +50,18 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .parallelGateway("fork")
-          .serviceTask(ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE))
-          .serviceTask("task-after", t -> t.zeebeTaskType("nope"))
+          .serviceTask(ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
+          .serviceTask("task-after", t -> t.zeebeJobType("nope"))
           .done();
 
   private static final BpmnModelInstance PARALLEL_FLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .parallelGateway("fork")
-          .serviceTask(ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE))
+          .serviceTask(ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
           .endEvent()
           .moveToLastGateway()
-          .serviceTask("parallel-task", t -> t.zeebeTaskType("nope"))
+          .serviceTask("parallel-task", t -> t.zeebeJobType("nope"))
           .endEvent()
           .done();
 
@@ -74,10 +74,10 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
                   s.embeddedSubProcess()
                       .startEvent()
                       .parallelGateway("fork")
-                      .serviceTask(ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE))
+                      .serviceTask(ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
                       .endEvent()
                       .moveToLastGateway()
-                      .serviceTask("parallel-task", t -> t.zeebeTaskType("nope"))
+                      .serviceTask("parallel-task", t -> t.zeebeJobType("nope"))
                       .endEvent())
           .done();
 
@@ -87,10 +87,12 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
           .serviceTask(
               ELEMENT_ID,
               t ->
-                  t.zeebeTaskType(JOB_TYPE)
+                  t.zeebeJobType(JOB_TYPE)
                       .multiInstance(
-                          m -> m.parallel().zeebeInputCollection(INPUT_COLLECTION_VARIABLE)))
-          .serviceTask("task-after", t -> t.zeebeTaskType("nope"))
+                          m ->
+                              m.parallel()
+                                  .zeebeInputCollectionExpression(INPUT_COLLECTION_VARIABLE)))
+          .serviceTask("task-after", t -> t.zeebeJobType("nope"))
           .done();
 
   @Rule

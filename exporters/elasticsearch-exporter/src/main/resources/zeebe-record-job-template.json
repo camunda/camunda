@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-job_*"
+    "zeebe-record_job_*"
   ],
   "order": 20,
   "settings": {

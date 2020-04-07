@@ -273,7 +273,7 @@ public class ActorTask {
     }
   }
 
-  public void onFailure(final Throwable failure) {
+  public void onFailure(final Exception failure) {
     switch (lifecyclePhase) {
       case STARTING:
         Loggers.ACTOR_LOGGER.error(
@@ -294,9 +294,7 @@ public class ActorTask {
         break;
 
       default:
-        Loggers.ACTOR_LOGGER.error(
-            "Actor failed in phase '{}'. Continue with next job.", lifecyclePhase, failure);
-
+        actor.handleFailure(failure);
         currentJob.failFuture(failure);
     }
   }
@@ -544,6 +542,12 @@ public class ActorTask {
 
   public void insertJob(final ActorJob job) {
     fastLaneJobs.addFirst(job);
+  }
+
+  public void fail() {
+    lifecyclePhase = ActorLifecyclePhase.FAILED;
+    discardNextJobs();
+    actor.onActorFailed();
   }
 
   /** Describes an actor's scheduling state */

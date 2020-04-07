@@ -37,7 +37,7 @@ public class ZeebeTaskDefinitionValidator implements ModelElementValidator<Zeebe
     }
 
     if (element.getRetries() == null) {
-      validationResultCollector.addError(0, "Task retries must be an integer");
+      validationResultCollector.addError(0, "Task retries must be present and not empty");
     }
   }
 }

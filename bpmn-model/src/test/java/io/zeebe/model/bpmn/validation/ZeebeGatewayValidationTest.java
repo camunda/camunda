@@ -34,7 +34,7 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
             .endEvent()
             .moveToLastExclusiveGateway()
             .sequenceFlowId("flow2")
-            .condition("condition")
+            .conditionExpression("condition")
             .endEvent()
             .done(),
         singletonList(expect("flow1", "Must have a condition or be default flow"))
@@ -44,7 +44,7 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
             .startEvent()
             .exclusiveGateway("gateway")
             .sequenceFlowId("flow")
-            .condition("name", "$.foo")
+            .condition("name", "foo")
             .defaultFlow()
             .endEvent()
             .done(),
@@ -54,8 +54,8 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .condition("foo")
+            .serviceTask("task", b -> b.zeebeJobType("type"))
+            .conditionExpression("foo")
             .endEvent()
             .done(),
         singletonList(

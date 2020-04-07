@@ -15,6 +15,7 @@ import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.PublishMessageResponse;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
@@ -57,7 +58,10 @@ public final class MessageCorrelationTest {
             Bpmn.createExecutableProcess("process")
                 .startEvent()
                 .intermediateCatchEvent(CATCH_EVENT_ELEMENT_ID)
-                .message(c -> c.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_KEY_VARIABLE))
+                .message(
+                    c ->
+                        c.name(MESSAGE_NAME)
+                            .zeebeCorrelationKeyExpression(CORRELATION_KEY_VARIABLE))
                 .endEvent()
                 .done());
   }
@@ -155,7 +159,7 @@ public final class MessageCorrelationTest {
         .join();
 
     // when
-    final ZeebeFuture<Void> future =
+    final ZeebeFuture<PublishMessageResponse> future =
         CLIENT_RULE
             .getClient()
             .newPublishMessageCommand()

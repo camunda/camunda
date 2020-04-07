@@ -15,11 +15,13 @@ package zbc
 
 import (
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/oauth2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 type oauthCredsCacheTestSuite struct {
@@ -32,29 +34,31 @@ func TestOAuthCredsProviderCacheSuite(t *testing.T) {
 
 const wombatAudience = "wombat.cloud.camunda.io"
 
-var wombat = &OAuthCredentials{
+var wombat = &oauth2.Token{
 	AccessToken: "wombat",
-	ExpiresIn:   3600,
+	Expiry:      time.Date(3020, 1, 1, 0, 0, 0, 0, time.UTC),
 	TokenType:   "Bearer",
-	Scope:       "grpc",
 }
 
 const aardvarkAudience = "aardvark.cloud.camunda.io"
 
-var aardvark = &OAuthCredentials{
+var aardvark = &oauth2.Token{
 	AccessToken: "aardvark",
-	ExpiresIn:   1800,
+	Expiry:      time.Date(3020, 1, 1, 0, 0, 0, 0, time.UTC),
 	TokenType:   "Bearer",
-	Scope:       "grpc",
 }
 
-func init() {
+func (s *oauthCredsCacheTestSuite) SetupSuite() {
 	// overwrite the default cache path for testing
 	file, err := ioutil.TempFile("", "credentialsCache.tmp.yml")
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	DefaultOauthYamlCachePath, err = filepath.Abs(file.Name())
 	if err != nil {
@@ -73,12 +77,13 @@ func (s *oauthCredsCacheTestSuite) TestReadCacheGoldenFile() {
 
 func (s *oauthCredsCacheTestSuite) TestWriteCacheGoldenFile() {
 	capybaraAudience := "capybara.cloud.camunda.io"
-	capybara := &OAuthCredentials{
+
+	capybara := &oauth2.Token{
 		AccessToken: "capybara",
-		ExpiresIn:   900,
+		Expiry:      time.Now().Add(time.Second * 900).In(time.UTC),
 		TokenType:   "Bearer",
-		Scope:       "grpc",
 	}
+
 	cachePath := copyCredentialsCacheGoldenFileToTempFile()
 	cache, err := NewOAuthYamlCredentialsCache(cachePath)
 	s.NoError(err)
@@ -86,7 +91,9 @@ func (s *oauthCredsCacheTestSuite) TestWriteCacheGoldenFile() {
 	err = cache.Update(capybaraAudience, capybara)
 	s.NoError(err)
 
-	cacheCopy, _ := NewOAuthYamlCredentialsCache(cachePath)
+	cacheCopyI, _ := NewOAuthYamlCredentialsCache(cachePath)
+	cacheCopy := cacheCopyI.(*oauthYamlCredentialsCache)
+
 	err = cacheCopy.readCache()
 	s.NoError(err)
 	s.EqualValues(wombat, cacheCopy.Get(wombatAudience))
@@ -95,7 +102,8 @@ func (s *oauthCredsCacheTestSuite) TestWriteCacheGoldenFile() {
 }
 
 func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCacheDefaultPath() {
-	cache, err := NewOAuthYamlCredentialsCache("")
+	cacheI, err := NewOAuthYamlCredentialsCache("")
+	cache := cacheI.(*oauthYamlCredentialsCache)
 	s.NoError(err)
 	s.Equal(DefaultOauthYamlCachePath, cache.path)
 }
@@ -115,7 +123,9 @@ func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCachePathFromEnvironm
 
 	env.set(OAuthCachePathEnvVar, file.Name())
 
-	cache, err := NewOAuthYamlCredentialsCache(fakePath)
+	cacheI, err := NewOAuthYamlCredentialsCache(fakePath)
+	cache := cacheI.(*oauthYamlCredentialsCache)
+
 	s.NoError(err)
 	s.Equal(file.Name(), cache.path)
 	s.Empty(cache.audiences)

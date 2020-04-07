@@ -9,6 +9,8 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.zeebe.el.Expression;
+import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableServiceTask;
@@ -49,7 +51,7 @@ public final class ServiceTaskTransformer implements ModelElementTransformer<Ser
     final ExecutableServiceTask serviceTask =
         workflow.getElementById(element.getId(), ExecutableServiceTask.class);
 
-    transformTaskDefinition(element, serviceTask);
+    transformTaskDefinition(element, serviceTask, context);
 
     transformTaskHeaders(element, serviceTask);
 
@@ -64,12 +66,22 @@ public final class ServiceTaskTransformer implements ModelElementTransformer<Ser
   }
 
   private void transformTaskDefinition(
-      final ServiceTask element, final ExecutableServiceTask serviceTask) {
+      final ServiceTask element,
+      final ExecutableServiceTask serviceTask,
+      final TransformContext context) {
     final ZeebeTaskDefinition taskDefinition =
         element.getSingleExtensionElement(ZeebeTaskDefinition.class);
 
-    serviceTask.setType(taskDefinition.getType());
-    serviceTask.setRetries(taskDefinition.getRetries());
+    final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
+    final Expression jobTypeExpression =
+        expressionLanguage.parseExpression(taskDefinition.getType());
+
+    serviceTask.setType(jobTypeExpression);
+
+    final Expression retriesExpression =
+        expressionLanguage.parseExpression(taskDefinition.getRetries());
+
+    serviceTask.setRetries(retriesExpression);
   }
 
   private void transformTaskHeaders(

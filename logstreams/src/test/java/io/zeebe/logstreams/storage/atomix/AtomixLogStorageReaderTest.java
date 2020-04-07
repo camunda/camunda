@@ -10,9 +10,9 @@ package io.zeebe.logstreams.storage.atomix;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.atomix.protocols.raft.storage.log.entry.ConfigurationEntry;
-import io.atomix.protocols.raft.zeebe.ZeebeEntry;
-import io.atomix.protocols.raft.zeebe.ZeebeLogAppender.AppendListener;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
+import io.atomix.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
@@ -138,6 +138,57 @@ public final class AtomixLogStorageReaderTest {
     // then
     assertThat(address).isEqualTo(expected.index() + 1);
     assertThat(buffer.getInt(0, BYTE_ORDER)).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldReturnEmptyIfLogIsEmpty() {
+    // given
+    final var reader = storageRule.get().newReader();
+
+    // when
+    final var isEmpty = reader.isEmpty();
+
+    // then
+    assertThat(isEmpty).isTrue();
+  }
+
+  @Test
+  public void shouldReturnEmptyIfLogContainsNonZeebeEntries() {
+    // given
+    final var reader = storageRule.get().newReader();
+
+    // when
+    final var entry =
+        storageRule
+            .getRaftLog()
+            .writer()
+            .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
+    final var isEmpty = reader.isEmpty();
+
+    // then
+    assertThat(entry).isNotNull();
+    assertThat(isEmpty).isTrue();
+  }
+
+  @Test
+  public void shouldNotReturnEmptyIfAtLeastOneZeebeEntryPresent() {
+    // given
+    final var reader = storageRule.get().newReader();
+
+    // when
+    final var entry =
+        storageRule
+            .getRaftLog()
+            .writer()
+            .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
+    final var expected = append(1, 4, allocateData(1));
+
+    final var isEmpty = reader.isEmpty();
+
+    // then
+    assertThat(entry).isNotNull();
+    assertThat(expected).isNotNull();
+    assertThat(isEmpty).isFalse();
   }
 
   private Indexed<ZeebeEntry> append(

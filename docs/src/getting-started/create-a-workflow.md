@@ -102,7 +102,7 @@ Here's what you should see in the Modeler:
 
 ![Message Correlation Key](/getting-started/img/tutorial-3.4-add-correlation-key.png)
 
-Next, we'll add an Exclusive (XOR) Gateway to our workflow model. The Exclusive Gateway is used to make a data-based decision about which path a workflow instance should follow. In this case, we want to ship items _with_ insurance if total order value is greater than or equal to $100 and ship _without_ insurance.  
+Next, we'll add an Exclusive (XOR) Gateway to our workflow model. The Exclusive Gateway is used to make a data-based decision about which path a workflow instance should follow. In this case, we want to ship items _with_ insurance if total order value is greater than or equal to $100 and ship _without_ insurance otherwise.
 
 That means that when we create a workflow instance, we'll need to include order value as an instance variable. But we'll come to that later.
 
@@ -156,7 +156,7 @@ Next, we'll set a condition expression in the Sequence Flow leading to this "Shi
 
 *   Click on the sequence flow and open the Properties panel
 *   Input  `orderValue >= 100` in the "Condition expression" field in the Properties panel
-*   Double-click on the sequence flow to add a label "`>$100"`
+*   Double-click on the sequence flow to add a label "`>= $100"`
 
 ![Condition Expression](/getting-started/img/tutorial-3.9-condition-expression.png)
 

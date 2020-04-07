@@ -9,11 +9,11 @@ package io.zeebe.broker.engine.impl;
 
 import static io.zeebe.util.sched.Actor.buildActorName;
 
-import io.atomix.cluster.messaging.ClusterEventService;
-import io.atomix.cluster.messaging.Subscription;
+import io.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.zeebe.engine.Loggers;
 import io.zeebe.logstreams.state.SnapshotChunk;
 import io.zeebe.logstreams.state.SnapshotReplication;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -24,77 +24,73 @@ import org.slf4j.Logger;
 
 public final class StateReplication implements SnapshotReplication {
 
-  public static final String REPLICATION_TOPIC_FORMAT = "replication-%d";
+  private static final String REPLICATION_TOPIC_FORMAT = "replication-%d";
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final String replicationTopic;
 
   private final DirectBuffer readBuffer = new UnsafeBuffer(0, 0);
-  private final ClusterEventService eventService;
+  private final PartitionMessagingService messagingService;
   private final String threadName;
 
   private ExecutorService executorService;
-  private Subscription subscription;
 
   public StateReplication(
-      final ClusterEventService eventService, final int partitionId, final int nodeId) {
-    this.eventService = eventService;
+      final PartitionMessagingService messagingService, final int partitionId, final int nodeId) {
+    this.messagingService = messagingService;
     this.replicationTopic = String.format(REPLICATION_TOPIC_FORMAT, partitionId);
     this.threadName = buildActorName(nodeId, "StateReplication-" + partitionId);
   }
 
   @Override
-  public void replicate(final SnapshotChunk snapshot) {
-    eventService.broadcast(
+  public void replicate(final SnapshotChunk chunk) {
+    LOG.trace(
+        "Replicate on topic {} snapshot chunk {} for snapshot {}.",
         replicationTopic,
-        snapshot,
-        (s) -> {
-          LOG.trace(
-              "Replicate on topic {} snapshot chunk {} for snapshot {}.",
-              replicationTopic,
-              s.getChunkName(),
-              s.getSnapshotId());
+        chunk.getChunkName(),
+        chunk.getSnapshotId());
 
-          final SnapshotChunkImpl chunkImpl = new SnapshotChunkImpl(s);
-          return chunkImpl.toBytes();
-        });
+    messagingService.broadcast(replicationTopic, serializeSnapshotChunk(chunk));
   }
 
   @Override
   public void consume(final Consumer<SnapshotChunk> consumer) {
-    executorService = Executors.newSingleThreadExecutor((r) -> new Thread(r, threadName));
+    executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, threadName));
+    messagingService.subscribe(
+        replicationTopic,
+        message -> {
+          final var chunk = deserializeChunk(message);
+          LOG.trace(
+              "Received on topic {} replicated snapshot chunk {} for snapshot {}.",
+              replicationTopic,
+              chunk.getChunkName(),
+              chunk.getSnapshotId());
 
-    subscription =
-        eventService
-            .subscribe(
-                replicationTopic,
-                (bytes -> {
-                  readBuffer.wrap(bytes);
-                  final SnapshotChunkImpl chunk = new SnapshotChunkImpl();
-                  chunk.wrap(readBuffer, 0, bytes.length);
-                  LOG.trace(
-                      "Received on topic {} replicated snapshot chunk {} for snapshot {}.",
-                      replicationTopic,
-                      chunk.getChunkName(),
-                      chunk.getSnapshotId());
-                  return chunk;
-                }),
-                consumer,
-                executorService)
-            .join();
+          consumer.accept(chunk);
+        },
+        executorService);
   }
 
   @Override
   public void close() throws Exception {
-    if (subscription != null) {
-      subscription.close().join();
-      subscription = null;
-    }
+    messagingService.unsubscribe(replicationTopic);
 
     if (executorService != null) {
       executorService.shutdownNow();
       executorService.awaitTermination(10, TimeUnit.SECONDS);
       executorService = null;
     }
+  }
+
+  private ByteBuffer serializeSnapshotChunk(final SnapshotChunk chunk) {
+    return new SnapshotChunkImpl(chunk).toByteBuffer();
+  }
+
+  private SnapshotChunk deserializeChunk(final ByteBuffer buffer) {
+    final var chunk = new SnapshotChunkImpl();
+    readBuffer.wrap(buffer);
+    chunk.wrap(readBuffer, 0, readBuffer.capacity());
+
+    return chunk;
   }
 }

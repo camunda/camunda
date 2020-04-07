@@ -9,13 +9,14 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.22.3-SNAPSHOT</version>
+    <version>0.24.0-SNAPSHOT</version>
     <relativePath>parent/</relativePath>
   </parent>
 
   <modules>
     <module>bom</module>
     <module>parent</module>
+    <module>atomix</module>
     <module>broker</module>
     <module>qa</module>
     <module>protocol-test-util</module>
@@ -32,8 +33,6 @@
     <module>dispatcher</module>
     <module>msgpack-core</module>
     <module>msgpack-value</module>
-    <module>json-el</module>
-    <module>json-path</module>
     <module>build-tools</module>
     <module>gateway-protocol</module>
     <module>gateway-protocol-impl</module>
@@ -44,6 +43,9 @@
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>
     <module>zb-db</module>
+    <module>upgrade-tests</module>
+    <module>expression-language</module>
+    <module>legacy/toml-config</module>
   </modules>
 
   <scm>

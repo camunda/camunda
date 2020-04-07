@@ -19,11 +19,12 @@ import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.CancelWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.command.FinalCommandStep;
+import io.zeebe.client.api.response.CancelWorkflowInstanceResponse;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -48,18 +49,21 @@ public final class CancelWorkflowInstanceCommandImpl implements CancelWorkflowIn
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<CancelWorkflowInstanceResponse> requestTimeout(
+      final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
-  public ZeebeFuture<Void> send() {
+  public ZeebeFuture<CancelWorkflowInstanceResponse> send() {
     final CancelWorkflowInstanceRequest request = builder.build();
 
-    final RetriableClientFutureImpl<Void, CancelWorkflowInstanceResponse> future =
-        new RetriableClientFutureImpl<>(
-            retryPredicate, streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<
+            CancelWorkflowInstanceResponse, GatewayOuterClass.CancelWorkflowInstanceResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                retryPredicate, streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;
@@ -67,7 +71,7 @@ public final class CancelWorkflowInstanceCommandImpl implements CancelWorkflowIn
 
   private void send(
       final CancelWorkflowInstanceRequest request,
-      final StreamObserver<CancelWorkflowInstanceResponse> future) {
+      final StreamObserver<GatewayOuterClass.CancelWorkflowInstanceResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .cancelWorkflowInstance(request, future);

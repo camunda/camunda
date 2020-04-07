@@ -15,6 +15,8 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 
 public final class LeaderManagementRequestHandler extends Actor implements PartitionListener {
@@ -31,20 +33,19 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
   }
 
   @Override
-  public void onBecomingFollower(
+  public ActorFuture<Void> onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    actor.submit(
+    return actor.call(
         () -> {
-          final var recordWriter = leaderForPartitions.remove(partitionId);
-
-          if (recordWriter != null) {
-            recordWriter.close();
-          }
+          leaderForPartitions.remove(partitionId);
+          return null;
         });
   }
 
   @Override
-  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingLeader(
+      final int partitionId, final long term, final LogStream logStream) {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     actor.submit(
         () ->
             logStream
@@ -53,14 +54,16 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
                     (recordWriter, error) -> {
                       if (error == null) {
                         leaderForPartitions.put(partitionId, recordWriter);
+                        future.complete(null);
                       } else {
                         Loggers.CLUSTERING_LOGGER.error(
                             "Unexpected error on retrieving write buffer for partition {}",
                             partitionId,
                             error);
-                        // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                        future.completeExceptionally(error);
                       }
                     }));
+    return future;
   }
 
   @Override

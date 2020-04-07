@@ -13,6 +13,8 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.zeebe.util.SocketUtil;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
@@ -37,7 +39,8 @@ public class ZeebeTestRule extends ExternalResource {
             () -> {
               final Properties properties = propertiesProvider.get();
               properties.setProperty(
-                  ClientProperties.BROKER_CONTACTPOINT, brokerRule.getGatewayAddress().toString());
+                  ClientProperties.BROKER_CONTACTPOINT,
+                  SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
               properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, "");
 
               return properties;
@@ -50,6 +53,10 @@ public class ZeebeTestRule extends ExternalResource {
 
   public BrokerCfg getBrokerCfg() {
     return brokerRule.getBrokerCfg();
+  }
+
+  public ControlledActorClock getBrokerClock() {
+    return brokerRule.getClock();
   }
 
   @Override

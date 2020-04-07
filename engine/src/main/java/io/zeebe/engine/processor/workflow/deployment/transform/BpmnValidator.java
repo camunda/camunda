@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.transform;
 
+import io.zeebe.el.ExpressionLanguage;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.validation.ZeebeRuntimeValidators;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.traversal.ModelWalker;
@@ -22,9 +24,12 @@ public final class BpmnValidator {
 
   private final ValidationErrorFormatter formatter = new ValidationErrorFormatter();
 
-  public BpmnValidator() {
+  public BpmnValidator(
+      final ExpressionLanguage expressionLanguage, final ExpressionProcessor expressionProcessor) {
     designTimeAspectValidator = new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
-    runtimeAspectValidator = new ValidationVisitor(ZeebeRuntimeValidators.VALIDATORS);
+    runtimeAspectValidator =
+        new ValidationVisitor(
+            ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
   }
 
   public String validate(final BpmnModelInstance modelInstance) {

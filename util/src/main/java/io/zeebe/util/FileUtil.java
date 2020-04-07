@@ -20,6 +20,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -31,16 +32,28 @@ public final class FileUtil {
 
   public static final Logger LOG = Loggers.FILE_LOGGER;
 
+  private FileUtil() {}
+
   public static void deleteFolder(final String path) throws IOException {
     final Path directory = Paths.get(path);
 
     deleteFolder(directory);
   }
 
+  public static void ensureDirectoryExists(final Path directory) throws IOException {
+    if (Files.exists(directory)) {
+      if (!Files.isDirectory(directory)) {
+        throw new NotDirectoryException(directory.toString());
+      }
+    } else {
+      Files.createDirectories(directory);
+    }
+  }
+
   public static void deleteFolder(final Path directory) throws IOException {
     Files.walkFileTree(
         directory,
-        new SimpleFileVisitor<Path>() {
+        new SimpleFileVisitor<>() {
           @Override
           public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
               throws IOException {

@@ -19,10 +19,12 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -34,31 +36,37 @@ public final class MultiInstanceIncidentTest {
 
   private static final String PROCESS_ID = "process";
   private static final String ELEMENT_ID = "task";
-  private static final String JOB_TYPE = "test";
   private static final String INPUT_COLLECTION = "items";
   private static final String INPUT_ELEMENT = "item";
-
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
-          .serviceTask(
-              ELEMENT_ID,
-              t ->
-                  t.zeebeTaskType(JOB_TYPE)
-                      .multiInstance(
-                          b ->
-                              b.zeebeInputCollection(INPUT_COLLECTION)
-                                  .zeebeInputElement(INPUT_ELEMENT)))
-          .endEvent()
-          .done();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  private String jobType;
+
+  private static BpmnModelInstance createWorkflow(final String jobType) {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .serviceTask(
+            ELEMENT_ID,
+            t ->
+                t.zeebeJobType(jobType)
+                    .multiInstance(
+                        b ->
+                            b.zeebeInputCollectionExpression(INPUT_COLLECTION)
+                                .zeebeInputElement(INPUT_ELEMENT)
+                                .zeebeOutputElementExpression("sum(undefined_var)")
+                                .zeebeOutputCollection("results")))
+        .endEvent()
+        .done();
+  }
+
   @Before
   public void init() {
-    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
+    jobType = helper.getJobType();
+    ENGINE.deployment().withXmlResource(createWorkflow(jobType)).deploy();
   }
 
   @Test
@@ -83,9 +91,11 @@ public final class MultiInstanceIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected multi-instance input collection variable '"
+            "failed to evaluate expression '"
                 + INPUT_COLLECTION
-                + "' to be an ARRAY, but not found.");
+                + "': no variable found for name '"
+                + INPUT_COLLECTION
+                + "'");
   }
 
   @Test
@@ -95,7 +105,7 @@ public final class MultiInstanceIncidentTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION, "no-an-array")
+            .withVariable(INPUT_COLLECTION, "not-an-array-but-a-string")
             .create();
 
     // then
@@ -115,9 +125,43 @@ public final class MultiInstanceIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected multi-instance input collection variable '"
+            "Expected result of the expression '"
                 + INPUT_COLLECTION
-                + "' to be an ARRAY, but found 'STRING'.");
+                + "' to be 'ARRAY', but was 'STRING'.");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfOutputElementExpressionEvaluationFailed() {
+    // given
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
+            .create();
+
+    // when
+    ENGINE.job().withType(jobType).ofInstance(workflowInstanceKey).complete();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    final Record<WorkflowInstanceRecordValue> elementInstance =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETING)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasElementInstanceKey(elementInstance.getKey())
+        .hasElementId(elementInstance.getValue().getElementId())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "failed to evaluate expression 'sum(undefined_var)': expected number but found "
+                + "'ValError(no variable found for name 'undefined_var')'");
   }
 
   @Test

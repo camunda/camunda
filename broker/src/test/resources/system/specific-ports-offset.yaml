@@ -1,0 +1,14 @@
+zeebe:
+  broker:
+    network:
+      portOffset: 3
+
+      commandApi:
+        port: 1
+
+      internalApi:
+        port: 5
+
+      monitoringApi:
+        port: 6
+

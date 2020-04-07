@@ -24,10 +24,10 @@ import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.response.CreateWorkflowInstanceWithResultResponseImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -75,7 +75,7 @@ public final class CreateWorkflowInstanceWithResultCommandImpl
             .build();
 
     final RetriableClientFutureImpl<
-            WorkflowInstanceResult, CreateWorkflowInstanceWithResultResponse>
+            WorkflowInstanceResult, GatewayOuterClass.CreateWorkflowInstanceWithResultResponse>
         future =
             new RetriableClientFutureImpl<>(
                 response ->
@@ -89,7 +89,7 @@ public final class CreateWorkflowInstanceWithResultCommandImpl
 
   private void send(
       final CreateWorkflowInstanceWithResultRequest request,
-      final StreamObserver<CreateWorkflowInstanceWithResultResponse> future) {
+      final StreamObserver<GatewayOuterClass.CreateWorkflowInstanceWithResultResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.plus(DEADLINE_OFFSET).toMillis(), TimeUnit.MILLISECONDS)
         .createWorkflowInstanceWithResult(request, future);

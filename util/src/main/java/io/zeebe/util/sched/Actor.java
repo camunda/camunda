@@ -8,6 +8,7 @@
 package io.zeebe.util.sched;
 
 import io.zeebe.util.CloseableSilently;
+import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -19,6 +20,10 @@ public abstract class Actor implements CloseableSilently {
 
   public String getName() {
     return getClass().getName();
+  }
+
+  public boolean isActorClosed() {
+    return actor.isClosed();
   }
 
   protected void onActorStarting() {
@@ -57,7 +62,7 @@ public abstract class Actor implements CloseableSilently {
 
   @Override
   public void close() {
-    actor.close().join(MAX_CLOSE_TIMEOUT, TimeUnit.SECONDS);
+    closeAsync().join(MAX_CLOSE_TIMEOUT, TimeUnit.SECONDS);
   }
 
   public ActorFuture<Void> closeAsync() {
@@ -66,5 +71,22 @@ public abstract class Actor implements CloseableSilently {
 
   public static String buildActorName(final int nodeId, final String name) {
     return String.format("Broker-%d-%s", nodeId, name);
+  }
+
+  /**
+   * Invoked when a task throws an exception when the actor phase is not 'STARTING' and 'CLOSING'.
+   *
+   * @param failure
+   */
+  protected void handleFailure(final Exception failure) {
+    Loggers.ACTOR_LOGGER.error(
+        "Uncaught exception in '{}' in phase '{}'. Continuing with next job.",
+        getName(),
+        actor.getLifecyclePhase(),
+        failure);
+  }
+
+  public void onActorFailed() {
+    // clean ups
   }
 }

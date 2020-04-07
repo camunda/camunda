@@ -13,9 +13,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processor.CommandProcessorTestCase;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.TypedRecord;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor.VariablesLookup;
 import io.zeebe.engine.processor.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
@@ -49,7 +52,6 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.junit.MockitoJUnitRunner;
 
-@SuppressWarnings("unchecked")
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
 public final class CreateWorkflowInstanceProcessorTest
     extends CommandProcessorTestCase<WorkflowInstanceCreationRecord> {
@@ -67,8 +69,12 @@ public final class CreateWorkflowInstanceProcessorTest
 
   @BeforeClass
   public static void init() {
+    final VariablesLookup emptyLookup = (variable, scopeKey) -> null;
+    final var expressionProcessor =
+        new ExpressionProcessor(ExpressionLanguageFactory.createExpressionLanguage(), emptyLookup);
     transformer =
-        new DeploymentTransformer(CommandProcessorTestCase.ZEEBE_STATE_RULE.getZeebeState());
+        new DeploymentTransformer(
+            CommandProcessorTestCase.ZEEBE_STATE_RULE.getZeebeState(), expressionProcessor);
   }
 
   @Before
@@ -149,7 +155,7 @@ public final class CreateWorkflowInstanceProcessorTest
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess()
             .startEvent()
-            .message(m -> m.name("message").zeebeCorrelationKey("key"))
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
             .endEvent()
             .done();
     final DeployedWorkflow workflow = deployNewWorkflow(process);

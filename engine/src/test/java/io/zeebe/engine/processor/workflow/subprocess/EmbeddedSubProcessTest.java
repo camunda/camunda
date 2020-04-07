@@ -43,7 +43,7 @@ public final class EmbeddedSubProcessTest {
           .embeddedSubProcess()
           .startEvent("subProcessStart")
           .sequenceFlowId("subProcessFlow1")
-          .serviceTask("subProcessTask", b -> b.zeebeTaskType("type"))
+          .serviceTask("subProcessTask", b -> b.zeebeJobType("type"))
           .sequenceFlowId("subProcessFlow2")
           .endEvent("subProcessEnd")
           .subProcessDone()
@@ -206,7 +206,7 @@ public final class EmbeddedSubProcessTest {
             .startEvent()
             .endEvent()
             .subProcessDone()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .endEvent()
             .done();
 
@@ -241,7 +241,7 @@ public final class EmbeddedSubProcessTest {
             .subProcess("innerSubProcess")
             .embeddedSubProcess()
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .serviceTask("task", b -> b.zeebeJobType("type"))
             .endEvent()
             .subProcessDone()
             .endEvent()
@@ -287,7 +287,7 @@ public final class EmbeddedSubProcessTest {
             inner
                 .embeddedSubProcess()
                 .startEvent()
-                .serviceTask("task", b -> b.zeebeTaskType("type"))
+                .serviceTask("task", b -> b.zeebeJobType("type"))
                 .endEvent();
     final Consumer<SubProcessBuilder> outSubProcess =
         outer ->
@@ -301,7 +301,7 @@ public final class EmbeddedSubProcessTest {
             .startEvent()
             .subProcess("outerSubProcess", outSubProcess)
             .boundaryEvent("event")
-            .message(m -> m.name("msg").zeebeCorrelationKey("key"))
+            .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
             .endEvent("msgEnd")
             .moveToActivity("outerSubProcess")
             .endEvent()

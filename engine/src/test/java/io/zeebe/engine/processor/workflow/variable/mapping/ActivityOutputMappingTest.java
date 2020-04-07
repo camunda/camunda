@@ -7,8 +7,8 @@
  */
 package io.zeebe.engine.processor.workflow.variable.mapping;
 
+import static io.zeebe.engine.processor.workflow.variable.mapping.VariableValue.variable;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
-import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,38 +48,50 @@ public final class ActivityOutputMappingTest {
   public Consumer<SubProcessBuilder> mappings;
 
   @Parameter(2)
-  public List<Tuple> expectedScopeVariables;
+  public List<VariableValue> expectedScopeVariables;
 
   @Parameters(name = "from {0} to {2}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"{'x': 1}", mapping(b -> b.zeebeOutput("x", "y")), scopeVariables(tuple("y", "1"))},
-      {"{'x': 1, 'y': 2}", mapping(b -> b.zeebeOutput("y", "z")), scopeVariables(tuple("z", "2"))},
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("x", "y").zeebeOutput("y", "z")),
-        scopeVariables(tuple("z", "1"))
-      },
-      {
-        "{'x': 1}",
-        mapping(b -> b.zeebeInput("x", "y").zeebeOutput("x", "z")),
-        scopeVariables(tuple("z", "1"))
-      },
-      {
-        "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeOutput("x", "z")),
-        scopeVariables(tuple("z", "{\"y\":2}"))
-      },
-      {"{'x': {'y': 2}}", mapping(b -> b.zeebeOutput("x.y", "z")), scopeVariables(tuple("z", "2"))},
-      {
-        "{'z': {'x': 1}, 'y': 2}",
-        mapping(b -> b.zeebeOutput("y", "z.y")),
-        scopeVariables(tuple("z", "{\"x\":1,\"y\":2}"))
+        mapping(b -> b.zeebeOutputExpression("x", "y")),
+        scopeVariables(variable("y", "1"))
       },
       {
         "{'x': 1, 'y': 2}",
-        mapping(b -> b.zeebeOutput("x", "z.x").zeebeOutput("y", "z.y")),
-        scopeVariables(tuple("z", "{\"x\":1,\"y\":2}"))
+        mapping(b -> b.zeebeOutputExpression("y", "z")),
+        scopeVariables(variable("z", "2"))
+      },
+      {
+        "{'x': 1}",
+        mapping(b -> b.zeebeInputExpression("x", "y").zeebeOutputExpression("y", "z")),
+        scopeVariables(variable("z", "1"))
+      },
+      {
+        "{'x': 1}",
+        mapping(b -> b.zeebeInputExpression("x", "y").zeebeOutputExpression("x", "z")),
+        scopeVariables(variable("z", "1"))
+      },
+      {
+        "{'x': {'y': 2}}",
+        mapping(b -> b.zeebeOutputExpression("x", "z")),
+        scopeVariables(variable("z", "{\"y\":2}"))
+      },
+      {
+        "{'x': {'y': 2}}",
+        mapping(b -> b.zeebeOutputExpression("x.y", "z")),
+        scopeVariables(variable("z", "2"))
+      },
+      {
+        "{'z': {'x': 1}, 'y': 2}",
+        mapping(b -> b.zeebeOutputExpression("y", "z.y")),
+        scopeVariables(variable("z", "{\"x\":1,\"y\":2}"))
+      },
+      {
+        "{'x': 1, 'y': 2}",
+        mapping(b -> b.zeebeOutputExpression("x", "z.x").zeebeOutputExpression("y", "z.y")),
+        scopeVariables(variable("z", "{\"x\":1,\"y\":2}"))
       },
     };
   }
@@ -100,7 +111,7 @@ public final class ActivityOutputMappingTest {
                     b -> {
                       b.embeddedSubProcess()
                           .startEvent()
-                          .serviceTask("task", t -> t.zeebeTaskType(jobType))
+                          .serviceTask("task", t -> t.zeebeJobType(jobType))
                           .endEvent();
 
                       mappings.accept(b);
@@ -137,7 +148,7 @@ public final class ActivityOutputMappingTest {
                 .withScopeKey(workflowInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
-        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .extracting(v -> variable(v.getName(), v.getValue()))
         .hasSize(expectedScopeVariables.size())
         .containsAll(expectedScopeVariables);
   }
@@ -147,7 +158,7 @@ public final class ActivityOutputMappingTest {
     return mappingBuilder;
   }
 
-  private static List<Tuple> scopeVariables(final Tuple... variables) {
+  private static List<VariableValue> scopeVariables(final VariableValue... variables) {
     return Arrays.asList(variables);
   }
 }

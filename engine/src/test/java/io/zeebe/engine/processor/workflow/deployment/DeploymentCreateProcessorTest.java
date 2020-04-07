@@ -125,7 +125,7 @@ public final class DeploymentCreateProcessorTest {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("processId")
             .startEvent()
-            .serviceTask("test", task -> task.zeebeTaskType("type"))
+            .serviceTask("test", task -> task.zeebeJobType("type"))
             .endEvent()
             .done();
 

@@ -40,7 +40,7 @@ public final class TimerCatchEventTest {
   private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess("BOUNDARY_EVENT_WORKFLOW")
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("timer")
           .cancelActivity(true)
           .timerWithDuration("PT1S")
@@ -51,7 +51,7 @@ public final class TimerCatchEventTest {
   private static final BpmnModelInstance TWO_REPS_CYCLE_WORKFLOW =
       Bpmn.createExecutableProcess("TWO_REPS_CYCLE_WORKFLOW")
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("timer")
           .cancelActivity(false)
           .timerWithCycle("R2/PT1S")
@@ -62,7 +62,7 @@ public final class TimerCatchEventTest {
   private static final BpmnModelInstance INFINITE_CYCLE_WORKFLOW =
       Bpmn.createExecutableProcess("INFINITE_CYCLE_WORKFLOW")
           .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .serviceTask("task", b -> b.zeebeJobType("type"))
           .boundaryEvent("timer")
           .cancelActivity(false)
           .timerWithCycle("R/PT1S")
@@ -156,7 +156,43 @@ public final class TimerCatchEventTest {
 
     assertThat(createdEvent.getValue().getDueDate())
         .isBetween(
-            System.currentTimeMillis(),
+            ENGINE.getClock().getCurrentTimeInMillis(),
+            createdEvent.getTimestamp() + Duration.ofSeconds(10).toMillis());
+  }
+
+  @Test
+  public void shouldCreateTimerFromFeelExpression() {
+    // given
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("shouldCreateTimer")
+            .startEvent()
+            .intermediateCatchEvent("timer", c -> c.timerWithDurationExpression("\"PT10S\""))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+    workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("shouldCreateTimer").create();
+
+    // when
+    final Record<WorkflowInstanceRecordValue> activatedEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId("timer")
+            .getFirst();
+
+    // then
+    final Record<TimerRecordValue> createdEvent =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(createdEvent.getValue())
+        .hasElementInstanceKey(activatedEvent.getKey())
+        .hasWorkflowInstanceKey(workflowInstanceKey);
+
+    assertThat(createdEvent.getValue().getDueDate())
+        .isBetween(
+            ENGINE.getClock().getCurrentTimeInMillis(),
             createdEvent.getTimestamp() + Duration.ofSeconds(10).toMillis());
   }
 
@@ -377,7 +413,7 @@ public final class TimerCatchEventTest {
 
     assertThat(timerRecord.getValue().getDueDate())
         .isBetween(
-            System.currentTimeMillis(),
+            ENGINE.getClock().getCurrentTimeInMillis(),
             timerRecord.getTimestamp() + Duration.ofSeconds(1).toMillis());
   }
 
@@ -450,13 +486,13 @@ public final class TimerCatchEventTest {
         Bpmn.createExecutableProcess("shouldRecreateTimerForTheSpecifiedAmountOfRepetitions")
             .startEvent()
             .parallelGateway("gw")
-            .serviceTask("task-1", b -> b.zeebeTaskType("type"))
+            .serviceTask("task-1", b -> b.zeebeJobType("type"))
             .boundaryEvent("timer-1")
             .cancelActivity(false)
             .timerWithCycle("R1/PT1S")
             .endEvent()
             .moveToNode("gw")
-            .serviceTask("task-2", b -> b.zeebeTaskType("type"))
+            .serviceTask("task-2", b -> b.zeebeJobType("type"))
             .boundaryEvent("timer-2")
             .cancelActivity(false)
             .timerWithCycle("R3/PT1S")

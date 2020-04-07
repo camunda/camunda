@@ -33,7 +33,7 @@ public final class WorkflowInstanceVariableTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType("test"))
+          .serviceTask("task", t -> t.zeebeJobType("test"))
           .endEvent()
           .done();
   private static long workflowKey;
@@ -114,7 +114,8 @@ public final class WorkflowInstanceVariableTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess("shouldCreateVariableByOutputMapping")
                     .startEvent()
-                    .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
+                    .serviceTask(
+                        "task", t -> t.zeebeJobType("test").zeebeOutputExpression("x", "y"))
                     .endEvent()
                     .done())
             .deploy()
@@ -237,7 +238,8 @@ public final class WorkflowInstanceVariableTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess("shouldUpdateVariableByOutputMapping")
                     .startEvent()
-                    .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
+                    .serviceTask(
+                        "task", t -> t.zeebeJobType("test").zeebeOutputExpression("x", "y"))
                     .endEvent()
                     .done())
             .deploy()

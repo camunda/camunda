@@ -39,8 +39,8 @@ public class MyTest {
         .newDeployCommand()
         .addResourceFromClasspath("process.bpmn")
         .send()
-        .join();  	
-  
+        .join();
+
     final WorkflowInstanceEvent workflowInstance =
         client
             .newCreateInstanceCommand()
@@ -54,7 +54,7 @@ public class MyTest {
 
 ## Verify the Result
 
-The `ZeebeTestRule` provides also some basic assertions in AssertJ style. The entry point of the assertions is `ZeebeTestRule.assertThat(...)`. 
+The `ZeebeTestRule` provides also some basic assertions in AssertJ style. The entry point of the assertions is `ZeebeTestRule.assertThat(...)`.
 
 ```java
 final WorkflowInstanceEvent workflowInstance = ...

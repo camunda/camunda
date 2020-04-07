@@ -97,6 +97,10 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
     return myself;
   }
 
+  public B zeebeInputCollectionExpression(final String inputCollectionExpression) {
+    return zeebeInputCollection(asZeebeExpression(inputCollectionExpression));
+  }
+
   public B zeebeInputElement(final String inputElement) {
     final ZeebeLoopCharacteristics characteristics =
         getCreateSingleExtensionElement(ZeebeLoopCharacteristics.class);
@@ -116,5 +120,9 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
         getCreateSingleExtensionElement(ZeebeLoopCharacteristics.class);
     characteristics.setOutputElement(outputElement);
     return myself;
+  }
+
+  public B zeebeOutputElementExpression(final String outputElementExpression) {
+    return zeebeOutputElement(asZeebeExpression(outputElementExpression));
   }
 }

@@ -126,11 +126,13 @@ public final class ProcessingStateMachine {
   private LoggedEvent currentEvent;
   private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private long writtenEventPosition = -1L;
-  private long lastSuccessfulProcessedEventPosition = -1L;
-  private long lastWrittenEventPosition = -1L;
+  private long writtenEventPosition = StreamProcessor.UNSET_POSITION;
+  private long lastSuccessfulProcessedEventPosition = StreamProcessor.UNSET_POSITION;
+  private long lastWrittenEventPosition = StreamProcessor.UNSET_POSITION;
   private boolean onErrorHandling;
-  private long errorRecordPosition = -1;
+  private long errorRecordPosition = StreamProcessor.UNSET_POSITION;
+  private volatile boolean onErrorHandlingLoop;
+  private int onErrorRetries;
 
   public ProcessingStateMachine(
       final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
@@ -166,6 +168,10 @@ public final class ProcessingStateMachine {
   }
 
   void readNextEvent() {
+    if (onErrorRetries > 0) {
+      onErrorHandlingLoop = false;
+      onErrorRetries = 0;
+    }
     if (onErrorHandling) {
       logStream
           .getCommitPositionAsync()
@@ -279,6 +285,10 @@ public final class ProcessingStateMachine {
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
+    onErrorRetries++;
+    if (onErrorRetries > 1) {
+      onErrorHandlingLoop = true;
+    }
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -425,5 +435,9 @@ public final class ProcessingStateMachine {
 
   public long getLastWrittenEventPosition() {
     return lastWrittenEventPosition;
+  }
+
+  public boolean isMakingProgress() {
+    return !onErrorHandlingLoop;
   }
 }

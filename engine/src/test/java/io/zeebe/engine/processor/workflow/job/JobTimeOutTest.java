@@ -199,7 +199,7 @@ public final class JobTimeOutTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent("start")
-                .serviceTask("task", b -> b.zeebeTaskType(jobType).done())
+                .serviceTask("task", b -> b.zeebeJobType(jobType).done())
                 .endEvent("end")
                 .done())
         .deploy();

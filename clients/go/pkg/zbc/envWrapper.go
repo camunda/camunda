@@ -15,11 +15,16 @@
 package zbc
 
 import (
+	"flag"
 	"github.com/stretchr/testify/suite"
 	"os"
 )
 
 var env = &envWrapper{vars: make(map[string]string)}
+
+func notInTest() bool {
+	return flag.Lookup("test.v") == nil
+}
 
 type envWrapper struct {
 	vars map[string]string
@@ -31,7 +36,7 @@ func (w *envWrapper) set(variable, value string) {
 
 func (w *envWrapper) get(variable string) string {
 	value := w.vars[variable]
-	if value == "" {
+	if value == "" && notInTest() {
 		value = os.Getenv(variable)
 	}
 
@@ -39,14 +44,12 @@ func (w *envWrapper) get(variable string) string {
 }
 
 func (w *envWrapper) unset(variable string) {
-	if _, present := w.vars[variable]; present {
-		delete(w.vars, variable)
-	}
+	delete(w.vars, variable)
 }
 
 func (w *envWrapper) lookup(variable string) (string, bool) {
 	value, ok := w.vars[variable]
-	if !ok {
+	if !ok && notInTest() {
 		value, ok = os.LookupEnv(variable)
 	}
 

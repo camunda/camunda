@@ -47,7 +47,7 @@ public final class ParallelGatewayStreamProcessorTest {
             .parallelGateway("join") // process should deadlock here
             .endEvent()
             .moveToNode("fork")
-            .serviceTask("waitState", b -> b.zeebeTaskType("type"))
+            .serviceTask("waitState", b -> b.zeebeJobType("type"))
             .sequenceFlowId("flowToEnd")
             .endEvent()
             .done();

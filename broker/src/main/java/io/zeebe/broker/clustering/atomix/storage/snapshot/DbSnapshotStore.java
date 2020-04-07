@@ -7,19 +7,20 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
-import io.atomix.protocols.raft.storage.snapshot.PendingSnapshot;
-import io.atomix.protocols.raft.storage.snapshot.Snapshot;
-import io.atomix.protocols.raft.storage.snapshot.SnapshotListener;
-import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
+import io.atomix.raft.storage.snapshot.PendingSnapshot;
+import io.atomix.raft.storage.snapshot.Snapshot;
+import io.atomix.raft.storage.snapshot.SnapshotListener;
+import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.utils.time.WallClockTimestamp;
-import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -27,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
-import org.slf4j.helpers.NOPLogger;
 
 public final class DbSnapshotStore implements SnapshotStore {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStore.class);
@@ -41,13 +41,11 @@ public final class DbSnapshotStore implements SnapshotStore {
   private final Path pendingDirectory;
   // keeps track of all snapshot modification listeners
   private final Set<SnapshotListener> listeners;
-  // used to fetch the position for snapshots replicated by Atomix
-  private final StatePositionSupplier positionSupplier;
   // a pair of mutable snapshot ID for index-only lookups
   private final ReusableSnapshotId lowerBoundId;
   private final ReusableSnapshotId upperBoundId;
 
-  DbSnapshotStore(
+  public DbSnapshotStore(
       final Path snapshotsDirectory,
       final Path pendingDirectory,
       final ConcurrentNavigableMap<DbSnapshotId, DbSnapshot> snapshots) {
@@ -55,23 +53,22 @@ public final class DbSnapshotStore implements SnapshotStore {
     this.pendingDirectory = pendingDirectory;
     this.snapshots = snapshots;
 
-    this.positionSupplier = new StatePositionSupplier(-1, NOPLogger.NOP_LOGGER);
-    this.lowerBoundId = new ReusableSnapshotId(Long.MIN_VALUE);
-    this.upperBoundId = new ReusableSnapshotId(Long.MAX_VALUE);
+    this.lowerBoundId = new ReusableSnapshotId(WallClockTimestamp.from(0));
+    this.upperBoundId = new ReusableSnapshotId(WallClockTimestamp.from(Long.MAX_VALUE));
     this.listeners = new CopyOnWriteArraySet<>();
   }
 
   /**
    * Returns the newest snapshot for the given index, meaning the snapshot with the given index with
-   * the highest position.
+   * the highest timestamp.
    *
    * @param index index of the snapshot
    * @return a snapshot, or null if there are no known snapshots for this index
    */
   @Override
   public Snapshot getSnapshot(final long index) {
-    // compute a map of all snapshots with index equal to the given index, and pick the one with the
-    // highest position
+    // it's possible (though unlikely) to have more than one snapshot per index, so we fallback to
+    // the one with the highest timestamp
     final var indexBoundedSet =
         snapshots.subMap(lowerBoundId.setIndex(index), false, upperBoundId.setIndex(index), false);
     if (indexBoundedSet.isEmpty()) {
@@ -126,15 +123,7 @@ public final class DbSnapshotStore implements SnapshotStore {
   @Override
   public Snapshot newSnapshot(
       final long index, final long term, final WallClockTimestamp timestamp, final Path directory) {
-    final var metadata = DbSnapshotMetadata.ofPath(directory);
-    if (metadata.isPresent()) {
-      return put(directory, metadata.get());
-    }
-
-    // as a fallback, read the position from the DB; Atomix does not propagate position information
-    // when replicating, so this is necessary
-    final var position = positionSupplier.getLowestPosition(directory);
-    return put(directory, new DbSnapshotMetadata(index, term, timestamp, position));
+    return put(directory, new DbSnapshotMetadata(index, term, timestamp));
   }
 
   @Override
@@ -155,11 +144,12 @@ public final class DbSnapshotStore implements SnapshotStore {
 
     final DbSnapshot dbSnapshot = (DbSnapshot) snapshot;
     snapshots.headMap(dbSnapshot.getMetadata(), false).values().forEach(this::remove);
+  }
 
-    try {
-      cleanUpTemporarySnapshots(dbSnapshot.getMetadata());
-    } catch (final IOException e) {
-      LOGGER.error("Failed to remove orphaned temporary snapshot older than {}", dbSnapshot, e);
+  @Override
+  public void purgePendingSnapshots() throws IOException {
+    try (final var files = Files.list(pendingDirectory)) {
+      files.filter(Files::isDirectory).forEach(this::purgePendingSnapshot);
     }
   }
 
@@ -183,6 +173,15 @@ public final class DbSnapshotStore implements SnapshotStore {
     listeners.remove(listener);
   }
 
+  private void purgePendingSnapshot(final Path pendingSnapshot) {
+    try {
+      FileUtil.deleteFolder(pendingSnapshot);
+      LOGGER.debug("Delete not completed (orphaned) snapshot {}", pendingSnapshot);
+    } catch (final IOException e) {
+      LOGGER.error("Failed to delete not completed (orphaned) snapshot {}", pendingSnapshot);
+    }
+  }
+
   private DbSnapshot put(final DbSnapshot snapshot) {
     // caveat: if the metadata is the same but the location is different, this will do nothing
     final var previous = snapshots.put(snapshot.getMetadata(), snapshot);
@@ -202,7 +201,7 @@ public final class DbSnapshotStore implements SnapshotStore {
 
     final var destination = buildSnapshotDirectory(metadata);
     try {
-      Files.move(directory, destination);
+      tryAtomicDirectoryMove(directory, destination);
     } catch (final FileAlreadyExistsException e) {
       LOGGER.debug(
           "Expected to move snapshot from {} to {}, but it already exists",
@@ -214,6 +213,15 @@ public final class DbSnapshotStore implements SnapshotStore {
     }
 
     return put(new DbSnapshot(destination, metadata));
+  }
+
+  private void tryAtomicDirectoryMove(final Path directory, final Path destination)
+      throws IOException {
+    try {
+      Files.move(directory, destination, StandardCopyOption.ATOMIC_MOVE);
+    } catch (final AtomicMoveNotSupportedException e) {
+      Files.move(directory, destination);
+    }
   }
 
   private Optional<DbSnapshot> getLatestSnapshot() {
@@ -228,44 +236,22 @@ public final class DbSnapshotStore implements SnapshotStore {
     LOGGER.trace("Snapshots count: {}", snapshots.size());
   }
 
-  private void cleanUpTemporarySnapshots(final DbSnapshotId cutoffId) throws IOException {
-    LOGGER.debug("Search for orphaned snapshots below oldest valid snapshot {}", cutoffId);
-
-    try (final var files = Files.newDirectoryStream(pendingDirectory)) {
-      for (final var file : files) {
-        final var name = file.getFileName().toString();
-        final var parts = name.split("-", 3);
-        final var index = Long.parseLong(parts[0]);
-        if (cutoffId.getIndex() < index) {
-          FileUtil.deleteFolder(file);
-          LOGGER.debug("Delete not completed (orphaned) snapshot {}", file);
-        }
-      }
-    }
-  }
-
   private Path buildPendingSnapshotDirectory(
       final long index, final long term, final WallClockTimestamp timestamp) {
-    final var name = String.format("%d-%d-%d", index, term, timestamp.unixTimestamp());
-    return pendingDirectory.resolve(name);
+    final var metadata = new DbSnapshotMetadata(index, term, timestamp);
+    return pendingDirectory.resolve(metadata.getFileName());
   }
 
   private Path buildSnapshotDirectory(final DbSnapshotMetadata metadata) {
-    return snapshotsDirectory.resolve(
-        String.format(
-            "%d-%d-%d-%d",
-            metadata.getIndex(),
-            metadata.getTerm(),
-            metadata.getTimestamp().unixTimestamp(),
-            metadata.getPosition()));
+    return snapshotsDirectory.resolve(metadata.getFileName());
   }
 
   private static final class ReusableSnapshotId implements DbSnapshotId {
-    private final long position;
+    private final WallClockTimestamp timestamp;
     private long index;
 
-    private ReusableSnapshotId(final long position) {
-      this.position = position;
+    private ReusableSnapshotId(final WallClockTimestamp position) {
+      this.timestamp = position;
     }
 
     @Override
@@ -274,8 +260,8 @@ public final class DbSnapshotStore implements SnapshotStore {
     }
 
     @Override
-    public long getPosition() {
-      return position;
+    public WallClockTimestamp getTimestamp() {
+      return timestamp;
     }
 
     private ReusableSnapshotId setIndex(final long index) {

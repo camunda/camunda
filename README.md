@@ -39,7 +39,7 @@ To learn more about what we're currently working on, please visit the [roadmap](
 * [Core Concepts](https://docs.zeebe.io/basics/index.html)
 * [Getting Started Tutorial](https://docs.zeebe.io/getting-started/index.html)
 * [BPMN Workflows](https://docs.zeebe.io/bpmn-workflows/index.html)
-* [Configuration](https://docs.zeebe.io/operations/the-zeebecfgtoml-file.html)
+* [Configuration](https://docs.zeebe.io/operations/the-zeebecfgyaml-file.html)
 * [Java Client](https://docs.zeebe.io/java-client/index.html)
 * [Go Client](https://docs.zeebe.io/go-client/index.html)
 

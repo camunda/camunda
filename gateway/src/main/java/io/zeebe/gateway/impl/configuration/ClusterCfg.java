@@ -13,43 +13,19 @@ import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_PORT;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
-import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_HOST;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_MEMBER_ID;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_NAME;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_PORT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MAX_MESSAGE_SIZE;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.DurationUtil;
-import io.zeebe.util.Environment;
 import java.time.Duration;
 import java.util.Objects;
 
 public final class ClusterCfg {
   private String contactPoint = DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT;
-  private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
-  private String requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+
+  private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
   private String host = DEFAULT_CLUSTER_HOST;
   private int port = DEFAULT_CLUSTER_PORT;
-
-  public void init(final Environment environment) {
-    environment
-        .get(ENV_GATEWAY_CONTACT_POINT)
-        .map(v -> v.contains(":") ? v : v + ":" + DEFAULT_CONTACT_POINT_PORT)
-        .ifPresent(this::setContactPoint);
-    environment.get(ENV_GATEWAY_REQUEST_TIMEOUT).ifPresent(this::setRequestTimeout);
-    environment.get(ENV_GATEWAY_CLUSTER_NAME).ifPresent(this::setClusterName);
-    environment.get(ENV_GATEWAY_CLUSTER_MEMBER_ID).ifPresent(this::setMemberId);
-    environment.get(ENV_GATEWAY_CLUSTER_HOST).ifPresent(this::setHost);
-    environment.getInt(ENV_GATEWAY_CLUSTER_PORT).ifPresent(this::setPort);
-    environment.get(ENV_GATEWAY_MAX_MESSAGE_SIZE).ifPresent(this::setMaxMessageSize);
-  }
 
   public String getMemberId() {
     return memberId;
@@ -88,10 +64,10 @@ public final class ClusterCfg {
   }
 
   public Duration getRequestTimeout() {
-    return DurationUtil.parse(requestTimeout);
+    return requestTimeout;
   }
 
-  public ClusterCfg setRequestTimeout(final String requestTimeout) {
+  public ClusterCfg setRequestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -105,19 +81,9 @@ public final class ClusterCfg {
     return this;
   }
 
-  public ByteValue getMaxMessageSize() {
-    return new ByteValue(maxMessageSize);
-  }
-
-  public ClusterCfg setMaxMessageSize(final String maxMessageSize) {
-    this.maxMessageSize = maxMessageSize;
-    return this;
-  }
-
   @Override
   public int hashCode() {
-    return Objects.hash(
-        contactPoint, maxMessageSize, requestTimeout, clusterName, memberId, host, port);
+    return Objects.hash(contactPoint, requestTimeout, clusterName, memberId, host, port);
   }
 
   @Override
@@ -131,7 +97,6 @@ public final class ClusterCfg {
     final ClusterCfg that = (ClusterCfg) o;
     return port == that.port
         && Objects.equals(contactPoint, that.contactPoint)
-        && Objects.equals(maxMessageSize, that.maxMessageSize)
         && Objects.equals(requestTimeout, that.requestTimeout)
         && Objects.equals(clusterName, that.clusterName)
         && Objects.equals(memberId, that.memberId)
@@ -143,9 +108,6 @@ public final class ClusterCfg {
     return "ClusterCfg{"
         + "contactPoint='"
         + contactPoint
-        + '\''
-        + ", maxMessageSize='"
-        + maxMessageSize
         + '\''
         + ", requestTimeout='"
         + requestTimeout
