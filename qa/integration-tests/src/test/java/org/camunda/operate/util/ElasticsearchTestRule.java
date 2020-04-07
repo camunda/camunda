@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -41,7 +42,9 @@ import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
@@ -52,6 +55,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.util.ThreadUtil.sleepFor;
@@ -59,6 +64,11 @@ import static org.camunda.operate.util.ThreadUtil.sleepFor;
 public class ElasticsearchTestRule extends TestWatcher {
 
   protected static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
+  
+  // Scroll contexts constants 
+  private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
+  // Path to find search statistics for all indexes
+  private static final String PATH_SEARCH_STATISTICS = "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
 
   @Autowired
   protected RestHighLevelClient esClient;
@@ -146,6 +156,13 @@ public class ElasticsearchTestRule extends TestWatcher {
       TestUtil.removeAllIndices(esClient,indexPrefix);
     }
     operateProperties.getElasticsearch().setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
+    assertMaxOpenScrollContexts(10);
+  }
+  
+  public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
+    assertThat(getOpenScrollcontextSize())
+      .describedAs("There are too many open scroll contexts left.")
+      .isLessThanOrEqualTo(maxOpenScrollContexts);
   }
 
   public void refreshIndexesInElasticsearch() {
@@ -310,6 +327,31 @@ public class ElasticsearchTestRule extends TestWatcher {
       entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getMainIndexName());
     }
     return entityToESAliasMap;
+  }  
+
+  public int getOpenScrollcontextSize() {
+    return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
   }
 
+  public int getIntValueForJSON(final String path,final String fieldname,final int defaultValue) {
+    Optional<JsonNode> jsonNode = getJsonFor(path);
+    if(jsonNode.isPresent()) {
+      JsonNode field = jsonNode.get().findValue(fieldname);
+      if(field != null) {
+        return field.asInt(defaultValue);
+      }
+    }
+    return defaultValue;
+  }
+
+  public Optional<JsonNode> getJsonFor(final String path) {
+    try {      
+      ObjectMapper objectMapper = new ObjectMapper();
+      Response response = esClient.getLowLevelClient().performRequest(new Request("GET",path));
+      return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
+    } catch (Throwable e) {
+      logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.",e);
+      return Optional.empty();
+    }
+  }
 }

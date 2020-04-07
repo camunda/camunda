@@ -5,6 +5,10 @@
  */
 package org.camunda.operate.util;
 
+import static org.camunda.operate.util.CollectionUtil.map;
+import static org.camunda.operate.util.CollectionUtil.throwAwayNullElements;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.es.schema.templates.TemplateDescriptor;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -39,16 +44,14 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.camunda.operate.util.CollectionUtil.map;
-import static org.camunda.operate.util.CollectionUtil.throwAwayNullElements;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 public abstract class ElasticsearchUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
-
+  
   public static final String ZEEBE_INDEX_DELIMITER = "_";
   public static final String ES_INDEX_TYPE = "_doc";
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
@@ -57,7 +60,6 @@ public abstract class ElasticsearchUtil {
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
   public static final int UPDATE_RETRY_COUNT = 3;
-
 
   public static final Function<SearchHit,Long> searchHitIdToLong = (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit,String> searchHitIdToString = SearchHit::getId;
@@ -78,7 +80,7 @@ public abstract class ElasticsearchUtil {
     SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType)).indicesOptions(IndicesOptions.lenientExpandOpen());
     return searchRequest;
   }
-
+  
   private static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
     switch (queryType) {
     case ONLY_ARCHIVE:
@@ -261,11 +263,10 @@ public abstract class ElasticsearchUtil {
     }
 
     List<T> result = new ArrayList<>();
-    String scrollId = null;
-    while (response.getHits().getHits().length != 0) {
-      SearchHits hits = response.getHits();
-      scrollId = response.getScrollId();
-
+    String scrollId = response.getScrollId();
+    SearchHits hits = response.getHits();
+    
+    while (hits.getHits().length != 0) {
       result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
 
       //call response processor
@@ -279,7 +280,9 @@ public abstract class ElasticsearchUtil {
       response = esClient
         .scroll(scrollRequest, RequestOptions.DEFAULT);
 
-    };
+      scrollId = response.getScrollId();
+      hits = response.getHits();
+    }
 
     clearScroll(scrollId, esClient);
 
@@ -302,10 +305,9 @@ public abstract class ElasticsearchUtil {
       aggsProcessor.accept(response.getAggregations());
     }
 
-    String scrollId = null;
-    while (response.getHits().getHits().length != 0) {
-      scrollId = response.getScrollId();
-
+    String scrollId = response.getScrollId();
+    SearchHits hits = response.getHits();
+    while (hits.getHits().length != 0) {
       //call response processor
       if (searchHitsProcessor != null) {
         searchHitsProcessor.accept(response.getHits());
@@ -317,7 +319,9 @@ public abstract class ElasticsearchUtil {
       response = esClient
         .scroll(scrollRequest, RequestOptions.DEFAULT);
 
-    };
+      scrollId = response.getScrollId();
+      hits = response.getHits();
+    }
 
     clearScroll(scrollId, esClient);
   }
@@ -387,4 +391,5 @@ public abstract class ElasticsearchUtil {
     scrollWith(request, esClient, collectIds, null, collectIds);
     return result;
   }
+
 }
