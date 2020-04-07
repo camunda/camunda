@@ -32,10 +32,15 @@ final class ReplicationController {
     this.metrics.setCount(0);
   }
 
-  void replicate(final String snapshotId, final int totalCount, final File snapshotChunkFile) {
+  void replicate(
+      final String snapshotId,
+      final int totalCount,
+      final File snapshotChunkFile,
+      long snapshotChecksum) {
     try {
       final SnapshotChunk chunkToReplicate =
-          SnapshotChunkUtil.createSnapshotChunkFromFile(snapshotChunkFile, snapshotId, totalCount);
+          SnapshotChunkUtil.createSnapshotChunkFromFile(
+              snapshotChunkFile, snapshotId, totalCount, snapshotChecksum);
       replication.replicate(chunkToReplicate);
     } catch (final IOException ioe) {
       LOG.error(
@@ -103,7 +108,8 @@ final class ReplicationController {
 
   private boolean tryToMarkSnapshotAsValid(
       final SnapshotChunk snapshotChunk, final ReplicationContext context) {
-    if (snapshotConsumer.completeSnapshot(snapshotChunk.getSnapshotId())) {
+    if (snapshotConsumer.completeSnapshot(
+        snapshotChunk.getSnapshotId(), snapshotChunk.getSnapshotChecksum())) {
       final var elapsed = System.currentTimeMillis() - context.startTimestamp;
       receivedSnapshots.remove(snapshotChunk.getSnapshotId());
       metrics.decrementCount();

@@ -15,6 +15,7 @@ import io.zeebe.logstreams.util.TestSnapshotStorage;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -112,6 +113,44 @@ public final class FailingSnapshotChunkReplicationTest {
     assertThat(receiverStorage.exists(replicatedChunks.get(0).getSnapshotId())).isFalse();
   }
 
+  @Test
+  public void shouldSnapshotWithWrongChecksum() throws Exception {
+    // given
+    final InterruptedReplicator replicator = new InterruptedReplicator();
+    setup(replicator);
+
+    receiverSnapshotController.consumeReplicatedSnapshots();
+    replicatorSnapshotController.takeSnapshot(1);
+
+    // when
+    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+    final List<SnapshotChunk> pendingChunks = new ArrayList<>(replicator.unsentSnapshots);
+
+    final Path pendingSnapshot =
+        receiverStorage.getPendingDirectoryFor(pendingChunks.get(0).getSnapshotId()).orElseThrow();
+    final List<Path> snapshotChunks = Files.list(pendingSnapshot).collect(Collectors.toList());
+    assertThat(snapshotChunks).hasSize(pendingChunks.get(0).getTotalCount() - 1);
+    snapshotChunks.forEach(
+        p -> {
+          try {
+            Files.delete(p);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        });
+
+    replicator.count = 0;
+    pendingChunks.forEach(replicator::replicate);
+
+    // then
+    assertThat(
+            receiverStorage
+                .getPendingDirectoryFor(pendingChunks.get(0).getSnapshotId())
+                .orElseThrow())
+        .doesNotExist();
+    assertThat(receiverStorage.exists(pendingChunks.get(0).getSnapshotId())).isFalse();
+  }
+
   private final class FlakyReplicator implements SnapshotReplication {
 
     final List<SnapshotChunk> replicatedChunks = new ArrayList<>();
@@ -124,6 +163,31 @@ public final class FailingSnapshotChunkReplicationTest {
         if (replicatedChunks.size() < 3) {
           chunkConsumer.accept(snapshot);
         }
+      }
+    }
+
+    @Override
+    public void consume(final Consumer<SnapshotChunk> consumer) {
+      chunkConsumer = consumer;
+    }
+
+    @Override
+    public void close() {}
+  }
+
+  private final class InterruptedReplicator implements SnapshotReplication {
+    final List<SnapshotChunk> unsentSnapshots = new ArrayList<>();
+    int count = 0;
+    private Consumer<SnapshotChunk> chunkConsumer;
+
+    @Override
+    public void replicate(final SnapshotChunk snapshot) {
+      count++;
+
+      if (count < snapshot.getTotalCount() && chunkConsumer != null) {
+        chunkConsumer.accept(snapshot);
+      } else {
+        unsentSnapshots.add(snapshot);
       }
     }
 
@@ -189,6 +253,11 @@ public final class FailingSnapshotChunkReplicationTest {
     @Override
     public byte[] getContent() {
       return snapshotChunk.getContent();
+    }
+
+    @Override
+    public long getSnapshotChecksum() {
+      return snapshotChunk.getSnapshotChecksum();
     }
   }
 }

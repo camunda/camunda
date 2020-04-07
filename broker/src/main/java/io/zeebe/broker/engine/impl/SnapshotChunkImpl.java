@@ -27,6 +27,7 @@ public final class SnapshotChunkImpl
   private int totalCount;
   private String chunkName;
   private long checksum;
+  private long snapshotChecksum;
 
   public SnapshotChunkImpl() {}
 
@@ -35,6 +36,7 @@ public final class SnapshotChunkImpl
     totalCount = chunk.getTotalCount();
     chunkName = chunk.getChunkName();
     checksum = chunk.getChecksum();
+    snapshotChecksum = chunk.getSnapshotChecksum();
     content.wrap(chunk.getContent());
   }
 
@@ -54,6 +56,7 @@ public final class SnapshotChunkImpl
 
     totalCount = SnapshotChunkDecoder.totalCountNullValue();
     checksum = SnapshotChunkDecoder.checksumNullValue();
+    snapshotChecksum = SnapshotChunkDecoder.snapshotChecksumNullValue();
 
     snapshotId = "";
     chunkName = "";
@@ -80,6 +83,7 @@ public final class SnapshotChunkImpl
         .snapshotId(snapshotId)
         .chunkName(chunkName)
         .checksum(checksum)
+        .snapshotChecksum(snapshotChecksum)
         .putContent(content, 0, content.capacity());
   }
 
@@ -91,6 +95,7 @@ public final class SnapshotChunkImpl
     snapshotId = decoder.snapshotId();
     chunkName = decoder.chunkName();
     checksum = decoder.checksum();
+    snapshotChecksum = decoder.snapshotChecksum();
 
     if (decoder.contentLength() > 0) {
       decoder.wrapContent(content);
@@ -123,6 +128,11 @@ public final class SnapshotChunkImpl
   }
 
   @Override
+  public long getSnapshotChecksum() {
+    return snapshotChecksum;
+  }
+
+  @Override
   public String toString() {
     return "SnapshotChunkImpl{"
         + "snapshotId="
@@ -134,6 +144,8 @@ public final class SnapshotChunkImpl
         + '\''
         + ", checksum="
         + checksum
+        + ", snapshotChecksum="
+        + snapshotChecksum
         + "} "
         + super.toString();
   }

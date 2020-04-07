@@ -14,6 +14,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 final class FileSnapshotConsumer implements SnapshotConsumer {
@@ -37,13 +41,29 @@ final class FileSnapshotConsumer implements SnapshotConsumer {
   }
 
   @Override
-  public boolean completeSnapshot(final String snapshotId) {
-    return storage.getPendingDirectoryFor(snapshotId).flatMap(storage::commitSnapshot).isPresent();
+  public boolean completeSnapshot(final String snapshotId, final long snapshotChecksum) {
+    return verifySnapshot(snapshotId, snapshotChecksum)
+        && storage.getPendingDirectoryFor(snapshotId).flatMap(storage::commitSnapshot).isPresent();
   }
 
   @Override
   public void invalidateSnapshot(final String snapshotId) {
     storage.getPendingDirectoryFor(snapshotId).ifPresent(this::deletePendingSnapshot);
+  }
+
+  private boolean verifySnapshot(final String snapshotId, final long snapshotChecksum) {
+    final Optional<Path> snapshot = storage.getPendingDirectoryFor(snapshotId);
+    if (snapshot.isEmpty()) {
+      return false;
+    }
+
+    try (Stream<Path> chunkPaths = Files.list(snapshot.get()).sorted()) {
+      final List<Path> paths = chunkPaths.collect(Collectors.toList());
+      return StateSnapshotController.getCombinedChecksum(paths) == snapshotChecksum;
+    } catch (IOException e) {
+      logger.trace("Could not verify snapshot checksum. ", e);
+      return false;
+    }
   }
 
   private void deletePendingSnapshot(final Path pendingDirectory) {
