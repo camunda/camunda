@@ -14,6 +14,7 @@ import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.SocketUtil;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
@@ -52,6 +53,10 @@ public class ZeebeTestRule extends ExternalResource {
 
   public BrokerCfg getBrokerCfg() {
     return brokerRule.getBrokerCfg();
+  }
+
+  public ControlledActorClock getBrokerClock() {
+    return brokerRule.getClock();
   }
 
   @Override
