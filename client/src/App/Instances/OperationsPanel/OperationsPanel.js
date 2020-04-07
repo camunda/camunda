@@ -16,6 +16,7 @@ import * as Styled from './styled';
 import * as CONSTANTS from './constants';
 import {hasBatchOperations} from './service';
 import OperationsEntry from './OperationsEntry';
+import Skeleton from './Skeleton';
 
 function OperationsPanel({
   isOperationsCollapsed,
@@ -26,6 +27,7 @@ function OperationsPanel({
     batchOperations,
     requestBatchOperations,
     requestNextBatchOperations,
+    isLoading,
   } = useBatchOperations();
 
   useEffect(requestBatchOperations, []);
@@ -40,6 +42,7 @@ function OperationsPanel({
       toggle={toggleOperations}
       hasBackgroundColor
       verticalLabelOffset={27}
+      scrollable={!isLoading}
       onScroll={(event) => {
         const {target} = event;
 
@@ -53,8 +56,10 @@ function OperationsPanel({
         }
       }}
     >
-      <Styled.OperationsList>
-        {hasBatchOperations(batchOperations) ? (
+      <Styled.OperationsList isLoading={isLoading}>
+        {isLoading ? (
+          <Skeleton data-test="skeleton" />
+        ) : hasBatchOperations(batchOperations) ? (
           batchOperations.map((batchOperation) => (
             <OperationsEntry
               onInstancesClick={onInstancesClick}

@@ -7,12 +7,21 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-export const OperationsList = styled.ul`
+export const OperationsList = themed(styled.ul`
   overflow-y: auto;
   li:first-child {
     border-top: none;
   }
-`;
+  
+  li:last-child {
+    border-bottom:  ${({isLoading}) =>
+      isLoading
+        ? themeStyle({
+            dark: `1px solid ${Colors.uiDark04}`,
+            light: `1px solid ${Colors.uiLight05}`
+          })
+        : 'none'};
+`);
 
 export const EmptyMessage = themed(styled.div`
   border: 1px solid

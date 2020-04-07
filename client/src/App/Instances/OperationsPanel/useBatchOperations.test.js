@@ -254,4 +254,27 @@ describe('useBatchOperations', () => {
     );
     expect(mockUnsubscribe).toHaveBeenCalledTimes(3);
   });
+
+  it('should change loading state correctly', () => {
+    // given
+    let publish;
+    useSubscription.mockReturnValue({
+      subscribe: (topic, stateHooks, callback) => {
+        if (topic === SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS) {
+          publish = callback;
+        }
+        return mockUnsubscribe;
+      },
+    });
+    const {result} = renderHook(() => useBatchOperations(), {});
+    expect(result.current.isLoading).toEqual(true);
+
+    // when
+    act(() => {
+      publish([mockOperationFinished]);
+    });
+
+    // then
+    expect(result.current.isLoading).toEqual(false);
+  });
 });

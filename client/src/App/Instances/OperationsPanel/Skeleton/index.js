@@ -4,10 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-
-export const Body = styled.div`
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-`;
+export {default} from './Skeleton';

@@ -26,6 +26,7 @@ function CollapsablePanel({
   toggle,
   verticalLabelOffset,
   hasBackgroundColor,
+  scrollable,
   ...props
 }) {
   const buttonDirection =
@@ -45,7 +46,6 @@ function CollapsablePanel({
       }
     }
   }, [isCollapsed, prevIsCollapsed]);
-
   return (
     <Styled.Collapsable
       {...props}
@@ -79,6 +79,7 @@ function CollapsablePanel({
         hasBackgroundColor={hasBackgroundColor}
         transitionTimeout={TRANSITION_TIMEOUT}
         data-test="expanded-panel"
+        scrollable={scrollable}
       >
         <Styled.Header panelPosition={panelPosition}>
           <Styled.CollapseButton
@@ -92,7 +93,7 @@ function CollapsablePanel({
           {label}
           {renderHeader()}
         </Styled.Header>
-        <Panel.Body scrollable>{children}</Panel.Body>
+        <Panel.Body scrollable={scrollable}>{children}</Panel.Body>
         {renderFooter ? <Panel.Footer>{renderFooter()}</Panel.Footer> : ''}
       </Styled.ExpandedPanel>
     </Styled.Collapsable>
@@ -120,6 +121,7 @@ CollapsablePanel.propTypes = {
   ]),
   verticalLabelOffset: PropTypes.number,
   hasBackgroundColor: PropTypes.bool,
+  scrollable: PropTypes.bool,
 };
 
 export default CollapsablePanel;

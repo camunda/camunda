@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useEffect, useReducer, useCallback} from 'react';
+import {useEffect, useState, useReducer, useCallback} from 'react';
 
 import {
   SUBSCRIPTION_TOPIC,
@@ -63,6 +63,7 @@ function reducer(state, action) {
 export default function useBatchOperations() {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const {subscribe} = useSubscription();
+  const [isLoading, setIsLoading] = useState(true);
   const dataManager = useDataManager();
 
   const requestBatchOperations = useCallback(() => {
@@ -86,6 +87,7 @@ export default function useBatchOperations() {
       SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS,
       LOADING_STATE.LOADED,
       (payload) => {
+        setIsLoading(false);
         dispatch({type: ACTIONS.LOAD, payload});
       }
     );
@@ -129,5 +131,6 @@ export default function useBatchOperations() {
     batchOperations: state.batchOperations,
     requestBatchOperations,
     requestNextBatchOperations,
+    isLoading,
   };
 }

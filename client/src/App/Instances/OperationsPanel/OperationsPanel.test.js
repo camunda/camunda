@@ -54,6 +54,22 @@ describe('OperationsPanel', () => {
     expect(emptyMessage.text()).toEqual(CONSTANTS.EMPTY_MESSAGE);
   });
 
+  it('should render skeleton when loading', () => {
+    // given
+    useBatchOperations.mockReturnValue({
+      batchOperations: [],
+      requestBatchOperations: jest.fn(),
+      isLoading: true
+    });
+
+    // when
+    const node = mountOperationsPanel();
+
+    // then
+    expect(node.find('[data-test="operations-entry"]')).not.toExist();
+    expect(node.find('[data-test="skeleton"]')).toExist();
+  });
+
   it('should render operation entries', () => {
     // given
     useBatchOperations.mockReturnValue({

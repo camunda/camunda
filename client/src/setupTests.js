@@ -16,6 +16,13 @@ Enzyme.configure({adapter: new Adapter()});
 jest.mock('modules/utils/date/formatDate');
 global.beforeEach(() => {
   localStorage.clear();
+
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation((query) => ({
+      matches: false,
+    })),
+  });
 });
 
 global.localStorage = (function () {
