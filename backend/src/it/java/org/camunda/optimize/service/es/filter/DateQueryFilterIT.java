@@ -244,7 +244,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
   @Test
   public void resultLimited_onTooBroadFixedStartDateFilter() {
     // given
-    final OffsetDateTime startDate = OffsetDateTime.now();
+    final OffsetDateTime startDate = OffsetDateTime.parse("2019-06-15T12:00:00+01:00");
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
@@ -301,7 +301,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
   @Test
   public void resultLimited_noUserDefinedFilter_defaultFilter_limitEndsAtLatestProcessInstanceStartDate() {
     // given
-    final OffsetDateTime oldStartDate = OffsetDateTime.now().minusDays(10L);
+    final OffsetDateTime oldStartDate = OffsetDateTime.parse("2019-06-15T12:00:00+01:00").minusDays(10L);
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
@@ -350,7 +350,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
   @Test
   public void resultLimited_onTooBroadFixedEndDateFilter() {
     // given
-    final OffsetDateTime startDate = OffsetDateTime.now();
+    final OffsetDateTime startDate = OffsetDateTime.parse("2019-06-15T12:00:00+01:00");
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
