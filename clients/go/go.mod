@@ -9,7 +9,7 @@ require (
 	github.com/containerd/containerd v1.3.2 // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v0.12.0
+	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/go-ozzo/ozzo-validation/v4 v4.1.0
