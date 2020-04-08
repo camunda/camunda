@@ -19,6 +19,10 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
+import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
+import static org.camunda.optimize.util.DmnModels.OUTPUT_CLASSIFICATION_ID;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

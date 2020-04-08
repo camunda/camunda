@@ -32,6 +32,10 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.util.DmnModels.createDecideDishDecisionDefinition;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
+import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
+import static org.camunda.optimize.util.DmnModels.OUTPUT_CLASSIFICATION_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -133,7 +137,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   }
 
   private DecisionDefinitionEngineDto deployDishDecisionDefinition() {
-    return engineIntegrationExtension.deployDecisionDefinition("dmn/decide-dish.xml");
+    return engineIntegrationExtension.deployDecisionDefinition(createDecideDishDecisionDefinition());
   }
 
   @Test
@@ -173,7 +177,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
         OUTPUT_BEVERAGES,
         new OutputVariableEntry(
           // very good beer choice!
-          OUTPUT_BEVERAGES, "Beverages", VariableType.STRING, "Aecht Schlenkerla Rauchbier", "Apple Juice"
+          OUTPUT_BEVERAGES, "Beverages", VariableType.STRING, "Aecht Schlenkerla Rauchbier"
         )
       );
     }};

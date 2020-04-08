@@ -18,6 +18,8 @@ import java.time.OffsetDateTime;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedDateInputVariableFilter;
+import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
+import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,7 +34,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
-      "dmn/invoiceBusinessDecision_withDate.xml"
+      createDecisionDefinitionWithDate()
     );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
@@ -80,7 +82,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
-      "dmn/invoiceBusinessDecision_withDate.xml"
+      createDecisionDefinitionWithDate()
     );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
@@ -120,7 +122,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
-      "dmn/invoiceBusinessDecision_withDate.xml"
+      createDecisionDefinitionWithDate()
     );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),

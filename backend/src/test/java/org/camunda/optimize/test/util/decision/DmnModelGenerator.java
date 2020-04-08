@@ -8,6 +8,7 @@ package org.camunda.optimize.test.util.decision;
 
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.bpm.model.dmn.HitPolicy;
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.DecisionTable;
 import org.camunda.bpm.model.dmn.instance.Definitions;
@@ -64,6 +65,7 @@ public class DmnModelGenerator {
     definitions.setId(decisionRequirementDiagramKey);
     definitions.setNamespace(TEST_NAMESPACE);
     decisions.forEach(definitions::addChildElement);
+
     modelInstance.setDefinitions(definitions);
 
     return modelInstance;
@@ -103,7 +105,9 @@ public class DmnModelGenerator {
     private List<Output> outputs = new ArrayList<>();
     private String decisionDefinitionKey;
     private String decisionDefinitionName;
+    private String decisionDefinitionVersionTag;
     private List<Rule> rules = new ArrayList<>();
+    private HitPolicy hitPolicy = HitPolicy.UNIQUE;
 
     public DecisionGenerator(final DmnModelGenerator dmnModelGenerator, final DmnModelInstance modelInstance) {
       this.dmnModelGenerator = dmnModelGenerator;
@@ -119,6 +123,11 @@ public class DmnModelGenerator {
 
     public DecisionGenerator decisionDefinitionName(String decisionDefinitionName) {
       this.decisionDefinitionName = decisionDefinitionName;
+      return this;
+    }
+
+    public DecisionGenerator decisionDefinitionVersionTag(String decisionDefinitionVersionTag) {
+      this.decisionDefinitionVersionTag = decisionDefinitionVersionTag;
       return this;
     }
 
@@ -165,6 +174,11 @@ public class DmnModelGenerator {
       return addOutput(label, "CamOutPutVariable_" + IdGenerator.getNextId(), decisionTypeRef);
     }
 
+    public DecisionGenerator setHitPolicy(HitPolicy hitPolicy) {
+      this.hitPolicy = hitPolicy;
+      return this;
+    }
+
     public RuleGenerator rule() {
       return new RuleGenerator(this);
     }
@@ -177,8 +191,10 @@ public class DmnModelGenerator {
     public DmnModelGenerator buildDecision() {
       Decision decision = generateNamedElement(Decision.class, decisionDefinitionName, modelInstance);
       decision.setId(decisionDefinitionKey);
+      decision.setVersionTag(decisionDefinitionVersionTag);
 
       DecisionTable decisionTable = generateElement(DecisionTable.class, modelInstance);
+      decisionTable.setHitPolicy(hitPolicy);
       decisionTable.setId("DecisionTable_" + IdGenerator.getNextId());
       decision.setExpression(decisionTable);
 
@@ -225,7 +241,11 @@ public class DmnModelGenerator {
     }
 
     public DecisionGenerator buildRule() {
-      Rule rule = modelInstance.newInstance(Rule.class);
+      return buildRule(null);
+    }
+
+    public DecisionGenerator buildRule(String ruleId) {
+      Rule rule = modelInstance.newInstance(Rule.class, ruleId);
       if (inputEntries.size() != decisionGenerator.inputs.size()) {
         throw new RuntimeException("The number of inputs and input entries must match!");
       }

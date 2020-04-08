@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -40,6 +39,11 @@ import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -86,7 +90,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // given
     final String dateGroupKey = "2018-01-01T00:00:00.000+0100";
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension
-      .deployDecisionDefinition("dmn/invoiceBusinessDecision_withDate.xml");
+      .deployDecisionDefinition(createDecisionDefinitionWithDate());
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(),
@@ -761,9 +765,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   }
 
   private DecisionDefinitionEngineDto deployDefaultDecisionDefinitionWithDifferentKey(final String key) {
-    final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
-      getClass().getClassLoader().getResourceAsStream(engineIntegrationExtension.DEFAULT_DMN_DEFINITION_PATH)
-    );
+    final DmnModelInstance dmnModelInstance = createDefaultDmnModel();
     dmnModelInstance.getDefinitions().getDrgElements().stream()
       .findFirst()
       .ifPresent(drgElement -> drgElement.setId(key));

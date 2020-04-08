@@ -44,9 +44,9 @@ public class DmnModelUtility {
   public static Optional<String> extractDecisionDefinitionName(final String definitionKey, final String xml) {
     try {
       final DmnModelInstance dmnModelInstance = parseDmnModel(xml);
-      final Collection<Decision> processes = dmnModelInstance.getModelElementsByType(Decision.class);
+      final Collection<Decision> decisions = dmnModelInstance.getModelElementsByType(Decision.class);
 
-      return processes.stream()
+      return decisions.stream()
         .filter(decision -> decision.getId().equals(definitionKey))
         .map(Decision::getName)
         .findFirst();

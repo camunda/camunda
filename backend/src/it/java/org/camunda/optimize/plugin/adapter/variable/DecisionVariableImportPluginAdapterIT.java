@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_DMN_DEFINITION_PATH;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -200,7 +200,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(HashMap<String, Object> variables) {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(
-      DEFAULT_DMN_DEFINITION_PATH
+      createDefaultDmnModel()
     );
     engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionEngineDto.getId(),

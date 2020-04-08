@@ -6,9 +6,10 @@
 package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
-import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
@@ -47,6 +48,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -56,8 +59,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class ReportRestServiceIT extends AbstractIT {
 
-  private static final String DECISION_DEFINITION_XML = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
-  private static final String DECISION_DEFINITION_XML_WO_NAME = "dmn/invoiceBusinessDecision_woName.xml";
   private static final String PROCESS_DEFINITION_KEY = "simple";
   private static final String DECISION_DEFINITION_KEY = "invoiceClassification";
   private static final String RANDOM_KEY = "someRandomKey";
@@ -260,7 +261,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     final String idDecisionReport = addEmptyDecisionReport();
     final SingleDecisionReportDefinitionDto decisionReportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
-      DECISION_DEFINITION_XML_WO_NAME
+      createDecisionDefinitionWoName()
     );
     embeddedOptimizeExtension
       .getRequestExecutor()
@@ -991,9 +992,7 @@ public class ReportRestServiceIT extends AbstractIT {
         .buildUpdateSingleProcessReportRequest(id, reportDefinitionDto)
         .execute();
     } else {
-      SingleDecisionReportDefinitionDto reportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
-        DECISION_DEFINITION_XML
-      );
+      SingleDecisionReportDefinitionDto reportDefinitionDto = getDecisionReportDefinitionDtoWithXml(createDefaultDmnModel());
       response = embeddedOptimizeExtension
         .getRequestExecutor()
         .buildUpdateSingleDecisionReportRequest(id, reportDefinitionDto)
@@ -1002,7 +1001,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return response;
   }
 
-  private SingleProcessReportDefinitionDto getProcessReportDefinitionDtoWithXml(final String xml) throws IOException {
+  private SingleProcessReportDefinitionDto getProcessReportDefinitionDtoWithXml(final String xml) {
     SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
@@ -1012,15 +1011,12 @@ public class ReportRestServiceIT extends AbstractIT {
     return reportDefinitionDto;
   }
 
-  private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDtoWithXml(final String xml) throws IOException {
+  private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDtoWithXml(final DmnModelInstance dmn) {
     SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
     DecisionReportDataDto data = new DecisionReportDataDto();
     data.setDecisionDefinitionKey(DECISION_DEFINITION_KEY);
     data.setDecisionDefinitionVersion("1");
-    data.getConfiguration().setXml(IOUtils.toString(
-      getClass().getClassLoader().getResourceAsStream(xml),
-      "UTF-8"
-    ));
+    data.getConfiguration().setXml(Dmn.convertToString(dmn));
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
   }

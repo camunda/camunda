@@ -302,7 +302,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .processDefinitionKey("key")
       .processDefinitionVersions(Collections.singletonList("1"))
       .build();
-    
+
     PIDuration_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
     PIDuration_startDateYear_bar.setData(PIDuration_startDateYear_barData);
 
@@ -402,7 +402,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId));
 
     // then
-    assertThat(updateResponse.getStatus(), anyOf(equalTo(Response.Status.OK.getStatusCode()), equalTo(Response.Status.NO_CONTENT.getStatusCode())));
+    assertThat(
+      updateResponse.getStatus(),
+      anyOf(equalTo(Response.Status.OK.getStatusCode()), equalTo(Response.Status.NO_CONTENT.getStatusCode()))
+    );
   }
 
   @ParameterizedTest

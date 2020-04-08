@@ -85,6 +85,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -104,7 +105,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
   public static final String DEFAULT_EMAIL_DOMAIN = "@camunda.org";
   public static final String DEFAULT_FIRSTNAME = "firstName";
   public static final String DEFAULT_LASTNAME = "lastName";
-  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
   private static final int MAX_WAIT = 10;
   private static final String COUNT = "count";
   public static final String KERMIT_GROUP_NAME = "anyGroupName";
@@ -1234,7 +1234,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition() {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(
-      DEFAULT_DMN_DEFINITION_PATH
+      createDefaultDmnModel()
     );
     startDecisionInstance(
       decisionDefinitionEngineDto.getId(),
@@ -1261,11 +1261,11 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
   }
 
   public DecisionDefinitionEngineDto deployDecisionDefinitionWithTenant(String tenantId) {
-    return deployDecisionDefinition(DEFAULT_DMN_DEFINITION_PATH, tenantId);
+    return deployDecisionDefinition(createDefaultDmnModel(), tenantId);
   }
 
   public DecisionDefinitionEngineDto deployDecisionDefinition() {
-    return deployDecisionDefinition(DEFAULT_DMN_DEFINITION_PATH);
+    return deployDecisionDefinition(createDefaultDmnModel());
   }
 
   public DecisionDefinitionEngineDto deployDecisionDefinition(String dmnPath) {

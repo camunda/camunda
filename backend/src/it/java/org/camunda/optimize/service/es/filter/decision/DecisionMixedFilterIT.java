@@ -27,6 +27,11 @@ import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.c
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedDateInputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRelativeEvaluationDateFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createStringInputVariableFilter;
+import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
+import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +48,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
     final Boolean expectedAuditOutput = false;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
-      "dmn/invoiceBusinessDecision_withDate.xml"
+      createDecisionDefinitionWithDate()
     );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
@@ -72,6 +77,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       FilterOperatorConstants.IN,
       String.valueOf(expectedAmountValue)
     );
+
     final InputVariableFilterDto stringInputVariableFilter = createStringInputVariableFilter(
       INPUT_CATEGORY_ID, FilterOperatorConstants.IN, expectedCategory
     );

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.decision;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
@@ -31,25 +30,9 @@ import java.util.Objects;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.DmnModels.*;
 
 public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
-  protected static final String OUTPUT_CLASSIFICATION_ID = "clause3";
-  protected static final String OUTPUT_AUDIT_ID = "OutputClause_1ur6jbl";
-  protected static final String INPUT_AMOUNT_ID = "clause1";
-  protected static final String INPUT_CATEGORY_ID = "InputClause_15qmk0v";
-  protected static final String INPUT_INVOICE_DATE_ID = "InputClause_0qixz9e";
-  protected static final String INPUT_VARIABLE_INVOICE_CATEGORY = "invoiceCategory";
-  protected static final String INPUT_VARIABLE_AMOUNT = "amount";
-  protected static final String INPUT_VARIABLE_INVOICE_DATE = "invoiceDate";
-
-  // dish variables
-  protected static final String INPUT_SEASON_ID = "InputData_0rin549";
-  protected static final String INPUT_NUMBER_OF_GUESTS_ID = "InputData_1axnom3";
-  protected static final String INPUT_GUEST_WITH_CHILDREN_ID = "InputData_0pgvdj9";
-  protected static final String INPUT_VARIABLE_SEASON = "season";
-  protected static final String INPUT_VARIABLE_NUMBER_OF_GUESTS = "guestCount";
-  protected static final String INPUT_VARIABLE_GUEST_WITH_CHILDREN = "guestsWithChildren";
-
   @RegisterExtension
   @Order(4)
   public EngineDatabaseExtension engineDatabaseExtension =
@@ -105,9 +88,7 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
   }
 
   protected DecisionDefinitionEngineDto deployDecisionDefinitionWithDifferentKey(final String key, String tenantId) {
-    final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
-      getClass().getClassLoader().getResourceAsStream(engineIntegrationExtension.DEFAULT_DMN_DEFINITION_PATH)
-    );
+    final DmnModelInstance dmnModelInstance = createDefaultDmnModel();
     dmnModelInstance.getDefinitions().getDrgElements().stream()
       .findFirst()
       .ifPresent(drgElement -> drgElement.setId(key));

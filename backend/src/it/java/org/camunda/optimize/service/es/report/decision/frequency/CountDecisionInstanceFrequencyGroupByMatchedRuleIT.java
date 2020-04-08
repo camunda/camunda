@@ -31,20 +31,23 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
+import static org.camunda.optimize.util.DmnModels.BEVERAGES_RULE_1_ID;
+import static org.camunda.optimize.util.DmnModels.BEVERAGES_RULE_2_ID;
+import static org.camunda.optimize.util.DmnModels.createDecideDishDecisionDefinition;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_GUEST_WITH_CHILDREN_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_NUMBER_OF_GUESTS_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_SEASON_ID;
+import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_1_ID;
+import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_2_ID;
+import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_3_ID;
+import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_4_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecisionDefinitionIT {
-
-  private static final String INVOICE_RULE_1_ID = "DecisionRule_1of5a87";
-  private static final String INVOICE_RULE_3_ID = "row-49839158-4";
-  private static final String INVOICE_RULE_2_ID = "DecisionRule_1ak4z14";
-  private static final String INVOICE_RULE_4_ID = "DecisionRule_0cuxolz";
-  private static final String BEVERAGES_RULE_3_ID = "row-506282952-9";
-  private static final String BEVERAGES_RULE_5_ID = "row-506282952-11";
-  private static final String BEVERAGES_RULE_6_ID = "row-506282952-12";
 
   @Test
   public void reportEvaluationMultiBucketsSpecificVersionGroupByMatchedRule() {
@@ -244,7 +247,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
       bucketValues,
-      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray()) 
+      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
     );
   }
 
@@ -348,7 +351,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   public void reportEvaluationOnCollectPolicyMultiBucketsAllVersionsGroupByMatchedRule() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDishDecisionDefinition();
-    // triggers rule 3 and 5
+    // triggers rule 1
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createDishInputs("Winter", 8, true)
     );
@@ -356,7 +359,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createDishInputs("Winter", 8, true)
     );
 
-    // triggers rule 6
+    // triggers rule 2
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createDishInputs("Winter", 8, false)
     );
@@ -372,10 +375,9 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     // then
     assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(3));
-    assertThat(result.getEntryForKey(BEVERAGES_RULE_3_ID).get().getValue(), is(2L));
-    assertThat(result.getEntryForKey(BEVERAGES_RULE_5_ID).get().getValue(), is(2L));
-    assertThat(result.getEntryForKey(BEVERAGES_RULE_6_ID).get().getValue(), is(1L));
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.getEntryForKey(BEVERAGES_RULE_1_ID).get().getValue(), is(2L));
+    assertThat(result.getEntryForKey(BEVERAGES_RULE_2_ID).get().getValue(), is(1L));
   }
 
   @Test
@@ -472,7 +474,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   }
 
   private DecisionDefinitionEngineDto deployDishDecisionDefinition() {
-    return engineIntegrationExtension.deployDecisionDefinition("dmn/decide-dish.xml");
+    return engineIntegrationExtension.deployDecisionDefinition(createDecideDishDecisionDefinition());
   }
 
   private HashMap<String, InputVariableEntry> createDishInputs(final String season,

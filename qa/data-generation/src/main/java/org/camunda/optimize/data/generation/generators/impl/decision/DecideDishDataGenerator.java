@@ -15,12 +15,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_GUEST_WITH_CHILDREN;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_NUMBER_OF_GUESTS;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_SEASON;
+
 public class DecideDishDataGenerator extends DecisionDataGenerator {
 
   private static final String DMN_DIAGRAM = "diagrams/decision/decide-dish.dmn";
 
   private Triple<String, String, String> inputVarNames =
-    Triple.of("guestCount", "season", "guestsWithChildren");
+    Triple.of(INPUT_VARIABLE_NUMBER_OF_GUESTS, INPUT_VARIABLE_SEASON, INPUT_VARIABLE_GUEST_WITH_CHILDREN);
   private List<Triple<Integer, String, Boolean>> possibleInputCombinations = ImmutableList.of(
     Triple.of(RandomUtils.nextInt(0, 11), "Monsoon", RandomUtils.nextBoolean()),
     Triple.of(RandomUtils.nextInt(0, 9), "Fall", RandomUtils.nextBoolean()),
@@ -52,5 +56,4 @@ public class DecideDishDataGenerator extends DecisionDataGenerator {
     variables.put(inputVarNames.getRight(), nextCombination.getRight());
     return variables;
   }
-
 }

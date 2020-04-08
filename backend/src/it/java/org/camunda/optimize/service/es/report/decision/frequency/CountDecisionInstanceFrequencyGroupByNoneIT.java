@@ -20,6 +20,7 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;

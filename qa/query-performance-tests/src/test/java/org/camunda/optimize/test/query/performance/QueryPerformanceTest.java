@@ -57,6 +57,7 @@ import java.util.stream.Stream;
 
 import static java.time.temporal.ChronoUnit.YEARS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -68,7 +69,6 @@ public class QueryPerformanceTest {
   private static final Properties properties = PropertyUtil.loadProperties(PROPERTY_LOCATION);
   private static final Random randomGen = new Random();
   public static final String DOUBLE_VAR = "doubleVar";
-  public static final String VARIABLE_ID = "clause1";
 
   @RegisterExtension
   @Order(1)
@@ -173,7 +173,7 @@ public class QueryPerformanceTest {
         .setFilter(createDecisionFilter())
         .setVariableName(DOUBLE_VAR)
         .setVariableType(VariableType.DOUBLE)
-        .setVariableId(VARIABLE_ID)
+        .setVariableId(INPUT_AMOUNT_ID)
         .build();
       reports.add(reportDataDto);
     }
