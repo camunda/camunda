@@ -7,7 +7,7 @@
  */
 package io.zeebe.util.sched.future;
 
-import io.zeebe.util.Loggers;
+import io.zeebe.util.LangUtil;
 import java.util.function.BiConsumer;
 
 public final class FutureContinuationRunnable<T> implements Runnable {
@@ -26,8 +26,8 @@ public final class FutureContinuationRunnable<T> implements Runnable {
       try {
         final T res = future.get();
         consumer.accept(res, null);
-      } catch (final Throwable e) {
-        Loggers.ACTOR_LOGGER.debug("Continuing on future completion failed", e);
+      } catch (final Exception e) {
+        LangUtil.rethrowUnchecked(e);
       }
     } else {
       consumer.accept(null, future.getException());

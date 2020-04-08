@@ -715,6 +715,14 @@ public final class ZeebePartition extends Actor
     super.close();
   }
 
+  @Override
+  protected void handleFailure(final Exception failure) {
+    LOG.warn("Uncaught exception in {}.", actorName, failure);
+    // Most probably exception happened in the middle of installing leader or follower services
+    // because this actor is not doing anything else
+    onInstallFailure();
+  }
+
   private ActorFuture<LogStream> openLogStream() {
     return LogStream.builder()
         .withLogStorage(atomixLogStorage)
