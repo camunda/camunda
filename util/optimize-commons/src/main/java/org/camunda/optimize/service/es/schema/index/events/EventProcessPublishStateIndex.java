@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @Component
@@ -61,7 +61,7 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
 
   @Override
   public String getIndexName() {
-    return EVENT_PROCESS_PUBLISH_STATE_INDEX;
+    return EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
   }
 
   @Override

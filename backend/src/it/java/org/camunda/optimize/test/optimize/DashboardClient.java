@@ -101,13 +101,6 @@ public class DashboardClient {
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public IdDto copyDashboardToCollectionAsUser(final String dashboardId, final String collectionId, String username, String password) {
-    return getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId, collectionId)
-      .withUserAuthentication(username, password)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
-  }
-
   public Response copyDashboardToCollectionAsUserAndGetRawResponse(final String dashboardId, final String collectionId, String username, String password) {
     return getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId, collectionId)

@@ -5,22 +5,33 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static javax.ws.rs.HttpMethod.DELETE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
+import static org.mockserver.model.HttpRequest.request;
 
 public class DashboardRestServiceIT extends AbstractIT {
 
@@ -34,7 +45,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -46,7 +57,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
-    assertThat(idDto, is(notNullValue()));
+    assertThat(idDto).isNotNull();
   }
 
   @Test
@@ -58,7 +69,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
-    assertThat(idDto, is(notNullValue()));
+    assertThat(idDto).isNotNull();
   }
 
   @Test
@@ -75,19 +86,20 @@ public class DashboardRestServiceIT extends AbstractIT {
     // then
     DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
     DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
-    assertThat(dashboard.toString(), is(oldDashboard.toString()));
-    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
+    assertThat(dashboard.toString()).isEqualTo(oldDashboard.toString());
+    assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
 
     final List<String> newReportIds = dashboard.getReports()
       .stream()
       .map(ReportLocationDto::getId)
       .collect(Collectors.toList());
 
-    assertThat(newReportIds.isEmpty(), is(false));
-    assertThat(
-      newReportIds,
-      containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray())
-    );
+    final List<String> oldDashboardReportIds = oldDashboard.getReports()
+      .stream()
+      .map(ReportLocationDto::getId)
+      .collect(Collectors.toList());
+    assertThat(newReportIds).isNotEmpty();
+    assertThat(newReportIds).containsExactlyInAnyOrderElementsOf(oldDashboardReportIds);
   }
 
   @Test
@@ -107,8 +119,8 @@ public class DashboardRestServiceIT extends AbstractIT {
     // then
     DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
     DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
-    assertThat(dashboard.toString(), is(oldDashboard.toString()));
-    assertThat(dashboard.getName(), is(testDashboardCopyName));
+    assertThat(dashboard.toString()).isEqualTo(oldDashboard.toString());
+    assertThat(dashboard.getName()).isEqualTo(testDashboardCopyName);
   }
 
   @Test
@@ -121,7 +133,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -134,9 +146,9 @@ public class DashboardRestServiceIT extends AbstractIT {
     DashboardDefinitionDto returnedDashboard = getDashboardWithId(id);
 
     // then
-    assertThat(returnedDashboard, is(notNullValue()));
-    assertThat(returnedDashboard.getId(), is(id));
-    assertThat(returnedDashboard.getName(), is(definitionDto.getName()));
+    assertThat(returnedDashboard).isNotNull();
+    assertThat(returnedDashboard.getId()).isEqualTo(id);
+    assertThat(returnedDashboard.getName()).isEqualTo(definitionDto.getName());
   }
 
   @Test
@@ -148,7 +160,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then the status code is okay
-    assertThat(response.contains("Dashboard does not exist!"), is(true));
+    assertThat(response.contains("Dashboard does not exist!")).isTrue();
   }
 
   @Test
@@ -161,7 +173,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -173,7 +185,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -188,7 +200,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -207,7 +219,7 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     // then
     final DashboardDefinitionDto dashboard = getDashboard(id);
-    assertThat(dashboard.getCollectionId(), is(collectionId));
+    assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
   }
 
   @Test
@@ -220,7 +232,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -235,7 +247,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -247,7 +259,106 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @Test
+  public void deleteDashboardWithShares_shareAlsoGetsDeleted() {
+    // given
+    final String dashboardId = createDashboardWithDefinition();
+    final String shareId = createDashboardShareForDashboard(dashboardId);
+
+    // then
+    assertThat(documentShareExists(shareId)).isTrue();
+
+    // when
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteDashboardRequest(dashboardId)
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
+
+    // then
+    assertThat(documentShareExists(shareId)).isFalse();
+  }
+
+  @Test
+  public void deleteDashboardWithShares_shareGetsDeleted_despiteDashboardDeleteFail() {
+    // given
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+
+    final String dashboardId = createDashboardWithDefinition();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_doc/" + dashboardId)
+      .withMethod(DELETE);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    final String shareId = createDashboardShareForDashboard(dashboardId);
+
+    // then
+    assertThat(documentShareExists(shareId)).isTrue();
+
+    // when
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteDashboardRequest(dashboardId)
+      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(getDashboardWithId(dashboardId)).isNotNull();
+    assertThat(documentShareExists(shareId)).isFalse();
+  }
+
+  @Test
+  public void deleteDashboardWithShares_shareDeleteFails_dashboardNotDeleted() {
+    // given
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+
+    final String dashboardId = createDashboardWithDefinition();
+    final String shareId = createDashboardShareForDashboard(dashboardId);
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + DASHBOARD_SHARE_INDEX_NAME + "/_doc/" + shareId)
+      .withMethod(DELETE);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // then
+    assertThat(documentShareExists(shareId)).isTrue();
+
+    // when
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteDashboardRequest(dashboardId)
+      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(getDashboardWithId(dashboardId)).isNotNull();
+    assertThat(documentShareExists(shareId)).isTrue();
+  }
+
+  private String createDashboardShareForDashboard(final String dashboardId) {
+    DashboardShareDto sharingDto = new DashboardShareDto();
+    sharingDto.setDashboardId(dashboardId);
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildShareDashboardRequest(sharingDto)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
+  }
+
+  @SneakyThrows
+  private boolean documentShareExists(final String shareId) {
+    SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(DASHBOARD_SHARE_INDEX_NAME);
+    List<String> storedShareIds = new ArrayList<>();
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      storedShareIds.add(elasticSearchIntegrationTestExtension.getObjectMapper()
+                           .readValue(searchHitFields.getSourceAsString(), DashboardShareDto.class).getId());
+    }
+    return storedShareIds.contains(shareId);
   }
 
   private String createEmptyPrivateDashboard() {
@@ -279,11 +390,9 @@ public class DashboardRestServiceIT extends AbstractIT {
 
   private void updateDashboardRequest(final String dashboardId, final List<ReportLocationDto> reports) {
     final DashboardDefinitionDto dashboard = getDashboardWithId(dashboardId);
-
     if (reports != null) {
       dashboard.setReports(reports);
     }
-
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateDashboardRequest(dashboardId, dashboard)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
@@ -309,6 +418,13 @@ public class DashboardRestServiceIT extends AbstractIT {
       .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionDto())
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
+  }
+
+  private String createDashboardWithDefinition() {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(generateDashboardDefinitionDto())
+      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
   private DashboardDefinitionDto generateDashboardDefinitionDto() {

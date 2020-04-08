@@ -69,7 +69,7 @@ import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOUR
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -267,7 +267,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .size(1);
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
       .getOptimizeElasticClient()
-      .search(new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX).source(searchSourceBuilder), RequestOptions.DEFAULT);
+      .search(new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(searchSourceBuilder), RequestOptions.DEFAULT);
 
     EventProcessPublishStateDto result = null;
     if (searchResponse.getHits().getTotalHits().value > 0) {

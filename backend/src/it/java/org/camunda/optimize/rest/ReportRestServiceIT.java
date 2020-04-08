@@ -14,6 +14,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -24,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
@@ -34,28 +36,34 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static javax.ws.rs.HttpMethod.DELETE;
+import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.mockserver.model.HttpRequest.request;
 
 public class ReportRestServiceIT extends AbstractIT {
 
@@ -75,7 +83,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest
@@ -84,7 +92,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     String id = addEmptyReportToOptimize(reportType);
     // then
-    assertThat(id, is(notNullValue()));
+    assertThat(id).isNotNull();
   }
 
   @ParameterizedTest
@@ -93,7 +101,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     String id = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
     // then
-    assertThat(id, is(notNullValue()));
+    assertThat(id).isNotNull();
   }
 
   @Test
@@ -106,7 +114,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -117,7 +125,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .buildCreateCombinedReportRequest()
       .execute(IdDto.class, OK.getStatusCode());
     // then
-    assertThat(idDto, is(notNullValue()));
+    assertThat(idDto).isNotNull();
   }
 
   @Test
@@ -130,7 +138,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, OK.getStatusCode());
     // then
-    assertThat(idDto, is(notNullValue()));
+    assertThat(idDto).isNotNull();
   }
 
   @Test
@@ -143,7 +151,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -155,7 +163,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @ParameterizedTest
@@ -168,7 +176,7 @@ public class ReportRestServiceIT extends AbstractIT {
     Response response = updateReportRequest(id, reportType);
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
@@ -181,7 +189,7 @@ public class ReportRestServiceIT extends AbstractIT {
     final Response response = updateReportWithValidXml(id, reportType);
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -196,10 +204,8 @@ public class ReportRestServiceIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then the returned list excludes reports in collections
-    assertThat(
-      reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(privateDecisionReportId, privateProcessReportId)
-    );
+    assertThat(reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()))
+      .containsExactlyInAnyOrder(privateDecisionReportId, privateProcessReportId);
   }
 
   @Test
@@ -212,7 +218,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -227,24 +233,19 @@ public class ReportRestServiceIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports.size(), is(2));
-    assertThat(
-      reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(idDecisionReport, idProcessReport)
-    );
+    assertThat(reports).hasSize(2);
+    assertThat(reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()))
+      .containsExactlyInAnyOrder(idDecisionReport, idProcessReport);
     assertThat(
       reports.stream()
         .map(ReportDefinitionDto::getData)
         .map(data -> (SingleReportDataDto) data)
         .map(SingleReportDataDto::getDefinitionName)
-        .collect(Collectors.toList()),
-
-      containsInAnyOrder("Simple Process", "Invoice Classification")
-    );
+        .collect(Collectors.toList()))
+      .containsExactlyInAnyOrder("Simple Process", "Invoice Classification");
     reports.forEach(
       reportDefinitionDto ->
-        assertThat(((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration().getXml(), is(nullValue()))
-    );
+        assertThat(((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration().getXml()).isNull());
   }
 
   @Test
@@ -272,20 +273,17 @@ public class ReportRestServiceIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports.size(), is(2));
+    assertThat(reports).hasSize(2);
     assertThat(
       reports.stream()
         .map(ReportDefinitionDto::getData)
         .map(data -> (SingleReportDataDto) data)
         .map(SingleReportDataDto::getDefinitionName)
-        .collect(Collectors.toList()),
-
-      containsInAnyOrder(PROCESS_DEFINITION_KEY, DECISION_DEFINITION_KEY)
-    );
+        .collect(Collectors.toList()))
+      .containsExactlyInAnyOrder(PROCESS_DEFINITION_KEY, DECISION_DEFINITION_KEY);
     reports.forEach(
       reportDefinitionDto ->
-        assertThat(((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration().getXml(), is(nullValue()))
-    );
+        assertThat(((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration().getXml()).isNull());
   }
 
   @Test
@@ -298,7 +296,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest
@@ -311,9 +309,9 @@ public class ReportRestServiceIT extends AbstractIT {
     ReportDefinitionDto report = getReport(id);
 
     // then the status code is okay
-    assertThat(report, is(notNullValue()));
-    assertThat(report.getReportType(), is(reportType));
-    assertThat(report.getId(), is(id));
+    assertThat(report).isNotNull();
+    assertThat(report.getReportType()).isEqualTo(reportType);
+    assertThat(report.getId()).isEqualTo(id);
   }
 
   @Test
@@ -325,7 +323,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then the status code is okay
-    assertThat(response.contains("Report does not exist."), is(true));
+    assertThat(response.contains("Report does not exist.")).isTrue();
   }
 
   @ParameterizedTest
@@ -349,7 +347,7 @@ public class ReportRestServiceIT extends AbstractIT {
       default:
         xmlString = "";
     }
-    assertThat(xmlString.contains(RANDOM_STRING), is(true));
+    assertThat(xmlString.contains(RANDOM_STRING)).isTrue();
   }
 
   @Test
@@ -362,7 +360,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest
@@ -378,8 +376,8 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-    assertThat(getAllPrivateReports().size(), is(0));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(getAllPrivateReports()).isEmpty();
   }
 
   @Test
@@ -391,7 +389,105 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReportType.class)
+  public void forceDeleteReport_notDeletedIfEsFailsWhenRemovingFromDashboards(final ReportType reportType) {
+    //given
+    String reportId = addEmptyReportToOptimize(reportType);
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    final String dashboardId = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute(IdDto.class, OK.getStatusCode())
+      .getId();
+    dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_update_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteReportRequest(reportId, true)
+      .execute();
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(getAllPrivateReports())
+      .extracting(ReportDefinitionDto::getId)
+      .containsExactly(reportId);
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReportType.class)
+  public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingAlertsForReport(final ReportType reportType) {
+    //given
+    String reportId = addEmptyReportToOptimize(reportType);
+    alertClient.createSimpleAlert(reportId);
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + ALERT_INDEX_NAME + "/_delete_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteReportRequest(reportId, true)
+      .execute();
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(getAllPrivateReports())
+      .extracting(ReportDefinitionDto::getId)
+      .containsExactly(reportId);
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReportType.class)
+  public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingSharesForReport(final ReportType reportType) {
+    //given
+    String reportId = addEmptyReportToOptimize(reportType);
+    ReportShareDto sharingDto = new ReportShareDto();
+    sharingDto.setReportId(reportId);
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildShareReportRequest(sharingDto)
+      .execute();
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + REPORT_SHARE_INDEX_NAME + "/_doc/.*")
+      .withMethod(DELETE);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteReportRequest(reportId, true)
+      .execute();
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(getAllPrivateReports())
+      .extracting(ReportDefinitionDto::getId)
+      .containsExactly(reportId);
   }
 
   @Test
@@ -404,7 +500,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest
@@ -420,7 +516,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
   }
 
   @Test
@@ -456,7 +552,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest
@@ -492,7 +588,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -521,7 +617,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -534,7 +630,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
   }
 
   @Test
@@ -549,7 +645,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -563,8 +659,8 @@ public class ReportRestServiceIT extends AbstractIT {
 
     ReportDefinitionDto oldReport = getReport(id);
     ReportDefinitionDto report = getReport(copyId.getId());
-    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
-    assertThat(oldReport.getName() + " – Copy", is(report.getName()));
+    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
   }
 
   @Test
@@ -578,8 +674,8 @@ public class ReportRestServiceIT extends AbstractIT {
 
     ReportDefinitionDto oldReport = getReport(id.getId());
     ReportDefinitionDto report = getReport(copyId.getId());
-    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
-    assertThat(oldReport.getName() + " – Copy", is(report.getName()));
+    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
   }
 
   @Test
@@ -601,8 +697,8 @@ public class ReportRestServiceIT extends AbstractIT {
     // then
     ReportDefinitionDto oldReport = getReport(id);
     ReportDefinitionDto report = getReport(copyId.getId());
-    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
-    assertThat(report.getName(), is(testReportCopyName));
+    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(report.getName()).isEqualTo(testReportCopyName);
   }
 
   @ParameterizedTest
@@ -620,10 +716,10 @@ public class ReportRestServiceIT extends AbstractIT {
     // then
     ReportDefinitionDto oldReport = getReport(id);
     ReportDefinitionDto report = getReport(copyId.getId());
-    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
-    assertThat(oldReport.getName() + " – Copy", is(report.getName()));
-    assertThat(oldReport.getCollectionId(), is(nullValue()));
-    assertThat(report.getCollectionId(), is(collectionId));
+    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
+    assertThat(oldReport.getCollectionId()).isNull();
+    assertThat(report.getCollectionId()).isEqualTo(collectionId);
   }
 
   @Test
@@ -644,22 +740,22 @@ public class ReportRestServiceIT extends AbstractIT {
     // then
     ReportDefinitionDto oldReport = getReport(id.getId());
     ReportDefinitionDto newReport = getReport(copyId.getId());
-    assertThat(oldReport.getName() + " – Copy", is(newReport.getName()));
-    assertThat(oldReport.getCollectionId(), is(nullValue()));
-    assertThat(newReport.getCollectionId(), is(collectionId));
+    assertThat(oldReport.getName() + " – Copy").isEqualTo(newReport.getName());
+    assertThat(oldReport.getCollectionId()).isNull();
+    assertThat(newReport.getCollectionId()).isEqualTo(collectionId);
 
     final CombinedReportDataDto oldData = (CombinedReportDataDto) oldReport.getData();
-    assertThat(oldData.getReportIds().isEmpty(), is(false));
-    assertThat(oldData.getReportIds(), containsInAnyOrder(report1, report2));
+    assertThat(oldData.getReportIds()).isNotEmpty();
+    assertThat(oldData.getReportIds()).containsExactlyInAnyOrder(report1, report2);
 
     final CombinedReportDataDto newData = (CombinedReportDataDto) newReport.getData();
-    assertThat(newData.getReportIds().isEmpty(), is(false));
-    assertThat(newData.getReportIds(), not(containsInAnyOrder(report1, report2)));
+    assertThat(newData.getReportIds()).isNotEmpty();
+    assertThat(newData.getReportIds()).doesNotContain(report1, report2);
 
     newData.getReportIds()
       .forEach(newSingleReportId -> {
         final ReportDefinitionDto newSingleReport = getReport(newSingleReportId);
-        assertThat(newSingleReport.getCollectionId(), is(collectionId));
+        assertThat(newSingleReport.getCollectionId()).isEqualTo(collectionId);
       });
   }
 
@@ -678,10 +774,10 @@ public class ReportRestServiceIT extends AbstractIT {
     // then
     ReportDefinitionDto oldReport = getReport(id);
     ReportDefinitionDto report = getReport(copyId.getId());
-    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
-    assertThat(oldReport.getName() + " – Copy", is(report.getName()));
-    assertThat(oldReport.getCollectionId(), is(collectionId));
-    assertThat(report.getCollectionId(), is(nullValue()));
+    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
+    assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
+    assertThat(report.getCollectionId()).isNull();
   }
 
   @Test
@@ -703,22 +799,22 @@ public class ReportRestServiceIT extends AbstractIT {
     ReportDefinitionDto oldReport = getReport(id.getId());
     ReportDefinitionDto newReport = getReport(copyId.getId());
 
-    assertThat(oldReport.getName() + " – Copy", is(newReport.getName()));
-    assertThat(oldReport.getCollectionId(), is(collectionId));
-    assertThat(newReport.getCollectionId(), is(nullValue()));
+    assertThat(oldReport.getName() + " – Copy").isEqualTo(newReport.getName());
+    assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
+    assertThat(newReport.getCollectionId()).isNull();
 
     final CombinedReportDataDto oldData = (CombinedReportDataDto) oldReport.getData();
-    assertThat(oldData.getReportIds().isEmpty(), is(false));
-    assertThat(oldData.getReportIds(), containsInAnyOrder(report1, report2));
+    assertThat(oldData.getReportIds()).isNotEmpty();
+    assertThat(oldData.getReportIds()).containsExactlyInAnyOrder(report1, report2);
 
     final CombinedReportDataDto newData = (CombinedReportDataDto) newReport.getData();
-    assertThat(newData.getReportIds().isEmpty(), is(false));
-    assertThat(newData.getReportIds(), not(containsInAnyOrder(report1, report2)));
+    assertThat(newData.getReportIds()).isNotEmpty();
+    assertThat(newData.getReportIds()).doesNotContain(report1, report2);
 
     newData.getReportIds()
       .forEach(newSingleReportId -> {
         final ReportDefinitionDto newSingleReport = getReport(newSingleReportId);
-        assertThat(newSingleReport.getCollectionId(), is(nullValue()));
+        assertThat(newSingleReport.getCollectionId()).isNull();
       });
   }
 
@@ -738,10 +834,10 @@ public class ReportRestServiceIT extends AbstractIT {
     // then
     ReportDefinitionDto oldReport = getReport(id);
     ReportDefinitionDto newReport = getReport(copyId.getId());
-    assertThat(newReport.getData().toString(), is(oldReport.getData().toString()));
-    assertThat(oldReport.getName() + " – Copy", is(newReport.getName()));
-    assertThat(oldReport.getCollectionId(), is(collectionId));
-    assertThat(newReport.getCollectionId(), is(newCollectionId));
+    assertThat(newReport.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(oldReport.getName() + " – Copy").isEqualTo(newReport.getName());
+    assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
+    assertThat(newReport.getCollectionId()).isEqualTo(newCollectionId);
   }
 
   @Test
@@ -766,21 +862,21 @@ public class ReportRestServiceIT extends AbstractIT {
     ReportDefinitionDto oldReport = getReport(id.getId());
     ReportDefinitionDto newReport = getReport(copyId.getId());
 
-    assertThat(oldReport.getName() + " – Copy", is(newReport.getName()));
-    assertThat(oldReport.getCollectionId(), is(collectionId));
-    assertThat(newReport.getCollectionId(), is(newCollectionId));
+    assertThat(oldReport.getName() + " – Copy").isEqualTo(newReport.getName());
+    assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
+    assertThat(newReport.getCollectionId()).isEqualTo(newCollectionId);
     final CombinedReportDataDto oldData = (CombinedReportDataDto) oldReport.getData();
-    assertThat(oldData.getReportIds().isEmpty(), is(false));
-    assertThat(oldData.getReportIds(), containsInAnyOrder(report1, report2));
+    assertThat(oldData.getReportIds()).isNotEmpty();
+    assertThat(oldData.getReportIds()).containsExactlyInAnyOrder(report1, report2);
 
     final CombinedReportDataDto newData = (CombinedReportDataDto) newReport.getData();
-    assertThat(newData.getReportIds().isEmpty(), is(false));
-    assertThat(newData.getReportIds(), not(containsInAnyOrder(report1, report2)));
+    assertThat(newData.getReportIds()).isNotEmpty();
+    assertThat(newData.getReportIds()).doesNotContain(report1, report2);
 
     newData.getReportIds()
       .forEach(newSingleReportId -> {
         final ReportDefinitionDto newSingleReport = getReport(newSingleReportId);
-        assertThat(newSingleReport.getCollectionId(), is(newCollectionId));
+        assertThat(newSingleReport.getCollectionId()).isEqualTo(newCollectionId);
       });
   }
 

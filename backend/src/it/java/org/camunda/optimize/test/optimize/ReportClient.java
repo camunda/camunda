@@ -338,22 +338,22 @@ public class ReportClient {
     return createSingleDecisionReport(decisionReportDefinition);
   }
 
-  public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String originalReportId) {
-    return getSingleProcessReportDefinitionDto(originalReportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String reportId) {
+    return getSingleProcessReportDefinitionDto(reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
 
-  public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String originalReportId, String username,
+  public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String reportId, String username,
                                                                               String password) {
-    Response response = getSingleProcessReportRawResponse(originalReportId, username, password);
+    Response response = getSingleProcessReportRawResponse(reportId, username, password);
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     return response.readEntity(SingleProcessReportDefinitionDto.class);
   }
 
-  public Response getSingleProcessReportRawResponse(String originalReportId, String username,
+  public Response getSingleProcessReportRawResponse(String reportId, String username,
                                                     String password) {
     return getRequestExecutor()
-      .buildGetReportRequest(originalReportId)
+      .buildGetReportRequest(reportId)
       .withUserAuthentication(username, password)
       .execute();
   }

@@ -29,11 +29,12 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
   protected static final String USER_TASK_1 = "userTask1";
   protected static final String USER_TASK_2 = "userTask2";
 
+  protected ObjectMapper objectMapper;
+
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
-
-  protected ObjectMapper objectMapper;
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @BeforeEach
   public void setUp() {

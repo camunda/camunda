@@ -57,7 +57,7 @@ engines:
       id: null
       # the name used for this tenant when displayed in the UI
       name: null
-    #A base URL that will be used for connections to the Camunda Engine REST API.
+    # A base URL that will be used for connections to the Camunda Engine REST API.
     rest: '${OPTIMIZE_CAMUNDABPM_REST_URL:http://localhost:8080/engine-rest}'
     # Determines whether this instance of Optimize should import definition & historical data from this engine.
     importEnabled: true

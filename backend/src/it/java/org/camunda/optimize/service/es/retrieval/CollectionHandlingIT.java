@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -36,6 +37,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -44,6 +46,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -58,6 +64,8 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
+import static javax.ws.rs.HttpMethod.POST;
+import static javax.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -65,8 +73,13 @@ import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_CO
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
+import static org.mockserver.model.HttpError.error;
+import static org.mockserver.model.HttpRequest.request;
 
 public class CollectionHandlingIT extends AbstractIT {
 
@@ -466,6 +479,79 @@ public class CollectionHandlingIT extends AbstractIT {
   }
 
   @Test
+  public void collectionNotDeletedIfEsFailsWhenDeletingContainedAlerts() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+    final String reportId1 = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    final String reportId2 = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    alertClient.createAlertForReport(reportId1);
+    alertClient.createAlertForReport(reportId1);
+    alertClient.createAlertForReport(reportId2);
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + ALERT_INDEX_NAME + "/_delete_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(error().withDropConnection(true));
+
+    // when
+    collectionClient.deleteCollection(collectionId);
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    Integer alertCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(ALERT_INDEX_NAME);
+    assertThat(alertCount).isEqualTo(3);
+    assertThat(collectionClient.getCollectionById(collectionId)).isNotNull();
+  }
+
+  @Test
+  public void collectionNotDeletedIfEsFailsWhenDeletingContainedReport() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+    final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(error().withDropConnection(true));
+
+    // when
+    collectionClient.deleteCollection(collectionId);
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(reportClient.getSingleProcessReportDefinitionDto(reportId)).isNotNull();
+    assertThat(collectionClient.getCollectionById(collectionId)).isNotNull();
+  }
+
+  @Test
+  public void collectionNotDeletedIfEsFailsWhenDeletingContainedDashboard() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_delete_by_query")
+      .withMethod(POST);
+    esMockServer.when(requestMatcher, Times.once())
+      .error(error().withDropConnection(true));
+
+    // when
+    collectionClient.deleteCollection(collectionId);
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(dashboardClient.getDashboard(dashboardId)).isNotNull();
+    assertThat(collectionClient.getCollectionById(collectionId)).isNotNull();
+  }
+
+  @Test
   public void copyAnEmptyCollectionWithCustomPermissionsAndScope() {
     //given
     engineIntegrationExtension.addUser("kermit", "kermit");
@@ -483,7 +569,6 @@ public class CollectionHandlingIT extends AbstractIT {
 
     //when
     String copyId = collectionClient.copyCollection(collectionId).getId();
-
     CollectionDefinitionRestDto copyDefinition = collectionClient.getCollectionById(copyId);
 
     //then
@@ -572,7 +657,8 @@ public class CollectionHandlingIT extends AbstractIT {
     String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     DashboardDefinitionDto dashboardDefinition = dashboardClient.getDashboard(dashboardId);
-    CombinedReportDefinitionDto combinedReportDefinition = reportClient.getCombinedProcessReportDefinitionDto(combinedReportId);
+    CombinedReportDefinitionDto combinedReportDefinition = reportClient.getCombinedProcessReportDefinitionDto(
+      combinedReportId);
 
     reportClient.updateCombinedReport(combinedReportId, Lists.newArrayList(originalReportId));
 
@@ -669,6 +755,35 @@ public class CollectionHandlingIT extends AbstractIT {
     assertThat(copiedReportIdsWithAlert.size()).isEqualTo(copiedReports.size());
     assertThat(copiedReports.stream()
                  .allMatch(report -> copiedReportIdsWithAlert.contains(report.getDefinitionDto().getId()))).isTrue();
+  }
+
+  @Test
+  public void copyCollectionWithAReport_entitiesNotCopiedIfCollectionCreationFailsOnEsFailure() {
+    //given
+    final String collectionId = collectionClient.createNewCollection();
+    final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    final String alertId = alertClient.createAlertForReport(reportId);
+    final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(reportId));
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + COLLECTION_INDEX_NAME + "/_doc/.*")
+      .withMethod(PUT);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(error().withDropConnection(true));
+
+    // when
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildCopyCollectionRequest(collectionId)
+      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    // then only original entities exist
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(getAllStoredCollections()).extracting(CollectionDefinitionDto::getId).containsExactly(collectionId);
+    assertThat(getAllStoredProcessReports()).extracting(SingleProcessReportDefinitionDto::getId).containsExactly(reportId);
+    assertThat(getAllStoredDashboards()).extracting(DashboardDefinitionDto::getId).containsExactly(dashboardId);
+    assertThat(getAllStoredAlerts()).extracting(AlertDefinitionDto::getId).containsExactly(alertId);
   }
 
   @ParameterizedTest
@@ -794,6 +909,30 @@ public class CollectionHandlingIT extends AbstractIT {
     assertThat(collectionClient.getAlertsForCollection(collectionId))
       .extracting(AlertDefinitionDto::getId)
       .contains(alertId);
+  }
+
+  private List<SingleProcessReportDefinitionDto> getAllStoredProcessReports() {
+    return getAllStoredInIndexOfType(SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionDto.class);
+  }
+
+  private List<CollectionDefinitionDto> getAllStoredCollections() {
+    return getAllStoredInIndexOfType(COLLECTION_INDEX_NAME, CollectionDefinitionDto.class);
+  }
+
+  private List<AlertDefinitionDto> getAllStoredAlerts() {
+    return getAllStoredInIndexOfType(ALERT_INDEX_NAME, AlertDefinitionDto.class);
+  }
+
+  private List<DashboardDefinitionDto> getAllStoredDashboards() {
+    return getAllStoredInIndexOfType(DASHBOARD_INDEX_NAME, DashboardDefinitionDto.class);
+  }
+
+  private <T> List<T> getAllStoredInIndexOfType(final String indexName, Class<T> type) {
+    return ElasticsearchHelper.mapHits(
+      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(indexName).getHits(),
+      type,
+      embeddedOptimizeExtension.getObjectMapper()
+    );
   }
 
   private void addTenantToElasticsearch(final String tenantId) {

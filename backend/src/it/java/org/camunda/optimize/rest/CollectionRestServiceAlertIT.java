@@ -68,7 +68,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     assertThat(allAlerts.size(), is(0));
   }
 
-  @ParameterizedTest(name = "deleting a collection with reports of definition type {0} also deletes associated alerts")
+  @ParameterizedTest
   @MethodSource("definitionType")
   public void deleteCollectionAlsoDeletesContainingAlerts(final DefinitionType definitionType) {
     // given
@@ -90,4 +90,5 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     // then
     assertThat(alertCount, is(0));
   }
+
 }

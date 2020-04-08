@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -54,7 +54,7 @@ public class EventProcessPublishStateReader {
       )
       .sort(SortBuilders.fieldSort(EventProcessPublishStateIndex.PUBLISH_DATE_TIME).order(SortOrder.DESC))
       .size(1);
-    final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX)
+    final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     final SearchResponse searchResponse;
@@ -93,7 +93,7 @@ public class EventProcessPublishStateReader {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT);
-    final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX)
+    final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

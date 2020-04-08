@@ -22,6 +22,11 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -29,6 +34,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.util.Arrays.asList;
+import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -36,7 +42,9 @@ import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
+import static org.mockserver.model.HttpRequest.request;
 
 public class CollectionRestServiceScopeIT extends AbstractIT {
 
@@ -497,17 +505,23 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
   @Test
   public void removeScopeDefinitionFailsDueReportConflict() {
+    // given
     String collectionId = collectionClient.createNewCollection();
     CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
 
     collectionClient.addScopeEntryToCollection(collectionId, entry);
+    String reportId = reportClient.createAndStoreProcessReport(
+      collectionId,
+      DEFAULT_DEFINITION_KEY,
+      Collections.singletonList(null)
+    );
 
-    String reportId = reportClient.createAndStoreProcessReport(collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
-
+    // when
     ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
       .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
+    // then
     assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeCollectionConflictException.ERROR_CODE);
     assertThat(conflictResponseDto.getConflictedItems())
       .extracting(ConflictedItemDto::getId)
@@ -515,9 +529,39 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   }
 
   @Test
+  public void forceRemoveScopeDefinitionFailsIfEsFailsToRemoveReports() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
+    reportClient.createAndStoreProcessReport(collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId(), true)
+      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
+      .extracting(CollectionScopeEntryDto::getId)
+      .contains(entry.getId());
+  }
+
+  @Test
   public void removeNotExistingScopeDefinitionFails() {
+    // given
     String collectionId = collectionClient.createNewCollection();
 
+    // then
     embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
       .execute(Response.Status.NOT_FOUND.getStatusCode());

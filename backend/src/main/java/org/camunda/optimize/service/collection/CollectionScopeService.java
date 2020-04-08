@@ -142,8 +142,7 @@ public class CollectionScopeService {
     });
   }
 
-  public void deleteScopeEntry(String userId, String collectionId, String scopeEntryId, boolean force)
-    throws NotFoundException {
+  public void deleteScopeEntry(String userId, String collectionId, String scopeEntryId, boolean force) throws NotFoundException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
     final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =

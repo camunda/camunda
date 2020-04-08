@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -52,7 +52,7 @@ public class EventProcessPublishStateWriter {
     log.debug("Writing event process publish state [{}] to elasticsearch", id);
     IndexResponse indexResponse;
     try {
-      final IndexRequest request = new IndexRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX)
+      final IndexRequest request = new IndexRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
         .id(id)
         .source(
           objectMapper.writeValueAsString(
@@ -92,7 +92,7 @@ public class EventProcessPublishStateWriter {
         objectMapper
       );
       final UpdateRequest request = new UpdateRequest()
-        .index(EVENT_PROCESS_PUBLISH_STATE_INDEX)
+        .index(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
         .id(id)
         .script(updateScript)
         .setRefreshPolicy(IMMEDIATE)
@@ -140,7 +140,7 @@ public class EventProcessPublishStateWriter {
       "true",
       updateScript,
       termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId),
-      EVENT_PROCESS_PUBLISH_STATE_INDEX
+      EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
     );
   }
 
@@ -171,7 +171,7 @@ public class EventProcessPublishStateWriter {
       "true",
       updateScript,
       query,
-      EVENT_PROCESS_PUBLISH_STATE_INDEX
+      EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
     );
   }
 

@@ -111,15 +111,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                                     final String userId,
                                     final String collectionId,
                                     final String name) {
-    return copyAndMoveDashboard(dashboardId, userId, collectionId, name, new HashMap<>());
-  }
-
-  private IdDto copyAndMoveDashboard(final String dashboardId,
-                                     final String userId,
-                                     final String collectionId,
-                                     final String name,
-                                     final Map<String, String> uniqueReportCopies) {
-    return copyAndMoveDashboard(dashboardId, userId, collectionId, name, uniqueReportCopies, false);
+    return copyAndMoveDashboard(dashboardId, userId, collectionId, name, new HashMap<>(), false);
   }
 
   public IdDto copyAndMoveDashboard(final String dashboardId,

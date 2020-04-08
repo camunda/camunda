@@ -43,8 +43,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
-import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -60,6 +61,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static javax.ws.rs.HttpMethod.DELETE;
+import static javax.ws.rs.HttpMethod.GET;
+import static javax.ws.rs.HttpMethod.POST;
+import static javax.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -67,6 +72,9 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINI
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
@@ -81,22 +89,22 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   private static Stream<Arguments> getAllEndpointsThatNeedEventAuthorization() {
     return Stream.of(
-      Arguments.of(HttpMethod.GET, "/eventBasedProcess", null),
-      Arguments.of(HttpMethod.GET, "/eventBasedProcess/someId/delete-conflicts", null),
-      Arguments.of(HttpMethod.POST, "/eventBasedProcess", null),
+      Arguments.of(GET, "/eventBasedProcess", null),
+      Arguments.of(GET, "/eventBasedProcess/someId/delete-conflicts", null),
+      Arguments.of(POST, "/eventBasedProcess", null),
       Arguments.of(
-        HttpMethod.PUT, "/eventBasedProcess/someId", EventProcessMappingRequestDto.builder().name("someName").build()
+        PUT, "/eventBasedProcess/someId", EventProcessMappingRequestDto.builder().name("someName").build()
       ),
-      Arguments.of(HttpMethod.POST, "/eventBasedProcess/someId/_publish", null),
-      Arguments.of(HttpMethod.POST, "/eventBasedProcess/someId/_cancelPublish", null),
-      Arguments.of(HttpMethod.DELETE, "/eventBasedProcess/someId", null),
-      Arguments.of(HttpMethod.GET, "/eventBasedProcess/someId/role", null),
+      Arguments.of(POST, "/eventBasedProcess/someId/_publish", null),
+      Arguments.of(POST, "/eventBasedProcess/someId/_cancelPublish", null),
+      Arguments.of(DELETE, "/eventBasedProcess/someId", null),
+      Arguments.of(GET, "/eventBasedProcess/someId/role", null),
       Arguments.of(
-        HttpMethod.PUT,
+        PUT,
         "/eventBasedProcess/someId/role",
         Collections.singleton(new EventProcessRoleRestDto(new UserDto("someId")))
       ),
-      Arguments.of(HttpMethod.POST, "/eventBasedProcess/_mappingCleanup", EventMappingCleanupRequestDto.builder()
+      Arguments.of(POST, "/eventBasedProcess/_mappingCleanup", EventMappingCleanupRequestDto.builder()
         .xml("<xml></xml>")
         .build()
       )
@@ -163,8 +171,8 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     esMockServer.verify(
       request()
-        .withPath("/.*-event-process-mapping/_doc/.*")
-        .withMethod("PUT"),
+        .withPath("/.*-" + EVENT_PROCESS_MAPPING_INDEX_NAME + "/_doc/.*")
+        .withMethod(PUT),
       exactly(1)
     );
   }
@@ -202,11 +210,12 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   public void createEventProcessMappingElasticsearchConnectionError() {
     // given
     final ClientAndServer esMockServer = useElasticsearchMockServer();
-    esMockServer.when(
-      request().withPath("/.*-event-process-mapping/_doc/.*").withMethod("PUT"), Times.once()
-    ).error(
-      HttpError.error().withDropConnection(true)
-    );
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + EVENT_PROCESS_MAPPING_INDEX_NAME + "/_doc/.*")
+      .withMethod(PUT);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
 
     // when
     Response createResponse = eventProcessClient
@@ -215,6 +224,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       ).execute();
 
     // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(createResponse.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
@@ -1035,6 +1045,109 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .extracting("id")
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isEmpty();
+  }
+
+  @Test
+  public void eventProcessMappingNotDeletedIfEsFailsToDeleteReportsUsingMapping() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto =
+      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    collectionClient.addScopeEntryToCollection(
+      collectionId,
+      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
+    );
+    String reportUsingMapping = reportClient.createSingleProcessReport(
+      reportClient.createSingleProcessReportDefinitionDto(
+        collectionId,
+        eventProcessDefinitionKey,
+        Collections.emptyList()
+      ));
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    eventProcessClient.createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
+      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey)
+      .execute(Response.Status.OK.getStatusCode());
+    assertThat(collectionClient.getReportsForCollection(collectionId))
+      .extracting("definitionDto.id")
+      .containsExactlyInAnyOrder(reportUsingMapping);
+  }
+
+  @Test
+  public void eventProcessMappingNotDeletedIfEsFailsToDeleteMappingAsScopeEntry() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto =
+      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    collectionClient.addScopeEntryToCollection(
+      collectionId,
+      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
+    );
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*" + COLLECTION_INDEX_NAME + ".*/_update_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    eventProcessClient.createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
+      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey)
+      .execute(Response.Status.OK.getStatusCode());
+    assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
+      .extracting(CollectionScopeEntryDto::getDefinitionKey)
+      .contains(eventProcessDefinitionKey);
+  }
+
+  @Test
+  public void eventProcessMappingNotDeletedIfEsFailsToDeletePublishState() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto =
+      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME + "/_update_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    eventProcessClient.createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
+      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey)
+      .execute(Response.Status.OK.getStatusCode());
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isNotEmpty();
   }
 
   @Test

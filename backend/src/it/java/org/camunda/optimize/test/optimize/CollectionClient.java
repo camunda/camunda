@@ -342,13 +342,10 @@ public class CollectionClient {
   public CollectionDefinitionRestDto copyCollection(String collectionId, String newName) {
     OptimizeRequestExecutor executor = getRequestExecutor()
       .buildCopyCollectionRequest(collectionId);
-
     if (newName != null) {
       executor.addSingleQueryParam("name", newName);
     }
-
-    return executor
-      .execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+    return executor.execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   public ConflictResponseDto getDeleteCollectionConflicts(String id) {

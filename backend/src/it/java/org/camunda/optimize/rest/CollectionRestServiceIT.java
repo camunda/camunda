@@ -203,4 +203,5 @@ public class CollectionRestServiceIT extends AbstractIT {
     // then
     assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
+
 }

@@ -49,7 +49,7 @@ public class ElasticsearchConstants {
   public static final String EVENT_PROCESS_MAPPING_INDEX_NAME = "event-process-mapping";
 
   public static final String EVENT_PROCESS_DEFINITION_INDEX_NAME = "event-process-definition";
-  public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX = "event-process-publish-state";
+  public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME = "event-process-publish-state";
   public static final String ONBOARDING_INDEX_NAME = "onboarding-state";
   public static final String VARIABLE_UPDATE_INSTANCE_INDEX_NAME = "variable-update-instance";
   public static final String BUSINESS_KEY_INDEX_NAME = "business-key";
