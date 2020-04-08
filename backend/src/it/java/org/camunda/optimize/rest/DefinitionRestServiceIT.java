@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWith
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -803,11 +802,13 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
-  @Disabled
   @Test
-  public void getDefinitions_canHandleOver10kDefinitions() {
+  public void getDefinitions_allEntriesAreRetrievedIfMoreThanBucketLimit() {
     // given
-    final Integer definitionCount = 11000;
+    final Integer bucketLimit = 1000;
+    final Integer definitionCount = bucketLimit * 2;
+
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
     Map<String, Object> definitionMap = new HashMap<>();
     IntStream
       .range(0, definitionCount)
@@ -826,23 +827,22 @@ public class DefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
     final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
       .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
 
     // then
-    assertThat(responseTimeMs).isLessThan(10_000L);
     assertThat(definitions).isNotEmpty().hasSize(definitionCount);
   }
 
-  @Disabled
   @Test
-  public void getDefinitionVersionsWithTenants_canHandleOver10kDefinitions() {
+  public void getDefinitionVersionsWithTenants_allEntriesAreRetrievedIfMoreThanBucketLimit() {
     // given
-    final Integer definitionCount = 11000;
+    final Integer bucketLimit = 1000;
+    final Integer definitionCount = bucketLimit * 2;
+
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
     Map<String, Object> definitionMap = new HashMap<>();
     IntStream
       .range(0, definitionCount)
@@ -861,24 +861,23 @@ public class DefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
     final List<DefinitionVersionsWithTenantsDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildGetProcessDefinitionVersionsWithTenants()
       .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
 
     // then
-    assertThat(responseTimeMs).isLessThan(10_000L);
     assertThat(definitions).isNotEmpty().hasSize(definitionCount);
   }
 
-  @Disabled
   @Test
-  public void getDefinitionsGroupedByTenant_canHandleOver10kDefinitions() {
+  public void getDefinitionsGroupedByTenant_allEntriesAreRetrievedIfMoreThanBucketLimit() {
     //given
-    final Integer definitionCount = 11000;
+    final Integer bucketLimit = 1000;
+    final Integer definitionCount = bucketLimit * 2;
+
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
     Map<String, Object> definitionMap = new HashMap<>();
     IntStream
       .range(0, definitionCount)
@@ -897,16 +896,13 @@ public class DefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
     final List<TenantWithDefinitionsDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildGetDefinitionsGroupedByTenant()
       .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
 
     // then
-    assertThat(responseTimeMs).isLessThan(10_000L);
     assertThat(definitions).isNotEmpty().hasSize(1);
     assertThat(definitions.get(0).getDefinitions()).isNotEmpty().hasSize(definitionCount);
   }

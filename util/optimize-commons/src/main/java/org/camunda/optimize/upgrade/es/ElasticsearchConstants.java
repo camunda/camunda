@@ -11,7 +11,6 @@ public class ElasticsearchConstants {
   public static final int LIST_FETCH_LIMIT = 1000;
 
   public static final int MAX_RESPONSE_SIZE_LIMIT = 10_000;
-  public static final int MAX_COMPOSITE_BUCKET_SIZE_LIMIT  = 1000;
 
   public static final int NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION = 80;
 

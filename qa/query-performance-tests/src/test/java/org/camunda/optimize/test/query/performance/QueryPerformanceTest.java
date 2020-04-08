@@ -100,6 +100,18 @@ public class QueryPerformanceTest {
     authenticationToken = embeddedOptimizeExtension.getNewAuthenticationToken();
   }
 
+  @ParameterizedTest
+  @MethodSource("getPossibleReports")
+  public void testQueryPerformance_reportEvaluation(SingleReportDataDto report) {
+    // given the report to evaluate
+
+    // when
+    long timeElapsed = evaluateReportAndReturnEvaluationTime(report);
+
+    // then
+    assertThat(timeElapsed, lessThan(getMaxAllowedQueryTime()));
+  }
+
   private static List<SingleReportDataDto> createAllPossibleReports() {
     List<ProcessDefinitionEngineDto> latestDefinitionVersions =
       engineIntegrationExtension.getLatestProcessDefinitions();
@@ -247,18 +259,6 @@ public class QueryPerformanceTest {
     String timeoutAsString =
       properties.getProperty("camunda.optimize.test.import.timeout.in.hours", "2");
     return Long.parseLong(timeoutAsString);
-  }
-
-  @ParameterizedTest
-  @MethodSource("getPossibleReports")
-  public void testQueryPerformance(SingleReportDataDto report) {
-    // given the report to evaluate
-
-    // when
-    long timeElapsed = evaluateReportAndReturnEvaluationTime(report);
-
-    // then
-    assertThat(timeElapsed, lessThan(getMaxAllowedQueryTime()));
   }
 
   private long getMaxAllowedQueryTime() {

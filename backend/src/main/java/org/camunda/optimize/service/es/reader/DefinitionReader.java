@@ -79,7 +79,6 @@ import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.co
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_COMPOSITE_BUCKET_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -242,7 +241,7 @@ public class DefinitionReader {
 
     CompositeAggregationBuilder keyAndTypeAndTenantAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, keyAndTypeAndTenantSources)
-        .size(MAX_COMPOSITE_BUCKET_SIZE_LIMIT)
+        .size(configurationService.getEsAggregationBucketLimit())
         .subAggregation(nameAggregation);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -355,7 +354,7 @@ public class DefinitionReader {
 
     CompositeAggregationBuilder keyAndTypeAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyAndTypeSources)
-        .size(MAX_COMPOSITE_BUCKET_SIZE_LIMIT)
+        .size(configurationService.getEsAggregationBucketLimit())
         .subAggregation(nameAggregation)
         .subAggregation(versionAggregation);
 
@@ -566,7 +565,7 @@ public class DefinitionReader {
 
     CompositeAggregationBuilder keyAndTypeAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyAndTypeSources)
-        .size(MAX_COMPOSITE_BUCKET_SIZE_LIMIT)
+        .size(configurationService.getEsAggregationBucketLimit())
         .subAggregation(tenantsAggregation)
         .subAggregation(nameAggregation);
 
