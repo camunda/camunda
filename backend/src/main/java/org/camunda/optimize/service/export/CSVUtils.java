@@ -235,7 +235,7 @@ public class CSVUtils {
   private static List<String> extractAllDtoFieldKeys(Class<?> dtoClass) {
     final List<String> fieldKeys = new ArrayList<>();
     for (Field f : dtoClass.getDeclaredFields()) {
-      if (!Map.class.getName().equals(f.getType().getName())) {
+      if (!f.isSynthetic() && !Map.class.getName().equals(f.getType().getName())) {
         fieldKeys.add(f.getName());
       }
     }
