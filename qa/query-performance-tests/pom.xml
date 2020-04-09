@@ -16,7 +16,7 @@
     <failOnMissingWebXml>false</failOnMissingWebXml>
     <allure.version>2.13.2</allure.version>
     <aspectj.version>1.9.5</aspectj.version>
-    <test.argLine>-Xmx1024m</test.argLine>
+    <argLine>-Xmx1024m -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"</argLine>
   </properties>
 
   <dependencies>
@@ -79,7 +79,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <argLine>${test.argLine} -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"</argLine>
               <redirectTestOutputToFile>false</redirectTestOutputToFile>
               <includes>**/*Test.java</includes>
             </configuration>

@@ -16,7 +16,8 @@
     <it.test.excludedGroups />
     <test.forkCount />
 
-    <test.argLine>-Xms256m -Xmx512m -Dnashorn.args="--no-deprecation-warning"</test.argLine>
+    <argLine>-Xms256m -Xmx512m</argLine>
+    <sonar.coverage.jacoco.xmlReportPaths>${basedir}/../${aggregate.report.dir}</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
   <dependencies>
@@ -315,7 +316,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <workingDirectory>${project.build.directory}</workingDirectory>
-          <argLine>${test.argLine}</argLine>
           <trimStackTrace>false</trimStackTrace>
           <forkCount>${test.forkCount}</forkCount>
           <reuseForks>true</reuseForks>
@@ -465,7 +465,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <argLine>${test.argLine}</argLine>
               <excludedGroups>${it.test.excludedGroups}</excludedGroups>
               <forkCount>${test.forkCount}</forkCount>
               <reuseForks>true</reuseForks>

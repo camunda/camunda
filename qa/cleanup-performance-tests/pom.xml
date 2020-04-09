@@ -12,7 +12,7 @@
 
   <properties>
     <skip.tests>true</skip.tests>
-    <test.argLine>-Xmx2048m</test.argLine>
+    <argLine>-Xmx2048m</argLine>
     <engine.url>http://localhost:8080/engine-rest</engine.url>
     <es.host>localhost</es.host>
     <cleanup.timeout.minutes>60</cleanup.timeout.minutes>
@@ -95,7 +95,6 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <redirectTestOutputToFile>false</redirectTestOutputToFile>
-              <argLine>${test.argLine}</argLine>
             </configuration>
           </plugin>
         </plugins>

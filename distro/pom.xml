@@ -13,8 +13,8 @@
 
   <properties>
     <exclude.from.environment>OptimizeLicense.txt</exclude.from.environment>
+    <sonar.skip>true</sonar.skip>
   </properties>
-
 
   <dependencies>
     <dependency>
