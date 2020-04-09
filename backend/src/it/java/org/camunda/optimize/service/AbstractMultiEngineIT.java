@@ -35,10 +35,11 @@ public class AbstractMultiEngineIT extends AbstractIT {
   public static final String DECISION_KEY_1 = "TestDecision1";
   public static final String DECISION_KEY_2 = "TestDecision2";
   protected final String SECOND_ENGINE_ALIAS = "secondTestEngine";
-  
+
   @RegisterExtension
   @Order(3)
-  public EngineIntegrationExtension secondaryEngineIntegrationExtension = new EngineIntegrationExtension("anotherEngine");
+  public EngineIntegrationExtension secondaryEngineIntegrationExtension = new EngineIntegrationExtension(
+    "anotherEngine");
   @RegisterExtension
   @Order(4)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
@@ -90,7 +91,10 @@ public class AbstractMultiEngineIT extends AbstractIT {
 
   protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2) {
     engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId1);
-    secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_2), tenantId2);
+    secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(
+      createSimpleDmnModel(DECISION_KEY_2),
+      tenantId2
+    );
   }
 
   protected void deployAndStartSimpleProcessDefinitionForAllEngines() {
@@ -159,7 +163,13 @@ public class AbstractMultiEngineIT extends AbstractIT {
   }
 
   protected void addSecureSecondEngineToConfiguration() {
-    addEngineToConfiguration(secondaryEngineIntegrationExtension.getEngineName(), SECURE_REST_ENDPOINT, true, "admin", "admin");
+    addEngineToConfiguration(
+      secondaryEngineIntegrationExtension.getEngineName(),
+      SECURE_REST_ENDPOINT,
+      true,
+      "admin",
+      "admin"
+    );
   }
 
   protected void addEngineToConfiguration(String engineName) {
@@ -187,6 +197,14 @@ public class AbstractMultiEngineIT extends AbstractIT {
       .getConfiguredEngines()
       .put(SECOND_ENGINE_ALIAS, anotherEngineConfig);
   }
+
+  protected void removeDefaultEngineConfiguration() {
+    configurationService
+      .getConfiguredEngines()
+      .remove("1");
+    embeddedOptimizeExtension.reloadConfiguration();
+  }
+
 
   protected EngineAuthenticationConfiguration constructEngineAuthenticationConfiguration(boolean withAuthentication,
                                                                                          String username,

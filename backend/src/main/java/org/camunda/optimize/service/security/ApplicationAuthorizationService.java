@@ -77,14 +77,20 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
   @Override
   protected List<String> fetchAuthorizationsForUserId(final String userId) {
     final List<String> result = new ArrayList<>();
+    final List<EngineContext> failedEngines = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       try {
         if (isUserAuthorizedToAccessOptimizeOnEngine(userId, engineContext)) {
           result.add(engineContext.getEngineAlias());
         }
       } catch (OptimizeRuntimeException e) {
-        log.warn(String.format("Unable to check user [%s] authorization for engine [%s}", userId, engineContext.getEngineAlias()));
+        failedEngines.add(engineContext);
       }
+    }
+    if (failedEngines.containsAll(engineContextFactory.getConfiguredEngines())) {
+      String errorMessage = "Failed to fetch user authorizations because all engines are down.";
+      log.warn(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
     }
     return result;
   }
@@ -92,14 +98,20 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
   @Override
   protected List<String> fetchAuthorizationsForGroupId(final String groupId) {
     final List<String> result = new ArrayList<>();
+    final List<EngineContext> failedEngines = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       try {
         if (isGroupAuthorizedToAccessOptimizeOnEngine(groupId, engineContext)) {
           result.add(engineContext.getEngineAlias());
         }
       } catch (OptimizeRuntimeException e) {
-        log.warn(String.format("Unable to check group [%s] authorization for engine [%s}", groupId, engineContext.getEngineAlias()));
+        failedEngines.add(engineContext);
       }
+    }
+    if (failedEngines.containsAll(engineContextFactory.getConfiguredEngines())) {
+      String errorMessage = "Failed to fetch group authorizations because all engines are down.";
+      log.warn(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
     }
     return result;
   }
@@ -130,7 +142,7 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
   }
 
   private static boolean isGroupAuthorizedToAccessOptimizeOnEngine(final String groupId,
-                                                                  final EngineContext engineContext) {
+                                                                   final EngineContext engineContext) {
     final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
     final List<AuthorizationDto> allAuthorizations;
     try {

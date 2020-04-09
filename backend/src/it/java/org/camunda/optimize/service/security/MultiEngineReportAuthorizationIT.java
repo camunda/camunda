@@ -434,6 +434,33 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
+  @ParameterizedTest
+  @MethodSource("definitionType")
+  public void authorizationFailsWhenAllEnginesDown(int definitionResourceType) {
+    // given
+    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
+
+    final SingleReportDataDto report = constructReportData(
+      getDefinitionKeyDefaultEngine(definitionResourceType), definitionResourceType
+    );
+
+    // when
+    addNonExistingSecondEngineToConfiguration();
+    removeDefaultEngineConfiguration();
+
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(report)
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+  }
+
   private String getDefinitionKeyDefaultEngine(final int definitionResourceType) {
     return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY_1 : DECISION_KEY_1;
   }
