@@ -476,17 +476,6 @@ pipeline {
         }
       }
     }
-    stage ('Deploy to K8s') {
-      when {
-        expression { BRANCH_NAME ==~ /(.*-deploy)/ }
-      }
-      steps {
-        build job: '/deploy-optimize-branch-to-k8s',
-          parameters: [
-              string(name: 'BRANCH', value: getBranchSlug()),
-          ]
-      }
-    }
   }
 
   post {
