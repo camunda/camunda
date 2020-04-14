@@ -94,7 +94,7 @@ But how do we know which _specific workflow instance_--that is, which customer o
 
 We'll use `orderId` for our correlation key.
 
-Go ahead and add `orderId` to the Subscription Correlation Key field.
+Go ahead and add the expression `= orderId` to the Subscription Correlation Key field.
 
 When we create a workflow instance, we need to be sure to include `orderId` as a variable, and we also need to provide `orderId` as a correlation key when we send a message.
 
@@ -155,7 +155,7 @@ Next, we'll set a condition expression in the Sequence Flow leading to this "Shi
 
 
 *   Click on the sequence flow and open the Properties panel
-*   Input  `orderValue >= 100` in the "Condition expression" field in the Properties panel
+*   Input the expression `= orderValue >= 100` in the "Condition expression" field in the Properties panel
 *   Double-click on the sequence flow to add a label "`>= $100"`
 
 ![Condition Expression](/getting-started/img/tutorial-3.9-condition-expression.png)
