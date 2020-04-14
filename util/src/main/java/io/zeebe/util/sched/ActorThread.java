@@ -150,11 +150,9 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
      * This implementation takes advantage of the fact that ActorTaskRunner extends Thread
      * itself. If we can cast down, the current thread is the current ActorTaskRunner.
      */
-    try {
-      return (ActorThread) Thread.currentThread();
-    } catch (final ClassCastException e) {
-      return null;
-    }
+    return Thread.currentThread() instanceof ActorThread
+        ? (ActorThread) Thread.currentThread()
+        : null;
   }
 
   public ActorJob newJob() {
