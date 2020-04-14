@@ -138,14 +138,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     }
 
     if (configuration == null) {
-
-      final MemberId firstMemberId = new ArrayList<>(cluster).get(0);
-      if (cluster.size() == 1 || (cluster.size() > 1 && firstMemberId.equals(member.memberId()))) {
-        // try to bootstrap partition as leader
-        member.setType(Type.BOOTSTRAP);
-      } else {
-        member.setType(Type.ACTIVE);
-      }
+      member.setType(Type.ACTIVE);
 
       // Create a set of active members.
       final Set<RaftMember> activeMembers =
@@ -388,9 +381,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
             () -> {
               // Transition the server to the appropriate state for the local member type.
               raft.transition(member.getType());
-              if (member.getType() == Type.BOOTSTRAP) {
-                member.setType(Type.ACTIVE);
-              }
 
               // Attempt to join the cluster. If the local member is ACTIVE then failing to join the
               // cluster
