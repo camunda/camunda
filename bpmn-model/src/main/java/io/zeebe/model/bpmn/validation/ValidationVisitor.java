@@ -15,10 +15,13 @@
  */
 package io.zeebe.model.bpmn.validation;
 
+import static java.util.stream.Collectors.groupingBy;
+
 import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.zeebe.model.bpmn.traversal.TypeHierarchyVisitor;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.camunda.bpm.model.xml.impl.validation.ValidationResultsCollectorImpl;
 import org.camunda.bpm.model.xml.type.ModelElementType;
@@ -27,13 +30,13 @@ import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public class ValidationVisitor extends TypeHierarchyVisitor {
 
-  private final Map<Class<?>, ModelElementValidator<?>> validators;
+  private final Map<Class, List<ModelElementValidator>> validators;
 
   private ValidationResultsCollectorImpl resultCollector;
 
   public ValidationVisitor(final Collection<ModelElementValidator<?>> validators) {
-    this.validators = new HashMap<>();
-    validators.forEach(v -> this.validators.put(v.getElementType(), v));
+    this.validators =
+        validators.stream().collect(groupingBy(ModelElementValidator::getElementType));
     resultCollector = new ValidationResultsCollectorImpl();
   }
 
@@ -43,10 +46,9 @@ public class ValidationVisitor extends TypeHierarchyVisitor {
 
     resultCollector.setCurrentElement(instance);
 
-    final ModelElementValidator validator = validators.get(implementedType.getInstanceType());
-    if (validator != null) {
-      validator.validate(instance, resultCollector);
-    }
+    validators
+        .getOrDefault(implementedType.getInstanceType(), Collections.emptyList())
+        .forEach(validator -> validator.validate(instance, resultCollector));
   }
 
   public void reset() {

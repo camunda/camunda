@@ -12,6 +12,7 @@ import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
@@ -21,6 +22,7 @@ import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
 public final class DeploymentCreatedProcessor implements TypedRecordProcessor<DeploymentRecord> {
@@ -99,13 +101,22 @@ public final class DeploymentCreatedProcessor implements TypedRecordProcessor<De
     // if startEvents contain message events
     for (final ExecutableCatchEventElement startEvent : startEvents) {
       if (startEvent.isMessage()) {
-        subscriptionRecord.reset();
-        subscriptionRecord
-            .setMessageName(startEvent.getMessage().getMessageName())
-            .setWorkflowKey(workflowKey)
-            .setBpmnProcessId(workflow.getId())
-            .setStartEventId(startEvent.getId());
-        streamWriter.appendNewCommand(MessageStartEventSubscriptionIntent.OPEN, subscriptionRecord);
+        final ExecutableMessage message = startEvent.getMessage();
+
+        message
+            .getMessageName()
+            .map(BufferUtil::wrapString)
+            .ifPresent(
+                messageNameBuffer -> {
+                  subscriptionRecord.reset();
+                  subscriptionRecord
+                      .setMessageName(messageNameBuffer)
+                      .setWorkflowKey(workflowKey)
+                      .setBpmnProcessId(workflow.getId())
+                      .setStartEventId(startEvent.getId());
+                  streamWriter.appendNewCommand(
+                      MessageStartEventSubscriptionIntent.OPEN, subscriptionRecord);
+                });
       }
     }
   }

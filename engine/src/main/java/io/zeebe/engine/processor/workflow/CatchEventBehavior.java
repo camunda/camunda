@@ -17,6 +17,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMes
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext.VariablesDocumentSupplier;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
+import io.zeebe.engine.processor.workflow.message.MessageNameException;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
@@ -28,9 +29,11 @@ import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public final class CatchEventBehavior {
@@ -74,6 +77,10 @@ public final class CatchEventBehavior {
     final MessageCorrelationKeyContext scopeContext =
         new MessageCorrelationKeyContext(variablesSupplier, context.getValue().getFlowScopeKey());
 
+    // collect all message names from their respective variables, as this might fail and
+    // we might need to raise an incident
+    final Map<DirectBuffer, DirectBuffer> extractedMessageNames =
+        extractMessageNames(events, context);
     // collect all message correlation keys from their respective variables, as this might fail and
     // we might need to raise an incident. This works the same for timers
     final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
@@ -91,7 +98,11 @@ public final class CatchEventBehavior {
             evaluatedTimers.get(event.getId()),
             context.getOutput().getStreamWriter());
       } else if (event.isMessage()) {
-        subscribeToMessageEvent(context, event, extractedCorrelationKeys.get(event.getId()));
+        subscribeToMessageEvent(
+            context,
+            event,
+            extractedCorrelationKeys.get(event.getId()),
+            extractedMessageNames.get((event.getId())));
       }
     }
 
@@ -144,14 +155,14 @@ public final class CatchEventBehavior {
   private void subscribeToMessageEvent(
       final BpmnStepContext<?> context,
       final ExecutableCatchEvent handler,
-      final DirectBuffer extractedKey) {
-    final ExecutableMessage message = handler.getMessage();
-
+      final DirectBuffer extractedKey,
+      final DirectBuffer extractedMessageName) {
     final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getValue().getBpmnProcessIdBuffer());
     final long elementInstanceKey = context.getKey();
-    final DirectBuffer messageName = cloneBuffer(message.getMessageName());
+
     final DirectBuffer correlationKey = extractedKey;
+    final DirectBuffer messageName = extractedMessageName;
     final boolean closeOnCorrelate = handler.shouldCloseMessageSubscriptionOnCorrelate();
     final int subscriptionPartitionId =
         SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionsCount);
@@ -220,6 +231,13 @@ public final class CatchEventBehavior {
         correlationKeyExpression, context);
   }
 
+  private Optional<DirectBuffer> extractMessageName(
+      final ExecutableMessage message, final BpmnStepContext context) {
+
+    final Expression messageNameExpression = message.getMessageNameExpression();
+    return expressionProcessor.evaluateStringExpression(messageNameExpression, context);
+  }
+
   private boolean sendCloseMessageSubscriptionCommand(
       final int subscriptionPartitionId,
       final long workflowInstanceKey,
@@ -280,5 +298,30 @@ public final class CatchEventBehavior {
     }
 
     return evaluatedTimers;
+  }
+
+  private Map<DirectBuffer, DirectBuffer> extractMessageNames(
+      final List<ExecutableCatchEvent> events, final BpmnStepContext context) {
+    final Map<DirectBuffer, DirectBuffer> extractedMessageNames = new HashMap<>();
+
+    final List<DirectBuffer> eventIdsWithNameEvaluationFailures = new ArrayList<>();
+
+    for (final ExecutableCatchEvent event : events) {
+      if (event.isMessage()) {
+        final Optional<DirectBuffer> messageName = extractMessageName(event.getMessage(), context);
+
+        if (messageName.isPresent()) {
+          extractedMessageNames.put(event.getId(), cloneBuffer(messageName.get()));
+        } else {
+          eventIdsWithNameEvaluationFailures.add(event.getId());
+        }
+      }
+    }
+
+    if (!eventIdsWithNameEvaluationFailures.isEmpty()) {
+      throw new MessageNameException(context, eventIdsWithNameEvaluationFailures);
+    }
+
+    return extractedMessageNames;
   }
 }

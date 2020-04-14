@@ -43,7 +43,6 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
 
   @Override
   public void validate(final T element, final ValidationResultCollector validationResultCollector) {
-
     verifications.forEach(
         verification -> {
           final String expression = verification.expressionSupplier.apply(element);
@@ -104,7 +103,6 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     }
 
     public ZeebeExpressionValidator<T> build(final ExpressionLanguage expressionLanguage) {
-
       return new ZeebeExpressionValidator<>(expressionLanguage, elementType, verifications);
     }
   }

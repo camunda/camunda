@@ -11,6 +11,7 @@ import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
+import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
@@ -39,6 +40,11 @@ public final class ZeebeRuntimeValidators {
                 ZeebeOutput::getSource, expression -> expression.isNonStatic().isMandatory())
             .hasValidPath(ZeebeOutput::getTarget)
             .build(expressionLanguage),
+        ZeebeExpressionValidator.verifyThat(Message.class)
+            .hasValidExpression(Message::getName, expression -> expression.isOptional())
+            .build(expressionLanguage),
+        // Checks message name expressions of start event messages
+        new ProcessMessageStartEventMessageNameValidator(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeSubscription.class)
             .hasValidExpression(

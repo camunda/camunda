@@ -186,7 +186,7 @@ public final class ZeebeRuntimeValidationTest {
         Arrays.asList(expect(ZeebeOutput.class, MISSING_PATH_EXPRESSION_MESSAGE))
       },
       {
-        // correlation key expression is not supported
+        // name expression is invalid
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent("catch")
@@ -206,7 +206,6 @@ public final class ZeebeRuntimeValidationTest {
         Arrays.asList(expect(ZeebeSubscription.class, STATIC_EXPRESSION_MESSAGE))
       },
       {
-        // correlation key expression is not supported
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .receiveTask("catch")
@@ -335,6 +334,34 @@ public final class ZeebeRuntimeValidationTest {
                 StartEvent.class,
                 INVALID_TIMER_START_EVENT_EXPRESSION_MESSAGE + "Repetition spec must start with R"))
       },
+      {
+        /* message on start event has expression that contains a variable reference
+         * This must fail validation, because at the time the expression is evaluated,
+         * there are no variables defined
+         */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .message(messageBuilder -> messageBuilder.nameExpression("variableReference"))
+            .done(),
+        Arrays.asList(
+            expect(
+                StartEvent.class,
+                "Expected constant expression but found '=variableReference', which could not be evaluated without context: "
+                    + "failed to evaluate expression 'variableReference': no variable found for name 'variableReference'"))
+      },
+      {
+        /* message on start event has expression that evaluates to something other than string
+         * This must fail validation, because the message name must be a string
+         */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .message(messageBuilder -> messageBuilder.nameExpression("false"))
+            .done(),
+        Arrays.asList(
+            expect(
+                StartEvent.class,
+                "Expected constant expression of type String for message name '=false', but was BOOLEAN"))
+      }
     };
   }
 

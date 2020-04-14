@@ -17,6 +17,7 @@ import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.instance.EventScopeInstanceState;
 import io.zeebe.engine.state.message.Message;
 import io.zeebe.engine.state.message.MessageState;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 
@@ -83,10 +84,11 @@ public final class BufferedMessageToStartEventCorrelator implements WorkflowPost
     for (final ExecutableStartEvent startEvent : workflow.getWorkflow().getStartEvents()) {
       if (startEvent.isMessage()) {
 
-        final var messageName = startEvent.getMessage().getMessageName();
+        final DirectBuffer messageNameBuffer =
+            startEvent.getMessage().getMessageName().map(BufferUtil::wrapString).orElseThrow();
 
         messageState.visitMessages(
-            messageName,
+            messageNameBuffer,
             correlationKey,
             message -> {
               // correlate the first message with same correlation key that was not correlated yet
