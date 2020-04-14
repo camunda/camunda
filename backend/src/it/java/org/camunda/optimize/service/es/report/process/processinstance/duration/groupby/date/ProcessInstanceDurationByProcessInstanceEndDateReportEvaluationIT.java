@@ -94,7 +94,7 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -140,7 +140,7 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .setFilter(endDateFilterDto)
       .build();
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
 
     // then
@@ -197,7 +197,7 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
       .build();
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getIsComplete(), is(true));
@@ -224,7 +224,7 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .build();
 
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
 
     // then

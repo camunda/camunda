@@ -68,7 +68,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(OffsetDateTime.now(), null)));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(0L));
@@ -101,7 +101,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(null, OffsetDateTime.now())));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(5L));
@@ -137,7 +137,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       OffsetDateTime.now()
     )));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(5L));
@@ -185,7 +185,8 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(createFixedEvaluationDateFilter(beforeStart.minusDays(3L), beforeStart))
       .build();
-    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult = reportClient.evaluateMapReport(
+      reportData);
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
@@ -209,7 +210,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, dateFilterUnit)));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -294,7 +295,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(createRelativeEvaluationDateFilter(3L, DateFilterUnit.DAYS))
       .build();
-    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
+      reportClient.evaluateMapReport(
+      reportData);
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
@@ -328,7 +331,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(0L, dateFilterUnit)));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -351,7 +354,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, dateFilterUnit)));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(0L));

@@ -91,7 +91,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateWithProcessPartRep
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(startDateFilterDto)
       .build();
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
 
     // then

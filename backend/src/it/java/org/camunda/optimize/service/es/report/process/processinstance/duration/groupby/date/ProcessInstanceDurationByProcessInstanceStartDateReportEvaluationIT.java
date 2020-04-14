@@ -96,7 +96,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -142,7 +142,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setFilter(startDateFilterDto)
       .build();
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
 
     // then
@@ -199,7 +199,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .build();
 
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
 
     // then
@@ -265,7 +265,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
-    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = resultDto.getData();
@@ -316,7 +316,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
-    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = resultDto.getData();

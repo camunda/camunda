@@ -206,7 +206,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
@@ -267,7 +267,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
@@ -317,7 +317,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .build();
 
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final List<MapResultEntryDto> resultData = evaluationResult.getResult().getData();
@@ -394,7 +394,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
@@ -574,7 +574,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.HOUR)
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -612,7 +612,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       ))
       .build();
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
@@ -634,7 +634,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     reportData.getView().setProperty(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(reportData);
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
@@ -657,7 +657,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     reportData.getGroupBy().setType(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(reportData);
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -673,7 +673,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(groupByDateUnit)
       .build();
-    return evaluateMapReport(reportData);
+    return reportClient.evaluateMapReport(reportData);
   }
 
 }

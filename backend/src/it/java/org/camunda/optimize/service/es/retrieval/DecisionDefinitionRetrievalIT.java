@@ -37,11 +37,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetDecisionDefinitionsRequest()
-        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    List<DecisionDefinitionOptimizeDto> definitions = definitionClient.getAllDecisionDefinitions();
 
     assertThat(definitions.size(), is(11));
   }
@@ -132,13 +128,8 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    String actualXml = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDecisionDefinitionXmlRequest(
-        decisionDefinitionEngineDto.getKey(),
-        decisionDefinitionEngineDto.getVersion()
-      )
-      .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getDecisionDefinitionXml(decisionDefinitionEngineDto.getKey(),
+                                                                 decisionDefinitionEngineDto.getVersionAsString());
 
     // then
     assertThat(actualXml, is(Dmn.convertToString(modelInstance)));
@@ -163,10 +154,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final String actualXml = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDecisionDefinitionXmlRequest(decisionDefinitionEngineDto1.getKey(), ALL_VERSIONS)
-      .execute(String.class, Response.Status.OK.getStatusCode());
+    final String actualXml = definitionClient.getDecisionDefinitionXml(decisionDefinitionEngineDto1.getKey(), ALL_VERSIONS);
 
     // then
     assertThat(actualXml, is(Dmn.convertToString(modelInstance2)));
@@ -192,11 +180,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetDecisionDefinitionXmlRequest(decisionDefinitionKey, ALL_VERSIONS)
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getDecisionDefinitionXml(decisionDefinitionKey, ALL_VERSIONS);
 
     // then: we get the latest version xml
     assertThat(actualXml, is(Dmn.convertToString(latestModelInstance)));

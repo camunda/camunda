@@ -1,0 +1,1 @@
+org.camunda.bpm.engine.rest.spi.impl.DefaultPermissionProvider

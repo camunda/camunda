@@ -58,7 +58,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createStringInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.IN, categoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -101,7 +101,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       inputVariableIdToFilterOn, FilterOperatorConstants.IN,
       firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(2L));
@@ -140,7 +140,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createStringInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.NOT_IN, categoryInputValueToExclude
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -191,7 +191,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     variableFilterDto.setData(createUndefinedVariableFilterData(inputClauseId));
 
     reportData.setFilter(Collections.singletonList(variableFilterDto));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
 
     // then
@@ -243,7 +243,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     variableFilterDto.setData(createUndefinedVariableFilterData(outputClauseId));
 
     reportData.setFilter(Collections.singletonList(variableFilterDto));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));

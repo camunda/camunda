@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.decision;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -48,7 +47,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = reportClient.evaluateReport(
         report);
 
       // then
@@ -72,7 +71,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result =
+        reportClient.evaluateReport(
         report);
 
       // then
@@ -93,7 +93,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = reportClient.evaluateReport(
         report);
 
       // then
@@ -107,7 +107,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = reportClient.evaluateReport(
         report);
 
       // then
@@ -129,7 +129,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      DecisionReportResultDto result = evaluateReport(report).getResult();
+      DecisionReportResultDto result = reportClient.evaluateReport(report).getResult();
 
       // then
       assertThat(result.getInstanceCount()).isEqualTo(0);
@@ -142,15 +142,6 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       i -> engineIntegrationExtension.startDecisionInstance(definition.getId())
     );
     return definition;
-  }
-
-  private AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute(new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto,
-        SingleDecisionReportDefinitionDto>>() {
-      });
   }
 
   private List<DecisionReportDataDto> createAllPossibleDecisionReports(String definitionKey,

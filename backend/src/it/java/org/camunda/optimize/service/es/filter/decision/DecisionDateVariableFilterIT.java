@@ -53,7 +53,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, dateTimeInputFilterStart, null
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -101,7 +101,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, null, dateTimeInputFilterEnd
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -145,7 +145,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, dateTimeInputFilterStart, dateTimeInputFilterEnd
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));

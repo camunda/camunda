@@ -203,7 +203,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
         OUTPUT_AUDIT_ID, true
       )))
       .build();
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -350,7 +350,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setVariableId(OUTPUT_CLASSIFICATION_ID)
       .setVariableType(VariableType.STRING)
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -395,7 +395,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setVariableType(VariableType.STRING)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -447,7 +447,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setVariableType(VariableType.STRING)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -689,7 +689,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     reportData.getView().setProperty(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(reportData);
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
@@ -706,7 +706,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     reportData.getGroupBy().setType(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(reportData);
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -735,7 +735,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       variableName,
       variableType
     );
-    return evaluateMapReport(reportData);
+    return reportClient.evaluateMapReport(reportData);
   }
 
   private DecisionReportDataDto createReportDataDto(final DecisionDefinitionEngineDto decisionDefinitionDto,

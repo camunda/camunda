@@ -89,7 +89,7 @@ public abstract class UserTaskDurationByUserTaskStartDateReportEvaluationIT
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.DAY);
     reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);

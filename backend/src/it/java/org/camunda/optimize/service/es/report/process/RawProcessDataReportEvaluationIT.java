@@ -63,7 +63,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -99,7 +99,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -133,7 +133,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -170,7 +170,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReportById(reportId);
+      reportClient.evaluateRawReportById(reportId);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -206,7 +206,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -249,7 +249,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -290,7 +290,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .viewProperty(ProcessViewProperty.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
-    RawDataProcessReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -322,7 +322,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -370,7 +370,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
     reportData.getConfiguration().setSorting(new SortingDto(ProcessInstanceIndex.PROCESS_INSTANCE_ID, SortOrder.DESC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -393,7 +393,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
     reportData.getConfiguration().setSorting(new SortingDto("lalalala", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -430,7 +430,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
     reportData.getConfiguration().setSorting(new SortingDto("variable:intVar", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -453,7 +453,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
     reportData.getConfiguration().setSorting(new SortingDto("variable:lalalala", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -478,7 +478,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -512,7 +512,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -544,7 +544,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
                            .add()
                            .buildList());
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult1 =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result1 = evaluationResult1.getResult();
 
     // then
@@ -568,7 +568,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
                            .buildList());
 
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult2 =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result2 = evaluationResult2.getResult();
 
     // then
@@ -600,7 +600,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
                            .add()
                            .buildList());
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult1 =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result1 = evaluationResult1.getResult();
 
     // then
@@ -616,7 +616,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData = createReport(processInstance);
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult2 =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result2 = evaluationResult2.getResult();
 
     // then
@@ -646,7 +646,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = createReport(processInstance);
     reportData.setFilter(createVariableFilter());
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -699,7 +699,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     reportData.getFilter().addAll(flowNodeFilter);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -714,7 +714,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   @Test
   public void testValidationExceptionOnNullDto() {
     //when
-    Response response = evaluateReportAndReturnResponse(null);
+    Response response = reportClient.evaluateReportAndReturnResponse((ProcessReportDataDto) null);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -732,7 +732,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .visualization(ProcessVisualization.TABLE)
       .build();
 
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -748,7 +748,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .viewProperty(null)
       .visualization(ProcessVisualization.TABLE)
       .build();
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -764,7 +764,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .viewProperty(null)
       .visualization(ProcessVisualization.TABLE)
       .build();
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -781,7 +781,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .visualization(null)
       .build();
 
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));

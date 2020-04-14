@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -68,7 +67,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     //given
     final String definitionKey = "definitionKey1";
     createDefinition(type, definitionKey, "1", null, "the name");
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
     final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
@@ -92,7 +91,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final String definitionKey2 = "definitionKey2";
     createDefinition(type, definitionKey2, "1", null, "the name");
 
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
     final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
@@ -119,7 +118,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final String definitionKey2 = "definitionKey2";
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(definitionKey2);
 
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
     final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(DefinitionType.PROCESS, definitionKey1, scopeTenantIds)
@@ -147,7 +146,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     //given
     final String definitionKey = "definitionKey1";
     createDefinition(type, definitionKey, "1", null, "the name");
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -172,7 +171,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     createDefinition(type, definitionKey, "1", tenant2, "the name");
 
     final List<String> scopeTenantIds = Collections.singletonList(tenant2);
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(
       collectionId,
       new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
@@ -210,7 +209,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     createDefinition(type, definitionKey, "1", null, "the name");
 
     final List<String> scopeTenantIds = Lists.newArrayList(tenant2);
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(
       collectionId,
       new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
@@ -247,7 +246,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     createDefinition(type, definitionKey, "1", null, "the name");
 
     final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID, tenant2);
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(
       collectionId,
       new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
@@ -287,14 +286,6 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       default:
         throw new OptimizeIntegrationTestException("Unsupported definition type: " + type);
     }
-  }
-
-  private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
   }
 
   private void createDefinition(final DefinitionType definitionType,

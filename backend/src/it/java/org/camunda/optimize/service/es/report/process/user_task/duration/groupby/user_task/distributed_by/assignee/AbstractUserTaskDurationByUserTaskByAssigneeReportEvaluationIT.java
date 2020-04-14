@@ -95,7 +95,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      evaluateHyperMapReport(reportData);
+      reportClient.evaluateHyperMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -143,7 +143,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      evaluateHyperMapReport(reportData);
+      reportClient.evaluateHyperMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -260,7 +260,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      evaluateHyperMapReport(reportData);
+      reportClient.evaluateHyperMapReport(reportData);
 
     // then
     final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
@@ -433,7 +433,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     //when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      evaluateHyperMapReport(reportData);
+      reportClient.evaluateHyperMapReport(reportData);
 
     // then
     final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
@@ -477,7 +477,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
         ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
       );
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      evaluateHyperMapReport(reportData);
+      reportClient.evaluateHyperMapReport(reportData);
 
     // then
     final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
@@ -516,7 +516,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     //when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      evaluateHyperMapReport(reportData);
+      reportClient.evaluateHyperMapReport(reportData);
 
     // then
     final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
@@ -557,7 +557,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
         ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
       );
     final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      evaluateHyperMapReport(reportData);
+      reportClient.evaluateHyperMapReport(reportData);
 
     // then
     final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
@@ -603,9 +603,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
-    final ReportHyperMapResultDto actualResult1 = evaluateHyperMapReport(reportData1).getResult();
+    final ReportHyperMapResultDto actualResult1 = reportClient.evaluateHyperMapReport(reportData1).getResult();
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ReportHyperMapResultDto actualResult2 = evaluateHyperMapReport(reportData2).getResult();
+    final ReportHyperMapResultDto actualResult2 = reportClient.evaluateHyperMapReport(reportData2).getResult();
 
     // then
     assertHyperMap_otherProcessDefinitionsDoNotInfluenceResult(
@@ -652,7 +652,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
+    ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
@@ -700,7 +700,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(0));
@@ -744,7 +744,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setFlowNodeExecutionState(executionState);
-    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(actualResult.getData().size(), is(2));
@@ -935,7 +935,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     Map<AggregationType, ReportHyperMapResultDto> resultsMap = new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
       reportData.getConfiguration().setAggregationType(aggType);
-      final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
+      final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });
     return resultsMap;

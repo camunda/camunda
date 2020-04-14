@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jboss-deployment-structure>
+  <deployment>
+    <exclusions>
+      <module name="org.jboss.resteasy.resteasy-jackson-provider" />
+      <module name="org.jboss.resteasy.resteasy-jettison-provider" />
+      <module name="org.jboss.resteasy.resteasy-jaxrs" />
+      <module name="javax.ws.rs.api" />
+      <module name="javaee.api" />
+    </exclusions>
+  </deployment>
+</jboss-deployment-structure>

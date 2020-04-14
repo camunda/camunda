@@ -69,13 +69,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final DefinitionWithTenantsDto definition = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitionByTypeAndKeyRequest(
-        definitionType.getId(),
-        expectedDefinition.getKey()
-      )
-      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(
+      definitionType,
+      expectedDefinition
+    );
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -90,13 +87,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final DefinitionOptimizeDto expectedDefinition = createEventBasedDefinition("key", "the name");
 
     // when
-    final DefinitionWithTenantsDto definition = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitionByTypeAndKeyRequest(
-        PROCESS.getId(),
-        expectedDefinition.getKey()
-      )
-      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(PROCESS, expectedDefinition);
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -163,13 +154,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final DefinitionWithTenantsDto definition = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitionByTypeAndKeyRequest(
-        definitionType.getId(),
-        expectedDefinition.getKey()
-      )
-      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(
+      definitionType,
+      expectedDefinition
+    );
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -193,13 +181,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final DefinitionWithTenantsDto definition = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitionByTypeAndKeyRequest(
-        definitionType.getId(),
-        expectedDefinition.getKey()
-      )
-      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(
+      definitionType,
+      expectedDefinition
+    );
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -225,13 +210,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createDefinitionAndAddToElasticsearch(definitionType, "key", "1", TENANT_2.getId(), "the name");
 
     // when
-    final DefinitionWithTenantsDto definition = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitionByTypeAndKeyRequest(
-        definitionType.getId(),
-        expectedDefinition.getKey()
-      )
-      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final DefinitionWithTenantsDto definition = definitionClient.getDefinitionByTypeAndKey(
+      definitionType,
+      expectedDefinition
+    );
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -275,10 +257,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
 
     assertThat(definitions)
       .isNotEmpty()
@@ -363,10 +342,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
 
     assertThat(definitions)
       .isNotEmpty()
@@ -413,10 +389,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
 
     assertThat(definitions)
       .isNotEmpty()
@@ -495,10 +468,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
 
     assertThat(definitions)
       .isNotEmpty()
@@ -594,10 +564,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
+    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = definitionClient.getDefinitionsGroupedByTenant();
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
@@ -653,10 +620,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
+    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = definitionClient.getDefinitionsGroupedByTenant();
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
@@ -740,10 +704,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
+    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = definitionClient.getDefinitionsGroupedByTenant();
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
@@ -827,10 +788,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
 
     // then
     assertThat(definitions).isNotEmpty().hasSize(definitionCount);
@@ -896,11 +854,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<TenantWithDefinitionsDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
+    final List<TenantWithDefinitionsDto> definitions = definitionClient.getDefinitionsGroupedByTenant();
 
     // then
     assertThat(definitions).isNotEmpty().hasSize(1);

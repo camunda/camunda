@@ -52,7 +52,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse = evaluateNumberReport(reportData);
+    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse = reportClient.evaluateNumberReport(
+      reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -81,7 +82,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // when
     ProcessReportDataDto reportData =
       createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
-    NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(3L));
@@ -99,7 +100,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // when
     ProcessReportDataDto reportData = createReport(engineDto.getProcessDefinitionKey(),
                                                    engineDto.getProcessDefinitionVersion());
-    NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(2L));
@@ -121,7 +122,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is((long) selectedTenants.size()));
@@ -144,7 +145,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
                            .end(past.minusSeconds(1L))
                            .add()
                            .buildList());
-    NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -153,7 +154,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // when
     reportData = createReport(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
-    result = evaluateNumberReport(reportData).getResult();
+    result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -182,7 +183,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       .add()
       .buildList();
     reportData.getFilter().addAll(flowNodeFilter);
-    NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -197,7 +198,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     dataDto.getView().setProperty(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -211,7 +212,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     dataDto.getGroupBy().setType(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -231,7 +232,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     reportData.getConfiguration().setAggregationType(AggregationType.MAX);
     reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
     AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
-      evaluateNumberReport(reportData);
+      reportClient.evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();

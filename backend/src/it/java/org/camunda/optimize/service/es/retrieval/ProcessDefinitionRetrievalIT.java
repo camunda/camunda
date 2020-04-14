@@ -37,11 +37,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionsRequest()
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitions();
 
     assertThat(definitions.size(), is(11));
   }
@@ -138,11 +134,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionsRequest()
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitions();
 
     // then
     assertThat(definitions.size(), is(1));
@@ -169,11 +161,11 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), processDefinition.getVersion())
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getProcessDefinitionXml(
+      processDefinition.getKey(),
+      processDefinition.getVersionAsString(),
+      null
+    );
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
@@ -207,11 +199,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), ALL_VERSIONS)
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getProcessDefinitionXml(processDefinition.getKey(), ALL_VERSIONS, null);
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
@@ -241,11 +229,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest(definitionKey, ALL_VERSIONS)
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getProcessDefinitionXml(definitionKey, ALL_VERSIONS, null);
 
     // then: we get the latest version xml
     assertThat(actualXml, is(Bpmn.convertToString(latestModelInstance)));

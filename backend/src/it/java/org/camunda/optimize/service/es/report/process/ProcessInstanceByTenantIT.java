@@ -86,7 +86,7 @@ public class ProcessInstanceByTenantIT extends AbstractProcessDefinitionIT {
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
-    RawDataProcessReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) expectedTenants.size()));

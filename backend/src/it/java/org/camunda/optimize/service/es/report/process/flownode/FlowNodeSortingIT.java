@@ -48,7 +48,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -84,7 +84,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getData();
@@ -126,7 +126,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -168,7 +168,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -206,7 +206,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -242,7 +242,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, sortOrder));
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getData();

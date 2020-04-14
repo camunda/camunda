@@ -253,7 +253,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableType(VariableType.DOUBLE)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -302,7 +302,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableType(VariableType.DOUBLE)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -357,7 +357,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       )))
       .build();
 
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(2L));
@@ -504,7 +504,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableId(INPUT_AMOUNT_ID)
       .setVariableType(VariableType.DOUBLE)
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -741,7 +741,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     reportData.getView().setProperty(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(reportData);
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
@@ -758,7 +758,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     reportData.getGroupBy().setType(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(reportData);
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -799,7 +799,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       variableName,
       variableType
     );
-    return evaluateMapReport(reportData);
+    return reportClient.evaluateMapReport(reportData);
   }
 
   private DecisionReportDataDto createReportDataDto(final DecisionDefinitionEngineDto decisionDefinitionDto,

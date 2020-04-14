@@ -16,6 +16,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 
@@ -29,10 +30,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
     final DecisionDefinitionOptimizeDto expectedDecisionDefinition = createDecisionDefinitionDto();
 
     // when
-    List<DecisionDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDecisionDefinitionsRequest()
-      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    List<DecisionDefinitionOptimizeDto> definitions = definitionClient.getAllDecisionDefinitions();
 
     // then the status code is okay
     assertThat(definitions).isNotNull();
@@ -42,22 +40,20 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   @Test
   public void getDecisionDefinitionsReturnOnlyThoseAuthorizedToSee() {
     //given
-    final String kermitUser = "kermit";
     final String notAuthorizedDefinitionKey = "noAccess";
     final String authorizedDefinitionKey = "access";
-    engineIntegrationExtension.addUser(kermitUser, kermitUser);
-    engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
-    grantSingleDefinitionAuthorizationsForUser(kermitUser, authorizedDefinitionKey);
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, authorizedDefinitionKey);
 
     final DecisionDefinitionOptimizeDto authorizedToSee = createDecisionDefinitionDto(authorizedDefinitionKey);
     final DecisionDefinitionOptimizeDto notAuthorizedToSee = createDecisionDefinitionDto(notAuthorizedDefinitionKey);
 
     // when
-    List<DecisionDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(kermitUser, kermitUser)
-      .buildGetDecisionDefinitionsRequest()
-      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    List<DecisionDefinitionOptimizeDto> definitions = definitionClient.getAllDecisionDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then we only get 1 definition, the one kermit is authorized to see
     assertThat(definitions).isNotNull().hasSize(1);
@@ -103,11 +99,10 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
     addDecisionDefinitionToElasticsearch(expectedDefinitionDto);
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetDecisionDefinitionXmlRequest(expectedDefinitionDto.getKey(), expectedDefinitionDto.getVersion())
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getDecisionDefinitionXml(
+        expectedDefinitionDto.getKey(),
+        expectedDefinitionDto.getVersion()
+    );
 
     // then
     assertThat(actualXml).isEqualTo(expectedDefinitionDto.getDmn10Xml());
@@ -124,10 +119,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
     // when
     String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetDecisionDefinitionXmlRequest(key, ALL_VERSIONS_STRING)
-        .execute(String.class, Response.Status.OK.getStatusCode());
+      definitionClient.getDecisionDefinitionXml(key, ALL_VERSIONS_STRING);
 
     // then
     assertThat(actualXml).isEqualTo(expectedDto2.getDmn10Xml());
@@ -144,13 +136,9 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
     addDecisionDefinitionToElasticsearch(secondTenantDefinition);
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetDecisionDefinitionXmlRequest(
-          firstTenantDefinition.getKey(), firstTenantDefinition.getVersion(), firstTenantDefinition.getTenantId()
-        )
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getDecisionDefinitionXml(
+      firstTenantDefinition.getKey(), firstTenantDefinition.getVersion(), firstTenantDefinition.getTenantId()
+    );
 
     // then
     assertThat(actualXml).isEqualTo(firstTenantDefinition.getDmn10Xml());
@@ -166,14 +154,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
     addDecisionDefinitionToElasticsearch(secondTenantDefinition);
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetDecisionDefinitionXmlRequest(
-          firstTenantDefinition.getKey(), firstTenantDefinition.getVersion(), null
-        )
-        .execute(String.class, Response.Status.OK.getStatusCode());
-
+    String actualXml = definitionClient.getDecisionDefinitionXml(firstTenantDefinition.getKey(), firstTenantDefinition.getVersion());
     // then
     assertThat(actualXml).isEqualTo(secondTenantDefinition.getDmn10Xml());
   }
@@ -186,13 +167,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
     addDecisionDefinitionToElasticsearch(sharedDecisionDefinition);
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetDecisionDefinitionXmlRequest(
-          sharedDecisionDefinition.getKey(), sharedDecisionDefinition.getVersion(), firstTenantId
-        )
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getDecisionDefinitionXml(sharedDecisionDefinition.getKey(), sharedDecisionDefinition.getVersion(), firstTenantId);
 
     // then
     assertThat(actualXml).isEqualTo(sharedDecisionDefinition.getDmn10Xml());

@@ -64,7 +64,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), decisionDefinitionVersion);
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -106,7 +106,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -156,7 +156,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionKey, ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -188,7 +188,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -219,7 +219,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -255,7 +255,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getConfiguration().setSorting(new SortingDto(DecisionInstanceIndex.DECISION_INSTANCE_ID, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -290,7 +290,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getConfiguration().setSorting(new SortingDto(DecisionInstanceIndex.EVALUATION_DATE_TIME, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -328,7 +328,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       new SortingDto(DecisionViewRawData.INPUT_VARIABLE_PREFIX + INPUT_AMOUNT_ID, SortOrder.ASC)
     );
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
@@ -377,7 +377,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       new SortingDto(DecisionViewRawData.OUTPUT_VARIABLE_PREFIX + OUTPUT_AUDIT_ID, SortOrder.ASC)
     );
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
-      evaluateRawReport(reportData);
+      reportClient.evaluateRawReport(reportData);
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();

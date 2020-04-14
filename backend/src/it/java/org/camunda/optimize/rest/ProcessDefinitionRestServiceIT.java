@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -53,40 +54,33 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     );
 
     // when
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetProcessDefinitionsRequest()
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitions();
 
     // then the status code is okay
     assertThat(definitions.get(0).getId()).isEqualTo(processDefinitionOptimizeDto.getId());
   }
 
+
   @Test
   public void getProcessDefinitionsReturnOnlyThoseAuthorizedToSeeAndAllEventProcessDefinitions() {
     //given
-    final String kermitUser = "kermit";
     final String notAuthorizedDefinitionKey = "noAccess";
     final String authorizedDefinitionKey1 = "access1";
     final String authorizedDefinitionKey2 = "access2";
     final String authorizedDefinitionKey3 = "access3";
-    engineIntegrationExtension.addUser(kermitUser, kermitUser);
-    engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
-    grantSingleDefinitionAuthorizationsForUser(kermitUser, authorizedDefinitionKey1);
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, authorizedDefinitionKey1);
     final ProcessDefinitionOptimizeDto notAuthorizedToSee =
       addProcessDefinitionToElasticsearch(notAuthorizedDefinitionKey);
     final String authorizedProcessId = addProcessDefinitionToElasticsearch(authorizedDefinitionKey1).getId();
     final String authorizedEventProcessId1 = elasticSearchIntegrationTestExtension
-      .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey2, new UserDto(kermitUser)).getId();
+      .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey2, new UserDto(KERMIT_USER)).getId();
     final String authorizedEventProcessId2 = elasticSearchIntegrationTestExtension
-      .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey3, new UserDto(kermitUser)).getId();
+      .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey3, new UserDto(KERMIT_USER)).getId();
 
     // when
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(kermitUser, kermitUser)
-      .buildGetProcessDefinitionsRequest()
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitionsAsUser(KERMIT_USER, KERMIT_USER);
 
     // then we only get 3 definitions, the one kermit is authorized to see and all event based definitions
     assertThat(definitions)
@@ -136,11 +130,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     ProcessDefinitionOptimizeDto expectedDto = addDefinitionToElasticsearch(KEY, processDefinitionType);
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest(expectedDto.getKey(), expectedDto.getVersion())
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getProcessDefinitionXml(expectedDto.getKey(), expectedDto.getVersion(), null);
 
     // then
     assertThat(actualXml).isEqualTo(expectedDto.getBpmn20Xml());
@@ -154,11 +144,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     ProcessDefinitionOptimizeDto expectedDto2 = addDefinitionToElasticsearch(KEY, "2", processDefinitionType);
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest(KEY, ALL_VERSIONS_STRING)
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getProcessDefinitionXml(KEY, ALL_VERSIONS_STRING, null);
 
     // then
     assertThat(actualXml).isEqualTo(expectedDto2.getBpmn20Xml());
@@ -173,15 +159,8 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     ProcessDefinitionOptimizeDto secondTenantDefinition = addProcessDefinitionToElasticsearch(KEY, secondTenantId);
 
     // when
-    final String actualXmlFirstTenant = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetProcessDefinitionXmlRequest(KEY, "1", firstTenantId)
-      .execute(String.class, Response.Status.OK.getStatusCode());
-    final String actualXmlSecondTenant = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetProcessDefinitionXmlRequest(KEY, "1", secondTenantId)
-      .execute(String.class, Response.Status.OK.getStatusCode());
-
+    final String actualXmlFirstTenant = definitionClient.getProcessDefinitionXml(KEY, "1", firstTenantId);
+    final String actualXmlSecondTenant = definitionClient.getProcessDefinitionXml(KEY, "1", secondTenantId);
     // then
     assertThat(actualXmlFirstTenant).isEqualTo(firstTenantDefinition.getBpmn20Xml());
     assertThat(actualXmlSecondTenant).isEqualTo(secondTenantDefinition.getBpmn20Xml());
@@ -201,13 +180,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     );
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest(
-          secondTenantDefinition.getKey(), secondTenantDefinition.getVersion(), null
-        )
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getProcessDefinitionXml(secondTenantDefinition.getKey(), secondTenantDefinition.getVersion(), null);
 
     // then
     assertThat(actualXml).isEqualTo(secondTenantDefinition.getBpmn20Xml());
@@ -221,13 +194,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     ProcessDefinitionOptimizeDto sharedTenantDefinition = addDefinitionToElasticsearch(KEY, processDefinitionType);
 
     // when
-    String actualXml =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest(
-          sharedTenantDefinition.getKey(), sharedTenantDefinition.getVersion(), firstTenantId
-        )
-        .execute(String.class, Response.Status.OK.getStatusCode());
+    String actualXml = definitionClient.getProcessDefinitionXml(sharedTenantDefinition.getKey(), sharedTenantDefinition.getVersion(), firstTenantId);
 
     // then
     assertThat(actualXml).isEqualTo(sharedTenantDefinition.getBpmn20Xml());
@@ -267,17 +234,16 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @Test
   public void getProcessDefinitionXmlWithoutAuthorization() {
     // given
-    final String kermitUser = "kermit";
     final String definitionKey = "aProcDefKey";
-    engineIntegrationExtension.addUser(kermitUser, kermitUser);
-    engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
     final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addProcessDefinitionToElasticsearch(
       definitionKey
     );
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(kermitUser, kermitUser)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetProcessDefinitionXmlRequest(
         processDefinitionOptimizeDto.getKey(), processDefinitionOptimizeDto.getVersion()
       ).execute();
@@ -289,16 +255,15 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @Test
   public void getEventProcessDefinitionXmlWithoutAuthorization() {
     // given
-    final String kermitUser = "kermit";
     final String definitionKey = "anEventProcDefKey";
-    engineIntegrationExtension.addUser(kermitUser, kermitUser);
-    engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
     final ProcessDefinitionOptimizeDto expectedDefinition = elasticSearchIntegrationTestExtension
       .addEventProcessDefinitionDtoToElasticsearch(definitionKey);
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(kermitUser, kermitUser)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetProcessDefinitionXmlRequest(
         expectedDefinition.getKey(), expectedDefinition.getVersion()
       ).execute();

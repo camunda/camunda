@@ -54,7 +54,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     reportData.setFilter(Lists.newArrayList(createBooleanOutputVariableFilter(
       outputVariableIdToFilterOn, outputAuditValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));

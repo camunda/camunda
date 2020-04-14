@@ -85,7 +85,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceStartDateReportEvalua
     ));
     reportData.setFilter(Collections.singletonList(new StartDateFilterDto(dateFilterDataDto)));
 
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -140,7 +140,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceStartDateReportEvalua
       .setReportDataType(getTestReportDataType())
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
     // then

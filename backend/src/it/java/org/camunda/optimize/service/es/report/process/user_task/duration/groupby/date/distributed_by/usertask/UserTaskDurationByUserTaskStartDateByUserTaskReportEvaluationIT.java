@@ -89,7 +89,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.DAY);
     reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
-    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off

@@ -71,7 +71,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -109,7 +109,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
     // when
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReportById(reportId);
+      reportClient.evaluateMapReportById(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -149,7 +149,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
@@ -175,7 +175,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessReportDataDto reportData =
       createReport(processKey, ALL_VERSIONS, DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_TYPE);
     reportData.setTenantIds(selectedTenants);
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -201,7 +201,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
@@ -235,7 +235,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
@@ -270,7 +270,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -308,7 +308,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -339,7 +339,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
@@ -369,7 +369,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
@@ -403,7 +403,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
         entry.getKey(),
         variableType
       );
-      ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+      ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
       assertThat(result.getData(), is(notNullValue()));
@@ -476,7 +476,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
 
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
@@ -505,7 +505,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
@@ -546,7 +546,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
@@ -582,7 +582,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.DOUBLE
     );
     final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
@@ -619,8 +619,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       .setVariableType(VariableType.DATE)
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> response = evaluateMapReport(
-      reportData);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> response = reportClient.evaluateMapReport(reportData);
 
     // then
     final List<MapResultEntryDto> resultData = response.getResult().getData();
@@ -656,7 +655,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
                            .end(past.minusSeconds(1L))
                            .add()
                            .buildList());
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -664,7 +663,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
-    result = evaluateMapReport(reportData).getResult();
+    result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -679,7 +678,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     dataDto.getView().setEntity(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -692,7 +691,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     dataDto.getView().setProperty(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -705,7 +704,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     dataDto.getGroupBy().setType(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -719,7 +718,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     groupByDto.getValue().setName(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
@@ -733,7 +732,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     groupByDto.getValue().setType(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));

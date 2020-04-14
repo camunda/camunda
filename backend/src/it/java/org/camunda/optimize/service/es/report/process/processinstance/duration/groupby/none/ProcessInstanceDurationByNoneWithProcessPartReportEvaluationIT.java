@@ -87,7 +87,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       );
 
     AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
-      evaluateNumberReport(reportData);
+      reportClient.evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -131,7 +131,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       );
 
     AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
-      evaluateNumberReport(reportData);
+      reportClient.evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -173,7 +173,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
 
     // when
     AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
-      evaluateNumberReportById(reportId);
+      reportClient.evaluateNumberReportById(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -246,7 +246,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_LOOP
       );
 
-    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
+    NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -275,7 +275,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
+    NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -322,7 +322,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
+    NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -349,7 +349,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
+    NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -376,7 +376,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         "FOO"
       );
 
-    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
+    NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -394,7 +394,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
+    NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -455,7 +455,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessReportDataDto reportData =
       createReport(processKey, ALL_VERSIONS, START_EVENT, END_EVENT);
     reportData.setTenantIds(selectedTenants);
-    NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -484,7 +484,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
     reportData.setFilter(createVariableFilter("true"));
-    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
+    NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -492,7 +492,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
 
     // when
     reportData.setFilter(createVariableFilter("false"));
-    resultDto = evaluateNumberReport(reportData).getResult();
+    resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     calculatedResult = resultDto.getData();
@@ -553,7 +553,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     aggregationTypes.forEach((AggregationType aggType) -> {
       reportData.getConfiguration().setAggregationType(aggType);
       AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
-        evaluateNumberReport(reportData);
+        reportClient.evaluateNumberReport(reportData);
       resultsMap.put(aggType, evaluationResponse);
     });
     return resultsMap;

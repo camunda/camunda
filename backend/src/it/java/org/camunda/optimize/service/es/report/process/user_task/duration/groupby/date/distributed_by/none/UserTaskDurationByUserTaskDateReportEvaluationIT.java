@@ -90,7 +90,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -139,7 +139,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReportById(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReportById(
       reportId
     );
 
@@ -270,7 +270,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -306,7 +306,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -349,7 +349,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
@@ -385,7 +385,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -421,7 +421,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -453,7 +453,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getIsComplete()).isTrue();
@@ -497,7 +497,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, groupByDateUnit);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -534,7 +534,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getIsComplete()).isTrue();
@@ -563,7 +563,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     // when
     final ProcessReportDataDto reportData = createReportData(processKey, "1", GroupByDateUnit.DAY);
     reportData.setTenantIds(selectedTenants);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -587,7 +587,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     final List<ProcessFilterDto> processFilterDtoList = ProcessFilterBuilder.filter()
       .completedInstancesOnly().add().buildList();
     reportData.setFilter(processFilterDtoList);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -623,7 +623,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -658,7 +658,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -681,7 +681,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -702,7 +702,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the single data point should be grouped by month
     final List<MapResultEntryDto> resultData = result.getData();
@@ -924,7 +924,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     Map<AggregationType, ReportMapResultDto> resultsMap = new HashMap<>();
     getAggregationTypesAsList().forEach((AggregationType aggType) -> {
       reportData.getConfiguration().setAggregationType(aggType);
-      final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+      final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });
     return resultsMap;

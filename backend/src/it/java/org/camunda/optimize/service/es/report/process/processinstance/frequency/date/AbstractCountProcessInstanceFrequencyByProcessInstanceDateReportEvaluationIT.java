@@ -73,7 +73,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setReportDataType(getTestReportDataType())
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
     // then
@@ -107,9 +107,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     );
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReportById(
-      reportId
-    );
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReportById(
+      reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -166,7 +165,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -206,7 +205,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -248,7 +247,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getIsComplete(), is(true));
@@ -291,7 +290,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -322,7 +321,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -366,7 +365,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -415,7 +414,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -477,7 +476,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -502,7 +501,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -527,7 +526,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -552,7 +551,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -575,7 +574,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -605,7 +604,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .build();
 
     reportData.setTenantIds(selectedTenants);
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -637,7 +636,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .buildList();
 
     reportData.getFilter().addAll(flowNodeFilter);
-    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -652,7 +651,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     dataDto.getGroupBy().setType(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -666,7 +665,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     groupByDto.getValue().setUnit(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
+    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));

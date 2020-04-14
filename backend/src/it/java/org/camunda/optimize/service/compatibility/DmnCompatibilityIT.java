@@ -237,7 +237,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
       .setVariableName(null)
       .setVariableType(VariableType.STRING)
       .build();
-    return evaluateMapReport(reportData);
+    return reportClient.evaluateMapReport(reportData);
   }
 
   private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -251,7 +251,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
       .setVariableName(null)
       .setVariableType(VariableType.STRING)
       .build();
-    return evaluateMapReport(reportData);
+    return reportClient.evaluateMapReport(reportData);
   }
 
   private DecisionVariableValueRequestDto createVariableRequest(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,

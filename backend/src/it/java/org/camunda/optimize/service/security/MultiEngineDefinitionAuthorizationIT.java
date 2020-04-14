@@ -368,5 +368,4 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
       .withUserAuthentication(name, password)
       .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
   }
-
 }

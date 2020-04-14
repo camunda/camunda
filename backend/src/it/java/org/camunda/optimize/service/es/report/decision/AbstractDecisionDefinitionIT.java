@@ -5,24 +5,18 @@
  */
 package org.camunda.optimize.service.es.report.decision;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +24,19 @@ import java.util.Objects;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.util.DmnModels.*;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_GUEST_WITH_CHILDREN_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_NUMBER_OF_GUESTS_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_SEASON_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_AMOUNT;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_GUEST_WITH_CHILDREN;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_INVOICE_CATEGORY;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_INVOICE_DATE;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_NUMBER_OF_GUESTS;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_SEASON;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
 public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
   @RegisterExtension
@@ -156,37 +162,4 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
     );
   }
 
-  protected AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateMapReport(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  protected AuthorizedDecisionReportEvaluationResultDto<NumberResultDto> evaluateNumberReport(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<NumberResultDto>>() {});
-      // @formatter:on
-  }
-
-  protected AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReport(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
-      // @formatter:on
-  }
-
-  protected Response evaluateReportAndReturnResponse(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
-  }
 }

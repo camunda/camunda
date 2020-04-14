@@ -50,7 +50,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = getDefinitionsAsUser(KERMIT_USER);
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(definitions).extracting(DefinitionWithTenantsDto::getKey).containsExactly(definitionKey1);
@@ -74,7 +77,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = getDefinitionsAsUser(KERMIT_USER);
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(definitions).extracting(DefinitionWithTenantsDto::getKey).containsExactly(definitionKey1);
@@ -95,7 +101,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = getDefinitionsAsUser(KERMIT_USER);
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(definitions).isEmpty();
@@ -116,7 +125,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = getDefinitionsAsUser(KERMIT_USER);
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(definitions).isEmpty();
@@ -137,7 +149,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = getDefinitionsAsUser(KERMIT_USER);
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(definitions).extracting(DefinitionWithTenantsDto::getKey).containsExactly(definitionKey);
@@ -161,7 +176,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsDto> definitions = getDefinitionsAsUser(KERMIT_USER);
+    final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(definitions).extracting(DefinitionWithTenantsDto::getKey).containsExactly(definitionKey);
@@ -185,7 +203,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<ProcessDefinitionOptimizeDto> definitions = getProcessDefinitionsAsUser(KERMIT_USER);
+    final List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(definitions).extracting(ProcessDefinitionOptimizeDto::getKey).containsExactly(definitionKey1);
@@ -209,7 +230,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<ProcessDefinitionOptimizeDto> definitions = getProcessDefinitionsAsUser(KERMIT_USER);
+    final List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitionsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(definitions).extracting(ProcessDefinitionOptimizeDto::getKey).containsExactly(definitionKey1);
@@ -342,7 +366,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
 
     // when
     final List<TenantWithDefinitionsDto> definitionsWithVersionsAndTenants =
-      getDefinitionsGroupedByTenantAsUser(KERMIT_USER);
+      definitionClient.getDefinitionsGroupedByTenantAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(definitionsWithVersionsAndTenants)
@@ -375,7 +399,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
 
     // when
     final List<TenantWithDefinitionsDto> definitionsWithVersionsAndTenants =
-      getDefinitionsGroupedByTenantAsUser(KERMIT_USER);
+      definitionClient.getDefinitionsGroupedByTenantAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(definitionsWithVersionsAndTenants)
@@ -399,16 +423,22 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
 
     final EventProcessDefinitionDto eventProcessDefinition1 =
       elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey1,
-      new GroupDto(GROUP_ID)
-    );
+        definitionKey1,
+        new GroupDto(GROUP_ID)
+      );
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
       definitionKey2,
       new GroupDto("otherGroup")
     );
 
     // when
-    final String definitionXml1 = getProcessDefinitionXmlByKeyAsUser(definitionKey1, KERMIT_USER);
+    final String definitionXml1 = definitionClient.getProcessDefinitionXmlAsUser(
+      definitionKey1,
+      EVENT_PROCESS_DEFINITION_VERSION,
+      null,
+      KERMIT_USER,
+      KERMIT_USER
+    );
     final Response definitionXml2Response = executeGetProcessDefinitionXmlByKeyAsUser(definitionKey2, KERMIT_USER);
 
     // then
@@ -436,38 +466,19 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final String definitionXml1 = getProcessDefinitionXmlByKeyAsUser(definitionKey1, KERMIT_USER);
+    final String definitionXml1 = definitionClient.getProcessDefinitionXmlAsUser(
+      definitionKey1,
+      EVENT_PROCESS_DEFINITION_VERSION,
+      null,
+      KERMIT_USER,
+      KERMIT_USER
+    );
     final Response definitionXml2Response = executeGetProcessDefinitionXmlByKeyAsUser(definitionKey2, KERMIT_USER);
 
     // then
     assertThat(definitionXml1).isEqualTo(eventProcessDefinition1.getBpmn20Xml());
 
     assertThat(definitionXml2Response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-  }
-
-  private List<DefinitionWithTenantsDto> getDefinitionsAsUser(final String user) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitions()
-      .withUserAuthentication(user, user)
-      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private List<ProcessDefinitionOptimizeDto> getProcessDefinitionsAsUser(final String user) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetProcessDefinitionsRequest()
-      .withUserAuthentication(user, user)
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenantAsUser(
-    final String user) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitionsGroupedByTenant()
-      .withUserAuthentication(user, user)
-      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
   }
 
   private List<DefinitionVersionsWithTenantsDto> getProcessDefinitionVersionsWithTenantsAsUser(
@@ -491,10 +502,6 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
       .execute();
   }
 
-  private String getProcessDefinitionXmlByKeyAsUser(final String key, final String user) {
-    return executeGetProcessDefinitionXmlByKeyAsUser(key, user).readEntity(String.class);
-  }
-
   private Response executeGetProcessDefinitionXmlByKeyAsUser(final String definitionKey, final String user) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -502,6 +509,5 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
       .withUserAuthentication(user, user)
       .execute();
   }
-
 }
 

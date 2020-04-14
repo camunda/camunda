@@ -95,7 +95,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       booleanOutputVariableFilter,
       relativeEvaluationDateFilter
     ));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));

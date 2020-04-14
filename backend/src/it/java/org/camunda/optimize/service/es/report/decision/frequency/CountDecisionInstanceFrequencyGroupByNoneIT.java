@@ -48,7 +48,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    final NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(3L));
@@ -76,7 +76,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    final NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(5L));
@@ -107,7 +107,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    final NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(5L));
@@ -135,7 +135,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setTenantIds(selectedTenants)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is((long) selectedTenants.size()));
@@ -171,7 +171,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
         INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-   final NumberResultDto result = evaluateNumberReport(reportData).getResult();
+    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(2L));
@@ -190,7 +190,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     reportData.getView().setProperty(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(reportData);
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
@@ -207,7 +207,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     reportData.getGroupBy().setType(null);
 
     //when
-    Response response = evaluateReportAndReturnResponse(reportData);
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
