@@ -498,7 +498,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     // given
     final ChronoUnit groupByUnitAsChrono = mapToChronoUnit(groupByDateUnit);
     final int groupingCount = 5;
-    OffsetDateTime referenceDate = OffsetDateTime.now();
+    final OffsetDateTime referenceDate = OffsetDateTime.parse("2019-06-15T12:00:00+02:00");;
 
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     List<ProcessInstanceEngineDto> processInstanceDtos = IntStream.range(0, groupingCount)
