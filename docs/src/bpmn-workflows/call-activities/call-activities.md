@@ -10,9 +10,11 @@ When the created workflow instance is completed then the call activity is left a
 
 ## Defining the Called Workflow
 
-A call activity must define the BPMN process id of the called workflow as `processId`. The `processId` defines the BPMN process id statically on the design time of the workflow.
+A call activity must define the BPMN process id of the called workflow as `processId`.
 
 The new instance of the defined workflow will be created of its **latest version** - at the point when the call activity is activated.
+
+Usually, the `processId` is defined as a static value (e.g. `shipping-process`) but it can also be defined as [expression](/reference/expressions.html) (e.g. `= "shipping-" + tenantId`). The expression is evaluated on activating the call activity and must result in a `string`.
 
 ## Boundary Events
 
@@ -116,5 +118,6 @@ The workflow instance records of the created workflow instance have a reference 
 </details>
 
 References:
+* [Expressions](/reference/expressions.html)
 * [Variable Scopes](/reference/variables.html#variable-scopes)
 * [Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)

@@ -14,7 +14,7 @@ When a workflow is deployed then it creates a message subscription for each mess
 
 When the message subscription is created then a message can be correlated to the start event if the message name matches. On correlating the message, a new workflow instance is created and the corresponding message start event is activated.
 
-Messages are **not** correlated if they were published before the workflow was deployed. Or, if a new version of the workflow is deployed which doesn't have a proper start event. 
+Messages are **not** correlated if they were published before the workflow was deployed. Or, if a new version of the workflow is deployed which doesn't have a proper start event.
 
 The `correlationKey` of a published message can be used to control the workflow instance creation. If an instance of this workflow is active (independently from its version) and it was triggered by a message with the same `correlationKey` then the message is **not** correlated and no new instance is created. When the active workflow instance is ended (completed or terminated) and a message with the same `correlationKey` and a matching message name is buffered (i.e. TTL > 0) then this message is correlated and a new instance of the latest version of the workflow is created.
 
@@ -30,15 +30,15 @@ When an intermediate message catch event is entered then a corresponding message
 
 An activity can have one or more message boundary events. Each of the message events must have a unique message name.
 
-When the activity is entered then it creates a corresponding message subscription for each boundary message event. If a non-interrupting boundary event is triggered then the activity is not terminated and multiple messages can be correlated. 
+When the activity is entered then it creates a corresponding message subscription for each boundary message event. If a non-interrupting boundary event is triggered then the activity is not terminated and multiple messages can be correlated.
 
 ## Messages
 
-A message can be referenced by one or more message events. It **must** define the name of the message (e.g. `Money collected`) and the `correlationKey` variable (e.g. `orderId`), except it is only referenced by message start events.
+A message can be referenced by one or more message events. It **must** define the name of the message (e.g. `Money collected`) and the `correlationKey` expression (e.g. `= orderId`). If the message is only referenced by message start events then the `correlationKey` is not required.
 
-The `correlationKey` variable must reference a variable of the workflow instance that holds the correlation key of the message. It is read from the workflow instance on activating the message event and must be either a `string` or a `number`.
+The `correlationKey` is an expression that usually [accesses a variable](/reference/expressions.html#access-variables) of the workflow instance that holds the correlation key of the message. The expression is evaluated on activating the message event and must result either in a `string` or in a `number`.
 
-In order to correlate a message to the message event, the message is published with the defined name (e.g. `Money collected`) and the **value** of the `correlationKey` variable. For example, if the workflow instance has a variable `orderId` with value `"order-123"` then the message must be published with the correlation key `"order-123"`.
+In order to correlate a message to the message event, the message is published with the defined name (e.g. `Money collected`) and the **value** of the `correlationKey` expression. For example, if the workflow instance has a variable `orderId` with value `"order-123"` then the message must be published with the correlation key `"order-123"`.
 
 ## Variable Mappings
 
@@ -56,14 +56,14 @@ By default, all message variables are merged into the workflow instance. This be
 <bpmn:startEvent id="order-placed" name="Order placed">
   <bpmn:messageEventDefinition messageRef="Message_0z0aft4" />
 </bpmn:startEvent>
-``` 
-  
+```
+
 An intermediate message catch event with message definition:
 
 ```xml
 <bpmn:message id="Message_1iz5qtq" name="money-collected">
   <bpmn:extensionElements>
-    <zeebe:subscription correlationKey="orderId" />
+    <zeebe:subscription correlationKey="= orderId" />
   </bpmn:extensionElements>
 </bpmn:message>
 
@@ -74,7 +74,7 @@ An intermediate message catch event with message definition:
 
 A boundary message event:
 ```xml
-<bpmn:boundaryEvent id="order-canceled" name="Order Canceled" 
+<bpmn:boundaryEvent id="order-canceled" name="Order Canceled"
   attachedToRef="collect-money">
   <bpmn:messageEventDefinition messageRef="Message_1iz5qtq" />
 </bpmn:boundaryEvent>
@@ -87,25 +87,25 @@ A boundary message event:
   <summary>Using the BPMN modeler</summary>
   <p>Adding an intermediate message catch event:
 
-![message-event](/bpmn-workflows/message-events/message-event.gif) 
+![message-event](/bpmn-workflows/message-events/message-event.gif)
   </p>
 </details>
 
 <details>
   <summary>Workflow Lifecycle</summary>
-  <p>Workflow instance records of a message start event: 
+  <p>Workflow instance records of a message start event:
 
 <table>
     <tr>
         <th>Intent</th>
         <th>Element Id</th>
         <th>Element Type</th>
-    </tr>   
+    </tr>
     <tr>
         <td>EVENT_OCCURRED</td>
         <td>order-placed</td>
         <td>START_EVENT</td>
-    <tr> 
+    <tr>
     <tr>
         <td>ELEMENT_ACTIVATING</td>
         <td>order-placed</td>
@@ -128,14 +128,14 @@ A boundary message event:
     <tr>
 </table>
 
-Workflow instance records of an intermediate message catch event: 
+Workflow instance records of an intermediate message catch event:
 
 <table>
     <tr>
         <th>Intent</th>
         <th>Element Id</th>
         <th>Element Type</th>
-    </tr>    
+    </tr>
     <tr>
         <td>ELEMENT_ACTIVATING</td>
         <td>order-delivered</td>
@@ -173,5 +173,6 @@ Workflow instance records of an intermediate message catch event:
 
 References:
 * [Message Correlation](/reference/message-correlation.html)
+* [Expressions](/reference/expressions.html)
 * [Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)
 * [Incidents](/reference/incidents.html)
