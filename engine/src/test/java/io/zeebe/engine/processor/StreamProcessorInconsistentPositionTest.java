@@ -17,10 +17,10 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.zeebe.engine.util.ListLogStorage;
 import io.zeebe.engine.util.RecordStream;
 import io.zeebe.engine.util.StreamProcessingComposite;
 import io.zeebe.engine.util.TestStreams;
-import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -49,21 +49,13 @@ public final class StreamProcessorInconsistentPositionTest {
   private TestStreams testStreams;
 
   @Before
-  public void setup() throws Exception {
+  public void setup() {
 
     testStreams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
 
-    final var dataDirectory = tempFolder.newFolder();
-
-    final AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(tempFolder, 1);
-    logStorageRule.open(
-        b ->
-            b.withDirectory(dataDirectory)
-                .withMaxEntrySize(4 * 1024 * 1024)
-                .withMaxSegmentSize(128 * 1024 * 1024));
-
-    testStreams.createLogStream(getLogName(1), 1, logStorageRule);
-    testStreams.createLogStream(getLogName(2), 2, logStorageRule);
+    final var listLogStorage = new ListLogStorage();
+    testStreams.createLogStream(getLogName(1), 1, listLogStorage);
+    testStreams.createLogStream(getLogName(2), 2, listLogStorage);
 
     firstStreamProcessorComposite =
         new StreamProcessingComposite(testStreams, 1, DEFAULT_DB_FACTORY);
