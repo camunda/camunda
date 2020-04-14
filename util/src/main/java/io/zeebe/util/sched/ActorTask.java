@@ -7,12 +7,15 @@
  */
 package io.zeebe.util.sched;
 
+import static io.zeebe.util.sched.ActorThread.ensureCalledFromActorThread;
+
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayDeque;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,7 +41,7 @@ public class ActorTask {
   private ActorThreadGroup actorThreadGroup;
   private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
   private volatile ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
-  private ActorSubscription[] subscriptions = new ActorSubscription[0];
+  private List<ActorSubscription> subscriptions = new ArrayList<>();
   /**
    * the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound
    */
@@ -238,11 +241,11 @@ public class ActorTask {
   private void onClosed() {
     schedulingState.set(TaskSchedulingState.NOT_SCHEDULED);
 
-    for (int i = 0; i < subscriptions.length; i++) {
-      subscriptions[i].cancel();
-    }
-
-    subscriptions = new ActorSubscription[0];
+    // we need to work on a copy - otherwise we would get a ConcurrentModificationException
+    // since some subscriptions remove them self on cancel
+    final var actorSubscriptions = new ArrayList<>(subscriptions);
+    actorSubscriptions.forEach(ActorSubscription::cancel);
+    subscriptions = new ArrayList<>();
 
     final Queue<ActorJob> activeJobsQueue = submittedJobs;
     submittedJobs = new ClosedQueue();
@@ -331,7 +334,7 @@ public class ActorTask {
     // take copy of subscriptions list: once we set the state to WAITING, the task could be woken up
     // by another
     // thread. That thread could modify the subscriptions array.
-    final ActorSubscription[] subscriptionsCopy = this.subscriptions;
+    final List<ActorSubscription> subscriptionsRef = new ArrayList<>(this.subscriptions);
 
     // first set state to waiting
     schedulingState.set(TaskSchedulingState.WAITING);
@@ -343,11 +346,9 @@ public class ActorTask {
      * up right away.
      */
     if ((lifecyclePhase == ActorLifecyclePhase.STARTED && !submittedJobs.isEmpty())
-        || pollSubscriptionsWithoutAddingJobs(subscriptionsCopy)) {
+        || pollSubscriptionsWithoutAddingJobs(subscriptionsRef)) {
       // could be that another thread already woke up this task
-      if (casState(TaskSchedulingState.WAITING, TaskSchedulingState.WAKING_UP)) {
-        return true;
-      }
+      return casState(TaskSchedulingState.WAITING, TaskSchedulingState.WAKING_UP);
     }
 
     return false;
@@ -376,9 +377,7 @@ public class ActorTask {
   private boolean pollSubscriptions() {
     boolean hasJobs = false;
 
-    for (int i = 0; i < subscriptions.length; i++) {
-      final ActorSubscription subscription = subscriptions[i];
-
+    for (final ActorSubscription subscription : subscriptions) {
       if (pollSubscription(subscription)) {
         final ActorJob job = subscription.getJob();
         job.schedulingState = TaskSchedulingState.QUEUED;
@@ -399,11 +398,11 @@ public class ActorTask {
     return subscription.triggersInPhase(lifecyclePhase) && subscription.poll();
   }
 
-  private boolean pollSubscriptionsWithoutAddingJobs(final ActorSubscription[] subscriptions) {
+  private boolean pollSubscriptionsWithoutAddingJobs(final List<ActorSubscription> subscriptions) {
     boolean result = false;
 
-    for (int i = 0; i < subscriptions.length && !result; i++) {
-      result |= pollSubscription(subscriptions[i]);
+    for (int i = 0; i < subscriptions.size() && !result; i++) {
+      result |= pollSubscription(subscriptions.get(i));
     }
 
     return result;
@@ -412,8 +411,8 @@ public class ActorTask {
   private boolean allPhaseSubscriptionsTriggered() {
     boolean allTriggered = true;
 
-    for (int i = 0; i < subscriptions.length && allTriggered; i++) {
-      final ActorSubscription subscription = subscriptions[i];
+    for (int i = 0; i < subscriptions.size() && allTriggered; i++) {
+      final ActorSubscription subscription = subscriptions.get(i);
       allTriggered &= !subscription.triggersInPhase(lifecyclePhase);
     }
 
@@ -493,30 +492,13 @@ public class ActorTask {
   }
 
   public void addSubscription(final ActorSubscription subscription) {
-    final ActorSubscription[] arrayCopy = Arrays.copyOf(subscriptions, subscriptions.length + 1);
-    arrayCopy[arrayCopy.length - 1] = subscription;
-    subscriptions = arrayCopy;
+    ensureCalledFromActorThread("addSubscription(ActorSubscription)");
+    subscriptions.add(subscription);
   }
 
   private void removeSubscription(final ActorSubscription subscription) {
-    final int length = subscriptions.length;
-
-    int index = -1;
-    for (int i = 0; i < subscriptions.length; i++) {
-      if (subscriptions[i] == subscription) {
-        index = i;
-      }
-    }
-
-    assert index >= 0 : "Subscription not registered";
-
-    final ActorSubscription[] newSubscriptions = new ActorSubscription[length - 1];
-    System.arraycopy(subscriptions, 0, newSubscriptions, 0, index);
-    if (index < length - 1) {
-      System.arraycopy(subscriptions, index + 1, newSubscriptions, index, length - index - 1);
-    }
-
-    this.subscriptions = newSubscriptions;
+    ensureCalledFromActorThread("removeSubscription(ActorSubscription)");
+    subscriptions.remove(subscription);
   }
 
   // subscription helpers

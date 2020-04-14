@@ -7,6 +7,8 @@
  */
 package io.zeebe.util.sched;
 
+import static io.zeebe.util.sched.ActorThread.ensureCalledFromActorThread;
+
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.channel.ChannelConsumerCondition;
 import io.zeebe.util.sched.channel.ChannelSubscription;
@@ -38,8 +40,7 @@ public class ActorControl {
   }
 
   public static ActorControl current() {
-    final ActorThread actorThread =
-        ActorControl.ensureCalledFromActorThread("ActorControl#current");
+    final ActorThread actorThread = ensureCalledFromActorThread("ActorControl#current");
 
     return new ActorControl(actorThread.currentTask);
   }
@@ -513,17 +514,6 @@ public class ActorControl {
     }
 
     return currentJob;
-  }
-
-  private static ActorThread ensureCalledFromActorThread(final String methodName) {
-    final ActorThread thread = ActorThread.current();
-
-    if (thread == null) {
-      throw new UnsupportedOperationException(
-          "Incorrect usage of actor. " + methodName + ": must be called from actor thread");
-    }
-
-    return thread;
   }
 
   /** Mark actor as failed. This sets the lifecycle phase to 'FAILED' and discards all jobs. */

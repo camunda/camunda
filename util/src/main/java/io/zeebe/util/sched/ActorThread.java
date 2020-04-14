@@ -157,6 +157,17 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     }
   }
 
+  public static ActorThread ensureCalledFromActorThread(final String methodName) {
+    final ActorThread thread = ActorThread.current();
+
+    if (thread == null) {
+      throw new UnsupportedOperationException(
+          "Incorrect usage of actor. " + methodName + ": must be called from actor thread");
+    }
+
+    return thread;
+  }
+
   public ActorJob newJob() {
     ActorJob job = jobs.poll();
 
