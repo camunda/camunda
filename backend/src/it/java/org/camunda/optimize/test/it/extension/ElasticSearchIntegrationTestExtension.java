@@ -647,33 +647,17 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   public ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
                                                                           final String name,
                                                                           final String version) {
-    final String versionValue = Optional.ofNullable(version).orElse("1");
     final ProcessDefinitionOptimizeDto processDefinitionDto = ProcessDefinitionOptimizeDto.builder()
       .id(key + "-" + version)
       .key(key)
       .name(name)
-      .version(versionValue)
-      .bpmn20Xml(key + versionValue)
+      .version(version)
+      .bpmn20Xml(key + version)
       .build();
     addEntryToElasticsearch(
       PROCESS_DEFINITION_INDEX_NAME, processDefinitionDto.getId(), processDefinitionDto
     );
     return processDefinitionDto;
-  }
-
-  public List<ProcessDefinitionOptimizeDto> addProcessDefinitionForEachVersionDtoToElasticsearch(final String key,
-                                                                                                 final String name,
-                                                                                                 final List<String> versions) {
-    List<ProcessDefinitionOptimizeDto> processDefinitions = new ArrayList<>();
-    for (String version : versions) {
-      final ProcessDefinitionOptimizeDto processDefinitionDto = addProcessDefinitionToElasticsearch(
-        key,
-        name,
-        version
-      );
-      processDefinitions.add(processDefinitionDto);
-    }
-    return processDefinitions;
   }
 
   public void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos) {

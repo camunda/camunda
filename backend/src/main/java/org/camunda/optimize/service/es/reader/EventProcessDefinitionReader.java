@@ -61,20 +61,22 @@ public class EventProcessDefinitionReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    EventProcessDefinitionDto result = null;
-    if (getResponse.isExists()) {
-      try {
-        result = objectMapper.readValue(getResponse.getSourceAsString(), EventProcessDefinitionDto.class);
-      } catch (IOException e) {
-        final String reason = "Could not deserialize information for event based process definition with id: "
-          + eventProcessDefinitionId;
-        log.error(
-          "Was not able to retrieve event based process definition with id [{}]. Reason: {}",
-          eventProcessDefinitionId,
-          reason
-        );
-        throw new OptimizeRuntimeException(reason, e);
-      }
+    if (!getResponse.isExists()) {
+      return Optional.empty();
+    }
+
+    EventProcessDefinitionDto result;
+    try {
+      result = objectMapper.readValue(getResponse.getSourceAsString(), EventProcessDefinitionDto.class);
+    } catch (IOException e) {
+      final String reason = "Could not deserialize information for event based process definition with id: "
+        + eventProcessDefinitionId;
+      log.error(
+        "Was not able to retrieve event based process definition with id [{}]. Reason: {}",
+        eventProcessDefinitionId,
+        reason
+      );
+      throw new OptimizeRuntimeException(reason, e);
     }
 
     return Optional.ofNullable(result);
@@ -104,26 +106,26 @@ public class EventProcessDefinitionReader {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    EventProcessDefinitionDto definitionDto = null;
 
-    if (searchResponse.getHits().getHits().length > 0) {
-      SearchHit hit = searchResponse.getHits().getAt(0);
-      final String sourceAsString = hit.getSourceAsString();
-      try {
-        definitionDto = objectMapper.readValue(
-          sourceAsString,
-          EventProcessDefinitionDto.class
-        );
-      } catch (JsonProcessingException e) {
-        final String reason = "It was not possible to deserialize a hit from Elasticsearch!"
-          + " Hit response from Elasticsearch: " + sourceAsString;
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason);
-      }
+    if (searchResponse.getHits().getHits().length == 0) {
+      return Optional.empty();
     }
 
+    EventProcessDefinitionDto definitionDto;
+    SearchHit hit = searchResponse.getHits().getAt(0);
+    final String sourceAsString = hit.getSourceAsString();
+    try {
+      definitionDto = objectMapper.readValue(
+        sourceAsString,
+        EventProcessDefinitionDto.class
+      );
+    } catch (JsonProcessingException e) {
+      final String reason = "It was not possible to deserialize a hit from Elasticsearch!"
+        + " Hit response from Elasticsearch: " + sourceAsString;
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason);
+    }
     return Optional.ofNullable(definitionDto);
-
   }
 
   public List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml() {
@@ -151,5 +153,4 @@ public class EventProcessDefinitionReader {
       configurationService.getElasticsearchScrollTimeout()
     );
   }
-
 }

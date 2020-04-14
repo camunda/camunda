@@ -434,11 +434,13 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final Map<String, EventMappingDto> eventMappings,
     final String traceVariable) {
     final List<EventSourceEntryDto> eventSourceEntryDtos =
-      createCamundaEventSourceEntryAsListForDeployedProcessWithTraceVariable(
-        processInstanceEngineDto,
+      Collections.singletonList(addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+        processInstanceEngineDto.getProcessDefinitionKey(),
+        processInstanceEngineDto.getProcessDefinitionKey(),
+        processInstanceEngineDto.getTenantId(),
         traceVariable,
         Collections.singletonList("1")
-      );
+      ));
     createAndPublishEventMapping(eventMappings, eventSourceEntryDtos);
   }
 
@@ -459,15 +461,15 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return Collections.singletonList(eventProcessClient.createExternalEventSourceEntry());
   }
 
-  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
     final ProcessInstanceEngineDto processInstanceEngineDto) {
-    return createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+    return createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
       processInstanceEngineDto,
       null
     );
   }
 
-  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
     final ProcessInstanceEngineDto processInstanceEngineDto,
     final List<String> versions) {
     return Collections.singletonList(addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
@@ -475,19 +477,6 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       processInstanceEngineDto.getProcessDefinitionKey(),
       processInstanceEngineDto.getTenantId(),
       null,
-      versions
-    ));
-  }
-
-  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessWithTraceVariable(
-    final ProcessInstanceEngineDto processInstanceEngineDto,
-    final String traceVariable,
-    final List<String> versions) {
-    return Collections.singletonList(addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      processInstanceEngineDto.getProcessDefinitionKey(),
-      processInstanceEngineDto.getProcessDefinitionKey(),
-      processInstanceEngineDto.getTenantId(),
-      traceVariable,
       versions
     ));
   }
@@ -503,17 +492,20 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     );
   }
 
-  protected EventSourceEntryDto addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+  private EventSourceEntryDto addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
     final String processDefinitionKey,
     final String processDefinitionName,
     final String tenantId,
     final String traceVariable,
     final List<String> versions) {
-    elasticSearchIntegrationTestExtension.addProcessDefinitionForEachVersionDtoToElasticsearch(
-      processDefinitionKey,
-      processDefinitionName,
-      Optional.ofNullable(versions).orElse(Collections.singletonList("1"))
-    );
+    final List<String> versionValues = Optional.ofNullable(versions).orElse(Collections.singletonList("1"));
+    versionValues.stream()
+      .forEach(version ->
+                 elasticSearchIntegrationTestExtension.addProcessDefinitionToElasticsearch(
+                   processDefinitionKey,
+                   processDefinitionName,
+                   version
+                 ));
     return EventSourceEntryDto.builder()
       .type(EventSourceType.CAMUNDA)
       .eventScope(EventScopeType.ALL)

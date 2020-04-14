@@ -374,9 +374,9 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         .build()
     );
 
-    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
       firstProcessInstanceEngineDto);
-    List<EventSourceEntryDto> secondEventSource = createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+    List<EventSourceEntryDto> secondEventSource = createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
       secondProcessInstanceEngineDto);
 
     createAndPublishEventMapping(mappingsForEventProcess, Stream.of(firstEventSource, secondEventSource).flatMap(
@@ -423,7 +423,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         .build()
     );
 
-    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
       processInstanceEngineDto);
     List<EventSourceEntryDto> secondEventSource = createExternalEventSourceAsList();
 
@@ -453,7 +453,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
     final List<EventSourceEntryDto> eventSource =
-      createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+      createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
         processInstanceEngineDto,
         Collections.singletonList("versionNotSameAsInstance")
       );

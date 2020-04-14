@@ -161,7 +161,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
                .build())
       .build());
 
-    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessWithBusinessKey(
+    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
       processInstanceEngineDto);
     List<EventSourceEntryDto> secondEventSource = createExternalEventSourceAsList();
 
