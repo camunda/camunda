@@ -107,7 +107,7 @@ public interface Intent {
       case WORKFLOW_INSTANCE:
         return WorkflowInstanceIntent.valueOf(intent);
       case MESSAGE:
-        return WorkflowInstanceIntent.valueOf(intent);
+        return MessageIntent.valueOf(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.valueOf(intent);
       case MESSAGE_START_EVENT_SUBSCRIPTION:
