@@ -310,18 +310,19 @@ public class EventProcessService {
   }
 
   private void validateNoEventProcessesAsEventSource(final EventProcessMappingDto eventProcessMappingDto) {
-    List<EventSourceEntryDto> eventProcessEventSources = eventProcessMappingDto.getEventSources()
+    List<String> eventProcessSourceIds = eventProcessMappingDto.getEventSources()
       .stream()
       .filter(eventSource -> eventSource.getType().equals(EventSourceType.CAMUNDA))
       .filter(eventSource ->
                 eventProcessDefinitionService
                   .getEventProcessDefinitionByKey(eventSource.getProcessDefinitionKey())
                   .isPresent())
+      .map(eventSource -> eventSource.getId())
       .collect(toList());
-    if (!eventProcessEventSources.isEmpty()) {
+    if (!eventProcessSourceIds.isEmpty()) {
       final String errorMessage = String.format(
         "The following event sources are not permitted as they are event processes themselves: %s",
-        eventProcessEventSources
+        eventProcessSourceIds
       );
       throw new OptimizeConflictException(errorMessage);
     }

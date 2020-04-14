@@ -65,9 +65,12 @@ public class EventProcessDefinitionReader {
       return Optional.empty();
     }
 
-    EventProcessDefinitionDto result;
     try {
-      result = objectMapper.readValue(getResponse.getSourceAsString(), EventProcessDefinitionDto.class);
+      final EventProcessDefinitionDto result = objectMapper.readValue(
+        getResponse.getSourceAsString(),
+        EventProcessDefinitionDto.class
+      );
+      return Optional.of(result);
     } catch (IOException e) {
       final String reason = "Could not deserialize information for event based process definition with id: "
         + eventProcessDefinitionId;
@@ -78,8 +81,6 @@ public class EventProcessDefinitionReader {
       );
       throw new OptimizeRuntimeException(reason, e);
     }
-
-    return Optional.ofNullable(result);
   }
 
   public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(final String eventProcessDefinitionKey) {
@@ -98,7 +99,6 @@ public class EventProcessDefinitionReader {
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
     } catch (IOException e) {
       final String reason = String.format(
         "Could not fetch event based process definition with key [%s].", eventProcessDefinitionKey
@@ -111,21 +111,20 @@ public class EventProcessDefinitionReader {
       return Optional.empty();
     }
 
-    EventProcessDefinitionDto definitionDto;
     SearchHit hit = searchResponse.getHits().getAt(0);
     final String sourceAsString = hit.getSourceAsString();
     try {
-      definitionDto = objectMapper.readValue(
+      final EventProcessDefinitionDto definitionDto = objectMapper.readValue(
         sourceAsString,
         EventProcessDefinitionDto.class
       );
+      return Optional.of(definitionDto);
     } catch (JsonProcessingException e) {
       final String reason = "It was not possible to deserialize a hit from Elasticsearch!"
         + " Hit response from Elasticsearch: " + sourceAsString;
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason);
     }
-    return Optional.ofNullable(definitionDto);
   }
 
   public List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml() {
