@@ -47,6 +47,7 @@ import org.junit.Test;
 /** Atomix test. */
 public class AtomixTest extends AbstractAtomixTest {
 
+  private static final int TIMEOUT_IN_S = 90;
   private List<Atomix> instances;
 
   @Before
@@ -61,7 +62,7 @@ public class AtomixTest extends AbstractAtomixTest {
         instances.stream().map(Atomix::stop).collect(Collectors.toList());
     try {
       CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]))
-          .get(30, TimeUnit.SECONDS);
+          .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
     } catch (final Exception e) {
       // Do nothing
     }
@@ -106,11 +107,12 @@ public class AtomixTest extends AbstractAtomixTest {
                     .withMembers("1")
                     .withDataPath(new File(getDataDir(), "scale-up"))
                     .build())
-            .get(30, TimeUnit.SECONDS);
+            .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
     final Atomix atomix2 =
-        startAtomix(2, Arrays.asList(1, 2), Profile.client()).get(30, TimeUnit.SECONDS);
+        startAtomix(2, Arrays.asList(1, 2), Profile.client()).get(TIMEOUT_IN_S, TimeUnit.SECONDS);
     final Atomix atomix3 =
-        startAtomix(3, Arrays.asList(1, 2, 3), Profile.client()).get(30, TimeUnit.SECONDS);
+        startAtomix(3, Arrays.asList(1, 2, 3), Profile.client())
+            .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
   }
 
   @Test
@@ -123,10 +125,10 @@ public class AtomixTest extends AbstractAtomixTest {
                     .withMembers("1")
                     .withDataPath(new File(getDataDir(), "start-stop-consensus"))
                     .build())
-            .get(30, TimeUnit.SECONDS);
-    atomix1.stop().get(30, TimeUnit.SECONDS);
+            .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
+    atomix1.stop().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
     try {
-      atomix1.start().get(30, TimeUnit.SECONDS);
+      atomix1.start().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
       fail("Expected ExecutionException");
     } catch (final ExecutionException ex) {
       assertTrue(ex.getCause() instanceof IllegalStateException);
@@ -157,14 +159,15 @@ public class AtomixTest extends AbstractAtomixTest {
     futures.add(startAtomix(1, Arrays.asList(1, 2, 3), profiles[0]));
     futures.add(startAtomix(2, Arrays.asList(1, 2, 3), profiles[1]));
     futures.add(startAtomix(3, Arrays.asList(1, 2, 3), profiles[2]));
-    Futures.allOf(futures).get(30, TimeUnit.SECONDS);
+    Futures.allOf(futures).get(TIMEOUT_IN_S, TimeUnit.SECONDS);
 
     final TestClusterMembershipEventListener dataListener =
         new TestClusterMembershipEventListener();
     instances.get(0).getMembershipService().addListener(dataListener);
 
     final Atomix client1 =
-        startAtomix(4, Arrays.asList(1, 2, 3), Profile.client()).get(30, TimeUnit.SECONDS);
+        startAtomix(4, Arrays.asList(1, 2, 3), Profile.client())
+            .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
     assertEquals(1, client1.getPartitionService().getPartitionGroups().size());
 
     // client1 added to data node
@@ -178,7 +181,8 @@ public class AtomixTest extends AbstractAtomixTest {
     client1.getMembershipService().addListener(clientListener);
 
     final Atomix client2 =
-        startAtomix(5, Arrays.asList(1, 2, 3), Profile.client()).get(30, TimeUnit.SECONDS);
+        startAtomix(5, Arrays.asList(1, 2, 3), Profile.client())
+            .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
     assertEquals(1, client2.getPartitionService().getPartitionGroups().size());
 
     // client2 added to data node
@@ -187,7 +191,7 @@ public class AtomixTest extends AbstractAtomixTest {
     // client2 added to client node
     assertEquals(ClusterMembershipEvent.Type.MEMBER_ADDED, clientListener.event().type());
 
-    client2.stop().get(30, TimeUnit.SECONDS);
+    client2.stop().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
 
     // client2 removed from data node
     assertEquals(ClusterMembershipEvent.Type.REACHABILITY_CHANGED, dataListener.event().type());
@@ -226,7 +230,7 @@ public class AtomixTest extends AbstractAtomixTest {
                 .withMembers("1", "2", "3")
                 .withDataPath(new File(new File(getDataDir(), "client-properties"), "3"))
                 .build()));
-    Futures.allOf(futures).get(30, TimeUnit.SECONDS);
+    Futures.allOf(futures).get(TIMEOUT_IN_S, TimeUnit.SECONDS);
 
     final TestClusterMembershipEventListener dataListener =
         new TestClusterMembershipEventListener();
@@ -236,7 +240,7 @@ public class AtomixTest extends AbstractAtomixTest {
     properties.setProperty("a-key", "a-value");
     final Atomix client1 =
         startAtomix(4, Arrays.asList(1, 2, 3), properties, Profile.client())
-            .get(30, TimeUnit.SECONDS);
+            .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
     assertEquals(1, client1.getPartitionService().getPartitionGroups().size());
 
     // client1 added to data node
