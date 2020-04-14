@@ -1,3 +1,12 @@
+---
+name: Unstable test
+about: Report tests that are flaky/non-deterministic
+title: ''
+labels: 'Type: Unstable Test'
+assignees: ''
+
+---
+
 **Summary**
 
 > Try to answer the following as best as possible
