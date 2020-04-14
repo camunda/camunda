@@ -81,6 +81,10 @@ The following metrics can be used to monitor back-pressure and processing latenc
 * `zeebe_backpressure_requests_limit`: The limit for the number of inflight requests used for backpressure.
 * `zeebe_stream_processor_latency_bucket`: The processing latency for commands and event.
 
+**Metrics related to health:**
+
+The health of partitions in a broker can be monitored by the metric `zeebe_health`. 
+
 [prom-format]: https://prometheus.io/docs/instrumenting/exposition_formats/#text-format-details
 
 ## Grafana
