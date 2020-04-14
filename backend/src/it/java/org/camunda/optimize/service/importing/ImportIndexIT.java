@@ -55,7 +55,7 @@ public class ImportIndexIT extends AbstractImportIT {
   }
 
   @Test
-  public void latestImportIndexAfterRestartOfOptimize() throws Exception {
+  public void latestImportIndexAfterRestartOfOptimize() {
     // given
     deployAndStartUserTaskProcess();
     // we need finished ones
@@ -80,7 +80,7 @@ public class ImportIndexIT extends AbstractImportIT {
   }
 
   @Test
-  public void indexAfterRestartOfOptimizeHasCorrectProcessDefinitionsToImport() throws Exception {
+  public void indexAfterRestartOfOptimizeHasCorrectProcessDefinitionsToImport() {
     // given
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
@@ -102,7 +102,7 @@ public class ImportIndexIT extends AbstractImportIT {
   }
 
   @Test
-  public void afterRestartOfOptimizeAlsoNewDataIsImported() throws Exception {
+  public void afterRestartOfOptimizeAlsoNewDataIsImported() {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();

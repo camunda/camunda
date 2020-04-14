@@ -19,12 +19,17 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Set;
 
+import static javax.ws.rs.HttpMethod.POST;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
@@ -38,6 +43,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.StringBody.subString;
 
 public class DecisionImportIT extends AbstractImportIT {
 
@@ -62,6 +69,68 @@ public class DecisionImportIT extends AbstractImportIT {
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 1L);
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 1L);
+  }
+
+  @Test
+  public void importOfDecisionDefinition_dataIsImportedOnNextSuccessfulAttemptAfterEsFailures() {
+    // given
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
+
+    // given failed ES update requests to store new definition
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest definitionImportMatcher = request()
+      .withPath("/_bulk")
+      .withMethod(POST)
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+        .getIndexNameService()
+        .getIndexPrefix() + "-" + DECISION_DEFINITION_INDEX_NAME + "\""));
+    esMockServer
+      .when(definitionImportMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then the definition will be stored when update next works
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 1L);
+    esMockServer.verify(definitionImportMatcher);
+  }
+
+  @Test
+  public void importOfDecisionDInstance_dataIsImportedOnNextSuccessfulAttemptAfterEsFailures() {
+    // given
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
+
+    // given failed ES update requests to store new instance
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest instanceImportMatcher = request()
+      .withPath("/_bulk")
+      .withMethod(POST)
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+        .getIndexNameService()
+        .getIndexPrefix() + "-" + DECISION_INSTANCE_INDEX_NAME + "\""));
+    esMockServer
+      .when(instanceImportMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then the instance will be stored when update next works
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 1L);
+    esMockServer.verify(instanceImportMatcher);
   }
 
   @Test
@@ -181,7 +250,7 @@ public class DecisionImportIT extends AbstractImportIT {
     final String tenantId = "reallyAwesomeTenantId";
     final DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinitionWithTenant(
-      tenantId);
+        tenantId);
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     //when
@@ -223,7 +292,7 @@ public class DecisionImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     final DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinitionWithTenant(
-      expectedTenantId);
+        expectedTenantId);
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     //when

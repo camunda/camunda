@@ -26,6 +26,10 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -33,12 +37,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.StringBody.subString;
 
 public class VariableImportIT extends AbstractImportIT {
 
@@ -80,6 +87,44 @@ public class VariableImportIT extends AbstractImportIT {
     //then
     assertThat(variablesResponseDtos).hasSize(variables.size());
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
+  }
+
+  @Test
+  public void variableImportWorks_evenIfSeriesOfEsUpdateFailures() throws JsonProcessingException {
+    // given
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(getStoredVariableUpdateInstances()).isEmpty();
+
+    // when
+    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
+    ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+
+    // whenES update writes fail
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest variableImportMatcher = request()
+      .withPath("/_bulk")
+      .withMethod(POST)
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+        .getIndexNameService()
+        .getIndexPrefix() + "-" + VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "\""));
+    esMockServer
+      .when(variableImportMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
+
+    // then variables are stored as expected after ES writes successful
+    assertThat(variablesResponseDtos).hasSize(variables.size());
+    assertThat(storedVariableUpdateInstances).hasSize(variables.size());
+    esMockServer.verify(variableImportMatcher);
   }
 
   @Test

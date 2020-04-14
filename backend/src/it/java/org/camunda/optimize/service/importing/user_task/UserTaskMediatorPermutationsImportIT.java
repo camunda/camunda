@@ -39,7 +39,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -152,12 +151,12 @@ public class UserTaskMediatorPermutationsImportIT extends AbstractIT {
   }
 
   private static Stream<? extends Object> getParameters() {
-    return StreamSupport.stream(Collections2.permutations(
+    return Collections2.permutations(
       ImmutableList.of(
         CompletedUserTaskEngineImportMediator.class.getSimpleName(),
         IdentityLinkLogEngineImportMediator.class.getSimpleName(),
         CompletedProcessInstanceEngineImportMediator.class.getSimpleName()
-      )).spliterator(), false);
+      )).stream();
   }
 
 }

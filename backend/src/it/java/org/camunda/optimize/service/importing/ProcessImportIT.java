@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
@@ -45,12 +46,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEF
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
 
 public class ProcessImportIT extends AbstractImportIT {
 
@@ -73,15 +68,14 @@ public class ProcessImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartProcess(exampleProcess);
 
     // then
-    assertThat(embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers().size(), is(greaterThan(0)));
+    assertThat(embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()).hasSizeGreaterThan(0);
     embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()
-      .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun(), is(false)));
+      .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
-
   }
 
   @Test
@@ -110,9 +104,9 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID)).isEqualTo(tenantId);
   }
 
   @Test
@@ -129,9 +123,9 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID)).isEqualTo(tenantId);
   }
 
   @Test
@@ -149,9 +143,9 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(expectedTenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID)).isEqualTo(expectedTenantId);
   }
 
   @Test
@@ -182,7 +176,7 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(3L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(3L);
   }
 
   @Test
@@ -198,9 +192,9 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID)).isEqualTo(tenantId);
   }
 
   @Test
@@ -217,9 +211,9 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID)).isEqualTo(tenantId);
   }
 
   @Test
@@ -237,9 +231,9 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(expectedTenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID)).isEqualTo(expectedTenantId);
   }
 
   @Test
@@ -260,7 +254,7 @@ public class ProcessImportIT extends AbstractImportIT {
     thread.start();
 
     OffsetDateTime lastImportTimestamp = elasticSearchIntegrationTestExtension.getLastProcessInstanceImportTimestamp();
-    assertThat(lastImportTimestamp, is(endTime));
+    assertThat(lastImportTimestamp).isEqualTo(endTime);
 
     elasticSearchIntegrationTestExtension.blockProcInstIndex(false);
     endTime = engineIntegrationExtension.getHistoricProcessInstance(dto2.getId()).getEndTime();
@@ -270,7 +264,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     lastImportTimestamp = elasticSearchIntegrationTestExtension.getLastProcessInstanceImportTimestamp();
 
-    assertThat(lastImportTimestamp, is(endTime));
+    assertThat(lastImportTimestamp).isEqualTo(endTime);
   }
 
   @AfterEach
@@ -302,11 +296,11 @@ public class ProcessImportIT extends AbstractImportIT {
 
     SearchResponse response = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    assertThat(response.getHits().getTotalHits().value, is(2L));
+    assertThat(response.getHits().getTotalHits().value).isEqualTo(2L);
     response.getHits().forEach((SearchHit hit) -> {
       Map<String, Object> source = hit.getSourceAsMap();
       if (source.get("id").equals(definitionId)) {
-        assertThat(source.get("bpmn20Xml"), is(not(nullValue())));
+        assertThat(source.get("bpmn20Xml")).isNotNull();
       }
     });
   }
@@ -327,7 +321,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(EVENTS);
-      assertThat(events.size(), is(3));
+      assertThat(events).hasSize(3);
     }
   }
 
@@ -343,10 +337,8 @@ public class ProcessImportIT extends AbstractImportIT {
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(
-      idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceIndex.STATE),
-      is(EXTERNALLY_TERMINATED_STATE)
-    );
+    assertThat(idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceIndex.STATE))
+      .isEqualTo(EXTERNALLY_TERMINATED_STATE);
   }
 
   @Test
@@ -360,9 +352,9 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(EVENTS);
-      assertThat(events.size(), is(2));
+      assertThat(events).hasSize(2);
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
-      assertThat(date, is(nullValue()));
+      assertThat(date).isNull();
     }
 
     // when
@@ -375,7 +367,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
-      assertThat(date, is(notNullValue()));
+      assertThat(date).isNotNull();
     }
   }
 
@@ -419,7 +411,7 @@ public class ProcessImportIT extends AbstractImportIT {
         .buildProcessVariableNamesRequest(variableRequestDto)
         .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
-    assertThat(variablesResponseDtos.size(), is(3));
+    assertThat(variablesResponseDtos).hasSize(3);
   }
 
   @Test
@@ -440,10 +432,10 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     SearchHit hit = idsResp.getHits().getAt(0);
     List<?> events = (List<?>) hit.getSourceAsMap().get(EVENTS);
-    assertThat(events.size(), is(2));
+    assertThat(events).hasSize(2);
   }
 
   @Test
@@ -465,11 +457,11 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
     boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
-    assertThat(allEventsHaveEndDate, is(true));
+    assertThat(allEventsHaveEndDate).isTrue();
   }
 
   @Test
@@ -501,11 +493,11 @@ public class ProcessImportIT extends AbstractImportIT {
     //then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
     boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
-    assertThat(allEventsHaveEndDate, is(true));
+    assertThat(allEventsHaveEndDate).isTrue();
   }
 
   @Test
@@ -522,7 +514,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(getImportedActivityCount(), is(3L));
+    assertThat(getImportedActivityCount()).isEqualTo(3L);
   }
 
   @Test

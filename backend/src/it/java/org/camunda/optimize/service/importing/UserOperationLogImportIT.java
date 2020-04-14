@@ -43,9 +43,9 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
 
     // then
-    assertThat(allProcessInstances.size()).isEqualTo(1);
+    assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getState()).isEqualTo(ACTIVE_STATE);
-    assertThat(embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers().size()).isGreaterThan(0);
+    assertThat(embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()).hasSizeGreaterThan(0);
     embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()
       .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
   }
@@ -63,7 +63,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
 
     // then
-    assertThat(allProcessInstances.size()).isEqualTo(1);
+    assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getState()).isEqualTo(SUSPENDED_STATE);
   }
 
@@ -84,7 +84,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
 
     // then
-    assertThat(allProcessInstances.size()).isEqualTo(1);
+    assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getState()).isEqualTo(ACTIVE_STATE);
   }
 
@@ -101,7 +101,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
 
     // then
-    assertThat(allProcessInstances.size()).isEqualTo(1);
+    assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getState()).isEqualTo(SUSPENDED_STATE);
   }
 
@@ -122,7 +122,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
 
     // then
-    assertThat(allProcessInstances.size()).isEqualTo(1);
+    assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getState()).isEqualTo(ACTIVE_STATE);
   }
 
@@ -141,7 +141,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
 
     // then
-    assertThat(allProcessInstances.size()).isEqualTo(1);
+    assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getState()).isEqualTo(COMPLETED_STATE);
   }
 

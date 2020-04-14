@@ -5,29 +5,34 @@
  */
 package org.camunda.optimize.service.importing.user_task;
 
+import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static java.util.stream.Collectors.toList;
+import static javax.ws.rs.HttpMethod.POST;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.not;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.StringBody.subString;
 
 public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
   @Test
-  public void completedUserTasksAreImported() throws IOException {
+  public void completedUserTasksAreImported() {
     // given
     deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -38,38 +43,33 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
-      );
-      assertThat(processInstanceDto.getUserTasks().size(), is(2));
-      assertThat(
-        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()),
-        containsInAnyOrder(USER_TASK_1, USER_TASK_2)
-
-      );
-      processInstanceDto.getUserTasks().forEach(simpleUserTaskInstanceDto -> {
-        assertThat(simpleUserTaskInstanceDto.getId(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getActivityId(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getActivityInstanceId(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getStartDate(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getEndDate(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getDueDate(), is(nullValue()));
-        assertThat(simpleUserTaskInstanceDto.getClaimDate(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getDeleteReason(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getTotalDurationInMs(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getIdleDurationInMs(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getWorkDurationInMs(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getAssigneeOperations(), is(notNullValue()));
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(processInstanceDto -> {
+        assertThat(processInstanceDto.getUserTasks()).hasSize(2);
+        assertThat(
+          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
+          .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
+        processInstanceDto.getUserTasks().forEach(simpleUserTaskInstanceDto -> {
+          assertThat(simpleUserTaskInstanceDto.getId()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getActivityId()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getActivityInstanceId()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getStartDate()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getEndDate()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getDueDate()).isNull();
+          assertThat(simpleUserTaskInstanceDto.getClaimDate()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getDeleteReason()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getTotalDurationInMs()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getIdleDurationInMs()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getWorkDurationInMs()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getAssigneeOperations()).isNotNull();
+        });
       });
-    }
   }
 
   @Test
-  public void runningUserTaskIsImported() throws IOException {
+  public void runningUserTaskIsImported() {
     // given (two user tasks, one is started)
     deployAndStartTwoUserTasksProcess();
 
@@ -78,29 +78,24 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
-      );
-      assertThat(processInstanceDto.getUserTasks().size(), is(1));
-      assertThat(
-        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()),
-        containsInAnyOrder(USER_TASK_1)
-      );
-
-      processInstanceDto.getUserTasks().forEach(userTask -> {
-        assertThat(userTask.getId(), is(notNullValue()));
-        assertThat(userTask.getActivityId(), is(notNullValue()));
-        assertThat(userTask.getActivityInstanceId(), is(notNullValue()));
-        assertThat(userTask.getStartDate(), is(notNullValue()));
-        assertThat(userTask.getEndDate(), is(nullValue()));
-        assertThat(userTask.getClaimDate(), is(nullValue()));
-        assertThat(userTask.getTotalDurationInMs(), is(nullValue()));
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(processInstanceDto -> {
+        assertThat(processInstanceDto.getUserTasks()).hasSize(1);
+        assertThat(
+          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
+          .containsExactlyInAnyOrder(USER_TASK_1);
+        processInstanceDto.getUserTasks().forEach(userTask -> {
+          assertThat(userTask.getId()).isNotNull();
+          assertThat(userTask.getActivityId()).isNotNull();
+          assertThat(userTask.getActivityInstanceId()).isNotNull();
+          assertThat(userTask.getStartDate()).isNotNull();
+          assertThat(userTask.getEndDate()).isNull();
+          assertThat(userTask.getClaimDate()).isNull();
+          assertThat(userTask.getTotalDurationInMs()).isNull();
+        });
       });
-    }
   }
 
   @Test
@@ -114,29 +109,74 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
-      );
-      assertThat(processInstanceDto.getUserTasks().size(), is(2));
-      assertThat(
-        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()),
-        containsInAnyOrder(USER_TASK_1, USER_TASK_2)
-      );
-
-      processInstanceDto.getUserTasks().forEach(userTask -> {
-        if (USER_TASK_1.equals(userTask.getActivityId())) {
-          assertThat(userTask.getEndDate(), is(notNullValue()));
-          assertThat(userTask.getClaimDate(), is(notNullValue()));
-        } else {
-          assertThat(userTask.getEndDate(), is(nullValue()));
-          assertThat(userTask.getClaimDate(), is(nullValue()));
-        }
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(processInstanceDto -> {
+        assertThat(processInstanceDto.getUserTasks()).hasSize(2);
+        assertThat(
+          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
+          .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
+        processInstanceDto.getUserTasks().forEach(userTask -> {
+          if (USER_TASK_1.equals(userTask.getActivityId())) {
+            assertThat(userTask.getEndDate()).isNotNull();
+            assertThat(userTask.getClaimDate()).isNotNull();
+          } else {
+            assertThat(userTask.getEndDate()).isNull();
+            assertThat(userTask.getClaimDate()).isNull();
+          }
+        });
       });
-    }
+  }
+
+  @Test
+  public void runningAndCompletedUserTasksAreImported_despiteEsUpdateFailures() {
+    // given
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(getStoredProcessInstances()).isEmpty();
+
+    // given ES update request fails
+    deployAndStartTwoUserTasksProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest userTaskImportMatcher = request()
+      .withPath("/_bulk")
+      .withMethod(POST)
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+        .getIndexNameService()
+        .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_NAME + "\""));
+    esMockServer
+      .when(userTaskImportMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then expected user tasks are stored on next successful update
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(processInstanceDto -> {
+        assertThat(processInstanceDto.getUserTasks()).hasSize(2);
+        assertThat(
+          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
+          .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
+        processInstanceDto.getUserTasks().forEach(userTask -> {
+          if (USER_TASK_1.equals(userTask.getActivityId())) {
+            assertThat(userTask.getEndDate()).isNotNull();
+            assertThat(userTask.getClaimDate()).isNotNull();
+          } else {
+            assertThat(userTask.getEndDate()).isNull();
+            assertThat(userTask.getClaimDate()).isNull();
+          }
+        });
+      });
+    esMockServer.verify(userTaskImportMatcher);
   }
 
   @Test
@@ -151,23 +191,18 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
-      );
-      assertThat(processInstanceDto.getUserTasks().size(), is(1));
-      assertThat(
-        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()),
-        containsInAnyOrder(USER_TASK_1)
-      );
-      assertThat(
-        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getId).collect(toList()),
-        not(containsInAnyOrder(independentUserTaskId))
-      );
-    }
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(processInstanceDto -> {
+        assertThat(processInstanceDto.getUserTasks()).hasSize(1);
+        assertThat(
+          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
+          .containsExactlyInAnyOrder(USER_TASK_1);
+        assertThat(
+          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getId).collect(toList()))
+          .doesNotContain(independentUserTaskId.toString());
+      });
   }
 
   @Test
@@ -180,13 +215,11 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(0L));
+    assertThat(getStoredProcessInstances()).isEmpty();
   }
 
   @Test
-  public void noSideEffectsByOtherProcessInstanceUserTasks() throws IOException {
+  public void noSideEffectsByOtherProcessInstanceUserTasks() {
     // given
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -201,33 +234,28 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(2L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
-      );
-      if (persistedProcessInstanceDto.getProcessInstanceId().equals(processInstanceDto1.getId())) {
-        assertThat(persistedProcessInstanceDto.getUserTasks().size(), is(2));
-        assertThat(
-          persistedProcessInstanceDto.getUserTasks()
-            .stream()
-            .map(UserTaskInstanceDto::getActivityId)
-            .collect(toList()),
-          containsInAnyOrder(USER_TASK_1, USER_TASK_2)
-        );
-      } else {
-        assertThat(persistedProcessInstanceDto.getUserTasks().size(), is(1));
-        assertThat(
-          persistedProcessInstanceDto.getUserTasks()
-            .stream()
-            .map(UserTaskInstanceDto::getActivityId)
-            .collect(toList()),
-          containsInAnyOrder(USER_TASK_1)
-        );
-      }
-    }
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(2)
+      .allSatisfy(persistedProcessInstanceDto -> {
+        if (persistedProcessInstanceDto.getProcessInstanceId().equals(processInstanceDto1.getId())) {
+          assertThat(persistedProcessInstanceDto.getUserTasks()).hasSize(2);
+          assertThat(
+            persistedProcessInstanceDto.getUserTasks()
+              .stream()
+              .map(UserTaskInstanceDto::getActivityId)
+              .collect(toList()))
+            .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
+        } else {
+          assertThat(persistedProcessInstanceDto.getUserTasks()).hasSize(1);
+          assertThat(
+            persistedProcessInstanceDto.getUserTasks()
+              .stream()
+              .map(UserTaskInstanceDto::getActivityId)
+              .collect(toList()))
+            .containsExactlyInAnyOrder(USER_TASK_1);
+        }
+      });
   }
 
   @Test
@@ -241,13 +269,11 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(0L));
+    assertThat(getStoredProcessInstances()).isEmpty();
   }
 
   @Test
-  public void defaultIdleTimeOnNoClaimOperation() throws IOException {
+  public void defaultIdleTimeOnNoClaimOperation() {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
@@ -257,24 +283,19 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(),
-        ProcessInstanceDto.class
-      );
-
-      persistedProcessInstanceDto.getUserTasks().forEach(userTask -> {
-        if (USER_TASK_1.equals(userTask.getActivityId())) {
-          assertThat(userTask.getIdleDurationInMs(), is(0L));
-        } else if (USER_TASK_2.equals(userTask.getActivityId())) {
-          assertThat(userTask.getIdleDurationInMs(), is(nullValue()));
-        }
-        assertThat(userTask.getClaimDate(), is(nullValue()));
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(persistedProcessInstanceDto -> {
+        persistedProcessInstanceDto.getUserTasks().forEach(userTask -> {
+          if (USER_TASK_1.equals(userTask.getActivityId())) {
+            assertThat(userTask.getIdleDurationInMs()).isEqualTo(0L);
+          } else if (USER_TASK_2.equals(userTask.getActivityId())) {
+            assertThat(userTask.getIdleDurationInMs()).isNull();
+          }
+          assertThat(userTask.getClaimDate()).isNull();
+        });
       });
-    }
   }
 
   @Test
@@ -290,17 +311,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(),
-        ProcessInstanceDto.class
-      );
-      persistedProcessInstanceDto.getUserTasks()
-        .forEach(userTask -> assertThat(userTask.getIdleDurationInMs(), is(idleDuration)));
-    }
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(persistedProcessInstanceDto -> {
+        persistedProcessInstanceDto.getUserTasks()
+          .forEach(userTask -> assertThat(userTask.getIdleDurationInMs()).isEqualTo(idleDuration));
+      });
   }
 
   @Test
@@ -314,17 +331,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(),
-        ProcessInstanceDto.class
-      );
-      persistedProcessInstanceDto.getUserTasks()
-        .forEach(userTask -> assertThat(userTask.getWorkDurationInMs(), is(userTask.getTotalDurationInMs())));
-    }
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(persistedProcessInstanceDto -> {
+        persistedProcessInstanceDto.getUserTasks()
+          .forEach(userTask -> assertThat(userTask.getWorkDurationInMs()).isEqualTo(userTask.getTotalDurationInMs()));
+      });
   }
 
   @Test
@@ -341,17 +354,26 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(persistedProcessInstanceDto -> {
+        persistedProcessInstanceDto.getUserTasks()
+          .forEach(userTask -> assertThat(userTask.getWorkDurationInMs()).isEqualTo(workDuration));
+      });
+  }
+
+  @SneakyThrows
+  private List<ProcessInstanceDto> getStoredProcessInstances() {
+    SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    List<ProcessInstanceDto> storedInstances = new ArrayList<>();
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(),
-        ProcessInstanceDto.class
-      );
-      persistedProcessInstanceDto.getUserTasks()
-        .forEach(userTask -> assertThat(userTask.getWorkDurationInMs(), is(workDuration)));
+      storedInstances.add(objectMapper.readValue(
+        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
+      ));
     }
+    return storedInstances;
   }
 
 }

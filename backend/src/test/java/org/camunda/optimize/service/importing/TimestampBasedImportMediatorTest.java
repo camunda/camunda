@@ -51,9 +51,6 @@ public class TimestampBasedImportMediatorTest {
   protected ImportService<HistoricActivityInstanceEngineDto> importService;
 
   @Captor
-  protected ArgumentCaptor<Runnable> callbackLambdaCaptor;
-
-  @Captor
   private ArgumentCaptor<List<HistoricActivityInstanceEngineDto>> importEntitiesCaptor;
 
   @Mock

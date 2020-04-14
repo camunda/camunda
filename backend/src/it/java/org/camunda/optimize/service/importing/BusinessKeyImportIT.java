@@ -12,12 +12,19 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.StringBody.subString;
 
 public class BusinessKeyImportIT extends AbstractImportIT {
 
@@ -58,7 +65,69 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void businessKeyNotImportedWhenFeatureDisabled() throws JsonProcessingException {
+  public void importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws JsonProcessingException {
+    // given
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(getAllStoredBusinessKeys()).isEmpty();
+
+    // when updates to ES fail
+    ProcessInstanceEngineDto runningProcess = deployAndStartUserTaskProcess();
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest businessKeyImportMatcher = request()
+      .withPath("/_bulk")
+      .withMethod(POST)
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+        .getIndexNameService()
+        .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
+    esMockServer
+      .when(businessKeyImportMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then the key gets stored after successful write
+    assertThat(getAllStoredBusinessKeys())
+      .containsExactlyInAnyOrder(new BusinessKeyDto(runningProcess.getId(), runningProcess.getBusinessKey()));
+    esMockServer.verify(businessKeyImportMatcher);
+  }
+
+  @Test
+  public void importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws JsonProcessingException {
+    // given
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(getAllStoredBusinessKeys()).isEmpty();
+
+    // when updates to ES fail
+    ProcessInstanceEngineDto process = deployAndStartUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks(process.getId());
+
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final HttpRequest businessKeyImportMatcher = request()
+      .withPath("/_bulk")
+      .withMethod(POST)
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+        .getIndexNameService()
+        .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
+    esMockServer
+      .when(businessKeyImportMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then the key gets stored after successful write
+    assertThat(getAllStoredBusinessKeys())
+      .containsExactlyInAnyOrder(new BusinessKeyDto(process.getId(), process.getBusinessKey()));
+    esMockServer.verify(businessKeyImportMatcher);
+  }
+
+  @Test
+  public void businessKeyNotImported_whenFeatureDisabled() throws JsonProcessingException {
     //given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
 
