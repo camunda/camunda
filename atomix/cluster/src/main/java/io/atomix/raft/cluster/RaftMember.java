@@ -188,8 +188,5 @@ public interface RaftMember {
      * be elected leaders.
      */
     ACTIVE,
-
-    /** Bootstraps the partition cluster, which means it tries directly to become candidate. */
-    BOOTSTRAP,
   }
 }

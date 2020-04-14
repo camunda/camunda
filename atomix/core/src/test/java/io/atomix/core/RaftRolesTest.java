@@ -18,7 +18,6 @@ package io.atomix.core;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
@@ -30,7 +29,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -257,140 +255,6 @@ public final class RaftRolesTest extends AbstractAtomixTest {
 
     assertEquals(3, leaderRoles.size());
     assertEquals(6, followerRoles.size());
-  }
-
-  @Test
-  public void testAtomixBootstrapPartitions() throws Exception {
-    // given
-    // Partitions \ Nodes
-    //      \   0  1  2
-    //    0     L  F  F
-    //    1     F  L  F
-    //    2     F  F  L
-    final CountDownLatch latch = new CountDownLatch(3);
-    final List<Map<Integer, Role>> nodeRoles = new CopyOnWriteArrayList<>();
-    nodeRoles.add(new ConcurrentHashMap<>());
-    nodeRoles.add(new ConcurrentHashMap<>());
-    nodeRoles.add(new ConcurrentHashMap<>());
-
-    final List<Integer> members = Arrays.asList(1, 2, 3);
-
-    final int firstNodeId = 1;
-    final CompletableFuture<Atomix> nodeOneFuture =
-        startAtomixAndCollectNodeRoles(firstNodeId, members, nodeRoles, latch);
-
-    final int secondNodeId = 2;
-    final CompletableFuture<Atomix> nodeTwoFuture =
-        startAtomixAndCollectNodeRoles(secondNodeId, members, nodeRoles, latch);
-
-    final int thirdNodeId = 3;
-    final CompletableFuture<Atomix> nodeThreeFuture =
-        startAtomixAndCollectNodeRoles(thirdNodeId, members, nodeRoles, latch);
-
-    // then
-    CompletableFuture.allOf(nodeOneFuture, nodeTwoFuture, nodeThreeFuture).join();
-    latch.await(15, TimeUnit.SECONDS);
-
-    final Map<Integer, RaftServer.Role> expectedNodeOneRoles = new HashMap<>();
-    expectedNodeOneRoles.put(1, Role.LEADER);
-    expectedNodeOneRoles.put(2, Role.FOLLOWER);
-    expectedNodeOneRoles.put(3, Role.FOLLOWER);
-    assertEquals(expectedNodeOneRoles, nodeRoles.get(0));
-
-    final Map<Integer, RaftServer.Role> expectedNodeTwoRoles = new HashMap<>();
-    expectedNodeTwoRoles.put(1, Role.FOLLOWER);
-    expectedNodeTwoRoles.put(2, Role.LEADER);
-    expectedNodeTwoRoles.put(3, Role.FOLLOWER);
-    assertEquals(expectedNodeTwoRoles, nodeRoles.get(1));
-
-    final Map<Integer, RaftServer.Role> expectedNodeThreeRoles = new HashMap<>();
-    expectedNodeThreeRoles.put(1, Role.FOLLOWER);
-    expectedNodeThreeRoles.put(2, Role.FOLLOWER);
-    expectedNodeThreeRoles.put(3, Role.LEADER);
-    assertEquals(expectedNodeThreeRoles, nodeRoles.get(2));
-  }
-
-  @Test
-  public void testAtomixBootstrapPartitionsAndRestartingNode() throws Exception {
-    // given
-    // Partitions \ Nodes
-    //      \   0  1  2
-    //    0     L  F  F
-    //    1     F  L  F
-    //    2     F  F  L
-    final CountDownLatch latch = new CountDownLatch(3);
-    final List<Map<Integer, RaftServer.Role>> nodeRoles = new ArrayList<>();
-    nodeRoles.add(new HashMap<>());
-    nodeRoles.add(new HashMap<>());
-    nodeRoles.add(new HashMap<>());
-
-    final List<Integer> members = Arrays.asList(1, 2, 3);
-
-    final int firstNodeId = 1;
-    final CompletableFuture<Atomix> nodeOneFuture =
-        startAtomixAndCollectNodeRoles(firstNodeId, members, nodeRoles, latch);
-
-    final int secondNodeId = 2;
-    final CompletableFuture<Atomix> nodeTwoFuture =
-        startAtomixAndCollectNodeRoles(secondNodeId, members, nodeRoles, latch);
-
-    final int thirdNodeId = 3;
-    final CompletableFuture<Atomix> nodeThreeFuture =
-        startAtomixAndCollectNodeRoles(thirdNodeId, members, nodeRoles, latch);
-
-    // then
-    CompletableFuture.allOf(nodeOneFuture, nodeTwoFuture, nodeThreeFuture).join();
-    latch.await(15_000, TimeUnit.MILLISECONDS);
-
-    // when
-    final Atomix atomix = nodeTwoFuture.get();
-    atomix.stop().join();
-    nodeRoles.get(1).clear();
-    final CountDownLatch newLatch = new CountDownLatch(1);
-    final CompletableFuture<Atomix> nodeTwoSecondFuture =
-        startAtomixAndCollectNodeRoles(secondNodeId, members, nodeRoles, newLatch);
-
-    nodeTwoSecondFuture.join();
-    newLatch.await(5_000, TimeUnit.MILLISECONDS);
-
-    // then
-    final long nodeOneLeaderCount =
-        nodeRoles.get(0).values().stream().filter(r -> r == Role.LEADER).count();
-    final long nodeTwoLeaderCount =
-        nodeRoles.get(1).values().stream().filter(r -> r == Role.LEADER).count();
-    final long nodeThreeLeaderCount =
-        nodeRoles.get(2).values().stream().filter(r -> r == Role.LEADER).count();
-
-    assertTrue(nodeOneLeaderCount == 2 || nodeThreeLeaderCount == 2);
-    assertEquals(0, nodeTwoLeaderCount);
-
-    final Map<Integer, RaftServer.Role> expectedNodeTwoRoles = new HashMap<>();
-    expectedNodeTwoRoles.put(1, Role.FOLLOWER);
-    expectedNodeTwoRoles.put(2, Role.FOLLOWER);
-    expectedNodeTwoRoles.put(3, Role.FOLLOWER);
-    assertEquals(expectedNodeTwoRoles, nodeRoles.get(1));
-  }
-
-  private CompletableFuture<Atomix> startAtomixAndCollectNodeRoles(
-      final int nodeId,
-      final List<Integer> members,
-      final List<Map<Integer, Role>> nodeRoles,
-      final CountDownLatch latch) {
-    return startAtomixWithPartitionConsumer(
-        nodeId,
-        3,
-        members,
-        partition -> {
-          final Map<Integer, RaftServer.Role> roleMap = nodeRoles.get(nodeId - 1);
-          final RaftPartition raftPartition = (RaftPartition) partition;
-          raftPartition.addRoleChangeListener(
-              (role) -> {
-                roleMap.put(partition.id().id(), role);
-                if (roleMap.size() >= 3) {
-                  latch.countDown();
-                }
-              });
-        });
   }
 
   private CompletableFuture<Atomix> startSingleNodeSinglePartitionWithPartitionConsumer(

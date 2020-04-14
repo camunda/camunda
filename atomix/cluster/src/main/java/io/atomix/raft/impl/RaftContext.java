@@ -626,11 +626,6 @@ public class RaftContext implements AutoCloseable {
           transition(RaftServer.Role.FOLLOWER);
         }
         break;
-      case BOOTSTRAP:
-        if (!(role instanceof ActiveRole)) {
-          transition(Role.CANDIDATE);
-        }
-        break;
       case PROMOTABLE:
         if (this.role.role() != RaftServer.Role.PROMOTABLE) {
           transition(RaftServer.Role.PROMOTABLE);
