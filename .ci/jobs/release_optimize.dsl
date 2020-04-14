@@ -20,8 +20,8 @@ pipelineJob('camunda-optimize-release') {
   }
 
   parameters {
-    stringParam('RELEASE_VERSION', '2.3.0', 'Version to release. Applied to pom.xml and Git tag.')
-    stringParam('DEVELOPMENT_VERSION', '2.4.0-SNAPSHOT', 'Next development version.')
+    stringParam('RELEASE_VERSION', '0.0.0', 'Version to release. Applied to pom.xml and Git tag.')
+    stringParam('DEVELOPMENT_VERSION', '0.1.0-SNAPSHOT', 'Next development version.')
     stringParam('BRANCH', 'master', 'The branch used for the release checkout.')
     booleanParam('PUSH_CHANGES', true, 'Should the changes be pushed to remote locations.')
     booleanParam('RELEASE_EXAMPLE', true, 'Should an example repository be released.')

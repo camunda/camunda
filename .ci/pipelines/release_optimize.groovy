@@ -276,8 +276,8 @@ pipeline {
   }
 
   parameters {
-    string(name: 'RELEASE_VERSION', defaultValue: '3.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
-    string(name: 'DEVELOPMENT_VERSION', defaultValue: '3.1.0-SNAPSHOT', description: 'Next development version.')
+    string(name: 'RELEASE_VERSION', defaultValue: '0.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
+    string(name: 'DEVELOPMENT_VERSION', defaultValue: '0.1.0-SNAPSHOT', description: 'Next development version.')
     string(name: 'BRANCH', defaultValue: 'master', description: 'The branch used for the release checkout.')
     booleanParam(name: 'PUSH_CHANGES', defaultValue: false, description: 'Should the changes be pushed to remote locations.')
   }
