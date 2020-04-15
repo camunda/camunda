@@ -114,8 +114,8 @@ pipeline {
                 apk add --no-cache jq gettext
                 # kubectl
                 gcloud components install kubectl --quiet
-                
-                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${REGISTRY_USR}" "${REGISTRY_PSW}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "false"
+
+                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "false"
             """)
         }
       }
@@ -127,7 +127,7 @@ pipeline {
                 bash .ci/podSpecs/performanceTests/wait-for-import-to-finish.sh "${NAMESPACE}"
 
                 curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
-                
+
                 # assert expected counts
                 # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
                 NUMBER_OF_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_count' | jq '.count') || true
@@ -135,7 +135,7 @@ pipeline {
                 NUMBER_OF_USER_TASKS=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"userTasks": {"nested": {"path": "userTasks"},"aggs": {"user_task_Count": {"value_count": {"field": "userTasks.id"}}}}}}' | jq '.aggregations.userTasks.doc_count') || true
                 NUMBER_OF_VARIABLES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0, "aggs": {"variables": {"nested": { "path": "variables" },  "aggs": { "variable_count": { "value_count": { "field": "variables.id" } } } } } }' | jq '.aggregations.variables.doc_count') || true
                 NUMBER_OF_DECISION_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-decision-instance/_count' | jq '.count') || true
-               
+
                 # note: each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
                 # a final if block checks if there was an error and will let the script fail
                 export EXPECTED_NUMBER_OF_PROCESS_INSTANCES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_process_instances | cut -f2 -d':'`
@@ -143,7 +143,7 @@ pipeline {
                 export EXPECTED_NUMBER_OF_VARIABLES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_variables | cut -f2 -d':'`
                 export EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_activity_instances | cut -f2 -d':'`
                 export EXPECTED_NUMBER_OF_DECISION_INSTANCES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_decision_instances | cut -f2 -d':'`
-                
+
                 echo "NUMBER_OF_PROCESS_INSTANCES"
                 test "\$NUMBER_OF_PROCESS_INSTANCES" = "\${EXPECTED_NUMBER_OF_PROCESS_INSTANCES}" || error=true
                 echo "NUMBER_OF_ACTIVITY_INSTANCES"
@@ -153,11 +153,11 @@ pipeline {
                 echo "NUMBER_OF_VARIABLES"
                 test "\$NUMBER_OF_VARIABLES" = "\${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
                 echo "NUMBER_OF_DECISION_INSTANCES"
-                test "\$NUMBER_OF_DECISION_INSTANCES" = "\${EXPECTED_NUMBER_OF_DECISION_INSTANCES}" || error=true 
+                test "\$NUMBER_OF_DECISION_INSTANCES" = "\${EXPECTED_NUMBER_OF_DECISION_INSTANCES}" || error=true
 
                 #Fail the build if there was an error
                 if [ \$error ]
-                then 
+                then
                   exit -1
                 fi
             """)

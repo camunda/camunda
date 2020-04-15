@@ -64,10 +64,10 @@ spec:
           resources:
             # Note: high cpu request here to ensure this pod is deployed on a dedicated node, with an exclusive ssd
             # this is 30 - (cpu of elasticsearch container)
-            limits:
+            requests:
               cpu: 14
               memory: 1Gi
-            requests:
+            limits:
               cpu: 14
               memory: 1Gi
           volumeMounts:
@@ -102,11 +102,11 @@ spec:
             - name: bootstrap.memory_lock
               value: "true"
           resources:
-            limits:
-              cpu: 16
             requests:
               cpu: 16
-              memory: "16Gi"
+              memory: 16Gi
+            limits:
+              cpu: 16
           ports:
             - containerPort: 9200
               name: http

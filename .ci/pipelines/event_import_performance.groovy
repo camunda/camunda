@@ -115,8 +115,8 @@ pipeline {
                 apk add --no-cache jq gettext
                 # kubectl
                 gcloud components install kubectl --quiet
-                
-                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${REGISTRY_USR}" "${REGISTRY_PSW}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "${EVENT_IMPORT_ENABLED}"
+
+                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "${EVENT_IMPORT_ENABLED}"
             """)
         }
       }
@@ -128,12 +128,12 @@ pipeline {
                 bash .ci/podSpecs/performanceTests/wait-for-import-to-finish.sh "${NAMESPACE}"
 
                 curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
-                
+
                 # assert expected counts
                 # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
                 NUMBER_OF_ACTIVITY_EVENTS=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-camunda-activity-*/_count' | jq '.count') || true
                 NUMBER_OF_VARIABLE_UPDATES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-variable-update-instance*/_count' | jq '.count') || true
-               
+
                 # note: each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
                 # a final if block checks if there was an error and will let the script fail
                 export EXPECTED_NUMBER_OF_VARIABLES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_variables | cut -f2 -d':'`
@@ -148,7 +148,7 @@ pipeline {
 
                 #Fail the build if there was an error
                 if [ \$error ]
-                then 
+                then
                   exit -1
                 fi
             """)
@@ -168,7 +168,7 @@ pipeline {
                 # assert expected counts
                 NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-event-process-instance-*/_count' | jq '.count') || true
                 EXPECTED_NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES=\$(curl -s -H 'Content-Type: application/json' -XPOST 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_doc/_count' -d '{"query":{"bool":{"must":[{"term":{"processDefinitionKey":"invoice"}}],"must_not":[],"should":[]}}}' | jq '.count') || true
-                
+
                 # note: each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
                 # a final if block checks if there was an error and will let the script fail
                 echo "NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES"
@@ -178,10 +178,10 @@ pipeline {
 
                 # Fail the build if there was an error
                 if [ \$error ]
-                then 
+                then
                   exit -1
                 fi
-                
+
                 # store the number of activity event processes for reuse
                 echo "\$NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES" > numberOfActivityEventProcessInstances.txt
             """)
@@ -197,7 +197,7 @@ pipeline {
 
                 # ingest events
                 bash .ci/pipelines/event_import_performance/ingestEvents.sh ${NAMESPACE} .ci/pipelines/event_import_performance/eventTemplates ${EXTERNAL_EVENT_COUNT} secret
-                
+
                 curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
                 # assert expected counts
                 # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
@@ -210,7 +210,7 @@ pipeline {
 
                 #Fail the build if there was an error
                 if [ \$error ]
-                then 
+                then
                   exit -1
                 fi
             """)
@@ -223,9 +223,9 @@ pipeline {
           sh ("""
                 # make sure that on piping we fail if any command of the pipe failed
                 set -o pipefail
-                
+
                 bash .ci/pipelines/event_import_performance/create-and-publish-event-process.sh ${NAMESPACE} .ci/pipelines/event_import_performance/externalInvoiceEventProcessMapping.json
-                
+
                 curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
                 # assert expected counts
                 # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
@@ -233,7 +233,7 @@ pipeline {
                 # this reads the previously saved count of activity event processInstances
                 NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES=\$(cat numberOfActivityEventProcessInstances.txt)
                 EXPECTED_NUMBER_OF_EVENT_PROCESS_INSTANCES=\$((NUMBER_OF_ACTIVITY_EVENT_PROCESS_INSTANCES+${EXTERNAL_EVENT_COUNT}/4))
-                
+
                 echo "NUMBER_OF_EVENT_PROCESS_INSTANCES"
                 test "\$NUMBER_OF_EVENT_PROCESS_INSTANCES" = "\$EXPECTED_NUMBER_OF_EVENT_PROCESS_INSTANCES" || error=true
 
@@ -241,7 +241,7 @@ pipeline {
 
                 #Fail the build if there was an error
                 if [ \$error ]
-                then 
+                then
                   exit -1
                 fi
             """)

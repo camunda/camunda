@@ -120,8 +120,8 @@ pipeline {
                 apk add --no-cache jq gettext
                 # kubectl
                 gcloud components install kubectl --quiet
-                
-                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${REGISTRY_USR}" "${REGISTRY_PSW}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "30s" "false"
+
+                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "30s" "false"
             """)
         }
       }
