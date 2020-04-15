@@ -622,6 +622,7 @@ public class RaftContext implements AutoCloseable {
   public void transition(final RaftMember.Type type) {
     switch (type) {
       case ACTIVE:
+      case BOOTSTRAP:
         if (!(role instanceof ActiveRole)) {
           transition(RaftServer.Role.FOLLOWER);
         }

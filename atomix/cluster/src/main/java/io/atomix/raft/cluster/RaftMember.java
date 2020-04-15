@@ -188,5 +188,15 @@ public interface RaftMember {
      * be elected leaders.
      */
     ACTIVE,
+
+    /**
+     * <b>DEPRECATED</b>
+     *
+     * <p>We need to keep this type to be backwards compatible
+     *
+     * <p>Bootstraps the partition cluster, which means it tries directly to become candidate.
+     */
+    @Deprecated
+    BOOTSTRAP,
   }
 }

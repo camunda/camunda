@@ -153,6 +153,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       // Create a new configuration and store it on disk to ensure the cluster can fall back to the
       // configuration.
       configure(new Configuration(0, 0, member.getLastUpdated().toEpochMilli(), activeMembers));
+    } else if (member.getType() == Type.BOOTSTRAP) {
+      member.setType(
+          Type.ACTIVE); // bootstrap is deprecated, but might be persisted on previous started
+      // cluster
     }
     return join();
   }
@@ -381,6 +385,11 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
             () -> {
               // Transition the server to the appropriate state for the local member type.
               raft.transition(member.getType());
+              if (member.getType() == Type.BOOTSTRAP) {
+                // RaftMember.Type.BOOTSTRAP is deprecated, but might be persisted on a previous
+                // started cluster
+                member.setType(Type.ACTIVE);
+              }
 
               // Attempt to join the cluster. If the local member is ACTIVE then failing to join the
               // cluster
