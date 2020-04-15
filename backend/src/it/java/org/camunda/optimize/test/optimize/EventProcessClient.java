@@ -169,11 +169,7 @@ public class EventProcessClient {
     final String name,
     final String xml) {
     List<EventSourceEntryDto> externalEventSource = new ArrayList<>();
-    externalEventSource.add(EventSourceEntryDto.builder()
-                              .id(IdGenerator.getNextId())
-                              .type(EventSourceType.EXTERNAL)
-                              .eventScope(EventScopeType.ALL)
-                              .build());
+    externalEventSource.add(createExternalEventSourceEntry());
     return buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
       flowNodeEventMappingsDto,
       name,
@@ -203,6 +199,13 @@ public class EventProcessClient {
 
   public OptimizeRequestExecutor createCleanupEventProcessMappingsRequest(final EventMappingCleanupRequestDto cleanupRequestDto) {
     return getRequestExecutor().buildCleanupEventProcessMappingRequest(cleanupRequestDto);
+  }
+
+  public static EventSourceEntryDto createExternalEventSourceEntry() {
+    return EventSourceEntryDto.builder()
+      .type(EventSourceType.EXTERNAL)
+      .eventScope(EventScopeType.ALL)
+      .build();
   }
 
   public static EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey) {

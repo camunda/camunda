@@ -40,6 +40,10 @@ public class EventProcessDefinitionService {
     return eventProcessDefinitionReader.getAllEventProcessDefinitionsOmitXml();
   }
 
+  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKey(final String definitionKey) {
+    return eventProcessDefinitionReader.getEventProcessDefinitionByKeyOmitXml(definitionKey);
+  }
+
   public boolean deleteEventProcessDefinition(final String eventProcessDefinitionId) {
     return eventProcessDefinitionWriter.deleteEventProcessDefinition(eventProcessDefinitionId);
   }

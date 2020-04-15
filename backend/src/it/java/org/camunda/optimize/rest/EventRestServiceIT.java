@@ -53,6 +53,7 @@ import static org.camunda.optimize.service.events.CamundaEventService.applyCamun
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
 
 public class EventRestServiceIT extends AbstractIT {
 
@@ -376,7 +377,7 @@ public class EventRestServiceIT extends AbstractIT {
     List<EventCountDto> eventCountDtos =
       createPostEventCountsRequest(
         ImmutableList.of(
-          createExternalEventSourceEntryDto(),
+          createExternalEventSourceEntry(),
           createCamundaEventSourceEntryDto(definitionKey, EventScopeType.ALL, ImmutableList.of("1"))
         )
       ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
@@ -416,7 +417,7 @@ public class EventRestServiceIT extends AbstractIT {
     final EventCountRequestDto countRequestDto = EventCountRequestDto.builder()
       .eventSources(
         ImmutableList.of(
-          createExternalEventSourceEntryDto(),
+          createExternalEventSourceEntry(),
           createCamundaEventSourceEntryDto(definitionKey, EventScopeType.ALL, ImmutableList.of("1"))
         )
       )
@@ -1086,7 +1087,7 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   private List<EventSourceEntryDto> createEventSourcesWithExternalEventsOnly() {
-    return Collections.singletonList(createExternalEventSourceEntryDto());
+    return Collections.singletonList(createExternalEventSourceEntry());
   }
 
   private OptimizeRequestExecutor createPostEventCountsRequestCamundaSourceOnly(final String definitionKey,
@@ -1107,10 +1108,6 @@ public class EventRestServiceIT extends AbstractIT {
                                                                final EventCountRequestDto eventCountSuggestionsRequestDto) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildPostEventCountRequest(eventCountRequestDto, eventCountSuggestionsRequestDto);
-  }
-
-  private EventSourceEntryDto createExternalEventSourceEntryDto() {
-    return EventSourceEntryDto.builder().type(EventSourceType.EXTERNAL).build();
   }
 
   private EventSourceEntryDto createCamundaEventSourceEntryDto(final String definitionKey,

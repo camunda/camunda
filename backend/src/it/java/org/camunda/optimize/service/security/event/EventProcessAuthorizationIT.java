@@ -10,9 +10,7 @@ import com.google.common.collect.Lists;
 import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -25,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.EventBasedProcessRestServiceIT.createProcessDefinitionXml;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -91,10 +88,8 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
       createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
     );
 
-    final EventSourceEntryDto eventSourceEntry1 =
-      createSimpleCamundaEventSourceEntry(definitionKey1);
-    final EventSourceEntryDto eventSourceEntry2 =
-      createSimpleCamundaEventSourceEntry(definitionKey2);
+    final EventSourceEntryDto eventSourceEntry1 = createCamundaEventSourceEntry(definitionKey1);
+    final EventSourceEntryDto eventSourceEntry2 = createCamundaEventSourceEntry(definitionKey2);
 
     final EventProcessMappingDto eventProcessMappingDto =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
@@ -152,8 +147,8 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
       createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
     );
 
-    final EventSourceEntryDto eventSourceEntry1 = createSimpleCamundaEventSourceEntry(definitionKey1);
-    final EventSourceEntryDto eventSourceEntry2 = createSimpleCamundaEventSourceEntry(definitionKey2);
+    final EventSourceEntryDto eventSourceEntry1 = createCamundaEventSourceEntry(definitionKey1);
+    final EventSourceEntryDto eventSourceEntry2 = createCamundaEventSourceEntry(definitionKey2);
 
     final EventProcessMappingDto eventProcessMappingDto1 =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
@@ -245,8 +240,8 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
       EventMappingCleanupRequestDto.builder()
         .xml("")
         .eventSources(ImmutableList.of(
-          createCamundaEventSourceEntry(definitionKey1, ImmutableList.of(ALL_VERSIONS)),
-          createCamundaEventSourceEntry(definitionKey2, ImmutableList.of(ALL_VERSIONS))
+          createCamundaEventSourceEntry(definitionKey1),
+          createCamundaEventSourceEntry(definitionKey2)
         ))
         .build()
     ).execute();
@@ -255,14 +250,13 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
-  private EventSourceEntryDto createCamundaEventSourceEntry(final String processDefinitionKey,
-                                                            final List<String> versions) {
-    return EventSourceEntryDto.builder()
-      .type(EventSourceType.CAMUNDA)
-      .processDefinitionKey(processDefinitionKey)
-      .versions(versions)
-      .tracedByBusinessKey(true)
-      .eventScope(EventScopeType.ALL)
-      .build();
+  private EventSourceEntryDto createCamundaEventSourceEntry(final String processDefinitionKey) {
+    elasticSearchIntegrationTestExtension.addProcessDefinitionToElasticsearch(
+      processDefinitionKey,
+      null,
+      "1"
+    );
+
+    return createSimpleCamundaEventSourceEntry(processDefinitionKey);
   }
 }

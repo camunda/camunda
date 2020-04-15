@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.rest;
 
-import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
@@ -24,10 +24,11 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 
 public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT {
 
@@ -59,8 +60,11 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void createWithCamundaEventSource() {
     // given
-    EventSourceEntryDto eventSourceEntryDto = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
-    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Collections.singletonList(eventSourceEntryDto));
+    EventSourceEntryDto eventSourceEntryDto = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_1
+    );
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Collections.singletonList(
+      eventSourceEntryDto));
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     // when
@@ -81,7 +85,8 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     // given
     List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
     final EventSourceEntryDto externalEventSourceEntry = createExternalEventSourceEntry();
-    final EventSourceEntryDto camundaEventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto camundaEventSourceEntry = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_1);
     eventSourceEntryDtos.add(externalEventSourceEntry);
     eventSourceEntryDtos.add(camundaEventSourceEntry);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
@@ -122,8 +127,12 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void createWithDuplicateCamundaEventSource_fails() {
     // given
-    final EventSourceEntryDto eventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
-    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Arrays.asList(eventSourceEntry, eventSourceEntry));
+    final EventSourceEntryDto eventSourceEntry = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_1);
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Arrays.asList(
+      eventSourceEntry,
+      eventSourceEntry
+    ));
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     // when
@@ -139,8 +148,32 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void createWithMultipleExternalEventSources_fails() {
     // given
-    final EventSourceEntryDto eventSourceEntry = EventSourceEntryDto.builder().type(EventSourceType.EXTERNAL).build();
-    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Arrays.asList(eventSourceEntry, eventSourceEntry));
+    final EventSourceEntryDto eventSourceEntry = createExternalEventSourceEntry();
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Arrays.asList(
+      eventSourceEntry,
+      eventSourceEntry
+    ));
+
+    // when
+    ConflictResponseDto conflictResponseDto = eventProcessClient
+      .createCreateEventProcessMappingRequest(eventProcessMapping)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
+
+    // then
+    assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeConflictException.ERROR_CODE);
+  }
+
+  @Test
+  public void createWithEventProcessEventSources_fails() {
+    // given
+    addEventProcessDefinitionDtoToElasticsearch();
+    final EventSourceEntryDto eventSourceEntry = createSimpleCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_1
+    );
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Arrays.asList(
+      eventSourceEntry
+    ));
 
     // when
     ConflictResponseDto conflictResponseDto = eventProcessClient
@@ -160,7 +193,8 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     eventSourceEntryDtos.add(externalEventSourceEntry);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
 
-    final EventSourceEntryDto camundaEventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto camundaEventSourceEntry = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_1);
     eventProcessMapping.getEventSources().add(camundaEventSourceEntry);
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
@@ -202,7 +236,8 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void updateWithDuplicateCamundaEventSource_fails() {
     // given
-    final EventSourceEntryDto camundaEventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto camundaEventSourceEntry = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_1);
     List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
     eventSourceEntryDtos.add(camundaEventSourceEntry);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
@@ -248,14 +283,39 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   }
 
   @Test
+  public void updateWithEventProcessEventSources_fails() {
+    // given
+    addEventProcessDefinitionDtoToElasticsearch();
+    final EventSourceEntryDto eventProcessEventSource = createSimpleCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_1
+    );
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(new ArrayList<>());
+
+    final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
+
+    // when
+    eventProcessMapping.getEventSources().add(eventProcessEventSource);
+    ConflictResponseDto conflictResponseDto = eventProcessClient
+      .createUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMapping)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
+
+    // then
+    assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeConflictException.ERROR_CODE);
+  }
+
+  @Test
   public void deleteEventSource() {
     // given
     List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
     final EventSourceEntryDto externalEventSourceEntry = createExternalEventSourceEntry();
     eventSourceEntryDtos.add(externalEventSourceEntry);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
-    final EventSourceEntryDto camundaSourceEntry1 = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
-    final EventSourceEntryDto camundaSourceEntry2 = createCamundaEventSourceEntry(PROCESS_DEF_KEY_2);
+
+    final EventSourceEntryDto camundaSourceEntry1 = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto camundaSourceEntry2 = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_2);
     eventProcessMapping.getEventSources().add(camundaSourceEntry1);
     eventProcessMapping.getEventSources().add(camundaSourceEntry2);
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
@@ -276,6 +336,15 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .allSatisfy(eventSourceEntryRestDto -> assertThat(eventSourceEntryRestDto.getId()).isNotBlank());
   }
 
+  private void addEventProcessDefinitionDtoToElasticsearch() {
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      PROCESS_DEF_KEY_1,
+      PROCESS_DEF_KEY_1,
+      "1",
+      Collections.singletonList(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
+    );
+  }
+
   private EventProcessMappingDto createWithEventSourceEntries(final List<EventSourceEntryDto> eventSourceEntries) {
     return eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
       null,
@@ -283,23 +352,6 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       processDefinitionXml,
       eventSourceEntries
     );
-  }
-
-  private EventSourceEntryDto createExternalEventSourceEntry() {
-    return EventSourceEntryDto.builder()
-      .type(EventSourceType.EXTERNAL)
-      .eventScope(EventScopeType.ALL)
-      .build();
-  }
-
-  private EventSourceEntryDto createCamundaEventSourceEntry(final String processDefinitionKey) {
-    return EventSourceEntryDto.builder()
-      .type(EventSourceType.CAMUNDA)
-      .processDefinitionKey(processDefinitionKey)
-      .versions(ImmutableList.of(ALL_VERSIONS))
-      .tracedByBusinessKey(true)
-      .eventScope(EventScopeType.ALL)
-      .build();
   }
 
   private EventSourceEntryRestDto mapToRestDto(final EventSourceEntryDto sourceEntryDto) {
