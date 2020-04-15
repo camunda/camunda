@@ -7,19 +7,11 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ReportEdit from './ReportEdit';
+import {ReportEdit} from './ReportEdit';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {EntityNameForm} from 'components';
-
-jest.mock('react-router-dom', () => {
-  const rest = jest.requireActual('react-router-dom');
-  return {
-    ...rest,
-    withRouter: a => a
-  };
-});
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -45,6 +37,8 @@ const report = {
   data: {
     processDefinitionKey: null,
     configuration: {},
+    view: {proeprty: 'rawData', entity: null},
+    groupBy: {type: 'none', value: null},
     visualization: 'table'
   },
   result: {data: [1, 2, 3]}
@@ -71,27 +65,25 @@ it('should not contain a Control Panel in edit mode for a combined report', () =
     }
   };
 
-  const node = shallow(<ReportEdit {...props} report={{...report, ...combinedReport}} />).dive();
+  const node = shallow(<ReportEdit {...props} report={{...report, ...combinedReport}} />);
 
   expect(node).not.toIncludeText('ControlPanel');
 });
 
 it('should contain a Control Panel in edit mode for a single report', () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   expect(node).toIncludeText('ControlPanel');
 });
 
 it('should contain a decision control panel in edit mode for decision reports', () => {
-  const node = shallow(
-    <ReportEdit {...props} report={{...report, reportType: 'decision'}} />
-  ).dive();
+  const node = shallow(<ReportEdit {...props} report={{...report, reportType: 'decision'}} />);
 
   expect(node).toIncludeText('DecisionControlPanel');
 });
 
 it('should update the report', async () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   await node.instance().updateReport({visualization: {$set: 'customTestVis'}});
 
@@ -99,7 +91,7 @@ it('should update the report', async () => {
 });
 
 it('should evaluate the report after updating', async () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   evaluateReport.mockReturnValue(report);
   await node.instance().updateReport({visualization: {$set: 'customTestVis'}}, true);
@@ -107,8 +99,17 @@ it('should evaluate the report after updating', async () => {
   expect(evaluateReport).toHaveBeenCalled();
 });
 
+it('should not evaluate the report if the view/groupBy/visualization setting is incomplete', async () => {
+  const node = shallow(<ReportEdit {...props} />);
+
+  evaluateReport.mockClear();
+  await node.instance().updateReport({$unset: ['groupBy', 'visualization']}, true);
+
+  expect(evaluateReport).not.toHaveBeenCalled();
+});
+
 it('should reset the report data to its original state after canceling', async () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   const dataBefore = node.state().report;
 
@@ -119,7 +120,7 @@ it('should reset the report data to its original state after canceling', async (
 });
 
 it('should save a changed report', async () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   await node.instance().save();
 
@@ -127,7 +128,7 @@ it('should save a changed report', async () => {
 });
 
 it('should reset name on cancel', async () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   node.setState({report: {...report, name: 'new Name'}});
 
@@ -137,7 +138,7 @@ it('should reset name on cancel', async () => {
 });
 
 it('should use original data as result data if report cant be evaluated on cancel', async () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   node.setState({
     originalData: {
@@ -156,7 +157,7 @@ it('should use original data as result data if report cant be evaluated on cance
 });
 
 it('should show a warning message when the data is not complete', async () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   node.setState({
     report: {
@@ -170,7 +171,7 @@ it('should show a warning message when the data is not complete', async () => {
 });
 
 it('should show a warning message when there are incompatible filter ', async () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   incompatibleFilters.mockReturnValue(true);
 
@@ -192,7 +193,7 @@ it('should show a warning message when there are incompatible filter ', async ()
 });
 
 it('should show a warning when node status is running on a grouped by endDate user task report', async () => {
-  const node = shallow(<ReportEdit {...props} report={report} />).dive();
+  const node = shallow(<ReportEdit {...props} />);
 
   node.setState({
     report: {
@@ -220,9 +221,7 @@ it('should set conflict state when conflict happens on save button click', async
 
   const mightFail = (promise, cb, err) => err({status: 409, json: () => ({conflictedItems})});
 
-  const node = shallow(
-    <ReportEdit.WrappedComponent {...props} report={report} mightFail={mightFail} />
-  );
+  const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
 
   try {
     node.instance().save();
@@ -233,7 +232,7 @@ it('should set conflict state when conflict happens on save button click', async
 });
 
 it('should create a new report if the report is new', () => {
-  const node = shallow(<ReportEdit.WrappedComponent {...props} isNew />);
+  const node = shallow(<ReportEdit {...props} isNew />);
 
   node.instance().save();
 
@@ -246,7 +245,7 @@ it('should create a new report if the report is new', () => {
 
 it('should create a new report in a collection', async () => {
   const node = await shallow(
-    <ReportEdit.WrappedComponent
+    <ReportEdit
       {...props}
       location={{pathname: '/collection/123/report/new/edit'}}
       match={{params: {id: 'new'}}}
@@ -267,7 +266,7 @@ it('should invoke updateOverview when saving the report', async () => {
   updateEntity.mockClear();
   updateEntity.mockReturnValue({});
   const spy = jest.fn();
-  const node = shallow(<ReportEdit {...props} report={report} updateOverview={spy} />).dive();
+  const node = shallow(<ReportEdit {...props} updateOverview={spy} />);
 
   await node.find(EntityNameForm).prop('onSave')();
 
@@ -275,7 +274,7 @@ it('should invoke updateOverview when saving the report', async () => {
 });
 
 it('should notify the saveGuard of changes', () => {
-  const node = shallow(<ReportEdit.WrappedComponent {...props} />);
+  const node = shallow(<ReportEdit {...props} />);
 
   node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: 'b'}});
 
@@ -288,7 +287,7 @@ it('should notify the saveGuard of changes', () => {
 
 describe('showIncompleteResultWarning', () => {
   it('should show incomplete warning if report is configured and incomplete', () => {
-    const node = shallow(<ReportEdit {...props} report={report} />).dive();
+    const node = shallow(<ReportEdit {...props} />);
 
     node.setState({
       report: {
@@ -301,7 +300,7 @@ describe('showIncompleteResultWarning', () => {
   });
 
   it('should not show incomplete data warning if the visualization is not selected', () => {
-    const node = shallow(<ReportEdit {...props} report={report} />).dive();
+    const node = shallow(<ReportEdit {...props} />);
 
     node.setState({
       report: {
