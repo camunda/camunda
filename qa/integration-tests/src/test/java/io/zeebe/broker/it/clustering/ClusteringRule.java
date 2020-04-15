@@ -649,7 +649,8 @@ public final class ClusteringRule extends ExternalResource {
           }
 
           return false;
-        });
+        },
+        1000);
 
     return referenceToResult
         .get()
