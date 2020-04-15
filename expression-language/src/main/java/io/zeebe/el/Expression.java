@@ -7,11 +7,19 @@
  */
 package io.zeebe.el;
 
+import java.util.Optional;
+
 /** A parsed expression. */
 public interface Expression {
 
   /** @return the (raw) expression as string */
   String getExpression();
+
+  /**
+   * @return optional of the name of the variable if expression is a single variable or a property
+   *     of a single variable, otherwise empty
+   */
+  Optional<String> getVariableName();
 
   /**
    * @return {@code true} if it is an static expression that does not require additional context
