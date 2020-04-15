@@ -15,12 +15,16 @@ import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.zip.CRC32;
 import org.slf4j.Logger;
 
 /** Controls how snapshot/recovery operations are performed */
@@ -72,13 +76,18 @@ public class StateSnapshotController implements SnapshotController {
       LOG.debug("Start replicating latest snapshot {}", latestSnapshotDirectory);
 
       try (final var stream = Files.list(latestSnapshotDirectory)) {
-        final var files = stream.collect(Collectors.toList());
-        for (final var file : files) {
+        final var paths = stream.sorted().collect(Collectors.toList());
+        final long combinedChecksum = getCombinedChecksum(paths);
+
+        for (final var path : paths) {
           executor.accept(
               () -> {
-                LOG.debug("Replicate snapshot chunk {}", file);
+                LOG.debug("Replicate snapshot chunk {}", path);
                 replicationController.replicate(
-                    latestSnapshotDirectory.getFileName().toString(), files.size(), file.toFile());
+                    latestSnapshotDirectory.getFileName().toString(),
+                    paths.size(),
+                    path.toFile(),
+                    combinedChecksum);
               });
         }
       } catch (final IOException e) {
@@ -155,6 +164,22 @@ public class StateSnapshotController implements SnapshotController {
   @Override
   public File getLastValidSnapshotDirectory() {
     return storage.getLatestSnapshot().map(Snapshot::getPath).map(Path::toFile).orElse(null);
+  }
+
+  /** computes a checksum for the files, in the order they're presented */
+  static long getCombinedChecksum(final List<Path> paths) throws IOException {
+    final CRC32 checksumGenerator = new CRC32();
+    final List<Long> chunkChecksum = new ArrayList<>();
+
+    for (final var path : paths) {
+      checksumGenerator.update(Files.readAllBytes(path));
+      chunkChecksum.add(checksumGenerator.getValue());
+      checksumGenerator.reset();
+    }
+
+    chunkChecksum.forEach(
+        c -> checksumGenerator.update(ByteBuffer.allocate(Long.BYTES).putLong(0, c)));
+    return checksumGenerator.getValue();
   }
 
   @Override

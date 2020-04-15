@@ -22,4 +22,7 @@ public interface SnapshotChunk {
 
   /** @return the content of the current chunk */
   byte[] getContent();
+
+  /** @return the checksum of the entire snapshot */
+  long getSnapshotChecksum();
 }
