@@ -15,6 +15,7 @@ pipelineJob('event-import-performance') {
 
     choiceParam('SQL_DUMP', ['optimize_large_data-performance.sqlc', 'optimize_large_data-stage.sqlc'])
     stringParam('ES_REFRESH_INTERVAL', '2s', 'Elasticsearch index refresh interval.')
+    stringParam('ES_NUM_NODES', '1', 'Number of Elasticsearch nodes in the cluster (not more than 5)')
     stringParam('EXTERNAL_EVENT_COUNT', '40000000', 'Number of external events to ingest.')
   }
 

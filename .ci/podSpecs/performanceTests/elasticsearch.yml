@@ -8,7 +8,7 @@ metadata:
     app: elasticsearch
 spec:
   serviceName: elasticsearch
-  replicas: 1
+  replicas: ${ES_NUM_NODES}
   selector:
     matchLabels:
       app: elasticsearch
@@ -95,12 +95,16 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: discovery.type
-              value: "single-node"
+            - name: discovery.seed_hosts
+              value: "elasticsearch-discovery"
+            - name: discovery.find_peers_interval
+              value: "5s"
+            - name: cluster.initial_master_nodes
+              value: "elasticsearch-0"
             - name: ES_JAVA_OPTS
               value: "-Xms8g -Xmx8g"
             - name: bootstrap.memory_lock
-              value: "true"
+              value: "false"
           resources:
             requests:
               cpu: 16
@@ -110,6 +114,9 @@ spec:
           ports:
             - containerPort: 9200
               name: http
+              protocol: TCP
+            - containerPort: 9300
+              name: transport
               protocol: TCP
             - containerPort: 5005
               name: debug

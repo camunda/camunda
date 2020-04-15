@@ -115,7 +115,7 @@ pipeline {
                 # kubectl
                 gcloud components install kubectl --quiet
 
-                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "false"
+                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "false" "${ES_NUM_NODES}"
             """)
         }
       }

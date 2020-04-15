@@ -1,10 +1,11 @@
 #!/bin/bash
+
 die () {
     echo >&2 "$@"
     exit 1
 }
 
-[[ "$#" -eq 6 ]] || die "6 arguments required [NAMESPACE] [SQL_DUMP_NAME] [ES_VERSION] [CAMPBM_VERSION] [ES_REFRESH_INTERVAL] [EVENT_IMPORT_ENABLED], $# provided"
+[[ "$#" -eq 7 ]] || die "7 arguments required [NAMESPACE] [SQL_DUMP_NAME] [ES_VERSION] [CAMPBM_VERSION] [ES_REFRESH_INTERVAL] [EVENT_IMPORT_ENABLED] [ES_NUM_NODES], $# provided"
 
 NAMESPACE=$1
 SQL_DUMP=$2
@@ -12,6 +13,7 @@ ES_VERSION=$3
 CAMBPM_VERSION=$4
 ES_REFRESH_INTERVAL=$5
 EVENT_IMPORT_ENABLED=$6
+ES_NUM_NODES=$7
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/ns.yml | kubectl apply -f -
 kubectl create secret docker-registry registry-camunda-cloud-secret \
@@ -40,10 +42,8 @@ kubectl exec -n "$NAMESPACE" "$POD_NAME" -c postgresql -it -- pg_restore --clean
 
 # Spawning elasticsearch
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/elasticsearch-cfg.yml | kubectl apply -f -
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${ES_VERSION}/$ES_VERSION/g" < .ci/podSpecs/performanceTests/elasticsearch.yml | kubectl apply -f -
-# The following command does not work due to https://github.com/kubernetes/kubernetes/issues/52653
-# Can be removed when we migrate to kubernetes version > 1.12.0
-#sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/elasticsearch.yml | kubectl rollout status -f - --watch=true
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${ES_VERSION}/$ES_VERSION/g" -e "s/\${ES_NUM_NODES}/$ES_NUM_NODES/g" < .ci/podSpecs/performanceTests/elasticsearch.yml | kubectl apply -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${ES_VERSION}/$ES_VERSION/g" -e "s/\${ES_NUM_NODES}/$ES_NUM_NODES/g" < .ci/podSpecs/performanceTests/elasticsearch.yml | kubectl rollout status -f - --watch=true
 while ! nc -z -w 3 "elasticsearch.${NAMESPACE}" 9200; do
   sleep 15
 done

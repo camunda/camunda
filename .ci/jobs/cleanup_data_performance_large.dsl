@@ -12,8 +12,10 @@ pipelineJob('cleanup-data-performance') {
 
   parameters {
     stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
+
     choiceParam('SQL_DUMP', ['optimize_large_data-performance.sqlc', 'optimize_large_data-stage.sqlc'])
     stringParam('ES_REFRESH_INTERVAL', '5s', 'Elasticsearch index refresh interval.')
+    stringParam('ES_NUM_NODES', '1', 'Number of Elasticsearch nodes in the cluster (not more than 5)')
     stringParam('CLEANUP_TIMEOUT_MINUTES', '120', 'Time limit for a cleanup run to finish')
   }
 
