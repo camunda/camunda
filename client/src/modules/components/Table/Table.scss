@@ -1,82 +1,116 @@
-@import '~react-table/react-table.css';
+@import 'shared-styles/shared-styles.scss';
 
 .Table {
+  font-size: 14px;
   display: flex;
   flex-direction: column;
 
-  &.empty {
-    .ReactTable {
-      height: 100%;
-    }
+  .reactTable {
+    border: 1px solid $silver-darken-87;
+    border-collapse: collapse;
+    display: flex;
+    flex-direction: column;
   }
 
-  .ReactTable {
-    min-height: 0;
-    font-size: 14px;
-    border: none;
+  thead tr {
+    border-bottom: 1px solid $silver-darken-87;
 
-    .rt-thead.-header {
-      box-shadow: none;
-      font-weight: bold;
-      border-bottom: 1px solid #e3e3e3;
-    }
-
-    .rt-table {
-      min-height: 0;
-      -ms-overflow-style: -ms-autohiding-scrollbar; /* IE FIX */
-    }
-
-    .rt-tbody {
-      padding-bottom: 15px; /* IE FIX */
-    }
-
-    .rt-noData {
-      background: rgba(255, 255, 255, 1);
-      font-weight: bold;
-    }
-
-    .rt-thead .rt-tr {
-      text-align: left;
-    }
-
-    .rt-th {
-      &:focus {
-        outline: none;
-      }
-    }
-
-    .-pagination {
-      padding: 5px;
-      box-shadow: none;
-
-      .-previous,
-      .-next {
-        flex: 1 0;
-        padding: 0 20px;
-      }
-
-      .-previous {
-        text-align: right;
-      }
-
-      .-next {
-        text-align: left;
-      }
-
-      .-center {
-        flex: none;
-      }
-
-      .-pageInfo {
-        margin: 0;
-      }
-    }
-  }
-
-  .unscrollable-mode {
-    .rt-tbody,
-    .rt-table {
+    .tableHeader {
+      padding: 0;
       overflow: hidden;
+
+      &:not(:first-child):not(.placeholder):before {
+        content: ' ';
+        position: absolute;
+        bottom: 3px;
+        left: 0;
+        height: 31px;
+        width: 1px;
+        background: rgb(216, 220, 227);
+      }
+
+      &:first-child .cellContent {
+        padding-left: 20px;
+      }
+
+      .cellContent {
+        padding: 10px 5px;
+        text-align: left;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+
+      .resizer {
+        display: inline-block;
+        width: 10px;
+        height: 100%;
+        position: absolute;
+        right: 0;
+        top: 0;
+        transform: translateX(50%);
+        z-index: 1;
+        overflow: hidden;
+      }
+
+      &.placeholder .resizer {
+        display: none;
+      }
     }
+  }
+
+  tbody {
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    tr {
+      color: #606060;
+
+      &:not(:last-child) {
+        border-bottom: 1px solid $silver-darken-87;
+      }
+
+      &:nth-child(odd) {
+        background-color: $silver-base-97;
+      }
+
+      td {
+        &:first-child {
+          padding-left: 20px;
+        }
+        padding: 10px 5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .controls {
+    margin: 20px auto;
+
+    .Button {
+      margin: 0 10px;
+    }
+    .Input {
+      margin-right: 10px;
+      width: 70px;
+    }
+  }
+
+  .noData {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px;
+    color: $grey-lighten-56;
+  }
+}
+
+.Table.unscrollable-mode {
+  .Table,
+  .Table tbody {
+    overflow: hidden;
   }
 }

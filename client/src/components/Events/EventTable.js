@@ -22,25 +22,24 @@ const asMapping = ({group, source, eventName, eventLabel}) => ({
   group,
   source,
   eventName,
-  eventLabel
+  eventLabel,
 });
 
 export default withErrorHandling(
   class EventTable extends React.Component {
     container = React.createRef();
-    table = React.createRef();
 
     state = {
       events: null,
       searchQuery: '',
-      showSuggested: true
+      showSuggested: true,
     };
 
     async componentDidMount() {
       this.loadEvents(this.state.searchQuery);
     }
 
-    loadEvents = searchQuery => {
+    loadEvents = (searchQuery) => {
       const {selection, xml, mappings, eventSources} = this.props;
 
       this.setState({events: null});
@@ -55,19 +54,19 @@ export default withErrorHandling(
           targetFlowNodeId: selection.id,
           xml,
           mappings,
-          eventSources
+          eventSources,
         };
       }
 
       this.props.mightFail(
         loadEvents(payload, searchQuery),
-        events => this.setState({events}),
+        (events) => this.setState({events}),
         showError
       );
     };
     loadEventsDebounced = debounce(this.loadEvents, 300);
 
-    getNumberOfPotentialMappings = node => {
+    getNumberOfPotentialMappings = (node) => {
       if (!node) {
         return 0;
       }
@@ -80,7 +79,7 @@ export default withErrorHandling(
       }
     };
 
-    mappedAs = event => {
+    mappedAs = (event) => {
       const mappings = Object.values(this.props.mappings);
 
       for (let i = 0; i < mappings.length; i++) {
@@ -98,7 +97,7 @@ export default withErrorHandling(
       }
     };
 
-    searchFor = searchQuery => {
+    searchFor = (searchQuery) => {
       this.setState({searchQuery, events: null});
       this.loadEventsDebounced(searchQuery);
     };
@@ -106,11 +105,7 @@ export default withErrorHandling(
     componentDidUpdate(prevProps, prevState) {
       this.updateTableAfterSelectionChange(prevProps);
       if (prevState.events === null && this.state.events !== null) {
-        // After Table props change, there is a delay before react-table updates the dom
-        // forcing the update will ensure the table is updated before scrolling to element
-        if (this.table.current) {
-          this.table.current.forceUpdate(this.scrollToSelectedElement);
-        }
+        this.scrollToSelectedElement();
       }
 
       if (prevProps.eventSources !== this.props.eventSources) {
@@ -118,7 +113,7 @@ export default withErrorHandling(
       }
     }
 
-    updateTableAfterSelectionChange = prevProps => {
+    updateTableAfterSelectionChange = (prevProps) => {
       const {selection} = this.props;
       const {showSuggested, searchQuery} = this.state;
 
@@ -149,8 +144,8 @@ export default withErrorHandling(
       }
     };
 
-    inShownSources = event => {
-      const shownSources = this.props.eventSources.filter(src => !src.hidden);
+    inShownSources = (event) => {
+      const shownSources = this.props.eventSources.filter((src) => !src.hidden);
 
       return shownSources.some(({processDefinitionKey, type}) => {
         if (type === 'external') {
@@ -162,7 +157,7 @@ export default withErrorHandling(
     };
 
     camundaSourcesAdded = () =>
-      this.props.eventSources.filter(src => src.type !== 'external').length > 0;
+      this.props.eventSources.filter((src) => src.type !== 'external').length > 0;
 
     render() {
       const {events, searchQuery, showSuggested, collapsed} = this.state;
@@ -172,7 +167,7 @@ export default withErrorHandling(
       const numberOfMappings = !!start + !!end;
       const numberOfPotentialMappings = this.getNumberOfPotentialMappings(selection);
       const allMapped = numberOfPotentialMappings <= numberOfMappings;
-      const externalEvents = eventSources.some(src => src.type === 'external');
+      const externalEvents = eventSources.some((src) => src.type === 'external');
 
       return (
         <div className="EventTable" ref={this.container}>
@@ -208,7 +203,6 @@ export default withErrorHandling(
             </Button>
           </div>
           <Table
-            ref={this.table}
             className={classnames({collapsed})}
             head={[
               'checked',
@@ -216,11 +210,11 @@ export default withErrorHandling(
               t('events.table.name'),
               t('events.table.group'),
               t('events.table.source'),
-              t('events.table.count')
+              t('events.table.count'),
             ]}
             body={
               events
-                ? events.filter(this.inShownSources).map(event => {
+                ? events.filter(this.inShownSources).map((event) => {
                     const {group, source, eventLabel, eventName, count, suggested} = event;
                     const mappedAs = this.mappedAs(event);
                     const eventAsMapping = asMapping(event);
@@ -242,16 +236,16 @@ export default withErrorHandling(
                         showDropdown ? (
                           <Select
                             value={mappedAs}
-                            onOpen={isOpen => {
+                            onOpen={(isOpen) => {
                               if (isOpen) {
                                 // due to how we integrate Dropdowns in React Table, we need to manually
                                 // adjust to the scroll offset
                                 const container = this.container.current;
                                 container.querySelector('.Dropdown.is-open .menu').style.marginTop =
-                                  -container.querySelector('.rt-tbody').scrollTop + 'px';
+                                  -container.querySelector('.Table tbody').scrollTop + 'px';
                               }
                             }}
-                            onChange={value =>
+                            onChange={(value) =>
                               mappedAs !== value && onMappingChange(eventAsMapping, true, value)
                             }
                           >
@@ -276,15 +270,15 @@ export default withErrorHandling(
                         eventLabel || eventName,
                         group,
                         source,
-                        count
+                        count,
                       ],
                       props: {
                         className: classnames(eventName, {
                           disabled,
                           mapped: mappedAs,
-                          suggested
+                          suggested,
                         }),
-                        onClick: evt => {
+                        onClick: (evt) => {
                           const type = evt.target.getAttribute('type');
                           if (mappedAs) {
                             if (type !== 'checkbox' && !evt.target.closest('.Dropdown')) {
@@ -293,8 +287,8 @@ export default withErrorHandling(
                               this.props.onSelectEvent(null);
                             }
                           }
-                        }
-                      }
+                        },
+                      },
                     };
                   })
                 : []
@@ -312,7 +306,6 @@ export default withErrorHandling(
                   t('events.sources.empty')}
               </>
             }
-            noHighlight
           />
         </div>
       );

@@ -19,7 +19,7 @@ export default withErrorHandling(
   class Table extends React.Component {
     state = {
       camundaEndpoints: null,
-      needEndpoint: false
+      needEndpoint: false,
     };
 
     static getDerivedStateFromProps({report: {result, combined, data}}) {
@@ -31,7 +31,7 @@ export default withErrorHandling(
 
     componentDidMount() {
       if (this.state.needEndpoint) {
-        this.props.mightFail(getWebappEndpoints(), camundaEndpoints =>
+        this.props.mightFail(getWebappEndpoints(), (camundaEndpoints) =>
           this.setState({camundaEndpoints})
         );
       }
@@ -58,7 +58,7 @@ export default withErrorHandling(
     formatData = () => {
       const {
         report: {reportType, combined, data, result},
-        updateReport
+        updateReport,
       } = this.props;
       const {configuration} = data;
 
@@ -81,7 +81,7 @@ export default withErrorHandling(
         resultType: result.type,
         sortByLabel: ['flowNodes', 'userTasks'].includes(data.groupBy.type),
         updateSorting: updateReport && this.updateSorting,
-        sorting: configuration && configuration.sorting
+        sorting: configuration && configuration.sorting,
       };
     };
   }

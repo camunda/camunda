@@ -1,9 +1,10 @@
+@import 'shared-styles/shared-styles.scss';
 .ColumnRearrangement {
   display: flex;
   flex-direction: column;
 }
 
-.ColumnRearrangement .rt-resizable-header {
+.ColumnRearrangement .tableHeader {
   cursor: grab;
 }
 
@@ -11,25 +12,26 @@
   opacity: 0.3;
 }
 
-.ReactTable .rt-tr .ColumnRearrangement__dropTarget--left {
-  box-shadow: -2px 0 0 green inset;
+.Table tr .ColumnRearrangement__dropTarget--left {
+  box-shadow: -2px 0 0 $green-base-44 inset;
 }
 
-.ReactTable .rt-tr .ColumnRearrangement__dropTarget--right {
-  box-shadow: 2px 0 0 green inset;
+.Table tr .ColumnRearrangement__dropTarget--right {
+  box-shadow: 2px 0 0 $green-base-44 inset;
 }
 
-.ReactTable .rt-tr .ColumnRearrangement__dropTarget--invalid-left {
-  box-shadow: -2px 0 0 red inset;
+.Table tr .ColumnRearrangement__dropTarget--invalid-left {
+  box-shadow: -2px 0 0 $red-base-62 inset;
 }
 
-.ReactTable .rt-tr .ColumnRearrangement__dropTarget--invalid-right {
-  box-shadow: 2px 0 0 red inset;
+.Table tr .ColumnRearrangement__dropTarget--invalid-right {
+  box-shadow: 2px 0 0 $red-base-62 inset;
 }
 
 .ColumnRearrangement__dragPreview {
   background-color: white;
   width: 250px;
+  min-width: 0 !important;
   max-height: 400px;
   z-index: 12;
   transform: scale(0.7);
@@ -38,15 +40,7 @@
   position: absolute;
   overflow: hidden;
 
-  .rt-table {
-    overflow: hidden;
-
-    .rt-thead.-headerGroups {
-      display: none;
-    }
-  }
-
-  .pagination-bottom {
-    display: none;
+  tr {
+    max-width: max-content;
   }
 }

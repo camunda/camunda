@@ -3,6 +3,7 @@
 .EventTable {
   border: solid 1px #dfdfdf;
   border-bottom: none;
+  position: relative;
 
   > .header {
     border-bottom: solid 1px #dfdfdf;
@@ -63,45 +64,34 @@
     }
   }
 
-  .Table {
-    display: flex;
-    flex-direction: column;
+  .Table.collapsed .reactTable {
+    height: 0;
+    overflow: hidden;
+  }
+
+  .reactTable {
     height: 300px;
-    width: 100%;
+    border: none;
     transition: height 0.25s;
 
-    &.collapsed {
-      height: 0;
-      overflow: hidden;
-    }
-
-    .rt-noData {
-      pointer-events: all;
-      color: #aeaeae;
-      font-weight: normal;
-    }
-
-    .rt-tr {
-      height: 38px;
-      border-left: 10px solid transparent;
-
-      .rt-th:first-child {
+    thead tr {
+      .tableHeader:first-child {
+        min-width: 0;
         visibility: hidden;
       }
-    }
-    .rt-th,
-    .rt-td {
-      padding-top: 11px;
+
+      .tableHeader:nth-child(2):before {
+        width: 0;
+      }
     }
 
-    .rt-tr > :first-child {
-      width: 40px !important;
-      max-width: 40px !important;
-      border: 0;
-      padding-top: 9px;
+    tr > :first-child {
+      min-width: 0 !important;
+      width: 60px !important;
+      max-width: 60px !important;
     }
 
-    .rt-tbody {
+    tbody {
       .Dropdown {
         position: static;
 
@@ -118,7 +108,7 @@
         }
       }
 
-      .rt-tr {
+      tr {
         &.mapped:hover {
           background-color: $silver-darken-94;
           cursor: pointer;

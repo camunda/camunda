@@ -15,22 +15,18 @@
     max-height: 30%;
     overflow: auto;
 
-    .ReactTable {
-      position: inherit;
+    .Dropdown {
+      position: static;
+      width: 130px;
 
-      .Dropdown {
-        position: static;
-        width: 130px;
+      .menu {
+        bottom: 0px;
+        right: 25px;
+        left: auto !important;
+        height: 250px;
 
-        .menu {
-          bottom: 0px;
-          right: 25px;
-          left: auto !important;
-          height: 250px;
-
-          > ul.scrollable {
-            overflow: auto;
-          }
+        > ul.scrollable {
+          overflow: auto;
         }
       }
     }

@@ -26,8 +26,12 @@ export default class ColumnRearrangement extends React.Component {
     );
   }
 
-  handleMouseDown = evt => {
-    const columnHeader = evt.target.closest('.rt-resizable-header');
+  handleMouseDown = (evt) => {
+    if (evt.target.classList.contains('resizer')) {
+      return;
+    }
+
+    const columnHeader = evt.target.closest('.Table .tableHeader:not(.placeholder)');
 
     if (columnHeader) {
       this.dragIdx = Array.from(columnHeader.parentNode.childNodes).indexOf(columnHeader);
@@ -49,7 +53,7 @@ export default class ColumnRearrangement extends React.Component {
   };
 
   processDrag = ({evt, validTarget = () => {}, invalidTarget = () => {}}) => {
-    const elem = evt.target.closest('.rt-td,.rt-resizable-header');
+    const elem = evt.target.closest('.Table td, .Table .tableHeader');
 
     if (elem) {
       let idx = Array.from(elem.parentNode.childNodes).indexOf(elem);
@@ -69,14 +73,14 @@ export default class ColumnRearrangement extends React.Component {
     }
   };
 
-  handleMouseMove = evt => {
+  handleMouseMove = (evt) => {
     if (!this.preview.parentNode) {
       document.body.appendChild(this.preview);
     }
 
     removeHighlights();
 
-    const applyClass = (modifier = '') => idx => {
+    const applyClass = (modifier = '') => (idx) => {
       forColumn(idx)
         .do(({classList}) => classList.add(`ColumnRearrangement__dropTarget--${modifier}left`))
         .usingEvent(evt);
@@ -88,11 +92,11 @@ export default class ColumnRearrangement extends React.Component {
     this.processDrag({
       evt,
       validTarget: applyClass(),
-      invalidTarget: applyClass('invalid-')
+      invalidTarget: applyClass('invalid-'),
     });
   };
 
-  handleMouseUp = evt => {
+  handleMouseUp = (evt) => {
     removeHighlights(true);
 
     this.processDrag({
@@ -100,7 +104,7 @@ export default class ColumnRearrangement extends React.Component {
       validTarget: (idx, dropElem) => {
         // create a list of the text of all header columns
         const list = Array.from(
-          dropElem.closest('.rt-table').querySelector('.rt-thead.-header .rt-tr').childNodes
+          dropElem.closest('.Table').querySelector('thead tr:nth-child(2)').childNodes
         ).map(({textContent}) => textContent);
 
         // add the column at the specified position
@@ -126,11 +130,11 @@ export default class ColumnRearrangement extends React.Component {
                   return orders;
                 },
                 {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}
-              )
-            }
-          }
+              ),
+            },
+          },
         });
-      }
+      },
     });
 
     document.removeEventListener('mousemove', this.handleMouseMove);
@@ -140,27 +144,27 @@ export default class ColumnRearrangement extends React.Component {
 
 function forColumn(columnIdx) {
   return {
-    do: fct => {
+    do: (fct) => {
       if (columnIdx === 'all') {
         cellsForColumn(document, '1n').forEach(fct);
       } else {
         return {
           usingEvent: ({target}) => {
-            const table = target.closest('.rt-table');
+            const table = target.closest('.Table');
 
             if (table) {
               cellsForColumn(table, columnIdx + 1).forEach(fct);
             }
-          }
+          },
         };
       }
-    }
+    },
   };
 }
 
 function cellsForColumn(target, matcher) {
   return target.querySelectorAll(
-    `.rt-tbody .rt-tr .rt-td:nth-child(${matcher}),.rt-resizable-header:nth-child(${matcher})`
+    `.Table tbody tr td:nth-child(${matcher}),.Table thead tr .tableHeader:nth-child(${matcher})`
   );
 }
 
@@ -171,17 +175,18 @@ function removeHighlights(alsoRemoveDraggedColumnStyle) {
       'ColumnRearrangement__dropTarget--right',
       'ColumnRearrangement__dropTarget--invalid-left',
       'ColumnRearrangement__dropTarget--invalid-right',
-      alsoRemoveDraggedColumnStyle && 'ColumnRearrangement__draggedColumn'
-    ].forEach(cssClass => classList.remove(cssClass))
+      alsoRemoveDraggedColumnStyle && 'ColumnRearrangement__draggedColumn',
+    ].forEach((cssClass) => classList.remove(cssClass))
   );
 }
 
 function createDragPreview(idx, evt) {
   // create a copy of the table, hide all irrelevant stuff so that only the column remains
   // then make this column follow mouse movements
-  const preview = evt.target.closest('.ReactTable').cloneNode(true);
+  const preview = evt.target.closest('.Table').cloneNode(true);
   preview.classList.add('ColumnRearrangement__dragPreview');
 
+  preview.querySelector('thead tr:first-child').style.display = 'none';
   cellsForColumn(preview, `-n+${idx}`).forEach(({style}) => (style.display = 'none'));
   cellsForColumn(preview, idx + 1).forEach(({style}) => {
     style.width = '250px';

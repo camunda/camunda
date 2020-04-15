@@ -134,7 +134,6 @@ exports[`should match snapshot 1`] = `
         No Events available.
       </React.Fragment>
     }
-    noHighlight={true}
   />
 </div>
 `;

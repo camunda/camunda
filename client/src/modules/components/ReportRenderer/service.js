@@ -18,7 +18,7 @@ export function getFormatter(viewProperty) {
     case 'duration':
       return formatters.duration;
     default:
-      return v => v;
+      return (v) => v;
   }
 }
 
@@ -30,7 +30,7 @@ export function processResult({data, result}) {
       return {...formattedResult, data: formattedResult.data};
     }
     if (formattedResult.type === 'map') {
-      const newData = formattedResult.data.map(entry => {
+      const newData = formattedResult.data.map((entry) => {
         return {...entry, value: entry.value};
       });
 
@@ -46,7 +46,7 @@ function filterResult(result, {groupBy: {type}, configuration: {hiddenNodes}}) {
       ...result,
       data: result.data.filter(
         ({key}) => !(hiddenNodes.active ? hiddenNodes.keys : []).includes(key)
-      )
+      ),
     };
   }
 
@@ -57,9 +57,9 @@ function formatResult(result, {groupBy: {type}}) {
   if (type === 'variable') {
     return {
       ...result,
-      data: result.data.map(row =>
+      data: result.data.map((row) =>
         row.key === 'missing' ? {...row, label: t('report.missingVariableValue')} : row
-      )
+      ),
     };
   }
 

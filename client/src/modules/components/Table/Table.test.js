@@ -8,7 +8,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Table from './Table';
-import ReactTable from 'react-table';
 
 function generateData(amount) {
   const arr = [];
@@ -24,7 +23,7 @@ it('shoud correctly format header', () => {
   expect(result).toEqual([
     {Header: 'x', accessor: 'x', minWidth: 100},
     {Header: 'y', accessor: 'y', minWidth: 100},
-    {Header: 'z', accessor: 'z', minWidth: 100}
+    {Header: 'z', accessor: 'z', minWidth: 100},
   ]);
 });
 
@@ -37,9 +36,9 @@ it('should correctly format multi-level header', () => {
       Header: 'a',
       columns: [
         {Header: 'i', accessor: 'ai', minWidth: 100},
-        {Header: 'j', accessor: 'aj', minWidth: 100}
-      ]
-    }
+        {Header: 'j', accessor: 'aj', minWidth: 100},
+      ],
+    },
   ]);
 });
 
@@ -47,13 +46,13 @@ it('should support explicit id for columns', () => {
   const result = Table.formatColumns([
     {id: 'column1', label: 'X'},
     'Y',
-    {id: 'column3', label: 'Z'}
+    {id: 'column3', label: 'Z'},
   ]);
 
   expect(result).toEqual([
     {Header: 'X', accessor: 'column1', minWidth: 100},
     {Header: 'Y', accessor: 'y', minWidth: 100},
-    {Header: 'Z', accessor: 'column3', minWidth: 100}
+    {Header: 'Z', accessor: 'column3', minWidth: 100},
   ]);
 });
 
@@ -75,7 +74,7 @@ it('should format structured body data', () => {
 it('should show pagination if data contains more than 20 rows', () => {
   const node = shallow(<Table {...{head: ['a'], body: generateData(21), foot: []}} />);
 
-  expect(node.find(ReactTable)).toHaveProp('showPagination', true);
+  expect(node.find('.controls')).toExist();
 });
 
 it('should not show pagination if data contains more than 20 rows, but disablePagination flag is set', () => {
@@ -83,13 +82,13 @@ it('should not show pagination if data contains more than 20 rows, but disablePa
     <Table {...{head: ['a'], body: generateData(21), foot: []}} disablePagination />
   );
 
-  expect(node.find(ReactTable)).toHaveProp('showPagination', false);
+  expect(node.find('.controls')).not.toExist();
 });
 
 it('should not show pagination if data contains less than or equal to 20 rows', () => {
   const node = shallow(<Table {...{head: ['a'], body: generateData(20), foot: []}} />);
 
-  expect(node.find(ReactTable)).toHaveProp('showPagination', false);
+  expect(node.find('.controls')).not.toExist();
 });
 
 it('should call the updateSorting method on click on header', () => {
@@ -98,12 +97,9 @@ it('should call the updateSorting method on click on header', () => {
     <Table {...{head: ['a'], body: generateData(20), foot: []}} updateSorting={spy} />
   );
 
-  node
-    .find(ReactTable)
-    .prop('getTheadThProps')(0, 0, {id: 'someId'})
-    .onClick({target: 'header'});
+  node.find('thead .cellContent').at(0).simulate('click', {persist: jest.fn()});
 
-  expect(spy).toHaveBeenCalledWith('someId', 'asc');
+  expect(spy).toHaveBeenCalledWith('a', 'asc');
 });
 
 it('should call the updateSorting method to sort by key/value if result is map', () => {
@@ -115,10 +111,7 @@ it('should call the updateSorting method to sort by key/value if result is map',
     />
   );
 
-  node
-    .instance()
-    .applySortingBehavior({columns: [{accessor: 'test'}]}, null, {id: 'test'})
-    .onClick({target: 'header'});
+  node.find('thead .cellContent').at(0).simulate('click', {persist: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith('key', 'asc');
 });
@@ -132,16 +125,13 @@ it('should call the updateSorting method to sort by Label if sortByLabel is true
     />
   );
 
-  node
-    .instance()
-    .applySortingBehavior({columns: [{accessor: 'test'}]}, null, {id: 'test'})
-    .onClick({target: 'header'});
+  node.find('thead .cellContent').at(0).simulate('click', {persist: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith('label', 'asc');
 });
 
-it('should set empty classname', () => {
+it('should show empty message', () => {
   const node = shallow(<Table head={['a']} body={[]} />);
 
-  expect(node).toHaveClassName('empty');
+  expect(node.find('.noData')).toExist();
 });
