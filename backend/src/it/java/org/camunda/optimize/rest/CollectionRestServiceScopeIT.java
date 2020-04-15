@@ -536,7 +536,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     collectionClient.addScopeEntryToCollection(collectionId, entry);
     reportClient.createAndStoreProcessReport(collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
       .withMethod(POST);

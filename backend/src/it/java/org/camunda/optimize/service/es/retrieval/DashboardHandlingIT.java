@@ -208,7 +208,7 @@ public class DashboardHandlingIT extends AbstractIT {
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
     final String collectionId = collectionClient.createNewCollection();
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_doc/.*")
       .withMethod(PUT);
@@ -242,7 +242,7 @@ public class DashboardHandlingIT extends AbstractIT {
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
     final String collectionId = collectionClient.createNewCollection();
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + SINGLE_PROCESS_REPORT_INDEX_NAME + "/_doc/.*")
       .withMethod(PUT);

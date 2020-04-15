@@ -18,6 +18,7 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockserver.model.HttpRequest.request;
 
 public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
@@ -58,6 +60,8 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     );
 
     // when
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final ClientAndServer secondaryEngineMockServer = useAndGetSecondaryEngineMockServer();
     Response responseDefaultEngineKey = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
@@ -73,14 +77,16 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     // then
     assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
     assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
+    engineMockServer.verify(
+      request().withPath(engineIntegrationExtension.getEnginePath() + "/authorization"));
+    secondaryEngineMockServer.verify(
+      request().withPath(secondaryEngineIntegrationExtension.getEnginePath() + "/authorization"));
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void authorizedForSingleEngineReportWhenAuthorizedByParticularEngineAndOtherEngineIsDown(int definitionResourceType) {
     // given
-    addSecondEngineToConfiguration();
-
     defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();

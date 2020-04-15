@@ -14,7 +14,7 @@ import java.util.Properties;
 
 @UtilityClass
 public class IntegrationTestConfigurationUtil {
-  public static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
+  public static final String DEFAULT_PROPERTIES_PATH = "integration-extensions.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(DEFAULT_PROPERTIES_PATH);
 
   public static String getDefaultEngineName() {
@@ -38,11 +38,27 @@ public class IntegrationTestConfigurationUtil {
   }
 
   public static String getEngineItPluginEndpoint() {
-    return PROPERTIES.getProperty("camunda.engine.it.plugin.endpoint");
+    return getEngineSchemeAndAuthority() + PROPERTIES.getProperty("camunda.engine.it.plugin.endpoint");
   }
 
-  public static String getEnginesRestEndpoint() {
+  public static String getEngineRestEndpoint() {
+    return getEngineSchemeAndAuthority() + getEngineRestPath();
+  }
+
+  private static String getEngineSchemeAndAuthority() {
+    return "http://" + getEngineHost() + ":" + getEnginePort();
+  }
+
+  public static String getEngineRestPath() {
     return PROPERTIES.getProperty("camunda.engine.rest.engines.endpoint");
+  }
+
+  public static String getEngineHost() {
+    return PROPERTIES.getProperty("camunda.engine.it.host");
+  }
+
+  public static String getEnginePort() {
+    return PROPERTIES.getProperty("camunda.engine.it.port");
   }
 
   public static String getEmbeddedOptimizeEndpoint() {
@@ -71,6 +87,10 @@ public class IntegrationTestConfigurationUtil {
     return Integer.parseInt(
       System.getProperty("elasticSearchMockServerPort", "1080")
     );
+  }
+
+  public static int getEngineMockServerPort() {
+    return Integer.parseInt(System.getProperty("engineMockServerPort", "1090"));
   }
 
 }

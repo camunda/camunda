@@ -104,7 +104,7 @@ public class VariableImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
 
     // whenES update writes fail
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest variableImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)

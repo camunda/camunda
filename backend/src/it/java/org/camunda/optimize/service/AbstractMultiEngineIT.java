@@ -18,6 +18,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockserver.integration.ClientAndServer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,11 +58,14 @@ public class AbstractMultiEngineIT extends AbstractIT {
     embeddedOptimizeExtension.reloadConfiguration();
   }
 
+  protected ClientAndServer useAndGetSecondaryEngineMockServer() {
+    return useAndGetMockServerForEngine(secondaryEngineIntegrationExtension.getEngineName());
+  }
+
   protected void finishAllUserTasksForAllEngines() {
     engineIntegrationExtension.finishAllRunningUserTasks();
     secondaryEngineIntegrationExtension.finishAllRunningUserTasks();
   }
-
 
   protected void deployStartAndImportDefinitionForAllEngines(final int definitionResourceType) {
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, null, null);

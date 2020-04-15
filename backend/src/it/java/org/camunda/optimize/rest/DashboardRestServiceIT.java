@@ -284,7 +284,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void deleteDashboardWithShares_shareGetsDeleted_despiteDashboardDeleteFail() {
     // given
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     final String dashboardId = createDashboardWithDefinition();
     final HttpRequest requestMatcher = request()
@@ -314,7 +314,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void deleteDashboardWithShares_shareDeleteFails_dashboardNotDeleted() {
     // given
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     final String dashboardId = createDashboardWithDefinition();
     final String shareId = createDashboardShareForDashboard(dashboardId);

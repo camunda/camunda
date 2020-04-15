@@ -469,6 +469,7 @@
                 <optimizeHttpsPort>401${surefire.forkNumber}</optimizeHttpsPort>
                 <smtpTestPort>500${surefire.forkNumber}</smtpTestPort>
                 <elasticSearchMockServerPort>108${surefire.forkNumber}</elasticSearchMockServerPort>
+                <engineMockServerPort>109${surefire.forkNumber}</engineMockServerPort>
                 <camunda.engine.version>${camunda.engine.version}</camunda.engine.version>
               </systemPropertyVariables>
             </configuration>

@@ -115,7 +115,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 /**
- * ElasticSearch Extension including retrievable MockServer
+ * ElasticSearch Extension including configuration of retrievable ElasticSearch MockServer
  */
 @Slf4j
 public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback, AfterEachCallback {
@@ -124,7 +124,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     Collections.singletonMap("flat_settings", "true")
   );
 
-  private static final String MOCKSERVER_CLIENT_KEY = "Mockserver";
+  private static final String MOCKSERVER_CLIENT_KEY = "MockServer";
 
   private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
   private static final Map<String, OptimizeElasticsearchClient> CLIENT_CACHE = new HashMap<>();
@@ -193,7 +193,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     );
   }
 
-  public ClientAndServer useESMockServer() {
+  public ClientAndServer useEsMockServer() {
     log.debug("Using ElasticSearch MockServer");
     if (CLIENT_CACHE.containsKey(MOCKSERVER_CLIENT_KEY)) {
       prefixAwareRestHighLevelClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);

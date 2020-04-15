@@ -82,7 +82,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // given failed ES update requests to store new definition
     engineIntegrationExtension.deployAndStartDecisionDefinition();
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest definitionImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
@@ -113,7 +113,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // given failed ES update requests to store new instance
     engineIntegrationExtension.deployAndStartDecisionDefinition();
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest instanceImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)

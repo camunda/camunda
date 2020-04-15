@@ -142,7 +142,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest userTaskImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)

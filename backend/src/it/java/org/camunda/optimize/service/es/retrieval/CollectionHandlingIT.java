@@ -488,7 +488,7 @@ public class CollectionHandlingIT extends AbstractIT {
     alertClient.createAlertForReport(reportId1);
     alertClient.createAlertForReport(reportId2);
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + ALERT_INDEX_NAME + "/_delete_by_query")
       .withMethod(POST);
@@ -512,7 +512,7 @@ public class CollectionHandlingIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
       .withMethod(POST);
@@ -535,7 +535,7 @@ public class CollectionHandlingIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_delete_by_query")
       .withMethod(POST);
@@ -765,7 +765,7 @@ public class CollectionHandlingIT extends AbstractIT {
     final String alertId = alertClient.createAlertForReport(reportId);
     final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(reportId));
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + COLLECTION_INDEX_NAME + "/_doc/.*")
       .withMethod(PUT);

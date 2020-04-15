@@ -405,7 +405,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .getId();
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_update_by_query")
       .withMethod(POST);
@@ -434,7 +434,7 @@ public class ReportRestServiceIT extends AbstractIT {
     String reportId = addEmptyReportToOptimize(reportType);
     alertClient.createSimpleAlert(reportId);
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + ALERT_INDEX_NAME + "/_delete_by_query")
       .withMethod(POST);
@@ -468,7 +468,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .buildShareReportRequest(sharingDto)
       .execute();
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + REPORT_SHARE_INDEX_NAME + "/_doc/.*")
       .withMethod(DELETE);

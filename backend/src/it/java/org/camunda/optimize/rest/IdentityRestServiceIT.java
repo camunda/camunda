@@ -17,6 +17,8 @@ import org.camunda.optimize.rest.providers.GenericExceptionMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
 
 import javax.ws.rs.core.Response;
 import java.util.stream.Stream;
@@ -28,6 +30,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.mockserver.model.HttpRequest.request;
 
 
 public class IdentityRestServiceIT extends AbstractIT {
@@ -227,24 +230,30 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().getIdentitySyncConfiguration().setIncludeUserMetaData(false);
     embeddedOptimizeExtension.reloadConfiguration();
 
+    final HttpRequest engineFetchRequestMatcher;
     switch (expectedIdentity.getType()) {
       case USER:
         authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
           embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
+        engineFetchRequestMatcher = request()
+          .withPath(engineIntegrationExtension.getEnginePath() + "/user/" + expectedIdentity.getId() + "/profile");
         break;
       case GROUP:
         authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
           embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
+        engineFetchRequestMatcher = request()
+          .withPath(engineIntegrationExtension.getEnginePath() + "/group/" + expectedIdentity.getId());
         break;
       default:
         throw new OptimizeIntegrationTestException("Unsupported identity type: " + expectedIdentity.getType());
     }
 
     // when
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
     final IdentityWithMetadataDto identity = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetIdentityById(expectedIdentity.getId())
       .execute(IdentityWithMetadataDto.class, Response.Status.OK.getStatusCode());
@@ -254,6 +263,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       UserDto.Fields.email, UserDto.Fields.firstName, UserDto.Fields.lastName
     );
     assertThat(identity.getName()).isEqualTo(expectedIdentity.getId());
+    engineMockServer.verify(engineFetchRequestMatcher);
   }
 
   @ParameterizedTest

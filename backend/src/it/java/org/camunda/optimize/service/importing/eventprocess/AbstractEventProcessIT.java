@@ -94,8 +94,8 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String MERGING_GATEWAY_ID_FOUR = "merging_gateway_four";
   protected static final String VARIABLE_ID = "var";
   protected static final String VARIABLE_VALUE = "value";
-  protected static final String EXTERNAL_EVENT_GROUP = "test";
-  protected static final String EXTERNAL_EVENT_SOURCE = "integrationTest";
+  protected static final String EXTERNAL_EVENT_GROUP = "testGroup";
+  protected static final String EXTERNAL_EVENT_SOURCE = "integrationTestSource";
   protected static final String EVENT_PROCESS_NAME = "myEventProcess";
 
   protected static final String STARTED_EVENT = "startedEvent";

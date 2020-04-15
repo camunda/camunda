@@ -75,7 +75,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
 
     // when updates to ES fail
     ProcessInstanceEngineDto runningProcess = deployAndStartUserTaskProcess();
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest businessKeyImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
@@ -107,7 +107,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto process = deployAndStartUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(process.getId());
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest businessKeyImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)

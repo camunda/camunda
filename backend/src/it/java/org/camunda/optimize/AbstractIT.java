@@ -9,7 +9,7 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
-import org.camunda.optimize.test.it.extension.MockServerFactory;
+import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.AnalysisClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
@@ -28,6 +28,8 @@ import org.mockserver.integration.ClientAndServer;
 
 import java.util.function.Supplier;
 
+import static org.camunda.optimize.test.it.extension.MockServerFactory.MOCKSERVER_HOST;
+
 public abstract class AbstractIT {
 
   @RegisterExtension
@@ -44,10 +46,21 @@ public abstract class AbstractIT {
   private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
     () -> embeddedOptimizeExtension.getRequestExecutor();
 
-  protected ClientAndServer useElasticsearchMockServer() {
-    final ClientAndServer esMockServer = elasticSearchIntegrationTestExtension.useESMockServer();
-    embeddedOptimizeExtension.configureEsHostAndPort(MockServerFactory.MOCKSERVER_HOST, esMockServer.getLocalPort());
+  protected ClientAndServer useAndGetElasticsearchMockServer() {
+    final ClientAndServer esMockServer = elasticSearchIntegrationTestExtension.useEsMockServer();
+    embeddedOptimizeExtension.configureEsHostAndPort(MOCKSERVER_HOST, esMockServer.getLocalPort());
     return esMockServer;
+  }
+
+  protected ClientAndServer useAndGetEngineMockServer() {
+    return useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
+  }
+
+  protected ClientAndServer useAndGetMockServerForEngine(String engineName) {
+    String mockServerUrl = "http://" + MOCKSERVER_HOST + ":" +
+      IntegrationTestConfigurationUtil.getEngineMockServerPort() + "/engine-rest";
+    embeddedOptimizeExtension.configureEngineRestEndpointForEngineWithName(engineName, mockServerUrl);
+    return engineIntegrationExtension.useEngineMockServer();
   }
 
   // engine test helpers

@@ -58,8 +58,10 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
 import org.camunda.optimize.test.engine.EnginePluginClient;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import javax.ws.rs.core.Response;
@@ -83,6 +85,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.test.it.extension.MockServerFactory.MOCKSERVER_HOST;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
@@ -91,16 +94,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Extension that performs clean up of engine on integration test startup and one more clean up after integration test.
+ * Includes configuration of retrievable Engine MockServer
  * <p>
  * Relies on it-plugin being deployed on cambpm platform Tomcat.
  */
 @Slf4j
-public class EngineIntegrationExtension implements BeforeEachCallback {
+public class EngineIntegrationExtension implements BeforeEachCallback, AfterEachCallback {
   private static final Set<String> DEPLOYED_ENGINES = new HashSet<>(Collections.singleton("default"));
 
   private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
   private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
   private static final EnginePluginClient ENGINE_PLUGIN_CLIENT = new EnginePluginClient(HTTP_CLIENT);
+
+  private static final ClientAndServer mockServerClient = initMockServer();
 
   public static final String DEFAULT_EMAIL_DOMAIN = "@camunda.org";
   public static final String DEFAULT_FIRSTNAME = "firstName";
@@ -113,6 +119,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
 
   @Getter
   private final String engineName;
+
+  private boolean usingMockServer = false;
 
   public EngineIntegrationExtension() {
     this(null);
@@ -133,6 +141,16 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
   @Override
   public void beforeEach(final ExtensionContext extensionContext) throws Exception {
     before();
+  }
+
+  @Override
+  public void afterEach(final ExtensionContext context) throws Exception {
+    if (usingMockServer) {
+      log.info("Resetting all MockServer expectations and logs");
+      mockServerClient.reset();
+      log.info("No longer using Engine MockServer");
+    }
+    usingMockServer = false;
   }
 
   private void before() {
@@ -171,6 +189,25 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
         SerializationFeature.INDENT_OUTPUT
       )
       .build();
+  }
+
+  private static ClientAndServer initMockServer() {
+    log.debug("Setting up Engine MockServer on port {}", IntegrationTestConfigurationUtil.getEngineMockServerPort());
+    return MockServerFactory.createProxyMockServer(
+      IntegrationTestConfigurationUtil.getEngineHost(),
+      Integer.parseInt(IntegrationTestConfigurationUtil.getEnginePort()),
+      IntegrationTestConfigurationUtil.getEngineMockServerPort()
+    );
+  }
+
+  public ClientAndServer useEngineMockServer() {
+    usingMockServer = true;
+    log.debug("Using Engine MockServer");
+    return mockServerClient;
+  }
+
+  public String getEnginePath() {
+    return "/engine-rest/engine/" + getEngineName();
   }
 
   public UUID createIndependentUserTask() throws IOException {
@@ -683,7 +720,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     HttpPost deploymentRequest = createDeploymentRequest(process, "test.bpmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
     try {
-      CloseableHttpResponse response = EngineIntegrationExtension.HTTP_CLIENT.execute(deploymentRequest);
+      CloseableHttpResponse response = HTTP_CLIENT.execute(deploymentRequest);
       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         throw new RuntimeException("Something really bad happened during deployment, " +
                                      "could not create a deployment!");
@@ -850,7 +887,11 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
   }
 
   private String getEngineUrl() {
-    return IntegrationTestConfigurationUtil.getEnginesRestEndpoint() + engineName;
+    if (usingMockServer) {
+      return "http://" + MOCKSERVER_HOST + ":" + IntegrationTestConfigurationUtil.getEngineMockServerPort()
+        + IntegrationTestConfigurationUtil.getEngineRestPath() + engineName;
+    }
+    return IntegrationTestConfigurationUtil.getEngineRestEndpoint() + engineName;
   }
 
   private String getSecuredEngineUrl() {
@@ -859,7 +900,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
 
   private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(final DeploymentDto deployment) {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(
-      deployment, EngineIntegrationExtension.HTTP_CLIENT
+      deployment, HTTP_CLIENT
     );
     assertThat("Deployment should contain only one process definition!", processDefinitions.size(), is(1));
     return processDefinitions.get(0);
@@ -944,7 +985,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     try {
       requestBodyAsJson = OBJECT_MAPPER.writeValueAsString(requestBodyAsMap);
       post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
-      try (CloseableHttpResponse response = EngineIntegrationExtension.HTTP_CLIENT.execute(post)) {
+      try (CloseableHttpResponse response = HTTP_CLIENT.execute(post)) {
         if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
           String body = "";
           if (response.getEntity() != null) {
@@ -957,10 +998,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
           );
         }
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        ProcessInstanceEngineDto processInstanceEngineDto = OBJECT_MAPPER.readValue(
-          responseString, ProcessInstanceEngineDto.class
-        );
-        return processInstanceEngineDto;
+        return OBJECT_MAPPER.readValue(responseString, ProcessInstanceEngineDto.class);
       }
     } catch (IOException e) {
       String message = "Could not start the given process model!";
@@ -1302,7 +1340,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     String decisionDefinition = Dmn.convertToString(dmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
-    try (CloseableHttpResponse response = EngineIntegrationExtension.HTTP_CLIENT.execute(deploymentRequest)) {
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         String responseErrorMessage = EntityUtils.toString(response.getEntity(), "UTF-8");
         String exceptionMessage = String.format(
@@ -1335,4 +1373,5 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
     return credentialsProvider;
   }
+
 }

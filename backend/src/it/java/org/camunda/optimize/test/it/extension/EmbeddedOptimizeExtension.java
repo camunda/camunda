@@ -65,6 +65,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.test.it.extension.MockServerFactory.MOCKSERVER_HOST;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 /**
@@ -140,6 +141,17 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     getConfigurationService().getElasticsearchConnectionNodes().get(0).setHost(host);
     getConfigurationService().getElasticsearchConnectionNodes().get(0).setHttpPort(esPort);
     reloadConfiguration();
+  }
+
+  public void configureEngineRestEndpointForEngineWithName(final String engineName, final String restEndpoint) {
+    getConfigurationService()
+      .getConfiguredEngines()
+      .values()
+      .stream()
+      .filter(config -> config.getName().equals(engineName))
+      .findFirst()
+      .orElseThrow(() -> new IllegalStateException("Cannot find configured engine with name " + engineName))
+      .setRest(restEndpoint);
   }
 
   public void startContinuousImportScheduling() {

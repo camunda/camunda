@@ -158,7 +158,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   @Test
   public void createEventProcessMapping() {
     // given
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     // when
     Response response = eventProcessClient
@@ -209,7 +209,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   @Test
   public void createEventProcessMappingElasticsearchConnectionError() {
     // given
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + EVENT_PROCESS_MAPPING_INDEX_NAME + "/_doc/.*")
       .withMethod(PUT);
@@ -1067,7 +1067,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
         Collections.emptyList()
       ));
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
       .withMethod(POST);
@@ -1102,7 +1102,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
     );
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + COLLECTION_INDEX_NAME + ".*/_update_by_query")
       .withMethod(POST);
@@ -1131,7 +1131,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
 
-    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME + "/_update_by_query")
       .withMethod(POST);
