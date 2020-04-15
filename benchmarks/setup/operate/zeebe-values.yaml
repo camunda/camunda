@@ -35,6 +35,8 @@ env:
   # Enable JSON logging for google cloud stackdriver
   - name: ZEEBE_LOG_APPENDER
     value: Stackdriver
+  - name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED
+    value: "true"
 
 # RESOURCES
 resources:

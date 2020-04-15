@@ -22,6 +22,7 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
 import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
@@ -60,8 +61,10 @@ public final class BrokerCfgTest {
 
   private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
   private static final String ZEEBE_BROKER_NETWORK_ADVERTISED_HOST =
-      "zeebe.broker.network.advertised-host";
+      "zeebe.broker.network.advertisedHost";
   private static final String ZEEBE_BROKER_NETWORK_PORT_OFFSET = "zeebe.broker.network.portOffset";
+  private static final String ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED =
+      "zeebe.broker.executionMetricsExporterEnabled";
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -238,6 +241,15 @@ public final class BrokerCfgTest {
 
     // then
     assertDefaultDebugLogExporter(true);
+  }
+
+  @Test
+  public void shouldEnableMetricsExporter() {
+    // given
+    environment.put(ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED, "true");
+
+    // then
+    assertMetricsExporter();
   }
 
   @Test
@@ -491,7 +503,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldUseDefaultAdvertisedHostFromEnv() {
     // given
-    environment.put("zeebe.broker.network.advertisedHost", "zeebe.io");
+    environment.put(ZEEBE_BROKER_NETWORK_ADVERTISED_HOST, "zeebe.io");
 
     // then
     assertAdvertisedAddress("default", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
@@ -662,6 +674,20 @@ public final class BrokerCfgTest {
 
   private void assertDebugLogExporter(final String configFileName, final boolean prettyPrint) {
     final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
+    final BrokerCfg brokerCfg = readConfig(configFileName);
+
+    assertThat(brokerCfg.getExporters().values())
+        .usingRecursiveFieldByFieldElementComparator()
+        .contains(exporterCfg);
+  }
+
+  private void assertMetricsExporter() {
+    assertMetricsExporter("default");
+    assertMetricsExporter("empty");
+  }
+
+  private void assertMetricsExporter(final String configFileName) {
+    final ExporterCfg exporterCfg = MetricsExporter.defaultConfig();
     final BrokerCfg brokerCfg = readConfig(configFileName);
 
     assertThat(brokerCfg.getExporters().values())
