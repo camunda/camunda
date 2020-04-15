@@ -38,7 +38,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-@Ignore
 @RunWith(Parameterized.class)
 public class UpgradeTest {
 
@@ -172,6 +171,7 @@ public class UpgradeTest {
   }
 
   @Test
+  @Ignore
   public void oldGatewayWithNewBroker() {
     // given
     state
