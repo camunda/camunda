@@ -5,7 +5,7 @@ boolean slaveDisconnected() {
 }
 
 // general properties for CI execution
-def static NODE_POOL() { return "slaves-ssd-small" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 def static GCLOUD_DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { "postgres:${postgresVersion}" }
 static String kubectlAgent(env, postgresVersion='9.6-alpine') {
@@ -23,9 +23,7 @@ spec:
   serviceAccountName: ci-optimize-camunda-cloud
   volumes:
   - name: import
-    hostPath:
-      path: /mnt/disks/ssd0
-      type: Directory
+    emptyDir: {}
   containers:
   - name: gcloud
     image: ${GCLOUD_DOCKER_IMAGE()}
@@ -40,7 +38,7 @@ spec:
         cpu: 500m
         memory: 512Mi
     volumeMounts:
-    - name: import 
+    - name: import
       mountPath: /import
   - name: postgres
     image: ${POSTGRES_DOCKER_IMAGE(postgresVersion)}
@@ -56,14 +54,14 @@ spec:
     env:
       - name: PGUSER
         value: camunda
-      - name: PGPASSWORD 
+      - name: PGPASSWORD
         value: camunda123
       - name: PGHOST
         value: opt-ci-perf.db
       - name: PGDATABASE
         value: optimize-ci-performance
     volumeMounts:
-    - name: import 
+    - name: import
       mountPath: /import
 """
 }
