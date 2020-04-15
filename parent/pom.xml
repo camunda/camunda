@@ -87,7 +87,7 @@
     <version.kryo>4.0.2</version.kryo>
 
     <!-- maven plugins -->
-    <plugin.version.antrun>1.8</plugin.version.antrun>
+    <plugin.version.antrun>3.0.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.1.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.1.1</plugin.version.checkstyle>
