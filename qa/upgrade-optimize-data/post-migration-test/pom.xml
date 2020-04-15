@@ -7,7 +7,6 @@
     <old.optimize.elasticsearch.port>9250</old.optimize.elasticsearch.port>
     <new.optimize.elasticsearch.port>9200</new.optimize.elasticsearch.port>
     <elasticsearch.snapshot.path>/usr/share/elasticsearch/essnapshots</elasticsearch.snapshot.path>
-    <previous.generator.version>2.7.1-SNAPSHOT</previous.generator.version>
   </properties>
 
   <parent>
@@ -164,12 +163,12 @@
                       <isset property="env.MAVEN_SETTINGS_XML" />
                     </condition>
 
-                    <echo message="Downloading &amp; unpacking Optimize Report Generator ${previous.generator.version}..." />
+                    <echo message="Downloading &amp; unpacking Optimize Report Generator ${project.previousVersion}..." />
                     <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${previous.generator.version}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                      <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${project.previousVersion}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
                     </exec>
-                    <echo message="Optimize ${previous.generator.version} generator successfully unpacked." />
+                    <echo message="Optimize ${project.previousVersion} generator successfully unpacked." />
 
                     <echo message="Downloading &amp; unpacking Optimize Report Generator ${project.version}..." />
                     <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
@@ -266,7 +265,7 @@
                     <echo message="Generating optimize data" />
                     <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${previous.generator.version}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
+                      <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${project.previousVersion}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
                     </exec>
 
                     <echo message="Killing Optimize ${project.previousVersion}..." />
