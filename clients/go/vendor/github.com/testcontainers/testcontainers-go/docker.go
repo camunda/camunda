@@ -243,6 +243,16 @@ func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
 	return n, nil
 }
 
+// ContainerIP gets the IP address of the primary network within the container.
+func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return inspect.NetworkSettings.IPAddress, nil
+}
+
 // NetworkAliases gets the aliases of the container for the networks it is attached to.
 func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
 	inspect, err := c.inspectContainer(ctx)
@@ -384,11 +394,9 @@ type DockerNetwork struct {
 }
 
 // Remove is used to remove the network. It is usually triggered by as defer function.
-func (n *DockerNetwork) Remove(_ context.Context) error {
-	if n.terminationSignal != nil {
-		n.terminationSignal <- true
-	}
-	return nil
+func (n *DockerNetwork) Remove(ctx context.Context) error {
+
+	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -714,6 +722,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		Driver:            req.Driver,
 		Name:              req.Name,
 		terminationSignal: termSignal,
+		provider:          p,
 	}
 
 	return n, nil
