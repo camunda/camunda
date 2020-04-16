@@ -5,8 +5,7 @@
 		]
 	},
 	"dest": {
-		"index": "operate-sequence-flow-${schema.version}_",
-		"pipeline": "operate-sequence-flow"
+		"index": "operate-sequence-flow-${schema.version}_"
 	},
 	"script": {
 		"lang": "painless",

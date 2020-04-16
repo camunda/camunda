@@ -14,7 +14,6 @@
   <properties>
     <plugin.version.license>3.0</plugin.version.license>
     <license.header>${project.baseUri}/../../license/license-header</license.header>
-    <version.old.zeebe>0.22.1</version.old.zeebe>
   </properties>
 
 
@@ -23,7 +22,7 @@
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-bom</artifactId>
-        <version>${version.old.zeebe}</version>
+        <version>${version.zeebe.old}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

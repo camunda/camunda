@@ -34,7 +34,7 @@ public class MigrationProperties {
 
   private int elasticsearchPort = 9200;
 
-  private String archiverDateFormat = "yyyyMMdd";
+  private String archiverDateFormat = "yyyy-MM-dd";
   
   public void setFromOperateBaseUrl(String fromOperateBaseUrl) {
 	  this.fromOperateBaseUrl = fromOperateBaseUrl;

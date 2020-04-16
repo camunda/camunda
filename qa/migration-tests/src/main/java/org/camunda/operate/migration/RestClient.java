@@ -17,6 +17,7 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,12 +62,12 @@ public class RestClient {
 	}
 	
 	@SuppressWarnings("rawtypes")
-  public boolean createOperation(Long workflowInstanceKey, OperationType operationType) {
-		Map<String,Object> operationRequest = CollectionUtil.asMap("operationType",operationType.name());
-		String apiEndpoint = migrationProperties.getFromOperateBaseUrl()+"/api/workflow-instances/" + workflowInstanceKey + "/operation";
-		ResponseEntity<Map> operationResponse = testRestTemplate.postForEntity(apiEndpoint,operationRequest,Map.class, loggedInHeaders);
-		logger.debug("OperationResponse: {}",operationResponse.getBody());
-		return operationResponse.getStatusCode().equals(HttpStatus.OK) && operationResponse.getBody().get("count").equals(1);
+	public boolean createOperation(Long workflowInstanceKey, OperationType operationType) {
+		Map<String, Object> operationRequest = CollectionUtil.asMap("operationType", operationType.name());
+		String apiEndpoint = migrationProperties.getFromOperateBaseUrl() + "/api/workflow-instances/" + workflowInstanceKey + "/operation";
+		ResponseEntity<Map> operationResponse = testRestTemplate.postForEntity(apiEndpoint, operationRequest, Map.class, loggedInHeaders);
+		logger.debug("OperationResponse: {}", operationResponse.getBody());
+		return operationResponse.getStatusCode().equals(HttpStatus.OK) && operationResponse.getBody().get(BatchOperationTemplate.ID) != null;
 	}
 	  
 	private HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {

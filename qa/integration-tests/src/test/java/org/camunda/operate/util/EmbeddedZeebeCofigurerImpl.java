@@ -13,7 +13,6 @@ import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.test.EmbeddedBrokerRule;
 
 @Component("embeddedZeebeCofigurer")
-@Profile("!old-zeebe")
 public class EmbeddedZeebeCofigurerImpl implements EmbeddedZeebeConfigurer {
 
   public void injectPrefixToZeebeConfig(EmbeddedBrokerRule brokerRule, String exporterId, String prefix) {

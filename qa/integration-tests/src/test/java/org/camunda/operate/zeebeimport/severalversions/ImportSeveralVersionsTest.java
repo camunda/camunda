@@ -35,7 +35,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
-@Ignore
 public class ImportSeveralVersionsTest extends OperateIntegrationTest {
 
   @Rule
@@ -66,10 +65,10 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
   private int incidentCount;
 
   @SpyBean
-  private org.camunda.operate.zeebeimport.v22.processors.ElasticsearchBulkProcessor importerv1;
+  private org.camunda.operate.zeebeimport.v23.processors.ElasticsearchBulkProcessor importerv1;
 
   @SpyBean
-  private org.camunda.operate.zeebeimport.v23.processors.ElasticsearchBulkProcessor importerv2;
+  private org.camunda.operate.zeebeimport.v24.processors.ElasticsearchBulkProcessor importerv2;
 
   public TestContainerUtil testContainerUtil = new TestContainerUtil();
 
@@ -79,6 +78,7 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
   }
 
   @Test
+  @Ignore("Broken on Zeebe side")
   public void shouldImportFromSeveralZeebeVersions() throws PersistenceException {
     //when
     startImportAndWaitTillItFinishes();

@@ -27,8 +27,7 @@ public class TestContainerUtil {
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME = "docker.elastic.co/elasticsearch/elasticsearch-oss";
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
   public static final int ELS_PORT = 9200;
-  public static final String ZEEBE_CFG_TOML_FILE = "/severalversions/zeebe.cfg.toml";
-  public static final String ZEEBE_CFG_YAML_FILE = "/severalversions/zeebe.cfg.yml";
+  public static final String ZEEBE_CFG_YAML_FILE = "/severalversions/application.yaml";
   public static final String PROPERTIES_PREFIX = "camunda.operate.";
 
   private Network network;
@@ -55,21 +54,7 @@ public class TestContainerUtil {
   }
 
   private void addConfig(ZeebeBrokerContainer broker, String version) {
-    boolean tomlVersion = false;
-    final String[] versionParts = version.split("\\.");
-    try {
-      if (versionParts.length >= 2 && Integer.valueOf(versionParts[1]) <= 22) {
-        tomlVersion = true;
-      }
-    } catch (NumberFormatException ex) {
-      //second part of version is not a number, skipping
-    }
-    if (tomlVersion) {
-      broker.withConfigurationResource(ZEEBE_CFG_TOML_FILE);
-    } else {
-      broker.withCopyFileToContainer(MountableFile.forClasspathResource(ZEEBE_CFG_YAML_FILE),
-          "/usr/local/zeebe/config/application.yml");
-    }
+    broker.withCopyFileToContainer(MountableFile.forClasspathResource(ZEEBE_CFG_YAML_FILE), "/usr/local/zeebe/config/application.yaml");
   }
 
   public void startElasticsearch() {

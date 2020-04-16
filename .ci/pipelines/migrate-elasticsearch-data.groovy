@@ -139,12 +139,10 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:0.22.0
+      image: camunda/zeebe:0.23.0
       env:
-      volumeMounts:
-        - name: zeebe-configuration
-          mountPath: /usr/local/zeebe/conf/zeebe.cfg.toml
-          subPath: zeebe.cfg.toml
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+          value: io.zeebe.exporter.ElasticsearchExporter
       resources:
         limits:
           cpu: 4
@@ -153,7 +151,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: operate
-      image: camunda/operate:1.2.0
+      image: camunda/operate:0.23.0
       env:
         - name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
           value: false
@@ -177,12 +175,6 @@ spec:
   - name: vault-config
     configMap:
       name: ${prefix}ci-operate-vault-templates
-  - name: zeebe-configuration
-    configMap:
-      name: zeebe-configuration
-      items:
-      - key: zeebe.cfg.toml
-        path: zeebe.cfg.toml
 """ as String
 }
 

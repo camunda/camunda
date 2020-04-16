@@ -10,6 +10,10 @@
 
   <properties>
     <license.header>${project.baseUri}/../../license/license-header</license.header>
+
+    <!-- properties for ImportSeveralVersionsTest and import-old-zeebe-tests module -->
+    <version.zeebe.old>0.23.0</version.zeebe.old>
+    <version.zeebe.docker.current>SNAPSHOT</version.zeebe.docker.current>
   </properties>
 
   <name>Camunda Operate QA</name>

@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>camunda-operate-importer-023</artifactId>
+  <artifactId>camunda-operate-importer-024</artifactId>
 
   <dependencies>
 
@@ -22,7 +22,7 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>compile</scope>
-      <version>0.23.0</version>
+      <version>${version.zeebe}</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
 

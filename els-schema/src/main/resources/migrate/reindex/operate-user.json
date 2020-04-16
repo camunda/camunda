@@ -5,7 +5,6 @@
 		]
 	},
 	"dest": {
-		"index": "operate-user-${schema.version}_",
-		"pipeline": "operate-user"
+		"index": "operate-user-${schema.version}_"
 	}
 }
