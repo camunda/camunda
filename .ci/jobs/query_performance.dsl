@@ -12,8 +12,10 @@ pipelineJob('query-performance-tests') {
 
   parameters {
     stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
+
+    choiceParam('SQL_DUMP', ['optimize_data-medium.sqlc', 'optimize_data-large.sqlc', 'optimize_data-stage.sqlc'])
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
-    stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
+    stringParam('ES_VERSION', '7.3.0', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
   }
 
   triggers {
