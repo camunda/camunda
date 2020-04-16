@@ -32,10 +32,6 @@ public final class AsyncSnapshotDirector extends Actor {
       "Unexpected error in resolving last written position.";
   private static final String ERROR_MSG_MOVE_SNAPSHOT =
       "Unexpected exception occurred on moving valid snapshot.";
-  private static final String LOG_MSG_ENFORCE_SNAPSHOT =
-      "Enforce snapshot creation. Last successful processed position is {}.";
-  private static final String ERROR_MSG_ENFORCED_SNAPSHOT =
-      "Unexpected exception occurred on creating snapshot, was enforced to do so.";
 
   private final SnapshotController snapshotController;
   private final LogStream logStream;
@@ -92,50 +88,7 @@ public final class AsyncSnapshotDirector extends Actor {
       return CompletableActorFuture.completed(null);
     }
 
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-    actor.call(
-        () ->
-            actor.runOnCompletion(
-                streamProcessor.getLastWrittenPositionAsync(),
-                (writtenPosition, ex1) -> {
-                  if (ex1 == null) {
-                    actor.runOnCompletion(
-                        streamProcessor.getLastProcessedPositionAsync(),
-                        (processedPosition, ex2) -> {
-                          if (ex2 == null) {
-
-                            logStream
-                                .getCommitPositionAsync()
-                                .onComplete(
-                                    (commitPosition, errorOnRetrieveCommitPos) -> {
-                                      if (errorOnRetrieveCommitPos == null) {
-                                        enforceSnapshotCreation(
-                                            commitPosition, writtenPosition, processedPosition);
-                                        super.closeAsync();
-                                        future.complete(null);
-                                      } else {
-                                        LOG.error(
-                                            "Unexpected error on retrieving commit position", ex2);
-                                        super.closeAsync();
-                                        future.completeExceptionally(errorOnRetrieveCommitPos);
-                                      }
-                                    });
-
-                          } else {
-                            LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, ex2);
-                            super.closeAsync();
-                            future.completeExceptionally(ex2);
-                          }
-                        });
-
-                  } else {
-                    LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, ex1);
-                    super.closeAsync();
-                    future.completeExceptionally(ex1);
-                  }
-                }));
-
-    return future;
+    return super.closeAsync();
   }
 
   private void scheduleSnapshotOnRate() {
@@ -246,19 +199,5 @@ public final class AsyncSnapshotDirector extends Actor {
                 }
               }
             });
-  }
-
-  void enforceSnapshotCreation(
-      final long commitPosition, final long lastWrittenPosition, final long lastProcessedPosition) {
-    if (lastProcessedPosition > StreamProcessor.UNSET_POSITION
-        && commitPosition >= lastWrittenPosition) {
-      LOG.debug(LOG_MSG_ENFORCE_SNAPSHOT, lastProcessedPosition);
-      try {
-        snapshotController.takeSnapshot(lastProcessedPosition);
-        LOG.debug("Created snapshot for {}", processorName);
-      } catch (final Exception ex) {
-        LOG.error(ERROR_MSG_ENFORCED_SNAPSHOT, ex);
-      }
-    }
   }
 }

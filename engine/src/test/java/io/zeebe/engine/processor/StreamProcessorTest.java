@@ -493,57 +493,6 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldCreateSnapshotOnClose() throws Exception {
-    // given
-    final var onProcessedListener = new AwaitableProcessedListener();
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, context) ->
-            processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                mock(TypedRecordProcessor.class)),
-        onProcessedListener.expect(1));
-
-    // when
-    streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    onProcessedListener.await();
-    final StateSnapshotController stateSnapshotController =
-        streamProcessorRule.getStateSnapshotController();
-    streamProcessorRule.closeStreamProcessor();
-
-    // then
-    waitUntil(() -> stateSnapshotController.getValidSnapshotsCount() == 1);
-    assertThat(stateSnapshotController.getValidSnapshotsCount()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldCreateSnapshotOnCloseEvenIfNothingProcessedSinceLastSnapshot()
-      throws Exception {
-    // given
-    final var onProcessedListener = new AwaitableProcessedListener();
-    final var streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, context) ->
-                processors.onEvent(
-                    ValueType.WORKFLOW_INSTANCE,
-                    WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                    mock(TypedRecordProcessor.class)),
-            onProcessedListener.expect(1));
-    final var stateSnapshotController = streamProcessorRule.getStateSnapshotController();
-    streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    onProcessedListener.await();
-    streamProcessorRule.getClock().addTime(SNAPSHOT_INTERVAL);
-    waitUntil(() -> stateSnapshotController.getValidSnapshotsCount() == 1);
-
-    // when
-    streamProcessorRule.closeStreamProcessor();
-
-    // then
-    assertThat(streamProcessor.isClosed()).isTrue();
-    waitUntil(() -> stateSnapshotController.getValidSnapshotsCount() == 2);
-  }
-
-  @Test
   public void shouldCreateSnapshotsEvenIfNoProcessorProcessEvent()
       throws InterruptedException, TimeoutException {
     // given

@@ -59,8 +59,7 @@ import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
 
 public final class TestStreams {
-  private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
-
+  static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
   private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
   static {
