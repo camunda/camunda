@@ -1,0 +1,29 @@
+global:
+  scrape_interval:     5s
+  evaluation_interval: 5s 
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+         - targets: ['localhost:9090']
+
+  - job_name: 'broker-1'
+    static_configs:
+      - targets: ['broker-1:9600']
+        labels:
+          namespace: 'local'
+          pod: 'broker-1'
+
+  - job_name: 'broker-2'
+    static_configs:
+      - targets: ['broker-2:9600']
+        labels:
+          namespace: 'local'
+          pod: 'broker-2'
+
+  - job_name: 'broker-3'
+    static_configs:
+      - targets: ['broker-3:9600']
+        labels:
+          namespace: 'local'
+          pod: 'broker-3'
