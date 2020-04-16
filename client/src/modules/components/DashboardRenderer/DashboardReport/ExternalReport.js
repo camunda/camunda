@@ -8,7 +8,7 @@ import React from 'react';
 
 export default class ExternalReport extends React.Component {
   state = {
-    reloadState: 0
+    reloadState: 0,
   };
 
   reloadReport = () => {
@@ -16,7 +16,7 @@ export default class ExternalReport extends React.Component {
   };
 
   render() {
-    const {report, disableReportScrolling, children = () => {}} = this.props;
+    const {report, children = () => {}} = this.props;
 
     if (report.configuration && report.configuration.external) {
       return (
@@ -26,7 +26,6 @@ export default class ExternalReport extends React.Component {
             title="External Report"
             src={report.configuration.external}
             frameBorder="0"
-            scrolling={disableReportScrolling ? 'no' : 'yes'}
             style={{width: '100%', height: '100%'}}
           />
           {children({loadReportData: this.reloadReport})}

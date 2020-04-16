@@ -6,8 +6,6 @@
 
 import React from 'react';
 
-import classnames from 'classnames';
-
 import {ReportRenderer, LoadingIndicator, NoDataNotice} from 'components';
 import {Link, withRouter} from 'react-router-dom';
 import {withErrorHandling} from 'HOC';
@@ -27,7 +25,7 @@ export default themed(
           this.state = {
             loading: true,
             data: undefined,
-            error: null
+            error: null,
           };
         }
 
@@ -38,18 +36,18 @@ export default themed(
         loadReport = async () => {
           await this.props.mightFail(
             this.props.loadReport(this.props.report.id),
-            response => {
+            (response) => {
               this.setState({
                 loading: false,
-                data: response
+                data: response,
               });
             },
-            async e => {
+            async (e) => {
               const errorData = await e.json();
               this.setState({
                 loading: false,
                 data: errorData.reportDefinition,
-                error: formatError(e, errorData)
+                error: formatError(e, errorData),
               });
             }
           );
@@ -74,7 +72,7 @@ export default themed(
             return <LoadingIndicator />;
           }
 
-          const {report, disableNameLink, disableReportScrolling, children = () => {}} = this.props;
+          const {report, disableNameLink, children = () => {}} = this.props;
 
           const reportName = this.getName();
 
@@ -96,19 +94,11 @@ export default themed(
                   </Link>
                 )}
               </div>
-              <div
-                className={classnames('OptimizeReport__visualization', {
-                  'OptimizeReport__visualization--unscrollable': disableReportScrolling
-                })}
-              >
+              <div className="OptimizeReport__visualization">
                 {error ? (
                   <NoDataNotice title={error.title}>{error.text}</NoDataNotice>
                 ) : (
-                  <ReportRenderer
-                    disableReportScrolling={disableReportScrolling}
-                    report={data}
-                    isExternal
-                  />
+                  <ReportRenderer report={data} isExternal />
                 )}
               </div>
               {children({loadReportData: this.loadReport})}
@@ -124,11 +114,11 @@ function formatError(e, {errorCode, errorMessage}) {
   if (e.status === 403) {
     return {
       title: t('dashboard.noAuthorization'),
-      text: t('dashboard.noReportAccess')
+      text: t('dashboard.noReportAccess'),
     };
   }
 
   return {
-    text: errorCode ? t('apiErrors.' + errorCode) : errorMessage
+    text: errorCode ? t('apiErrors.' + errorCode) : errorMessage,
   };
 }

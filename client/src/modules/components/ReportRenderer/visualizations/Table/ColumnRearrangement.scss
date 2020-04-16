@@ -42,5 +42,9 @@
 
   tr {
     max-width: max-content;
+
+    .placeholder {
+      display: none;
+    }
   }
 }

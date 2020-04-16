@@ -24,7 +24,7 @@ export default function DashboardRenderer({
   reports,
   loadReport,
   addons,
-  onChange
+  onChange,
 }) {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -71,11 +71,10 @@ export default function DashboardRenderer({
               x: report.position.x,
               y: report.position.y,
               w: report.dimensions.width,
-              h: report.dimensions.height
+              h: report.dimensions.height,
             }}
           >
             <DashboardReport
-              disableReportScrolling={disableReportInteractions}
               disableNameLink={disableReportInteractions || disableNameLink}
               loadReport={loadReport}
               report={report}
@@ -100,8 +99,9 @@ function constructBackgroundGrid() {
     'url("data:image/svg+xml;base64,' +
     btoa(
       `<svg xmlns='http://www.w3.org/2000/svg' width='${outerWidth}' height='${outerHeight}'>` +
-        `<rect stroke='rgba(0, 0, 0, 0.2)' stroke-width='1' fill='none' x='${margin / 2 +
-          1}' y='${margin / 2 + 1}' width='${innerWidth - 3}' height='${innerHeight - 3}'/>` +
+        `<rect stroke='rgba(0, 0, 0, 0.2)' stroke-width='1' fill='none' x='${margin / 2 + 1}' y='${
+          margin / 2 + 1
+        }' width='${innerWidth - 3}' height='${innerHeight - 3}'/>` +
         `</svg>`
     ) +
     '")'

@@ -104,7 +104,7 @@ export default class ColumnRearrangement extends React.Component {
       validTarget: (idx, dropElem) => {
         // create a list of the text of all header columns
         const list = Array.from(
-          dropElem.closest('.Table').querySelector('thead tr:nth-child(2)').childNodes
+          dropElem.closest('.Table').querySelector('thead tr:last-child').childNodes
         ).map(({textContent}) => textContent);
 
         // add the column at the specified position
@@ -185,8 +185,6 @@ function createDragPreview(idx, evt) {
   // then make this column follow mouse movements
   const preview = evt.target.closest('.Table').cloneNode(true);
   preview.classList.add('ColumnRearrangement__dragPreview');
-
-  preview.querySelector('thead tr:first-child').style.display = 'none';
   cellsForColumn(preview, `-n+${idx}`).forEach(({style}) => (style.display = 'none'));
   cellsForColumn(preview, idx + 1).forEach(({style}) => {
     style.width = '250px';

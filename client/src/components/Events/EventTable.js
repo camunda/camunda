@@ -306,6 +306,7 @@ export default withErrorHandling(
                   t('events.sources.empty')}
               </>
             }
+            noHighlight
           />
         </div>
       );

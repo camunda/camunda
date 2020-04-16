@@ -13,7 +13,10 @@
 
   .Table {
     max-height: 30%;
-    overflow: auto;
+
+    table {
+      height: 100%;
+    }
 
     .Dropdown {
       position: static;

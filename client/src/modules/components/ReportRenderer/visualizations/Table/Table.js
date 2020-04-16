@@ -38,7 +38,7 @@ export default withErrorHandling(
     }
 
     render() {
-      const {report, disableReportScrolling, updateReport} = this.props;
+      const {report, updateReport} = this.props;
 
       if (this.state.needEndpoint && this.state.camundaEndpoints === null) {
         return <LoadingIndicator />;
@@ -46,7 +46,7 @@ export default withErrorHandling(
 
       return (
         <ColumnRearrangement report={report} updateReport={updateReport}>
-          <TableRenderer disableReportScrolling={disableReportScrolling} {...this.formatData()} />
+          <TableRenderer {...this.formatData()} />
         </ColumnRearrangement>
       );
     }

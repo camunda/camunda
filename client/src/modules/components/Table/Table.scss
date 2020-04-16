@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
 
-  .reactTable {
+  table {
     border: 1px solid $silver-darken-87;
     border-collapse: collapse;
     display: flex;
@@ -14,10 +14,11 @@
 
   thead tr {
     border-bottom: 1px solid $silver-darken-87;
+    user-select: none;
+    overflow: hidden;
 
     .tableHeader {
       padding: 0;
-      overflow: hidden;
 
       &:not(:first-child):not(.placeholder):before {
         content: ' ';
@@ -26,7 +27,7 @@
         left: 0;
         height: 31px;
         width: 1px;
-        background: rgb(216, 220, 227);
+        background: $silver-darken-87;
       }
 
       &:first-child .cellContent {
@@ -86,6 +87,10 @@
     }
   }
 
+  &.highlight tbody tr:hover {
+    background-color: $silver-darken-94;
+  }
+
   .controls {
     margin: 20px auto;
 
@@ -105,12 +110,5 @@
     transform: translate(-50%, -50%);
     padding: 20px;
     color: $grey-lighten-56;
-  }
-}
-
-.Table.unscrollable-mode {
-  .Table,
-  .Table tbody {
-    overflow: hidden;
   }
 }

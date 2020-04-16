@@ -24,7 +24,7 @@ export default function Table({
   updateSorting,
   sorting,
   disablePagination,
-  disableReportScrolling,
+  noHighlight,
   noData = t('common.noData'),
 }) {
   const columns = React.useMemo(() => Table.formatColumns(head), [head]);
@@ -100,31 +100,22 @@ export default function Table({
   }
 
   return (
-    <div
-      className={classnames('Table', className, {
-        'unscrollable-mode': disableReportScrolling,
-      })}
-    >
-      <table {...getTableProps()} className="reactTable">
+    <div className={classnames('Table', className, {highlight: !noHighlight})}>
+      <table {...getTableProps()}>
         <thead>
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column) => {
-                return (
-                  <th
-                    className={classnames('tableHeader', {placeholder: column.placeholderOf})}
-                    {...column.getHeaderProps()}
-                  >
-                    <div className="cellContent" {...getSortingProps(column)}>
-                      {column.render('Header')}
-                    </div>
-                    <div
-                      {...column.getResizerProps()}
-                      className={`resizer ${column.isResizing ? 'isResizing' : ''}`}
-                    />
-                  </th>
-                );
-              })}
+              {headerGroup.headers.map((column) => (
+                <th
+                  className={classnames('tableHeader', {placeholder: column.placeholderOf})}
+                  {...column.getHeaderProps()}
+                >
+                  <div className="cellContent" {...getSortingProps(column)}>
+                    {column.render('Header')}
+                  </div>
+                  <div {...column.getResizerProps()} className="resizer" />
+                </th>
+              ))}
             </tr>
           ))}
         </thead>
@@ -133,9 +124,9 @@ export default function Table({
             prepareRow(row);
             return (
               <tr {...row.getRowProps(row.original.__props)}>
-                {row.cells.map((cell) => {
-                  return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>;
-                })}
+                {row.cells.map((cell) => (
+                  <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                ))}
               </tr>
             );
           })}

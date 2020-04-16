@@ -10,7 +10,7 @@ import {t} from 'translation';
 
 export const getNoDataMessage = () => ({
   head: [t('report.table.noData.head')],
-  body: [[t('report.table.noData.body')]]
+  body: [[t('report.table.noData.body')]],
 });
 
 export function cockpitLink(endpoints, instance, type) {
@@ -68,17 +68,17 @@ function sortHead(head, columnOrder) {
     ...sortedHeadWithoutVariables,
     ...sortedHeadVariables,
     ...sortedHeadInputVariables,
-    ...sortedHeadOutputVariables
+    ...sortedHeadOutputVariables,
   ];
 }
 
 function sortNested(head, columnOrder, label, accessor) {
   return head
-    .filter(entry => entry.label === label)
-    .map(entry => {
+    .filter((entry) => entry.label === label)
+    .map((entry) => {
       return {
         ...entry,
-        columns: [...entry.columns].sort(byOrder(columnOrder[accessor]))
+        columns: [...entry.columns].sort(byOrder(columnOrder[accessor])),
       };
     });
 }
@@ -88,13 +88,13 @@ function onlyNonNestedColumns(entry) {
 }
 
 function byOrder(order) {
-  return function(a, b) {
+  return function (a, b) {
     return order.indexOf(a.label || a) - order.indexOf(b.label || b);
   };
 }
 
 function sortBody(body, head, sortedHead) {
-  return body.map(row => sortRow(row, head, sortedHead));
+  return body.map((row) => sortRow(row, head, sortedHead));
 }
 
 function sortRow(row, head, sortedHead) {
@@ -115,7 +115,7 @@ function sortRow(row, head, sortedHead) {
     ...sortedRowWithoutVariables,
     ...sortedRowVariables,
     ...sortedRowInputVariables,
-    ...sortedRowOutputVariables
+    ...sortedRowOutputVariables,
   ];
 }
 
@@ -131,20 +131,20 @@ function sortNestedRow(row, head, sortedHead, label) {
 }
 
 function belongingToNonNestedColumn(head) {
-  return function(_, idx) {
+  return function (_, idx) {
     return head[idx] && !head[idx].columns;
   };
 }
 
 function belongingToColumnWithLabel(head, label) {
   const flatHead = head.reduce(flatten(), []);
-  return function(_, idx) {
+  return function (_, idx) {
     return flatHead[idx] === label;
   };
 }
 
 function valueForNewColumnPosition(head, sortedHead) {
-  return function(_, newPosition, cells) {
+  return function (_, newPosition, cells) {
     const headerAtNewPosition = sortedHead[newPosition];
     const originalPosition = head.indexOf(headerAtNewPosition);
 
@@ -153,6 +153,6 @@ function valueForNewColumnPosition(head, sortedHead) {
 }
 
 function getNestedColumnsForEntryWithLabel(head, label) {
-  const column = head.find(column => column.label === label);
+  const column = head.find((column) => column.label === label);
   return column && column.columns;
 }
