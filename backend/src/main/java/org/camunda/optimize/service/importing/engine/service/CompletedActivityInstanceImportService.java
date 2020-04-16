@@ -73,22 +73,21 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   }
 
   private FlowNodeEventDto mapEngineEntityToOptimizeEntity(final HistoricActivityInstanceEngineDto engineEntity) {
-    return new FlowNodeEventDto(
-      engineEntity.getId(),
-      engineEntity.getActivityId(),
-      engineEntity.getActivityName(),
-      engineEntity.getParentActivityInstanceId(),
-      engineEntity.getStartTime(),
-      engineEntity.getProcessDefinitionKey(),
-      engineEntity.getProcessDefinitionId(),
-      engineEntity.getProcessInstanceId(),
-      engineEntity.getStartTime(),
-      engineEntity.getEndTime(),
-      engineEntity.getDurationInMillis(),
-      engineEntity.getActivityType(),
-      engineContext.getEngineAlias(),
-      engineEntity.getTenantId()
-    );
+    return FlowNodeEventDto.builder()
+      .id(engineEntity.getId())
+      .activityId(engineEntity.getActivityId())
+      .activityName(engineEntity.getActivityName())
+      .timestamp(engineEntity.getStartTime())
+      .processDefinitionKey(engineEntity.getProcessDefinitionKey())
+      .processDefinitionId(engineEntity.getProcessDefinitionId())
+      .processInstanceId(engineEntity.getProcessInstanceId())
+      .startDate(engineEntity.getStartTime())
+      .endDate(engineEntity.getEndTime())
+      .durationInMs(engineEntity.getDurationInMillis())
+      .activityType(engineEntity.getActivityType())
+      .engineAlias(engineContext.getEngineAlias())
+      .tenantId(engineEntity.getTenantId())
+      .build();
   }
 
 }

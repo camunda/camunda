@@ -71,23 +71,19 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   }
 
   private FlowNodeEventDto mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
-    final FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto(
-      engineEntity.getId(),
-      engineEntity.getActivityId(),
-      engineEntity.getActivityName(),
-      engineEntity.getParentActivityInstanceId(),
-      engineEntity.getStartTime(),
-      engineEntity.getProcessDefinitionKey(),
-      engineEntity.getProcessDefinitionId(),
-      engineEntity.getProcessInstanceId(),
-      engineEntity.getStartTime(),
-      null,
-      null,
-      engineEntity.getActivityType(),
-      engineContext.getEngineAlias(),
-      engineEntity.getTenantId()
-    );
-    return flowNodeEventDto;
+    return FlowNodeEventDto.builder()
+      .id(engineEntity.getId())
+      .activityId(engineEntity.getActivityId())
+      .activityName(engineEntity.getActivityName())
+      .timestamp(engineEntity.getStartTime())
+      .processDefinitionKey(engineEntity.getProcessDefinitionKey())
+      .processDefinitionId(engineEntity.getProcessDefinitionId())
+      .processInstanceId(engineEntity.getProcessInstanceId())
+      .startDate(engineEntity.getStartTime())
+      .activityType(engineEntity.getActivityType())
+      .engineAlias(engineContext.getEngineAlias())
+      .tenantId(engineEntity.getTenantId())
+      .build();
   }
 
 }
