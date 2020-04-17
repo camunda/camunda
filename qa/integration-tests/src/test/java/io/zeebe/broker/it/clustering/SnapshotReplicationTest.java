@@ -82,15 +82,8 @@ public final class SnapshotReplicationTest {
             .map(b -> b.getConfig().getCluster().getNodeId())
             .collect(Collectors.toList());
 
-    // Temp fix to make sure we don't restart broker-0 due to
-    // https://github.com/zeebe-io/atomix/issues/208
-    final var firstFollowerId =
-        followers.stream().filter(nodeId -> !nodeId.equals(0)).findFirst().orElseThrow();
-    final var secondFollowerId =
-        followers.stream()
-            .filter(nodeId -> nodeId.equals(firstFollowerId))
-            .findFirst()
-            .orElseThrow();
+    final var firstFollowerId = followers.get(0);
+    final var secondFollowerId = followers.get(1);
 
     // when - snapshot
     clusteringRule.stopBroker(firstFollowerId);
@@ -115,15 +108,8 @@ public final class SnapshotReplicationTest {
             .map(b -> b.getConfig().getCluster().getNodeId())
             .collect(Collectors.toList());
 
-    // Temp fix to make sure we don't restart broker-0 due to
-    // https://github.com/zeebe-io/atomix/issues/208
-    final var firstFollowerId =
-        followers.stream().filter(nodeId -> !nodeId.equals(0)).findFirst().orElseThrow();
-    final var secondFollowerId =
-        followers.stream()
-            .filter(nodeId -> nodeId.equals(firstFollowerId))
-            .findFirst()
-            .orElseThrow();
+    final var firstFollowerId = followers.get(0);
+    final var secondFollowerId = followers.get(1);
 
     // when - snapshot
     clusteringRule.stopBroker(firstFollowerId);

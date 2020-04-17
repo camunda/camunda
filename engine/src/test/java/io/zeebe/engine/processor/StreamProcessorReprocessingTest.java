@@ -336,6 +336,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING);
     streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING);
     processingLatch.await();
+    streamProcessorRule.waitForNextSnapshot();
     streamProcessorRule.closeStreamProcessor();
 
     // when
@@ -391,7 +392,8 @@ public final class StreamProcessorReprocessingTest {
     final long snapshotPosition =
         streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
     processingLatch.await();
-    streamProcessorRule.closeStreamProcessor(); // enforce snapshot
+    streamProcessorRule.waitForNextSnapshot();
+    streamProcessorRule.closeStreamProcessor();
     final long lastSourceEvent =
         streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long lastEvent =

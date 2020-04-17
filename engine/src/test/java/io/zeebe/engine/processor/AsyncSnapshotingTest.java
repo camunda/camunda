@@ -9,7 +9,6 @@ package io.zeebe.engine.processor;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -172,74 +171,6 @@ public final class AsyncSnapshotingTest {
   }
 
   @Test
-  public void shouldEnforceSnapshotCreation() {
-    // given
-    long lastProcessedPosition = 25L;
-    long lastWrittenPosition = 26L;
-    final long commitPosition = 100L;
-
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    setCommitPosition(commitPosition);
-
-    // when
-    lastProcessedPosition = 26L;
-    lastWrittenPosition = 27L;
-    asyncSnapshotDirector.enforceSnapshotCreation(
-        commitPosition, lastWrittenPosition, lastProcessedPosition);
-
-    // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldEnforceSnapshotCreationOnClose() {
-    // given
-    final long lastProcessedPosition = 25L;
-    final long lastWrittenPosition = 26L;
-    final long commitPosition = 100L;
-
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    setCommitPosition(commitPosition);
-
-    // when
-    asyncSnapshotDirector.closeAsync().join();
-
-    // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldPropagateLastWrittenPosExceptionOnClose() {
-    // given
-    final long lastProcessedPosition = 25L;
-    final long commitPosition = 100L;
-
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(
-            CompletableActorFuture.completedExceptionally(
-                new RuntimeException("getLastWrittenPositionAsync fails")));
-    setCommitPosition(commitPosition);
-
-    // when
-    final var future = asyncSnapshotDirector.closeAsync();
-
-    // then
-    assertThatThrownBy(future::get).hasMessage("getLastWrittenPositionAsync fails");
-    waitUntil(asyncSnapshotDirector::isActorClosed);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(0);
-  }
-
-  @Test
   public void shouldSucceedToTakeSnapshotOnNextIntervalWhenLastWritePosRetrievingFailed() {
     // given
     final long lastProcessedPosition = 25L;
@@ -264,29 +195,6 @@ public final class AsyncSnapshotingTest {
     // then
     waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
     assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldPropagateLastProcessedPosExceptionOnClose() {
-    // given
-    final long lastWrittenPosition = 26L;
-    final long commitPosition = 100L;
-
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
-        .thenReturn(
-            CompletableActorFuture.completedExceptionally(
-                new RuntimeException("getLastProcessedPositionAsync fails")));
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    setCommitPosition(commitPosition);
-
-    // when
-    final var future = asyncSnapshotDirector.closeAsync();
-
-    // then
-    assertThatThrownBy(future::get).hasMessage("getLastProcessedPositionAsync fails");
-    waitUntil(asyncSnapshotDirector::isActorClosed);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(0);
   }
 
   @Test
@@ -317,30 +225,6 @@ public final class AsyncSnapshotingTest {
   }
 
   @Test
-  public void shouldPropagateCommitPosExceptionOnClose() {
-    // given
-    final long lastProcessedPosition = 25L;
-    final long lastWrittenPosition = 26L;
-
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    when(logStream.getCommitPositionAsync())
-        .thenReturn(
-            CompletableActorFuture.completedExceptionally(
-                new RuntimeException("getCommitPositionAsync fails")));
-
-    // when
-    final var future = asyncSnapshotDirector.closeAsync();
-
-    // then
-    assertThatThrownBy(future::get).hasMessage("getCommitPositionAsync fails");
-    waitUntil(asyncSnapshotDirector::isActorClosed);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(0);
-  }
-
-  @Test
   public void shouldSucceedToTakeSnapshotOnNextIntervalWhenCommitPositionRetrievingFailed() {
     // given
     final long lastProcessedPosition = 25L;
@@ -365,31 +249,6 @@ public final class AsyncSnapshotingTest {
     // then
     waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
     assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldEnforceSnapshotCreationEvenIfExists() {
-    // given
-    final long lastProcessedPosition = 25L;
-    final long lastWrittenPosition = 26L;
-    final long commitPosition = 100L;
-
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    setCommitPosition(commitPosition);
-
-    clock.addTime(Duration.ofMinutes(1));
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
-
-    // when
-    asyncSnapshotDirector.enforceSnapshotCreation(
-        commitPosition, lastWrittenPosition, lastProcessedPosition);
-
-    // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 2);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(2);
   }
 
   @Test
