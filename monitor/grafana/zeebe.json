@@ -64,11 +64,12 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1586154330555,
+  "iteration": 1587026668314,
   "links": [],
   "panels": [
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -105,6 +106,7 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "link": false,
               "pattern": "Time",
@@ -112,6 +114,7 @@
             },
             {
               "alias": "Broker - Partition",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -131,6 +134,7 @@
             },
             {
               "alias": "Role",
+              "align": "auto",
               "colorMode": "value",
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -164,6 +168,7 @@
             },
             {
               "alias": "test",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -328,12 +333,14 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "pattern": "Time",
               "type": "date"
             },
             {
               "alias": "",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -350,6 +357,7 @@
             },
             {
               "alias": "Broker Partition",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -364,6 +372,7 @@
             },
             {
               "alias": "Status",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -431,12 +440,14 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "pattern": "Time",
               "type": "date"
             },
             {
               "alias": "Pod",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -451,6 +462,7 @@
             },
             {
               "alias": "Status",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -1269,6 +1281,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1301,12 +1314,14 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "pattern": "Time",
               "type": "date"
             },
             {
               "alias": "",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -1358,12 +1373,14 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "pattern": "Time",
               "type": "date"
             },
             {
               "alias": "",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -1974,6 +1991,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2490,6 +2508,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -3180,6 +3199,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -3542,6 +3562,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -3881,6 +3902,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -4272,6 +4294,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -4984,6 +5007,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -5239,13 +5263,14 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 19,
+  "schemaVersion": 22,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
         "current": {
+          "selected": false,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -5265,40 +5290,19 @@
         "allValue": ".*",
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "",
+        "definition": "label_values(zeebe_health, namespace)",
         "hide": 0,
         "includeAll": true,
+        "index": -1,
         "label": null,
         "multi": false,
         "name": "namespace",
         "options": [],
-        "query": "label_values(jvm_info, namespace)",
+        "query": "label_values(zeebe_health, namespace)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allValue": "(.*-zeebe-[0-9]+$)",
-        "current": {},
-        "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(jvm_info{namespace=~\"$namespace\"}, pod)",
-        "hide": 0,
-        "includeAll": true,
-        "label": null,
-        "multi": false,
-        "name": "pod",
-        "options": [],
-        "query": "label_values(jvm_info{namespace=~\"$namespace\"}, pod)",
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -5309,18 +5313,42 @@
         "allValue": ".*",
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "",
+        "definition": "label_values(zeebe_health{namespace=~\"$namespace\"}, pod)",
         "hide": 0,
         "includeAll": true,
+        "index": -1,
         "label": null,
-        "multi": false,
-        "name": "partition",
+        "multi": true,
+        "name": "pod",
         "options": [],
-        "query": "label_values(zeebe_stream_processor_events_total{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "query": "label_values(zeebe_health{namespace=~\"$namespace\"}, pod)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(zeebe_health{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "hide": 0,
+        "includeAll": true,
+        "index": -1,
+        "label": null,
+        "multi": true,
+        "name": "partition",
+        "options": [],
+        "query": "label_values(zeebe_health{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -5361,5 +5389,8 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
+  "variables": {
+    "list": []
+  },
   "version": 2
 }
