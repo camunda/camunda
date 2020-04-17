@@ -10,7 +10,7 @@ import {withErrorHandling} from 'HOC';
 import {getFormatter, processResult as processSingleReportResult} from './service';
 import {Table, Chart} from './visualizations';
 
-const getComponent = visualization => {
+const getComponent = (visualization) => {
   if (visualization === 'table') {
     return Table;
   } else {
@@ -27,7 +27,7 @@ export default withErrorHandling(
 
       const processedReport = {
         ...this.props.report,
-        result: {...this.props.report.result, data: processResult(this.props.report.result.data)}
+        result: {...this.props.report.result, data: processResult(this.props.report.result.data)},
       };
 
       return (

@@ -18,7 +18,7 @@ export default class DurationChart extends React.Component {
     this.createChart();
   }
 
-  storeContainer = canvas => {
+  storeContainer = (canvas) => {
     this.canvas = canvas;
   };
 
@@ -36,54 +36,54 @@ export default class DurationChart extends React.Component {
             data: data.map(({value}) => value),
             borderColor: colors,
             backgroundColor: colors,
-            borderWidth: 2
-          }
-        ]
+            borderWidth: 2,
+          },
+        ],
       },
       options: {
         responsive: true,
         animation: false,
         maintainAspectRatio: false,
         legend: {
-          display: false
+          display: false,
         },
         tooltips: {
           intersect: false,
           mode: 'x',
           callbacks: {
             title: this.createTooltipTitle,
-            label: ({xLabel}) => ' ' + t('analysis.outlier.tooltip.tookDuration') + ' ' + xLabel
+            label: ({xLabel}) => ' ' + t('analysis.outlier.tooltip.tookDuration') + ' ' + xLabel,
           },
-          filter: (tooltipItem, data) => +tooltipItem.value > 0
+          filter: (tooltipItem, data) => +tooltipItem.value > 0,
         },
         scales: {
           xAxes: [
             {
               ticks: {
-                ...createDurationFormattingOptions(null, maxDuration)
+                ...createDurationFormattingOptions(null, maxDuration),
               },
               scaleLabel: {
                 display: true,
                 labelString: t('analysis.outlier.detailsModal.axisLabels.duration'),
-                fontStyle: 'bold'
-              }
-            }
+                fontStyle: 'bold',
+              },
+            },
           ],
           yAxes: [
             {
               scaleLabel: {
                 display: true,
                 labelString: t('analysis.outlier.detailsModal.axisLabels.instanceCount'),
-                fontStyle: 'bold'
-              }
-            }
-          ]
-        }
-      }
+                fontStyle: 'bold',
+              },
+            },
+          ],
+        },
+      },
     });
   };
 
-  createTooltipTitle = data => {
+  createTooltipTitle = (data) => {
     if (!data.length) {
       return;
     }

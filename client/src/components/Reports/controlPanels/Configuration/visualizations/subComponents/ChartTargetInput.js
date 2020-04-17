@@ -12,7 +12,7 @@ import {t} from 'translation';
 
 export default function ChartTargetInput({onChange, report}) {
   const {
-    configuration: {targetValue}
+    configuration: {targetValue},
   } = report.data;
   const referenceReport = report.combined ? Object.values(report.result.data)[0] : report;
   const type = referenceReport.data.view.property === 'frequency' ? 'countChart' : 'durationChart';
@@ -21,9 +21,9 @@ export default function ChartTargetInput({onChange, report}) {
     onChange({
       targetValue: {
         [type]: {
-          [prop]: {$set: value}
-        }
-      }
+          [prop]: {$set: value},
+        },
+      },
     });
   }
 
@@ -56,7 +56,7 @@ export default function ChartTargetInput({onChange, report}) {
       {type === 'durationChart' && (
         <Select
           value={targetValue[type].unit}
-          onChange={value => setValues('unit', value)}
+          onChange={(value) => setValues('unit', value)}
           disabled={!targetValue.active}
         >
           <Select.Option value="millis">{t('common.unit.milli.label-plural')}</Select.Option>

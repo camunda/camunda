@@ -27,8 +27,8 @@ it('should render an duration type selection for user task duration reports', ()
       report={{
         data: {
           configuration: {userTaskDurationTime: 'total'},
-          view: {entity: 'userTask', property: 'duration'}
-        }
+          view: {entity: 'userTask', property: 'duration'},
+        },
       }}
     />
   );
@@ -44,8 +44,8 @@ it('should reevaluate the report when changing the duration type', () => {
       report={{
         data: {
           configuration: {userTaskDurationTime: 'total'},
-          view: {entity: 'userTask', property: 'duration'}
-        }
+          view: {entity: 'userTask', property: 'duration'},
+        },
       }}
       onChange={spy}
     />

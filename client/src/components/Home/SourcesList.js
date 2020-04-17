@@ -16,7 +16,7 @@ import {
   addSources,
   editSource,
   removeSource,
-  checkDeleteSourceConflicts
+  checkDeleteSourceConflicts,
 } from './service';
 
 import AddSourceModal from './modals/AddSourceModal';
@@ -37,7 +37,7 @@ export default withErrorHandling(
       tenantsAvailable: false,
       conflict: null,
       editLoading: false,
-      tenants: []
+      tenants: [],
     };
 
     async componentDidMount() {
@@ -48,19 +48,19 @@ export default withErrorHandling(
     getSources = () => {
       this.props.mightFail(
         getSources(this.props.collection),
-        sources => this.setState({sources}),
+        (sources) => this.setState({sources}),
         showError
       );
     };
 
     openAddSourceModal = () => this.setState({addingSource: true});
-    addSource = sources => {
+    addSource = (sources) => {
       this.closeAddSourceModal();
       this.props.mightFail(addSources(this.props.collection, sources), this.getSources, showError);
     };
     closeAddSourceModal = () => this.setState({addingSource: false});
 
-    openEditSourceModal = editing => this.setState({editing});
+    openEditSourceModal = (editing) => this.setState({editing});
     editSource = (tenants, force) => {
       const {id} = this.state.editing;
       this.setState({editLoading: true});
@@ -73,13 +73,13 @@ export default withErrorHandling(
             this.props.onChange();
           }
         },
-        async error => {
+        async (error) => {
           if (error.status === 409) {
             const {conflictedItems} = await error.json();
             this.setState({
               editLoading: false,
               conflict: conflictedItems,
-              tenants
+              tenants,
             });
           } else {
             showError(error);
@@ -99,7 +99,7 @@ export default withErrorHandling(
         sources,
         tenantsAvailable,
         conflict,
-        tenants
+        tenants,
       } = this.state;
 
       const {readOnly, collection} = this.props;
@@ -120,7 +120,7 @@ export default withErrorHandling(
             columns={[t('home.sources.definitionName'), t('common.tenant.label-plural')]}
             data={
               sources &&
-              sources.map(source => {
+              sources.map((source) => {
                 const {definitionKey, definitionName, definitionType, tenants} = source;
                 const actions = [];
                 if (!readOnly) {
@@ -128,7 +128,7 @@ export default withErrorHandling(
                     actions.push({
                       icon: 'delete',
                       text: t('common.remove'),
-                      action: () => this.setState({deleting: source})
+                      action: () => this.setState({deleting: source}),
                     });
                   }
 
@@ -136,7 +136,7 @@ export default withErrorHandling(
                     actions.unshift({
                       icon: 'edit',
                       text: t('common.edit'),
-                      action: () => this.openEditSourceModal(source)
+                      action: () => this.openEditSourceModal(source),
                     });
                   }
                 }
@@ -147,7 +147,7 @@ export default withErrorHandling(
                   type: formatType(definitionType),
                   name: definitionName || definitionKey,
                   meta: [tenantsAvailable && formatTenants(tenants)],
-                  actions
+                  actions,
                 };
               })
             }
@@ -157,7 +157,7 @@ export default withErrorHandling(
             getName={() => deleting.definitionName || deleting.definitionKey}
             deleteText={t('common.remove')}
             descriptionText={t('home.sources.deleteWarning', {
-              name: (deleting && (deleting.definitionName || deleting.definitionKey)) || ''
+              name: (deleting && (deleting.definitionName || deleting.definitionKey)) || '',
             })}
             onDelete={() => {
               this.getSources();

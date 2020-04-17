@@ -14,15 +14,15 @@ jest.mock('services', () => {
   const durationSpy = jest.fn();
   return {
     formatters: {
-      duration: durationSpy
-    }
+      duration: durationSpy,
+    },
   };
 });
 
 const viewer = {
   get: jest.fn().mockReturnThis(),
   remove: jest.fn(),
-  add: jest.fn()
+  add: jest.fn(),
 };
 
 formatters.duration.mockReturnValue('some duration');

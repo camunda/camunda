@@ -9,8 +9,8 @@ export const view = [
   {
     key: 'evaluationCount',
     group: 'count',
-    data: {property: 'frequency'}
-  }
+    data: {property: 'frequency'},
+  },
 ];
 
 export const groupBy = [
@@ -18,7 +18,7 @@ export const groupBy = [
   {
     key: 'rules',
     group: 'rule',
-    data: {type: 'matchedRule', value: null}
+    data: {type: 'matchedRule', value: null},
   },
   {
     key: 'evaluationDate',
@@ -27,37 +27,37 @@ export const groupBy = [
       {
         key: 'evaluationDate_automatic',
 
-        data: {type: 'evaluationDateTime', value: {unit: 'automatic'}}
+        data: {type: 'evaluationDateTime', value: {unit: 'automatic'}},
       },
       {
         key: 'evaluationDate_year',
 
-        data: {type: 'evaluationDateTime', value: {unit: 'year'}}
+        data: {type: 'evaluationDateTime', value: {unit: 'year'}},
       },
       {
         key: 'evaluationDate_month',
 
-        data: {type: 'evaluationDateTime', value: {unit: 'month'}}
+        data: {type: 'evaluationDateTime', value: {unit: 'month'}},
       },
       {
         key: 'evaluationDate_week',
 
-        data: {type: 'evaluationDateTime', value: {unit: 'week'}}
+        data: {type: 'evaluationDateTime', value: {unit: 'week'}},
       },
       {
         key: 'evaluationDate_day',
 
-        data: {type: 'evaluationDateTime', value: {unit: 'day'}}
+        data: {type: 'evaluationDateTime', value: {unit: 'day'}},
       },
       {
         key: 'evaluationDate_hour',
 
-        data: {type: 'evaluationDateTime', value: {unit: 'hour'}}
-      }
-    ]
+        data: {type: 'evaluationDateTime', value: {unit: 'hour'}},
+      },
+    ],
   },
   {key: 'inputVariable', group: 'variable', options: 'inputVariable'},
-  {key: 'outputVariable', group: 'variable', options: 'outputVariable'}
+  {key: 'outputVariable', group: 'variable', options: 'outputVariable'},
 ];
 
 export const visualization = [
@@ -65,17 +65,17 @@ export const visualization = [
   {key: 'table', group: 'table', data: 'table'},
   {key: 'bar', group: 'chart', data: 'bar'},
   {key: 'line', group: 'chart', data: 'line'},
-  {key: 'pie', group: 'chart', data: 'pie'}
+  {key: 'pie', group: 'chart', data: 'pie'},
 ];
 
 export const combinations = {
   raw: {
-    none: ['table']
+    none: ['table'],
   },
   count: {
     none: ['number'],
     rule: ['table'],
     date: ['table', 'chart'],
-    variable: ['table', 'chart']
-  }
+    variable: ['table', 'chart'],
+  },
 };

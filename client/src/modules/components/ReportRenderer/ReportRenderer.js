@@ -69,8 +69,8 @@ function ReportRenderer(props) {
                   className="additionalInfo"
                   dangerouslySetInnerHTML={{
                     __html: t(`report.totalCount.${isDecision ? 'evaluation' : 'instance'}`, {
-                      count: formatters.frequency(report.result.instanceCount || 0)
-                    })
+                      count: formatters.frequency(report.result.instanceCount || 0),
+                    }),
                   }}
                 />
               )}

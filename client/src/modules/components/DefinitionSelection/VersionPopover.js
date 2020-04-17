@@ -17,7 +17,7 @@ export default function VersionPopover({
   selected,
   selectedSpecificVersions = [],
   onChange,
-  disabled
+  disabled,
 }) {
   const specific = usesSpecificVersions(selected);
 
@@ -59,7 +59,7 @@ export default function VersionPopover({
           <Form.Group
             noSpacing
             className={classnames('specificVersions', {
-              disabled: !specific
+              disabled: !specific,
             })}
           >
             {versions.map(({version, versionTag}) => {
@@ -79,7 +79,7 @@ export default function VersionPopover({
                     if (target.checked) {
                       onChange(selected.concat([version]).sort((a, b) => b - a));
                     } else {
-                      onChange(selected.filter(selected => selected !== version));
+                      onChange(selected.filter((selected) => selected !== version));
                     }
                   }}
                 />

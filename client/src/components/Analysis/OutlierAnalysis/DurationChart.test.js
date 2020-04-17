@@ -10,7 +10,10 @@ import {shallow} from 'enzyme';
 import Chart from 'chart.js';
 import DurationChart from './DurationChart';
 
-const data = [{key: '5', value: '3', outlier: true}, {key: '1', value: '20', outlier: false}];
+const data = [
+  {key: '5', value: '3', outlier: true},
+  {key: '1', value: '20', outlier: false},
+];
 
 it('should construct a bar Chart with the noda data', () => {
   shallow(<DurationChart data={data} />);

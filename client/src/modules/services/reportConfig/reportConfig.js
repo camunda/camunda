@@ -82,11 +82,11 @@ export default function reportConfig({view, groupBy, visualization, combinations
       return 'variable';
     }
 
-    const entry = type.find(entry => {
+    const entry = type.find((entry) => {
       if (entry.data) {
         return equal(entry.data, data, {strict: true});
       } else if (Array.isArray(entry.options)) {
-        return entry.options.find(entry => equal(entry.data, data, {strict: true}));
+        return entry.options.find((entry) => equal(entry.data, data, {strict: true}));
       }
       return false;
     });
@@ -95,7 +95,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
   }
 
   function getOnlyOptionFor(type, group) {
-    return type.find(entry => entry.group === group).data;
+    return type.find((entry) => entry.group === group).data;
   }
 
   /**
@@ -184,6 +184,6 @@ export default function reportConfig({view, groupBy, visualization, combinations
     getLabelFor,
     isAllowed,
     update,
-    options: {view, groupBy, visualization}
+    options: {view, groupBy, visualization},
   };
 }

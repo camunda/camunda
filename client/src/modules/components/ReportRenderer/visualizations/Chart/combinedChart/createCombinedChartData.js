@@ -16,14 +16,21 @@ export default function createCombinedChartData(props) {
     reportColors,
     targetValue,
     isDark,
-    visualization
+    visualization,
   } = extractCombinedData(props);
 
   const datasets = unitedResults.map((report, index) => {
     return {
       label: reportsNames && reportsNames[index],
       data: report.map(({value}) => value),
-      ...createDatasetOptions(visualization, report, targetValue, reportColors[index], true, isDark)
+      ...createDatasetOptions(
+        visualization,
+        report,
+        targetValue,
+        reportColors[index],
+        true,
+        isDark
+      ),
     };
   });
 
@@ -54,7 +61,7 @@ export function extractCombinedData({report, theme, targetValue}) {
   }
 
   const unitedResults = uniteResults(resultArr, keys);
-  const labels = keys.map(key => labelsMap[key] || key);
+  const labels = keys.map((key) => labelsMap[key] || key);
 
   return {
     labels,
@@ -63,6 +70,6 @@ export function extractCombinedData({report, theme, targetValue}) {
     reportColors,
     targetValue,
     isDark,
-    visualization: data.visualization
+    visualization: data.visualization,
   };
 }

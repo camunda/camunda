@@ -22,7 +22,7 @@ export default function ConflictModal({conflict, onClose, onConfirm}) {
       <Modal.Header>{t('report.saveConflict.header')}</Modal.Header>
       <Modal.Content>
         {conflict &&
-          ['combined_report', 'alert'].map(type => {
+          ['combined_report', 'alert'].map((type) => {
             if (conflict[type].length === 0) {
               return null;
             }

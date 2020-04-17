@@ -13,7 +13,7 @@ import DurationTargetInput from './DurationTargetInput';
 const validProps = {
   baseline: {value: '12', unit: 'weeks'},
   target: {value: '15', unit: 'months'},
-  disabled: false
+  disabled: false,
 };
 
 it('should display the current target values', () => {

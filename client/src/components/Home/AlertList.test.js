@@ -24,8 +24,8 @@ jest.mock('services', () => {
     loadReports: jest.fn().mockReturnValue([
       {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
       {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'},
-      {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'}
-    ])
+      {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'},
+    ]),
   };
 });
 
@@ -39,16 +39,16 @@ jest.mock('./service', () => ({
       lastModifier: 'Admin',
       lastModified: '2017-11-11T11:11:11.1111+0200',
       reportId: '2',
-      webhook: null
-    }
+      webhook: null,
+    },
   ]),
   addAlert: jest.fn(),
   editAlert: jest.fn(),
-  removeAlert: jest.fn()
+  removeAlert: jest.fn(),
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should load existing reports', () => {
@@ -66,7 +66,7 @@ it('should load existing webhooks', () => {
 it('should only save single number reports', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.state('reports').map(report => report.id)).toEqual(['2']);
+  expect(node.state('reports').map((report) => report.id)).toEqual(['2']);
 });
 
 it('should format durations with value and unit', async () => {
@@ -79,15 +79,15 @@ it('should format durations with value and unit', async () => {
       thresholdOperator: '>',
       threshold: {
         value: '12',
-        unit: 'seconds'
+        unit: 'seconds',
       },
       checkInterval: {
         value: '10',
-        unit: 'minutes'
+        unit: 'minutes',
       },
       reminder: null,
-      fixNotification: false
-    }
+      fixNotification: false,
+    },
   ]);
 
   const node = shallow(<AlertList {...props} />);
@@ -124,10 +124,7 @@ it('should show create Alert button', () => {
 it('should Alert to Deleter', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  node
-    .find(EntityList)
-    .prop('data')[0]
-    .actions[1].action();
+  node.find(EntityList).prop('data')[0].actions[1].action();
 
   expect(node.state('deleting')).toEqual({
     id: 'alertID',
@@ -136,17 +133,14 @@ it('should Alert to Deleter', async () => {
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
     reportId: '2',
-    webhook: null
+    webhook: null,
   });
 });
 
 it('should open a modal when editing an alert', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  node
-    .find(EntityList)
-    .prop('data')[0]
-    .actions[0].action();
+  node.find(EntityList).prop('data')[0].actions[0].action();
 
   expect(node.find(AlertModal)).toExist();
   expect(node.find(AlertModal).prop('initialAlert')).toEqual({
@@ -156,7 +150,7 @@ it('should open a modal when editing an alert', async () => {
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
     reportId: '2',
-    webhook: null
+    webhook: null,
   });
 });
 
@@ -170,8 +164,8 @@ it('should show warning if alert is inactive due to missing webhoook', () => {
       lastModifier: 'Admin',
       lastModified: '2017-11-11T11:11:11.1111+0200',
       reportId: '2',
-      webhook: 'nonExistingWebhook'
-    }
+      webhook: 'nonExistingWebhook',
+    },
   ]);
   const node = shallow(<AlertList {...props} />);
 

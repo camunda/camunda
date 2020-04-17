@@ -15,7 +15,7 @@ import VariablesTable from './VariablesTable';
 
 export default class OutlierDetailsModal extends React.Component {
   state = {
-    tableView: false
+    tableView: false,
   };
 
   render() {
@@ -43,7 +43,7 @@ export default class OutlierDetailsModal extends React.Component {
                       higherOutlier.count === 1 ? '' : '-plural'
                     }`
                   ),
-                  percentage: Math.round(higherOutlier.relation * 100)
+                  percentage: Math.round(higherOutlier.relation * 100),
                 })}
               </p>
               <DurationChart data={data} />

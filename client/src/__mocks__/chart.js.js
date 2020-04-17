@@ -6,20 +6,20 @@
 
 const Chart = jest.fn(() => {
   return {
-    destroy: jest.fn()
+    destroy: jest.fn(),
   };
 });
 
 Chart.defaults = {
   global: {
-    defaultFontFamily: ''
-  }
+    defaultFontFamily: '',
+  },
 };
 
 Chart.controllers = {
   line: {
-    extend: jest.fn()
-  }
+    extend: jest.fn(),
+  },
 };
 
 export default Chart;

@@ -23,7 +23,7 @@ export default class Submenu extends React.Component {
     this.state = {styles: {}, scrollable: false};
   }
 
-  onClick = evt => {
+  onClick = (evt) => {
     if (this.props.disabled) {
       return;
     }
@@ -37,7 +37,7 @@ export default class Submenu extends React.Component {
     this.props.forceToggle(evt);
   };
 
-  onMouseOver = evt => {
+  onMouseOver = (evt) => {
     if (this.props.disabled || this.props.open) {
       return;
     }
@@ -48,11 +48,11 @@ export default class Submenu extends React.Component {
     this.props.setOpened(evt);
   };
 
-  onMouseLeave = evt => {
+  onMouseLeave = (evt) => {
     this.props.setClosed(evt);
   };
 
-  onKeyDown = evt => {
+  onKeyDown = (evt) => {
     evt.stopPropagation();
 
     if (evt.key !== 'Tab') {
@@ -99,7 +99,7 @@ export default class Submenu extends React.Component {
   componentDidMount() {
     new MutationObserver(this.calculatePlacement).observe(this.containerRef.current, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
 
     this.initilizeHeaderAndFooterRefs();
@@ -159,7 +159,7 @@ export default class Submenu extends React.Component {
         checked={this.props.checked}
         disabled={this.props.disabled}
         className={classnames('Submenu', {
-          open: this.props.open
+          open: this.props.open,
         })}
         ref={this.containerRef}
         onClick={this.onClick}

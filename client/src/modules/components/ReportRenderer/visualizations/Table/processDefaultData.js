@@ -9,12 +9,12 @@ import {t} from 'translation';
 
 const {formatReportResult, getRelativeValue} = formatters;
 
-export default function processDefaultData({formatter = v => v, report}) {
+export default function processDefaultData({formatter = (v) => v, report}) {
   const {data, result, reportType} = report;
   const {
     configuration: {hideAbsoluteValue, hideRelativeValue},
     view,
-    groupBy
+    groupBy,
   } = data;
 
   const formattedResult = formatReportResult(data, result.data);
@@ -22,7 +22,7 @@ export default function processDefaultData({formatter = v => v, report}) {
   const config = reportConfig[reportType];
   const labels = [
     config.getLabelFor('groupBy', config.options.groupBy, groupBy),
-    config.getLabelFor('view', config.options.view, view)
+    config.getLabelFor('view', config.options.view, view),
   ];
 
   if (view.entity === 'userTask' && groupBy.type === 'userTasks') {
@@ -42,7 +42,7 @@ export default function processDefaultData({formatter = v => v, report}) {
     body: formattedResult.map(({label, key, value}) => [
       label || key,
       ...(displayAbsoluteValue ? [formatter(value)] : []),
-      ...(displayRelativeValue ? [getRelativeValue(value, instanceCount)] : [])
-    ])
+      ...(displayRelativeValue ? [getRelativeValue(value, instanceCount)] : []),
+    ]),
   };
 }

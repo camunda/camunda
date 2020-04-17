@@ -16,7 +16,7 @@ import {isEmailEnabled} from 'config';
 
 jest.mock('config', () => ({
   isEmailEnabled: jest.fn().mockReturnValue(true),
-  getOptimizeVersion: jest.fn().mockReturnValue('2.7.0')
+  getOptimizeVersion: jest.fn().mockReturnValue('2.7.0'),
 }));
 
 jest.mock('services', () => {
@@ -26,9 +26,9 @@ jest.mock('services', () => {
     ...rest,
     formatters: {
       convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
-      convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
+      convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'}),
     },
-    getOptimizeVersion: jest.fn().mockReturnValue('2.4.0-alpha2')
+    getOptimizeVersion: jest.fn().mockReturnValue('2.4.0-alpha2'),
   };
 });
 
@@ -41,11 +41,11 @@ const initialAlert = {
   threshold: 37,
   checkInterval: {
     value: 1,
-    unit: 'hours'
+    unit: 'hours',
   },
   reminder: null,
   fixNotification: true,
-  webhook: null
+  webhook: null,
 };
 
 const reports = [
@@ -54,8 +54,8 @@ const reports = [
   {
     id: '9',
     name: 'Nice report',
-    data: {view: {property: 'duration'}, visualization: 'number'}
-  }
+    data: {view: {property: 'duration'}, visualization: 'number'},
+  },
 ];
 
 it('should apply the alert property to the state when changing props', () => {
@@ -72,13 +72,13 @@ it('should apply the alert property to the state when changing props', () => {
     threshold: '37',
     checkInterval: {
       value: '1',
-      unit: 'hours'
+      unit: 'hours',
     },
     reminder: null,
     fixNotification: true,
     invalid: false,
     webhook: null,
-    inactive: null
+    inactive: null,
   });
 });
 
@@ -133,8 +133,8 @@ it('should disable the submit button if the check interval is negative', () => {
   node.setState({
     checkInterval: {
       value: '-7',
-      unit: 'seconds'
-    }
+      unit: 'seconds',
+    },
   });
   expect(node.find('[primary]')).toBeDisabled();
 });
@@ -144,10 +144,7 @@ it('should enable the submit button if webhook is selected', () => {
 
   node.setProps({initialAlert});
   node.setState({email: ''});
-  node
-    .find('Typeahead')
-    .at(1)
-    .prop('onChange')('testWebhook');
+  node.find('Typeahead').at(1).prop('onChange')('testWebhook');
 
   expect(node.find({variant: 'primary'})).not.toBeDisabled();
 });
@@ -190,11 +187,11 @@ it('should convert a duration threshold when opening', async () => {
       threshold: '14000',
       checkInterval: {
         value: '10',
-        unit: 'minutes'
+        unit: 'minutes',
       },
       reminder: null,
-      fixNotification: false
-    }
+      fixNotification: false,
+    },
   });
 
   expect(node.state('threshold')).toEqual({value: '14', unit: 'seconds'});

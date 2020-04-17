@@ -19,15 +19,15 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
       this.elements = [
         {id: 'a', name: 'Element A'},
         {id: 'b', name: 'Element B'},
-        {id: 'c', name: 'Element C'}
+        {id: 'c', name: 'Element C'},
       ];
 
       this.elementRegistry = {
         filter: () => {
           return {
-            map: () => this.elements
+            map: () => this.elements,
           };
-        }
+        },
       };
     }
     attachTo = jest.fn();
@@ -45,10 +45,10 @@ const validProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        property: 'duration'
+        property: 'duration',
       },
       groupBy: {
-        type: 'flowNodes'
+        type: 'flowNodes',
       },
       visualization: 'heat',
       configuration: {
@@ -57,17 +57,17 @@ const validProps = {
           values: {
             a: {
               value: 12,
-              unit: 'days'
-            }
-          }
-        }
-      }
+              unit: 'days',
+            },
+          },
+        },
+      },
     },
-    result: {data: []}
-  }
+    result: {data: []},
+  },
 };
 
-const flushPromises = () => new Promise(resolve => setImmediate(resolve));
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 it('should display the bpmn diagram in the modal', () => {
   const node = shallow(<DurationHeatmapModal {...validProps} />);
@@ -105,8 +105,8 @@ it('should save the changes target values', async () => {
   expect(spy).toHaveBeenCalledWith({
     a: {
       unit: 'years',
-      value: 34
-    }
+      value: 34,
+    },
   });
 });
 
@@ -129,10 +129,8 @@ it('should set isInvalid property for input if value is invalid', async () => {
 
   await node.update();
 
-  expect(
-    node
-      .find('.selection > [type="number"]')
-      .first()
-      .props()
-  ).toHaveProperty('isInvalid', true);
+  expect(node.find('.selection > [type="number"]').first().props()).toHaveProperty(
+    'isInvalid',
+    true
+  );
 });

@@ -12,7 +12,7 @@ import {storeLicense} from './service';
 import License from './License';
 
 jest.mock('./service', () => ({
-  storeLicense: jest.fn().mockReturnValue({})
+  storeLicense: jest.fn().mockReturnValue({}),
 }));
 
 it('should store a new license', async () => {

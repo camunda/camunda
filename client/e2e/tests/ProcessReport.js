@@ -11,12 +11,9 @@ import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as e from './ProcessReport.elements.js';
 
-fixture('Process Report')
-  .page(config.endpoint)
-  .beforeEach(u.login)
-  .afterEach(cleanEntities);
+fixture('Process Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
-test('create and name a report', async t => {
+test('create and name a report', async (t) => {
   await u.createNewReport(t);
 
   await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
@@ -36,7 +33,7 @@ test('create and name a report', async t => {
   await t.expect(e.reportName.textContent).eql('Invoice Pipeline');
 });
 
-test('sharing', async t => {
+test('sharing', async (t) => {
   await u.createNewReport(t);
 
   await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
@@ -66,7 +63,7 @@ test('sharing', async t => {
   await t.expect(e.shareHeader.textContent).contains('Invoice Pipeline');
 });
 
-test('version selection', async t => {
+test('version selection', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
@@ -112,7 +109,7 @@ test('version selection', async t => {
   );
 });
 
-test('sort table columns', async t => {
+test('sort table columns', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
@@ -148,7 +145,7 @@ test('sort table columns', async t => {
   await t.expect(b >= c).ok();
 });
 
-test('exclude raw data columns', async t => {
+test('exclude raw data columns', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
@@ -171,7 +168,7 @@ test('exclude raw data columns', async t => {
   await t.expect(e.reportRenderer.textContent).notContains('Start Date');
 });
 
-test('cancel changes', async t => {
+test('cancel changes', async (t) => {
   await u.createNewReport(t);
 
   await u.save(t);
@@ -183,7 +180,7 @@ test('cancel changes', async t => {
   await t.expect(e.reportName.textContent).notEql('Another new Name');
 });
 
-test('update definition', async t => {
+test('update definition', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
@@ -194,7 +191,7 @@ test('update definition', async t => {
   await t.expect(e.reportRenderer.textContent).contains('leadQualification');
 });
 
-test('should only enable valid combinations for process instance count grouped by none', async t => {
+test('should only enable valid combinations for process instance count grouped by none', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -218,7 +215,7 @@ test('should only enable valid combinations for process instance count grouped b
   await t.expect(e.reportNumber.visible).ok();
 });
 
-test('Limit the precsion in number report', async t => {
+test('Limit the precsion in number report', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
@@ -239,7 +236,7 @@ test('Limit the precsion in number report', async t => {
   await t.expect(e.reportNumber.visible).ok();
 });
 
-test('Disable absolute and relative values for table reports', async t => {
+test('Disable absolute and relative values for table reports', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
@@ -256,7 +253,7 @@ test('Disable absolute and relative values for table reports', async t => {
   await t.expect(e.reportTable.textContent).notContains('Relative Frequency');
 });
 
-test('select process instance count grouped by end date', async t => {
+test('select process instance count grouped by end date', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -277,7 +274,7 @@ test('select process instance count grouped by end date', async t => {
   await t.expect(e.reportTable.visible).ok();
 });
 
-test('select process instance count grouped by variable', async t => {
+test('select process instance count grouped by variable', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
@@ -300,7 +297,7 @@ test('select process instance count grouped by variable', async t => {
   await t.expect(e.reportTable.textContent).contains('Variable: amount');
 });
 
-test('should only enable valid combinations for Flow Node Count', async t => {
+test('should only enable valid combinations for Flow Node Count', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
@@ -316,7 +313,7 @@ test('should only enable valid combinations for Flow Node Count', async t => {
   await t.expect(e.option('Heatmap').hasAttribute('disabled')).notOk();
 });
 
-test('select which flow nodes to show from the configuration', async t => {
+test('select which flow nodes to show from the configuration', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
@@ -345,7 +342,7 @@ test('select which flow nodes to show from the configuration', async t => {
   await t.expect(e.nodeTableCell('Assign Approver Group').exists).notOk();
 });
 
-test('select to show only running or completed nodes', async t => {
+test('select to show only running or completed nodes', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
@@ -361,7 +358,7 @@ test('select to show only running or completed nodes', async t => {
   await t.expect(e.reportTable.visible).ok();
 });
 
-test('bar/line chart configuration', async t => {
+test('bar/line chart configuration', async (t) => {
   await u.createNewReport(t);
   await t.typeText(e.nameEditField, 'Bar Chart Report', {replace: true});
 
@@ -402,7 +399,7 @@ test('bar/line chart configuration', async t => {
   await t.expect(e.reportChart.visible).ok();
 });
 
-test('different visualizations', async t => {
+test('different visualizations', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Flow Node', 'Duration');
@@ -427,7 +424,7 @@ test('different visualizations', async t => {
   await t.expect(e.reportNumber.visible).ok();
 });
 
-test('aggregators and reset to default', async t => {
+test('aggregators and reset to default', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Duration');
@@ -471,7 +468,7 @@ test('aggregators and reset to default', async t => {
   await t.expect(e.reportNumber.textContent).eql(avg);
 });
 
-test('progress bar', async t => {
+test('progress bar', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
 
@@ -502,7 +499,7 @@ test('progress bar', async t => {
     .maximizeWindow();
 });
 
-test('heatmap target values', async t => {
+test('heatmap target values', async (t) => {
   await u.createNewReport(t);
 
   await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
@@ -557,7 +554,7 @@ test('heatmap target values', async t => {
   await t.maximizeWindow();
 });
 
-test('always show tooltips', async t => {
+test('always show tooltips', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
@@ -577,7 +574,7 @@ test('always show tooltips', async t => {
   await t.expect(e.tooltip.visible).ok();
 });
 
-test('should only enable valid combinations for user task', async t => {
+test('should only enable valid combinations for user task', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
@@ -612,7 +609,7 @@ test('should only enable valid combinations for user task', async t => {
   await t.expect(e.reportTable.visible).ok();
 });
 
-test('should be able to distribute candidate group by user task', async t => {
+test('should be able to distribute candidate group by user task', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification', 'All');
   await u.selectView(t, 'User Task', 'Count');
@@ -644,7 +641,7 @@ test('should be able to distribute candidate group by user task', async t => {
   await t.expect(e.reportTable.visible).ok();
 });
 
-test('should be able to select how the time of the user task is calculated', async t => {
+test('should be able to select how the time of the user task is calculated', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'User Task', 'Duration');
@@ -664,7 +661,7 @@ test('should be able to select how the time of the user task is calculated', asy
   await t.expect(e.reportTable.visible).ok();
 });
 
-test('show process instance count', async t => {
+test('show process instance count', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
@@ -676,7 +673,7 @@ test('show process instance count', async t => {
   await t.expect(e.instanceCount.textContent).contains('Total Instance Count:');
 });
 
-test('process parts', async t => {
+test('process parts', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
@@ -701,7 +698,7 @@ test('process parts', async t => {
   await t.expect(withoutPart).notEql(withPart);
 });
 
-test('deleting', async t => {
+test('deleting', async (t) => {
   await u.createNewReport(t);
 
   await u.save(t);

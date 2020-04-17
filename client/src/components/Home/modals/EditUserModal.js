@@ -14,7 +14,7 @@ export default class EditUserModal extends React.Component {
     super(props);
 
     this.state = {
-      role: props.initialRole
+      role: props.initialRole,
     };
   }
 
@@ -25,7 +25,7 @@ export default class EditUserModal extends React.Component {
   render() {
     const {
       identity: {name, id},
-      onClose
+      onClose,
     } = this.props;
     const {role} = this.state;
 

@@ -9,5 +9,5 @@ import processDecsionData from './processDecisionRawData';
 
 export default {
   process: processRawData,
-  decision: processDecsionData
+  decision: processDecsionData,
 };

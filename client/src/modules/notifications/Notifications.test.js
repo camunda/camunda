@@ -13,7 +13,10 @@ it('should render Notifications', () => {
   const node = shallow(<Notifications />);
 
   node.setState({
-    notifications: [{id: 'a', text: 'Notification 1'}, {id: 'b', text: 'Notification 2'}]
+    notifications: [
+      {id: 'a', text: 'Notification 1'},
+      {id: 'b', text: 'Notification 2'},
+    ],
   });
 
   expect(node).toMatchSnapshot();

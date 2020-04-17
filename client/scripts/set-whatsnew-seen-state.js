@@ -17,12 +17,12 @@ const url = 'http://localhost:8090/api';
 })();
 
 function authenticate(username) {
-  return new Promise(async resolve => {
+  return new Promise(async (resolve) => {
     try {
       const response = await fetch(`${url}/authentication`, {
         method: 'POST',
         headers: {'content-type': 'application/json'},
-        body: JSON.stringify({username, password: username})
+        body: JSON.stringify({username, password: username}),
       });
 
       if (response && response.status != 200) {
@@ -41,15 +41,15 @@ function authenticate(username) {
 }
 
 function setSeen(token, username) {
-  return new Promise(async resolve => {
+  return new Promise(async (resolve) => {
     try {
       const response = await fetch(`${url}/onboarding/whatsnew`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Cookie: `X-Optimize-Authorization=Bearer ${token};`
+          Cookie: `X-Optimize-Authorization=Bearer ${token};`,
         },
-        body: JSON.stringify({seen: true})
+        body: JSON.stringify({seen: true}),
       });
 
       if (response && response.status != 204) {

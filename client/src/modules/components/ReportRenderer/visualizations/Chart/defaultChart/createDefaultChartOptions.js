@@ -14,7 +14,7 @@ const {createDurationFormattingOptions} = formatters;
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
     data: {visualization, groupBy, configuration, decisionDefinitionKey},
-    result
+    result,
   } = report;
 
   const isDark = theme === 'dark';
@@ -39,7 +39,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         maxDuration: maxValue,
         isDark,
         isPersistedTooltips,
-        autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey)
+        autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey),
       });
       break;
     default:
@@ -57,7 +57,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
       ...(isPersistedTooltips && {
         yAlign: 'bottom',
         xAlign: 'center',
-        displayColors: false
+        displayColors: false,
       }),
       callbacks: {
         ...(isPersistedTooltips && {title: () => ''}),
@@ -77,9 +77,9 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
             visualization
           );
         },
-        labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization)
-      }
-    }
+        labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
+      },
+    },
   };
 }
 
@@ -90,7 +90,7 @@ export function createBarOptions({
   maxDuration,
   isDark,
   autoSkip,
-  isPersistedTooltips
+  isPersistedTooltips,
 }) {
   const targetLine = targetValue && getFormattedTargetValue(targetValue);
 
@@ -98,46 +98,46 @@ export function createBarOptions({
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
     legend: {display: false},
     layout: {
-      padding: {top: isPersistedTooltips ? 30 : 0}
+      padding: {top: isPersistedTooltips ? 30 : 0},
     },
     scales: {
       yAxes: [
         {
           gridLines: {
-            color: getColorFor('grid', isDark)
+            color: getColorFor('grid', isDark),
           },
           scaleLabel: {
             display: !!configuration.yLabel,
-            labelString: configuration.yLabel
+            labelString: configuration.yLabel,
           },
           ticks: {
             ...(maxDuration ? createDurationFormattingOptions(targetLine, maxDuration) : {}),
             beginAtZero: true,
             fontColor: getColorFor('label', isDark),
-            suggestedMax: targetLine
-          }
-        }
+            suggestedMax: targetLine,
+          },
+        },
       ],
       xAxes: [
         {
           gridLines: {
-            color: getColorFor('grid', isDark)
+            color: getColorFor('grid', isDark),
           },
           scaleLabel: {
             display: !!configuration.xLabel,
-            labelString: configuration.xLabel
+            labelString: configuration.xLabel,
           },
           ticks: {
             fontColor: getColorFor('label', isDark),
-            autoSkip
+            autoSkip,
           },
-          stacked
-        }
-      ]
+          stacked,
+        },
+      ],
     },
     spanGaps: true,
     // plugin property
-    lineAt: targetLine
+    lineAt: targetLine,
   };
 }
 
@@ -145,8 +145,8 @@ function createPieOptions(isDark) {
   return {
     legend: {
       display: true,
-      labels: {fontColor: getColorFor('label', isDark)}
-    }
+      labels: {fontColor: getColorFor('label', isDark)},
+    },
   };
 }
 
@@ -156,14 +156,14 @@ export function createDatasetOptions(type, data, targetValue, datasetColor, isSt
       return {
         borderColor: getColorFor('border', isDark),
         backgroundColor: createColors(data.length, isDark),
-        borderWidth: undefined
+        borderWidth: undefined,
       };
     case 'line':
       return {
         borderColor: datasetColor,
         backgroundColor: 'transparent',
         borderWidth: 2,
-        legendColor: datasetColor
+        legendColor: datasetColor,
       };
     case 'bar':
     case 'number':
@@ -174,13 +174,13 @@ export function createDatasetOptions(type, data, targetValue, datasetColor, isSt
         borderColor: barColor,
         backgroundColor: barColor,
         legendColor: datasetColor,
-        borderWidth: 1
+        borderWidth: 1,
       };
     default:
       return {
         borderColor: undefined,
         backgroundColor: undefined,
-        borderWidth: undefined
+        borderWidth: undefined,
       };
   }
 }

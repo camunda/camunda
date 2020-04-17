@@ -23,7 +23,7 @@ export default class StringInput extends React.Component {
     availableValues: [],
     valuesLoaded: 0,
     valuesAreComplete: false,
-    numberOfUnselectedValuesToDisplay: valuesToLoad
+    numberOfUnselectedValuesToDisplay: valuesToLoad,
   };
 
   reset() {
@@ -41,10 +41,10 @@ export default class StringInput extends React.Component {
     }
   }
 
-  loadAvailableValues = debounce(more => {
+  loadAvailableValues = debounce((more) => {
     this.setState(
       {
-        loading: true
+        loading: true,
       },
       async () => {
         const values = await this.props.config.getValues(
@@ -71,37 +71,37 @@ export default class StringInput extends React.Component {
           valuesLoaded: availableValues.length,
           numberOfUnselectedValuesToDisplay,
           valuesAreComplete,
-          loading: false
+          loading: false,
         });
       }
     );
   }, 300);
 
-  selectedAvailableValues = availableValues => {
-    return availableValues.filter(value => this.props.filter.values.includes(value));
+  selectedAvailableValues = (availableValues) => {
+    return availableValues.filter((value) => this.props.filter.values.includes(value));
   };
 
-  availableSelectedValues = availableValues => {
-    return this.props.filter.values.filter(value => availableValues.includes(value));
+  availableSelectedValues = (availableValues) => {
+    return this.props.filter.values.filter((value) => availableValues.includes(value));
   };
 
-  setOperator = operator => evt => {
+  setOperator = (operator) => (evt) => {
     evt.preventDefault();
     this.props.changeFilter({operator, values: this.props.filter.values});
   };
 
-  loadMore = evt => {
+  loadMore = (evt) => {
     evt.preventDefault();
     this.loadAvailableValues(true);
   };
 
-  setValueFilter = async valueFilter => {
+  setValueFilter = async (valueFilter) => {
     const queryIncluded = this.state.valueFilter.slice(0, -1) === valueFilter;
     this.setState(
       {
         valueFilter,
         valuesLoaded: queryIncluded ? this.props.filter.values.length : 0,
-        numberOfUnselectedValuesToDisplay: valuesToLoad
+        numberOfUnselectedValuesToDisplay: valuesToLoad,
       },
       this.loadAvailableValues
     );
@@ -112,11 +112,11 @@ export default class StringInput extends React.Component {
     if (checked) {
       newValues = this.props.filter.values.concat(value);
     } else {
-      newValues = this.props.filter.values.filter(existingValue => existingValue !== value);
+      newValues = this.props.filter.values.filter((existingValue) => existingValue !== value);
     }
     this.props.changeFilter({
       operator: this.props.filter.operator,
-      values: newValues
+      values: newValues,
     });
     this.props.setValid(newValues.length > 0);
   };
@@ -148,7 +148,7 @@ export default class StringInput extends React.Component {
                 available: t('common.filter.variableModal.multiSelect.available'),
                 selected: t('common.filter.variableModal.multiSelect.selected'),
                 search: t('common.filter.variableModal.multiSelect.search'),
-                empty: t('common.filter.variableModal.multiSelect.empty')
+                empty: t('common.filter.variableModal.multiSelect.empty'),
               }}
               disabled={this.props.disabled}
             />

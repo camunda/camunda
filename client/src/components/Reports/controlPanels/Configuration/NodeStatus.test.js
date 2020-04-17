@@ -19,7 +19,7 @@ it('should render a status selection for flow node reports', () => {
   const node = shallow(
     <NodeStatus
       report={{
-        data: {groupBy: {type: 'flowNodes'}, configuration: {flowNodeExecutionState: 'completed'}}
+        data: {groupBy: {type: 'flowNodes'}, configuration: {flowNodeExecutionState: 'completed'}},
       }}
     />
   );
@@ -31,7 +31,7 @@ it('should render a status selection reports grouped by assignee', () => {
   const node = shallow(
     <NodeStatus
       report={{
-        data: {groupBy: {type: 'assignee'}, configuration: {flowNodeExecutionState: 'completed'}}
+        data: {groupBy: {type: 'assignee'}, configuration: {flowNodeExecutionState: 'completed'}},
       }}
     />
   );
@@ -49,7 +49,7 @@ it('should reevaluate the report when changing execution status', () => {
   const node = shallow(
     <NodeStatus
       report={{
-        data: {groupBy: {type: 'flowNodes'}, configuration: {flowNodeExecutionState: 'completed'}}
+        data: {groupBy: {type: 'flowNodes'}, configuration: {flowNodeExecutionState: 'completed'}},
       }}
       onChange={spy}
     />

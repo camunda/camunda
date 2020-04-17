@@ -26,8 +26,8 @@ it('should pass relevant configuration to RelativeAbsoluteSelection', () => {
       report={{
         data: {
           view: {property: 'frequency'},
-          configuration: {alwaysShowAbsolute: true, alwaysShowRelative: false, unrelated: true}
-        }
+          configuration: {alwaysShowAbsolute: true, alwaysShowRelative: false, unrelated: true},
+        },
       }}
       onchange={() => {}}
     />

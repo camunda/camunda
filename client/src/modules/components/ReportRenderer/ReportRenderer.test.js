@@ -19,15 +19,15 @@ const reportTemplate = {
     processDefinitionVersions: ['1'],
     view: {
       property: 'foo',
-      entity: 'whatever'
+      entity: 'whatever',
     },
     groupBy: {
-      type: 'bar'
+      type: 'bar',
     },
     visualization: 'number',
-    configuration: {}
+    configuration: {},
   },
-  result: {data: 1234, instanceCount: 100}
+  result: {data: 1234, instanceCount: 100},
 };
 
 it('should render ProcessReportRenderer if the report type is process', () => {
@@ -43,8 +43,8 @@ it('should render DecisionReportRenderer if the report type is decision', () => 
     data: {
       ...reportTemplate.data,
       decisionDefinitionKey: 'foo',
-      decisionDefinitionVersions: ['1']
-    }
+      decisionDefinitionVersions: ['1'],
+    },
   };
   const node = shallow(<ReportRenderer report={report} />);
 
@@ -56,7 +56,7 @@ it('should render CombinedReportRenderer if the report is combined and all repor
     ...reportTemplate,
     data: {
       ...reportTemplate.data,
-      reports: ['reportId1']
+      reports: ['reportId1'],
     },
     result: {
       data: {
@@ -64,12 +64,12 @@ it('should render CombinedReportRenderer if the report is combined and all repor
           ...reportTemplate,
           result: {
             ...reportTemplate.result,
-            instanceCount: 1
-          }
-        }
-      }
+            instanceCount: 1,
+          },
+        },
+      },
     },
-    combined: true
+    combined: true,
   };
   const node = shallow(<ReportRenderer report={report} />);
 
@@ -88,9 +88,9 @@ it('should include the instance count if indicated in the config', () => {
     ...reportTemplate,
     data: {
       ...reportTemplate.data,
-      configuration: {showInstanceCount: true}
+      configuration: {showInstanceCount: true},
     },
-    result: {...reportTemplate.result, instanceCount: 723}
+    result: {...reportTemplate.result, instanceCount: 723},
   };
 
   const node = shallow(<ReportRenderer report={report} />);
@@ -119,8 +119,8 @@ describe('SetupNotice', () => {
       ...reportTemplate,
       data: {
         ...reportTemplate.data,
-        processDefinitionKey: ''
-      }
+        processDefinitionKey: '',
+      },
     };
 
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
@@ -133,8 +133,8 @@ describe('SetupNotice', () => {
       ...reportTemplate,
       data: {
         ...reportTemplate.data,
-        processDefinitionVersions: []
-      }
+        processDefinitionVersions: [],
+      },
     };
 
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
@@ -147,8 +147,8 @@ describe('SetupNotice', () => {
       ...reportTemplate,
       data: {
         ...reportTemplate.data,
-        view: null
-      }
+        view: null,
+      },
     };
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
 
@@ -160,8 +160,8 @@ describe('SetupNotice', () => {
       ...reportTemplate,
       data: {
         ...reportTemplate.data,
-        groupBy: null
-      }
+        groupBy: null,
+      },
     };
 
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
@@ -174,8 +174,8 @@ describe('SetupNotice', () => {
       ...reportTemplate,
       data: {
         ...reportTemplate.data,
-        visualization: null
-      }
+        visualization: null,
+      },
     };
 
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
@@ -188,8 +188,8 @@ describe('SetupNotice', () => {
       combined: true,
       data: {
         configuration: {},
-        reports: []
-      }
+        reports: [],
+      },
     };
 
     const node = shallow(<ReportRenderer report={report} updateReport />);
@@ -203,9 +203,9 @@ describe('SetupNotice', () => {
       data: {
         ...reportTemplate.data,
         view: {
-          property: 'rawData'
-        }
-      }
+          property: 'rawData',
+        },
+      },
     };
 
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
@@ -220,8 +220,8 @@ describe('NoDataNotice', () => {
       ...reportTemplate,
       result: {
         ...reportTemplate.result,
-        instanceCount: 0
-      }
+        instanceCount: 0,
+      },
     };
 
     const node = shallow(<ReportRenderer report={report} />);
@@ -236,17 +236,17 @@ describe('NoDataNotice', () => {
         ...reportTemplate.data,
         view: {
           property: 'frequency',
-          entity: 'processInstance'
+          entity: 'processInstance',
         },
         groupBy: {
-          type: 'none'
+          type: 'none',
         },
-        visualization: 'number'
+        visualization: 'number',
       },
       result: {
         ...reportTemplate.result,
-        instanceCount: 0
-      }
+        instanceCount: 0,
+      },
     };
 
     const node = shallow(<ReportRenderer report={report} />);
@@ -259,7 +259,7 @@ describe('NoDataNotice', () => {
       ...reportTemplate,
       data: {
         ...reportTemplate.data,
-        reports: [1, 2]
+        reports: [1, 2],
       },
       result: {
         data: {
@@ -267,19 +267,19 @@ describe('NoDataNotice', () => {
             ...reportTemplate,
             result: {
               ...reportTemplate.result,
-              instanceCount: 0
-            }
+              instanceCount: 0,
+            },
           },
           2: {
             ...reportTemplate,
             result: {
               ...reportTemplate.result,
-              instanceCount: 0
-            }
-          }
-        }
+              instanceCount: 0,
+            },
+          },
+        },
       },
-      combined: true
+      combined: true,
     };
 
     const node = shallow(<ReportRenderer report={report} />);
@@ -292,7 +292,7 @@ describe('NoDataNotice', () => {
       ...reportTemplate,
       data: {
         ...reportTemplate.data,
-        reports: [1, 2]
+        reports: [1, 2],
       },
       result: {
         data: {
@@ -300,19 +300,19 @@ describe('NoDataNotice', () => {
             ...reportTemplate,
             result: {
               ...reportTemplate.result,
-              instanceCount: 0
-            }
+              instanceCount: 0,
+            },
           },
           2: {
             ...reportTemplate,
             result: {
               ...reportTemplate.result,
-              instanceCount: 1
-            }
-          }
-        }
+              instanceCount: 1,
+            },
+          },
+        },
       },
-      combined: true
+      combined: true,
     };
 
     const node = shallow(<ReportRenderer report={report} />);
@@ -326,8 +326,8 @@ describe('NoDataNotice', () => {
       result: {
         ...reportTemplate.result,
         type: 'map',
-        data: []
-      }
+        data: [],
+      },
     };
 
     const node = shallow(<ReportRenderer report={report} />);

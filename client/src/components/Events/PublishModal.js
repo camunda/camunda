@@ -19,14 +19,14 @@ export class PublishModal extends React.Component {
   state = {
     loading: false,
     editingAccess: null,
-    isPrivate: false
+    isPrivate: false,
   };
 
   componentDidMount() {
-    this.props.mightFail(getUsers(this.props.id), users => this.updatePrivate(users), showError);
+    this.props.mightFail(getUsers(this.props.id), (users) => this.updatePrivate(users), showError);
   }
 
-  updatePrivate = users => {
+  updatePrivate = (users) => {
     this.setState({isPrivate: users.length === 1 && users[0].identity.id === this.props.user?.id});
   };
 
@@ -41,14 +41,14 @@ export class PublishModal extends React.Component {
         onPublish();
         onClose();
       },
-      error => {
+      (error) => {
         this.setState({loading: false});
         showError(error);
       }
     );
   };
 
-  closeUsersModal = users => {
+  closeUsersModal = (users) => {
     this.setState({editingAccess: null});
     if (users) {
       this.updatePrivate(users);

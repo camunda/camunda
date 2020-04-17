@@ -17,7 +17,7 @@ const breadcrumbConstructors = [];
 export default withRouter(
   class NavItem extends React.Component {
     state = {
-      breadcrumbs: []
+      breadcrumbs: [],
     };
 
     async componentDidMount() {
@@ -38,7 +38,7 @@ export default withRouter(
     constructBreadcrumbs = async () => {
       const {
         location: {pathname},
-        breadcrumbsEntities
+        breadcrumbsEntities,
       } = this.props;
 
       if (!breadcrumbsEntities) {
@@ -47,7 +47,7 @@ export default withRouter(
 
       let breadcrumbs = [];
       const entitiesIds = {};
-      breadcrumbsEntities.forEach(entity => {
+      breadcrumbsEntities.forEach((entity) => {
         const splittedUrl = pathname.split(`/${entity}/`);
         if (splittedUrl[1]) {
           const id = splittedUrl[1].split('/')[0];
@@ -56,7 +56,7 @@ export default withRouter(
             breadcrumbs.push({
               id,
               type: entity,
-              url: splittedUrl[0] + `/${entity}/${id}/`
+              url: splittedUrl[0] + `/${entity}/${id}/`,
             });
           }
         }
@@ -64,9 +64,9 @@ export default withRouter(
 
       if (breadcrumbs.length > 0) {
         const names = await loadEntitiesNames(entitiesIds);
-        breadcrumbs = breadcrumbs.map(breadcrumb => ({
+        breadcrumbs = breadcrumbs.map((breadcrumb) => ({
           ...breadcrumb,
-          name: names[breadcrumb.type + 'Name']
+          name: names[breadcrumb.type + 'Name'],
         }));
       }
 
@@ -105,5 +105,5 @@ export default withRouter(
 );
 
 export function refreshBreadcrumbs() {
-  breadcrumbConstructors.forEach(fct => fct());
+  breadcrumbConstructors.forEach((fct) => fct());
 }

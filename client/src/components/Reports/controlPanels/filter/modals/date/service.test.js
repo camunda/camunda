@@ -10,33 +10,33 @@ import moment from 'moment';
 it('create correct filter from state object', () => {
   const filter1 = convertStateToFilter({
     dateType: 'today',
-    unit: 'days'
+    unit: 'days',
   });
 
   expect(filter1.start).toEqual({
     value: 0,
-    unit: 'days'
+    unit: 'days',
   });
 
   const filter2 = convertStateToFilter({
     dateType: 'this',
-    unit: 'weeks'
+    unit: 'weeks',
   });
 
   expect(filter2.start).toEqual({
     value: 0,
-    unit: 'weeks'
+    unit: 'weeks',
   });
 
   const filter3 = convertStateToFilter({
     dateType: 'fixed',
     startDate: moment('2015-01-20T00:00:00'),
-    endDate: moment('2019-05-11T00:00:00')
+    endDate: moment('2019-05-11T00:00:00'),
   });
 
   expect(filter3).toEqual({
     type: 'fixed',
     start: '2015-01-20T00:00:00',
-    end: '2019-05-11T23:59:59'
+    end: '2019-05-11T23:59:59',
   });
 });

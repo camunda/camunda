@@ -14,7 +14,7 @@ import {getOptimizeVersion} from 'config';
 
 jest.mock('config', () => {
   return {
-    getOptimizeVersion: jest.fn()
+    getOptimizeVersion: jest.fn(),
   };
 });
 
@@ -45,12 +45,12 @@ it('displays the loading indicator if is importing', () => {
     connectionStatus: {
       connectedToElasticsearch: true,
       engineConnections: {
-        property1: true
-      }
+        property1: true,
+      },
     },
     isImporting: {
-      property1: true
-    }
+      property1: true,
+    },
   });
 
   expect(node.find('.is-in-progress')).toExist();
@@ -63,12 +63,12 @@ it('does not display the loading indicator if is not importing', () => {
     connectionStatus: {
       connectedToElasticsearch: true,
       engineConnections: {
-        property1: true
-      }
+        property1: true,
+      },
     },
     isImporting: {
-      property1: false
-    }
+      property1: false,
+    },
   });
 
   expect(node.find('.is-in-progress')).not.toExist();
@@ -79,8 +79,8 @@ it('displays the connection status', () => {
 
   node.setState({
     engineConnections: {
-      engine1: true
-    }
+      engine1: true,
+    },
   });
 
   expect(node.find('.Footer__connect-status')).toExist();
@@ -92,17 +92,17 @@ it('should store data from the socket connection in state', () => {
     connectionStatus: {
       connectedToElasticsearch: true,
       engineConnections: {
-        property1: true
-      }
+        property1: true,
+      },
     },
     isImporting: {
-      property1: true
-    }
+      property1: true,
+    },
   };
 
   const node = mount(<Footer />);
 
-  server.on('connection', server => {
+  server.on('connection', (server) => {
     server.send(JSON.stringify(data));
   });
 

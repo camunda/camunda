@@ -14,10 +14,10 @@ import {shallow, mount} from 'enzyme';
 const props = {
   open: true,
   input: {
-    addEventListener: jest.fn()
+    addEventListener: jest.fn(),
   },
   filter: '',
-  onSelect: jest.fn()
+  onSelect: jest.fn(),
 };
 
 it('should render an empty OptionsList', () => {

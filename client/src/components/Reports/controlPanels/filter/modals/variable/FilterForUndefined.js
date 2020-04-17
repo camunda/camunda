@@ -19,7 +19,7 @@ export default function FilterForUndefined({filterForUndefined, changeFilterForU
           label={
             <span
               dangerouslySetInnerHTML={{
-                __html: t(`common.filter.variableModal.filterForUndefined`)
+                __html: t(`common.filter.variableModal.filterForUndefined`),
               }}
             />
           }

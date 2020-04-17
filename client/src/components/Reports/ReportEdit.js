@@ -21,7 +21,7 @@ import {
   updateEntity,
   createEntity,
   evaluateReport,
-  getCollection
+  getCollection,
 } from 'services';
 import {addNotification} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
@@ -37,7 +37,7 @@ export class ReportEdit extends React.Component {
     conflict: null,
     originalData: this.props.report,
     optimizeVersion: 'latest',
-    report: this.props.report
+    report: this.props.report,
   };
 
   async componentDidMount() {
@@ -45,13 +45,13 @@ export class ReportEdit extends React.Component {
     version.length = 2;
 
     this.setState({
-      optimizeVersion: version.join('.')
+      optimizeVersion: version.join('.'),
     });
   }
 
-  showSaveError = name => {
+  showSaveError = (name) => {
     this.setState({
-      conflict: null
+      conflict: null,
     });
     addNotification({text: t('report.cannotSave', {name}), type: 'error'});
   };
@@ -61,7 +61,7 @@ export class ReportEdit extends React.Component {
       this.props.mightFail(
         updateEntity(endpoint, id, {name, data}, {query: {force: this.state.conflict !== null}}),
         () => resolve(id),
-        async error => {
+        async (error) => {
           if (error.status === 409) {
             const {conflictedItems} = await error.json();
             this.setState({
@@ -72,7 +72,7 @@ export class ReportEdit extends React.Component {
                   return obj;
                 },
                 {alert: [], combined_report: []}
-              )
+              ),
             });
             resolve(null);
           } else {
@@ -112,7 +112,7 @@ export class ReportEdit extends React.Component {
   cancel = () => {
     nowPristine();
     this.setState({
-      report: this.state.originalData
+      report: this.state.originalData,
     });
   };
 
@@ -121,7 +121,7 @@ export class ReportEdit extends React.Component {
 
     this.setState(
       ({report}) => ({
-        report: update(report, {data: change})
+        report: update(report, {data: change}),
       }),
       this.dirtyCheck
     );
@@ -129,7 +129,7 @@ export class ReportEdit extends React.Component {
     if (needsReevaluation) {
       const query = {
         ...this.state.report,
-        data: newReport
+        data: newReport,
       };
       delete query.result;
       await this.loadReport(query);
@@ -139,7 +139,7 @@ export class ReportEdit extends React.Component {
   updateName = ({target: {value}}) => {
     this.setState(
       ({report}) => ({
-        report: update(report, {name: {$set: value}})
+        report: update(report, {name: {$set: value}}),
       }),
       this.dirtyCheck
     );
@@ -153,7 +153,7 @@ export class ReportEdit extends React.Component {
     }
   };
 
-  loadReport = async query => {
+  loadReport = async (query) => {
     this.setState({report: query});
 
     const {view, groupBy, visualization} = query.data;
@@ -161,11 +161,11 @@ export class ReportEdit extends React.Component {
       this.setState({loadingReportData: true});
       await this.props.mightFail(
         evaluateReport(query),
-        response =>
+        (response) =>
           this.setState({
-            report: response
+            report: response,
           }),
-        async e => {
+        async (e) => {
           const report = (await e.json()).reportDefinition;
           if (report) {
             this.setState({report});
@@ -232,7 +232,7 @@ export class ReportEdit extends React.Component {
         {this.showIncompleteResultWarning() && (
           <MessageBox type="warning">
             {t('report.incomplete', {
-              count: report.result.data.length || Object.keys(report.result.data).length
+              count: report.result.data.length || Object.keys(report.result.data).length,
             })}
           </MessageBox>
         )}
@@ -245,7 +245,7 @@ export class ReportEdit extends React.Component {
           <MessageBox
             type="warning"
             dangerouslySetInnerHTML={{
-              __html: t('common.filter.suspensionFilterWarning', {docsLink})
+              __html: t('common.filter.suspensionFilterWarning', {docsLink}),
             }}
           />
         )}

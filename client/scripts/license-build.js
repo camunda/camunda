@@ -23,7 +23,7 @@ return fs.readFile(target[0], 'utf8', (err, data) => {
 
   const output = `${LICENSE_BANNER}${data}`;
 
-  return fs.writeFile(target[0], output, err => {
+  return fs.writeFile(target[0], output, (err) => {
     if (err) {
       throw err;
     }

@@ -18,7 +18,7 @@ const {convertCamelToSpaces} = formatters;
 const labels = {
   inputVariables: 'input',
   outputVariables: 'output',
-  variables: 'variable'
+  variables: 'variable',
 };
 
 export default function ColumnSelection({report, onChange}) {
@@ -35,7 +35,7 @@ export default function ColumnSelection({report, onChange}) {
     if (typeof value !== 'object' || value === null) {
       return [...prev, curr];
     } else {
-      return [...prev, ...Object.keys(value).map(key => `${labels[curr]}:${key}`)];
+      return [...prev, ...Object.keys(value).map((key) => `${labels[curr]}:${key}`)];
     }
   }, []);
 
@@ -46,7 +46,7 @@ export default function ColumnSelection({report, onChange}) {
         enableAll={() => onChange({excludedColumns: {$set: []}})}
         disableAll={() => onChange({excludedColumns: {$set: allColumns}})}
       />
-      {allColumns.map(column => {
+      {allColumns.map((column) => {
         let prefix, name;
 
         if (column.includes(':')) {
@@ -73,7 +73,7 @@ export default function ColumnSelection({report, onChange}) {
             onChange={({target: {checked}}) => {
               if (checked) {
                 onChange({
-                  excludedColumns: {$set: excludedColumns.filter(entry => column !== entry)}
+                  excludedColumns: {$set: excludedColumns.filter((entry) => column !== entry)},
                 });
               } else {
                 onChange({excludedColumns: {$set: excludedColumns.concat(column)}});

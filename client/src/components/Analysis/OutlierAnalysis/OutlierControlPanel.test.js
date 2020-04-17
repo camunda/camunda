@@ -14,7 +14,7 @@ const data = {
   processDefinitionVersions: ['aVersion'],
   tenantIds: [],
   filter: null,
-  xml: 'aFooXml'
+  xml: 'aFooXml',
 };
 
 it('show display a definition selection and an info message', () => {

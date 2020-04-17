@@ -20,14 +20,14 @@ import {t} from 'translation';
 export default class DecisionFilter extends React.Component {
   state = {
     newFilterType: null,
-    editFilter: null
+    editFilter: null,
   };
 
-  openNewFilterModal = type => () => {
+  openNewFilterModal = (type) => () => {
     this.setState({newFilterType: type});
   };
 
-  openEditFilterModal = filter => () => {
+  openEditFilterModal = (filter) => () => {
     if (filter.type === 'inputVariable' || filter.type === 'outputVariable') {
       const variable = this.props.variables[filter.type].find(({id}) => filter.data.name === id);
 
@@ -35,9 +35,9 @@ export default class DecisionFilter extends React.Component {
         editFilter: update(filter, {
           data: {
             id: {$set: variable.id},
-            name: {$set: variable.name}
-          }
-        })
+            name: {$set: variable.name},
+          },
+        }),
       });
     } else {
       this.setState({editFilter: filter});
@@ -48,7 +48,7 @@ export default class DecisionFilter extends React.Component {
     this.setState({newFilterType: null, editFilter: null});
   };
 
-  getFilterModal = type => {
+  getFilterModal = (type) => {
     switch (type) {
       case 'evaluationDateTime':
         return DateFilter;
@@ -60,7 +60,7 @@ export default class DecisionFilter extends React.Component {
     }
   };
 
-  getFilterConfig = type => {
+  getFilterConfig = (type) => {
     if (type === 'inputVariable' || type === 'outputVariable') {
       return {
         getVariables: () => this.props.variables[type],
@@ -75,26 +75,26 @@ export default class DecisionFilter extends React.Component {
             0,
             numResults,
             valueFilter
-          )
+          ),
       };
     }
   };
 
-  editFilter = newFilter => {
+  editFilter = (newFilter) => {
     const filters = this.props.data;
 
     let index;
     if (newFilter.type === 'inputVariable' || newFilter.type === 'outputVariable') {
-      index = filters.indexOf(filters.find(v => this.state.editFilter.data.id === v.data.name));
+      index = filters.indexOf(filters.find((v) => this.state.editFilter.data.id === v.data.name));
     } else {
-      index = filters.indexOf(filters.find(v => this.state.editFilter.data === v.data));
+      index = filters.indexOf(filters.find((v) => this.state.editFilter.data === v.data));
     }
 
     this.props.onChange({filter: {[index]: {$set: newFilter}}}, true);
     this.closeModal();
   };
 
-  addFilter = newFilter => {
+  addFilter = (newFilter) => {
     let filters = this.props.data;
     filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['evaluationDateTime']);
 
@@ -102,10 +102,10 @@ export default class DecisionFilter extends React.Component {
     this.closeModal();
   };
 
-  deleteFilter = oldFilter => {
+  deleteFilter = (oldFilter) => {
     this.props.onChange(
       {
-        filter: {$set: this.props.data.filter(filter => oldFilter !== filter)}
+        filter: {$set: this.props.data.filter((filter) => oldFilter !== filter)},
       },
       true
     );

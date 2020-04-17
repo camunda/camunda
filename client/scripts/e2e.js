@@ -38,7 +38,7 @@ const backendProcess = spawn('yarn', ['run', 'start-backend', ciMode ? 'ci' : un
 const frontendProcess = spawn('yarn', ['start']);
 
 if (ciMode) {
-  backendProcess.stderr.on('data', data => console.error(data.toString()));
+  backendProcess.stderr.on('data', (data) => console.error(data.toString()));
 
   const logStream = fs.createWriteStream('./build/backendLogs.log', {flags: 'a'});
   backendProcess.stdout.pipe(logStream);
@@ -64,7 +64,7 @@ const connectionInterval = setInterval(async () => {
 }, 5000);
 
 function checkHttpPort(number) {
-  return new Promise(async resolve => {
+  return new Promise(async (resolve) => {
     try {
       await fetch('http://localhost:' + number, {timeout: 1000});
       resolve(true);
@@ -86,7 +86,7 @@ async function waitForData() {
 
     const {
       connectionStatus: {engineConnections, connectedToElasticsearch},
-      isImporting
+      isImporting,
     } = status;
 
     if (
@@ -109,17 +109,13 @@ async function startTest() {
   try {
     for (let i = 0; i < browsers.length; i++) {
       if (
-        await testCafe
-          .createRunner()
-          .src('e2e/tests/*.js')
-          .browsers(browsers[i])
-          .run({
-            skipJsErrors: true,
-            disableScreenshots: true,
-            concurrency: 3,
-            assertionTimeout: 40000,
-            pageLoadTimeout: 40000
-          })
+        await testCafe.createRunner().src('e2e/tests/*.js').browsers(browsers[i]).run({
+          skipJsErrors: true,
+          disableScreenshots: true,
+          concurrency: 3,
+          assertionTimeout: 40000,
+          pageLoadTimeout: 40000,
+        })
       ) {
         hasFailures = true;
       }

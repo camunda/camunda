@@ -12,12 +12,9 @@ import * as e from './Homepage.elements.js';
 import * as Report from './ProcessReport.elements.js';
 import * as Dashboard from './Dashboard.elements.js';
 
-fixture('Homepage')
-  .page(config.endpoint)
-  .beforeEach(login)
-  .afterEach(cleanEntities);
+fixture('Homepage').page(config.endpoint).beforeEach(login).afterEach(cleanEntities);
 
-test('navigate to report view and edit pages', async t => {
+test('navigate to report view and edit pages', async (t) => {
   await t.click(e.createNewMenu).hover(e.newReportOption);
   await t.click(e.submenuOption('Process Report'));
   await save(t);
@@ -37,7 +34,7 @@ test('navigate to report view and edit pages', async t => {
   await t.expect(e.reportControlPanel.visible).ok();
 });
 
-test('navigate to dashboard view and edit pages', async t => {
+test('navigate to dashboard view and edit pages', async (t) => {
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
   await save(t);
   await t.click(e.homepageLink);
@@ -55,7 +52,7 @@ test('navigate to dashboard view and edit pages', async t => {
   await t.expect(e.addButton.visible).ok();
 });
 
-test('complex Homepage actions', async t => {
+test('complex Homepage actions', async (t) => {
   await t.click(e.createNewMenu).hover(e.newReportOption);
 
   await t.expect(e.createNewMenu.textContent).contains('New Collection');

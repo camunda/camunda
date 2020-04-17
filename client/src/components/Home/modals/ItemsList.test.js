@@ -13,7 +13,7 @@ const props = {
   selectedItems: [{id: 'item1'}],
   allItems: [{id: 'item1'}, {id: 'item2'}],
   onChange: jest.fn(),
-  formatter: jest.fn()
+  formatter: jest.fn(),
 };
 
 it('should call the formatter with the list items data', () => {
@@ -25,17 +25,11 @@ it('should call the formatter with the list items data', () => {
 it('should invoke onChange with the updated selected items', () => {
   const node = shallow(<ItemsList {...props} />);
 
-  node
-    .find('Checklist')
-    .props()
-    .onChange('item1', false);
+  node.find('Checklist').props().onChange('item1', false);
 
   expect(props.onChange).toHaveBeenCalledWith([]);
 
-  node
-    .find('Checklist')
-    .props()
-    .onChange('item2', true);
+  node.find('Checklist').props().onChange('item2', true);
 
   expect(props.onChange).toHaveBeenCalledWith([{id: 'item1'}, {id: 'item2'}]);
 });
@@ -43,17 +37,11 @@ it('should invoke onChange with the updated selected items', () => {
 it('should invoke onChange on selectAll/deselectAll', () => {
   const node = shallow(<ItemsList {...props} />);
 
-  node
-    .find('Checklist')
-    .props()
-    .selectAll();
+  node.find('Checklist').props().selectAll();
 
   expect(props.onChange).toHaveBeenCalledWith(props.allItems);
 
-  node
-    .find('Checklist')
-    .props()
-    .deselectAll();
+  node.find('Checklist').props().deselectAll();
 
   expect(props.onChange).toHaveBeenCalledWith([]);
 });

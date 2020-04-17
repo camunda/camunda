@@ -7,7 +7,7 @@
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flat#Polyfill
 /*eslint-disable no-extend-native */
 if (!Array.prototype.flat) {
-  Array.prototype.flat = function() {
+  Array.prototype.flat = function () {
     var depth = arguments[0];
     depth = depth === undefined ? 1 : Math.floor(depth);
     if (depth < 1) {

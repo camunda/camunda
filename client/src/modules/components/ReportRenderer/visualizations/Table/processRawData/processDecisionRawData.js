@@ -16,45 +16,45 @@ export default function processDecisionRawData(
       data: {
         configuration: {
           excludedColumns = [],
-          columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}
-        }
+          columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []},
+        },
       },
-      result: {data: result}
-    }
+      result: {data: result},
+    },
   },
   endpoints = {}
 ) {
   const instanceProps = Object.keys(result[0]).filter(
-    entry =>
+    (entry) =>
       entry !== 'inputVariables' && entry !== 'outputVariables' && !excludedColumns.includes(entry)
   );
 
   const inputVariables = Object.keys(result[0].inputVariables).filter(
-    entry => !excludedColumns.includes('input:' + entry)
+    (entry) => !excludedColumns.includes('input:' + entry)
   );
   const outputVariables = Object.keys(result[0].outputVariables).filter(
-    entry => !excludedColumns.includes('output:' + entry)
+    (entry) => !excludedColumns.includes('output:' + entry)
   );
 
   if (instanceProps.length + inputVariables.length + outputVariables.length === 0) {
     return getNoDataMessage();
   }
 
-  const body = result.map(instance => {
-    const propertyValues = instanceProps.map(entry => {
+  const body = result.map((instance) => {
+    const propertyValues = instanceProps.map((entry) => {
       if (entry === 'decisionInstanceId') {
         return cockpitLink(endpoints, instance, 'decision');
       }
       return instance[entry];
     });
-    const inputVariableValues = inputVariables.map(entry => {
+    const inputVariableValues = inputVariables.map((entry) => {
       const value = instance.inputVariables[entry].value;
       if (value === null) {
         return '';
       }
       return value.toString();
     });
-    const outputVariableValues = outputVariables.map(entry => {
+    const outputVariableValues = outputVariables.map((entry) => {
       const output = instance.outputVariables[entry];
       if (output && output.values) {
         return output.values.join(', ');
@@ -70,19 +70,19 @@ export default function processDecisionRawData(
   if (inputVariables.length > 0) {
     head.push({
       label: t('report.variables.input'),
-      columns: inputVariables.map(key => {
+      columns: inputVariables.map((key) => {
         const {name, id} = result[0].inputVariables[key];
         return {label: name || id, id: key};
-      })
+      }),
     });
   }
   if (outputVariables.length > 0) {
     head.push({
       label: t('report.variables.output'),
-      columns: outputVariables.map(key => {
+      columns: outputVariables.map((key) => {
         const {name, id} = result[0].outputVariables[key];
         return {label: name || id, id: key};
-      })
+      }),
     });
   }
 

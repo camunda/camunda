@@ -22,14 +22,14 @@ export default () => {
 
     render() {
       return createComponentVNode(2, Cell, {
-        ref: el => (this.el = el),
-        className: 'CustomCell'
+        ref: (el) => (this.el = el),
+        className: 'CustomCell',
       });
     }
   };
 
-  const HitsColumnAddon = components => {
-    components.onGetComponent('table.foot', () => props => {
+  const HitsColumnAddon = (components) => {
+    components.onGetComponent('table.foot', () => (props) => {
       const emptyCells = [];
 
       for (let i = 0; i < props.cols.length + 1; i++) {
@@ -47,7 +47,7 @@ export default () => {
           [
             createVNode(1, 'td', null, createTextVNode('Total'), 2),
             ...emptyCells,
-            createComponentVNode(2, CustomCell, {summary: true})
+            createComponentVNode(2, CustomCell, {summary: true}),
           ],
           0
         ),
@@ -71,7 +71,7 @@ export default () => {
     entryPoints,
     Addon: {
       __init__: ['hitsColumn'],
-      hitsColumn: ['type', HitsColumnAddon]
-    }
+      hitsColumn: ['type', HitsColumnAddon],
+    },
   };
 };

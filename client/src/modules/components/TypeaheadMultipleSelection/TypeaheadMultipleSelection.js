@@ -16,13 +16,13 @@ export default class TypeaheadMultipleSelection extends React.Component {
   constructor() {
     super();
     this.state = {
-      searchQuery: ''
+      searchQuery: '',
     };
     this.dragPlaceHolder = document.createElement('li');
     this.dragPlaceHolder.className = 'placeholder';
   }
 
-  mapSelectedValues = values => {
+  mapSelectedValues = (values) => {
     const isDraggable = !!this.props.onOrderChange;
     return (
       values.length > 0 && (
@@ -36,14 +36,14 @@ export default class TypeaheadMultipleSelection extends React.Component {
               const dragProps = {
                 draggable: true,
                 onDragEnd: this.dragEnd,
-                onDragStart: this.dragStart
+                onDragStart: this.dragStart,
               };
               return (
                 <li
                   key={idx}
                   data-id={idx}
                   className={classnames('TypeaheadMultipleSelection__valueListItem', {
-                    draggable: isDraggable
+                    draggable: isDraggable,
                   })}
                   {...(isDraggable ? dragProps : {})}
                 >
@@ -66,14 +66,14 @@ export default class TypeaheadMultipleSelection extends React.Component {
     );
   };
 
-  dragStart = evt => {
+  dragStart = (evt) => {
     this.dragged = evt.currentTarget;
     evt.dataTransfer.effectAllowed = 'move';
     // firefox requires calling this function to start dragging
     evt.dataTransfer.setData('text/plain', '');
   };
 
-  dragEnd = evt => {
+  dragEnd = (evt) => {
     if (!this.over) {
       this.over = evt.target;
     }
@@ -96,7 +96,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
     this.dragged = null;
   };
 
-  dragOver = evt => {
+  dragOver = (evt) => {
     evt.preventDefault();
     if (!this.dragged || evt.target.className === 'placeholder') {
       return;
@@ -145,7 +145,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
   toggleAvailable = ({target: {value, checked}}) =>
     this.props.toggleValue(this.props.availableValues[value], checked);
 
-  setFilter = val => {
+  setFilter = (val) => {
     this.setState({searchQuery: val});
     this.props.setFilter(val);
   };
@@ -158,7 +158,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
           className="TypeaheadMultipleSelection__input"
           placeholder={this.props.labels.search || t('common.multiSelect.search')}
           value={this.state.searchQuery}
-          onChange={e => this.setFilter(e.target.value)}
+          onChange={(e) => this.setFilter(e.target.value)}
           onClear={() => this.setFilter('')}
           disabled={this.props.disabled}
         />
@@ -198,11 +198,11 @@ export default class TypeaheadMultipleSelection extends React.Component {
 }
 
 TypeaheadMultipleSelection.defaultProps = {
-  format: v => v,
+  format: (v) => v,
   labels: {
     available: '',
     selected: '',
     search: '',
-    empty: ''
-  }
+    empty: '',
+  },
 };

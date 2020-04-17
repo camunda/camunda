@@ -29,8 +29,8 @@ jest.mock('./service', () => ({
       tenants: [
         {id: null, name: 'Not defined'},
         {id: 'tenant1', name: 'Sales'},
-        {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'}
-      ]
+        {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'},
+      ],
     },
     {
       id: 'decision:defKey2',
@@ -39,13 +39,13 @@ jest.mock('./service', () => ({
       definitionName: 'decision report',
       tenants: [
         {id: null, name: 'Not defined'},
-        {id: 'tenant1', name: 'Marketing'}
-      ]
-    }
+        {id: 'tenant1', name: 'Marketing'},
+      ],
+    },
   ]),
   removeSource: jest.fn(),
   editSource: jest.fn(),
-  addSources: jest.fn()
+  addSources: jest.fn(),
 }));
 
 const SourcesList = SourcesListWithErrorHandling.WrappedComponent;
@@ -54,7 +54,7 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   collection: 'collectionId',
   onChange: jest.fn(),
-  readOnly: false
+  readOnly: false,
 };
 
 it('should match snapshot', async () => {
@@ -75,10 +75,7 @@ it('should pass entity to Deleter', async () => {
   const node = shallow(<SourcesList {...props} />);
   await node.update();
 
-  node
-    .find(EntityList)
-    .prop('data')[1]
-    .actions[1].action();
+  node.find(EntityList).prop('data')[1].actions[1].action();
 
   expect(node.find(Deleter).prop('entity').id).toBe('decision:defKey2');
 });
@@ -97,10 +94,7 @@ it('should show an edit modal when clicking the edit button', async () => {
   const node = shallow(<SourcesList {...props} />);
   await node.update();
 
-  node
-    .find(EntityList)
-    .prop('data')[0]
-    .actions[0].action();
+  node.find(EntityList).prop('data')[0].actions[0].action();
 
   expect(node.find(EditSourceModal)).toExist();
 });
@@ -124,8 +118,8 @@ it('should add sources when addSourceModal is confirmed', () => {
       id: 'sourceId',
       definitionType: 'process',
       definitionKey: 'defKey',
-      tenants: ['tenantId']
-    }
+      tenants: ['tenantId'],
+    },
   ];
   node.find(AddSourceModal).prop('onConfirm')(sources);
 

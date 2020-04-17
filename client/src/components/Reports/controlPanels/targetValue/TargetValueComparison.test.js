@@ -16,10 +16,10 @@ const validProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        property: 'duration'
+        property: 'duration',
       },
       groupBy: {
-        type: 'flowNodes'
+        type: 'flowNodes',
       },
       visualization: 'heat',
       configuration: {
@@ -28,14 +28,14 @@ const validProps = {
           values: {
             a: {
               value: 12,
-              unit: 'days'
-            }
-          }
-        }
-      }
+              unit: 'days',
+            },
+          },
+        },
+      },
     },
-    result: {data: {}}
-  }
+    result: {data: {}},
+  },
 };
 
 const validPropsWithoutTargetValues = {
@@ -46,11 +46,11 @@ const validPropsWithoutTargetValues = {
       configuration: {
         heatmapTargetValue: {
           active: false,
-          values: {}
-        }
-      }
-    }
-  }
+          values: {},
+        },
+      },
+    },
+  },
 };
 
 const invalidProps = {
@@ -60,10 +60,10 @@ const invalidProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        property: 'duration'
+        property: 'duration',
       },
       groupBy: {
-        type: 'None'
+        type: 'None',
       },
       visualization: 'heat',
       configuration: {
@@ -71,13 +71,13 @@ const invalidProps = {
         heatmapTargetValue: {
           a: {
             value: 12,
-            unit: 'days'
-          }
-        }
-      }
+            unit: 'days',
+          },
+        },
+      },
     },
-    result: {data: {}}
-  }
+    result: {data: {}},
+  },
 };
 
 it('should display a double button', () => {
@@ -132,9 +132,9 @@ it('it should toggle target value view mode off if no target values are defined'
       heatmapTargetValue: {
         $set: {
           active: false,
-          values: {}
-        }
-      }
-    }
+          values: {},
+        },
+      },
+    },
   });
 });

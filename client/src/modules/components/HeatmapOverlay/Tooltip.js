@@ -32,7 +32,7 @@ export default class Tooltip extends React.Component {
 
   addAllTooltips = () => {
     const {viewer, formatter, data} = this.props;
-    Object.keys(data).forEach(id => {
+    Object.keys(data).forEach((id) => {
       addDiagramTooltip(viewer, id, formatter(data[id], id), this.props.theme);
     });
   };
@@ -56,7 +56,7 @@ export default class Tooltip extends React.Component {
     }
   };
 
-  removeOverlays = viewer => {
+  removeOverlays = (viewer) => {
     viewer.get('overlays').remove({type: 'TOOLTIP'});
   };
 }

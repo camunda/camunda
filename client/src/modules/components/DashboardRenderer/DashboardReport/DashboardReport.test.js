@@ -14,8 +14,8 @@ jest.mock('./OptimizeReport', () => ({children}) => <span>OptimizeReport: {child
 
 const props = {
   report: {
-    id: 'a'
-  }
+    id: 'a',
+  },
 };
 
 it('should render optional addons', () => {
@@ -32,7 +32,7 @@ it('should render optional addons', () => {
 });
 
 it('should pass properties to report addons', () => {
-  const PropsRenderer = props => <p>{JSON.stringify(Object.keys(props))}</p>;
+  const PropsRenderer = (props) => <p>{JSON.stringify(Object.keys(props))}</p>;
 
   const node = mount(
     <DashboardReport {...props} addons={[<PropsRenderer key="propsRenderer" />]} />

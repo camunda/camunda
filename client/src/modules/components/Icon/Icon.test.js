@@ -11,7 +11,7 @@ import Icon from './Icon';
 
 jest.mock('./icons', () => {
   return {
-    plus: props => <svg {...props} />
+    plus: (props) => <svg {...props} />,
   };
 });
 
@@ -56,6 +56,6 @@ it('should be possible to provide a size to the Icon', () => {
     minWidth: '10px',
     minHeight: '10px',
     maxWidth: '10px',
-    maxHeight: '10px'
+    maxHeight: '10px',
   });
 });

@@ -25,7 +25,7 @@ export function getTargetLineOptions(color, isBelowTarget, isCombined, isDark) {
       legendColor: color,
       borderWidth: 2,
       renderArea: isBelowTarget ? 'bottom' : 'top',
-      isTarget: true
+      isTarget: true,
     },
     normalLineOptions: {
       borderColor: color,
@@ -33,7 +33,7 @@ export function getTargetLineOptions(color, isBelowTarget, isCombined, isDark) {
       legendColor: color,
       borderWidth: 2,
       renderArea: isBelowTarget ? 'top' : 'bottom',
-      isTarget: false
-    }
+      isTarget: false,
+    },
   };
 }

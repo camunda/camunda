@@ -18,7 +18,7 @@ export default class NumberInput extends React.Component {
     this.props.setValid(this.selectionIsValid());
   }
 
-  setOperator = operator => evt => {
+  setOperator = (operator) => (evt) => {
     evt.preventDefault();
 
     let {values} = this.props.filter;
@@ -35,18 +35,18 @@ export default class NumberInput extends React.Component {
     return (values || []).every(this.isValid);
   };
 
-  isValid = value => value.trim() && !isNaN(value.trim());
+  isValid = (value) => value.trim() && !isNaN(value.trim());
 
-  addValue = evt => {
+  addValue = (evt) => {
     evt.preventDefault();
 
     this.props.changeFilter({...this.props.filter, values: [...this.props.filter.values, '']});
   };
 
-  removeValue = index => {
+  removeValue = (index) => {
     this.props.changeFilter({
       ...this.props.filter,
-      values: this.props.filter.values.filter((_, idx) => idx !== index)
+      values: this.props.filter.values.filter((_, idx) => idx !== index),
     });
   };
 
@@ -100,7 +100,7 @@ export default class NumberInput extends React.Component {
                   />
                   {values.length > 1 && (
                     <Button
-                      onClick={evt => {
+                      onClick={(evt) => {
                         evt.preventDefault();
                         this.removeValue(idx);
                       }}

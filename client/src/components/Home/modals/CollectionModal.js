@@ -20,7 +20,7 @@ export default withErrorHandling(
       this.state = {
         name: props.initialName,
         loading: false,
-        redirect: null
+        redirect: null,
       };
     }
 
@@ -33,13 +33,13 @@ export default withErrorHandling(
       this.setState({loading: true});
       this.props.mightFail(
         this.props.onConfirm(name),
-        id => {
+        (id) => {
           this.setState({loading: false});
           if (id) {
             this.setState({redirect: id});
           }
         },
-        error => {
+        (error) => {
           showError(error);
           this.setState({loading: false});
         }

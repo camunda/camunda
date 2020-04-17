@@ -12,12 +12,9 @@ import * as Homepage from './Homepage.elements.js';
 import * as Report from './DecisionReport.elements.js';
 import * as ProcessReport from './ProcessReport.elements.js';
 
-fixture('Decision Report')
-  .page(config.endpoint)
-  .beforeEach(u.login)
-  .afterEach(cleanEntities);
+fixture('Decision Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
-test('create a dmn js table report', async t => {
+test('create a dmn js table report', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
 
@@ -26,7 +23,7 @@ test('create a dmn js table report', async t => {
   await t
     .resizeWindow(1400, 700)
     .takeElementScreenshot(Homepage.entityList, 'decision/single-report/dmn_report_create.png', {
-      crop: {left: 1000, bottom: 300}
+      crop: {left: 1000, bottom: 300},
     });
 
   await t.click(Homepage.submenuOption('Decision Report'));
@@ -50,7 +47,7 @@ test('create a dmn js table report', async t => {
     .maximizeWindow();
 });
 
-test('create raw data report', async t => {
+test('create raw data report', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
@@ -70,7 +67,7 @@ test('create raw data report', async t => {
     .maximizeWindow();
 });
 
-test('save the report', async t => {
+test('save the report', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
@@ -88,7 +85,7 @@ test('save the report', async t => {
   await t.expect(Homepage.reportLabel.textContent).contains('Decision');
 });
 
-test('create a single number report', async t => {
+test('create a single number report', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
@@ -112,7 +109,7 @@ test('create a single number report', async t => {
     .maximizeWindow();
 });
 
-test('create a report grouped by evaluation date', async t => {
+test('create a report grouped by evaluation date', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
@@ -139,7 +136,7 @@ test('create a report grouped by evaluation date', async t => {
     .maximizeWindow();
 });
 
-test('create a report grouped by Input variable', async t => {
+test('create a report grouped by Input variable', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
@@ -167,7 +164,7 @@ test('create a report grouped by Input variable', async t => {
     .maximizeWindow();
 });
 
-test('filters', async t => {
+test('filters', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));

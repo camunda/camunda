@@ -8,8 +8,8 @@ import processDecisionRawData from './processDecisionRawData';
 
 const data = {
   configuration: {
-    excludedColumns: []
-  }
+    excludedColumns: [],
+  },
 };
 
 it('should make the decision instance id a link', () => {
@@ -23,12 +23,12 @@ it('should make the decision instance id a link', () => {
               decisionInstanceId: '123',
               engineName: '1',
               inputVariables: {},
-              outputVariables: {}
-            }
-          ]
+              outputVariables: {},
+            },
+          ],
         },
-        data
-      }
+        data,
+      },
     },
     {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
   ).body[0][0];
@@ -45,24 +45,24 @@ it('should return correct table props for decision tables', () => {
         prop2: 'bar',
         inputVariables: {
           var1: {id: 'var1', value: 12, name: 'Var 1'},
-          var2: {id: 'var2', value: null, name: 'Var 2'}
+          var2: {id: 'var2', value: null, name: 'Var 2'},
         },
         outputVariables: {
-          result: {id: 'result', values: [1], name: 'Result'}
-        }
+          result: {id: 'result', values: [1], name: 'Result'},
+        },
       },
       {
         decisionInstanceId: 'xyz',
         prop2: 'abc',
         inputVariables: {
           var1: {id: 'var1', value: null, name: 'Var 1'},
-          var2: {id: 'var2', value: true, name: 'Var 2'}
+          var2: {id: 'var2', value: true, name: 'Var 2'},
         },
         outputVariables: {
-          result: {id: 'result', values: [8], name: 'Result'}
-        }
-      }
-    ]
+          result: {id: 'result', values: [8], name: 'Result'},
+        },
+      },
+    ],
   };
 
   expect(processDecisionRawData({report: {result, reportType: 'decision', data}})).toEqual({
@@ -73,15 +73,15 @@ it('should return correct table props for decision tables', () => {
         label: 'Input Variables',
         columns: [
           {id: 'var1', label: 'Var 1'},
-          {id: 'var2', label: 'Var 2'}
-        ]
+          {id: 'var2', label: 'Var 2'},
+        ],
       },
-      {label: 'Output Variables', columns: [{id: 'result', label: 'Result'}]}
+      {label: 'Output Variables', columns: [{id: 'result', label: 'Result'}]},
     ],
     body: [
       ['foo', 'bar', '12', '', '1'],
-      ['xyz', 'abc', '', 'true', '8']
-    ]
+      ['xyz', 'abc', '', 'true', '8'],
+    ],
   });
 });
 
@@ -92,13 +92,13 @@ it('should show no data message when all column are excluded for decision tables
         decisionInstanceId: 'foo',
         prop2: 'bar',
         inputVariables: {
-          var1: {id: 'var1', value: 12, name: 'Var 1'}
+          var1: {id: 'var1', value: 12, name: 'Var 1'},
         },
         outputVariables: {
-          result: {id: 'result', values: [1], name: 'Result'}
-        }
-      }
-    ]
+          result: {id: 'result', values: [1], name: 'Result'},
+        },
+      },
+    ],
   };
   expect(
     processDecisionRawData({
@@ -107,13 +107,13 @@ it('should show no data message when all column are excluded for decision tables
         result,
         data: {
           configuration: {
-            excludedColumns: ['decisionInstanceId', 'prop2', 'input:var1', 'output:result']
-          }
-        }
-      }
+            excludedColumns: ['decisionInstanceId', 'prop2', 'input:var1', 'output:result'],
+          },
+        },
+      },
     })
   ).toEqual({
     head: ['No Data'],
-    body: [['You need to enable at least one table column']]
+    body: [['You need to enable at least one table column']],
   });
 });

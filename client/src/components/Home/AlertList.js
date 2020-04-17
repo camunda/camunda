@@ -28,7 +28,7 @@ export default withErrorHandling(
       editing: null,
       reports: null,
       alerts: null,
-      webhooks: null
+      webhooks: null,
     };
 
     componentDidMount() {
@@ -50,13 +50,13 @@ export default withErrorHandling(
     loadReports = () => {
       this.props.mightFail(
         loadReports(this.props.collection),
-        reports =>
+        (reports) =>
           this.setState({
             reports: reports.filter(
               ({combined, data: {visualization}}) => !combined && visualization === 'number'
-            )
+            ),
           }),
-        error => {
+        (error) => {
           showError(error);
           this.setState({reports: null});
         }
@@ -66,7 +66,7 @@ export default withErrorHandling(
     loadAlerts = () => {
       this.props.mightFail(
         loadAlerts(this.props.collection),
-        alerts => {
+        (alerts) => {
           this.setState({alerts});
         },
         showError
@@ -74,18 +74,18 @@ export default withErrorHandling(
     };
 
     loadWebhooks = () => {
-      this.props.mightFail(getWebhooks(), webhooks => this.setState({webhooks}), showError);
+      this.props.mightFail(getWebhooks(), (webhooks) => this.setState({webhooks}), showError);
     };
 
     openAddAlertModal = () => this.setState({editing: {}});
-    openEditAlertModal = editing => this.setState({editing});
+    openEditAlertModal = (editing) => this.setState({editing});
 
-    addAlert = newAlert => {
+    addAlert = (newAlert) => {
       this.closeEditAlertModal();
       this.props.mightFail(addAlert(newAlert), this.loadAlerts, showError);
     };
 
-    editAlert = changedAlert => {
+    editAlert = (changedAlert) => {
       this.closeEditAlertModal();
       this.props.mightFail(
         editAlert(this.state.editing.id, changedAlert),
@@ -117,7 +117,7 @@ export default withErrorHandling(
             columns={[t('common.name'), t('alert.recipient'), t('common.description')]}
             data={
               !isLoading &&
-              this.state.alerts.map(alert => {
+              this.state.alerts.map((alert) => {
                 const {name, email, webhook, reportId, threshold, thresholdOperator} = alert;
                 const inactive = webhook && !email && !webhooks?.includes(webhook);
 
@@ -127,21 +127,21 @@ export default withErrorHandling(
                   name,
                   meta: [
                     email || webhook,
-                    this.formatDescription(reportId, thresholdOperator, threshold)
+                    this.formatDescription(reportId, thresholdOperator, threshold),
                   ],
                   warning: inactive && t('alert.inactiveStatus'),
                   actions: !readOnly && [
                     {
                       icon: 'edit',
                       text: t('common.edit'),
-                      action: () => this.openEditAlertModal(alert)
+                      action: () => this.openEditAlertModal(alert),
                     },
                     {
                       icon: 'delete',
                       text: t('common.delete'),
-                      action: () => this.setState({deleting: alert})
-                    }
-                  ]
+                      action: () => this.setState({deleting: alert}),
+                    },
+                  ],
                 };
               })
             }
@@ -159,7 +159,7 @@ export default withErrorHandling(
               reports={reports}
               webhooks={webhooks}
               onClose={this.closeEditAlertModal}
-              onConfirm={alert => {
+              onConfirm={(alert) => {
                 if (editing.id) {
                   this.editAlert(alert);
                 } else {
@@ -180,7 +180,7 @@ export default withErrorHandling(
       return t('alert.description', {
         name: report.name,
         aboveOrBelow,
-        thresholdValue
+        thresholdValue,
       });
     };
   }

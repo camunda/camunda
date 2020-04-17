@@ -13,9 +13,9 @@ import showAllTooltips from './showAllTooltips';
 export default function createPlugins({updateReport, report: {combined, data, result}}) {
   const plugins = [
     {
-      afterDatasetsDraw: drawHorizentalLine
+      afterDatasetsDraw: drawHorizentalLine,
     },
-    showAllTooltips
+    showAllTooltips,
   ];
 
   if (
@@ -34,8 +34,8 @@ export default function createPlugins({updateReport, report: {combined, data, re
         type: data.groupBy.type,
         valueRange: {
           min: moment(dataPoints[0]),
-          max: moment(dataPoints[dataPoints.length - 1])
-        }
+          max: moment(dataPoints[dataPoints.length - 1]),
+        },
       })
     );
   }

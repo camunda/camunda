@@ -12,7 +12,7 @@ export function getDiagramElementsBetween(start, end, viewer) {
   const endStack = createParentStack(end);
 
   // find the deepest (sub-)process that contains both start and end node
-  const commonParent = startStack.find(parent => endStack.includes(parent));
+  const commonParent = startStack.find((parent) => endStack.includes(parent));
 
   // throw away all subprocesses further up, that also contain both nodes
   startStack.length = startStack.indexOf(commonParent);
@@ -40,8 +40,8 @@ export function getDiagramElementsBetween(start, end, viewer) {
   // only if there is a way between the two top level nodes
   if (reachableNodes.length) {
     // on lower levels, we are only interested in nodes _after_ the start node and _before_ the end node
-    startStack.forEach(node => reachableNodes.push(...getNodesAfter(node, viewer)));
-    endStack.forEach(node => reachableNodes.push(...getNodesBefore(node, viewer)));
+    startStack.forEach((node) => reachableNodes.push(...getNodesAfter(node, viewer)));
+    endStack.forEach((node) => reachableNodes.push(...getNodesBefore(node, viewer)));
 
     // add all nested nodes of the selected end, except if the start is inside the end
     const nestedInEnd = getNestedNodes(end);
@@ -111,13 +111,13 @@ function constructReachabilityGraphFrom(start, end, viewer) {
     const current = unprocessed.shift();
 
     const boundariesOnCurrent = boundaries.filter(({attachedToRef}) => attachedToRef === current);
-    boundariesOnCurrent.forEach(boundary => {
+    boundariesOnCurrent.forEach((boundary) => {
       unprocessed.push(boundary);
       graph[boundary.id] = [{node: current.id}];
     });
 
     current.outgoing &&
-      current.outgoing.forEach(connection => {
+      current.outgoing.forEach((connection) => {
         const target = connection.targetRef;
         const targetId = target.id;
 
@@ -138,8 +138,8 @@ function constructReachabilityGraphFrom(start, end, viewer) {
 function getBoundaries(viewer) {
   return viewer
     .get('elementRegistry')
-    .filter(element => element.businessObject.$instanceOf('bpmn:BoundaryEvent'))
-    .map(element => element.businessObject);
+    .filter((element) => element.businessObject.$instanceOf('bpmn:BoundaryEvent'))
+    .map((element) => element.businessObject);
 }
 
 function getNodesAfter(node, viewer) {
@@ -168,7 +168,7 @@ function getNodes(mode, node, viewer) {
 
     if (mode === 'after') {
       const boundariesOnCurrent = boundaries.filter(({attachedToRef}) => attachedToRef === current);
-      boundariesOnCurrent.forEach(boundary => {
+      boundariesOnCurrent.forEach((boundary) => {
         unprocessed.push(boundary);
       });
     }
@@ -178,7 +178,7 @@ function getNodes(mode, node, viewer) {
     }
 
     current[direction] &&
-      current[direction].forEach(connection => {
+      current[direction].forEach((connection) => {
         const target = connection[refType];
         const targetId = target.id;
 
@@ -196,7 +196,7 @@ function getNodes(mode, node, viewer) {
 function getNestedNodes(node) {
   const nested = [];
 
-  (node.flowElements || []).forEach(nestedNode => {
+  (node.flowElements || []).forEach((nestedNode) => {
     nested.push(nestedNode.id, ...getNestedNodes(nestedNode));
   });
 

@@ -14,16 +14,16 @@ export function generateLegendLabels(chart) {
   const data = chart.data;
   return data.datasets.length
     ? data.datasets
-        .map(function(dataset) {
+        .map(function (dataset) {
           return {
             text: dataset.label,
             fillStyle: !dataset.backgroundColor.length
               ? dataset.backgroundColor
               : dataset.legendColor,
-            strokeStyle: dataset.legendColor
+            strokeStyle: dataset.legendColor,
           };
         }, this)
-        .filter(dataset => {
+        .filter((dataset) => {
           return dataset.text;
         })
     : [];
@@ -48,7 +48,7 @@ export function getCombinedChartProps(reports, data) {
       return {
         resultArr: [...prev.resultArr, singleReportResult],
         reportsNames: [...prev.reportsNames, report.name],
-        reportColors: [...prev.reportColors, color]
+        reportColors: [...prev.reportColors, color],
       };
     },
     {resultArr: [], reportsNames: [], reportColors: []}

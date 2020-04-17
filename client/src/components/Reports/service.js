@@ -8,7 +8,7 @@ import {get, del, post} from 'request';
 
 export async function shareReport(reportId) {
   const body = {
-    reportId
+    reportId,
   };
   const response = await post(`api/share/report`, body);
 

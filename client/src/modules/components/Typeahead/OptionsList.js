@@ -43,14 +43,14 @@ export default function OptionsList({
   const optionsWithProps = filteredOptions.map((option, i) =>
     React.cloneElement(option, {
       className: i === selectedOption ? 'isActive' : '',
-      onClick: evt => onSelect(option),
+      onClick: (evt) => onSelect(option),
       onMouseDown,
-      children: highlightText(option.props.children, filter)
+      children: highlightText(option.props.children, filter),
     })
   );
 
   const handleKeyPress = useCallback(
-    evt => {
+    (evt) => {
       const {open, onOpen, onClose} = props;
       let nextOption = -1;
       evt = evt || window.event;

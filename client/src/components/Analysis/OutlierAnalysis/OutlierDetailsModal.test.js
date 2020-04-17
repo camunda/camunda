@@ -16,8 +16,8 @@ const selectedNode = {
   name: 'test',
   higherOutlier: {
     count: 4,
-    relation: 1.1
-  }
+    relation: 1.1,
+  },
 };
 
 it('should render a modal with a button group showing duration chart', () => {
@@ -30,10 +30,7 @@ it('should render a modal with a button group showing duration chart', () => {
 it('show total instance count and Variables table when clicking the variable button in the button group', () => {
   const node = shallow(<OutlierDetailsModal selectedNode={selectedNode} />);
 
-  node
-    .find(Button)
-    .at(1)
-    .simulate('click');
+  node.find(Button).at(1).simulate('click');
 
   expect(node.find('.description')).toExist();
   expect(node.find('VariablesTable')).toExist();

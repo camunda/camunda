@@ -12,7 +12,7 @@ import CopyModal from './modals/CopyModal';
 import {copyEntity} from './service';
 
 jest.mock('./service', () => ({
-  copyEntity: jest.fn()
+  copyEntity: jest.fn(),
 }));
 
 const Copier = CopierWithErrorHandling.WrappedComponent;
@@ -20,7 +20,7 @@ const Copier = CopierWithErrorHandling.WrappedComponent;
 const props = {
   mightFail: (promise, cb) => cb(promise),
   onCopy: jest.fn(),
-  entity: {id: 'entityId', entityType: 'report'}
+  entity: {id: 'entityId', entityType: 'report'},
 };
 
 it('should not render anything when no entity is set', () => {

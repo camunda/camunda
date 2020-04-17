@@ -11,9 +11,9 @@ import {t} from 'translation';
 
 export default function DistributedBy({
   report: {
-    data: {configuration, view, groupBy, visualization}
+    data: {configuration, view, groupBy, visualization},
   },
-  onChange
+  onChange,
 }) {
   if (view && view.entity === 'userTask' && groupBy) {
     return (
@@ -21,7 +21,7 @@ export default function DistributedBy({
         <legend>{t('report.config.userTaskDistributedBy')}</legend>
         <Select
           value={configuration.distributedBy}
-          onChange={value => {
+          onChange={(value) => {
             if (value !== 'none' && (visualization === 'pie' || visualization === 'line')) {
               onChange(
                 {visualization: {$set: 'bar'}, configuration: {distributedBy: {$set: value}}},

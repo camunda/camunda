@@ -19,7 +19,7 @@ import {
   Process,
   Sharing,
   License,
-  WithLicense
+  WithLicense,
 } from './components';
 
 import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
@@ -32,19 +32,19 @@ import {withErrorHandling, UserProvider} from 'HOC';
 
 class App extends React.Component {
   state = {
-    translationLoaded: false
+    translationLoaded: false,
   };
 
   async componentDidMount() {
     this.props.mightFail(init(), () => this.setState({translationLoaded: true}));
   }
 
-  renderEntity = props => {
+  renderEntity = (props) => {
     const components = {
       report: Report,
       dashboard: Dashboard,
       eventBasedProcess: Process,
-      collection: Collection
+      collection: Collection,
     };
     const entities = ['report', 'dashboard', 'collection', 'eventBasedProcess'];
     let Component, newProps;
@@ -54,7 +54,7 @@ class App extends React.Component {
         const match = matchPath(splitResult, {path: '/:id/:viewMode?'});
         newProps = {
           ...props,
-          match
+          match,
         };
         Component = components[entity];
         break;

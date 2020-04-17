@@ -15,11 +15,11 @@ import DeleterWithErrorHandling from './Deleter';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
-  deleteEntity: jest.fn()
+  deleteEntity: jest.fn(),
 }));
 
 jest.mock('notifications', () => ({
-  showError: jest.fn()
+  showError: jest.fn(),
 }));
 
 const Deleter = DeleterWithErrorHandling.WrappedComponent;
@@ -28,7 +28,7 @@ const props = {
   type: 'report',
   mightFail: (promise, cb) => cb(promise),
   onClose: jest.fn(),
-  onDelete: jest.fn()
+  onDelete: jest.fn(),
 };
 
 const entity = {id: 'entityId', name: 'Doomed Report', entityType: 'report'};

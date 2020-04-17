@@ -10,9 +10,9 @@ import * as config from './config';
 jest.mock('request', () => ({
   get: jest.fn().mockReturnValue({
     json: () => ({
-      optimizeVersion: '2.7.0'
-    })
-  })
+      optimizeVersion: '2.7.0',
+    }),
+  }),
 }));
 
 it('should load the configuration from the server', () => {

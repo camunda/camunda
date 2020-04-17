@@ -13,7 +13,7 @@ export function highlightText(content, query) {
   if (typeof content === 'string') {
     children = formatters.getHighlightedText(content, query);
   } else {
-    children = recursiveMap(content, child => {
+    children = recursiveMap(content, (child) => {
       if (child.type === Typeahead.Highlight) {
         const {children, matchFromStart} = child.props;
         return formatters.getHighlightedText(children[0], query, matchFromStart);
@@ -28,14 +28,14 @@ export function highlightText(content, query) {
 
 // https://stackoverflow.com/a/42498730/4016581
 function recursiveMap(children, fn) {
-  return React.Children.map(children, child => {
+  return React.Children.map(children, (child) => {
     if (!React.isValidElement(child)) {
       return child;
     }
 
     if (child.props.children) {
       child = React.cloneElement(child, {
-        children: recursiveMap(child.props.children, fn)
+        children: recursiveMap(child.props.children, fn),
       });
     }
 

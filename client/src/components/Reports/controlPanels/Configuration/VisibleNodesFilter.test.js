@@ -12,19 +12,22 @@ import {Button} from 'components';
 
 const report = {
   result: {
-    data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]
+    data: [
+      {key: 'foo', value: 123},
+      {key: 'bar', value: 5},
+    ],
   },
   data: {
     configuration: {color: 'testColor', xml: 'fooXml', hiddenNodes: {active: false, keys: ['foo']}},
     visualization: 'line',
     groupBy: {
       type: 'flowNodes',
-      value: ''
+      value: '',
     },
-    view: {}
+    view: {},
   },
   targetValue: false,
-  combined: false
+  combined: false,
 };
 
 it('should render nothing if report is not grouped by flowNodes', () => {

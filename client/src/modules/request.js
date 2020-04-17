@@ -11,7 +11,7 @@ export function put(url, body, options = {}) {
     url,
     body,
     method: 'PUT',
-    ...options
+    ...options,
   });
 }
 
@@ -20,7 +20,7 @@ export function post(url, body, options = {}) {
     url,
     body,
     method: 'POST',
-    ...options
+    ...options,
   });
 }
 
@@ -29,7 +29,7 @@ export function get(url, query, options = {}) {
     url,
     query,
     method: 'GET',
-    ...options
+    ...options,
   });
 }
 
@@ -38,7 +38,7 @@ export function del(url, query, options = {}) {
     url,
     query,
     method: 'DELETE',
-    ...options
+    ...options,
   });
 }
 
@@ -48,7 +48,7 @@ export function addHandler(fct, priority = 0) {
 }
 
 export function removeHandler(fct) {
-  handlers.splice(handlers.indexOf(handlers.find(entry => entry.fct === fct)), 1);
+  handlers.splice(handlers.indexOf(handlers.find((entry) => entry.fct === fct)), 1);
 }
 
 export async function request(payload) {
@@ -60,10 +60,10 @@ export async function request(payload) {
     body: processBody(body),
     headers: {
       'Content-Type': 'application/json',
-      ...headers
+      ...headers,
     },
     mode: 'cors',
-    credentials: 'same-origin'
+    credentials: 'same-origin',
   });
 
   for (let i = 0; i < handlers.length; i++) {
@@ -82,7 +82,7 @@ export function formatQuery(query) {
     const value = query[key];
 
     if (Array.isArray(value)) {
-      const str = value.map(val => `${key}=${val}`).join('&');
+      const str = value.map((val) => `${key}=${val}`).join('&');
       if (!str) {
         return queryStr;
       }

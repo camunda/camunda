@@ -18,32 +18,32 @@ jest.mock('dmn-js', () =>
     getViews: jest.fn().mockReturnValue([
       {type: 'decisionTable', element: {id: 'a'}},
       {type: 'decisionTable', element: {id: 'key'}},
-      {type: 'decisionTable', element: {id: 'c'}}
-    ])
+      {type: 'decisionTable', element: {id: 'c'}},
+    ]),
   }))
 );
 
-const flushPromises = () => new Promise(resolve => setImmediate(resolve));
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
-jest.mock('@bpmn-io/dmn-migrate', () => ({migrateDiagram: xml => xml}));
+jest.mock('@bpmn-io/dmn-migrate', () => ({migrateDiagram: (xml) => xml}));
 
 const props = {
   report: {
     data: {
       configuration: {
-        xml: 'dmn xml string'
+        xml: 'dmn xml string',
       },
-      decisionDefinitionKey: 'key'
+      decisionDefinitionKey: 'key',
     },
     result: {
       instanceCount: 3,
       data: [
         {key: 'a', value: 1},
-        {key: 'b', value: 2}
-      ]
-    }
+        {key: 'b', value: 2},
+      ],
+    },
   },
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should construct a new Viewer instance', () => {
@@ -67,7 +67,7 @@ it('should open the view of the appropriate decision table', async () => {
   expect(node.instance().viewer.open).toHaveBeenCalled();
   expect(node.instance().viewer.open.mock.calls[0][0]).toEqual({
     type: 'decisionTable',
-    element: {id: 'key'}
+    element: {id: 'key'},
   });
 });
 
@@ -78,10 +78,10 @@ it('should render content in DmnJsPortals', () => {
     entryPoints: {
       rules: {
         a: document.createElement('td'),
-        b: document.createElement('td')
+        b: document.createElement('td'),
       },
-      summary: document.createElement('td')
-    }
+      summary: document.createElement('td'),
+    },
   });
 
   expect(node).toMatchSnapshot();
@@ -99,10 +99,10 @@ it('should display meaningful data if there are no evaluations', () => {
     entryPoints: {
       rules: {
         a: document.createElement('td'),
-        b: document.createElement('td')
+        b: document.createElement('td'),
       },
-      summary: document.createElement('td')
-    }
+      summary: document.createElement('td'),
+    },
   });
 
   expect(node).toMatchSnapshot();

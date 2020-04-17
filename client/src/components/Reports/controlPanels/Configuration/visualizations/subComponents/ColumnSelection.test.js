@@ -14,7 +14,7 @@ it('should have a switch for every column + all columns switch', () => {
     <ColumnSelection
       report={{
         result: {data: [{a: 1, b: 2, c: 3, variables: {x: 1, y: 2}}]},
-        data: {configuration: {}}
+        data: {configuration: {}},
       }}
     />
   );
@@ -27,22 +27,12 @@ it('should change the switches labels to space case instead of camelCase for non
     <ColumnSelection
       report={{
         result: {data: [{processDefinitionKey: 1, variables: {testVariable: 1}}]},
-        data: {configuration: {}}
+        data: {configuration: {}},
       }}
     />
   );
-  expect(
-    node
-      .find('.columnSelectionSwitch')
-      .at(0)
-      .dive()
-  ).toIncludeText('Process Definition Key');
-  expect(
-    node
-      .find('.columnSelectionSwitch')
-      .at(1)
-      .dive()
-  ).toIncludeText('Variable: testVariable');
+  expect(node.find('.columnSelectionSwitch').at(0).dive()).toIncludeText('Process Definition Key');
+  expect(node.find('.columnSelectionSwitch').at(1).dive()).toIncludeText('Variable: testVariable');
 });
 
 it('should call change with an empty array when all columns switch is enabled', () => {
@@ -77,14 +67,14 @@ it('should provde a sane interface for decision tables', () => {
               decisionDefinitionId: 'foo',
               decisionDefinitionKey: 'bar',
               inputVariables: {
-                crypticId: {name: 'Cool Name'}
+                crypticId: {name: 'Cool Name'},
               },
               outputVariables: {
-                clause7: {name: 'Klaus Seven'}
-              }
-            }
-          ]
-        }
+                clause7: {name: 'Klaus Seven'},
+              },
+            },
+          ],
+        },
       }}
     />
   );
@@ -97,7 +87,7 @@ it('should not crash if the report result is empty', () => {
     <ColumnSelection
       report={{
         data: {configuration: {}},
-        result: {data: {}}
+        result: {data: {}},
       }}
     />
   );

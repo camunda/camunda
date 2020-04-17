@@ -16,9 +16,9 @@ jest.mock('services', () => ({
     formatReportResult: jest.fn().mockReturnValue([
       {key: 'a', value: 1, label: 'a name'},
       {key: 'b', value: 2},
-      {key: 'c', value: 3}
-    ])
-  }
+      {key: 'c', value: 3},
+    ]),
+  },
 }));
 
 const report = {
@@ -27,46 +27,46 @@ const report = {
   data: {
     groupBy: {
       value: {},
-      type: ''
+      type: '',
     },
     view: {property: 'frequency'},
     configuration: {
       excludedColumns: [],
       hideRelativeValue: true,
-      hideAbsoluteValue: false
+      hideAbsoluteValue: false,
     },
-    visualization: 'table'
+    visualization: 'table',
   },
   result: {
     data: [],
-    instanceCount: 5
-  }
+    instanceCount: 5,
+  },
 };
 
 const props = {
   mightFail: jest.fn().mockImplementation((a, b) => b(a)),
   error: '',
-  formatter: v => v,
-  report
+  formatter: (v) => v,
+  report,
 };
 
 it('should display data for key-value pairs', async () => {
   expect(processDefaultData(props).body).toEqual([
     ['a name', 1],
     ['b', 2],
-    ['c', 3]
+    ['c', 3],
   ]);
 });
 
 it('should format data according to the provided formatter', async () => {
   const newProps = {
     ...props,
-    formatter: v => 2 * v
+    formatter: (v) => 2 * v,
   };
   expect(processDefaultData(newProps).body).toEqual([
     ['a name', 2],
     ['b', 4],
-    ['c', 6]
+    ['c', 6],
   ]);
 });
 
@@ -78,10 +78,10 @@ const newProps = {
       ...report.data,
       configuration: {
         hideAbsoluteValue: true,
-        hideRelativeValue: false
-      }
-    }
-  }
+        hideRelativeValue: false,
+      },
+    },
+  },
 };
 
 it('should not include absolute values if if it is hidden in the configuration', () => {
@@ -91,7 +91,7 @@ it('should not include absolute values if if it is hidden in the configuration',
   expect(processDefaultData(newProps).body).toEqual([
     ['a name', '12.3%'],
     ['b', '12.3%'],
-    ['c', '12.3%']
+    ['c', '12.3%'],
   ]);
 });
 
@@ -118,9 +118,9 @@ it('should display the relative percentage for frequency views for DMN', () => {
       ...newProps.report,
       result: {
         ...newProps.report.result,
-        instanceCount: 18
-      }
-    }
+        instanceCount: 18,
+      },
+    },
   };
 
   const dmnTableData = processDefaultData(dmnProps);

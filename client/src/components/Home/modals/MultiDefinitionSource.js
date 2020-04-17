@@ -13,7 +13,7 @@ import {formatDefinitions} from './service';
 
 export default class MultiDefinitionSource extends React.Component {
   state = {
-    selectedDefinitions: []
+    selectedDefinitions: [],
   };
 
   componentDidUpdate(_, prevState) {
@@ -23,7 +23,7 @@ export default class MultiDefinitionSource extends React.Component {
         const sources = selectedDefinitions.map(({type, key}) => ({
           definitionType: type,
           definitionKey: key,
-          tenants: [null]
+          tenants: [null],
         }));
         this.props.onChange(sources);
       } else {
@@ -46,7 +46,7 @@ export default class MultiDefinitionSource extends React.Component {
           <ItemsList
             selectedItems={selectedDefinitions}
             allItems={definitions}
-            onChange={selectedDefinitions => this.setState({selectedDefinitions})}
+            onChange={(selectedDefinitions) => this.setState({selectedDefinitions})}
             formatter={formatDefinitions}
           />
         </Labeled>

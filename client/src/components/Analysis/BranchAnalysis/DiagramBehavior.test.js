@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import DiagramBehavior from './DiagramBehavior';
-jest.mock('react', () => ({...jest.requireActual('react'), useEffect: fn => fn()}));
+jest.mock('react', () => ({...jest.requireActual('react'), useEffect: (fn) => fn()}));
 
 const viewer = {
   get: jest.fn().mockReturnThis(),
@@ -23,14 +23,14 @@ const viewer = {
     x: 50,
     y: 50,
     width: 50,
-    height: 50
+    height: 50,
   }),
   getGraphics: jest.fn().mockReturnValue({
     querySelector: jest.fn().mockReturnValue({
       setAttribute: jest.fn(),
-      getAttribute: jest.fn().mockReturnValue(50)
-    })
-  })
+      getAttribute: jest.fn().mockReturnValue(50),
+    }),
+  }),
 };
 
 const props = {
@@ -38,10 +38,10 @@ const props = {
   data: {
     result: {
       data: [{key: 'endEvent', value: 3}],
-      instanceCount: 5
-    }
+      instanceCount: 5,
+    },
   },
-  setViewer: jest.fn()
+  setViewer: jest.fn(),
 };
 
 it('should add an end event overlay if an endEvent is selected', () => {
@@ -59,7 +59,7 @@ it('should add an overlay if an endEvent is hovered', () => {
       {...props}
       hoveredNode={{
         id: 'otherEndEvent',
-        $instanceOf: jest.fn().mockReturnValue(true)
+        $instanceOf: jest.fn().mockReturnValue(true),
       }}
     />
   );
@@ -74,7 +74,7 @@ it('should call the update hover state function', () => {
   const node = shallow(<DiagramBehavior {...props} updateHover={spy} />);
 
   const elementObj = {
-    $instanceOf: jest.fn().mockReturnValue(true)
+    $instanceOf: jest.fn().mockReturnValue(true),
   };
 
   node.find('ClickBehavior').prop('onHover')(elementObj);
@@ -89,13 +89,13 @@ it('should call the update selection state function', () => {
 
   const gateway = {
     businessObject: {
-      $instanceOf: jest.fn().mockImplementation(type => type === 'bpmn:Gateway')
-    }
+      $instanceOf: jest.fn().mockImplementation((type) => type === 'bpmn:Gateway'),
+    },
   };
   const endEvent = {
     businessObject: {
-      $instanceOf: jest.fn().mockImplementation(type => type === 'bpmn:EndEvent')
-    }
+      $instanceOf: jest.fn().mockImplementation((type) => type === 'bpmn:EndEvent'),
+    },
   };
 
   node.find('ClickBehavior').prop('onClick')(gateway.businessObject);
@@ -113,8 +113,8 @@ it('should deselct a selected element when clicking on it', () => {
 
   const gateway = {
     businessObject: {
-      $instanceOf: jest.fn().mockImplementation(type => type === 'bpmn:Gateway')
-    }
+      $instanceOf: jest.fn().mockImplementation((type) => type === 'bpmn:Gateway'),
+    },
   };
 
   const node = shallow(

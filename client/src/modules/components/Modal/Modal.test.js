@@ -123,10 +123,7 @@ it('should focus the modal container if all focusable elements are disabled', ()
 it('should trap focus', () => {
   const node = mount(<Modal open />);
 
-  node
-    .find('.Modal__scroll-container div')
-    .last()
-    .simulate('focus');
+  node.find('.Modal__scroll-container div').last().simulate('focus');
 
   expect(document.activeElement.getAttribute('class')).toBe('Modal__content-container');
 });

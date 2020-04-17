@@ -30,15 +30,15 @@ jest.mock('services', () => {
           view: {foo: {data: 'foo', label: 'viewfoo'}},
           groupBy: {
             foo: {data: 'foo', label: 'groupbyfoo'},
-            inputVariable: {data: {value: []}, label: 'Input Variable'}
+            inputVariable: {data: {value: []}, label: 'Input Variable'},
           },
-          visualization: {foo: {data: 'foo', label: 'visualizationfoo'}}
+          visualization: {foo: {data: 'foo', label: 'visualizationfoo'}},
         },
         isAllowed: jest.fn().mockReturnValue(true),
         getNext: jest.fn(),
-        update: jest.fn()
-      }
-    }
+        update: jest.fn(),
+      },
+    },
   };
 });
 
@@ -52,20 +52,17 @@ const report = {
     visualization: 'table',
     filter: [],
     configuration: {
-      xml: 'someXml'
-    }
+      xml: 'someXml',
+    },
   },
-  result: {instanceCount: 3}
+  result: {instanceCount: 3},
 };
 
 it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
   const node = shallow(<DecisionControlPanel report={report} updateReport={spy} />);
 
-  node
-    .find(ReportSelect)
-    .at(0)
-    .prop('onChange')('newSetting');
+  node.find(ReportSelect).at(0).prop('onChange')('newSetting');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -100,7 +97,7 @@ it('should retrieve variable names', async () => {
   const payload = {
     decisionDefinitionKey: 'aKey',
     decisionDefinitionVersions: ['aVersion'],
-    tenantIds: [null]
+    tenantIds: [null],
   };
 
   await Promise.resolve();
@@ -116,8 +113,8 @@ it('should reset variable groupby on definition change', async () => {
       report={{
         data: {
           ...report.data,
-          groupBy: {type: 'inputVariable', value: {id: 'clause1', name: 'Invoice Amount'}}
-        }
+          groupBy: {type: 'inputVariable', value: {id: 'clause1', name: 'Invoice Amount'}},
+        },
       }}
       updateReport={spy}
     />
@@ -136,8 +133,8 @@ it('should reset variable filters on definition change', async () => {
       report={{
         data: {
           ...report.data,
-          filter: [{type: 'inputVariable'}, {type: 'evaluationDateTime'}, {type: 'outputVariable'}]
-        }
+          filter: [{type: 'inputVariable'}, {type: 'evaluationDateTime'}, {type: 'outputVariable'}],
+        },
       }}
       updateReport={spy}
     />
@@ -167,8 +164,8 @@ it('should not crash when no decisionDefinition is selected', () => {
           ...report.data,
           decisionDefinitionKey: null,
           decisionDefinitionVersion: null,
-          configuration: {...report.data.configuration, xml: null}
-        }
+          configuration: {...report.data.configuration, xml: null},
+        },
       }}
     />
   );

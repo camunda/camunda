@@ -26,11 +26,11 @@ export default class Dropdown extends React.Component {
       openSubmenu: null,
       fixedSubmenu: null,
       menuStyle: {right: 0},
-      listStyles: {}
+      listStyles: {},
     };
   }
 
-  toggleOpen = evt => {
+  toggleOpen = (evt) => {
     evt.preventDefault();
 
     const {disabled, onOpen} = this.props;
@@ -65,7 +65,7 @@ export default class Dropdown extends React.Component {
     }
   }
 
-  calculateMenuStyle = open => {
+  calculateMenuStyle = (open) => {
     const activeButton = this.container.querySelector('.activateButton');
     const menuStyle = {minWidth: this.container.clientWidth + 'px'};
     const listStyles = {};
@@ -109,7 +109,7 @@ export default class Dropdown extends React.Component {
     this.setState({menuStyle, listStyles, scrollable});
   };
 
-  handleKeyPress = evt => {
+  handleKeyPress = (evt) => {
     evt.stopPropagation();
 
     const options = Array.from(
@@ -137,7 +137,7 @@ export default class Dropdown extends React.Component {
           {
             fixedSubmenu: [...this.container.querySelectorAll('li > *')].indexOf(
               options[selectedOption]
-            )
+            ),
           },
           () => {
             const childElement = document.activeElement.querySelector('[tabindex="0"]');
@@ -185,14 +185,14 @@ export default class Dropdown extends React.Component {
       fixedOptions,
       className,
       primary,
-      main
+      main,
     } = this.props;
 
     return (
       <div
         id={id}
         className={classnames(className, 'Dropdown', {
-          'is-open': open
+          'is-open': open,
         })}
         ref={this.storeContainer}
         onClick={this.toggleOpen}
@@ -233,14 +233,14 @@ export default class Dropdown extends React.Component {
                       setClosed: () => {
                         this.setState({openSubmenu: null});
                       },
-                      forceToggle: evt => {
+                      forceToggle: (evt) => {
                         evt.stopPropagation();
                         evt.preventDefault();
                         this.setState(({fixedSubmenu}) => {
                           return {fixedSubmenu: fixedSubmenu === idx ? null : idx};
                         });
                       },
-                      closeParent: () => this.setState({open: false, openSubmenu: null})
+                      closeParent: () => this.setState({open: false, openSubmenu: null}),
                     })
                   : child}
               </li>
@@ -258,7 +258,7 @@ export default class Dropdown extends React.Component {
     );
   }
 
-  storeContainer = node => {
+  storeContainer = (node) => {
     this.container = node;
   };
 

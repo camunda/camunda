@@ -20,6 +20,6 @@ it('should remove all fragments from children', () => {
   );
 
   expect(result.length).toBe(3);
-  const values = result.map(child => child.props.value);
+  const values = result.map((child) => child.props.value);
   expect(values).toEqual(['1', '2', '3']);
 });

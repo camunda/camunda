@@ -12,7 +12,7 @@ import DateInput from './DateInput';
 
 jest.mock('components', () => {
   return {
-    DatePicker: () => 'DatePicker'
+    DatePicker: () => 'DatePicker',
   };
 });
 
@@ -21,8 +21,8 @@ const props = {
   changeFilter: jest.fn(),
   filter: {
     startDate: 'start',
-    endDate: 'end'
-  }
+    endDate: 'end',
+  },
 };
 
 const exampleFilter = {
@@ -33,9 +33,9 @@ const exampleFilter = {
     filterForUndefined: false,
     data: {
       start: '2018-07-09T00:00:00',
-      end: '2018-07-12T23:59:59'
-    }
-  }
+      end: '2018-07-12T23:59:59',
+    },
+  },
 };
 
 it('should show a DatePicker', () => {
@@ -58,7 +58,7 @@ it('should convert a start and end-date to two compatible variable filters', () 
     {name: 'aVariableName', type: 'Date'},
     {
       startDate: moment('2018-07-09'),
-      endDate: moment('2018-07-12')
+      endDate: moment('2018-07-12'),
     },
     false
   );

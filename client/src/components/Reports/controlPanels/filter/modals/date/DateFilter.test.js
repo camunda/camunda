@@ -15,11 +15,11 @@ jest.mock('./service');
 
 const props = {
   filterType: 'startDate',
-  filterData: null
+  filterData: null,
 };
 
-const dateTypeSelect = node => node.find('Select').at(0);
-const unitSelect = node => node.find('Select').at(1);
+const dateTypeSelect = (node) => node.find('Select').at(0);
+const unitSelect = (node) => node.find('Select').at(1);
 
 it('should contain a modal', () => {
   const node = shallow(<DateFilter {...props} />);

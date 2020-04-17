@@ -8,10 +8,10 @@ export const isEmailEnabled = () => true;
 export const isSharingEnabled = () => true;
 export const getOptimizeVersion = () => '2.7.0';
 export const getWebappEndpoints = () => ({
-  default: {endpoint: 'http://localhost:8080/camunda', engineName: 'default'}
+  default: {endpoint: 'http://localhost:8080/camunda', engineName: 'default'},
 });
 export const getHeader = () => ({
   textColor: 'dark', // or "light"
   backgroundColor: '#FFFFFF',
-  logo: ''
+  logo: '',
 });

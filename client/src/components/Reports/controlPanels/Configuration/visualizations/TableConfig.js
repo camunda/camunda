@@ -51,7 +51,7 @@ export default function TableConfig({report, onChange}) {
 }
 
 // disable popover for duration tables since they currently have no configuration
-TableConfig.isDisabled = report => {
+TableConfig.isDisabled = (report) => {
   return (
     report.combined &&
     report.data.reports &&

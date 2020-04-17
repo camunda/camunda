@@ -42,11 +42,7 @@ it('should call the provided save handler', () => {
   nowDirty('report', save);
   SaveGuard.getUserConfirmation('', cb);
 
-  node
-    .find(Modal)
-    .find(Button)
-    .last()
-    .simulate('click');
+  node.find(Modal).find(Button).last().simulate('click');
 
   expect(save).toHaveBeenCalled();
 });

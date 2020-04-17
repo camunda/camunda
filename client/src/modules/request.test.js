@@ -8,11 +8,11 @@ import {request, formatQuery, put, post, get, addHandler, removeHandler} from '.
 
 const successResponse = {
   status: 200,
-  content: 'I have so much content'
+  content: 'I have so much content',
 };
 const failedResponse = {
   status: 401,
-  content: 'FAILED'
+  content: 'FAILED',
 };
 
 global.fetch = jest.fn();
@@ -30,7 +30,7 @@ describe('request', () => {
   it('should open http request with given method and url', async () => {
     await request({
       url,
-      method
+      method,
     });
 
     const {method: actualMethod} = fetch.mock.calls[0][1];
@@ -41,17 +41,17 @@ describe('request', () => {
 
   it('should set headers', async () => {
     const headers = {
-      g: 1
+      g: 1,
     };
 
     await request({
       url,
       method,
-      headers
+      headers,
     });
 
     const {
-      headers: {g}
+      headers: {g},
     } = fetch.mock.calls[0][1];
 
     expect(g).toBe(headers.g);
@@ -60,11 +60,11 @@ describe('request', () => {
   it('should set default Content-Type to application/json', async () => {
     await request({
       url,
-      method
+      method,
     });
 
     const {
-      headers: {'Content-Type': contentType}
+      headers: {'Content-Type': contentType},
     } = fetch.mock.calls[0][1];
 
     expect(contentType).toBe('application/json');
@@ -77,12 +77,12 @@ describe('request', () => {
       url,
       method,
       headers: {
-        'Content-Type': contentType
-      }
+        'Content-Type': contentType,
+      },
     });
 
     const {
-      headers: {'Content-Type': actualContentType}
+      headers: {'Content-Type': actualContentType},
     } = fetch.mock.calls[0][1];
 
     expect(actualContentType).toBe(contentType);
@@ -90,13 +90,13 @@ describe('request', () => {
 
   it('should stringify json body objects', async () => {
     const body = {
-      d: 1
+      d: 1,
     };
 
     await request({
       url,
       method,
-      body
+      body,
     });
 
     const {body: actualBody} = fetch.mock.calls[0][1];
@@ -107,7 +107,7 @@ describe('request', () => {
   it('should return successful response when status is 200', async () => {
     const response = await request({
       url,
-      method
+      method,
     });
 
     expect(response).toBe(successResponse);
@@ -119,7 +119,7 @@ describe('request', () => {
     try {
       await request({
         url,
-        method
+        method,
       });
     } catch (e) {
       expect(e).toBe(failedResponse);
@@ -151,7 +151,7 @@ describe('handlers', () => {
 
   it('should call handlers in order of their priority', async () => {
     const out = [];
-    const handler = i => r => out.push(i) && r;
+    const handler = (i) => (r) => out.push(i) && r;
 
     addHandler(handler(0), 0);
     addHandler(handler(-4), -4);
@@ -169,7 +169,7 @@ describe('formatQuery', () => {
   it('should format query object into proper query string', () => {
     const query = {
       a: 1,
-      b: '5=5'
+      b: '5=5',
     };
 
     expect(formatQuery(query)).toBe('a=1&b=5%3D5');
@@ -197,7 +197,7 @@ describe('methods shortcuts functions', () => {
 
     it('should use custom options', async () => {
       await put(url, body, {
-        headers: {d: 12}
+        headers: {d: 12},
       });
 
       const fetchPayload = fetch.mock.calls[0][1];
@@ -223,7 +223,7 @@ describe('methods shortcuts functions', () => {
 
     it('should use custom options', async () => {
       await post(url, body, {
-        headers: {d: 12}
+        headers: {d: 12},
       });
 
       const fetchPayload = fetch.mock.calls[0][1];
@@ -259,7 +259,7 @@ describe('methods shortcuts functions', () => {
 
     it('should use custom options', async () => {
       await get(url, body, {
-        headers: {d: 12}
+        headers: {d: 12},
       });
 
       const fetchPayload = fetch.mock.calls[0][1];

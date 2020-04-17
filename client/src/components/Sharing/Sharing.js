@@ -13,7 +13,7 @@ import {
   Icon,
   Button,
   LoadingIndicator,
-  ErrorPage
+  ErrorPage,
 } from 'components';
 import {Link} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
@@ -25,7 +25,7 @@ export default class Sharing extends React.Component {
 
     this.state = {
       evaluationResult: null,
-      loading: true
+      loading: true,
     };
 
     this.performEvaluation();
@@ -44,7 +44,7 @@ export default class Sharing extends React.Component {
 
     this.setState({
       evaluationResult,
-      loading: false
+      loading: false,
     });
   };
 

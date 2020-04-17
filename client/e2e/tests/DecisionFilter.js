@@ -17,7 +17,7 @@ fixture('Decision Report Filter')
   .beforeEach(u.login)
   .afterEach(cleanEntities);
 
-test('should apply a filter to the report result', async t => {
+test('should apply a filter to the report result', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
@@ -43,7 +43,7 @@ test('should apply a filter to the report result', async t => {
   await t.expect(unfiltered).gt(filtered);
 });
 
-test('should have seperate input and output variables', async t => {
+test('should have seperate input and output variables', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));

@@ -17,13 +17,13 @@ const loadReport = jest.fn();
 
 const props = {
   report: {
-    id: 'a'
+    id: 'a',
   },
   loadReport,
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   location: {
-    pathname: '/dashboard/did/'
-  }
+    pathname: '/dashboard/did/',
+  },
 };
 
 jest.mock('react-router-dom', () => {
@@ -31,7 +31,7 @@ jest.mock('react-router-dom', () => {
     Link: ({children, to}) => {
       return <a href={to}>{children}</a>;
     },
-    withRouter: fn => fn
+    withRouter: (fn) => fn,
   };
 });
 
@@ -85,8 +85,8 @@ it('should not provide a link to the report when link is disabled', async () => 
 it('should display the name of a failing report', async () => {
   loadReport.mockReturnValue({
     json: () => ({
-      reportDefinition: {name: 'Failing Name'}
-    })
+      reportDefinition: {name: 'Failing Name'},
+    }),
   });
   const node = shallow(
     <OptimizeReport {...props} mightFail={(data, success, fail) => fail(data)} disableNameLink />
@@ -101,8 +101,8 @@ it('should display an error message if there is an error and no report is return
   loadReport.mockReturnValue({
     json: () => ({
       errorMessage: 'Is failing',
-      reportDefinition: null
-    })
+      reportDefinition: null,
+    }),
   });
 
   const node = shallow(

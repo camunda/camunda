@@ -25,13 +25,13 @@ jest.mock('services', () => {
           view: [{key: 'rawData', data: 'foo', label: 'viewfoo'}],
           groupBy: [
             {key: 'none', data: 'foo', label: 'groupbyfoo'},
-            {key: 'variable', options: 'inputVariable', label: 'Input Variable'}
+            {key: 'variable', options: 'inputVariable', label: 'Input Variable'},
           ],
-          visualization: [{data: 'foo', label: 'visualizationfoo'}]
+          visualization: [{data: 'foo', label: 'visualizationfoo'}],
         },
-        isAllowed: jest.fn().mockReturnValue(true)
-      }
-    }
+        isAllowed: jest.fn().mockReturnValue(true),
+      },
+    },
   };
 });
 
@@ -41,7 +41,7 @@ const config = {
   value: 'foo',
   variables: {inputVariable: []},
   disabled: false,
-  onChange: jest.fn()
+  onChange: jest.fn(),
 };
 
 it('should disable options which would create a wrong combination', () => {
@@ -65,7 +65,7 @@ it('should match snapshot', async () => {
     value: 'foo',
     variables: {inputVariable: [{id: 'test', type: 'date', name: 'testName'}]},
     disabled: false,
-    onChange: jest.fn()
+    onChange: jest.fn(),
   };
 
   const node = shallow(<ReportSelect {...config} field="groupBy" />);
@@ -80,7 +80,7 @@ it('invoke onChange with the correct variable data', async () => {
     value: 'foo',
     variables: {inputVariable: [{id: 'test', type: 'date', name: 'testName'}]},
     disabled: false,
-    onChange: jest.fn()
+    onChange: jest.fn(),
   };
 
   const node = shallow(<ReportSelect {...config} field="groupBy" />);
@@ -89,6 +89,6 @@ it('invoke onChange with the correct variable data', async () => {
 
   expect(config.onChange).toHaveBeenCalledWith({
     type: 'inputVariable',
-    value: {id: 'test', name: 'testName', type: 'date'}
+    value: {id: 'test', name: 'testName', type: 'date'},
   });
 });

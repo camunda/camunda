@@ -14,11 +14,11 @@ jest.mock('notifications', () => ({addNotification: jest.fn(), Notifications: ()
 const App = AppWithErrorHandling.WrappedComponent;
 
 jest.mock('translation', () => ({
-  init: jest.fn()
+  init: jest.fn(),
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should show an error message when it is not possible to initilize the translation', async () => {
@@ -33,7 +33,7 @@ it('should render the last component in the url', async () => {
 
   const renderedEntity = shallow(
     node.find({path: '/(report|dashboard|collection|eventBasedProcess)/*'}).prop('render')({
-      location: {pathname: '/collection/cid/dashboard/did/report/rid'}
+      location: {pathname: '/collection/cid/dashboard/did/report/rid'},
     })
   );
 

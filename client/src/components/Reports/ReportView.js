@@ -20,7 +20,7 @@ import {t} from 'translation';
 
 export default class ReportView extends React.Component {
   state = {
-    deleting: null
+    deleting: null,
   };
 
   async componentDidMount() {

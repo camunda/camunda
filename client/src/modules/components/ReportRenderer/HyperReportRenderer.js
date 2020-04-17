@@ -12,7 +12,7 @@ import CombinedReportRenderer from './CombinedReportRenderer';
 
 export default function HyperReportRenderer({report, ...rest}) {
   const convertedReport = {
-    ...report
+    ...report,
   };
 
   const colors = ColorPicker.getColors(report.result.data[0].value.length);
@@ -21,7 +21,7 @@ export default function HyperReportRenderer({report, ...rest}) {
   convertedReport.data = {
     configuration: report.data.configuration,
     reports: report.result.data[0].value.map(({key}, i) => ({id: key, color: colors[i]})),
-    visualization: report.data.visualization === 'table' ? 'table' : 'bar'
+    visualization: report.data.visualization === 'table' ? 'table' : 'bar',
   };
 
   const newResultData = {};
@@ -36,17 +36,17 @@ export default function HyperReportRenderer({report, ...rest}) {
       result: {
         ...report.result,
         type: 'map',
-        data: report.result.data.map(entry => ({
+        data: report.result.data.map((entry) => ({
           ...entry,
-          value: entry.value.find(data => data.key === key).value
-        }))
-      }
+          value: entry.value.find((data) => data.key === key).value,
+        })),
+      },
     };
   });
 
   convertedReport.result = {
     type: null,
-    data: newResultData
+    data: newResultData,
   };
 
   return <CombinedReportRenderer {...rest} report={convertedReport} />;

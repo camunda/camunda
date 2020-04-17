@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import React, {useState, useRef} from 'react';
 import classnames from 'classnames';
 
@@ -30,7 +36,7 @@ export default function SearchField({value, onChange = () => {}}) {
         className={classnames({open})}
         value={value}
         placeholder={t('home.search.name')}
-        onChange={evt => onChange(evt.target.value)}
+        onChange={(evt) => onChange(evt.target.value)}
         onKeyDown={({key}) => {
           if (key === 'Escape') {
             setOpen(false);

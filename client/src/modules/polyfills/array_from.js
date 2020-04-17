@@ -7,12 +7,12 @@
 // source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/from
 // Production steps of ECMA-262, Edition 6, 22.1.2.1
 if (!Array.from) {
-  Array.from = (function() {
+  Array.from = (function () {
     var toStr = Object.prototype.toString;
-    var isCallable = function(fn) {
+    var isCallable = function (fn) {
       return typeof fn === 'function' || toStr.call(fn) === '[object Function]';
     };
-    var toInteger = function(value) {
+    var toInteger = function (value) {
       var number = Number(value);
       if (isNaN(number)) {
         return 0;
@@ -23,7 +23,7 @@ if (!Array.from) {
       return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
     };
     var maxSafeInteger = Math.pow(2, 53) - 1;
-    var toLength = function(value) {
+    var toLength = function (value) {
       var len = toInteger(value);
       return Math.min(Math.max(len, 0), maxSafeInteger);
     };

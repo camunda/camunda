@@ -21,9 +21,9 @@ const report = {
     view: {property: 'frequency'},
     groupBy: {
       value: '',
-      type: ''
-    }
-  }
+      type: '',
+    },
+  },
 };
 
 it('should destroy chart if no data is provided', () => {
@@ -40,7 +40,7 @@ it('should use the special targetLine type when target values are enabled on a l
       report={{
         ...report,
         result: {data: {foo: 123}},
-        data: {...report.data, visualization: 'line', configuration: targetValue}
+        data: {...report.data, visualization: 'line', configuration: targetValue},
       }}
     />
   );
@@ -54,7 +54,7 @@ it('should render combined chart if report is combined', () => {
       report={{
         ...report,
         result: {data: null},
-        combined: true
+        combined: true,
       }}
     />
   );
@@ -67,7 +67,7 @@ it('should render default normal chart if report is a single report', () => {
     <Chart
       report={{
         ...report,
-        result: {data: {}}
+        result: {data: {}},
       }}
     />
   );

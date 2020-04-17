@@ -15,7 +15,7 @@ jest.mock('react-router-dom', () => {
   const rest = jest.requireActual('react-router-dom');
   return {
     ...rest,
-    withRouter: a => a
+    withRouter: (a) => a,
   };
 });
 
@@ -23,12 +23,12 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    loadReports: jest.fn().mockReturnValue([])
+    loadReports: jest.fn().mockReturnValue([]),
   };
 });
 
 const props = {
-  location: {pathname: '/dashboard/1'}
+  location: {pathname: '/dashboard/1'},
 };
 
 it('should load the available reports', () => {
@@ -50,13 +50,13 @@ it('should render a Typeahead element with the available reports as options', ()
     availableReports: [
       {
         id: 'a',
-        name: 'Report A'
+        name: 'Report A',
       },
       {
         id: 'b',
-        name: 'Report B'
-      }
-    ]
+        name: 'Report B',
+      },
+    ],
   });
 
   expect(node.find('Typeahead')).toMatchSnapshot();
@@ -70,20 +70,20 @@ it('should call the callback when adding a report', () => {
     availableReports: [
       {
         id: 'a',
-        name: 'Report A'
+        name: 'Report A',
       },
       {
         id: 'b',
-        name: 'Report B'
-      }
+        name: 'Report B',
+      },
     ],
-    selectedReportId: 'a'
+    selectedReportId: 'a',
   });
 
   node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
-    id: 'a'
+    id: 'a',
   });
 });
 

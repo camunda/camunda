@@ -16,7 +16,7 @@ const createReport = ({reportA, reportB, groupByType}) => {
   getCombinedChartProps.mockReturnValue({
     reportsNames: ['report A', 'report B'],
     resultArr: [reportA.data, reportB.data],
-    reportColors: []
+    reportColors: [],
   });
 
   return {
@@ -25,26 +25,29 @@ const createReport = ({reportA, reportB, groupByType}) => {
         reportA: {
           name: 'Report A',
           result: {
-            data: reportA.data
-          }
+            data: reportA.data,
+          },
         },
         reportB: {
           name: 'Report B',
           result: {
-            data: reportB.data
-          }
-        }
-      }
+            data: reportB.data,
+          },
+        },
+      },
     },
     data: {
       groupBy: {
         type: groupByType || 'startDate',
-        value: 'month'
+        value: 'month',
       },
-      reports: [{id: 'reportA', color: reportA.color}, {id: 'reportB', color: reportB.color}],
-      visualization: 'line'
+      reports: [
+        {id: 'reportA', color: reportA.color},
+        {id: 'reportB', color: reportB.color},
+      ],
+      visualization: 'line',
     },
-    combined: true
+    combined: true,
   };
 };
 
@@ -52,28 +55,28 @@ it('should return correct chart data object for a combined report', () => {
   const reportA = {
     data: [
       {key: 'foo', value: 123, label: 'Flownode Foo'},
-      {key: 'bar', value: 5, label: 'Barrrr'}
+      {key: 'bar', value: 5, label: 'Barrrr'},
     ],
-    color: 'blue'
+    color: 'blue',
   };
 
   const reportB = {
     data: [
       {key: 'foo', value: 1, label: 'Flownode Foo'},
-      {key: 'dar', value: 3, label: 'Flownode DAR'}
+      {key: 'dar', value: 3, label: 'Flownode DAR'},
     ],
-    color: 'yellow'
+    color: 'yellow',
   };
 
   uniteResults.mockReturnValue([
     [{value: 123}, {value: 5}, {value: null}],
-    [{value: 1}, {value: null}, {value: 3}]
+    [{value: 1}, {value: null}, {value: 3}],
   ]);
 
   const chartData = createCombinedChartData({
     report: createReport({reportA, reportB, groupByType: 'flowNodes'}),
     targetValue: false,
-    theme: 'light'
+    theme: 'light',
   });
 
   expect(chartData).toMatchSnapshot();
@@ -82,20 +85,23 @@ it('should return correct chart data object for a combined report', () => {
 it('should return correct chart data object for a combined report with correct date order', () => {
   const reportA = {
     data: [{key: '2017-12-27T14:21:56.000', value: 123, label: 'Dec 2017'}],
-    color: 'blue'
+    color: 'blue',
   };
 
   const reportB = {
     data: [{key: '2017-03-27T14:21:56.000', value: 5, label: 'Mar 2017'}],
-    color: 'yellow'
+    color: 'yellow',
   };
 
-  uniteResults.mockReturnValue([[{value: 123}, {value: null}], [{value: null}, {value: 5}]]);
+  uniteResults.mockReturnValue([
+    [{value: 123}, {value: null}],
+    [{value: null}, {value: 5}],
+  ]);
 
   const chartData = createCombinedChartData({
     report: createReport({reportA, reportB}),
     targetValue: false,
-    theme: 'light'
+    theme: 'light',
   });
 
   expect(chartData).toMatchSnapshot();

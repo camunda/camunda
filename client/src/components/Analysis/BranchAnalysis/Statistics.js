@@ -22,19 +22,19 @@ export default class Statistics extends React.Component {
 
     this.state = {
       data: null,
-      flowNodeNames: null
+      flowNodeNames: null,
     };
   }
 
   loadFlowNodeNames = () => {
-    return new Promise(async resolve =>
+    return new Promise(async (resolve) =>
       this.setState(
         {
           flowNodeNames: await getFlowNodeNames(
             this.props.config.processDefinitionKey,
             this.props.config.processDefinitionVersions[0],
             this.props.config.tenantIds[0]
-          )
+          ),
         },
         resolve
       )
@@ -62,11 +62,11 @@ export default class Statistics extends React.Component {
         <div className="Statistics">
           <p
             dangerouslySetInnerHTML={{
-              __html: t('analysis.gatewayInstances', {totalGateway, gatewayName})
+              __html: t('analysis.gatewayInstances', {totalGateway, gatewayName}),
             }}
           />
           <ul>
-            {Object.keys(this.state.data.followingNodes).map(key => {
+            {Object.keys(this.state.data.followingNodes).map((key) => {
               const count = this.state.data.followingNodes[key].activityCount;
               const reached = this.state.data.followingNodes[key].activitiesReached;
 
@@ -80,8 +80,8 @@ export default class Statistics extends React.Component {
                       key,
                       reached,
                       reachedEndPercentage: Math.round((reached / count) * 100) || 0,
-                      endEventName
-                    })
+                      endEventName,
+                    }),
                   }}
                 />
               );
@@ -89,13 +89,13 @@ export default class Statistics extends React.Component {
           </ul>
           <p dangerouslySetInnerHTML={{__html: t('analysis.gatewayDistribution', {gatewayName})}} />
           <div className="diagram-container">
-            <canvas ref={node => (this.absoluteChartRef = node)} />
+            <canvas ref={(node) => (this.absoluteChartRef = node)} />
           </div>
           <p
             dangerouslySetInnerHTML={{__html: t('analysis.endEventProbability', {endEventName})}}
           />
           <div className="diagram-container">
-            <canvas ref={node => (this.relativeChartRef = node)} />
+            <canvas ref={(node) => (this.relativeChartRef = node)} />
           </div>
         </div>
       );
@@ -164,10 +164,10 @@ export default class Statistics extends React.Component {
   };
 
   loadCorrelation = () => {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.setState(
         {
-          data: null
+          data: null,
         },
         async () => {
           this.setState(
@@ -179,7 +179,7 @@ export default class Statistics extends React.Component {
                 this.props.config.filter,
                 this.props.gateway.id,
                 this.props.endEvent.id
-              )
+              ),
             },
             async () => {
               await this.applyFlowNodeNames();
@@ -192,11 +192,11 @@ export default class Statistics extends React.Component {
   };
 
   applyFlowNodeNames = () => {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const nodes = this.state.data.followingNodes;
       const flowNodeNames = this.state.flowNodeNames;
       const chartData = {};
-      Object.keys(nodes).forEach(v => {
+      Object.keys(nodes).forEach((v) => {
         const sequenceFlow = this.props.gateway.outgoing.find(({targetRef: {id}}) => id === v);
         chartData[sequenceFlow.name || flowNodeNames[v] || v] = nodes[v];
       });
@@ -204,8 +204,8 @@ export default class Statistics extends React.Component {
       this.setState(
         {
           data: {
-            followingNodes: chartData
-          }
+            followingNodes: chartData,
+          },
         },
         resolve
       );
@@ -224,22 +224,22 @@ export default class Statistics extends React.Component {
             data: Object.values(this.state.data.followingNodes).map(dataFct),
             borderColor: '#1991c8',
             backgroundColor: '#1991c8',
-            borderWidth: 2
-          }
-        ]
+            borderWidth: 2,
+          },
+        ],
       },
       options: {
         responsive: true,
         animation: false,
         maintainAspectRatio: false,
         legend: {
-          display: false
+          display: false,
         },
         tooltips: {
           callbacks: {
             label: ({index, datasetIndex}, {datasets}) =>
-              datasets[datasetIndex].data[index] + labelSuffix
-          }
+              datasets[datasetIndex].data[index] + labelSuffix,
+          },
         },
         hover: {
           onHover: (e, activeElements) => {
@@ -253,23 +253,23 @@ export default class Statistics extends React.Component {
             } else if (activeElements.length <= 0 && isInside) {
               // triggered once the mouse move from inside to outside the barchart box
               const elementRegistry = viewer.get('elementRegistry');
-              elementRegistry.forEach(element => canvas.removeMarker(element, classMark));
+              elementRegistry.forEach((element) => canvas.removeMarker(element, classMark));
               isInside = false;
               viewer._container.classList.remove('highlight-single-path');
             }
-          }
+          },
         },
         scales: {
           xAxes: [
             {
               ticks: {
                 beginAtZero: true,
-                callback: (...args) => ChartRenderer.Ticks.formatters.linear(...args) + labelSuffix
-              }
-            }
-          ]
-        }
-      }
+                callback: (...args) => ChartRenderer.Ticks.formatters.linear(...args) + labelSuffix,
+              },
+            },
+          ],
+        },
+      },
     });
   };
 
@@ -277,7 +277,7 @@ export default class Statistics extends React.Component {
     const {gateway, endEvent} = this.props;
     const hoveredElementLabel = activeElements[0]._model.label;
     const sequenceFlow = gateway.outgoing.find(
-      element =>
+      (element) =>
         element.name === hoveredElementLabel ||
         element.targetRef.name === hoveredElementLabel ||
         element.targetRef.id === hoveredElementLabel
@@ -287,7 +287,7 @@ export default class Statistics extends React.Component {
       canvas.addMarker(sequenceFlow, classMark);
       const reachableNodes = getDiagramElementsBetween(sequenceFlow.targetRef, endEvent, viewer);
 
-      reachableNodes.forEach(id => canvas.addMarker(id, classMark));
+      reachableNodes.forEach((id) => canvas.addMarker(id, classMark));
     }
   };
 }

@@ -16,11 +16,11 @@ const {WrappedComponent: ChangeLog} = ChangeLogWithErrorHandling;
 jest.mock('./service', () => ({
   isChangeLogSeen: jest.fn().mockReturnValue({seen: false}),
   setChangeLogAsSeen: jest.fn(),
-  getMarkdownText: jest.fn().mockReturnValue('#hello world')
+  getMarkdownText: jest.fn().mockReturnValue('#hello world'),
 }));
 
 const props = {
-  mightFail: (promise, cb) => cb(promise)
+  mightFail: (promise, cb) => cb(promise),
 };
 
 it('show match snapshot', () => {
@@ -40,10 +40,7 @@ it('should load markdown when opening modal', () => {
   isChangeLogSeen.mockReturnValueOnce({seen: true});
   const node = shallow(<ChangeLog {...props} />);
 
-  node
-    .find(Button)
-    .at(0)
-    .simulate('click');
+  node.find(Button).at(0).simulate('click');
 
   expect(getMarkdownText).toHaveBeenCalled();
 });

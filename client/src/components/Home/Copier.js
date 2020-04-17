@@ -16,18 +16,18 @@ import {copyEntity} from './service';
 export default withErrorHandling(
   class Copier extends React.Component {
     state = {
-      redirect: null
+      redirect: null,
     };
 
     copy = (name, redirect, destination) => {
       const {
         entity: {entityType, id},
-        onCopy
+        onCopy,
       } = this.props;
 
       this.props.mightFail(
         copyEntity(entityType, id, name, destination),
-        newId => {
+        (newId) => {
           if (redirect) {
             if (entityType === 'collection') {
               this.setState({redirect: `/collection/${newId}/`});

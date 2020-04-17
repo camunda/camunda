@@ -14,7 +14,7 @@ import {formatDefintionName, formatTenants} from './service';
 export default class DefinitionSource extends React.Component {
   state = {
     selectedDefinition: null,
-    selectedTenants: []
+    selectedTenants: [],
   };
 
   componentDidUpdate(_, prevState) {
@@ -28,8 +28,8 @@ export default class DefinitionSource extends React.Component {
           {
             definitionType: selectedDefinition.type,
             definitionKey: selectedDefinition.key,
-            tenants: selectedTenants.map(({id}) => id)
-          }
+            tenants: selectedTenants.map(({id}) => id),
+          },
         ]);
       } else {
         this.props.setInvalid();
@@ -37,8 +37,8 @@ export default class DefinitionSource extends React.Component {
     }
   }
 
-  updateSelectedDefinition = key => {
-    const selectedDefinition = this.props.definitionsWithTenants.find(def => def.key === key);
+  updateSelectedDefinition = (key) => {
+    const selectedDefinition = this.props.definitionsWithTenants.find((def) => def.key === key);
     if (selectedDefinition.tenants.length === 1) {
       // preselect if there is only one tenant
       this.setState({selectedDefinition, selectedTenants: [selectedDefinition.tenants[0]]});
@@ -65,7 +65,7 @@ export default class DefinitionSource extends React.Component {
               onChange={this.updateSelectedDefinition}
               noValuesMessage={t('common.definitionSelection.noDefinition')}
             >
-              {definitionsWithTenants.map(def => (
+              {definitionsWithTenants.map((def) => (
                 <Typeahead.Option key={def.key} value={def.key}>
                   {formatDefintionName(def)}
                 </Typeahead.Option>
@@ -79,7 +79,7 @@ export default class DefinitionSource extends React.Component {
               <ItemsList
                 selectedItems={selectedTenants}
                 allItems={selectedDefinition.tenants}
-                onChange={selectedTenants => this.setState({selectedTenants})}
+                onChange={(selectedTenants) => this.setState({selectedTenants})}
                 formatter={formatTenants}
               />
             </Labeled>

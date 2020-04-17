@@ -15,16 +15,16 @@ import {evaluateEntity} from './service';
 jest.mock('./service', () => {
   return {
     evaluateEntity: jest.fn(),
-    createLoadReportCallback: jest.fn()
+    createLoadReportCallback: jest.fn(),
   };
 });
 
 const props = {
   match: {
     params: {
-      id: 123
-    }
-  }
+      id: 123,
+    },
+  },
 };
 
 it('should render without crashing', () => {
@@ -49,7 +49,7 @@ it('should display an error message if evaluation was unsuccessful', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: null
+    evaluationResult: null,
   });
 
   expect(node.find('ErrorPage')).toExist();
@@ -61,7 +61,7 @@ it('should display an error message if type is invalid', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {name: 'foo'}
+    evaluationResult: {name: 'foo'},
   });
 
   expect(node.find('ErrorPage')).toExist();
@@ -73,7 +73,7 @@ it('should have report if everything is fine', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {name: 'foo'}
+    evaluationResult: {name: 'foo'},
   });
 
   expect(node.find(ReportRenderer)).toExist();
@@ -92,7 +92,7 @@ it('should display the report name', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {name: 'My report name'}
+    evaluationResult: {name: 'My report name'},
   });
 
   expect(node).toIncludeText('My report name');
@@ -104,7 +104,7 @@ it('should have dashboard if everything is fine', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {reportShares: 'foo'}
+    evaluationResult: {reportShares: 'foo'},
   });
 
   expect(node.find('DashboardRenderer')).toExist();
@@ -123,7 +123,7 @@ it('should display the dashboard name', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {name: 'My dashboard name'}
+    evaluationResult: {name: 'My dashboard name'},
   });
 
   expect(node).toIncludeText('My dashboard name');
@@ -135,7 +135,7 @@ it('should render a button linking to view mode', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {name: 'My dashboard name'}
+    evaluationResult: {name: 'My dashboard name'},
   });
 
   expect(node.find(Button)).toExist();

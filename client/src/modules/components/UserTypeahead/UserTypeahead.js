@@ -17,14 +17,14 @@ export default class UserTypeahead extends React.Component {
     hasMore: false,
     initialDataLoaded: false,
     empty: true,
-    identities: []
+    identities: [],
   };
 
   componentDidMount() {
     this.loadNewValues('');
   }
 
-  loadNewValues = query => {
+  loadNewValues = (query) => {
     if (this.state.initialDataLoaded && !query) {
       return this.cancelPendingSearch();
     }
@@ -32,14 +32,14 @@ export default class UserTypeahead extends React.Component {
     this.search(query);
   };
 
-  search = debounce(async query => {
+  search = debounce(async (query) => {
     const {total, result} = await searchIdentities(query);
     this.setState({
       identities: result,
       loading: false,
       hasMore: total > result.length,
       empty: result.length === 0,
-      initialDataLoaded: !query
+      initialDataLoaded: !query,
     });
   }, 800);
 
@@ -59,8 +59,8 @@ export default class UserTypeahead extends React.Component {
     }
   };
 
-  selectIdentity = id => {
-    const selectedIdentity = this.state.identities.find(identity => identity.id === id);
+  selectIdentity = (id) => {
+    const selectedIdentity = this.state.identities.find((identity) => identity.id === id);
     if (selectedIdentity) {
       this.props.onChange(selectedIdentity);
     } else {
@@ -85,7 +85,7 @@ export default class UserTypeahead extends React.Component {
         async
         typedOption
       >
-        {identities.map(identity => {
+        {identities.map((identity) => {
           const {text, tag, subTexts} = formatTypeaheadOption(identity);
           return (
             <Typeahead.Option key={identity.id} value={identity.id} label={text}>
@@ -94,7 +94,7 @@ export default class UserTypeahead extends React.Component {
               {subTexts && (
                 <span className="subTexts">
                   {subTexts
-                    .filter(subText => subText)
+                    .filter((subText) => subText)
                     .map((subText, i) => (
                       <span className="subText" key={i}>
                         <Typeahead.Highlight matchFromStart>{subText}</Typeahead.Highlight>
@@ -123,6 +123,6 @@ function formatTypeaheadOption({name, email, id, type}) {
   return {
     text: name || email || id,
     tag: type === 'group' && ' (User Group)',
-    subTexts
+    subTexts,
   };
 }

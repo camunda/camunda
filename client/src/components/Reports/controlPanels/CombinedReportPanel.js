@@ -21,7 +21,7 @@ export default withRouter(
 
       this.state = {
         reports: [],
-        searchQuery: ''
+        searchQuery: '',
       };
     }
 
@@ -31,7 +31,7 @@ export default withRouter(
       const collection = getCollection(this.props.location.pathname) || null;
 
       const reports = (await loadReports(collection)).filter(
-        report =>
+        (report) =>
           !report.combined &&
           report.reportType === 'process' &&
           acceptedVisualizations.includes(report.data.visualization) &&
@@ -49,11 +49,11 @@ export default withRouter(
       if (checked) {
         newSelected = [...selectedReports, selectedReport];
       } else {
-        newSelected = selectedReports.filter(report => report.id !== selectedReport.id);
+        newSelected = selectedReports.filter((report) => report.id !== selectedReport.id);
       }
 
       const change = {
-        visualization: {$set: selectedReport.data.visualization}
+        visualization: {$set: selectedReport.data.visualization},
       };
 
       let updatedColors = [];
@@ -78,10 +78,10 @@ export default withRouter(
       // we filter all entries which are not truthy to get rid of them
       return this.props.report.data.reports
         .map(({id}) => this.props.report.result.data[id])
-        .filter(v => v);
+        .filter((v) => v);
     };
 
-    getUpdatedColors = newSelected => {
+    getUpdatedColors = (newSelected) => {
       const prevOrderReports = this.getReportResult();
       const {reports} = this.props.report.data;
       let colorsHash = {};
@@ -92,13 +92,13 @@ export default withRouter(
       }
 
       const colors = ColorPicker.getColors(newSelected.length).filter(
-        color => !Object.values(colorsHash).includes(color)
+        (color) => !Object.values(colorsHash).includes(color)
       );
 
-      return newSelected.map(report => colorsHash[report.id] || colors.pop());
+      return newSelected.map((report) => colorsHash[report.id] || colors.pop());
     };
 
-    updateReportsOrder = newSelected => {
+    updateReportsOrder = (newSelected) => {
       let updatedColors = [];
       if (newSelected[0].data.visualization !== 'table') {
         updatedColors = this.getUpdatedColors(newSelected);
@@ -106,14 +106,14 @@ export default withRouter(
 
       const change = {
         reports: {
-          $set: newSelected.map((report, i) => ({id: report.id, color: updatedColors[i]}))
-        }
+          $set: newSelected.map((report, i) => ({id: report.id, color: updatedColors[i]})),
+        },
       };
 
       this.props.updateReport(change);
     };
 
-    isCompatible = report => {
+    isCompatible = (report) => {
       const referenceReport = this.getReportResult()[0];
       if (!referenceReport) {
         return true;
@@ -154,18 +154,18 @@ export default withRouter(
       );
     };
 
-    updateColor = idx => color => {
+    updateColor = (idx) => (color) => {
       const {
         report: {data},
-        updateReport
+        updateReport,
       } = this.props;
 
       const newReports = [...data.reports];
       newReports[idx] = {id: newReports[idx].id, color};
       updateReport({
         reports: {
-          $set: newReports
-        }
+          $set: newReports,
+        },
       });
     };
 
@@ -179,7 +179,7 @@ export default withRouter(
       let selectedReports = [];
 
       const combinableReportList = reports.filter(
-        report =>
+        (report) =>
           this.search(searchQuery, report.name) &&
           this.isCompatible(report) &&
           !(reportsData || []).some(({id}) => id === report.id)
@@ -201,17 +201,17 @@ export default withRouter(
           <TypeaheadMultipleSelection
             availableValues={combinableReportList}
             selectedValues={selectedReports}
-            setFilter={searchQuery => this.setState({searchQuery})}
+            setFilter={(searchQuery) => this.setState({searchQuery})}
             toggleValue={this.update}
             labels={{
               available: t('report.combined.multiSelect.available'),
               selected: t('report.combined.multiSelect.selected'),
               search: t('report.combined.multiSelect.search'),
-              empty: t('report.combined.multiSelect.empty')
+              empty: t('report.combined.multiSelect.empty'),
             }}
             loading={false}
             onOrderChange={this.updateReportsOrder}
-            format={v => v.name}
+            format={(v) => v.name}
             customItemSettings={(val, idx) => {
               if (!configurationType || configurationType === 'table') {
                 return;
@@ -226,7 +226,7 @@ export default withRouter(
                     <span
                       className="colorBox"
                       style={{
-                        background: selectedColor
+                        background: selectedColor,
                       }}
                     />
                   }

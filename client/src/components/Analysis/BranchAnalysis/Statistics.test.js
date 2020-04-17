@@ -16,12 +16,12 @@ import ChartRenderer from 'chart.js';
 import Statistics from './Statistics';
 
 function flushPromises() {
-  return new Promise(resolve => setImmediate(resolve));
+  return new Promise((resolve) => setImmediate(resolve));
 }
 
 jest.mock('components', () => {
   return {
-    LoadingIndicator: () => <span>loading</span>
+    LoadingIndicator: () => <span>loading</span>,
   };
 });
 
@@ -31,9 +31,9 @@ jest.mock('./service', () => {
       total: 10,
       followingNodes: {
         a: {activitiesReached: 3, activityCount: 1},
-        b: {activitiesReached: 2, activityCount: 2}
-      }
-    })
+        b: {activitiesReached: 2, activityCount: 2},
+      },
+    }),
   };
 });
 
@@ -41,9 +41,9 @@ jest.mock('services', () => {
   return {
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
-      b: 'bar'
+      b: 'bar',
     }),
-    getDiagramElementsBetween: jest.fn().mockReturnValue([])
+    getDiagramElementsBetween: jest.fn().mockReturnValue([]),
   };
 });
 
@@ -58,10 +58,10 @@ const initialProps = {
     filter: [],
     processDefinitionKey: null,
     tenantIds: [],
-    processDefinitionVersions: null
+    processDefinitionVersions: null,
   },
   gateway: null,
-  endEvent: null
+  endEvent: null,
 };
 
 const props = {
@@ -69,13 +69,13 @@ const props = {
     filter: [],
     processDefinitionKey: 'a',
     tenantIds: [null],
-    processDefinitionVersions: ['1']
+    processDefinitionVersions: ['1'],
   },
   gateway: {
     id: 'g',
-    outgoing: [{name: 'testLabel', targetRef: {id: 'a', name: 'a'}}, {targetRef: {id: 'b'}}]
+    outgoing: [{name: 'testLabel', targetRef: {id: 'a', name: 'a'}}, {targetRef: {id: 'b'}}],
   },
-  endEvent: {id: 'e'}
+  endEvent: {id: 'e'},
 };
 
 it('should show a load correlation data initially', async () => {
@@ -123,9 +123,9 @@ it('should create two Charts', async () => {
       total: 10,
       followingNodes: {
         a: {activitiesReached: 3, activityCount: 1},
-        b: {activitiesReached: 2, activityCount: 2}
-      }
-    }
+        b: {activitiesReached: 2, activityCount: 2},
+      },
+    },
   });
 
   expect(node).toMatchSnapshot();
@@ -135,13 +135,13 @@ it('should invoke add Marker when called Mark Sequence flow function', async () 
   getDiagramElementsBetween.mockReturnValueOnce(['elementA', 'elementB']);
 
   const canvas = {
-    addMarker: jest.fn()
+    addMarker: jest.fn(),
   };
 
   const activeElements = [
     {
-      _model: {label: 'testLabel'}
-    }
+      _model: {label: 'testLabel'},
+    },
   ];
 
   const node = shallow(<Statistics {...initialProps} />);
@@ -187,9 +187,9 @@ it('should show a message if no instances passed the gateway', () => {
       total: 10,
       followingNodes: {
         a: {activitiesReached: 0, activityCount: 0},
-        b: {activitiesReached: 0, activityCount: 0}
-      }
-    }
+        b: {activitiesReached: 0, activityCount: 0},
+      },
+    },
   });
 
   expect(node).toMatchSnapshot();

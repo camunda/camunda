@@ -12,7 +12,7 @@ import Chart from 'chart.js';
 
 const chartData = {
   type: 'visualization_type',
-  data: [1, 2]
+  data: [1, 2],
 };
 
 it('should construct a Chart', () => {

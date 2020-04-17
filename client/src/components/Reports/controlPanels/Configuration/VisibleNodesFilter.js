@@ -13,11 +13,11 @@ import {t} from 'translation';
 
 export default class VisibleNodesFilter extends React.Component {
   state = {
-    open: false
+    open: false,
   };
 
-  close = evt => this.setState({open: false});
-  open = evt => this.setState({open: true});
+  close = (evt) => this.setState({open: false});
+  open = (evt) => this.setState({open: true});
 
   updateConfig = ({target: {checked}}) => {
     this.props.onChange({hiddenNodes: {active: {$set: checked}}});
@@ -28,8 +28,8 @@ export default class VisibleNodesFilter extends React.Component {
       combined,
       data: {
         configuration: {hiddenNodes},
-        groupBy
-      }
+        groupBy,
+      },
     } = this.props.report;
 
     if (!combined && ['flowNodes', 'userTasks'].includes(groupBy.type)) {

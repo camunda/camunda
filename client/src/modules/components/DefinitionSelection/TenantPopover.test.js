@@ -15,7 +15,7 @@ const tenants = [
   {id: 'a', name: 'Tenant A'},
   {id: 'b', name: 'Tenant B'},
   {id: 'c', name: 'Tenant C'},
-  {id: null, name: 'Not defined'}
+  {id: null, name: 'Not defined'},
 ];
 
 it('should call the provided onChange function', () => {
@@ -29,17 +29,11 @@ it('should call the provided onChange function', () => {
 
   expect(spy).toHaveBeenCalledWith([null, 'a']);
 
-  node
-    .find(Button)
-    .first()
-    .simulate('click');
+  node.find(Button).first().simulate('click');
 
   expect(spy).toHaveBeenCalledWith(['a', 'b', 'c', null]);
 
-  node
-    .find(Button)
-    .last()
-    .simulate('click');
+  node.find(Button).last().simulate('click');
 
   expect(spy).toHaveBeenCalledWith([]);
 });

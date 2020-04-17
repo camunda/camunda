@@ -23,7 +23,7 @@ export default React.forwardRef(function Button(
         warning,
         icon,
         link,
-        active
+        active,
       })}
       ref={ref}
     />

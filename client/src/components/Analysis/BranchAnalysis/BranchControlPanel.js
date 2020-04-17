@@ -21,7 +21,7 @@ export default class BranchControlPanel extends React.Component {
     super(props);
 
     this.state = {
-      flowNodeNames: null
+      flowNodeNames: null,
     };
   }
 
@@ -35,7 +35,7 @@ export default class BranchControlPanel extends React.Component {
         this.props.processDefinitionKey,
         this.props.processDefinitionVersions[0],
         this.props.tenantIds[0]
-      )
+      ),
     });
   };
 
@@ -52,11 +52,11 @@ export default class BranchControlPanel extends React.Component {
     return {
       processDefinitionKey: this.props.processDefinitionKey,
       processDefinitionVersions: this.props.processDefinitionVersions,
-      tenantIds: this.props.tenantIds
+      tenantIds: this.props.tenantIds,
     };
   };
 
-  hover = element => () => {
+  hover = (element) => () => {
     this.props.updateHover(element);
   };
 
@@ -111,7 +111,7 @@ export default class BranchControlPanel extends React.Component {
                   filter: this.props.filter.filter(
                     ({type}) =>
                       !['executedFlowNodes', 'executingFlowNodes', 'variable'].includes(type)
-                  )
+                  ),
                 })
               }
             />

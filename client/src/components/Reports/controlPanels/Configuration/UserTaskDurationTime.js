@@ -11,9 +11,9 @@ import {t} from 'translation';
 
 export default function UserTaskDurationTime({
   report: {
-    data: {configuration, view}
+    data: {configuration, view},
   },
-  onChange
+  onChange,
 }) {
   if (view && view.entity === 'userTask' && view.property === 'duration') {
     return (
@@ -21,7 +21,7 @@ export default function UserTaskDurationTime({
         <legend>{t('report.config.userTaskDuration.legend')}</legend>
         <Select
           value={configuration.userTaskDurationTime}
-          onChange={value => onChange({userTaskDurationTime: {$set: value}}, true)}
+          onChange={(value) => onChange({userTaskDurationTime: {$set: value}}, true)}
         >
           <Select.Option value="idle">{t('report.config.userTaskDuration.idle')}</Select.Option>
           <Select.Option value="work">{t('report.config.userTaskDuration.work')}</Select.Option>

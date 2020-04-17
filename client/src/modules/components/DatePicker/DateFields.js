@@ -16,7 +16,7 @@ import './DateFields.scss';
 export default class DateFields extends React.PureComponent {
   state = {
     popupOpen: false,
-    currentlySelectedField: null
+    currentlySelectedField: null,
   };
 
   endDateField = React.createRef();
@@ -38,7 +38,7 @@ export default class DateFields extends React.PureComponent {
     document.removeEventListener('keydown', this.closeOnEscape);
   }
 
-  handleKeyPress = evt => {
+  handleKeyPress = (evt) => {
     if (this.state.popupOpen && evt.key === 'Escape') {
       evt.stopPropagation();
     }
@@ -55,7 +55,7 @@ export default class DateFields extends React.PureComponent {
         <div className="inputContainer">
           <DateInput
             className={classnames({
-              highlight: this.isFieldSelected('startDate')
+              highlight: this.isFieldSelected('startDate'),
             })}
             onChange={this.setDate('startDate')}
             onFocus={() => {
@@ -69,7 +69,7 @@ export default class DateFields extends React.PureComponent {
           />
           <DateInput
             className={classnames({
-              highlight: this.isFieldSelected('endDate')
+              highlight: this.isFieldSelected('endDate'),
             })}
             ref={this.endDateField}
             onChange={this.setDate('endDate')}
@@ -88,7 +88,7 @@ export default class DateFields extends React.PureComponent {
             onClick={this.stopClosingPopup}
             className={classnames('dateRangeContainer', {
               dateRangeContainerLeft: this.isFieldSelected('startDate'),
-              dateRangeContainerRight: this.isFieldSelected('endDate')
+              dateRangeContainerRight: this.isFieldSelected('endDate'),
             })}
           >
             <DateRange
@@ -113,13 +113,13 @@ export default class DateFields extends React.PureComponent {
     this.endDateField.current.blur();
   };
 
-  closeOnEscape = event => {
+  closeOnEscape = (event) => {
     if (event.key === 'Escape') {
       this.hidePopup();
     }
   };
 
-  formatDate = date => moment(date).format(this.props.format);
+  formatDate = (date) => moment(date).format(this.props.format);
 
   onDateRangeChange = ({startDate, endDate}) => {
     this.props.onDateChange('startDate', this.formatDate(startDate));
@@ -141,7 +141,7 @@ export default class DateFields extends React.PureComponent {
   hidePopup = () => {
     this.setState({
       popupOpen: false,
-      currentlySelectedField: null
+      currentlySelectedField: null,
     });
   };
 
@@ -149,23 +149,23 @@ export default class DateFields extends React.PureComponent {
     return this.state.currentlySelectedField === field;
   }
 
-  setDate = name => date => this.props.onDateChange(name, date);
+  setDate = (name) => (date) => this.props.onDateChange(name, date);
 
-  toggleDateRangeForStart = event => this.toggleDateRangePopup(event, 'startDate');
-  toggleDateRangeForEnd = event => this.toggleDateRangePopup(event, 'endDate');
+  toggleDateRangeForStart = (event) => this.toggleDateRangePopup(event, 'startDate');
+  toggleDateRangeForEnd = (event) => this.toggleDateRangePopup(event, 'endDate');
 
   toggleDateRangePopup = (event, field) => {
     this.stopClosingPopup(event);
 
     if (this.state.popupOpen) {
       return this.setState({
-        currentlySelectedField: field
+        currentlySelectedField: field,
       });
     }
 
     this.setState({
       popupOpen: true,
-      currentlySelectedField: field
+      currentlySelectedField: field,
     });
   };
 }

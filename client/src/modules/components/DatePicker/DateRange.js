@@ -18,12 +18,12 @@ export default function DateRange({startDate, endDate, onDateChange, endDateSele
   if (startDate.isValid() && endDate.isValid() && endDate.isSameOrAfter(startDate)) {
     range = {
       startDate: startDate.toDate(),
-      endDate: endDate.toDate()
+      endDate: endDate.toDate(),
     };
   } else {
     range = {
       startDate: new Date(),
-      endDate: new Date()
+      endDate: new Date(),
     };
   }
 

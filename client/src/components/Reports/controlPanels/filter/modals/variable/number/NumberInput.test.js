@@ -13,7 +13,7 @@ import {shallow} from 'enzyme';
 
 const props = {
   filter: NumberInput.defaultFilter,
-  setValid: jest.fn()
+  setValid: jest.fn(),
 };
 
 it('should be initialized with an empty variable value', () => {
@@ -35,7 +35,7 @@ it('should store the input in the state value array at the correct position', ()
     .find(Input)
     .at(1)
     .simulate('change', {
-      target: {getAttribute: jest.fn().mockReturnValue(1), value: 'newValue'}
+      target: {getAttribute: jest.fn().mockReturnValue(1), value: 'newValue'},
     });
 
   expect(spy).toHaveBeenCalledWith({operator: 'in', values: ['value0', 'newValue', 'value2']});

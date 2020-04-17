@@ -18,15 +18,15 @@ jest.mock('./service', () => ({
     {
       id: 'USER:demo',
       identity: {
-        id: 'demo'
-      }
-    }
-  ])
+        id: 'demo',
+      },
+    },
+  ]),
 }));
 
 jest.mock('notifications', () => ({
   showError: jest.fn(),
-  addNotification: jest.fn()
+  addNotification: jest.fn(),
 }));
 
 const props = {
@@ -35,7 +35,7 @@ const props = {
   onPublish: jest.fn(),
   onClose: jest.fn(),
   republish: false,
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should show different text depending on the republish prop', () => {

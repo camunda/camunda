@@ -18,7 +18,7 @@ import {
   updateProcess,
   loadProcess,
   getCleanedMappings,
-  isNonTimerEvent
+  isNonTimerEvent,
 } from './service';
 import ProcessRenderer from './ProcessRenderer';
 import EventTable from './EventTable';
@@ -29,7 +29,7 @@ const asMapping = ({group, source, eventName, eventLabel}) => ({
   group,
   source,
   eventName,
-  eventLabel
+  eventLabel,
 });
 
 export default withErrorHandling(
@@ -43,7 +43,7 @@ export default withErrorHandling(
         selectedNode: null,
         mappings: {},
         eventSources: null,
-        selectedEvent: null
+        selectedEvent: null,
       };
     }
 
@@ -69,11 +69,7 @@ export default withErrorHandling(
     }
 
     initializeNewProcess = () => {
-      const id =
-        'Process_' +
-        Math.random()
-          .toString(36)
-          .substr(2);
+      const id = 'Process_' + Math.random().toString(36).substr(2);
 
       this.setState({
         name: t('events.new'),
@@ -92,7 +88,7 @@ export default withErrorHandling(
       </bpmn:definitions>
       `,
         mappings: {},
-        eventSources: []
+        eventSources: [],
       });
     };
 
@@ -104,7 +100,7 @@ export default withErrorHandling(
             name,
             xml,
             mappings,
-            eventSources
+            eventSources,
           }),
         showError
       );
@@ -116,14 +112,14 @@ export default withErrorHandling(
         const {name, mappings, xml, eventSources} = this.state;
 
         if (this.isNew()) {
-          mightFail(createProcess(name, xml, mappings, eventSources), resolve, error =>
+          mightFail(createProcess(name, xml, mappings, eventSources), resolve, (error) =>
             reject(showError(error))
           );
         } else {
           mightFail(
             updateProcess(id, name, xml, mappings, eventSources),
             () => resolve(id),
-            error => reject(showError(error))
+            (error) => reject(showError(error))
           );
         }
       });
@@ -154,17 +150,17 @@ export default withErrorHandling(
               // we change the mapping of a mapped event
               change = {
                 [mapAs === 'end' ? 'start' : 'end']: {
-                  $set: null
+                  $set: null,
                 },
-                [mapAs]: {$set: event}
+                [mapAs]: {$set: event},
               };
             } else {
               // we map a new event
               // if we already have an end event, we map as start event
               change = {
                 [mappings[selectedNode.id].end ? 'start' : 'end']: {
-                  $set: event
-                }
+                  $set: event,
+                },
               };
             }
           } else {
@@ -177,20 +173,20 @@ export default withErrorHandling(
               // if we have another mapping for the node, just clear start or end
               change = {
                 [eventType]: {
-                  $set: null
-                }
+                  $set: null,
+                },
               };
             } else {
               // if there is no other mapping for the node, remove the node from the mappings array
               return {
-                mappings: update(mappings, {$unset: [selectedNode.id]})
+                mappings: update(mappings, {$unset: [selectedNode.id]}),
               };
             }
           }
         }
 
         return {
-          mappings: update(mappings, {[selectedNode.id]: change})
+          mappings: update(mappings, {[selectedNode.id]: change}),
         };
       });
     };
@@ -207,9 +203,9 @@ export default withErrorHandling(
             eventSources,
             mappings,
             xml,
-            ...change
+            ...change,
           }),
-          mappings => this.setState({mappings, ...change}),
+          (mappings) => this.setState({mappings, ...change}),
           showError
         );
       } else {
@@ -264,7 +260,7 @@ export default withErrorHandling(
             xml={xml}
             onMappingChange={this.setMapping}
             onSourcesChange={this.updateSources}
-            onSelectEvent={selectedEvent => this.setState({selectedEvent})}
+            onSelectEvent={(selectedEvent) => this.setState({selectedEvent})}
           />
         </div>
       );

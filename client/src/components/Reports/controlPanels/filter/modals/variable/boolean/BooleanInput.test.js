@@ -13,7 +13,7 @@ import {Button} from 'components';
 
 const props = {
   filter: BooleanInput.defaultFilter,
-  setValid: jest.fn()
+  setValid: jest.fn(),
 };
 
 it('should assume variable value true per default', () => {
@@ -31,10 +31,7 @@ it('should set the value when clicking on the operator fields', () => {
   const spy = jest.fn();
   const node = shallow(<BooleanInput {...props} changeFilter={spy} />);
 
-  node
-    .find(Button)
-    .at(1)
-    .simulate('click', {preventDefault: jest.fn()});
+  node.find(Button).at(1).simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({value: false});
 });

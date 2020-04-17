@@ -17,7 +17,7 @@ const {formatTenantName} = formatters;
 export default class TenantSource extends React.Component {
   state = {
     selectedTenant: null,
-    selectedDefinitions: []
+    selectedDefinitions: [],
   };
 
   componentDidUpdate(_, prevState) {
@@ -30,7 +30,7 @@ export default class TenantSource extends React.Component {
         const sources = selectedDefinitions.map(({type, key}) => ({
           definitionType: type,
           definitionKey: key,
-          tenants: [selectedTenant.id]
+          tenants: [selectedTenant.id],
         }));
         this.props.onChange(sources);
       } else {
@@ -39,8 +39,8 @@ export default class TenantSource extends React.Component {
     }
   }
 
-  selectTenant = id => {
-    const selectedTenant = this.props.tenantsWithDefinitions.find(ten => ten.id === id);
+  selectTenant = (id) => {
+    const selectedTenant = this.props.tenantsWithDefinitions.find((ten) => ten.id === id);
     this.setState({selectedTenant, selectedDefinitions: []});
   };
 
@@ -62,7 +62,7 @@ export default class TenantSource extends React.Component {
               onChange={this.selectTenant}
               noValuesMessage={t('common.notFound')}
             >
-              {tenantsWithDefinitions.map(tenant => (
+              {tenantsWithDefinitions.map((tenant) => (
                 <Typeahead.Option key={tenant.id} value={tenant.id}>
                   {formatTenantName(tenant)}
                 </Typeahead.Option>
@@ -76,7 +76,7 @@ export default class TenantSource extends React.Component {
               <ItemsList
                 selectedItems={selectedDefinitions}
                 allItems={selectedTenant.definitions}
-                onChange={selectedDefinitions => this.setState({selectedDefinitions})}
+                onChange={(selectedDefinitions) => this.setState({selectedDefinitions})}
                 formatter={formatDefinitions}
               />
             </Labeled>

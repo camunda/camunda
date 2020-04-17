@@ -12,7 +12,7 @@ const props = {
   entity: {name: 'Test Dashboard', entityType: 'dashboard', data: {subEntityCounts: {report: 2}}},
   collection: 'aCollectionId',
   onConfirm: jest.fn(),
-  onClose: jest.fn()
+  onClose: jest.fn(),
 };
 
 it('should match snapshot', () => {

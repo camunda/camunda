@@ -8,8 +8,8 @@ import processRawData from './processRawData';
 
 const data = {
   configuration: {
-    excludedColumns: []
-  }
+    excludedColumns: [],
+  },
 };
 
 const result = {
@@ -19,18 +19,18 @@ const result = {
       prop2: 'bar',
       variables: {
         var1: 12,
-        var2: null
-      }
+        var2: null,
+      },
     },
     {
       processInstanceId: 'xyz',
       prop2: 'abc',
       variables: {
         var1: null,
-        var2: true
-      }
-    }
-  ]
+        var2: true,
+      },
+    },
+  ],
 };
 
 it('should transform data to table compatible format', () => {
@@ -38,38 +38,38 @@ it('should transform data to table compatible format', () => {
     head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var1', 'var2']}],
     body: [
       ['foo', 'bar', '12', ''],
-      ['xyz', 'abc', '', 'true']
-    ]
+      ['xyz', 'abc', '', 'true'],
+    ],
   });
 });
 
 it('should not include columns that are hidden', () => {
   const data = {
     configuration: {
-      excludedColumns: ['prop2']
-    }
+      excludedColumns: ['prop2'],
+    },
   };
   expect(processRawData({report: {data, result}})).toEqual({
     head: ['Process Instance Id', {label: 'Variables', columns: ['var1', 'var2']}],
     body: [
       ['foo', '12', ''],
-      ['xyz', '', 'true']
-    ]
+      ['xyz', '', 'true'],
+    ],
   });
 });
 
 it('should exclude variable columns using the variable prefix', () => {
   const data = {
     configuration: {
-      excludedColumns: ['variable:var1']
-    }
+      excludedColumns: ['variable:var1'],
+    },
   };
   expect(processRawData({report: {data, result}})).toEqual({
     head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var2']}],
     body: [
       ['foo', 'bar', ''],
-      ['xyz', 'abc', 'true']
-    ]
+      ['xyz', 'abc', 'true'],
+    ],
   });
 });
 
@@ -78,8 +78,8 @@ it('should make the processInstanceId a link', () => {
     {
       report: {
         result: {data: [{processInstanceId: '123', engineName: '1', variables: {}}]},
-        data
-      }
+        data,
+      },
     },
     {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
   ).body[0][0];
@@ -96,12 +96,12 @@ it('should format start and end dates', () => {
           {
             startDate: '2019-06-07T10:33:19.192+0700',
             endDate: '2019-06-09T16:12:49.875+0500',
-            variables: {}
-          }
-        ]
+            variables: {},
+          },
+        ],
       },
-      data
-    }
+      data,
+    },
   }).body[0];
 
   expect(cells[0]).toBe('2019-06-07 10:33:19 UTC+07:00');
@@ -115,12 +115,12 @@ it('should format duration', () => {
         data: [
           {
             duration: 123023423,
-            variables: {}
-          }
-        ]
+            variables: {},
+          },
+        ],
       },
-      data
-    }
+      data,
+    },
   }).body[0];
 
   expect(cells[0]).toBe('1d 10h 10min 23s 423ms');
@@ -130,8 +130,8 @@ it('should not make the processInstanceId a link if no endpoint is specified', (
   const cell = processRawData({
     report: {
       result: {data: [{processInstanceId: '123', engineName: '1', variables: {}}]},
-      data
-    }
+      data,
+    },
   }).body[0][0];
 
   expect(cell).toBe('123');
@@ -140,11 +140,11 @@ it('should not make the processInstanceId a link if no endpoint is specified', (
 it('should show no data message when all column are excluded', () => {
   const data = {
     configuration: {
-      excludedColumns: ['processInstanceId', 'prop2', 'variable:var1', 'variable:var2']
-    }
+      excludedColumns: ['processInstanceId', 'prop2', 'variable:var1', 'variable:var2'],
+    },
   };
   expect(processRawData({report: {data, result}})).toEqual({
     head: ['No Data'],
-    body: [['You need to enable at least one table column']]
+    body: [['You need to enable at least one table column']],
   });
 });

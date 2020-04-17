@@ -10,14 +10,17 @@ it('should return true if filters contains completedInstancesOnly and runningIns
   expect(
     incompatibleFilters([
       {type: 'completedInstancesOnly', data: null},
-      {type: 'runningInstancesOnly', data: null}
+      {type: 'runningInstancesOnly', data: null},
     ])
   ).toBe(true);
 });
 
 it('should return true if filters contains endDate and runningInstancesOnly together', () => {
   expect(
-    incompatibleFilters([{type: 'endDate', data: null}, {type: 'runningInstancesOnly', data: null}])
+    incompatibleFilters([
+      {type: 'endDate', data: null},
+      {type: 'runningInstancesOnly', data: null},
+    ])
   ).toBe(true);
 });
 

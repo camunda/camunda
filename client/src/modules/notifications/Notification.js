@@ -34,7 +34,7 @@ export default class Notification extends React.Component {
     return (
       <div
         className={classnames('Notification', this.props.config.type, {
-          closing: this.state.closing
+          closing: this.state.closing,
         })}
         onClick={this.keepOpen}
       >

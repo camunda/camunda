@@ -18,18 +18,18 @@ export default class NodeSelectionModal extends React.Component {
     const hiddenNodes = props.report.data.configuration.hiddenNodes.keys || [];
 
     const visibleFlowNodes = getFlowNodesKeys(props.report).filter(
-      key => !hiddenNodes.includes(key)
+      (key) => !hiddenNodes.includes(key)
     );
 
     this.state = {
-      selectedNodes: visibleFlowNodes
+      selectedNodes: visibleFlowNodes,
     };
   }
 
-  toggleNode = toggledNode => {
+  toggleNode = (toggledNode) => {
     this.setState(({selectedNodes}) => {
       if (selectedNodes.includes(toggledNode.id)) {
-        return {selectedNodes: selectedNodes.filter(node => node !== toggledNode.id)};
+        return {selectedNodes: selectedNodes.filter((node) => node !== toggledNode.id)};
       } else {
         return {selectedNodes: selectedNodes.concat([toggledNode.id])};
       }
@@ -38,7 +38,9 @@ export default class NodeSelectionModal extends React.Component {
 
   applyConfiguration = () => {
     const selected = this.state.selectedNodes;
-    const hiddenNodes = getFlowNodesKeys(this.props.report).filter(key => !selected.includes(key));
+    const hiddenNodes = getFlowNodesKeys(this.props.report).filter(
+      (key) => !selected.includes(key)
+    );
 
     this.props.onChange({hiddenNodes: {keys: {$set: hiddenNodes}}});
     this.props.onClose();
@@ -54,7 +56,7 @@ export default class NodeSelectionModal extends React.Component {
 
   selectAll = async () => {
     this.setState({
-      selectedNodes: getFlowNodesKeys(this.props.report)
+      selectedNodes: getFlowNodesKeys(this.props.report),
     });
   };
 

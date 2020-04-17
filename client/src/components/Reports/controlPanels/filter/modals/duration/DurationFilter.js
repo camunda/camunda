@@ -18,7 +18,7 @@ export default class DurationFilter extends React.Component {
     this.state = {
       value: props.filterData ? props.filterData.data.value.toString() : '7',
       operator: props.filterData ? props.filterData.data.operator : '>',
-      unit: props.filterData ? props.filterData.data.unit : 'days'
+      unit: props.filterData ? props.filterData.data.unit : 'days',
     };
   }
 
@@ -28,8 +28,8 @@ export default class DurationFilter extends React.Component {
       data: {
         value: parseFloat(this.state.value),
         operator: this.state.operator,
-        unit: this.state.unit
-      }
+        unit: this.state.unit,
+      },
     });
   };
 
@@ -45,7 +45,7 @@ export default class DurationFilter extends React.Component {
       >
         <Modal.Header>
           {t('common.filter.modalHeader', {
-            type: t(`common.filter.types.duration`)
+            type: t(`common.filter.types.duration`),
           })}
         </Modal.Header>
         <Modal.Content>
@@ -106,7 +106,7 @@ export default class DurationFilter extends React.Component {
     );
   }
 
-  setOperator = operator => this.setState({operator});
-  setUnit = unit => this.setState({unit});
+  setOperator = (operator) => this.setState({operator});
+  setUnit = (unit) => this.setState({unit});
   setValue = ({target: {value}}) => this.setState({value});
 }

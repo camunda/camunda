@@ -15,7 +15,7 @@ const {WrappedComponent: DashboardView} = ThemedDashboardView;
 
 jest.mock('moment', () => () => {
   return {
-    format: () => 'some date'
+    format: () => 'some date',
   };
 });
 
@@ -61,10 +61,7 @@ it('should leave fullscreen mode', () => {
 it('should activate auto refresh mode and set it to numeric value', () => {
   const node = shallow(<DashboardView />);
 
-  node
-    .find(Dropdown.Option)
-    .last()
-    .simulate('click');
+  node.find(Dropdown.Option).last().simulate('click');
 
   expect(typeof node.state('autoRefreshInterval')).toBe('number');
 });
@@ -73,10 +70,7 @@ it('should deactivate autorefresh mode', () => {
   const node = shallow(<DashboardView />);
   node.setState({autoRefreshInterval: 1000});
 
-  node
-    .find(Dropdown.Option)
-    .first()
-    .simulate('click');
+  node.find(Dropdown.Option).first().simulate('click');
 
   expect(node.state('autoRefreshInterval')).toBe(null);
 });

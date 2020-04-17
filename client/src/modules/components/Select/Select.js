@@ -13,7 +13,7 @@ import {t} from 'translation';
 export default class Select extends React.Component {
   state = {
     selected: this.props.value,
-    selectedLabel: t('common.select')
+    selectedLabel: t('common.select'),
   };
 
   componentDidMount() {
@@ -34,12 +34,12 @@ export default class Select extends React.Component {
   };
 
   renderChildrenWithProps = (children, label) => {
-    return React.Children.map(children, child => {
+    return React.Children.map(children, (child) => {
       const props = {};
 
       if (child && child.type === Select.Submenu) {
         props.checked = React.Children.toArray(child.props.children).some(
-          child => child && child.props.value === this.state.selected
+          (child) => child && child.props.value === this.state.selected
         );
 
         props.children = this.renderChildrenWithProps(child.props.children, child.props.label);
@@ -63,7 +63,7 @@ export default class Select extends React.Component {
     }
   };
 
-  onChange = evt => {
+  onChange = (evt) => {
     const value = evt.target.getAttribute('value');
     if (value) {
       this.setState({selected: value});

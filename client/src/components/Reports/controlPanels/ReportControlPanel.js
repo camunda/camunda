@@ -35,7 +35,7 @@ export default withErrorHandling(
 
       this.state = {
         variables: [],
-        flowNodeNames: null
+        flowNodeNames: null,
       };
     }
 
@@ -46,7 +46,7 @@ export default withErrorHandling(
 
     loadFlowNodeNames = async () => {
       const {
-        data: {processDefinitionKey, processDefinitionVersions, tenantIds}
+        data: {processDefinitionKey, processDefinitionVersions, tenantIds},
       } = this.props.report;
 
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
@@ -55,7 +55,7 @@ export default withErrorHandling(
             processDefinitionKey,
             processDefinitionVersions[0],
             tenantIds[0]
-          )
+          ),
         });
       }
     };
@@ -65,7 +65,7 @@ export default withErrorHandling(
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
         this.props.mightFail(
           loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
-          variables => this.setState({variables}),
+          (variables) => this.setState({variables}),
           showError
         );
       }
@@ -99,27 +99,27 @@ export default withErrorHandling(
               inputVariables: [],
               instanceProps: [],
               outputVariables: [],
-              variables: []
-            }
+              variables: [],
+            },
           },
           heatmapTargetValue: {
             $set: {
               active: false,
-              values: {}
-            }
+              values: {},
+            },
           },
           xml: {
             $set:
               key && versions && versions[0]
                 ? await loadProcessDefinitionXml(key, versions[0], tenantIds[0])
-                : null
-          }
+                : null,
+          },
         },
         filter: {
           $set: filter.filter(
             ({type}) => !['executedFlowNodes', 'executingFlowNodes', 'variable'].includes(type)
-          )
-        }
+          ),
+        },
       };
 
       if (groupBy && groupBy.type === 'variable') {
@@ -155,7 +155,7 @@ export default withErrorHandling(
             {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
               const previous = fields
                 .filter((prev, prevIdx) => prevIdx < idx)
-                .map(prev => data[prev]);
+                .map((prev) => data[prev]);
 
               return (
                 <li className="select" key={field}>
@@ -167,8 +167,8 @@ export default withErrorHandling(
                     report={this.props.report}
                     variables={{variable: this.state.variables}}
                     previous={previous}
-                    disabled={!data.processDefinitionKey || previous.some(entry => !entry)}
-                    onChange={newValue => this.updateReport(field, newValue)}
+                    disabled={!data.processDefinitionKey || previous.some((entry) => !entry)}
+                    onChange={(newValue) => this.updateReport(field, newValue)}
                   />
                 </li>
               );
@@ -213,7 +213,7 @@ export default withErrorHandling(
                   flowNodeNames={this.state.flowNodeNames}
                   xml={data.configuration.xml}
                   processPart={data.configuration.processPart}
-                  update={newPart =>
+                  update={(newPart) =>
                     this.props.updateReport({configuration: {processPart: {$set: newPart}}}, true)
                   }
                 />

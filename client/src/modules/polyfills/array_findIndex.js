@@ -9,7 +9,7 @@ if (!Array.prototype.findIndex) {
   // source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex#Polyfill
   /*eslint-disable no-extend-native */
   Object.defineProperty(Array.prototype, 'findIndex', {
-    value: function(predicate) {
+    value: function (predicate) {
       // 1. Let O be ? ToObject(this value).
       if (this == null) {
         throw new TypeError('"this" is null or not defined');
@@ -47,7 +47,7 @@ if (!Array.prototype.findIndex) {
 
       // 7. Return -1.
       return -1;
-    }
+    },
   });
   /*eslint-enable no-extend-native */
 }

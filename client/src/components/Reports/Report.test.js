@@ -18,7 +18,7 @@ jest.mock('services', () => {
   return {
     ...rest,
     evaluateReport: jest.fn(),
-    loadEntity: jest.fn()
+    loadEntity: jest.fn(),
   };
 });
 
@@ -26,7 +26,7 @@ const props = {
   match: {params: {id: '1'}},
   location: {},
   mightFail: (promise, cb) => cb(promise),
-  getUser: () => ({id: 'demo'})
+  getUser: () => ({id: 'demo'}),
 };
 
 const report = {
@@ -39,9 +39,9 @@ const report = {
   data: {
     processDefinitionKey: null,
     configuration: {},
-    visualization: 'table'
+    visualization: 'table',
   },
-  result: {data: [1, 2, 3]}
+  result: {data: [1, 2, 3]},
 };
 
 loadEntity.mockReturnValue(report);
@@ -56,7 +56,7 @@ it('should display a loading indicator', () => {
 it("should show an error page if report doesn't exist", () => {
   const node = shallow(<Report {...props} />);
   node.setState({
-    serverError: 404
+    serverError: 404,
   });
 
   expect(node.find('ErrorPage')).toExist();

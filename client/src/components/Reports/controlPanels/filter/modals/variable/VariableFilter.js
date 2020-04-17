@@ -22,7 +22,7 @@ export default class VariableFilter extends React.Component {
     filter: {},
     variables: [],
     selectedVariable: null,
-    filterForUndefined: false
+    filterForUndefined: false,
   };
 
   componentDidMount = async () => {
@@ -38,25 +38,25 @@ export default class VariableFilter extends React.Component {
         selectedVariable: {id: filterData.id, name: filterData.name, type: filterData.type},
         filter,
         valid: true,
-        filterForUndefined: filterData.filterForUndefined
+        filterForUndefined: filterData.filterForUndefined,
       });
     }
 
     this.setState({
-      variables: await this.props.config.getVariables()
+      variables: await this.props.config.getVariables(),
     });
   };
 
-  selectVariable = nameOrId => {
-    const variable = this.state.variables.find(variable => this.getId(variable) === nameOrId);
+  selectVariable = (nameOrId) => {
+    const variable = this.state.variables.find((variable) => this.getId(variable) === nameOrId);
     this.setState({
       selectedVariable: variable,
       filter: this.getInputComponentForVariable(variable).defaultFilter,
-      filterForUndefined: false
+      filterForUndefined: false,
     });
   };
 
-  getInputComponentForVariable = variable => {
+  getInputComponentForVariable = (variable) => {
     if (!variable) {
       return () => null;
     }
@@ -73,13 +73,13 @@ export default class VariableFilter extends React.Component {
     }
   };
 
-  setValid = valid => this.setState({valid});
+  setValid = (valid) => this.setState({valid});
 
-  changeFilter = filter => this.setState({filter});
+  changeFilter = (filter) => this.setState({filter});
 
-  changeFilterForUndefined = filterForUndefined => this.setState({filterForUndefined});
+  changeFilterForUndefined = (filterForUndefined) => this.setState({filterForUndefined});
 
-  getId = variable => {
+  getId = (variable) => {
     if (variable) {
       return variable.id || variable.name;
     }
@@ -94,7 +94,7 @@ export default class VariableFilter extends React.Component {
       <Modal open={true} onClose={this.props.close} className="VariableFilter__modal">
         <Modal.Header>
           {t('common.filter.modalHeader', {
-            type: t(`common.filter.types.${this.props.filterType}`)
+            type: t(`common.filter.types.${this.props.filterType}`),
           })}
         </Modal.Header>
         <Modal.Content>
@@ -105,7 +105,7 @@ export default class VariableFilter extends React.Component {
               placeholder={t('common.filter.variableModal.inputPlaceholder')}
               noValuesMessage={t('common.filter.variableModal.noVariables')}
             >
-              {variables.map(variable => (
+              {variables.map((variable) => (
                 <Typeahead.Option key={this.getId(variable)} value={this.getId(variable)}>
                   {this.getVariableName(variable)}
                 </Typeahead.Option>
@@ -144,9 +144,9 @@ export default class VariableFilter extends React.Component {
     );
   }
 
-  getVariableName = variable => (variable ? variable.name : null);
+  getVariableName = (variable) => (variable ? variable.name : null);
 
-  createFilter = evt => {
+  createFilter = (evt) => {
     evt.preventDefault();
 
     const variable = this.state.selectedVariable;
@@ -165,8 +165,8 @@ export default class VariableFilter extends React.Component {
             name: variable.id || variable.name,
             type: variable.type,
             data: this.state.filter,
-            filterForUndefined: this.state.filterForUndefined
-          }
+            filterForUndefined: this.state.filterForUndefined,
+          },
         });
   };
 }

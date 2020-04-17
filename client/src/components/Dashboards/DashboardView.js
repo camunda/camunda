@@ -27,7 +27,7 @@ export default themed(
     state = {
       fullScreenActive: false,
       autoRefreshInterval: null,
-      deleting: null
+      deleting: null,
     };
 
     componentWillUnmount = () => {
@@ -36,20 +36,20 @@ export default themed(
       }
     };
 
-    changeFullScreen = fullScreenActive => {
+    changeFullScreen = (fullScreenActive) => {
       if (this.props.theme === 'dark') {
         this.props.toggleTheme();
       }
       this.setState({fullScreenActive});
     };
 
-    setAutorefresh = timeout => {
+    setAutorefresh = (timeout) => {
       clearInterval(this.timer);
       if (timeout) {
         this.timer = setInterval(this.props.loadDashboard, timeout);
       }
       this.setState({
-        autoRefreshInterval: timeout
+        autoRefreshInterval: timeout,
       });
     };
 
@@ -85,7 +85,7 @@ export default themed(
         sharingEnabled,
         reports,
         toggleTheme,
-        onDelete
+        onDelete,
       } = this.props;
 
       const {fullScreenActive, autoRefreshInterval, deleting} = this.state;
@@ -94,7 +94,7 @@ export default themed(
         <Fullscreen enabled={fullScreenActive} onChange={this.changeFullScreen}>
           <div
             className={classnames('DashboardView', {
-              fullscreen: fullScreenActive
+              fullscreen: fullScreenActive,
             })}
           >
             <div className="header">
@@ -215,7 +215,7 @@ export default themed(
               reports={reports}
               addons={
                 autoRefreshInterval && [
-                  <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />
+                  <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
                 ]
               }
             />

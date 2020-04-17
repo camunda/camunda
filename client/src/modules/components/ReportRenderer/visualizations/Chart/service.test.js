@@ -12,7 +12,7 @@ it('should include the relative value in tooltips', () => {
     {datasets: [{data: [2.5]}]},
     false,
     {},
-    v => v,
+    (v) => v,
     [5],
     false,
     'bar'
@@ -27,7 +27,7 @@ it('should return undefined tooltip for target line dataset', () => {
     {datasets: [{data: [2.5], isTarget: true}]},
     false,
     {},
-    v => v,
+    (v) => v,
     [5],
     false,
     'bar'
@@ -45,7 +45,7 @@ it('should generate correct colors in label tooltips for pie charts ', () => {
 
   expect(response).toEqual({
     borderColor: 'testColor1',
-    backgroundColor: 'testColor1'
+    backgroundColor: 'testColor1',
   });
 });
 
@@ -58,7 +58,7 @@ it('should generate correct colors in label tooltips for bar charts', () => {
 
   expect(response).toEqual({
     borderColor: 'testColor2',
-    backgroundColor: 'testColor2'
+    backgroundColor: 'testColor2',
   });
 });
 
@@ -69,15 +69,15 @@ it('should calculate the correct position for the target value line', () => {
         test: {
           max: 100,
           height: 100,
-          top: 0
-        }
+          top: 0,
+        },
       },
       options: {
         scales: {
-          yAxes: [{id: 'test'}]
+          yAxes: [{id: 'test'}],
         },
-        lineAt: 20
-      }
+        lineAt: 20,
+      },
     })
   ).toBe(80); // inverted y axis: height - lineAt = 100 - 20 = 80
 });

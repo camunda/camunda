@@ -14,7 +14,7 @@ export default function MessageBox({type, children, ...props}) {
     <div
       {...props}
       className={classnames('MessageBox', {
-        ['MessageBox--' + type]: type
+        ['MessageBox--' + type]: type,
       })}
     >
       {children}

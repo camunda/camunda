@@ -8,10 +8,10 @@ import {formatters} from 'services';
 
 export function uniteResults(results, allKeys) {
   const unitedResults = [];
-  results.forEach(result => {
+  results.forEach((result) => {
     const resultObj = formatters.objectifyResult(result);
     const newResult = [];
-    allKeys.forEach(key => {
+    allKeys.forEach((key) => {
       if (typeof resultObj[key] === 'undefined') {
         newResult.push({key, value: null});
       } else {

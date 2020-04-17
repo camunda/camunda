@@ -20,16 +20,16 @@ jest.mock('./service', () => ({
       id: 'USER:kermit',
       identity: {
         id: 'kermit',
-        type: 'user' // or group
-      }
-    }
-  ])
+        type: 'user', // or group
+      },
+    },
+  ]),
 }));
 
 const props = {
   id: 'processId',
   onClose: jest.fn(),
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should add user/group to the list', () => {
@@ -41,7 +41,7 @@ it('should add user/group to the list', () => {
     id: 'sales',
     type: 'group',
     name: 'Sales',
-    memberCount: '2'
+    memberCount: '2',
   });
 
   node.find('.confirm').simulate('click');
@@ -52,10 +52,7 @@ it('should add user/group to the list', () => {
 it('should disable the save button if the user list is empty', () => {
   const node = shallow(<UsersModal {...props} />);
 
-  node
-    .find('EntityList')
-    .props('data')
-    .data[0].actions[0].action();
+  node.find('EntityList').props('data').data[0].actions[0].action();
 
   expect(node.find('EntityList').props('data').data.length).toBe(0);
   expect(node.find('[primary]')).toBeDisabled();
@@ -66,7 +63,7 @@ it('should show an error when adding already existing user/group', () => {
   node.find('UserTypeahead').prop('onChange')({
     id: 'kermit',
     name: 'Kermit',
-    type: 'user'
+    type: 'user',
   });
   node.find('.confirm').simulate('click');
 
@@ -79,14 +76,14 @@ it('should update the event with the selected users', () => {
 
   expect(updateUsers).toHaveBeenCalled();
   expect(props.onClose).toHaveBeenCalledWith([
-    {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}}
+    {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},
   ]);
 });
 
 it('should load non imported user before adding it to the list', () => {
   const node = shallow(<UsersModal {...props} />);
   node.find('UserTypeahead').prop('onChange')({
-    id: 'test'
+    id: 'test',
   });
   node.find('.confirm').simulate('click');
   expect(getUser).toHaveBeenCalledWith('test');

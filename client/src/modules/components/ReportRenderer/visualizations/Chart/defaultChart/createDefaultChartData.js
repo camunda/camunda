@@ -16,14 +16,14 @@ export default function createDefaultChartData(props) {
     visualization,
     targetValue,
     color,
-    isDark
+    isDark,
   } = extractDefaultChartData(props);
 
   const datasets = [
     {
       data: formattedResult.map(({value}) => value),
-      ...createDatasetOptions(visualization, formattedResult, targetValue, color, false, isDark)
-    }
+      ...createDatasetOptions(visualization, formattedResult, targetValue, color, false, isDark),
+    },
   ];
 
   return {labels, datasets};
@@ -34,7 +34,7 @@ export function extractDefaultChartData({report, theme, targetValue}) {
   const isDark = theme === 'dark';
   const {
     visualization,
-    configuration: {color}
+    configuration: {color},
   } = data;
 
   const formattedResult = formatReportResult(data, result.data);
@@ -48,6 +48,6 @@ export function extractDefaultChartData({report, theme, targetValue}) {
     visualization,
     targetValue,
     color,
-    isDark
+    isDark,
   };
 }

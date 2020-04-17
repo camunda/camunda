@@ -21,23 +21,23 @@ jest.mock('./service', () => ({
       source: 'order-service',
       eventName: 'OrderProcessed',
       eventLabel: 'Order Processed',
-      count: 10
+      count: 10,
     },
     {
       group: 'eventGroup',
       source: 'order-service',
       eventName: 'OrderAccepted',
       eventLabel: 'Order Accepted',
-      count: 10
-    }
+      count: 10,
+    },
   ]),
-  isNonTimerEvent: jest.fn().mockReturnValue(false)
+  isNonTimerEvent: jest.fn().mockReturnValue(false),
 }));
 
-jest.mock('debounce', () => fn => fn);
+jest.mock('debounce', () => (fn) => fn);
 
 const props = {
-  selection: {id: 'a', $instanceOf: type => type === 'bpmn:Event'},
+  selection: {id: 'a', $instanceOf: (type) => type === 'bpmn:Event'},
   mappings: {
     a: {
       start: null,
@@ -45,15 +45,15 @@ const props = {
         group: 'eventGroup',
         source: 'order-service',
         eventName: 'OrderProcessed',
-        eventLabel: 'Order Processed'
-      }
-    }
+        eventLabel: 'Order Processed',
+      },
+    },
   },
   onMappingChange: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   xml: 'some xml',
   eventSources: [{type: 'external'}],
-  onSelectEvent: jest.fn()
+  onSelectEvent: jest.fn(),
 };
 
 it('should match snapshot', () => {
@@ -101,7 +101,7 @@ it('should call callback when changing mapping', () => {
       group: 'eventGroup',
       source: 'order-service',
       eventName: 'OrderProcessed',
-      eventLabel: 'Order Processed'
+      eventLabel: 'Order Processed',
     },
     false
   );
@@ -116,7 +116,7 @@ it('should pass payload to backend when loading events for suggestions', () => {
       targetFlowNodeId: 'a',
       xml: 'some xml',
       mappings: props.mappings,
-      eventSources: props.eventSources
+      eventSources: props.eventSources,
     },
     ''
   );
@@ -127,7 +127,7 @@ it('should load updated suggestions when the selection changes', () => {
 
   loadEvents.mockClear();
 
-  node.setProps({selection: {id: 'b', $instanceOf: type => type === 'bpmn:Event'}});
+  node.setProps({selection: {id: 'b', $instanceOf: (type) => type === 'bpmn:Event'}});
 
   expect(loadEvents).toHaveBeenCalled();
 });
@@ -138,7 +138,7 @@ it('should not reload events if suggestions are not activated', () => {
 
   loadEvents.mockClear();
 
-  node.setProps({selection: {id: 'b', $instanceOf: type => type === 'bpmn:Event'}});
+  node.setProps({selection: {id: 'b', $instanceOf: (type) => type === 'bpmn:Event'}});
 
   expect(loadEvents).not.toHaveBeenCalled();
 });
@@ -150,15 +150,15 @@ it('should mark suggested events', () => {
       source: 'order-service',
       eventName: 'OrderProcessed',
       count: 10,
-      suggested: true
+      suggested: true,
     },
     {
       group: 'eventGroup',
       source: 'order-service',
       eventName: 'OrderAccepted',
       count: 10,
-      suggested: false
-    }
+      suggested: false,
+    },
   ]);
 
   const node = shallow(<EventTable {...props} />);
@@ -180,14 +180,14 @@ it('should not show events from hidden sources in the table', () => {
       group: 'eventGroup',
       source: 'order-service',
       eventName: 'OrderProcessed',
-      count: 10
+      count: 10,
     },
     {
       group: 'bookrequest',
       source: 'camunda',
       eventName: 'startEvent',
-      count: 10
-    }
+      count: 10,
+    },
   ]);
 
   const node = shallow(
@@ -213,7 +213,7 @@ it('should invoke onSelectEvent when clicking on an element', () => {
     eventName: 'OrderProcessed',
     group: 'eventGroup',
     source: 'order-service',
-    eventLabel: 'Order Processed'
+    eventLabel: 'Order Processed',
   });
 });
 

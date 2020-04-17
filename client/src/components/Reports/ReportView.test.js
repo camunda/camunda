@@ -16,20 +16,20 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    checkDeleteConflict: jest.fn()
+    checkDeleteConflict: jest.fn(),
   };
 });
 
 jest.mock('./service', () => {
   return {
     remove: jest.fn(),
-    isSharingEnabled: jest.fn().mockReturnValue(true)
+    isSharingEnabled: jest.fn().mockReturnValue(true),
   };
 });
 
 jest.mock('moment', () => () => {
   return {
-    format: () => 'some date'
+    format: () => 'some date',
   };
 });
 
@@ -44,9 +44,9 @@ const report = {
   data: {
     processDefinitionKey: null,
     configuration: {},
-    visualization: 'table'
+    visualization: 'table',
   },
-  result: {data: [1, 2, 3]}
+  result: {data: [1, 2, 3]},
 };
 
 it('should display the key properties of a report', () => {
@@ -54,7 +54,7 @@ it('should display the key properties of a report', () => {
 
   node.setState({
     loaded: true,
-    report
+    report,
   });
 
   expect(node).toIncludeText(report.name);

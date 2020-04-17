@@ -15,18 +15,18 @@ jest.mock('config', () => ({
   getHeader: jest.fn().mockReturnValue({
     textColor: 'light',
     backgroundColor: '#000',
-    logo: 'url'
-  })
+    logo: 'url',
+  }),
 }));
 
 jest.mock('./service', () => ({
-  isEventBasedProcessEnabled: jest.fn().mockReturnValue(true)
+  isEventBasedProcessEnabled: jest.fn().mockReturnValue(true),
 }));
 
 const props = {
   user: {name: 'Hans Wurst'},
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  location: {pathname: '/'}
+  location: {pathname: '/'},
 };
 
 it('matches the snapshot', () => {

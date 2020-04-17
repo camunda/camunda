@@ -17,7 +17,7 @@ export default function Checklist({data, onChange, selectAll, deselectAll}) {
     <div className="Checklist">
       {data.length > 1 && (
         <LabeledInput
-          ref={input => {
+          ref={(input) => {
             if (input != null) {
               input.indeterminate = !allSelected && !allDeselected;
             }

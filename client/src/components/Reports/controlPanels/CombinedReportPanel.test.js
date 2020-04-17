@@ -13,7 +13,7 @@ jest.mock('react-router-dom', () => {
   const rest = jest.requireActual('react-router-dom');
   return {
     ...rest,
-    withRouter: a => a
+    withRouter: (a) => a,
   };
 });
 
@@ -23,10 +23,10 @@ jest.mock('services', () => {
   return {
     ...rest,
     formatters: {
-      getHighlightedText: text => text
+      getHighlightedText: (text) => text,
     },
     loadReports: jest.fn(),
-    getCollection: jest.fn()
+    getCollection: jest.fn(),
   };
 });
 
@@ -35,14 +35,14 @@ const singleReportData = {
   processDefinitionVersion: '1',
   view: {
     entity: 'flowNode',
-    property: 'duration'
+    property: 'duration',
   },
   groupBy: {
     type: 'flowNodes',
-    value: null
+    value: null,
   },
   configuration: {},
-  visualization: 'bar'
+  visualization: 'bar',
 };
 
 const reportsList = [
@@ -52,7 +52,7 @@ const reportsList = [
     combined: false,
     collectionId: null,
     reportType: 'process',
-    data: singleReportData
+    data: singleReportData,
   },
   {
     id: 'combinedReport',
@@ -61,16 +61,16 @@ const reportsList = [
     data: {
       configuration: {},
       reports: [{id: 'singleReport'}],
-      visualization: 'bar'
+      visualization: 'bar',
     },
     result: {
       data: {
         singleReport: {
           id: 'singleReport',
-          data: singleReportData
-        }
-      }
-    }
+          data: singleReportData,
+        },
+      },
+    },
   },
   {
     id: 'anotherSingleReport',
@@ -78,7 +78,7 @@ const reportsList = [
     combined: false,
     collectionId: null,
     reportType: 'process',
-    data: singleReportData
+    data: singleReportData,
   },
   {
     id: 'reportInAnotherCollection',
@@ -86,7 +86,7 @@ const reportsList = [
     combined: false,
     collectionId: '123',
     reportType: 'process',
-    data: singleReportData
+    data: singleReportData,
   },
   {
     id: 'flow-node-report',
@@ -97,15 +97,15 @@ const reportsList = [
       processDefinitionVersion: '1',
       view: {
         entity: 'flowNode',
-        property: 'duration'
+        property: 'duration',
       },
       groupBy: {
         type: 'flowNodes',
-        value: null
+        value: null,
       },
-      visualization: 'heat'
-    }
-  }
+      visualization: 'heat',
+    },
+  },
 ];
 
 loadReports.mockReturnValue(reportsList);
@@ -114,7 +114,7 @@ const props = {
   updateReport: jest.fn(),
   configuration: {},
   report: reportsList[1],
-  location: '/report/1'
+  location: '/report/1',
 };
 
 it('should invoke loadReports to load all reports when it is mounted', async () => {
@@ -153,8 +153,8 @@ describe('isCompatible', () => {
       ...reportsList[0],
       data: {
         ...reportsList[0].data,
-        visualization: 'table'
-      }
+        visualization: 'table',
+      },
     };
 
     expect(node.instance().isCompatible(tableReport)).toBeFalsy();
@@ -167,9 +167,9 @@ describe('isCompatible', () => {
         ...reportsList[0].data,
         groupBy: {
           type: 'none',
-          value: null
-        }
-      }
+          value: null,
+        },
+      },
     };
 
     expect(node.instance().isCompatible(groupByNone)).toBeFalsy();
@@ -182,9 +182,9 @@ describe('isCompatible', () => {
         ...reportsList[0].data,
         view: {
           entity: 'flowNode',
-          property: 'duration'
-        }
-      }
+          property: 'duration',
+        },
+      },
     };
 
     expect(node.instance().isCompatible(reportSameProperty)).toBeTruthy();
@@ -197,9 +197,9 @@ describe('isCompatible', () => {
         ...reportsList[0].data,
         view: {
           entity: 'process instance',
-          property: 'frequency'
-        }
-      }
+          property: 'frequency',
+        },
+      },
     };
 
     expect(node.instance().isCompatible(reportSameProperty)).toBeFalsy();
@@ -212,9 +212,9 @@ describe('isCompatible', () => {
         ...reportsList[0].data,
         view: {
           entity: 'userTask',
-          property: 'duration'
-        }
-      }
+          property: 'duration',
+        },
+      },
     };
 
     expect(node.instance().isCompatible(report)).toBeTruthy();
@@ -228,14 +228,14 @@ describe('isCompatible', () => {
         processDefinitionVersion: '1',
         view: {
           entity: 'flowNode',
-          property: 'duration'
+          property: 'duration',
         },
         groupBy: {
           type: 'startDate',
-          value: {unit: 'month'}
+          value: {unit: 'month'},
         },
-        visualization: 'bar'
-      }
+        visualization: 'bar',
+      },
     };
     const report2 = {
       id: '2',
@@ -244,14 +244,14 @@ describe('isCompatible', () => {
         processDefinitionVersion: '2',
         view: {
           entity: 'flowNode',
-          property: 'duration'
+          property: 'duration',
         },
         groupBy: {
           type: 'endDate',
-          value: {unit: 'month'}
+          value: {unit: 'month'},
         },
-        visualization: 'bar'
-      }
+        visualization: 'bar',
+      },
     };
     const node = shallow(
       <CombinedReportPanel
@@ -263,13 +263,13 @@ describe('isCompatible', () => {
           data: {
             configuration: {},
             reports: [{id: '1'}],
-            visualization: 'bar'
+            visualization: 'bar',
           },
           result: {
             data: {
-              '1': report1
-            }
-          }
+              '1': report1,
+            },
+          },
         }}
       />
     );
@@ -286,8 +286,11 @@ it('should update the color of a single report inside a combined report', async 
         ...reportsList[1],
         data: {
           ...reportsList[1].data,
-          reports: [{id: 'report1', color: 'red'}, {id: 'report2', color: 'yellow'}]
-        }
+          reports: [
+            {id: 'report1', color: 'red'},
+            {id: 'report2', color: 'yellow'},
+          ],
+        },
       }}
       updateReport={spy}
     />
@@ -298,7 +301,12 @@ it('should update the color of a single report inside a combined report', async 
   node.instance().updateColor(1)('blue');
 
   expect(spy).toHaveBeenCalledWith({
-    reports: {$set: [{color: 'red', id: 'report1'}, {color: 'blue', id: 'report2'}]}
+    reports: {
+      $set: [
+        {color: 'red', id: 'report1'},
+        {color: 'blue', id: 'report2'},
+      ],
+    },
   });
 });
 
@@ -313,25 +321,25 @@ it('should generate new colors or preserve existing ones when selected/deselecti
       reports: [
         {id: 'report1', color: 'red'},
         {id: 'report2', color: 'blue'},
-        {id: 'report3', color: 'yellow'}
-      ]
-    }
+        {id: 'report3', color: 'yellow'},
+      ],
+    },
   };
   const result = {
     data: {
       report1: {
         id: 'report1',
-        ...reportData
+        ...reportData,
       },
       report2: {
         id: 'report2',
-        ...reportData
+        ...reportData,
       },
       report3: {
         id: 'report3',
-        ...reportData
-      }
-    }
+        ...reportData,
+      },
+    },
   };
 
   const node = await shallow(
@@ -339,7 +347,7 @@ it('should generate new colors or preserve existing ones when selected/deselecti
       {...props}
       report={{
         ...report,
-        result
+        result,
       }}
     />
   );

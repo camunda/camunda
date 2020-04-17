@@ -14,18 +14,18 @@ const reports = [
   {
     position: {x: 0, y: 0},
     dimensions: {width: 3, height: 1},
-    id: '1'
+    id: '1',
   },
   {
     position: {x: 2, y: 0},
     dimensions: {width: 1, height: 4},
-    id: '2'
+    id: '2',
   },
   {
     position: {x: 3, y: 1},
     dimensions: {width: 2, height: 2},
-    id: '3'
-  }
+    id: '3',
+  },
 ];
 
 it('should render a Dashboard Report for every Report in the props', () => {

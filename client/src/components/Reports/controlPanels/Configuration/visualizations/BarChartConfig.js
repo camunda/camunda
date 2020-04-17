@@ -16,7 +16,7 @@ export default function BarChartConfig({onChange, report}) {
   const {
     combined,
     data: {visualization, configuration, groupBy},
-    result
+    result,
   } = report;
 
   const durationReport = isDurationReport(combined ? Object.values(result.data)[0] : report);
@@ -31,7 +31,7 @@ export default function BarChartConfig({onChange, report}) {
             <legend>{t('report.config.colorPicker.legend')}</legend>
             <ColorPicker
               selectedColor={configuration.color}
-              onChange={color => onChange({color: {$set: color}})}
+              onChange={(color) => onChange({color: {$set: color}})}
             />
           </fieldset>
         )}

@@ -33,12 +33,12 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
           value={baseline.value}
           disabled={disabled}
           isInvalid={baselineInvalid}
-          onChange={evt => onChange('baseline', 'value', evt.target.value)}
+          onChange={(evt) => onChange('baseline', 'value', evt.target.value)}
         />
         <Select
           value={baseline.unit}
           disabled={disabled}
-          onChange={value => onChange('baseline', 'unit', value)}
+          onChange={(value) => onChange('baseline', 'unit', value)}
         >
           {selectionOptions()}
         </Select>
@@ -52,12 +52,12 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
           value={target.value}
           disabled={disabled}
           isInvalid={targetInvalid || tooLow}
-          onChange={evt => onChange('target', 'value', evt.target.value)}
+          onChange={(evt) => onChange('target', 'value', evt.target.value)}
         />
         <Select
           value={target.unit}
           disabled={disabled}
-          onChange={value => onChange('target', 'unit', value)}
+          onChange={(value) => onChange('target', 'unit', value)}
         >
           {selectionOptions()}
         </Select>

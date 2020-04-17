@@ -16,7 +16,7 @@ export default React.forwardRef(function DropdownOption({active, link, ...props}
     ...props,
     className: classnames('DropdownOption', props.className, {'is-active': active}),
     tabIndex: props.disabled ? '-1' : '0',
-    ref
+    ref,
   };
 
   const content = (
@@ -34,7 +34,7 @@ export default React.forwardRef(function DropdownOption({active, link, ...props}
     );
   }
   return (
-    <div {...commonProps} onClick={evt => !props.disabled && props.onClick && props.onClick(evt)}>
+    <div {...commonProps} onClick={(evt) => !props.disabled && props.onClick && props.onClick(evt)}>
       {content}
     </div>
   );

@@ -21,14 +21,14 @@ export default withErrorHandling(
     static defaultProps = {
       deleteEntity: ({entityType, id}) => deleteEntity(entityType, id),
       getName: ({name}) => name,
-      onDelete: () => {}
+      onDelete: () => {},
     };
 
     cancelButton = React.createRef();
 
     state = {
       conflicts: {},
-      loading: false
+      loading: false,
     };
 
     componentDidUpdate(prevProps, prevState) {
@@ -45,10 +45,10 @@ export default withErrorHandling(
                   obj[conflict.type].push(conflict);
                   return obj;
                 }, {}),
-                loading: false
+                loading: false,
               });
             },
-            error => {
+            (error) => {
               showError(error);
               this.setState({conflicts: {}, loading: false});
             }
@@ -74,7 +74,7 @@ export default withErrorHandling(
           onDelete(...args);
           this.close();
         },
-        error => {
+        (error) => {
           showError(error);
           this.setState({loading: false});
         }
@@ -110,12 +110,12 @@ export default withErrorHandling(
                   {descriptionText ||
                     t('common.deleter.permanent', {
                       name: getName(entity),
-                      type: translatedType
+                      type: translatedType,
                     })}
                 </p>
                 {Object.keys(conflicts)
                   .sort((a, b) => sectionOrder.indexOf(a) - sectionOrder.indexOf(b))
-                  .map(conflictType => (
+                  .map((conflictType) => (
                     <div key={conflictType}>
                       {t(`common.deleter.affectedMessage.${type}.${conflictType}`)}
                       <ul>

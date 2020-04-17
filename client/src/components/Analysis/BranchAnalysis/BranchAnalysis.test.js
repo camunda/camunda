@@ -15,7 +15,7 @@ import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 
 jest.mock('./service', () => {
   return {
-    loadFrequencyData: jest.fn()
+    loadFrequencyData: jest.fn(),
   };
 });
 
@@ -23,7 +23,7 @@ jest.mock('services', () => {
   return {
     ...jest.requireActual('services'),
     loadProcessDefinitionXml: jest.fn(),
-    incompatibleFilters: jest.fn()
+    incompatibleFilters: jest.fn(),
   };
 });
 
@@ -40,7 +40,7 @@ it('should load the process definition xml when the process definition id is upd
   node.instance().updateConfig({
     processDefinitionKey: 'someKey',
     processDefinitionVersions: ['someVersion'],
-    tenantIds: ['a', 'b']
+    tenantIds: ['a', 'b'],
   });
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion', 'a');
@@ -76,7 +76,7 @@ it('should load updated frequency data when the filter changed', async () => {
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
     processDefinitionVersions: ['someVersion'],
-    tenantIds: [null]
+    tenantIds: [null],
   });
   loadFrequencyData.mockClear();
   await node.instance().updateConfig({filter: ['someFilter']});
@@ -98,7 +98,7 @@ it('should contain a statistics section if gateway and endEvent is selected', ()
 
   node.instance().setState({
     gateway: 'g',
-    endEvent: 'e'
+    endEvent: 'e',
   });
 
   expect(node).toIncludeText('Statistics');
@@ -111,7 +111,7 @@ it('should clear the selection when another process definition is selected', asy
   await node.instance().updateConfig({
     processDefinitionKey: 'newKey',
     processDefinitionVersions: ['latest'],
-    tenantIds: []
+    tenantIds: [],
   });
 
   expect(node).toHaveState('gateway', null);
@@ -127,13 +127,13 @@ it('should not clear the selection when the xml stays the same', async () => {
   await node.instance().updateConfig({
     processDefinitionKey: 'firstKey',
     processDefinitionVersions: ['2'],
-    tenantIds: []
+    tenantIds: [],
   });
   await node.instance().setState({gateway: 'g', endEvent: 'e'});
   await node.instance().updateConfig({
     processDefinitionKey: 'newKey',
     processDefinitionVersions: ['latest'],
-    tenantIds: []
+    tenantIds: [],
   });
 
   expect(node).toHaveState('gateway', 'g');
@@ -153,10 +153,10 @@ it('should not reset the xml when adding a filter', async () => {
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
     processDefinitionVersions: ['someVersion'],
-    tenantIds: ['a', 'b']
+    tenantIds: ['a', 'b'],
   });
   await node.instance().updateConfig({
-    filter: [{type: 'completedInstancesOnly', data: null}]
+    filter: [{type: 'completedInstancesOnly', data: null}],
   });
 
   expect(node.state().xml).not.toBe(null);

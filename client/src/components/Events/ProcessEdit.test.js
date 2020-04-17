@@ -18,12 +18,12 @@ const ProcessEdit = ProcessEditWithErrorHandling.WrappedComponent;
 
 const props = {
   id: '1',
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 jest.mock('saveGuard', () => ({
   nowDirty: jest.fn(),
-  nowPristine: jest.fn()
+  nowPristine: jest.fn(),
 }));
 
 jest.mock('./service', () => ({
@@ -34,9 +34,9 @@ jest.mock('./service', () => ({
     name: 'Process Name',
     xml: 'Process XML',
     mappings: {},
-    eventSources: []
+    eventSources: [],
   }),
-  isNonTimerEvent: jest.fn().mockReturnValue(false)
+  isNonTimerEvent: jest.fn().mockReturnValue(false),
 }));
 
 it('should match snapshot', () => {
@@ -81,7 +81,7 @@ it('should edit a mapping', () => {
   loadProcess.mockReturnValueOnce({
     name: 'Process Name',
     xml: 'Process XML',
-    mappings: {a: {end: {eventName: '1'}, start: null}}
+    mappings: {a: {end: {eventName: '1'}, start: null}},
   });
   const node = shallow(<ProcessEdit {...props} />);
   node.setState({selectedNode: {id: 'a'}});
@@ -95,7 +95,7 @@ it('should unset a mapping', () => {
   loadProcess.mockReturnValueOnce({
     name: 'Process Name',
     xml: 'Process XML',
-    mappings: {a: {end: {eventName: '1'}, start: {eventName: '2'}}}
+    mappings: {a: {end: {eventName: '1'}, start: {eventName: '2'}}},
   });
   const node = shallow(<ProcessEdit {...props} />);
   node.setState({selectedNode: {id: 'a'}});

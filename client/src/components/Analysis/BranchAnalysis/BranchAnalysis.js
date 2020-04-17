@@ -28,7 +28,7 @@ export default class BranchAnalysis extends React.Component {
         processDefinitionKey: '',
         processDefinitionVersions: [],
         tenantIds: [],
-        filter: []
+        filter: [],
       },
       data: null,
       hoveredControl: null,
@@ -36,7 +36,7 @@ export default class BranchAnalysis extends React.Component {
       gateway: null,
       endEvent: null,
       optimizeVersion: 'latest',
-      xml: null
+      xml: null,
     };
   }
 
@@ -45,7 +45,7 @@ export default class BranchAnalysis extends React.Component {
     version.length = 2;
 
     this.setState({
-      optimizeVersion: version.join('.')
+      optimizeVersion: version.join('.'),
     });
   }
 
@@ -58,7 +58,7 @@ export default class BranchAnalysis extends React.Component {
       gateway,
       endEvent,
       data,
-      optimizeVersion
+      optimizeVersion,
     } = this.state;
 
     const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/update/2.7-to-3.0/#suspension-filter`;
@@ -83,7 +83,7 @@ export default class BranchAnalysis extends React.Component {
           <MessageBox
             type="warning"
             dangerouslySetInnerHTML={{
-              __html: t('common.filter.suspensionFilterWarning', {docsLink})
+              __html: t('common.filter.suspensionFilterWarning', {docsLink}),
             }}
           />
         )}
@@ -127,20 +127,20 @@ export default class BranchAnalysis extends React.Component {
           config.processDefinitionVersions,
           config.tenantIds,
           config.filter
-        )
+        ),
       });
     }
   }
 
-  setViewer = viewer => {
+  setViewer = (viewer) => {
     this.viewer = viewer;
   };
 
-  updateHoveredControl = newField => {
+  updateHoveredControl = (newField) => {
     this.setState({hoveredControl: newField});
   };
 
-  updateHoveredNode = newNode => {
+  updateHoveredNode = (newNode) => {
     this.setState({hoveredNode: newNode});
   };
 
@@ -148,11 +148,11 @@ export default class BranchAnalysis extends React.Component {
     this.setState({[type]: node});
   };
 
-  updateConfig = async updates => {
+  updateConfig = async (updates) => {
     const newConfig = {...this.state.config, ...updates};
 
     const changes = {
-      config: newConfig
+      config: newConfig,
     };
 
     if (updates.processDefinitionKey && updates.processDefinitionVersions && updates.tenantIds) {

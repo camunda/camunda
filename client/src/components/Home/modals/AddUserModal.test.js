@@ -13,7 +13,7 @@ const props = {
   open: true,
   existingUsers: [],
   onClose: jest.fn(),
-  onConfirm: jest.fn()
+  onConfirm: jest.fn(),
 };
 
 it('should match snapshot', () => {

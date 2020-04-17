@@ -22,7 +22,7 @@ export default withErrorHandling(
       sources: [],
       tenants: null,
       definitions: null,
-      valid: false
+      valid: false,
     };
 
     async componentDidMount() {
@@ -41,14 +41,14 @@ export default withErrorHandling(
     loadDefinitionsWithTenants = () =>
       this.props.mightFail(
         getDefinitionsWithTenants(),
-        definitions => this.setState({definitions}),
+        (definitions) => this.setState({definitions}),
         showError
       );
 
     loadTenantsWithDefinitions = () =>
       this.props.mightFail(
         getTenantsWithDefinitions(),
-        tenants => this.setState({tenants}),
+        (tenants) => this.setState({tenants}),
         showError
       );
 
@@ -65,8 +65,8 @@ export default withErrorHandling(
       }
     };
 
-    changeAddBy = addBy => this.setState({addBy, valid: false});
-    onChange = sources => this.setState({sources, valid: true});
+    changeAddBy = (addBy) => this.setState({addBy, valid: false});
+    onChange = (sources) => this.setState({sources, valid: true});
     setInvalid = () => this.setState({valid: false});
 
     render() {

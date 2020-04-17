@@ -15,20 +15,20 @@ const awaiting = [];
     const response = await get('api/ui-configuration');
     config = await response.json();
 
-    awaiting.forEach(cb => cb(config));
+    awaiting.forEach((cb) => cb(config));
   } catch (e) {
     showError(e);
   }
 })();
 
 function createAccessorFunction(property) {
-  return async function() {
+  return async function () {
     if (config) {
       return config[property];
     }
 
-    return new Promise(resolve => {
-      awaiting.push(config => resolve(config[property]));
+    return new Promise((resolve) => {
+      awaiting.push((config) => resolve(config[property]));
     });
   };
 }

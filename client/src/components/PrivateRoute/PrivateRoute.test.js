@@ -14,13 +14,13 @@ import {Login} from './Login';
 
 import {addHandler, removeHandler} from 'request';
 
-const flushPromises = () => new Promise(resolve => setImmediate(resolve));
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 const TestComponent = () => <div>TestComponent</div>;
 
 jest.mock('request', () => {
   return {
     addHandler: jest.fn(),
-    removeHandler: jest.fn()
+    removeHandler: jest.fn(),
   };
 });
 

@@ -11,7 +11,7 @@ import RelativeAbsoluteSelection from './RelativeAbsoluteSelection';
 
 const props = {
   absolute: true,
-  relative: true
+  relative: true,
 };
 
 it('should match snapshot', () => {

@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import React from 'react';
 import {Icon, Dropdown, Button} from 'components';
 
@@ -14,7 +20,7 @@ export default function ListItemAction({actions = [], singleAction}) {
       <Button
         icon
         className="ListItemAction"
-        onClick={evt => {
+        onClick={(evt) => {
           evt.preventDefault();
           action(evt);
         }}

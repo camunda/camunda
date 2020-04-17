@@ -12,19 +12,22 @@ import {Modal, BPMNDiagram, Button} from 'components';
 
 const report = {
   result: {
-    data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]
+    data: [
+      {key: 'foo', value: 123},
+      {key: 'bar', value: 5},
+    ],
   },
   data: {
     configuration: {color: 'testColor', xml: 'fooXml', hiddenNodes: {active: false, keys: []}},
     visualization: 'line',
     groupBy: {
       type: '',
-      value: ''
+      value: '',
     },
-    view: {}
+    view: {},
   },
   targetValue: false,
-  combined: false
+  combined: false,
 };
 
 it('should contain a modal', () => {
@@ -44,7 +47,7 @@ it('should add an unselected node to the selectedNodes on toggle', () => {
 
   const flowNode = {
     name: 'bar',
-    id: 'bar'
+    id: 'bar',
   };
 
   node.instance().toggleNode(flowNode);
@@ -57,7 +60,7 @@ it('should remove a selected node from the selectedNodes on toggle', () => {
 
   const flowNode = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   node.instance().toggleNode(flowNode);
@@ -71,24 +74,20 @@ it('should invoke updateConfiguration when applying the filter', () => {
   const node = shallow(<NodeSelectionModal onClose={() => {}} report={report} onChange={spy} />);
 
   node.setState({
-    selectedNodes: ['foo']
+    selectedNodes: ['foo'],
   });
 
-  node
-    .find(Modal.Actions)
-    .find(Button)
-    .at(1)
-    .simulate('click');
+  node.find(Modal.Actions).find(Button).at(1).simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
-    hiddenNodes: {keys: {$set: [report.result.data[1].key]}}
+    hiddenNodes: {keys: {$set: [report.result.data[1].key]}},
   });
 });
 
 it('should disable create filter button if no node was selected', () => {
   const node = shallow(<NodeSelectionModal report={report} />);
   node.setState({
-    selectedNodes: []
+    selectedNodes: [],
   });
 
   const buttons = node.find(Modal.Actions).find(Button);
@@ -99,11 +98,7 @@ it('should disable create filter button if no node was selected', () => {
 it('should deselect All nodes if deselectAll button is clicked', () => {
   const node = shallow(<NodeSelectionModal report={report} />);
 
-  node
-    .find(Modal.Content)
-    .find(Button)
-    .at(1)
-    .simulate('click');
+  node.find(Modal.Content).find(Button).at(1).simulate('click');
 
   expect(node.state().selectedNodes).toEqual([]);
 });

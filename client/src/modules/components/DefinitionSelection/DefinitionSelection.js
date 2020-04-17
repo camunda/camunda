@@ -26,7 +26,7 @@ export default withRouter(
       this.state = {
         availableDefinitions: [],
         selectedSpecificVersions: this.isSpecificVersion(props.versions) ? props.versions : [],
-        loaded: false
+        loaded: false,
       };
     }
 
@@ -36,19 +36,19 @@ export default withRouter(
       this.setState({
         availableDefinitions: (
           await loadDefinitions(type, collectionId, excludeEventProcesses)
-        ).map(entry => ({
+        ).map((entry) => ({
           ...entry,
-          id: entry.key
+          id: entry.key,
         })),
-        loaded: true
+        loaded: true,
       });
     };
 
     hasDefinition = () => this.props.definitionKey;
 
-    getName = key => this.getDefinitionObject(key).name;
+    getName = (key) => this.getDefinitionObject(key).name;
 
-    changeDefinition = key => {
+    changeDefinition = (key) => {
       if (this.props.definitionKey === key) {
         return;
       }
@@ -62,11 +62,11 @@ export default withRouter(
         key,
         versions: latestVersion,
         tenantIds: tenants.map(({id}) => id),
-        name: this.getName(key)
+        name: this.getName(key),
       });
     };
 
-    getDefinitionObject = key => this.state.availableDefinitions.find(def => def.key === key);
+    getDefinitionObject = (key) => this.state.availableDefinitions.find((def) => def.key === key);
     canRenderDiagram = () => this.props.renderDiagram && this.props.xml;
 
     getAvailableTenants = (key, versions) => {
@@ -78,17 +78,17 @@ export default withRouter(
         const specificVersions =
           versions[0] === 'latest' ? [definitionObject.versions[0].version] : versions;
         const allTenantsWithDuplicates = definitionObject.versions
-          .filter(versionEntry => specificVersions.includes(versionEntry.version))
-          .map(versionEntry => versionEntry.tenants)
+          .filter((versionEntry) => specificVersions.includes(versionEntry.version))
+          .map((versionEntry) => versionEntry.tenants)
           .flat();
         return this.filterDuplicateTenants(allTenantsWithDuplicates);
       }
       return [];
     };
 
-    filterDuplicateTenants = arrayOfTenantsWithDuplicates => {
+    filterDuplicateTenants = (arrayOfTenantsWithDuplicates) => {
       return arrayOfTenantsWithDuplicates.filter(
-        (object, index, self) => index === self.findIndex(o => o.id === object.id)
+        (object, index, self) => index === self.findIndex((o) => o.id === object.id)
       );
     };
 
@@ -102,17 +102,17 @@ export default withRouter(
 
     getSelectedTenants = () => this.props.tenants;
 
-    changeTenants = tenantSelection => {
+    changeTenants = (tenantSelection) => {
       const {definitionKey, versions} = this.props;
       this.props.onChange({
         key: definitionKey,
         versions: versions,
         tenantIds: tenantSelection,
-        name: this.getName(definitionKey)
+        name: this.getName(definitionKey),
       });
     };
 
-    getAvailableVersions = key => {
+    getAvailableVersions = (key) => {
       const definitionObject = this.getDefinitionObject(key);
       if (definitionObject) {
         return definitionObject.versions.map(({version, versionTag}) => ({version, versionTag}));
@@ -122,7 +122,7 @@ export default withRouter(
 
     getSelectedVersions = () => this.props.versions || [];
 
-    changeVersions = versions => {
+    changeVersions = (versions) => {
       if (this.isSpecificVersion(versions)) {
         this.setState({selectedSpecificVersions: versions});
       }
@@ -131,25 +131,25 @@ export default withRouter(
         key: this.props.definitionKey,
         versions,
         tenantIds: this.findTenants(versions),
-        name: this.getName(this.props.definitionKey)
+        name: this.getName(this.props.definitionKey),
       });
     };
 
-    findTenants = versions => {
+    findTenants = (versions) => {
       const prevTenants = this.getAvailableTenants(this.props.definitionKey, this.props.versions);
       const deselectedTenants = prevTenants
         .map(({id}) => id)
-        .filter(tenant => !this.props.tenants.includes(tenant));
+        .filter((tenant) => !this.props.tenants.includes(tenant));
 
       // remove previously deselected tenants from the available tenants of the new version
       const newTenants = this.getAvailableTenants(this.props.definitionKey, versions)
         .map(({id}) => id)
-        .filter(tenant => !deselectedTenants.includes(tenant));
+        .filter((tenant) => !deselectedTenants.includes(tenant));
 
       return newTenants;
     };
 
-    isSpecificVersion = versions => versions && versions[0] !== 'latest' && versions[0] !== 'all';
+    isSpecificVersion = (versions) => versions && versions[0] !== 'latest' && versions[0] !== 'all';
 
     createTitle = () => {
       const {definitionKey, versions, type} = this.props;
@@ -222,7 +222,7 @@ export default withRouter(
           <div
             className={classnames('container', {
               large: this.canRenderDiagram(),
-              withTenants: this.hasTenants()
+              withTenants: this.hasTenants(),
             })}
           >
             <div className="selectionPanel">

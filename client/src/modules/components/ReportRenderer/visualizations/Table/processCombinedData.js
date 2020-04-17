@@ -14,7 +14,7 @@ export default function processCombinedData({formatter, report}) {
   );
 
   const {
-    configuration: {hideAbsoluteValue, hideRelativeValue}
+    configuration: {hideAbsoluteValue, hideRelativeValue},
   } = report.data;
   const {view} = Object.values(report.result.data)[0].data;
 
@@ -57,6 +57,6 @@ export default function processCombinedData({formatter, report}) {
 
   return {
     head: [keysLabel, ...formattedLabels],
-    body: rows
+    body: rows,
   };
 }

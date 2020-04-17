@@ -16,6 +16,6 @@ export default function createCombinedChartConfig(props) {
     type: chartVisualization,
     data: createCombinedChartData(props),
     options: createCombinedChartOptions(props),
-    plugins: createPlugins(props)
+    plugins: createPlugins(props),
   };
 }

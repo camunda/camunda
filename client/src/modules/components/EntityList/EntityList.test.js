@@ -21,22 +21,22 @@ const props = {
       meta: ['Some info', 'Some additional info', 'Some other info'],
       icon: 'iconType',
       type: 'Collection',
-      actions: [{icon: 'edit', text: 'Edit', action: jest.fn()}]
+      actions: [{icon: 'edit', text: 'Edit', action: jest.fn()}],
     },
     {
       name: 'aDashboard',
       meta: ['Some info', 'Some additional info', 'Some other info'],
       icon: 'iconType',
-      type: 'Dashboard'
+      type: 'Dashboard',
     },
     {
       name: 'aReport',
       meta: ['Some info', 'Some additional info', 'Some other info'],
       icon: 'iconType',
       type: 'Report',
-      link: 'link/to/somewhere'
-    }
-  ]
+      link: 'link/to/somewhere',
+    },
+  ],
 };
 
 it('should match snapshot', () => {
@@ -77,7 +77,7 @@ it('should pass a hasWarning prop to all ListEntries if one of them has a warnin
 
   const node = shallow(<EntityList {...props} data={warningData} />);
 
-  node.find('ListItem').forEach(node => expect(node.prop('hasWarning')).toBe(true));
+  node.find('ListItem').forEach((node) => expect(node.prop('hasWarning')).toBe(true));
 });
 
 it('should show a column header if specified', () => {

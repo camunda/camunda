@@ -23,7 +23,7 @@ export function getHeatmap(viewer, data, noSequenceHighlight) {
   const heat = generateHeatmap(viewer, data, noSequenceHighlight);
   const node = document.createElementNS('http://www.w3.org/2000/svg', 'image');
 
-  Object.keys(heat.dimensions).forEach(prop => {
+  Object.keys(heat.dimensions).forEach((prop) => {
     node.setAttributeNS(null, prop, heat.dimensions[prop]);
   });
 
@@ -40,7 +40,7 @@ function generateHeatmap(viewer, data, noSequenceHighlight) {
   const map = createMap(dimensions);
   const heatmapDataValueMax = Math.max.apply(
     this,
-    heatmapData.map(el => el.value)
+    heatmapData.map((el) => el.value)
   );
 
   heatmapData = heatmapData.map(({x, y, value, radius}) => {
@@ -49,33 +49,30 @@ function generateHeatmap(viewer, data, noSequenceHighlight) {
       x: Math.round(x),
       y: Math.round(y),
       radius,
-      value: (shiftValue + (value / heatmapDataValueMax) * (1 - shiftValue)) / COOLNESS
+      value: (shiftValue + (value / heatmapDataValueMax) * (1 - shiftValue)) / COOLNESS,
     };
   });
 
   map.setData({
     min: 0,
     max: 1,
-    data: heatmapData
+    data: heatmapData,
   });
 
   return {
     img: map.getDataURL(),
-    dimensions
+    dimensions,
   };
 }
 
 function getDimensions(viewer) {
-  const dimensions = viewer
-    .get('canvas')
-    .getDefaultLayer()
-    .getBBox();
+  const dimensions = viewer.get('canvas').getDefaultLayer().getBBox();
 
   return {
     width: dimensions.width + 2 * EDGE_BUFFER,
     height: dimensions.height + 2 * EDGE_BUFFER,
     x: dimensions.x - EDGE_BUFFER,
-    y: dimensions.y - EDGE_BUFFER
+    y: dimensions.y - EDGE_BUFFER,
   };
 }
 
@@ -104,7 +101,7 @@ function isBpmnType(element, types) {
   }
   return (
     element.type !== 'label' &&
-    types.filter(type => element.businessObject.$instanceOf('bpmn:' + type)).length > 0
+    types.filter((type) => element.businessObject.$instanceOf('bpmn:' + type)).length > 0
   );
 }
 
@@ -134,7 +131,7 @@ function generateData(values, viewer, {x: xOffset, y: yOffset}, noSequenceHighli
             x: (element.x + i - xOffset) / RESOLUTION,
             y: (element.y + j - yOffset) / RESOLUTION,
             value: value * ACTIVITY_VALUE_MODIFIER,
-            radius: ACTIVITY_RADIUS / RESOLUTION
+            radius: ACTIVITY_RADIUS / RESOLUTION,
           });
         }
       }
@@ -166,7 +163,7 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
 
     const movementVector = {
       x: end.x - start.x,
-      y: end.y - start.y
+      y: end.y - start.y,
     };
     const normalizedMovementVector = {
       x:
@@ -174,7 +171,7 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
         SEQUENCEFLOW_STEPWIDTH,
       y:
         (movementVector.y / (Math.abs(movementVector.x) + Math.abs(movementVector.y))) *
-        SEQUENCEFLOW_STEPWIDTH
+        SEQUENCEFLOW_STEPWIDTH,
     };
 
     const numberSteps =
@@ -186,7 +183,7 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
         x: (start.x + normalizedMovementVector.x * j - xOffset) / RESOLUTION,
         y: (start.y + normalizedMovementVector.y * j - yOffset) / RESOLUTION,
         value: value * SEQUENCEFLOW_VALUE_MODIFIER,
-        radius: SEQUENCEFLOW_RADIUS / RESOLUTION
+        radius: SEQUENCEFLOW_RADIUS / RESOLUTION,
       });
     }
   }
@@ -229,7 +226,7 @@ export function addDiagramTooltip(viewer, element, tooltipContent, theme) {
     observer.observe(overlayHtml, {childList: true, subtree: true});
 
     const position = {
-      left: nodeWidth / 2 - overlayWidth / 2
+      left: nodeWidth / 2 - overlayWidth / 2,
     };
 
     if (
@@ -249,9 +246,9 @@ export function addDiagramTooltip(viewer, element, tooltipContent, theme) {
       position,
       show: {
         minZoom: -Infinity,
-        maxZoom: +Infinity
+        maxZoom: +Infinity,
       },
-      html: overlayHtml
+      html: overlayHtml,
     });
   });
 }

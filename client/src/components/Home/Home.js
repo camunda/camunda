@@ -30,7 +30,7 @@ export class Home extends React.Component {
     copying: null,
     redirect: null,
     creatingCollection: false,
-    editingCollection: null
+    editingCollection: null,
   };
 
   componentDidMount() {
@@ -40,8 +40,8 @@ export class Home extends React.Component {
   loadList = () => {
     this.props.mightFail(
       loadEntities(),
-      entities => this.setState({entities}),
-      error => {
+      (entities) => this.setState({entities}),
+      (error) => {
         showError(error);
         this.setState({entities: []});
       }
@@ -51,14 +51,14 @@ export class Home extends React.Component {
   startCreatingCollection = () => this.setState({creatingCollection: true});
   stopCreatingCollection = () => this.setState({creatingCollection: false});
 
-  startEditingCollection = editingCollection => {
+  startEditingCollection = (editingCollection) => {
     this.setState({editingCollection});
   };
   stopEditingCollection = () => {
     this.setState({editingCollection: null});
   };
 
-  edit = entity => {
+  edit = (entity) => {
     const {entityType, id} = entity;
     if (entityType === 'collection') {
       this.startEditingCollection(entity);
@@ -74,7 +74,7 @@ export class Home extends React.Component {
       copying,
       creatingCollection,
       editingCollection,
-      redirect
+      redirect,
     } = this.state;
 
     if (redirect) {
@@ -96,11 +96,11 @@ export class Home extends React.Component {
               t('common.name'),
               t('home.contents'),
               t('common.entity.modified'),
-              t('home.members')
+              t('home.members'),
             ]}
             data={
               entities &&
-              entities.map(entity => {
+              entities.map((entity) => {
                 const {
                   id,
                   entityType,
@@ -109,7 +109,7 @@ export class Home extends React.Component {
                   name,
                   data,
                   reportType,
-                  combined
+                  combined,
                 } = entity;
 
                 return {
@@ -120,25 +120,25 @@ export class Home extends React.Component {
                   meta: [
                     formatSubEntities(data.subEntityCounts),
                     moment(lastModified).format('YYYY-MM-DD HH:mm'),
-                    formatUserCount(data.roleCounts)
+                    formatUserCount(data.roleCounts),
                   ],
                   actions: (entityType !== 'collection' || currentUserRole === 'manager') && [
                     {
                       icon: 'edit',
                       text: t('common.edit'),
-                      action: () => this.edit(entity)
+                      action: () => this.edit(entity),
                     },
                     {
                       icon: 'copy-document',
                       text: t('common.copy'),
-                      action: () => this.setState({copying: entity})
+                      action: () => this.setState({copying: entity}),
                     },
                     {
                       icon: 'delete',
                       text: t('common.delete'),
-                      action: () => this.setState({deleting: entity})
-                    }
-                  ]
+                      action: () => this.setState({deleting: entity}),
+                    },
+                  ],
                 };
               })
             }
@@ -173,7 +173,7 @@ export class Home extends React.Component {
             initialName={t('common.collection.modal.defaultName')}
             confirmText={t('common.collection.modal.createBtn')}
             onClose={this.stopCreatingCollection}
-            onConfirm={name => createEntity('collection', {name})}
+            onConfirm={(name) => createEntity('collection', {name})}
           />
         )}
         {editingCollection && (
@@ -182,7 +182,7 @@ export class Home extends React.Component {
             initialName={editingCollection.name}
             confirmText={t('common.collection.modal.editBtn')}
             onClose={this.stopEditingCollection}
-            onConfirm={async name => {
+            onConfirm={async (name) => {
               await updateEntity('collection', editingCollection.id, {name});
               this.stopEditingCollection();
               this.loadList();

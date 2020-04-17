@@ -9,7 +9,7 @@ import withErrorHandling from './withErrorHandling';
 
 import {mount} from 'enzyme';
 
-it('should pass the value of the receiver function to the callback', done => {
+it('should pass the value of the receiver function to the callback', (done) => {
   const spy = jest.fn();
   const Component = withErrorHandling(
     class extends React.Component {
@@ -31,7 +31,7 @@ it('should pass the value of the receiver function to the callback', done => {
   });
 });
 
-it('should not pass the value of the receiver function to the function when component is unmountd', done => {
+it('should not pass the value of the receiver function to the function when component is unmountd', (done) => {
   const spy = jest.fn();
   const Component = withErrorHandling(
     class extends React.Component {
@@ -54,7 +54,7 @@ it('should not pass the value of the receiver function to the function when comp
   });
 });
 
-it('should catch errors', done => {
+it('should catch errors', (done) => {
   const Component = withErrorHandling(
     class extends React.Component {
       constructor(props) {
@@ -79,7 +79,7 @@ it('should catch errors', done => {
   });
 });
 
-it('should pass errors via props', done => {
+it('should pass errors via props', (done) => {
   const error = new Error();
   const Component = withErrorHandling(
     class extends React.Component {
@@ -107,7 +107,7 @@ it('should pass errors via props', done => {
   });
 });
 
-it('should call a custom error handler', done => {
+it('should call a custom error handler', (done) => {
   const spy = jest.fn();
   const error = new Error();
   const Component = withErrorHandling(

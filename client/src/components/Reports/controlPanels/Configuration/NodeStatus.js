@@ -11,9 +11,9 @@ import {t} from 'translation';
 
 export default function NodeStatus({
   report: {
-    data: {view, groupBy, configuration}
+    data: {view, groupBy, configuration},
   },
-  onChange
+  onChange,
 }) {
   if (
     (groupBy?.type.includes('Date') && view?.entity === 'userTask') ||
@@ -24,7 +24,7 @@ export default function NodeStatus({
         <legend>{t('report.config.nodeStatus.legend')}</legend>
         <Select
           value={configuration.flowNodeExecutionState}
-          onChange={value => onChange({flowNodeExecutionState: {$set: value}}, true)}
+          onChange={(value) => onChange({flowNodeExecutionState: {$set: value}}, true)}
         >
           <Select.Option value="running">{t('report.config.nodeStatus.running')}</Select.Option>
           <Select.Option value="completed">{t('report.config.nodeStatus.completed')}</Select.Option>

@@ -15,21 +15,21 @@ import {t} from 'translation';
 export default withErrorHandling(
   class MoveCopy extends React.Component {
     state = {
-      availableCollections: []
+      availableCollections: [],
     };
 
     componentDidMount() {
       this.props.mightFail(
         loadEntities(),
-        entities =>
+        (entities) =>
           this.setState({
             availableCollections: [
               {id: null, entityType: 'collection', name: t('navigation.homepage')},
-              ...entities
+              ...entities,
             ].filter(
               ({entityType, id}) =>
                 entityType === 'collection' && id !== this.props.parentCollection
-            )
+            ),
           }),
         showError
       );
@@ -42,7 +42,7 @@ export default withErrorHandling(
       if (containedReports) {
         const params = {
           entityType: entityType === 'dashboard' ? t('dashboard.label') : t('home.types.combined'),
-          number: containedReports
+          number: containedReports,
         };
         if (containedReports > 1) {
           return t('home.copy.subEntities', params);
@@ -72,8 +72,8 @@ export default withErrorHandling(
                   initialValue={collection ? collection.id : undefined}
                   noValuesMessage={t('home.copy.noCollections')}
                   placeholder={t('home.copy.pleaseSelect')}
-                  onChange={id => {
-                    const collection = availableCollections.find(col => col.id === id);
+                  onChange={(id) => {
+                    const collection = availableCollections.find((col) => col.id === id);
                     this.props.setCollection(collection);
                   }}
                 >

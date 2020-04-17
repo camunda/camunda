@@ -24,13 +24,13 @@ it('should still contain selected value after changing the filter', async () => 
     />
   );
 
-  toggleValue.mockImplementation(value => () =>
+  toggleValue.mockImplementation((value) => () =>
     node.setProps({selectedValues: node.instance().props.selectedValues.concat([value])})
   );
 
-  setFilter.mockImplementation(filter =>
+  setFilter.mockImplementation((filter) =>
     node.setProps({
-      availableValues: allValues.filter(value => value.slice(0, filter.length) === filter)
+      availableValues: allValues.filter((value) => value.slice(0, filter.length) === filter),
     })
   );
 
@@ -54,16 +54,16 @@ it('it should not show the unselected value if it does not match the query', asy
     />
   );
 
-  toggleValue.mockImplementationOnce(value => () =>
+  toggleValue.mockImplementationOnce((value) => () =>
     node.setProps({
       selectedValues: node.instance().props.selectedValues.includes(value)
-        ? node.instance().props.selectedValues.filter(v => v !== value)
-        : node.instance().props.selectedValues.concat([value])
+        ? node.instance().props.selectedValues.filter((v) => v !== value)
+        : node.instance().props.selectedValues.concat([value]),
     })
   );
-  setFilter.mockImplementation(filter =>
+  setFilter.mockImplementation((filter) =>
     node.setProps({
-      availableValues: allValues.filter(value => value.slice(0, filter.length) === filter)
+      availableValues: allValues.filter((value) => value.slice(0, filter.length) === filter),
     })
   );
 
@@ -77,11 +77,11 @@ it('it should not show the unselected value if it does not match the query', asy
 });
 
 it('should add a value to the list of values when the checkbox is clicked', async () => {
-  const toggleValue = value =>
+  const toggleValue = (value) =>
     node.setProps({
       selectedValues: node.instance().props.selectedValues.includes(value)
-        ? node.instance().props.selectedValues.filter(v => v !== value)
-        : node.instance().props.selectedValues.concat([value])
+        ? node.instance().props.selectedValues.filter((v) => v !== value)
+        : node.instance().props.selectedValues.concat([value]),
     });
 
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
@@ -109,9 +109,9 @@ it('should request the values filtered by filter entered in the input', () => {
       toggleValue={() => {}}
     />
   );
-  setFilter.mockImplementation(value =>
+  setFilter.mockImplementation((value) =>
     node.setProps({
-      availableValues: allValues.filter(v => v.slice(0, value.length) === value)
+      availableValues: allValues.filter((v) => v.slice(0, value.length) === value),
     })
   );
 
@@ -138,16 +138,13 @@ it('make the list items draggable when adding a drag handler', () => {
   );
   setFilter.mockImplementation(({target: {value}}) =>
     node.setProps({
-      availableValues: allValues.filter(v => v.slice(0, value.length) === value)
+      availableValues: allValues.filter((v) => v.slice(0, value.length) === value),
     })
   );
 
-  expect(
-    node
-      .find('.TypeaheadMultipleSelection__valueListItem')
-      .first()
-      .props().draggable
-  ).toBe(true);
+  expect(node.find('.TypeaheadMultipleSelection__valueListItem').first().props().draggable).toBe(
+    true
+  );
 
   expect(node.find('.TypeaheadMultipleSelection__valueListItem').first()).toHaveClassName(
     'draggable'
@@ -169,7 +166,7 @@ it('make invok onOrderChange with the new selectedvalues data on drag end', () =
   );
   setFilter.mockImplementation(({target: {value}}) =>
     node.setProps({
-      availableValues: allValues.filter(v => v.slice(0, value.length) === value)
+      availableValues: allValues.filter((v) => v.slice(0, value.length) === value),
     })
   );
 
@@ -178,19 +175,19 @@ it('make invok onOrderChange with the new selectedvalues data on drag end', () =
       getBoundingClientRect: () => ({height: '30px'}),
       parentNode: {
         removeChild: () => {},
-        contains: () => false
+        contains: () => false,
       },
       dataset: {
-        id: 1
+        id: 1,
       },
       style: {
-        display: ''
-      }
+        display: '',
+      },
     },
     dataTransfer: {
       effectAllowed: '',
-      setData: () => {}
-    }
+      setData: () => {},
+    },
   };
 
   const dragOverEvt = {
@@ -200,13 +197,13 @@ it('make invok onOrderChange with the new selectedvalues data on drag end', () =
       nodeName: 'LI',
       closest: () => ({
         parentNode: {
-          insertBefore: () => {}
+          insertBefore: () => {},
         },
         dataset: {
-          id: 0
-        }
-      })
-    }
+          id: 0,
+        },
+      }),
+    },
   };
 
   node.instance().dragStart(dragStartEvt);
@@ -230,7 +227,7 @@ it('can be disabled', async () => {
     />
   );
 
-  node.find(LabeledInput).forEach(input => {
+  node.find(LabeledInput).forEach((input) => {
     expect(input.props().disabled).toBeTruthy();
   });
   expect(node.find(Input).props().disabled).toBeTruthy();

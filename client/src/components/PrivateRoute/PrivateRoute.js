@@ -20,7 +20,7 @@ import './PrivateRoute.scss';
 export class PrivateRoute extends React.Component {
   state = {
     showLogin: false,
-    forceGotoHome: false
+    forceGotoHome: false,
   };
   container = React.createRef();
   componentContainer = document.createElement('div');
@@ -62,10 +62,10 @@ export class PrivateRoute extends React.Component {
     }
   };
 
-  handleResponse = response => {
+  handleResponse = (response) => {
     if (response.status === 401) {
       this.setState({
-        showLogin: true
+        showLogin: true,
       });
     }
 
@@ -92,7 +92,7 @@ export class PrivateRoute extends React.Component {
     return (
       <Route
         {...rest}
-        render={props => {
+        render={(props) => {
           const {showLogin, forceGotoHome} = this.state;
 
           if (forceGotoHome) {

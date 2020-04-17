@@ -12,13 +12,13 @@ import './CopyToClipboard.scss';
 import {t} from 'translation';
 
 export default class CopyToClipboard extends React.Component {
-  copyText = event => {
+  copyText = (event) => {
     event.preventDefault();
     this.inputElement.select();
     document.execCommand('Copy');
   };
 
-  storeInputElement = inputElement => {
+  storeInputElement = (inputElement) => {
     this.inputElement = inputElement;
   };
 

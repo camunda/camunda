@@ -11,12 +11,9 @@ import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as Analysis from './Analysis.elements.js';
 
-fixture('Process Analysis')
-  .page(config.endpoint)
-  .beforeEach(u.login)
-  .afterEach(cleanEntities);
+fixture('Process Analysis').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
-test('show the statistics diagram', async t => {
+test('show the statistics diagram', async (t) => {
   await t.click(Analysis.navItem);
   await t.click(Analysis.branchAnalysisLink);
 
@@ -34,7 +31,7 @@ test('show the statistics diagram', async t => {
     .maximizeWindow();
 });
 
-test('show end event statistics on hover', async t => {
+test('show end event statistics on hover', async (t) => {
   await t.click(Analysis.navItem);
   await t.click(Analysis.branchAnalysisLink);
 
@@ -62,7 +59,7 @@ test('show end event statistics on hover', async t => {
   await clearAllAnnotations();
 });
 
-test('should deselect elements by clicking on the node or on the control panel', async t => {
+test('should deselect elements by clicking on the node or on the control panel', async (t) => {
   await t.click(Analysis.navItem);
   await t.click(Analysis.branchAnalysisLink);
 
@@ -83,7 +80,7 @@ test('should deselect elements by clicking on the node or on the control panel',
   await t.expect(Analysis.gatewayInput.textContent).eql('Select Gateway');
 });
 
-test('should show outliers heatmap when selecting a process definition', async t => {
+test('should show outliers heatmap when selecting a process definition', async (t) => {
   await t.click(Analysis.navItem);
 
   await t.resizeWindow(1050, 700);
@@ -93,14 +90,14 @@ test('should show outliers heatmap when selecting a process definition', async t
 
   await t
     .takeScreenshot('process/analysis/outlier-analysis/outlierExample_1_heatMap.png', {
-      fullPage: true
+      fullPage: true,
     })
     .maximizeWindow();
 
   await t.expect(Analysis.heatmapEl.visible).ok();
 });
 
-test('should show outlier details modal when clicking view details on a flow node', async t => {
+test('should show outlier details modal when clicking view details on a flow node', async (t) => {
   await t.click(Analysis.navItem);
 
   await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
@@ -120,7 +117,7 @@ test('should show outlier details modal when clicking view details on a flow nod
   await t.expect(Analysis.chart.visible).ok();
 });
 
-test('should show common outliers variables as a table', async t => {
+test('should show common outliers variables as a table', async (t) => {
   await t.click(Analysis.navItem);
 
   await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);

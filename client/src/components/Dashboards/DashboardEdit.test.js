@@ -47,20 +47,20 @@ it('should react to layout changes', () => {
         {
           id: '1',
           position: {x: 0, y: 0},
-          dimensions: {height: 2, width: 2}
+          dimensions: {height: 2, width: 2},
         },
         {
           id: '2',
           position: {x: 3, y: 0},
-          dimensions: {height: 4, width: 3}
-        }
+          dimensions: {height: 4, width: 3},
+        },
       ]}
     />
   );
 
   node.find('DashboardRenderer').prop('onChange')([
     {x: 0, y: 0, h: 4, w: 2},
-    {x: 3, y: 2, h: 4, w: 3}
+    {x: 3, y: 2, h: 4, w: 3},
   ]);
 
   expect(node.state('reports')).toMatchSnapshot();

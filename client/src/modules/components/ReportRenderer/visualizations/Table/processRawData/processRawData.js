@@ -18,11 +18,11 @@ export default function processRawData(
       data: {
         configuration: {
           excludedColumns = [],
-          columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}
-        }
+          columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []},
+        },
       },
-      result: {data: result}
-    }
+      result: {data: result},
+    },
   },
   endpoints = {}
 ) {
@@ -34,14 +34,14 @@ export default function processRawData(
   }
 
   const instanceProps = Object.keys(result[0]).filter(
-    entry => entry !== 'variables' && !excludedColumns.includes(entry)
+    (entry) => entry !== 'variables' && !excludedColumns.includes(entry)
   );
   const variableNames = Object.keys(result[0].variables).filter(
-    entry => !excludedColumns.includes('variable:' + entry)
+    (entry) => !excludedColumns.includes('variable:' + entry)
   );
 
-  const body = result.map(instance => {
-    const row = instanceProps.map(entry => {
+  const body = result.map((instance) => {
+    const row = instanceProps.map((entry) => {
       if (entry === 'processInstanceId') {
         return cockpitLink(endpoints, instance, 'process');
       }
@@ -53,7 +53,7 @@ export default function processRawData(
       }
       return instance[entry];
     });
-    const variableValues = variableNames.map(entry => {
+    const variableValues = variableNames.map((entry) => {
       const value = instance.variables[entry];
       if (value === null) {
         return '';

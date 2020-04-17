@@ -27,7 +27,7 @@ export default function Icon(props) {
           minWidth: props.size,
           minHeight: props.size,
           maxWidth: props.size,
-          maxHeight: props.size
+          maxHeight: props.size,
         }
       : {};
 

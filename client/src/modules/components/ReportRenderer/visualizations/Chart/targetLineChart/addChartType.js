@@ -13,7 +13,7 @@ import {calculateLinePosition} from '../service';
 ChartRenderer.defaults.targetLine = ChartRenderer.defaults.line;
 
 ChartRenderer.controllers.targetLine = ChartRenderer.controllers.line.extend({
-  draw: function() {
+  draw: function () {
     const helpers = ChartRenderer.helpers;
     const dataset = this.getDataset();
     const prop = dataset.renderArea;
@@ -45,5 +45,5 @@ ChartRenderer.controllers.targetLine = ChartRenderer.controllers.line.extend({
     }
 
     this.chart.chartArea[prop] = prevValue;
-  }
+  },
 });

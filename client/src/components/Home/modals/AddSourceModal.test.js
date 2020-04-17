@@ -14,7 +14,7 @@ const AddSourceModal = AddSourceModalWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
   getDefinitionsWithTenants: jest.fn().mockReturnValue([]),
-  getTenantsWithDefinitions: jest.fn().mockReturnValue([])
+  getTenantsWithDefinitions: jest.fn().mockReturnValue([]),
 }));
 
 const props = {
@@ -22,7 +22,7 @@ const props = {
   open: true,
   onClose: jest.fn(),
   onConfirm: jest.fn(),
-  tenantsAvailable: true
+  tenantsAvailable: true,
 };
 
 it('should match snapshot', () => {
@@ -47,10 +47,7 @@ it('should load definitions and tenants on mount', () => {
 it('should show TenantsSource when clicking Tenant button', () => {
   const node = shallow(<AddSourceModal {...props} />);
 
-  node
-    .find(Button)
-    .at(1)
-    .simulate('click');
+  node.find(Button).at(1).simulate('click');
   expect(node.find('TenantSource')).toExist();
 });
 
@@ -67,10 +64,7 @@ it('should invoke the onConfirm prop', () => {
 
   const sources = [{defintionKey: 'testKey'}];
 
-  node
-    .find('DefinitionSource')
-    .props()
-    .onChange(sources);
+  node.find('DefinitionSource').props().onChange(sources);
 
   node.find('.confirm').simulate('click');
 

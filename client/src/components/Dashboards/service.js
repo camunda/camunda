@@ -8,7 +8,7 @@ import {get, del, post} from 'request';
 
 export async function shareDashboard(dashboardId) {
   const body = {
-    dashboardId
+    dashboardId,
   };
   const response = await post(`api/share/dashboard`, body);
 

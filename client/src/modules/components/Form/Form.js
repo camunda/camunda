@@ -14,7 +14,7 @@ export default function Form({compact, title, description, horizontal, onSubmit,
   return (
     <form
       {...props}
-      onSubmit={evt => {
+      onSubmit={(evt) => {
         evt.preventDefault();
         onSubmit && onSubmit(evt);
       }}

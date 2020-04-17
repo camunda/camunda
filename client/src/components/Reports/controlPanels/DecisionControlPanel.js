@@ -18,7 +18,7 @@ import {
   loadInputVariables,
   loadOutputVariables,
   reportConfig,
-  loadDecisionDefinitionXml
+  loadDecisionDefinitionXml,
 } from 'services';
 
 import {t} from 'translation';
@@ -29,8 +29,8 @@ export default class DecisionControlPanel extends React.Component {
   state = {
     variables: {
       inputVariable: [],
-      outputVariable: []
-    }
+      outputVariable: [],
+    },
   };
 
   componentDidMount() {
@@ -57,8 +57,8 @@ export default class DecisionControlPanel extends React.Component {
       this.setState({
         variables: {
           inputVariable: await loadInputVariables(payload),
-          outputVariable: await loadOutputVariables(payload)
-        }
+          outputVariable: await loadOutputVariables(payload),
+        },
       });
     }
   };
@@ -77,19 +77,19 @@ export default class DecisionControlPanel extends React.Component {
             inputVariables: [],
             instanceProps: [],
             outputVariables: [],
-            variables: []
-          }
+            variables: [],
+          },
         },
         xml: {
           $set:
             key && versions && versions[0]
               ? await loadDecisionDefinitionXml(key, versions[0], tenantIds[0])
-              : null
-        }
+              : null,
+        },
       },
       filter: {
-        $set: filter.filter(({type}) => type !== 'inputVariable' && type !== 'outputVariable')
-      }
+        $set: filter.filter(({type}) => type !== 'inputVariable' && type !== 'outputVariable'),
+      },
     };
 
     if (groupBy && (groupBy.type === 'inputVariable' || groupBy.type === 'outputVariable')) {
@@ -112,7 +112,7 @@ export default class DecisionControlPanel extends React.Component {
       tenantIds,
       filter,
       visualization,
-      configuration: {xml}
+      configuration: {xml},
     } = data;
 
     return (
@@ -132,7 +132,7 @@ export default class DecisionControlPanel extends React.Component {
           {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
             const previous = fields
               .filter((prev, prevIdx) => prevIdx < idx)
-              .map(prev => data[prev]);
+              .map((prev) => data[prev]);
 
             return (
               <li className="select" key={field}>
@@ -144,8 +144,8 @@ export default class DecisionControlPanel extends React.Component {
                   value={data[field]}
                   variables={this.state.variables}
                   previous={previous}
-                  disabled={!decisionDefinitionKey || previous.some(entry => !entry)}
-                  onChange={newValue => this.updateReport(field, newValue)}
+                  disabled={!decisionDefinitionKey || previous.some((entry) => !entry)}
+                  onChange={(newValue) => this.updateReport(field, newValue)}
                 />
               </li>
             );
@@ -165,7 +165,7 @@ export default class DecisionControlPanel extends React.Component {
               {t(
                 `report.instanceCount.decision.label${result.instanceCount !== 1 ? '-plural' : ''}`,
                 {
-                  count: result.instanceCount
+                  count: result.instanceCount,
                 }
               )}
             </li>

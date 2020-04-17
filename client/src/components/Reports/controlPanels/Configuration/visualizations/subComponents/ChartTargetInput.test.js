@@ -18,7 +18,7 @@ const validProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        property: 'duration'
+        property: 'duration',
       },
       visualization: 'bar',
       configuration: {
@@ -27,13 +27,13 @@ const validProps = {
           durationChart: {
             value: '2',
             unit: 'hours',
-            isBelow: false
-          }
-        }
-      }
-    }
+            isBelow: false,
+          },
+        },
+      },
+    },
   },
-  onChange: () => {}
+  onChange: () => {},
 };
 
 const sampleTargetValue = {
@@ -41,8 +41,8 @@ const sampleTargetValue = {
   durationChart: {
     isBelow: true,
     value: '15',
-    dateFormat: 'months'
-  }
+    dateFormat: 'months',
+  },
 };
 
 it('should render without crashing', () => {
@@ -52,17 +52,9 @@ it('should render without crashing', () => {
 it('should add isActive classname to the clicked button in the buttonGroup', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
 
-  node
-    .find(Button)
-    .first()
-    .simulate('click');
+  node.find(Button).first().simulate('click');
 
-  expect(
-    node
-      .find(Button)
-      .first()
-      .props().active
-  ).toBe(true);
+  expect(node.find(Button).first().props().active).toBe(true);
 });
 
 it('should display the current target values target', () => {
@@ -70,8 +62,8 @@ it('should display the current target values target', () => {
   node.setProps({
     report: {
       ...validProps.report,
-      data: {...validProps.report.data, configuration: {targetValue: sampleTargetValue}}
-    }
+      data: {...validProps.report.data, configuration: {targetValue: sampleTargetValue}},
+    },
   });
 
   expect(node.find(Input).first()).toHaveValue('15');
@@ -92,17 +84,17 @@ it('should hide select dateFormat dropdown when viewProperty is not equal durati
         processDefinitionVersion: 1,
         view: {
           entity: 'flowNode',
-          property: 'frequency'
+          property: 'frequency',
         },
         visualization: 'bar',
         configuration: {
           targetValue: {
             active: true,
-            countChart: {value: '50', isBelow: false}
-          }
-        }
-      }
-    }
+            countChart: {value: '50', isBelow: false},
+          },
+        },
+      },
+    },
   };
   const node = shallow(<ChartTargetInput {...newProps} />);
   expect(node.find('Select')).not.toExist();
@@ -112,10 +104,7 @@ it('should invoke the onChange prop on button click', async () => {
   const spy = jest.fn();
   const node = shallow(<ChartTargetInput {...validProps} onChange={spy} />);
 
-  node
-    .find(Button)
-    .first()
-    .simulate('click');
+  node.find(Button).first().simulate('click');
 
   expect(spy).toHaveBeenCalledWith({targetValue: {durationChart: {isBelow: {$set: false}}}});
 });
@@ -132,13 +121,13 @@ it('should display select date format if combined report is duration report', as
             data: {
               visualization: 'bar',
               view: {
-                property: 'duration'
-              }
-            }
-          }
-        }
-      }
-    }
+                property: 'duration',
+              },
+            },
+          },
+        },
+      },
+    },
   };
   const node = shallow(<ChartTargetInput {...combinedProps} />);
 
@@ -155,11 +144,11 @@ it('should include an error message when invalid target value is typed', () => {
         configuration: {
           targetValue: {
             active: true,
-            durationChart: {...sampleTargetValue.durationChart, value: 'e'}
-          }
-        }
-      }
-    }
+            durationChart: {...sampleTargetValue.durationChart, value: 'e'},
+          },
+        },
+      },
+    },
   });
 
   expect(node.find(Message)).toExist();

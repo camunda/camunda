@@ -8,9 +8,9 @@ import {Selector} from 'testcafe';
 
 export const navItem = Selector('header a').withText('Event Based Processes');
 export const createDropdown = Selector('.Events .Dropdown');
-export const dropdownOption = text => Selector('a').withText(text);
+export const dropdownOption = (text) => Selector('a').withText(text);
 export const fileInput = Selector('input').withAttribute('type', 'file');
-export const entity = title => Selector('.name .entity').withText(title);
+export const entity = (title) => Selector('.name .entity').withText(title);
 export const nameEditField = Selector('.EntityNameForm .name-input');
 export const firstEl = Selector('.djs-hit');
 export const activityTask = Selector('.bpmn-icon-task');
@@ -21,8 +21,8 @@ export const addSource = Selector('button.addProcess');
 export const modalContainer = Selector('.Modal__content-container');
 export const processTypeahead = Selector('.selectionPanel');
 export const variableTypeahead = Selector('.FormGroup');
-export const optionsButton = typeahead => typeahead.find('.Typeahead .optionsButton');
-export const typeaheadInput = typeahead => typeahead.find('.Typeahead input');
+export const optionsButton = (typeahead) => typeahead.find('.Typeahead .optionsButton');
+export const typeaheadInput = (typeahead) => typeahead.find('.Typeahead input');
 export const typeaheadOption = (typeahead, text) =>
   typeahead.find('.Typeahead .DropdownOption').withText(text);
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');

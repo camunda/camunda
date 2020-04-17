@@ -15,13 +15,13 @@ jest.mock('./visualizations', () => {
   const typeA = () => null;
   typeA.defaults = {
     propA: 'abc',
-    propB: 1
+    propB: 1,
   };
   typeA.onUpdate = jest.fn().mockReturnValue({prop: 'updateValue'});
 
   const typeB = () => null;
   typeB.defaults = {
-    propC: false
+    propC: false,
   };
 
   const typeC = () => null;
@@ -59,7 +59,7 @@ it('should be disabled if the report is combined with a duration view', () => {
       report={{
         combined: true,
         data: {reports: [{id: 'test'}]},
-        result: {test: {data: {view: {property: 'duration'}}}}
+        result: {test: {data: {view: {property: 'duration'}}}},
       }}
     />
   );

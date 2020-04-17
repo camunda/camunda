@@ -15,8 +15,8 @@ const props = {
   onConfirm: jest.fn(),
   identity: {
     id: 'user',
-    name: 'User'
-  }
+    name: 'User',
+  },
 };
 
 it('should match snapshot', () => {

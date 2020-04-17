@@ -24,14 +24,14 @@ export default class DashboardEdit extends React.Component {
 
     this.state = {
       reports: props.initialReports,
-      name: props.name
+      name: props.name,
     };
   }
 
   contentContainer = React.createRef();
 
   mousePosition = {x: 0, y: 0};
-  mouseTracker = evt => {
+  mouseTracker = (evt) => {
     this.mousePosition.x = evt.clientX;
     this.mousePosition.y = evt.clientY;
   };
@@ -49,7 +49,7 @@ export default class DashboardEdit extends React.Component {
   }
 
   draggedItem = null;
-  setDraggedItem = evt => {
+  setDraggedItem = (evt) => {
     this.draggedItem = evt.target.closest('.grid-entry');
     if (this.draggedItem) {
       // We need to prevent the browser scroll that occurs when resizing
@@ -89,7 +89,7 @@ export default class DashboardEdit extends React.Component {
     });
   };
 
-  updateLayout = layout => {
+  updateLayout = (layout) => {
     this.setState(({reports}) => {
       const newReports = reports.map((oldReport, idx) => {
         const newPosition = layout[idx];
@@ -97,7 +97,7 @@ export default class DashboardEdit extends React.Component {
         return {
           ...oldReport,
           position: {x: newPosition.x, y: newPosition.y},
-          dimensions: {height: newPosition.h, width: newPosition.w}
+          dimensions: {height: newPosition.h, width: newPosition.w},
         };
       });
 
@@ -109,7 +109,7 @@ export default class DashboardEdit extends React.Component {
     this.setState({name: value});
   };
 
-  addReport = newReport => {
+  addReport = (newReport) => {
     this.setState({reports: update(this.state.reports, {$push: [newReport]})}, () => {
       const node = document.querySelector('.react-grid-layout').lastChild;
       const nodePos = node.getBoundingClientRect();
@@ -118,14 +118,14 @@ export default class DashboardEdit extends React.Component {
       node.dispatchEvent(
         createEvent('mousedown', {
           x: nodePos.x + nodePos.width / 2,
-          y: nodePos.y + nodePos.height / 2
+          y: nodePos.y + nodePos.height / 2,
         })
       );
 
       // prevent the next mousedown event (it confuses the grid library)
       node.addEventListener(
         'mousedown',
-        evt => {
+        (evt) => {
           evt.preventDefault();
           evt.stopPropagation();
         },
@@ -141,7 +141,7 @@ export default class DashboardEdit extends React.Component {
 
   deleteReport = ({report: reportToRemove}) => {
     this.setState({
-      reports: this.state.reports.filter(report => report !== reportToRemove)
+      reports: this.state.reports.filter((report) => report !== reportToRemove),
     });
   };
 
@@ -197,7 +197,7 @@ export default class DashboardEdit extends React.Component {
             loadReport={evaluateReport}
             addons={[
               <DragOverlay key="DragOverlay" />,
-              <DeleteButton key="DeleteButton" deleteReport={this.deleteReport} />
+              <DeleteButton key="DeleteButton" deleteReport={this.deleteReport} />,
             ]}
             onChange={this.updateLayout}
           />
@@ -213,6 +213,6 @@ function createEvent(type, position) {
     bubbles: true,
     cancelable: true,
     clientX: position.x,
-    clientY: position.y
+    clientY: position.y,
   });
 }

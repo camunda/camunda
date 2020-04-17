@@ -22,7 +22,7 @@ export default class DateInput extends React.Component {
         onDateChange={this.onDateChange}
         initialDates={{
           startDate: this.props.filter.startDate,
-          endDate: this.props.filter.endDate
+          endDate: this.props.filter.endDate,
         }}
         disabled={this.props.disabled}
       />
@@ -36,12 +36,12 @@ export default class DateInput extends React.Component {
 
   static parseFilter = ({
     data: {
-      data: {start, end}
-    }
+      data: {start, end},
+    },
   }) => {
     return {
       startDate: moment(start),
-      endDate: moment(end)
+      endDate: moment(end),
     };
   };
 
@@ -54,9 +54,9 @@ export default class DateInput extends React.Component {
         filterForUndefined,
         data: {
           start: filter.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-          end: filter.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')
-        }
-      }
+          end: filter.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
+        },
+      },
     });
   };
 }

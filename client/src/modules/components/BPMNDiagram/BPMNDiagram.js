@@ -24,10 +24,10 @@ export default themed(
   withErrorHandling(
     class BPMNDiagram extends React.Component {
       state = {
-        loaded: false
+        loaded: false,
       };
 
-      storeContainer = container => {
+      storeContainer = (container) => {
         this.container = container;
       };
 
@@ -37,7 +37,7 @@ export default themed(
             {this.state.loaded &&
               this.props.xml &&
               this.props.children &&
-              React.Children.map(this.props.children, child =>
+              React.Children.map(this.props.children, (child) =>
                 React.cloneElement(child, {viewer: this.viewer})
               )}
             {this.state.loaded && this.props.xml && (
@@ -48,7 +48,7 @@ export default themed(
         );
       }
 
-      zoom = val => {
+      zoom = (val) => {
         this.viewer.get('zoomScroll').stepZoom(val);
       };
 
@@ -76,7 +76,7 @@ export default themed(
             viewer: this.viewer,
             disableNavigation: this.props.disableNavigation,
             theme,
-            xml
+            xml,
           });
           this.viewer = null;
         }
@@ -84,7 +84,7 @@ export default themed(
 
       findOrCreateViewerFor = (xml, theme) => {
         const idx = availableViewers.findIndex(
-          conf =>
+          (conf) =>
             conf.xml === xml &&
             conf.theme === theme &&
             conf.disableNavigation === this.props.disableNavigation
@@ -108,14 +108,14 @@ export default themed(
 
         const viewer = new Constructor({
           canvas: {
-            deferUpdate: false
+            deferUpdate: false,
           },
           keyboard: {bindTo: document},
           bpmnRenderer: getDiagramColors(theme),
-          additionalModules
+          additionalModules,
         });
 
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           viewer.importXML(xml, () => {
             const defs = viewer._container.querySelector('defs');
             if (defs) {
@@ -130,11 +130,11 @@ export default themed(
         });
       };
 
-      importXML = xml => {
+      importXML = (xml) => {
         if (xml) {
           this.setState({loaded: false});
 
-          this.props.mightFail(this.findOrCreateViewerFor(xml, this.props.theme), viewer => {
+          this.props.mightFail(this.findOrCreateViewerFor(xml, this.props.theme), (viewer) => {
             this.viewer = viewer;
             this.viewer.attachTo(this.container);
 
@@ -177,12 +177,12 @@ function getDiagramColors(theme) {
   if (theme === 'dark') {
     return {
       defaultFillColor: '#313238',
-      defaultStrokeColor: '#dedede'
+      defaultStrokeColor: '#dedede',
     };
   } else {
     return {
       defaultFillColor: '#fdfdfe',
-      defaultStrokeColor: '#333'
+      defaultStrokeColor: '#333',
     };
   }
 }

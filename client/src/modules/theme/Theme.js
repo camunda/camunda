@@ -35,9 +35,9 @@ export class Provider extends React.Component {
 
 export const Consumer = ThemeContext.Consumer;
 
-export const themed = Component => {
+export const themed = (Component) => {
   function Themed(props) {
-    return <Consumer>{themeProps => <Component {...props} {...themeProps} />}</Consumer>;
+    return <Consumer>{(themeProps) => <Component {...props} {...themeProps} />}</Consumer>;
   }
 
   Themed.WrappedComponent = Component;

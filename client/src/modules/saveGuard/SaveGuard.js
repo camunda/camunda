@@ -18,7 +18,7 @@ export default class SaveGuard extends React.Component {
     dirty: false,
     confirm: null,
     label: '',
-    saveHandler: null
+    saveHandler: null,
   };
 
   componentDidMount() {
@@ -33,7 +33,7 @@ export default class SaveGuard extends React.Component {
     removeHandler(this.handleUnauthorized);
   }
 
-  handleUnauthorized = response => {
+  handleUnauthorized = (response) => {
     const {dirty, confirm} = this.state;
 
     if (response.status === 401 && dirty && confirm) {
@@ -56,7 +56,7 @@ export default class SaveGuard extends React.Component {
     });
   };
 
-  unloadHandler = evt => {
+  unloadHandler = (evt) => {
     if (this.state.dirty) {
       evt.preventDefault();
 

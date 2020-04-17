@@ -22,30 +22,30 @@ export default class OutlierAnalysis extends React.Component {
     config: {
       processDefinitionKey: '',
       processDefinitionVersions: [],
-      tenantIds: []
+      tenantIds: [],
     },
     xml: null,
     data: {},
     heatData: {},
     flowNodeNames: {},
-    selectedNode: null
+    selectedNode: null,
   };
 
-  loadFlowNodeNames = async config => {
+  loadFlowNodeNames = async (config) => {
     this.setState({
       flowNodeNames: await getFlowNodeNames(
         config.processDefinitionKey,
         config.processDefinitionVersions[0],
         config.tenantIds[0]
-      )
+      ),
     });
   };
 
-  updateConfig = async updates => {
+  updateConfig = async (updates) => {
     const newConfig = {...this.state.config, ...updates};
 
     const changes = {
-      config: newConfig
+      config: newConfig,
     };
 
     if (updates.processDefinitionKey && updates.processDefinitionVersions && updates.tenantIds) {
@@ -78,7 +78,7 @@ export default class OutlierAnalysis extends React.Component {
     }
   }
 
-  loadOutlierData = async config => {
+  loadOutlierData = async (config) => {
     this.loadFlowNodeNames(config);
     const data = await loadNodesOutliers(config);
     const heatData = Object.keys(data).reduce(
@@ -88,7 +88,7 @@ export default class OutlierAnalysis extends React.Component {
 
     this.setState({
       data,
-      heatData
+      heatData,
     });
   };
 
@@ -112,7 +112,7 @@ export default class OutlierAnalysis extends React.Component {
                 nodeData.higherOutlier.count === 1 ? '' : '-plural'
               }`
             ),
-            percentage: Math.round(nodeData.higherOutlier.relation * 100)
+            percentage: Math.round(nodeData.higherOutlier.relation * 100),
           })}
         </p>
         <Button onClick={() => this.loadChartData(id, nodeData)}>{t('common.viewDetails')}</Button>
@@ -124,7 +124,7 @@ export default class OutlierAnalysis extends React.Component {
     const data = await loadDurationData({
       ...this.state.config,
       flowNodeId: id,
-      higherOutlierBound: nodeData.higherOutlier.boundValue
+      higherOutlierBound: nodeData.higherOutlier.boundValue,
     });
 
     this.setState({
@@ -132,8 +132,8 @@ export default class OutlierAnalysis extends React.Component {
         name: this.state.flowNodeNames[id] || id,
         id,
         data,
-        ...nodeData
-      }
+        ...nodeData,
+      },
     });
   };
 

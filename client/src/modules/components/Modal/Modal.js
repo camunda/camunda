@@ -22,7 +22,7 @@ export default class Modal extends React.Component {
       onClose: () => {
         const handler = this.props.onClose;
         handler && handler();
-      }
+      },
     };
   }
 
@@ -77,7 +77,7 @@ export default class Modal extends React.Component {
     }
   };
 
-  onBackdropClick = evt => {
+  onBackdropClick = (evt) => {
     evt.stopPropagation();
     if (this.insideClick) {
       this.insideClick = false;
@@ -88,16 +88,16 @@ export default class Modal extends React.Component {
     handler && handler();
   };
 
-  onMouseDown = evt => {
+  onMouseDown = (evt) => {
     this.insideClick = true;
   };
 
-  onMouseClick = evt => {
+  onMouseClick = (evt) => {
     evt.stopPropagation();
     this.insideClick = false;
   };
 
-  handleKeyPress = evt => {
+  handleKeyPress = (evt) => {
     if (evt.key === 'Escape') {
       const handler = this.props.onClose;
       handler && handler();
@@ -128,7 +128,7 @@ export default class Modal extends React.Component {
               <div tabIndex="0" onFocus={() => this.focusTrap.current.focus()} />
               <div
                 className={classnames('Modal__content-container', this.props.className, {
-                  ['Modal__content-container--' + this.props.size]: this.props.size
+                  ['Modal__content-container--' + this.props.size]: this.props.size,
                 })}
                 tabIndex="-1"
                 ref={this.container}
@@ -158,7 +158,7 @@ export default class Modal extends React.Component {
   }
 }
 
-Modal.Header = function({children}) {
+Modal.Header = function ({children}) {
   return (
     <ModalContext.Consumer>
       {({onClose}) => (
@@ -171,10 +171,10 @@ Modal.Header = function({children}) {
   );
 };
 
-Modal.Content = function({className, children}) {
+Modal.Content = function ({className, children}) {
   return <div className={classnames('Modal__content', className)}>{children}</div>;
 };
 
-Modal.Actions = function({children}) {
+Modal.Actions = function ({children}) {
   return <div className="Modal__actions">{children}</div>;
 };

@@ -12,7 +12,7 @@ import {getHeatmap} from './service';
 
 jest.mock('./service', () => {
   return {
-    getHeatmap: jest.fn()
+    getHeatmap: jest.fn(),
   };
 });
 
@@ -24,9 +24,9 @@ const removeSpy = jest.fn();
 const viewer = {
   get: () => {
     return {
-      _viewport: {appendChild: appendSpy, removeChild: removeSpy}
+      _viewport: {appendChild: appendSpy, removeChild: removeSpy},
     };
-  }
+  },
 };
 const data = 'some heatmap data';
 

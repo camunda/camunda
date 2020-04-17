@@ -12,10 +12,7 @@ import * as Homepage from './Homepage.elements.js';
 import * as Dashboard from './Dashboard.elements.js';
 import * as e from './Collection.elements.js';
 
-fixture('Collection')
-  .page(config.endpoint)
-  .beforeEach(login)
-  .afterEach(cleanEntities);
+fixture('Collection').page(config.endpoint).beforeEach(login).afterEach(cleanEntities);
 
 async function createCollection(t, name = 'Test Collection') {
   await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
@@ -23,7 +20,7 @@ async function createCollection(t, name = 'Test Collection') {
   await t.click(Homepage.confirmButton);
 }
 
-test('create a collection and entities inside it', async t => {
+test('create a collection and entities inside it', async (t) => {
   await createCollection(t, 'Test Collection');
 
   await t.expect(e.collectionTitle.visible).ok();
@@ -43,7 +40,7 @@ test('create a collection and entities inside it', async t => {
   await t.expect(e.dashboardItem.textContent).contains('New Dashboard');
 });
 
-test('renaming a collection', async t => {
+test('renaming a collection', async (t) => {
   await createCollection(t);
 
   await t.click(e.collectionContextMenu);
@@ -55,7 +52,7 @@ test('renaming a collection', async t => {
   await t.expect(e.collectionTitle.textContent).contains('another Collection Name');
 });
 
-test('copy a collection', async t => {
+test('copy a collection', async (t) => {
   await createCollection(t);
 
   await t.click(e.collectionContextMenu);
@@ -68,7 +65,7 @@ test('copy a collection', async t => {
   await t.expect(e.collectionTitle.textContent).contains('copied collection');
 });
 
-test('user permissions', async t => {
+test('user permissions', async (t) => {
   await createCollection(t);
 
   await t.click(e.createNewMenu);
@@ -154,7 +151,7 @@ test('user permissions', async t => {
   await t.expect(Homepage.collectionItem.exists).notOk();
 });
 
-test('add, edit and delete sources', async t => {
+test('add, edit and delete sources', async (t) => {
   await createCollection(t);
   await t.click(e.sourcesTab);
 

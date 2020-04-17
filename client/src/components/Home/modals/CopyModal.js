@@ -20,7 +20,7 @@ export default class CopyModal extends React.Component {
       name: props.entity.name + ` (${t('common.copyLabel')})`,
       moving: false,
       collection: null,
-      gotoNew: true
+      gotoNew: true,
     };
   }
 
@@ -61,9 +61,9 @@ export default class CopyModal extends React.Component {
                 entity={entity}
                 parentCollection={this.props.collection}
                 moving={moving}
-                setMoving={moving => this.setState({moving})}
+                setMoving={(moving) => this.setState({moving})}
                 collection={collection}
-                setCollection={collection => this.setState({collection})}
+                setCollection={(collection) => this.setState({collection})}
               />
             )}
             {jumpToEntity && (this.isCollection() || moving) && (

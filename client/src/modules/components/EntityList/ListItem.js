@@ -16,7 +16,7 @@ import './ListItem.scss';
 export default function ListItem({
   data: {type, name, link, icon, meta = [], actions, warning},
   hasWarning,
-  singleAction
+  singleAction,
 }) {
   const content = (
     <>

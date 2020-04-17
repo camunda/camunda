@@ -12,14 +12,14 @@ let instanceCount = {
   Chrome: 0,
   headless: 0,
   Firefox: 0,
-  'Microsoft Edge': 0
+  'Microsoft Edge': 0,
 };
 
 export async function login(t, userHandle = 'user1') {
   const user = getUser(t, userHandle);
 
   t.ctx.users = t.ctx.users || [];
-  if (!t.ctx.users.find(existingUser => existingUser.username === user.username)) {
+  if (!t.ctx.users.find((existingUser) => existingUser.username === user.username)) {
     t.ctx.users.push(user);
   }
 
@@ -70,10 +70,8 @@ export async function selectDefinition(t, name, version = 'Specific version') {
   await t.click('.Popover.DefinitionSelection');
 }
 
-const selectControlPanelOption = type => async (t, name, subname) => {
-  const dropdown = Selector('.label')
-    .withText(type)
-    .nextSibling();
+const selectControlPanelOption = (type) => async (t, name, subname) => {
+  const dropdown = Selector('.label').withText(type).nextSibling();
 
   await t.click(dropdown.find('button')).click(dropdown.find('.DropdownOption').withText(name));
 

@@ -16,24 +16,24 @@ const {convertToMilliseconds} = formatters;
 
 jest.mock('components', () => {
   return {
-    HeatmapOverlay: props => <div {...props}>{props.children}</div>,
-    BPMNDiagram: props => (
+    HeatmapOverlay: (props) => <div {...props}>{props.children}</div>,
+    BPMNDiagram: (props) => (
       <div id="diagram">
         Diagram {props.children} {props.xml}
       </div>
     ),
     TargetValueBadge: () => <div>TargetValuesBadge</div>,
-    LoadingIndicator: props => (
+    LoadingIndicator: (props) => (
       <div {...props} className="sk-circle">
         Loading...
       </div>
-    )
+    ),
   };
 });
 
 jest.mock('./service', () => {
   return {
-    calculateTargetValueHeat: jest.fn()
+    calculateTargetValueHeat: jest.fn(),
   };
 });
 
@@ -43,10 +43,10 @@ jest.mock('services', () => {
     formatters: {
       duration: durationFct,
       convertToMilliseconds: jest.fn(),
-      objectifyResult: jest.fn().mockReturnValue({a: 1, b: 2})
+      objectifyResult: jest.fn().mockReturnValue({a: 1, b: 2}),
     },
     isDurationReport: jest.fn().mockReturnValue(false),
-    getTooltipText: jest.fn()
+    getTooltipText: jest.fn(),
   };
 });
 
@@ -55,14 +55,20 @@ const report = {
   combined: false,
   data: {
     configuration: {
-      xml: 'some diagram XML'
+      xml: 'some diagram XML',
     },
     view: {
-      property: 'frequency'
+      property: 'frequency',
     },
-    visualization: 'heat'
+    visualization: 'heat',
   },
-  result: {data: [{key: 'a', value: 1}, {key: 'b', value: 2}], instanceCount: 5}
+  result: {
+    data: [
+      {key: 'a', value: 1},
+      {key: 'b', value: 2},
+    ],
+    instanceCount: 5,
+  },
 };
 
 it('should load the process definition xml', () => {
@@ -102,18 +108,13 @@ it('should display a diagram', () => {
 it('should display a heatmap overlay', () => {
   const node = shallow(<Heatmap report={report} />);
 
-  expect(
-    node
-      .find('BPMNDiagram')
-      .children()
-      .find('HeatmapOverlay')
-  ).toExist();
+  expect(node.find('BPMNDiagram').children().find('HeatmapOverlay')).toExist();
 });
 
 it('should convert the data to target value heat when target value mode is active', () => {
   const heatmapTargetValue = {
     active: true,
-    values: 'some values'
+    values: 'some values',
   };
 
   shallow(
@@ -132,8 +133,8 @@ it('should show a tooltip with information about actual and target value', () =>
   const heatmapTargetValue = {
     active: true,
     values: {
-      b: {value: 1, unit: 'millis'}
-    }
+      b: {value: 1, unit: 'millis'},
+    },
   };
 
   calculateTargetValueHeat.mockReturnValue({b: 1});
@@ -155,8 +156,8 @@ it('should inform if the actual value is less than 1% of the target value', () =
   const heatmapTargetValue = {
     active: true,
     values: {
-      b: {value: 10000, unit: 'millis'}
-    }
+      b: {value: 10000, unit: 'millis'},
+    },
   };
 
   calculateTargetValueHeat.mockReturnValue({b: 10000});
@@ -178,8 +179,8 @@ it('should show a tooltip with information if no actual value is available', () 
   const heatmapTargetValue = {
     active: true,
     values: {
-      b: {value: 1, unit: 'millis'}
-    }
+      b: {value: 1, unit: 'millis'},
+    },
   };
 
   calculateTargetValueHeat.mockReturnValue({b: undefined});
@@ -192,7 +193,7 @@ it('should show a tooltip with information if no actual value is available', () 
       report={{
         ...report,
         result: {data: []},
-        data: {...report.data, configuration: {xml: 'test', heatmapTargetValue}}
+        data: {...report.data, configuration: {xml: 'test', heatmapTargetValue}},
       }}
     />
   );

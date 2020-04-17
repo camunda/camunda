@@ -14,8 +14,8 @@ import {loadCommonOutliersVariables} from './service';
 const selectedNode = {
   id: 'test',
   higherOutlier: {
-    boundValue: 23
-  }
+    boundValue: 23,
+  },
 };
 
 jest.mock('./service', () => ({
@@ -26,10 +26,10 @@ jest.mock('./service', () => ({
       instanceCount: 50,
       outlierRatio: 0.1,
       nonOutlierRatio: 0.05,
-      outlierToAllInstancesRatio: 0.01
-    }
+      outlierToAllInstancesRatio: 0.01,
+    },
   ]),
-  getInstancesDownloadUrl: jest.fn()
+  getInstancesDownloadUrl: jest.fn(),
 }));
 
 it('should Load common outliers variables on mount', async () => {

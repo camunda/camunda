@@ -17,7 +17,7 @@ const format = 'YYYY-MM-DD';
 const props = {
   startDate: moment('2017-08-29').format(format),
   endDate: moment('2020-06-05').format(format),
-  format
+  format,
 };
 
 it('should match snapshot', () => {

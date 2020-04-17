@@ -47,9 +47,9 @@ it('should contain an edit filter modal when a filter should be edited', () => {
     data: {
       operator: 'bar',
       type: 'baz',
-      value: 'foo'
+      value: 'foo',
     },
-    type: 'evaluationDateTime'
+    type: 'evaluationDateTime',
   })();
 
   expect(node.find(DateFilter)).toExist();
@@ -71,9 +71,9 @@ it('should contain a EditFilterModal component based on the Filter selected for 
     data: {
       operator: 'bar',
       type: 'baz',
-      value: 'foo'
+      value: 'foo',
     },
-    type: 'evaluationDateTime'
+    type: 'evaluationDateTime',
   })();
   expect(node.find(DateFilter)).toExist();
   expect(node.find(VariableFilter)).not.toExist();
@@ -85,9 +85,9 @@ it('should add a filter to the list of filters', () => {
     data: {
       operator: 'bar',
       type: 'baz',
-      value: 'foo'
+      value: 'foo',
     },
-    type: 'qux'
+    type: 'qux',
   };
   const previousFilters = [sampleFilter];
 
@@ -104,16 +104,16 @@ it('should edit the edited filter', () => {
     data: {
       operator: 'bar',
       type: 'baz',
-      value: 'foo'
+      value: 'foo',
     },
-    type: 'qux'
+    type: 'qux',
   };
 
   const filters = [sampleFilter, 'foo'];
   const node = shallow(<DecisionFilter data={filters} onChange={spy} />);
 
   node.instance().setState({
-    editFilter: sampleFilter
+    editFilter: sampleFilter,
   });
 
   node.instance().editFilter('bar');
@@ -150,6 +150,6 @@ it('should remove any previous evaluationDateTime filters when adding a new date
   node.instance().addFilter({type: 'evaluationDateTime', value: 'new date'});
 
   expect(spy.mock.calls[0][0].filter).toEqual({
-    $set: [{type: 'evaluationDateTime', value: 'new date'}]
+    $set: [{type: 'evaluationDateTime', value: 'new date'}],
   });
 });

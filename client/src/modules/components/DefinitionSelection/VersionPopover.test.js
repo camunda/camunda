@@ -14,7 +14,7 @@ import VersionPopover from './VersionPopover';
 const versions = [
   {version: '3', versionTag: 'v3'},
   {version: '2', versionTag: null},
-  {version: '1', versionTag: 'v1'}
+  {version: '1', versionTag: 'v1'},
 ];
 
 it('should call the provided onChange function', () => {

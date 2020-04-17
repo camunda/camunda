@@ -11,7 +11,7 @@ import {t} from 'translation';
 export default function HeatmapConfig(props) {
   const {
     report: {data},
-    onChange
+    onChange,
   } = props;
   return (
     <fieldset>

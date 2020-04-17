@@ -19,7 +19,7 @@ jest.mock('react-router-dom', () => {
   const rest = jest.requireActual('react-router-dom');
   return {
     ...rest,
-    withRouter: a => a
+    withRouter: (a) => a,
   };
 });
 
@@ -39,9 +39,9 @@ jest.mock('services', () => {
             tenants: [
               {
                 id: null,
-                name: 'Not defined'
-              }
-            ]
+                name: 'Not defined',
+              },
+            ],
           },
           {
             version: '2',
@@ -49,13 +49,13 @@ jest.mock('services', () => {
             tenants: [
               {
                 id: 'a',
-                name: 'Tenant A'
+                name: 'Tenant A',
               },
               {
                 id: 'b',
-                name: 'Tenant B'
-              }
-            ]
+                name: 'Tenant B',
+              },
+            ],
           },
           {
             version: '1',
@@ -63,33 +63,33 @@ jest.mock('services', () => {
             tenants: [
               {
                 id: 'a',
-                name: 'Tenant A'
+                name: 'Tenant A',
               },
               {
                 id: 'c',
-                name: 'Tenant C'
-              }
-            ]
-          }
+                name: 'Tenant C',
+              },
+            ],
+          },
         ],
         allTenants: [
           {
             id: null,
-            name: 'Not defined'
+            name: 'Not defined',
           },
           {
             id: 'a',
-            name: 'Tenant A'
+            name: 'Tenant A',
           },
           {
             id: 'b',
-            name: 'Tenant B'
+            name: 'Tenant B',
           },
           {
             id: 'c',
-            name: 'Tenant C'
-          }
-        ]
+            name: 'Tenant C',
+          },
+        ],
       },
       {
         key: 'bar',
@@ -101,20 +101,20 @@ jest.mock('services', () => {
             tenants: [
               {
                 id: null,
-                name: 'Not defined'
-              }
-            ]
-          }
+                name: 'Not defined',
+              },
+            ],
+          },
         ],
         allTenants: [
           {
             id: null,
-            name: 'Not defined'
-          }
-        ]
-      }
+            name: 'Not defined',
+          },
+        ],
+      },
     ]),
-    getCollection: jest.fn()
+    getCollection: jest.fn(),
   };
 });
 
@@ -124,7 +124,7 @@ const props = {
   type: 'process',
   tenants: [],
   location: {pathname: '/report/1'},
-  onChange: spy
+  onChange: spy,
 };
 
 it('should render without crashing', () => {
@@ -199,7 +199,7 @@ it('should disable typeahead if no reports are avaialbe', async () => {
 it('should set key and version, if process definition is already available', async () => {
   const definitionConfig = {
     definitionKey: 'bar',
-    versions: ['1']
+    versions: ['1'],
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
@@ -210,7 +210,7 @@ it('should set key and version, if process definition is already available', asy
 it('should not call on change if key didnt change', async () => {
   const definitionConfig = {
     definitionKey: 'bar',
-    versions: ['1']
+    versions: ['1'],
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
@@ -223,7 +223,7 @@ it('should call onChange function on change of the definition', async () => {
   spy.mockClear();
   const definitionConfig = {
     definitionKey: 'foo',
-    versions: ['2']
+    versions: ['2'],
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
@@ -236,7 +236,7 @@ it('should render diagram if enabled and definition is selected', async () => {
   const definitionConfig = {
     definitionKey: 'foo',
     versions: ['2'],
-    xml: 'some xml'
+    xml: 'some xml',
   };
   const node = await shallow(
     <DefinitionSelection renderDiagram {...definitionConfig} {...props} />
@@ -284,13 +284,13 @@ it('should pass an id for every entry to the typeahead', async () => {
     {
       key: 'foo',
       name: 'Foo Definition',
-      versions: []
+      versions: [],
     },
     {
       key: 'bar',
       name: 'Bar Definition',
-      versions: []
-    }
+      versions: [],
+    },
   ]);
 
   const node = await shallow(<DefinitionSelection {...props} />);
@@ -307,7 +307,7 @@ it('should construct a popover title', async () => {
     definitionKey: 'bar',
     versions: ['1'],
     xml: 'whatever',
-    tenants: [null]
+    tenants: [null],
   });
 
   expect(node.find('Popover')).toHaveProp('title', 'Bar : 1');
@@ -320,7 +320,7 @@ it('should construct a popover title even without xml', async () => {
     definitionKey: 'foo',
     versions: ['1'],
     xml: null,
-    tenants: []
+    tenants: [],
   });
 
   expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : -');
@@ -340,7 +340,7 @@ it('should merge tenenats from all selected versions and duplicates are filtered
   expect(node.find(TenantPopover)).toHaveProp('tenants', [
     {id: 'a', name: 'Tenant A'},
     {id: 'b', name: 'Tenant B'},
-    {id: 'c', name: 'Tenant C'}
+    {id: 'c', name: 'Tenant C'},
   ]);
 });
 
@@ -353,7 +353,7 @@ it('should show all tenants if version is set to all', async () => {
     {id: null, name: 'Not defined'},
     {id: 'a', name: 'Tenant A'},
     {id: 'b', name: 'Tenant B'},
-    {id: 'c', name: 'Tenant C'}
+    {id: 'c', name: 'Tenant C'},
   ]);
 });
 
@@ -388,17 +388,17 @@ describe('tenants', () => {
             tenants: [
               {
                 id: null,
-                name: 'Not defined'
+                name: 'Not defined',
               },
               {
                 id: 'a',
-                name: 'Tenant A'
+                name: 'Tenant A',
               },
               {
                 id: 'b',
-                name: 'Tenant B'
-              }
-            ]
+                name: 'Tenant B',
+              },
+            ],
           },
           {
             version: '2',
@@ -406,13 +406,13 @@ describe('tenants', () => {
             tenants: [
               {
                 id: 'a',
-                name: 'Tenant A'
+                name: 'Tenant A',
               },
               {
                 id: 'b',
-                name: 'Tenant B'
-              }
-            ]
+                name: 'Tenant B',
+              },
+            ],
           },
           {
             version: '1',
@@ -420,35 +420,35 @@ describe('tenants', () => {
             tenants: [
               {
                 id: 'c',
-                name: 'Tenant C'
-              }
-            ]
-          }
+                name: 'Tenant C',
+              },
+            ],
+          },
         ],
         allTenants: [
           {
             id: null,
-            name: 'Not defined'
+            name: 'Not defined',
           },
           {
             id: 'a',
-            name: 'Tenant A'
+            name: 'Tenant A',
           },
           {
             id: 'b',
-            name: 'Tenant B'
+            name: 'Tenant B',
           },
           {
             id: 'c',
-            name: 'Tenant C'
-          }
-        ]
+            name: 'Tenant C',
+          },
+        ],
       },
       {
         key: 'bar',
         name: 'Bar Definition',
-        versions: []
-      }
+        versions: [],
+      },
     ]);
   });
 
@@ -461,24 +461,24 @@ describe('tenants', () => {
       definitionKey: 'foo',
       versions: ['3'],
       xml: 'whatever',
-      tenants: []
+      tenants: [],
     });
 
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : -');
 
     await node.setProps({
-      tenants: ['a']
+      tenants: ['a'],
     });
 
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Tenant A');
 
     await node.setProps({
-      tenants: ['a', 'b']
+      tenants: ['a', 'b'],
     });
 
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Multiple');
     await node.setProps({
-      tenants: [null, 'a', 'b']
+      tenants: [null, 'a', 'b'],
     });
 
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : All');
@@ -503,7 +503,7 @@ describe('tenants', () => {
       key: 'foo',
       name: 'Foo',
       tenantIds: [null, 'a', 'b'],
-      versions: ['3']
+      versions: ['3'],
     });
   });
 });

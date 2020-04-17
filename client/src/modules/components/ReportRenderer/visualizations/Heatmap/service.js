@@ -10,7 +10,7 @@ const {convertToMilliseconds} = formatters;
 export function calculateTargetValueHeat(durationData, targetValues) {
   const data = {};
 
-  Object.keys(targetValues).forEach(element => {
+  Object.keys(targetValues).forEach((element) => {
     const targetValueInMs = convertToMilliseconds(
       targetValues[element].value,
       targetValues[element].unit

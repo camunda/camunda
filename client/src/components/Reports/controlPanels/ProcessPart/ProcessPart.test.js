@@ -14,13 +14,13 @@ import {Button, BPMNDiagram} from 'components';
 it('should display a button if no process part is set', () => {
   const node = shallow(<ProcessPart />);
 
-  expect(node.find(Button).filterWhere(n => n.text() === 'Process Instance Part')).toExist();
+  expect(node.find(Button).filterWhere((n) => n.text() === 'Process Instance Part')).toExist();
 });
 
 it('should not display the button if process part is set', () => {
   const node = shallow(<ProcessPart processPart={{start: 'a', end: 'b'}} />);
 
-  expect(node.find(Button).filterWhere(n => n.text() === 'Process Instance Part')).not.toExist();
+  expect(node.find(Button).filterWhere((n) => n.text() === 'Process Instance Part')).not.toExist();
 });
 
 it('should show a preview of the process part', () => {
@@ -31,22 +31,16 @@ it('should show a preview of the process part', () => {
     />
   );
 
-  expect(
-    node
-      .find('ActionItem')
-      .at(0)
-      .dive()
-  ).toIncludeText('Only regard part between Start Node and End Node');
+  expect(node.find('ActionItem').at(0).dive()).toIncludeText(
+    'Only regard part between Start Node and End Node'
+  );
 });
 
 it('should remove the process part', () => {
   const spy = jest.fn();
   const node = shallow(<ProcessPart processPart={{start: 'a', end: 'b'}} update={spy} />);
 
-  node
-    .find('ActionItem')
-    .at(0)
-    .prop('onClick')({stopPropagation: jest.fn()});
+  node.find('ActionItem').at(0).prop('onClick')({stopPropagation: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith(null);
 });
@@ -73,7 +67,7 @@ it('should show the id of the selected node if it does not have a name', () => {
   node.setState({
     modalOpen: true,
     start: {id: 'startId', name: 'Start Name'},
-    end: {id: 'endId'}
+    end: {id: 'endId'},
   });
 
   const previewItem = node.find('ActionItem');
@@ -89,7 +83,7 @@ it('should deselect a node when it is clicked and already selected', () => {
 
   node.setState({
     modalOpen: true,
-    start: flowNode
+    start: flowNode,
   });
 
   node.instance().selectNode(flowNode);
@@ -106,7 +100,7 @@ it('should display a warning if there is no path between start and end node', ()
     modalOpen: true,
     start: flowNode,
     end: {id: 'anId'},
-    hasPath: false
+    hasPath: false,
   });
 
   expect(node.find('MessageBox').dive()).toIncludeText(

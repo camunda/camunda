@@ -19,12 +19,7 @@ it('should contain a modal', () => {
 it('should display a diagram', () => {
   const node = shallow(<NodeFilter xml="fooXml" />);
 
-  expect(
-    node
-      .find('.diagramContainer')
-      .childAt(0)
-      .props().xml
-  ).toBe('fooXml');
+  expect(node.find('.diagramContainer').childAt(0).props().xml).toBe('fooXml');
 });
 
 it('should add an unselected node to the selectedNodes on toggle', () => {
@@ -32,7 +27,7 @@ it('should add an unselected node to the selectedNodes on toggle', () => {
 
   const flowNode = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   node.instance().toggleNode(flowNode);
@@ -45,7 +40,7 @@ it('should remove a selected node from the selectedNodes on toggle', () => {
 
   const flowNode = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   node.instance().toggleNode(flowNode);
@@ -60,16 +55,16 @@ it('should create an executed node filter when operator is specified', () => {
 
   const flowNode1 = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   const flowNode2 = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   node.setState({
-    selectedNodes: [flowNode1, flowNode2]
+    selectedNodes: [flowNode1, flowNode2],
   });
 
   node.find('[primary]').simulate('click');
@@ -78,8 +73,8 @@ it('should create an executed node filter when operator is specified', () => {
     type: 'executedFlowNodes',
     data: {
       operator: 'in',
-      values: [flowNode1.id, flowNode2.id]
-    }
+      values: [flowNode1.id, flowNode2.id],
+    },
   });
 });
 
@@ -89,16 +84,13 @@ it('should create executing node filter when operator is undefined', () => {
 
   const flowNode1 = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
-  node
-    .find(Button)
-    .at(0)
-    .simulate('click');
+  node.find(Button).at(0).simulate('click');
 
   node.setState({
-    selectedNodes: [flowNode1]
+    selectedNodes: [flowNode1],
   });
 
   node.find('[primary]').simulate('click');
@@ -107,15 +99,15 @@ it('should create executing node filter when operator is undefined', () => {
     type: 'executingFlowNodes',
     data: {
       operator: undefined,
-      values: [flowNode1.id]
-    }
+      values: [flowNode1.id],
+    },
   });
 });
 
 it('should disable create filter button if no node was selected', () => {
   const node = shallow(<NodeFilter />);
   node.setState({
-    selectedNodes: []
+    selectedNodes: [],
   });
 
   expect(node.find('[primary]').prop('disabled')).toBeTruthy(); // create filter
@@ -126,14 +118,14 @@ it('should create preview list of selected node', () => {
 
   const flowNode = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   node.instance().toggleNode(flowNode);
 
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'bar', name: 'foo'}],
-    operator: 'in'
+    operator: 'in',
   });
 });
 
@@ -146,15 +138,9 @@ it('should contain buttons to switch between executed and not executed mode', ()
 it('should set the operator when clicking the operator buttons', () => {
   const node = shallow(<NodeFilter />);
 
-  node
-    .find(Button)
-    .at(1)
-    .simulate('click');
+  node.find(Button).at(1).simulate('click');
   expect(node.state().operator).toBe('in');
 
-  node
-    .find(Button)
-    .at(2)
-    .simulate('click');
+  node.find(Button).at(2).simulate('click');
   expect(node.state().operator).toBe('not in');
 });

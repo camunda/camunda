@@ -14,14 +14,14 @@ import classnames from 'classnames';
 const defaultState = {
   query: '',
   open: false,
-  selected: ''
+  selected: '',
 };
 export default class Typeahead extends React.Component {
   static defaultProps = {
     onSearch: () => {},
     onChange: () => {},
     onOpen: () => {},
-    onClose: () => {}
+    onClose: () => {},
   };
 
   state = defaultState;
@@ -30,7 +30,7 @@ export default class Typeahead extends React.Component {
 
   input = React.createRef();
 
-  onTextChange = evt => {
+  onTextChange = (evt) => {
     this.setState({query: evt.target.value, open: true});
     this.props.onSearch(evt.target.value);
   };
@@ -50,13 +50,13 @@ export default class Typeahead extends React.Component {
     }
   }
 
-  findAndSelect = value => {
+  findAndSelect = (value) => {
     if (typeof value === 'undefined') {
       return;
     }
     const {children} = this.props;
     const foundOption = React.Children.toArray(children).find(
-      option => option.props.value === value
+      (option) => option.props.value === value
     );
 
     if (foundOption) {
@@ -64,7 +64,7 @@ export default class Typeahead extends React.Component {
       const selected = label || children;
       this.setState({
         selected,
-        query: selected
+        query: selected,
       });
     } else if (value === null) {
       this.setState(defaultState);
@@ -77,13 +77,13 @@ export default class Typeahead extends React.Component {
     this.setState({
       selected,
       query: selected,
-      open: false
+      open: false,
     });
     this.props.onChange(value);
     this.optionClicked = false;
   };
 
-  getPlaceholderText = isEmpty => {
+  getPlaceholderText = (isEmpty) => {
     const {placeholder, disabled, noValuesMessage} = this.props;
     const {selected} = this.state;
     if (selected) {
@@ -118,7 +118,7 @@ export default class Typeahead extends React.Component {
           className="typeaheadInput"
           value={query}
           onFocus={this.open}
-          onBlur={evt => {
+          onBlur={(evt) => {
             if (!this.optionClicked) {
               this.close();
             }
@@ -163,10 +163,10 @@ Typeahead.Highlight = function Highlight(props) {
 };
 
 Typeahead.Highlight.propTypes = {
-  children: props => {
+  children: (props) => {
     const option = React.Children.toArray(props.children);
     if (option.length !== 1 || typeof option[0] !== 'string') {
       return new Error('The Typeahed.Highlight should have only one string child element');
     }
-  }
+  },
 };

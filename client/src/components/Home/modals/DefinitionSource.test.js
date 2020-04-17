@@ -18,8 +18,8 @@ const props = {
       type: 'process',
       tenants: [
         {id: 'csm', name: 'csm'},
-        {id: 'engineering', name: 'engineering'}
-      ]
+        {id: 'engineering', name: 'engineering'},
+      ],
     },
     {
       key: 'invoiceClassification',
@@ -28,11 +28,11 @@ const props = {
       tenants: [
         {
           id: null,
-          name: 'Not defined'
-        }
-      ]
-    }
-  ]
+          name: 'Not defined',
+        },
+      ],
+    },
+  ],
 };
 
 it('should match snapshot', () => {
@@ -44,10 +44,7 @@ it('should match snapshot', () => {
 it('should invoke onChange with the selected source', () => {
   const node = shallow(<DefinitionSource {...props} />);
 
-  node
-    .find('Typeahead')
-    .props()
-    .onChange(props.definitionsWithTenants[0].key);
+  node.find('Typeahead').props().onChange(props.definitionsWithTenants[0].key);
 
   node
     .find('ItemsList')
@@ -58,24 +55,21 @@ it('should invoke onChange with the selected source', () => {
     {
       definitionKey: 'hiring-demo',
       definitionType: 'process',
-      tenants: ['csm']
-    }
+      tenants: ['csm'],
+    },
   ]);
 });
 
 it('should preselect the only tenant and invoke onChange', () => {
   const node = shallow(<DefinitionSource {...props} />);
 
-  node
-    .find('Typeahead')
-    .props()
-    .onChange(props.definitionsWithTenants[1].key);
+  node.find('Typeahead').props().onChange(props.definitionsWithTenants[1].key);
 
   expect(props.onChange).toHaveBeenCalledWith([
     {
       definitionKey: 'invoiceClassification',
       definitionType: 'decision',
-      tenants: [null]
-    }
+      tenants: [null],
+    },
   ]);
 });

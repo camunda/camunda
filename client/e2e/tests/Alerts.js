@@ -13,12 +13,9 @@ import * as Alert from './Alerts.elements.js';
 import * as Homepage from './Homepage.elements.js';
 import * as Collection from './Collection.elements.js';
 
-fixture('Alerts')
-  .page(config.endpoint)
-  .beforeEach(u.login)
-  .afterEach(cleanEntities);
+fixture('Alerts').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
-test('create, edit and remove an alert', async t => {
+test('create, edit and remove an alert', async (t) => {
   await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
   await t.typeText(Homepage.modalNameInput, 'Test Collection', {replace: true});
   await t.click(Homepage.confirmButton);
@@ -50,7 +47,7 @@ test('create, edit and remove an alert', async t => {
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test Alert', {replace: true});
   await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com', {
-    replace: true
+    replace: true,
   });
 
   await t.click(Alert.reportTypeahead);

@@ -19,7 +19,7 @@ it('should match snapshot', () => {
         link: '/report/1',
         meta: ['Column 1', 'Column 2'],
         actions: [{action: jest.fn(), icon: 'delete', text: 'Delete Entry'}],
-        warning: 'Warning Text'
+        warning: 'Warning Text',
       }}
       hasWarning
     />

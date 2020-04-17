@@ -12,7 +12,7 @@ async function getSession(user) {
   const resp = await fetch(config.endpoint + '/api/authentication', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(user)
+    body: JSON.stringify(user),
   });
   return await resp.text();
 }
@@ -21,7 +21,7 @@ export async function cleanEntities({ctx}) {
   if (ctx.users) {
     for (let i = 0; i < ctx.users.length; i++) {
       const headers = {
-        Cookie: `X-Optimize-Authorization="Bearer ${await getSession(ctx.users[i])}"`
+        Cookie: `X-Optimize-Authorization="Bearer ${await getSession(ctx.users[i])}"`,
       };
 
       const response = await fetch(`${config.endpoint}/api/entities`, {headers});
@@ -31,7 +31,7 @@ export async function cleanEntities({ctx}) {
           `${config.endpoint}/api/${entities[i].entityType}/${entities[i].id}?force=true`,
           {
             method: 'DELETE',
-            headers
+            headers,
           }
         );
       }
@@ -41,7 +41,7 @@ export async function cleanEntities({ctx}) {
 
 export async function cleanEventProcesses() {
   const headers = {
-    Cookie: `X-Optimize-Authorization="Bearer ${await getSession(config.users.Chrome[0].user1)}"`
+    Cookie: `X-Optimize-Authorization="Bearer ${await getSession(config.users.Chrome[0].user1)}"`,
   };
 
   const response = await fetch(`${config.endpoint}/api/eventBasedProcess`, {headers});
@@ -50,7 +50,7 @@ export async function cleanEventProcesses() {
   for (let i = 0; i < processes.length; i++) {
     await fetch(`${config.endpoint}/api/eventBasedProcess/${processes[i].id}`, {
       method: 'DELETE',
-      headers
+      headers,
     });
   }
 }

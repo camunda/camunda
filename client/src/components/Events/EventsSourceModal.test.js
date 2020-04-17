@@ -25,13 +25,13 @@ const testSource = {
   tenants: ['a', 'b'],
   eventScope: 'start_end',
   tracedByBusinessKey: false,
-  traceVariable: 'var'
+  traceVariable: 'var',
 };
 
 const props = {
   initialSource: {},
   existingSources: [],
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should disable the submit button if no definition selected', () => {
@@ -53,13 +53,13 @@ it('load variables after selecting a process definition', () => {
     key: 'test',
     name: 'Test',
     versions: ['1'],
-    tenantIds: ['a', 'b']
+    tenantIds: ['a', 'b'],
   });
 
   expect(loadVariables).toHaveBeenCalledWith({
     processDefinitionKey: 'test',
     processDefinitionVersions: ['1'],
-    tenantIds: ['a', 'b']
+    tenantIds: ['a', 'b'],
   });
 });
 
@@ -80,14 +80,8 @@ it('should edit a source when clicking confirm', () => {
     />
   );
 
-  node
-    .find({type: 'radio'})
-    .at(1)
-    .simulate('change');
-  node
-    .find({type: 'radio'})
-    .at(3)
-    .simulate('change');
+  node.find({type: 'radio'}).at(1).simulate('change');
+  node.find({type: 'radio'}).at(3).simulate('change');
 
   node.find('[primary]').simulate('click');
 
@@ -99,8 +93,8 @@ it('should edit a source when clicking confirm', () => {
       tenants: ['a', 'b'],
       traceVariable: null,
       tracedByBusinessKey: true,
-      versions: ['1']
-    }
+      versions: ['1'],
+    },
   ]);
 });
 
@@ -112,7 +106,7 @@ it('should add a source when clicking confirm', () => {
     key: 'test',
     name: 'Test',
     versions: ['1'],
-    tenantIds: ['a', 'b']
+    tenantIds: ['a', 'b'],
   });
 
   node.find('Typeahead').prop('onChange')('boolVar');
@@ -127,8 +121,8 @@ it('should add a source when clicking confirm', () => {
       tenants: ['a', 'b'],
       tracedByBusinessKey: false,
       traceVariable: 'boolVar',
-      eventScope: 'start_end'
-    }
+      eventScope: 'start_end',
+    },
   ]);
 });
 
@@ -139,7 +133,7 @@ it('should show an error when adding already existing source', async () => {
     key: testSource.processDefinitionKey,
     name: testSource.processDefinitionName,
     versions: testSource.versions,
-    tenantIds: testSource.tenants
+    tenantIds: testSource.tenants,
   });
 
   expect(node.find({error: true})).toExist();
@@ -149,11 +143,7 @@ it('should add external sources', () => {
   const spy = jest.fn();
   const node = shallow(<EventsSourceModal {...props} onConfirm={spy} />);
 
-  node
-    .find('ButtonGroup')
-    .find(Button)
-    .at(1)
-    .simulate('click');
+  node.find('ButtonGroup').find(Button).at(1).simulate('click');
 
   node.find('[primary]').simulate('click');
 
@@ -163,10 +153,5 @@ it('should add external sources', () => {
 it('should disable external source if already added', () => {
   const node = shallow(<EventsSourceModal {...props} existingSources={[{type: 'external'}]} />);
 
-  expect(
-    node
-      .find('ButtonGroup')
-      .find(Button)
-      .at(1)
-  ).toBeDisabled();
+  expect(node.find('ButtonGroup').find(Button).at(1)).toBeDisabled();
 });

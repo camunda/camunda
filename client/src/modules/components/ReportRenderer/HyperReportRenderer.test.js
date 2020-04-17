@@ -20,13 +20,13 @@ it('should convert a hypermap to a combined report', () => {
           processDefinitionVersion: '1',
           view: {
             property: 'duration',
-            entity: 'userTask'
+            entity: 'userTask',
           },
           groupBy: {
-            type: 'assignee'
+            type: 'assignee',
           },
           visualization: 'bar',
-          configuration: {distributedBy: 'userTask'}
+          configuration: {distributedBy: 'userTask'},
         },
         result: {
           data: [
@@ -36,8 +36,8 @@ it('should convert a hypermap to a combined report', () => {
               value: [
                 {key: 'taskId1', label: 'Usertask 1', value: 8},
                 {key: 'taskId2', label: 'Usertask 2', value: 1},
-                {key: 'taskId3', label: 'Usertask 3', value: 65}
-              ]
+                {key: 'taskId3', label: 'Usertask 3', value: 65},
+              ],
             },
             {
               key: 'Bernd',
@@ -45,8 +45,8 @@ it('should convert a hypermap to a combined report', () => {
               value: [
                 {key: 'taskId1', label: 'Usertask 1', value: 3},
                 {key: 'taskId2', label: 'Usertask 2', value: 17},
-                {key: 'taskId3', label: 'Usertask 3', value: 22}
-              ]
+                {key: 'taskId3', label: 'Usertask 3', value: 22},
+              ],
             },
             {
               key: 'Chris',
@@ -54,14 +54,14 @@ it('should convert a hypermap to a combined report', () => {
               value: [
                 {key: 'taskId1', label: 'Usertask 1', value: 1},
                 {key: 'taskId2', label: 'Usertask 2', value: 0},
-                {key: 'taskId3', label: 'Usertask 3', value: 73}
-              ]
-            }
+                {key: 'taskId3', label: 'Usertask 3', value: 73},
+              ],
+            },
           ],
           isComplete: true,
           instanceCount: 1234,
-          type: 'hyperMap'
-        }
+          type: 'hyperMap',
+        },
       }}
     />
   );

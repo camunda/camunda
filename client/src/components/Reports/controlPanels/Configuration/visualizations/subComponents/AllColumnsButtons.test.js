@@ -13,10 +13,7 @@ import {Button} from 'components';
 it('should invoke enable All when enable all button is clicked', () => {
   const spy = jest.fn();
   const node = shallow(<AllColumnsButtons enableAll={spy} disableAll={() => {}} />);
-  node
-    .find(Button)
-    .at(0)
-    .simulate('click');
+  node.find(Button).at(0).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -25,10 +22,7 @@ it('should call disableAll when clicking disable all', () => {
   const spy = jest.fn();
   const node = shallow(<AllColumnsButtons enableAll={() => {}} disableAll={spy} />);
 
-  node
-    .find(Button)
-    .at(1)
-    .simulate('click');
+  node.find(Button).at(1).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });

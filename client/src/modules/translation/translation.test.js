@@ -11,7 +11,7 @@ let languageGetter;
 languageGetter = jest.spyOn(window.navigator, 'languages', 'get');
 
 jest.mock('config', () => ({
-  getOptimizeVersion: () => '2.7.0'
+  getOptimizeVersion: () => '2.7.0',
 }));
 
 beforeAll(async () => {
@@ -20,9 +20,9 @@ beforeAll(async () => {
     json: () => ({
       homepage: 'Home',
       entity: {
-        create: 'Create a new {label}'
-      }
-    })
+        create: 'Create a new {label}',
+      },
+    }),
   });
   await init();
 });

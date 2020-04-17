@@ -12,8 +12,8 @@ import {Table} from './visualizations';
 
 jest.mock('./service', () => {
   return {
-    isEmpty: str => !str,
-    getFormatter: view => v => v
+    isEmpty: (str) => !str,
+    getFormatter: (view) => (v) => v,
   };
 });
 
@@ -24,15 +24,15 @@ const report = {
     decisionDefinitionKey: 'aKey',
     decisionDefinitionVersion: '1',
     view: {
-      property: 'rawData'
+      property: 'rawData',
     },
     groupBy: {
-      type: 'none'
+      type: 'none',
     },
     visualization: 'table',
-    configuration: {}
+    configuration: {},
   },
-  result: {data: 1234}
+  result: {data: 1234},
 };
 
 it('should provide an errorMessage property to the component', () => {

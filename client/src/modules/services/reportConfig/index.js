@@ -10,7 +10,7 @@ import * as processOptions from './process';
 
 const config = {
   process: reportConfig(processOptions),
-  decision: reportConfig(decisionOptions)
+  decision: reportConfig(decisionOptions),
 };
 
 const processUpdate = config.process.update;

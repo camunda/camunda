@@ -18,14 +18,14 @@ export function UserProvider({children}) {
     const response = await get('api/identity/current/user');
     const user = await response.json();
 
-    resolveWithUser.forEach(resolve => resolve(user));
+    resolveWithUser.forEach((resolve) => resolve(user));
     resolveWithUser.length = 0;
 
     setUser(user);
     return user;
   };
 
-  const getUser = () => (user ? user : new Promise(resolve => resolveWithUser.push(resolve)));
+  const getUser = () => (user ? user : new Promise((resolve) => resolveWithUser.push(resolve)));
 
   useEffect(() => {
     refreshUser();
@@ -36,4 +36,4 @@ export function UserProvider({children}) {
   );
 }
 
-export default Component => props => <Component {...useContext(UserContext)} {...props} />;
+export default (Component) => (props) => <Component {...useContext(UserContext)} {...props} />;

@@ -22,26 +22,26 @@ export default class Notifications extends React.Component {
     notificationsInstance = this;
 
     this.state = {
-      notifications: []
+      notifications: [],
     };
   }
 
-  addNotification = config => {
-    this.setState(state => update(state, {notifications: {$push: [config]}}));
+  addNotification = (config) => {
+    this.setState((state) => update(state, {notifications: {$push: [config]}}));
   };
 
-  removeNotification = notificationToDelete => {
-    this.setState(state => ({
+  removeNotification = (notificationToDelete) => {
+    this.setState((state) => ({
       notifications: state.notifications.filter(
-        notification => notification !== notificationToDelete
-      )
+        (notification) => notification !== notificationToDelete
+      ),
     }));
   };
 
   render() {
     return (
       <div className="Notifications">
-        {this.state.notifications.map(config => (
+        {this.state.notifications.map((config) => (
           <Notification
             config={config}
             remove={() => this.removeNotification(config)}

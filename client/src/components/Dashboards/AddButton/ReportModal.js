@@ -15,7 +15,7 @@ import {
   Typeahead,
   LoadingIndicator,
   Labeled,
-  Form
+  Form,
 } from 'components';
 import {getCollection, loadReports} from 'services';
 import {t} from 'translation';
@@ -26,20 +26,20 @@ export default withRouter(
       availableReports: null,
       selectedReportId: '',
       external: false,
-      externalUrl: ''
+      externalUrl: '',
     };
 
     componentDidMount = async () => {
       const collection = getCollection(this.props.location.pathname);
 
       this.setState({
-        availableReports: await loadReports(collection)
+        availableReports: await loadReports(collection),
       });
     };
 
-    selectReport = id => {
+    selectReport = (id) => {
       this.setState({
-        selectedReportId: id
+        selectedReportId: id,
       });
     };
 
@@ -50,9 +50,9 @@ export default withRouter(
       );
     };
 
-    setExternal = external => this.setState({external});
+    setExternal = (external) => this.setState({external});
 
-    isValid = url => {
+    isValid = (url) => {
       // url has to start with https:// or http://
       return url.match(/^(https|http):\/\/.+/);
     };
@@ -119,7 +119,7 @@ export default withRouter(
                       value={externalUrl}
                       onChange={({target: {value}}) =>
                         this.setState({
-                          externalUrl: value
+                          externalUrl: value,
                         })
                       }
                     />

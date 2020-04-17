@@ -19,7 +19,7 @@ export default function DiagramBehavior({
   updateSelection,
   data,
   gateway,
-  endEvent
+  endEvent,
 }) {
   useEffect(() => {
     setViewer(viewer);
@@ -48,7 +48,7 @@ export default function DiagramBehavior({
     <>
       <ClickBehavior
         viewer={viewer}
-        onClick={node => {
+        onClick={(node) => {
           const type = node.$instanceOf('bpmn:Gateway') ? 'gateway' : 'endEvent';
           if (node === gateway || node === endEvent) {
             return updateSelection(type, null);
@@ -56,7 +56,7 @@ export default function DiagramBehavior({
           updateSelection(type, node);
         }}
         selectedNodes={selectedNodes}
-        onHover={hoveredNode => updateHover(hoveredNode)}
+        onHover={(hoveredNode) => updateHover(hoveredNode)}
         nodeTypes={['Gateway', 'EndEvent']}
       />
       <PartHighlight viewer={viewer} nodes={selectedNodes} />
@@ -96,7 +96,7 @@ function addEndEventOverlay(element, viewer, {result: {data, instanceCount: piCo
 
   // stop propagation of mouse event so that click+drag does not move canvas
   // when user tries to select text
-  overlayHtml.addEventListener('mousedown', evt => {
+  overlayHtml.addEventListener('mousedown', (evt) => {
     evt.stopPropagation();
   });
 
@@ -134,8 +134,8 @@ function addEndEventOverlay(element, viewer, {result: {data, instanceCount: piCo
     position,
     show: {
       minZoom: -Infinity,
-      maxZoom: +Infinity
+      maxZoom: +Infinity,
     },
-    html: overlayHtml
+    html: overlayHtml,
   });
 }

@@ -21,17 +21,17 @@ const props = {
           durationProgress: {
             baseline: {
               value: '0',
-              unit: 'hours'
+              unit: 'hours',
             },
             target: {
               value: '2',
-              unit: 'hours'
-            }
-          }
-        }
-      }
-    }
-  }
+              unit: 'hours',
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 it('should have a switch for the precision setting', () => {

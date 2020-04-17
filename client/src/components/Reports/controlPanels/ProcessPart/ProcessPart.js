@@ -12,7 +12,7 @@ import {
   ClickBehavior,
   PartHighlight,
   ActionItem,
-  MessageBox
+  MessageBox,
 } from 'components';
 
 import './ProcessPart.scss';
@@ -24,7 +24,7 @@ export default class ProcessPart extends React.Component {
     start: null,
     end: null,
     hasPath: true,
-    hoveredNode: null
+    hoveredNode: null,
   };
 
   render() {
@@ -43,7 +43,7 @@ export default class ProcessPart extends React.Component {
     }
   }
 
-  renderFlowNodeName = id => {
+  renderFlowNodeName = (id) => {
     return this.props.flowNodeNames ? this.props.flowNodeNames[id] || id : id;
   };
 
@@ -52,7 +52,7 @@ export default class ProcessPart extends React.Component {
       return (
         <div onClick={this.openModal} className="ProcessPart__current">
           <ActionItem
-            onClick={evt => {
+            onClick={(evt) => {
               evt.stopPropagation();
               this.props.update(null);
             }}
@@ -71,7 +71,7 @@ export default class ProcessPart extends React.Component {
     }
   }
 
-  setHasPath = hasPath => {
+  setHasPath = (hasPath) => {
     if (this.state.hasPath !== hasPath) {
       // this is called during render of PartHighlight. We cannot update state during a render, so we do it later
       window.setTimeout(() => this.setState({hasPath}));
@@ -81,7 +81,7 @@ export default class ProcessPart extends React.Component {
   renderModal() {
     const {start, end, hasPath, modalOpen, hoveredNode} = this.state;
 
-    const selection = [start, end].filter(v => v);
+    const selection = [start, end].filter((v) => v);
     return (
       <Modal
         open={modalOpen}
@@ -122,7 +122,7 @@ export default class ProcessPart extends React.Component {
               <ClickBehavior
                 setSelectedNodes={this.setSelectedNodes}
                 onClick={this.selectNode}
-                onHover={hoveredNode => this.setState({hoveredNode})}
+                onHover={(hoveredNode) => this.setState({hoveredNode})}
                 selectedNodes={selection}
               />
               <PartHighlight nodes={selection} setHasPath={this.setHasPath} />
@@ -148,7 +148,7 @@ export default class ProcessPart extends React.Component {
     this.setState({start, end});
   };
 
-  selectNode = node => {
+  selectNode = (node) => {
     if (this.state.start === node) {
       return this.setState({start: null, hasPath: true});
     }

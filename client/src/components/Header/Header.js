@@ -24,19 +24,19 @@ import './Header.scss';
 export class Header extends React.Component {
   state = {
     config: {},
-    showEventBased: false
+    showEventBased: false,
   };
 
   componentDidMount() {
     this.props.mightFail(
       getHeader(),
-      config => this.setState({config}),
+      (config) => this.setState({config}),
       () => addNotification({type: 'error', text: t('navigation.configLoadingError')})
     );
 
     this.props.mightFail(
       isEventBasedProcessEnabled(),
-      enabled => this.setState({showEventBased: enabled}),
+      (enabled) => this.setState({showEventBased: enabled}),
       showError
     );
   }

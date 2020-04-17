@@ -19,14 +19,14 @@ const props = {
         {
           key: 'invoice-assign-approver',
           name: 'Assign Approver Group',
-          type: 'decision'
+          type: 'decision',
         },
         {
           key: 'beverages',
           name: 'Beverages',
-          type: 'decision'
-        }
-      ]
+          type: 'decision',
+        },
+      ],
     },
     {
       id: 'csm',
@@ -35,11 +35,11 @@ const props = {
         {
           key: 'hiring-demo-5-tenants',
           name: 'Hiring Demo 5 Tenants',
-          type: 'process'
-        }
-      ]
-    }
-  ]
+          type: 'process',
+        },
+      ],
+    },
+  ],
 };
 
 it('should match snapshot', () => {
@@ -51,10 +51,7 @@ it('should match snapshot', () => {
 it('should invoke onChange with the selected source', () => {
   const node = shallow(<TenantSource {...props} />);
 
-  node
-    .find('Typeahead')
-    .props()
-    .onChange(props.tenantsWithDefinitions[0].id);
+  node.find('Typeahead').props().onChange(props.tenantsWithDefinitions[0].id);
 
   node
     .find('ItemsList')
@@ -63,11 +60,11 @@ it('should invoke onChange with the selected source', () => {
       {
         key: 'invoice-assign-approver',
         name: 'Assign Approver Group',
-        type: 'decision'
-      }
+        type: 'decision',
+      },
     ]);
 
   expect(props.onChange).toHaveBeenCalledWith([
-    {definitionKey: 'invoice-assign-approver', definitionType: 'decision', tenants: [null]}
+    {definitionKey: 'invoice-assign-approver', definitionType: 'decision', tenants: [null]},
   ]);
 });

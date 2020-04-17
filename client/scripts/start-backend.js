@@ -68,7 +68,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     const logs = {
       backend: [],
       docker: [],
-      dataGenerator: []
+      dataGenerator: [],
     };
 
     const connectedSockets = [];
@@ -79,13 +79,13 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
           'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl backend,qa/data-generation -am',
           {
             cwd: path.resolve(__dirname, '..', '..'),
-            shell: true
+            shell: true,
           }
         );
 
-        buildBackendProcess.stdout.on('data', data => addLog(data, 'backend'));
-        buildBackendProcess.stderr.on('data', data => addLog(data, 'backend', true));
-        buildBackendProcess.on('close', code => {
+        buildBackendProcess.stdout.on('data', (data) => addLog(data, 'backend'));
+        buildBackendProcess.stderr.on('data', (data) => addLog(data, 'backend', true));
+        buildBackendProcess.on('close', (code) => {
           buildBackendProcess = null;
           if (code === 0) {
             resolve();
@@ -103,13 +103,13 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
           `java -cp ../src/main/resources/:./lib/*:optimize-backend-${backendVersion}.jar:../../client/demo-data/  -Xms1g -Xmx1g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -DOPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN=secret -DOPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[${eventUserIds}] org.camunda.optimize.Main`,
           {
             cwd: path.resolve(__dirname, '..', '..', 'backend', 'target'),
-            shell: true
+            shell: true,
           }
         );
 
-        backendProcess.stdout.on('data', data => addLog(data, 'backend'));
-        backendProcess.stderr.on('data', data => addLog(data, 'backend', true));
-        backendProcess.on('close', code => {
+        backendProcess.stdout.on('data', (data) => addLog(data, 'backend'));
+        backendProcess.stderr.on('data', (data) => addLog(data, 'backend', true));
+        backendProcess.on('close', (code) => {
           backendProcess = null;
           if (code === 0) {
             resolve();
@@ -124,7 +124,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function startDocker() {
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         // this directory should be mounted by docker, on Linux this results in root bering the owner of that directory
         // we create it with the current user to ensure we have write permissions
         fs.mkdirSync('databaseDumps');
@@ -134,12 +134,12 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
           env: {
             ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
             ES_VERSION: elasticSearchVersion,
-            CAMBPM_VERSION: cambpmVersion
-          }
+            CAMBPM_VERSION: cambpmVersion,
+          },
         });
 
-        dockerProcess.stdout.on('data', data => addLog(data, 'docker'));
-        dockerProcess.stderr.on('data', data => addLog(data, 'docker', true));
+        dockerProcess.stdout.on('data', (data) => addLog(data, 'docker'));
+        dockerProcess.stderr.on('data', (data) => addLog(data, 'docker', true));
 
         process.on('SIGINT', stopDocker);
         process.on('SIGTERM', stopDocker);
@@ -170,11 +170,11 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         'docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc'
       );
 
-      dataGeneratorProcess.stdout.on('data', data => {
+      dataGeneratorProcess.stdout.on('data', (data) => {
         addLog(data.toString(), 'dataGenerator');
       });
 
-      dataGeneratorProcess.stderr.on('data', data => {
+      dataGeneratorProcess.stderr.on('data', (data) => {
         addLog(data.toString(), 'dataGenerator', true);
       });
 
@@ -185,7 +185,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function downloadFile(downloadUrl, filePath) {
-      return new Promise(async resolve => {
+      return new Promise(async (resolve) => {
         const file = fs.createWriteStream(filePath);
         const res = await fetch(downloadUrl);
         res.body.pipe(file);
@@ -213,7 +213,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     async function ensureLicense() {
       await fetch('http://localhost:8090/api/license/validate-and-store', {
         method: 'POST',
-        body: license
+        body: license,
       });
     }
 
@@ -236,8 +236,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     function runDataGenerationProcess(scriptName) {
       const startedProcess = spawnWithArgs('node scripts/' + scriptName);
 
-      startedProcess.stdout.on('data', data => addLog(data, 'dataGenerator'));
-      startedProcess.stderr.on('data', data => addLog(data, 'dataGenerator', true));
+      startedProcess.stdout.on('data', (data) => addLog(data, 'dataGenerator'));
+      startedProcess.stderr.on('data', (data) => addLog(data, 'dataGenerator', true));
 
       process.on('SIGINT', () => startedProcess.kill('SIGINT'));
       process.on('SIGTERM', () => startedProcess.kill('SIGTERM'));
@@ -246,7 +246,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function startManagementServer() {
-      const server = http.createServer(function(request, response) {
+      const server = http.createServer(function (request, response) {
         if (request.url === '/api/dataGenerationComplete') {
           response.writeHead(200, {'Content-Type': 'text/plain'});
           response.end(
@@ -295,12 +295,12 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         var mimeTypes = {
           '.html': 'text/html',
           '.js': 'text/javascript',
-          '.css': 'text/css'
+          '.css': 'text/css',
         };
 
         var contentType = mimeTypes[extname] || 'application/octet-stream';
 
-        fs.readFile(filePath, function(error, content) {
+        fs.readFile(filePath, function (error, content) {
           if (error) {
             if (error.code === 'ENOENT') {
               response.writeHead(404, {'Content-Type': contentType});
@@ -323,12 +323,12 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
         logs.backend
           .slice(-200)
-          .forEach(entry => ws.send(JSON.stringify({...entry, type: 'backend'})));
+          .forEach((entry) => ws.send(JSON.stringify({...entry, type: 'backend'})));
         logs.docker
           .slice(-400)
-          .forEach(entry => ws.send(JSON.stringify({...entry, type: 'docker'})));
+          .forEach((entry) => ws.send(JSON.stringify({...entry, type: 'docker'})));
 
-        logs.dataGenerator.forEach(entry =>
+        logs.dataGenerator.forEach((entry) =>
           ws.send(JSON.stringify({...entry, type: 'dataGenerator'}))
         );
 
@@ -365,12 +365,12 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         logs[type].shift();
       }
 
-      connectedSockets.forEach(socket => {
+      connectedSockets.forEach((socket) => {
         socket.send(
           JSON.stringify({
             data: ansiHTML(data.toString()),
             type,
-            error: !!error
+            error: !!error,
           })
         );
       });
@@ -381,7 +381,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 function stopDocker() {
   const dockerStopProcess = spawnWithArgs('docker-compose rm -sfv', {
     cwd: path.resolve(__dirname, '..'),
-    shell: true
+    shell: true,
   });
 
   dockerStopProcess.on('close', () => {

@@ -10,7 +10,7 @@ it('should correctly format tenants', () => {
   const tenants = [
     {id: null, name: 'Not defined'},
     {id: 'tenant_id', name: null},
-    {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'}
+    {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'},
   ];
 
   const selectedTenants = [tenants[0]];
@@ -21,7 +21,7 @@ it('should correctly format tenants', () => {
 it('should correctly format definitions', () => {
   const definitions = [
     {key: 'beverages', name: 'Beverages', type: 'decision'},
-    {key: 'process_id', name: null, type: 'process'}
+    {key: 'process_id', name: null, type: 'process'},
   ];
 
   const selectedDefinitions = [definitions[1]];

@@ -10,7 +10,7 @@ export async function getFlowNodeNames(processDefinitionKey, processDefinitionVe
   if (processDefinitionKey && processDefinitionVersion) {
     const payload = {
       processDefinitionKey,
-      processDefinitionVersion
+      processDefinitionVersion,
     };
 
     if (tenantId) {
@@ -72,7 +72,7 @@ export async function checkDeleteConflict(id, entity) {
   return await response.json();
 }
 
-const loadVariablesFrom = endpoint => async payload => {
+const loadVariablesFrom = (endpoint) => async (payload) => {
   const response = await post(endpoint, payload);
 
   return await response.json();

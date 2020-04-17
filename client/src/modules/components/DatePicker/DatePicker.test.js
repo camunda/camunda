@@ -12,11 +12,11 @@ import moment from 'moment';
 
 console.error = jest.fn();
 
-jest.mock('./DateFields', () => props => `DateFields: props: ${Object.keys(props)}`);
+jest.mock('./DateFields', () => (props) => `DateFields: props: ${Object.keys(props)}`);
 
 jest.mock('components', () => {
   return {
-    ButtonGroup: props => <div {...props}>{props.children}</div>
+    ButtonGroup: (props) => <div {...props}>{props.children}</div>,
   };
 });
 

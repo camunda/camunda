@@ -19,7 +19,7 @@ export default class DateFilter extends React.Component {
     unit: '',
     customNum: '2',
     startDate: null,
-    endDate: null
+    endDate: null,
   };
 
   componentDidMount() {
@@ -37,7 +37,7 @@ export default class DateFilter extends React.Component {
     if (this.isValid()) {
       return addFilter({
         type: filterType,
-        data: convertStateToFilter({dateType, unit, customNum, startDate, endDate})
+        data: convertStateToFilter({dateType, unit, customNum, startDate, endDate}),
       });
     }
   };
@@ -71,7 +71,7 @@ export default class DateFilter extends React.Component {
       <Modal open={true} onClose={close} onConfirm={this.confirm} className="DateFilter">
         <Modal.Header>
           {t('common.filter.modalHeader', {
-            type: t(`common.filter.types.${filterType}`)
+            type: t(`common.filter.types.${filterType}`),
           })}
         </Modal.Header>
         <Modal.Content>
@@ -86,7 +86,7 @@ export default class DateFilter extends React.Component {
             <Form.Group>
               <Form.InputGroup className="selectGroup">
                 <Select
-                  onChange={dateType =>
+                  onChange={(dateType) =>
                     this.setState({dateType, unit: dateType === 'custom' ? 'days' : ''})
                   }
                   value={dateType}
@@ -114,7 +114,7 @@ export default class DateFilter extends React.Component {
                   {dateType !== 'fixed' && dateType !== 'custom' && (
                     <Select
                       disabled={dateType !== 'this' && dateType !== 'last'}
-                      onChange={unit => this.setState({unit})}
+                      onChange={(unit) => this.setState({unit})}
                       value={unit}
                     >
                       <Select.Option value="weeks">{t('common.unit.week.label')}</Select.Option>
@@ -130,7 +130,7 @@ export default class DateFilter extends React.Component {
                       onDateChange={this.onDateChange}
                       initialDates={{
                         startDate,
-                        endDate
+                        endDate,
                       }}
                     />
                   )}
@@ -143,7 +143,7 @@ export default class DateFilter extends React.Component {
                         onChange={({target: {value}}) => this.setState({customNum: value})}
                         maxLength="8"
                       />
-                      <Select onChange={unit => this.setState({unit})} value={unit}>
+                      <Select onChange={(unit) => this.setState({unit})} value={unit}>
                         <Select.Option value="minutes">
                           {t('common.unit.minute.label-plural')}
                         </Select.Option>
@@ -185,7 +185,7 @@ export default class DateFilter extends React.Component {
                     unit,
                     customNum,
                     startDate,
-                    endDate
+                    endDate,
                   })}
                 />
               )}

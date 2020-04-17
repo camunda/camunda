@@ -8,7 +8,7 @@ import {getFlowNodeNames} from './dataLoaders';
 import {post} from 'request';
 
 jest.mock('request', () => ({
-  post: jest.fn()
+  post: jest.fn(),
 }));
 
 post.mockReturnValueOnce({json: () => ({flowNodeNames: {a: 'foo'}})});

@@ -14,8 +14,8 @@ it('should create Today/Yesterday preview', () => {
     type: 'rolling',
     start: {
       value: 0,
-      unit: 'days'
-    }
+      unit: 'days',
+    },
   };
 
   const node = shallow(<DateFilterPreview filterType="startDate" filter={filter} />);
@@ -28,8 +28,8 @@ it('should create correct last... with custom preview', () => {
     type: 'relative',
     start: {
       value: 5,
-      unit: 'months'
-    }
+      unit: 'months',
+    },
   };
 
   const node = shallow(<DateFilterPreview filterType="endDate" filter={filter} />);
@@ -41,7 +41,7 @@ it('should create correct fixed date preview', () => {
   const filter = {
     type: 'fixed',
     start: '2015-01-20T00:00:00',
-    end: '2019-05-11T00:00:00'
+    end: '2019-05-11T00:00:00',
   };
 
   const node = shallow(<DateFilterPreview filterType="startDate" filter={filter} />);

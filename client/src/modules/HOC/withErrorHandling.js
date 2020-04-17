@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-export default Component => {
+export default (Component) => {
   class WithErrorHandling extends React.Component {
     constructor(props) {
       super(props);
@@ -14,7 +14,7 @@ export default Component => {
       this.mounted = true;
 
       this.state = {
-        error: undefined
+        error: undefined,
       };
     }
 
@@ -41,9 +41,9 @@ export default Component => {
     }
   }
 
-  WithErrorHandling.displayName = `${Component.displayName ||
-    Component.name ||
-    'Component'}ErrorHandler`;
+  WithErrorHandling.displayName = `${
+    Component.displayName || Component.name || 'Component'
+  }ErrorHandler`;
 
   WithErrorHandling.WrappedComponent = Component;
 

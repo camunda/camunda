@@ -14,9 +14,9 @@ import {processResult} from './service';
 
 jest.mock('./service', () => {
   return {
-    isEmpty: str => !str,
-    getFormatter: view => v => v,
-    processResult: jest.fn().mockImplementation(({result}) => result)
+    isEmpty: (str) => !str,
+    getFormatter: (view) => (v) => v,
+    processResult: jest.fn().mockImplementation(({result}) => result),
   };
 });
 
@@ -28,21 +28,21 @@ const report = {
     processDefinitionVersion: '1',
     view: {
       property: 'foo',
-      entity: 'whatever'
+      entity: 'whatever',
     },
     groupBy: {
-      type: 'bar'
+      type: 'bar',
     },
     visualization: 'number',
-    configuration: {}
+    configuration: {},
   },
-  result: {data: 1234}
+  result: {data: 1234},
 };
 
 it('should display a number if visualization is number', () => {
   const node = shallow(<ProcessReportRenderer report={report} />);
   node.setState({
-    loaded: true
+    loaded: true,
   });
 
   expect(node.find(Number)).toExist();
@@ -52,7 +52,7 @@ it('should display a number if visualization is number', () => {
 it('should provide an errorMessage property to the component', () => {
   const node = shallow(<ProcessReportRenderer report={report} errorMessage={'test'} />);
   node.setState({
-    loaded: true
+    loaded: true,
   });
   expect(node.find(Number)).toHaveProp('errorMessage');
 });
@@ -65,24 +65,24 @@ const exampleDurationReport = {
     processDefinitionVersion: '1',
     view: {
       property: 'foo',
-      entity: 'whatever'
+      entity: 'whatever',
     },
     groupBy: {
       type: 'processInstance',
-      unit: 'day'
+      unit: 'day',
     },
     visualization: 'table',
-    configuration: {}
+    configuration: {},
   },
   result: {
-    data: {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3}
-  }
+    data: {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3},
+  },
 };
 
 it('should pass the report to the visualization component', () => {
   const node = shallow(<ProcessReportRenderer report={exampleDurationReport} type="process" />);
   node.setState({
-    loaded: true
+    loaded: true,
   });
 
   expect(node.find(Table)).toHaveProp('report', exampleDurationReport);

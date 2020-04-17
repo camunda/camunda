@@ -12,7 +12,7 @@ import './Input.scss';
 
 export default React.forwardRef(function Input({isInvalid, onClear, ...props}, ref) {
   let inputEl;
-  const setRef = el => {
+  const setRef = (el) => {
     inputEl = el;
     if (!ref) {
       return;
@@ -23,7 +23,7 @@ export default React.forwardRef(function Input({isInvalid, onClear, ...props}, r
     return (ref.current = el);
   };
 
-  const triggerClear = evt => {
+  const triggerClear = (evt) => {
     if (evt.type === 'keydown' && evt.keyCode !== 13) {
       return;
     }

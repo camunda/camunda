@@ -12,7 +12,7 @@ const darkColors = {
   targetBar: '#A62A31',
   grid: 'rgba(255,255,255,0.1)',
   label: '#ddd',
-  border: '#333'
+  border: '#333',
 };
 
 const lightColors = {
@@ -20,7 +20,7 @@ const lightColors = {
   targetBar: '#A62A31',
   grid: 'rgba(0,0,0,0.1)',
   label: '#666',
-  border: '#fff'
+  border: '#fff',
 };
 
 const numberOfStripes = 100;

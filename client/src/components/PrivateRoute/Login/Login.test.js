@@ -15,7 +15,7 @@ import {login} from './service';
 
 jest.mock('./service', () => {
   return {
-    login: jest.fn().mockReturnValue({token: 'authToken'})
+    login: jest.fn().mockReturnValue({token: 'authToken'}),
   };
 });
 

@@ -13,7 +13,7 @@ import {LogoutButton} from './LogoutButton';
 import {get} from 'request';
 
 const props = {
-  mightFail: jest.fn()
+  mightFail: jest.fn(),
 };
 
 it('renders without crashing', () => {

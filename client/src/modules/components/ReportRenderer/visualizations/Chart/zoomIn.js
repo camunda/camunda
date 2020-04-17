@@ -84,17 +84,17 @@ export default ({updateReport, filters, type, valueRange: {min, max}}) => {
         {
           filter: {
             $set: [
-              ...filters.filter(filter => filter.type !== type),
+              ...filters.filter((filter) => filter.type !== type),
               {
                 type,
                 data: {
                   type: 'fixed',
                   start: start.format('YYYY-MM-DDTHH:mm:ss'),
-                  end: end.format('YYYY-MM-DDTHH:mm:ss')
-                }
-              }
-            ]
-          }
+                  end: end.format('YYYY-MM-DDTHH:mm:ss'),
+                },
+              },
+            ],
+          },
         },
         true
       );
@@ -109,7 +109,7 @@ export default ({updateReport, filters, type, valueRange: {min, max}}) => {
   }
 
   return {
-    afterInit: function(chart) {
+    afterInit: function (chart) {
       canvas = chart.canvas;
 
       const container = canvas.parentNode;
@@ -119,12 +119,12 @@ export default ({updateReport, filters, type, valueRange: {min, max}}) => {
       chart.options.onHover = onHover;
       canvas.addEventListener('mousedown', mousedown);
     },
-    destroy: function() {
+    destroy: function () {
       const container = canvas.parentNode;
       container.removeChild(selectionLeft);
       container.removeChild(selectionRight);
 
       canvas.removeEventListener('mousedown', mousedown);
-    }
+    },
   };
 };

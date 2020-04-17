@@ -23,7 +23,7 @@ export default withErrorHandling(
       users: null,
       deleting: null,
       editing: null,
-      addingUser: false
+      addingUser: false,
     };
 
     componentDidMount() {
@@ -33,7 +33,7 @@ export default withErrorHandling(
     getUsers = () => {
       this.props.mightFail(
         getUsers(this.props.collection),
-        users => this.setState({users}),
+        (users) => this.setState({users}),
         showError
       );
     };
@@ -54,8 +54,8 @@ export default withErrorHandling(
     };
     closeAddUserModal = () => this.setState({addingUser: false});
 
-    openEditUserModal = editing => this.setState({editing});
-    editUser = role => {
+    openEditUserModal = (editing) => this.setState({editing});
+    editUser = (role) => {
       this.props.mightFail(
         editUser(this.props.collection, this.state.editing.id, role),
         this.updateList,
@@ -85,7 +85,7 @@ export default withErrorHandling(
             columns={[t('common.name'), t('home.members'), t('home.roles.role')]}
             data={
               users &&
-              users.map(user => {
+              users.map((user) => {
                 const {identity, role, hasFullScopeAuthorizations} = user;
 
                 const numberOfManagers = users.filter(({role}) => role === 'manager').length;
@@ -101,7 +101,7 @@ export default withErrorHandling(
                       `${identity.memberCount} ${t(
                         'common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label')
                       )}`,
-                    formatRole(role)
+                    formatRole(role),
                   ],
                   warning:
                     hasFullScopeAuthorizations === false &&
@@ -111,14 +111,14 @@ export default withErrorHandling(
                       {
                         icon: 'edit',
                         text: t('common.edit'),
-                        action: () => this.openEditUserModal(user)
+                        action: () => this.openEditUserModal(user),
                       },
                       {
                         icon: 'delete',
                         text: t('common.remove'),
-                        action: () => this.setState({deleting: user})
-                      }
-                    ]
+                        action: () => this.setState({deleting: user}),
+                      },
+                    ],
                 };
               })
             }
@@ -136,7 +136,7 @@ export default withErrorHandling(
                   deleting.identity &&
                   (deleting.identity.name || deleting.identity.id)) ||
                 '',
-              type: deleting && deleting.identity && formatType(deleting.identity.type)
+              type: deleting && deleting.identity && formatType(deleting.identity.type),
             })}
           />
           <AddUserModal

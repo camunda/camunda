@@ -5,8 +5,8 @@
  */
 
 export function incompatibleFilters(filterData) {
-  const filters = filterData.map(filter => filter.type);
-  const bothExist = arr => arr.every(val => filters.includes(val));
+  const filters = filterData.map((filter) => filter.type);
+  const bothExist = (arr) => arr.every((val) => filters.includes(val));
 
   return (
     bothExist(['completedInstancesOnly', 'runningInstancesOnly']) ||

@@ -13,8 +13,8 @@ import {shallow} from 'enzyme';
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
   formatters: {
-    getHighlightedText: () => 'got highlight'
-  }
+    getHighlightedText: () => 'got highlight',
+  },
 }));
 
 it('should highlight strings', () => {

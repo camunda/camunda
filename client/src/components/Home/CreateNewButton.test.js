@@ -27,10 +27,7 @@ it('should call the createCollection prop', () => {
   const spy = jest.fn();
   const node = shallow(<CreateNewButton createCollection={spy} />);
 
-  node
-    .find(Dropdown.Option)
-    .at(0)
-    .simulate('click');
+  node.find(Dropdown.Option).at(0).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });

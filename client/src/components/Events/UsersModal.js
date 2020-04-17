@@ -21,14 +21,14 @@ export default withErrorHandling(
       users: null,
       deleting: null,
       alreadyExists: false,
-      selectedIdentity: null
+      selectedIdentity: null,
     };
 
     componentDidMount() {
-      this.props.mightFail(getUsers(this.props.id), users => this.setState({users}), showError);
+      this.props.mightFail(getUsers(this.props.id), (users) => this.setState({users}), showError);
     }
 
-    isUserAlreadyAdded = id => this.state.users.some(user => user.id === id);
+    isUserAlreadyAdded = (id) => this.state.users.some((user) => user.id === id);
 
     addUser = () => {
       this.getSelectedUser(({id, type, name, memberCount}) => {
@@ -38,7 +38,7 @@ export default withErrorHandling(
         if (!this.isUserAlreadyAdded(newId)) {
           this.setState(({users}) => ({
             users: update(users, {$push: [newIdentity]}),
-            selectedIdentity: null
+            selectedIdentity: null,
           }));
         } else {
           this.setState({alreadyExists: true});
@@ -46,7 +46,7 @@ export default withErrorHandling(
       });
     };
 
-    getSelectedUser = cb => {
+    getSelectedUser = (cb) => {
       const {id, name} = this.state.selectedIdentity;
       if (!name) {
         return this.props.mightFail(getUser(id), cb, showError);
@@ -55,9 +55,9 @@ export default withErrorHandling(
       cb(this.state.selectedIdentity);
     };
 
-    removeUser = id =>
+    removeUser = (id) =>
       this.setState(({users}) => ({
-        users: users.filter(user => user.id !== id)
+        users: users.filter((user) => user.id !== id),
       }));
 
     onConfirm = () => {
@@ -68,7 +68,7 @@ export default withErrorHandling(
           this.setState({loading: false});
           this.props.onClose(this.state.users);
         },
-        error => {
+        (error) => {
           showError(error);
           this.setState({loading: false});
         }
@@ -91,7 +91,7 @@ export default withErrorHandling(
               <Labeled className="userTypeahead" label={t('home.userTitle')}>
                 <UserTypeahead
                   selectedIdentity={selectedIdentity}
-                  onChange={selectedIdentity =>
+                  onChange={(selectedIdentity) =>
                     this.setState({selectedIdentity, alreadyExists: false})
                   }
                 />
@@ -113,7 +113,7 @@ export default withErrorHandling(
               isLoading={!users}
               data={
                 users &&
-                users.map(user => {
+                users.map((user) => {
                   const {id, identity} = user;
 
                   return {
@@ -125,15 +125,15 @@ export default withErrorHandling(
                       identity.type === 'group' &&
                         `${identity.memberCount} ${t(
                           'common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label')
-                        )}`
+                        )}`,
                     ],
                     actions: [
                       {
                         icon: 'delete',
                         text: t('common.remove'),
-                        action: () => this.removeUser(id)
-                      }
-                    ]
+                        action: () => this.removeUser(id),
+                      },
+                    ],
                   };
                 })
               }

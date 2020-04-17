@@ -12,7 +12,7 @@ jest.mock('./processRawData', () => jest.fn());
 
 jest.mock('services', () => {
   return {
-    flatten: jest.fn()
+    flatten: jest.fn(),
   };
 });
 

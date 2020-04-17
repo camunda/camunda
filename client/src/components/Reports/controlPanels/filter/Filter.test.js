@@ -12,16 +12,16 @@ import {mount} from 'enzyme';
 
 jest.mock('components', () => {
   const Dropdown = ({children}) => <p id="dropdown">Dropdown: {children}</p>;
-  Dropdown.Option = props => <button {...props}>{props.children}</button>;
+  Dropdown.Option = (props) => <button {...props}>{props.children}</button>;
 
   return {
     Dropdown,
-    Labeled: props => (
+    Labeled: (props) => (
       <div>
         <label id={props.id}>{props.label}</label>
         {props.children}
       </div>
-    )
+    ),
   };
 });
 
@@ -29,7 +29,7 @@ jest.mock('./modals', () => {
   return {
     DateFilter: () => 'DateFilter',
     VariableFilter: () => 'VariableFilter',
-    NodeFilter: () => 'NodeFilter'
+    NodeFilter: () => 'NodeFilter',
   };
 });
 
@@ -70,9 +70,9 @@ it('should contain an edit filter modal when a filter should be edited', () => {
     data: {
       operator: 'bar',
       type: 'baz',
-      value: 'foo'
+      value: 'foo',
     },
-    type: 'startDate'
+    type: 'startDate',
   })();
 
   expect(node).toIncludeText('DateFilter');
@@ -94,9 +94,9 @@ it('should contain a EditFilterModal component based on the Filter selected for 
     data: {
       operator: 'bar',
       type: 'baz',
-      value: 'foo'
+      value: 'foo',
     },
-    type: 'variable'
+    type: 'variable',
   })();
   expect(node).toIncludeText('VariableFilter');
   expect(node).not.toIncludeText('DateFilter');
@@ -108,9 +108,9 @@ it('should add a filter to the list of filters', () => {
     data: {
       operator: 'bar',
       type: 'baz',
-      value: 'foo'
+      value: 'foo',
     },
-    type: 'qux'
+    type: 'qux',
   };
   const previousFilters = [sampleFilter];
 
@@ -127,16 +127,16 @@ it('should edit the edited filter', () => {
     data: {
       operator: 'bar',
       type: 'baz',
-      value: 'foo'
+      value: 'foo',
     },
-    type: 'qux'
+    type: 'qux',
   };
 
   const filters = [sampleFilter, 'foo'];
   const node = mount(<Filter data={filters} onChange={spy} />);
 
   node.instance().setState({
-    editFilter: sampleFilter
+    editFilter: sampleFilter,
   });
 
   node.instance().editFilter('bar');

@@ -23,7 +23,7 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
 
   return (
     <Select
-      onChange={value => {
+      onChange={(value) => {
         const foundOption = findSelectedOption(options, 'key', value);
         onChange(foundOption.data);
       }}
@@ -82,12 +82,12 @@ export default React.memo(ReportSelect, (prevProps, nextProps) => {
 
 function excludeConfig(data) {
   return update(data, {
-    configuration: {$set: {distributedBy: data.configuration.distributedBy}}
+    configuration: {$set: {distributedBy: data.configuration.distributedBy}},
   });
 }
 
 function addVariables(options, variables) {
-  return options.map(option => {
+  return options.map((option) => {
     const subOptions = option.options;
     if (subOptions && typeof subOptions === 'string') {
       return {
@@ -97,9 +97,9 @@ function addVariables(options, variables) {
           return {
             key: subOptions + '_' + (id || name),
             label: name,
-            data: {type: subOptions, value}
+            data: {type: subOptions, value},
           };
-        })
+        }),
       };
     }
     return option;

@@ -12,7 +12,7 @@ import {LabeledInput} from 'components';
 const validProps = {
   baseline: 10,
   target: 200,
-  disabled: false
+  disabled: false,
 };
 
 it('should display the current target values', () => {

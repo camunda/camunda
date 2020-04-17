@@ -13,8 +13,8 @@ import ProgressBar from './ProgressBar';
 jest.mock('services', () => {
   return {
     formatters: {
-      convertDurationToSingleNumber: () => 12
-    }
+      convertDurationToSingleNumber: () => 12,
+    },
   };
 });
 
@@ -25,23 +25,23 @@ const report = {
   combined: false,
   data: {
     configuration: {
-      targetValue: {active: false}
+      targetValue: {active: false},
     },
     view: {
-      property: 'frequency'
+      property: 'frequency',
     },
-    visualization: 'Number'
+    visualization: 'Number',
   },
-  result: {data: 1234}
+  result: {data: 1234},
 };
 
 it('should display the number provided per data property', () => {
-  const node = shallow(<Number report={report} formatter={v => v} />);
+  const node = shallow(<Number report={report} formatter={(v) => v} />);
   expect(node).toIncludeText('1234');
 });
 
 it('should format data according to the provided formatter', () => {
-  const node = shallow(<Number report={report} formatter={v => 2 * v} />);
+  const node = shallow(<Number report={report} formatter={(v) => 2 * v} />);
 
   expect(node).toIncludeText('246');
 });
@@ -53,10 +53,12 @@ it('should display a progress bar if target values are active', () => {
         ...report,
         data: {
           ...report.data,
-          configuration: {targetValue: {active: true, countProgress: {baseline: '0', target: '12'}}}
-        }
+          configuration: {
+            targetValue: {active: true, countProgress: {baseline: '0', target: '12'}},
+          },
+        },
       }}
-      formatter={v => 2 * v}
+      formatter={(v) => 2 * v}
     />
   );
 

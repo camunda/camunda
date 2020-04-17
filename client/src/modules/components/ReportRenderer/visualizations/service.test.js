@@ -8,9 +8,24 @@ import {uniteResults} from './service';
 
 it('should unify the keys of all result object by filling empty ones with null', () => {
   expect(
-    uniteResults([[{key: 'a', value: 1}, {key: 'b', value: 2}], [{key: 'b', value: 1}]], ['a', 'b'])
+    uniteResults(
+      [
+        [
+          {key: 'a', value: 1},
+          {key: 'b', value: 2},
+        ],
+        [{key: 'b', value: 1}],
+      ],
+      ['a', 'b']
+    )
   ).toEqual([
-    [{key: 'a', value: 1}, {key: 'b', value: 2}],
-    [{key: 'a', value: null}, {key: 'b', value: 1}]
+    [
+      {key: 'a', value: 1},
+      {key: 'b', value: 2},
+    ],
+    [
+      {key: 'a', value: null},
+      {key: 'b', value: 1},
+    ],
   ]);
 });

@@ -31,7 +31,7 @@ it('should contain a button to abort the filter creation', () => {
 it('should have isInvalid prop on the input if value is invalid', async () => {
   const node = shallow(<DurationFilter />);
   await node.setState({
-    value: 'NaN'
+    value: 'NaN',
   });
 
   expect(node.find(Input).props()).toHaveProperty('isInvalid', true);

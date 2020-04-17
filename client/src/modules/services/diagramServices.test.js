@@ -13,8 +13,8 @@ import {getDiagramElementsBetween} from './diagramServices';
 console.error = jest.fn();
 const xml = fs.readFileSync('demo-data/subProcesses.bpmn', {encoding: 'utf-8'});
 
-const loadXml = async xml =>
-  new Promise(resolve => {
+const loadXml = async (xml) =>
+  new Promise((resolve) => {
     const viewer = new Viewer();
     viewer.importXML(xml, () => resolve(viewer));
   });

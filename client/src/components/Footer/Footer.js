@@ -17,10 +17,10 @@ export default class Footer extends React.Component {
     this.state = {
       connectionStatus: {
         engineConnections: {},
-        connectedToElasticsearch: true // initial status before we get first data
+        connectedToElasticsearch: true, // initial status before we get first data
       },
       isImporting: {},
-      optimizeVersion: null
+      optimizeVersion: null,
     };
   }
 
@@ -39,7 +39,7 @@ export default class Footer extends React.Component {
     });
 
     this.setState({
-      optimizeVersion: await getOptimizeVersion()
+      optimizeVersion: await getOptimizeVersion(),
     });
   }
 
@@ -74,14 +74,14 @@ export default class Footer extends React.Component {
     const {
       isImporting,
       connectionStatus: {engineConnections, connectedToElasticsearch},
-      optimizeVersion
+      optimizeVersion,
     } = this.state;
 
     return (
       <footer className="Footer">
         <div className="Footer__content">
           <ul className="Footer__connect-status">
-            {Object.keys(engineConnections).map(key => {
+            {Object.keys(engineConnections).map((key) => {
               return this.renderListElement(key, engineConnections[key], isImporting[key]);
             })}
             {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}

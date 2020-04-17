@@ -17,7 +17,7 @@ import {
   Select,
   Typeahead,
   MessageBox,
-  Form
+  Form,
 } from 'components';
 import {formatters, isDurationReport} from 'services';
 import {isEmailEnabled, getOptimizeVersion} from 'config';
@@ -33,11 +33,11 @@ const newAlert = {
   threshold: '100',
   checkInterval: {
     value: '10',
-    unit: 'minutes'
+    unit: 'minutes',
   },
   reminder: null,
   fixNotification: false,
-  webhook: null
+  webhook: null,
 };
 
 export default class AlertModal extends React.Component {
@@ -48,7 +48,7 @@ export default class AlertModal extends React.Component {
       ...newAlert,
       name: t('alert.newAlert'),
       inactive: false,
-      invalid: false
+      invalid: false,
     };
   }
 
@@ -62,11 +62,11 @@ export default class AlertModal extends React.Component {
 
     this.setState({
       emailNotificationIsEnabled: await isEmailEnabled(),
-      optimizeVersion: version.join('.')
+      optimizeVersion: version.join('.'),
     });
   };
 
-  isDefined = alert => alert && Object.keys(alert).length;
+  isDefined = (alert) => alert && Object.keys(alert).length;
 
   loadAlert() {
     const alert = this.props.initialAlert;
@@ -83,14 +83,14 @@ export default class AlertModal extends React.Component {
           : alert.threshold.toString(),
       checkInterval: {
         value: alert.checkInterval.value.toString(),
-        unit: alert.checkInterval.unit
+        unit: alert.checkInterval.unit,
       },
       reminder: alert.reminder
         ? {
             value: alert.reminder.value.toString(),
-            unit: alert.reminder.unit
+            unit: alert.reminder.unit,
           }
-        : null
+        : null,
     });
   }
 
@@ -99,20 +99,20 @@ export default class AlertModal extends React.Component {
       this.setState({
         reminder: {
           value: '2',
-          unit: 'hours'
-        }
+          unit: 'hours',
+        },
       });
     } else {
       this.setState({
-        reminder: null
+        reminder: null,
       });
     }
   };
 
-  setInvalid = isInvalid => {
+  setInvalid = (isInvalid) => {
     if (this.state.invalid !== isInvalid) {
       this.setState({
-        invalid: isInvalid
+        invalid: isInvalid,
       });
     }
   };
@@ -120,7 +120,7 @@ export default class AlertModal extends React.Component {
   confirm = () => {
     this.props.onConfirm({
       ...this.state,
-      threshold: formatters.convertDurationToSingleNumber(this.state.threshold)
+      threshold: formatters.convertDurationToSingleNumber(this.state.threshold),
     });
   };
 
@@ -181,7 +181,7 @@ export default class AlertModal extends React.Component {
     this.setInvalid(false);
   }
 
-  getReportType = reportId => {
+  getReportType = (reportId) => {
     const report = this.props.reports.find(({id}) => id === reportId);
 
     if (report) {
@@ -197,17 +197,17 @@ export default class AlertModal extends React.Component {
     return typeof threshold.value !== 'undefined' ? threshold.value : threshold;
   };
 
-  updateReport = id => {
+  updateReport = (id) => {
     const reportType = this.getReportType(id);
     const currentValue = this.getThresholdValue();
 
     this.setState({
       reportId: id,
-      threshold: reportType === 'duration' ? {value: currentValue, unit: 'days'} : currentValue
+      threshold: reportType === 'duration' ? {value: currentValue, unit: 'days'} : currentValue,
     });
   };
 
-  updateWebhook = webhook => {
+  updateWebhook = (webhook) => {
     this.setState({webhook});
   };
 
@@ -225,13 +225,13 @@ export default class AlertModal extends React.Component {
       inactive,
       invalid,
       optimizeVersion,
-      webhook
+      webhook,
     } = this.state;
 
     const {reports, webhooks, onClose} = this.props;
 
     const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`;
-    const selectedReport = reports.find(report => report.id === reportId) || {};
+    const selectedReport = reports.find((report) => report.id === reportId) || {};
     return (
       <Modal open onClose={onClose} className="AlertModal">
         <Modal.Header>
@@ -282,14 +282,14 @@ export default class AlertModal extends React.Component {
               <Form.InputGroup>
                 <Select
                   value={thresholdOperator}
-                  onChange={value => this.setState({thresholdOperator: value})}
+                  onChange={(value) => this.setState({thresholdOperator: value})}
                 >
                   <Select.Option value=">">{t('common.above')}</Select.Option>
                   <Select.Option value="<">{t('common.below')}</Select.Option>
                 </Select>
                 <ThresholdInput
                   value={threshold}
-                  onChange={threshold => this.setState({threshold})}
+                  onChange={(threshold) => this.setState({threshold})}
                   type={this.getReportType(reportId)}
                 />
               </Form.InputGroup>
@@ -306,7 +306,7 @@ export default class AlertModal extends React.Component {
                   />
                   <Select
                     value={checkInterval.unit}
-                    onChange={value =>
+                    onChange={(value) =>
                       this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
                     }
                   >
@@ -347,7 +347,7 @@ export default class AlertModal extends React.Component {
                       placeholder={t('alert.form.webookPlaceholder')}
                       onChange={this.updateWebhook}
                     >
-                      {webhooks.map(webhook => (
+                      {webhooks.map((webhook) => (
                         <Typeahead.Option key={webhook} value={webhook}>
                           {webhook}
                         </Typeahead.Option>
@@ -391,7 +391,7 @@ export default class AlertModal extends React.Component {
                     />
                     <Select
                       value={reminder.unit}
-                      onChange={value =>
+                      onChange={(value) =>
                         this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
                       }
                     >

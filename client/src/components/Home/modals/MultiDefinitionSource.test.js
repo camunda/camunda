@@ -19,9 +19,9 @@ const props = {
       tenants: [
         {
           id: null,
-          name: 'Not defined'
-        }
-      ]
+          name: 'Not defined',
+        },
+      ],
     },
     {
       key: 'invoiceClassification',
@@ -30,11 +30,11 @@ const props = {
       tenants: [
         {
           id: null,
-          name: 'Not defined'
-        }
-      ]
-    }
-  ]
+          name: 'Not defined',
+        },
+      ],
+    },
+  ],
 };
 
 it('should match snapshot', () => {
@@ -55,7 +55,7 @@ it('should invoke onChange with the selected source', () => {
     {
       definitionKey: 'invoiceClassification',
       definitionType: 'decision',
-      tenants: [null]
-    }
+      tenants: [null],
+    },
   ]);
 });

@@ -11,12 +11,9 @@ export const listItem = Selector('.ListItem');
 export const newAlertButton = Selector('.AlertList .header .Button.primary');
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const modalDeleteButton = Selector('.Modal .Modal__actions .warning');
-export const inputWithLabel = label =>
-  Selector('.Modal .label')
-    .withText(label)
-    .nextSibling();
+export const inputWithLabel = (label) => Selector('.Modal .label').withText(label).nextSibling();
 export const reportTypeahead = Selector('.Modal .Typeahead');
-export const reportTypeaheadOption = text =>
+export const reportTypeaheadOption = (text) =>
   Selector('.Modal .Typeahead .DropdownOption').withText(text);
 export const editButton = Selector('[title="Edit Alert"]');
 export const cancelButton = Selector('.Modal__actions button');

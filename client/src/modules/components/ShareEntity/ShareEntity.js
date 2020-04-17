@@ -17,7 +17,7 @@ export default class ShareEntity extends React.Component {
     this.state = {
       loaded: false,
       isShared: false,
-      id: ''
+      id: '',
     };
   }
 
@@ -26,13 +26,13 @@ export default class ShareEntity extends React.Component {
     this.setState({
       id,
       isShared: !!id,
-      loaded: true
+      loaded: true,
     });
   };
 
   toggleValue = async ({target: {checked}}) => {
     this.setState({
-      isShared: checked
+      isShared: checked,
     });
 
     if (checked) {

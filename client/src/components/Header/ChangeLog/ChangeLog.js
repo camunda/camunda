@@ -20,7 +20,7 @@ export default withErrorHandling(
       open: false,
       text: '',
       optimizeVersion: null,
-      seen: true
+      seen: true,
     };
 
     componentDidUpdate(_, prevState) {
@@ -28,7 +28,11 @@ export default withErrorHandling(
       const openedOrFirstSeen = (!prevState.open && open) || (prevState.seen && !seen);
       if (openedOrFirstSeen && !text) {
         const localCode = getLanguage();
-        this.props.mightFail(getMarkdownText(localCode), text => this.setState({text}), showError);
+        this.props.mightFail(
+          getMarkdownText(localCode),
+          (text) => this.setState({text}),
+          showError
+        );
       }
     }
 
@@ -36,7 +40,7 @@ export default withErrorHandling(
       this.props.mightFail(isChangeLogSeen(), ({seen}) => this.setState({seen}), showError);
 
       this.setState({
-        optimizeVersion: await getOptimizeVersion()
+        optimizeVersion: await getOptimizeVersion(),
       });
     }
 

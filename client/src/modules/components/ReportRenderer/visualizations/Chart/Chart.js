@@ -16,8 +16,8 @@ export function Chart(props) {
     report: {
       combined,
       result,
-      data: {configuration, visualization, view}
-    }
+      data: {configuration, visualization, view},
+    },
   } = props;
 
   const reportView = view || Object.values(result.data)[0].data.view;

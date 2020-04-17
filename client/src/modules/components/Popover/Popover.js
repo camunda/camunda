@@ -22,7 +22,7 @@ export default class Popover extends React.Component {
 
     this.state = {
       open: false,
-      dialogStyles: {}
+      dialogStyles: {},
     };
   }
 
@@ -36,19 +36,19 @@ export default class Popover extends React.Component {
     this.mounted = false;
   }
 
-  toggleOpen = evt => {
+  toggleOpen = (evt) => {
     evt.preventDefault();
     const open = this.state.open;
 
     setTimeout(() => {
       this.setState({
-        open: !open
+        open: !open,
       });
       this.calculateDialogStyle();
     });
   };
 
-  inSameScope = evt => {
+  inSameScope = (evt) => {
     const modal = evt.target.closest('.Modal');
     if (!modal) {
       return true;
@@ -56,7 +56,7 @@ export default class Popover extends React.Component {
     return modal.contains(this.popoverDialogRef);
   };
 
-  close = evt => {
+  close = (evt) => {
     // We need to wait for the event delegation to be finished
     // so we know whether the click occured inside the popover,
     // in which case we do not want to close the popover
@@ -68,7 +68,7 @@ export default class Popover extends React.Component {
         this.inSameScope(evt)
       ) {
         this.setState({
-          open: false
+          open: false,
         });
         this.calculateDialogStyle();
       }
@@ -110,11 +110,11 @@ export default class Popover extends React.Component {
 
     this.setState({
       scrollable,
-      dialogStyles: style
+      dialogStyles: style,
     });
   };
 
-  onPopoverDialogMouseDown = evt => {
+  onPopoverDialogMouseDown = (evt) => {
     this.insideClick = true;
   };
 
@@ -135,19 +135,19 @@ export default class Popover extends React.Component {
     );
   };
 
-  storeButtonRef = node => {
+  storeButtonRef = (node) => {
     this.buttonRef = node;
   };
 
-  storePopoverDialogRef = node => {
+  storePopoverDialogRef = (node) => {
     this.popoverDialogRef = node;
   };
 
-  storePopoverRootRef = node => {
+  storePopoverRootRef = (node) => {
     this.popoverRootRef = node;
   };
 
-  catchClick = evt => {
+  catchClick = (evt) => {
     evt.nativeEvent.popoverChain = evt.nativeEvent.popoverChain || [];
     evt.nativeEvent.popoverChain.push(this.id);
   };

@@ -11,7 +11,7 @@ import ConflictModal from './ConflictModal';
 const props = {
   conflict: {alert: [{id: '1', name: 'alert', type: 'alert'}], combined_report: []},
   onClose: jest.fn(),
-  onConfirm: jest.fn()
+  onConfirm: jest.fn(),
 };
 
 it('should match snapshot', () => {

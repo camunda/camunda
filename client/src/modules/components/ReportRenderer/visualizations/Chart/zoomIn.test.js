@@ -9,7 +9,7 @@ import zoomIn from './zoomIn';
 
 function simulateEvent(node, evt, payload = {}) {
   const event = new MouseEvent(evt, {...payload, bubbles: true});
-  Object.keys(payload).forEach(key => (event[key] = payload[key]));
+  Object.keys(payload).forEach((key) => (event[key] = payload[key]));
   node.dispatchEvent(event);
 }
 
@@ -26,8 +26,8 @@ beforeEach(() => {
     options: {},
     chartArea: {
       left: 0,
-      right: 100
-    }
+      right: 100,
+    },
   };
   updateReport = jest.fn();
 
@@ -37,8 +37,8 @@ beforeEach(() => {
     type: 'startDate',
     valueRange: {
       min: moment('2019-01-01T00:00:00.000'),
-      max: moment('2019-01-31T00:00:00.000')
-    }
+      max: moment('2019-01-31T00:00:00.000'),
+    },
   });
   plugin.afterInit(chart);
 
@@ -64,12 +64,12 @@ it('should create a startDate filter on zoom interaction', () => {
             data: {
               end: '2019-01-22T00:00:00',
               start: '2019-01-07T00:00:00',
-              type: 'fixed'
+              type: 'fixed',
             },
-            type: 'startDate'
-          }
-        ]
-      }
+            type: 'startDate',
+          },
+        ],
+      },
     },
     true
   );

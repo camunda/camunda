@@ -13,7 +13,7 @@ const props = {
   min: 0,
   max: 100,
   value: 20,
-  formatter: () => 'formatted'
+  formatter: () => 'formatted',
 };
 
 it('should use the provided formatter', () => {
@@ -33,7 +33,7 @@ it('should show the overlay with the goal value when the goal value is exceeded'
     min: 0,
     max: 100,
     value: 150,
-    formatter: () => 'formatted'
+    formatter: () => 'formatted',
   };
 
   const node = shallow(<ProgressBar {...props} />);

@@ -10,12 +10,9 @@ import * as u from '../utils';
 
 import * as e from './Events.elements.js';
 
-fixture('Events Processes')
-  .page(config.endpoint)
-  .beforeEach(u.login)
-  .after(cleanEventProcesses);
+fixture('Events Processes').page(config.endpoint).beforeEach(u.login).after(cleanEventProcesses);
 
-test('create a process from scratch', async t => {
+test('create a process from scratch', async (t) => {
   await t.click(e.navItem);
   await t.click(e.createDropdown);
   await t.click(e.dropdownOption('Model a Process'));
@@ -26,7 +23,7 @@ test('create a process from scratch', async t => {
   await t.expect(e.processName.textContent).eql('Invoice Process');
 });
 
-test('add sources, map and publish a process', async t => {
+test('add sources, map and publish a process', async (t) => {
   // Creation
   await t.resizeWindow(1100, 800);
   await t.click(e.navItem);

@@ -11,17 +11,17 @@ class Modeler {
       addMarker: jest.fn(),
       removeMarker: jest.fn(),
       resized: jest.fn(),
-      viewbox: jest.fn().mockReturnValue({})
+      viewbox: jest.fn().mockReturnValue({}),
     };
     this.zoomScroll = {stepZoom: jest.fn(), reset: jest.fn()};
     this.container = container;
     this.bpmnRenderer = bpmnRenderer;
     this.elementRegistry = {
       getGraphics: jest.fn(() => ({
-        querySelector: jest.fn(() => ({setAttribute: jest.fn()}))
+        querySelector: jest.fn(() => ({setAttribute: jest.fn()})),
       })),
       get: jest.fn().mockReturnValue({}),
-      forEach: jest.fn()
+      forEach: jest.fn(),
     };
     this.eventBus = {on: jest.fn()};
     this.overlays = {add: jest.fn(), remove: jest.fn()};
@@ -35,28 +35,28 @@ class Modeler {
           return {
             cloneNode: () => {
               return {
-                setAttribute: jest.fn()
+                setAttribute: jest.fn(),
               };
-            }
+            },
           };
         },
-        appendChild: jest.fn()
+        appendChild: jest.fn(),
       };
-    }
+    },
   };
 
   importXML = jest.fn((_, callback) => {
     callback();
   });
 
-  saveXML = jest.fn(callback => {
+  saveXML = jest.fn((callback) => {
     callback(undefined, 'some xml');
   });
 
   attachTo = jest.fn();
   detach = jest.fn();
 
-  get = key => this[key];
+  get = (key) => this[key];
 }
 
 export default Modeler;

@@ -24,7 +24,7 @@ export default class TargetValueBadge extends React.Component {
 
       overlays.remove({type: badgeType});
 
-      Object.keys(values).forEach(id => {
+      Object.keys(values).forEach((id) => {
         if (values[id] && values[id].value) {
           const container = document.createElement('div');
           container.innerHTML = `<span class="TargetValueBadge">${formatters.duration(
@@ -41,13 +41,13 @@ export default class TargetValueBadge extends React.Component {
           overlays.add(id, badgeType, {
             position: {
               top: -14,
-              right: overlayWidth - 11
+              right: overlayWidth - 11,
             },
             show: {
               minZoom: -Infinity,
-              maxZoom: +Infinity
+              maxZoom: +Infinity,
             },
-            html: overlayHtml
+            html: overlayHtml,
           });
         }
       });

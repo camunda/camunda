@@ -36,7 +36,7 @@ export default withErrorHandling(
       deleting: false,
       redirect: '',
       copying: null,
-      entities: null
+      entities: null,
     };
 
     componentDidMount() {
@@ -53,8 +53,8 @@ export default withErrorHandling(
     loadCollection = () => {
       this.props.mightFail(
         loadEntity('collection', this.props.match.params.id),
-        collection => this.setState({collection}),
-        error => {
+        (collection) => this.setState({collection}),
+        (error) => {
           showError(error);
           this.setState({collection: null});
         }
@@ -65,8 +65,8 @@ export default withErrorHandling(
     loadEntities = () => {
       this.props.mightFail(
         loadCollectionEntities(this.props.match.params.id),
-        entities => this.setState({entities}),
-        error => {
+        (entities) => this.setState({entities}),
+        (error) => {
           showError(error);
           this.setState({entities: null});
         }
@@ -151,7 +151,7 @@ export default withErrorHandling(
                 columns={[t('common.name'), t('home.contents'), t('common.entity.modified')]}
                 data={
                   entities &&
-                  entities.map(entity => {
+                  entities.map((entity) => {
                     const {
                       id,
                       entityType,
@@ -160,27 +160,28 @@ export default withErrorHandling(
                       name,
                       data,
                       reportType,
-                      combined
+                      combined,
                     } = entity;
 
                     const actions = [
                       {
                         icon: 'copy-document',
                         text: t('common.copy'),
-                        action: () => this.setState({copying: entity})
-                      }
+                        action: () => this.setState({copying: entity}),
+                      },
                     ];
 
                     if (currentUserRole === 'editor') {
                       actions.unshift({
                         icon: 'edit',
                         text: t('common.edit'),
-                        action: () => this.setState({redirect: formatLink(id, entityType) + 'edit'})
+                        action: () =>
+                          this.setState({redirect: formatLink(id, entityType) + 'edit'}),
                       });
                       actions.push({
                         icon: 'delete',
                         text: t('common.delete'),
-                        action: () => this.setState({deleting: entity})
+                        action: () => this.setState({deleting: entity}),
                       });
                     }
 
@@ -192,9 +193,9 @@ export default withErrorHandling(
                       name,
                       meta: [
                         formatSubEntities(data.subEntityCounts),
-                        moment(lastModified).format('YYYY-MM-DD HH:mm')
+                        moment(lastModified).format('YYYY-MM-DD HH:mm'),
                       ],
-                      actions
+                      actions,
                     };
                   })
                 }
@@ -227,7 +228,7 @@ export default withErrorHandling(
               initialName={collection.name}
               confirmText={t('common.collection.modal.editBtn')}
               onClose={this.stopEditingCollection}
-              onConfirm={async name => {
+              onConfirm={async (name) => {
                 await updateEntity('collection', collection.id, {name});
                 this.loadCollection();
                 this.stopEditingCollection();

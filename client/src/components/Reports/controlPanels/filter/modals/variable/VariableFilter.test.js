@@ -32,9 +32,9 @@ const props = {
     getVariables: jest.fn().mockReturnValue([
       {name: 'boolVar', type: 'Boolean'},
       {name: 'numberVar', type: 'Float'},
-      {name: 'stringVar', type: 'String'}
-    ])
-  }
+      {name: 'stringVar', type: 'String'},
+    ]),
+  },
 };
 
 it('should contain a modal', () => {
@@ -57,7 +57,7 @@ it('should enable add filter button if filter for undefined is checked', async (
   await node.setState({
     valid: true,
     selectedVariable: {type: 'String', name: 'StrVar'},
-    filterForUndefined: true
+    filterForUndefined: true,
   });
 
   const buttons = node.find(Button);
@@ -71,7 +71,7 @@ it('should disable value input if filter for undefined is checked', async () => 
   await node.setState({
     valid: true,
     selectedVariable: {type: 'String', name: 'StrVar'},
-    filterForUndefined: true
+    filterForUndefined: true,
   });
 
   expect(node.find(StringInput).prop('disabled')).toBeTruthy();
@@ -85,10 +85,10 @@ it('should take filter given by properties', async () => {
       type: 'String',
       data: {
         operator: 'not in',
-        values: ['value1', 'value2']
+        values: ['value1', 'value2'],
       },
-      filterForUndefined: true
-    }
+      filterForUndefined: true,
+    },
   };
   const spy = jest.fn();
   const node = shallow(<VariableFilter {...props} filterData={filterData} addFilter={spy} />);
@@ -102,10 +102,10 @@ it('should take filter given by properties', async () => {
       type: 'String',
       data: {
         operator: 'not in',
-        values: ['value1', 'value2']
+        values: ['value1', 'value2'],
       },
-      filterForUndefined: true
-    }
+      filterForUndefined: true,
+    },
   });
 });
 
@@ -114,7 +114,7 @@ it('should enable add filter button if variable selection is valid', async () =>
 
   await node.setState({
     valid: true,
-    selectedVariable: {type: 'String', name: 'StrVar'}
+    selectedVariable: {type: 'String', name: 'StrVar'},
   });
   const buttons = node.find(Button);
   expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
@@ -130,8 +130,8 @@ it('should create a new filter', () => {
     valid: true,
     filter: {
       operator: 'not in',
-      values: ['value1', 'value2']
-    }
+      values: ['value1', 'value2'],
+    },
   });
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
@@ -143,10 +143,10 @@ it('should create a new filter', () => {
       type: 'String',
       data: {
         operator: 'not in',
-        values: ['value1', 'value2']
+        values: ['value1', 'value2'],
       },
-      filterForUndefined: false
-    }
+      filterForUndefined: false,
+    },
   });
 });
 
@@ -157,7 +157,7 @@ it('should create a new filter even if only filter for undefined is checked', ()
   node.setState({
     selectedVariable: {name: 'foo', type: 'String'},
     valid: true,
-    filterForUndefined: true
+    filterForUndefined: true,
   });
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
@@ -168,8 +168,8 @@ it('should create a new filter even if only filter for undefined is checked', ()
       name: 'foo',
       type: 'String',
       data: {},
-      filterForUndefined: true
-    }
+      filterForUndefined: true,
+    },
   });
 });
 
@@ -183,9 +183,9 @@ it('should use custom filter parsing logic from input components', () => {
       data: {
         type: 'static',
         start: 'someDate',
-        end: 'someOtherDate'
-      }
-    }
+        end: 'someOtherDate',
+      },
+    },
   };
   shallow(<VariableFilter {...props} filterData={existingFilter} />);
 
@@ -201,7 +201,7 @@ it('should use custom filter adding logic from input components', () => {
   node.setState({
     selectedVariable,
     valid: true,
-    filter
+    filter,
   });
 
   DateInput.addFilter.mockClear();

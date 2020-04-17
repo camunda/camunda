@@ -11,7 +11,7 @@ const {convertToMilliseconds} = formatters;
 
 jest.mock('services', () => {
   return {
-    formatters: {convertToMilliseconds: jest.fn()}
+    formatters: {convertToMilliseconds: jest.fn()},
   };
 });
 

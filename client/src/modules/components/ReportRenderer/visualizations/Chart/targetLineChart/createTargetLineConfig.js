@@ -14,6 +14,6 @@ export default function createTargetLineConfig(props) {
     type: 'targetLine',
     data: createTargetLineData(props),
     options: createTargetLineOptions(props),
-    plugins: createPlugins(props)
+    plugins: createPlugins(props),
   };
 }

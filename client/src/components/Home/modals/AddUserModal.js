@@ -12,7 +12,7 @@ import {t} from 'translation';
 
 const defaultState = {
   selectedIdentity: null,
-  activeRole: 'viewer'
+  activeRole: 'viewer',
 };
 
 export default class AddUserModal extends React.Component {
@@ -65,7 +65,7 @@ export default class AddUserModal extends React.Component {
           <Form>
             {t('home.userTitle')}
             <Form.Group>
-              <UserTypeahead onChange={selectedIdentity => this.setState({selectedIdentity})} />
+              <UserTypeahead onChange={(selectedIdentity) => this.setState({selectedIdentity})} />
               {alreadyExists && selectedIdentity.type === 'user' && (
                 <Message error>
                   {t('home.roles.existing-user-error')} {t('home.roles.inCollection')}

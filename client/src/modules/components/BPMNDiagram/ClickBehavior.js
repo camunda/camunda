@@ -10,7 +10,7 @@ import './ClickBehavior.scss';
 
 export default class ClickBehavior extends React.Component {
   static defaultProps = {
-    nodeTypes: ['FlowNode']
+    nodeTypes: ['FlowNode'],
   };
 
   render() {
@@ -41,7 +41,7 @@ export default class ClickBehavior extends React.Component {
     const canvas = viewer.get('canvas');
 
     // remove existing selection markers
-    elementRegistry.forEach(element => {
+    elementRegistry.forEach((element) => {
       if (this.isValid(element)) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node');
@@ -51,7 +51,7 @@ export default class ClickBehavior extends React.Component {
     });
   };
 
-  isNodeOrSequence = el => el.$instanceOf('bpmn:FlowNode') || el.$instanceOf('bpmn:SequenceFlow');
+  isNodeOrSequence = (el) => el.$instanceOf('bpmn:FlowNode') || el.$instanceOf('bpmn:SequenceFlow');
 
   update() {
     const {viewer, selectedNodes} = this.props;
@@ -59,7 +59,7 @@ export default class ClickBehavior extends React.Component {
     const canvas = viewer.get('canvas');
 
     // remove existing selection markers and indicate selectable status for all flownodes
-    elementRegistry.forEach(element => {
+    elementRegistry.forEach((element) => {
       if (this.isValid(element)) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.addMarker(element.businessObject.id, 'ClickBehavior__node');
@@ -69,7 +69,7 @@ export default class ClickBehavior extends React.Component {
     });
 
     // add selection marker for all selected nodes
-    selectedNodes.forEach(elementId => {
+    selectedNodes.forEach((elementId) => {
       canvas.addMarker(elementId, 'ClickBehavior__node--selected');
     });
   }
@@ -77,7 +77,7 @@ export default class ClickBehavior extends React.Component {
   getNodeObjects = () => {
     const {viewer, selectedNodes} = this.props;
     const elementRegistry = viewer.get('elementRegistry');
-    const nodes = selectedNodes.map(v => elementRegistry.get(v).businessObject);
+    const nodes = selectedNodes.map((v) => elementRegistry.get(v).businessObject);
     this.props.setSelectedNodes(nodes);
   };
 
@@ -91,8 +91,8 @@ export default class ClickBehavior extends React.Component {
     });
   };
 
-  isValid = element =>
-    this.props.nodeTypes.some(type => element.businessObject.$instanceOf('bpmn:' + type));
+  isValid = (element) =>
+    this.props.nodeTypes.some((type) => element.businessObject.$instanceOf('bpmn:' + type));
 
   onClick = ({element}) => {
     if (this.isValid(element)) {

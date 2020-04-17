@@ -18,7 +18,7 @@ export default class TargetValueComparison extends React.Component {
     super(props);
 
     this.state = {
-      modalOpen: false
+      modalOpen: false,
     };
   }
 
@@ -36,38 +36,38 @@ export default class TargetValueComparison extends React.Component {
     }
   };
 
-  setActive = active => {
+  setActive = (active) => {
     this.props.onChange({
       configuration: {
         heatmapTargetValue: {
-          active: {$set: active}
-        }
-      }
+          active: {$set: active},
+        },
+      },
     });
   };
 
   openModal = async () => {
     this.setState({
-      modalOpen: true
+      modalOpen: true,
     });
   };
 
   closeModal = () => {
     this.setState({
-      modalOpen: false
+      modalOpen: false,
     });
   };
 
-  confirmModal = values => {
+  confirmModal = (values) => {
     this.props.onChange({
       configuration: {
         heatmapTargetValue: {
           $set: {
             active: Object.keys(values).length > 0,
-            values
-          }
-        }
-      }
+            values,
+          },
+        },
+      },
     });
     this.closeModal();
   };

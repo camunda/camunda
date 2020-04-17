@@ -20,11 +20,11 @@ const instanceFilters = [
   'canceledInstancesOnly',
   'nonCanceledInstancesOnly',
   'suspendedInstancesOnly',
-  'nonSuspendedInstancesOnly'
+  'nonSuspendedInstancesOnly',
 ];
 
 export default class FilterList extends React.Component {
-  createOperator = name => <span> {name} </span>;
+  createOperator = (name) => <span> {name} </span>;
 
   getVariableName = (type, nameOrId) => {
     if (this.props.variables && this.props.variables[type].length) {
@@ -43,7 +43,7 @@ export default class FilterList extends React.Component {
         list.push(
           <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
             <ActionItem
-              onClick={evt => {
+              onClick={(evt) => {
                 evt.stopPropagation();
                 this.props.deleteFilter(filter);
               }}
@@ -60,7 +60,7 @@ export default class FilterList extends React.Component {
             list.push(
               <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
                 <ActionItem
-                  onClick={evt => {
+                  onClick={(evt) => {
                     evt.stopPropagation();
                     this.props.deleteFilter(filter);
                   }}
@@ -79,7 +79,7 @@ export default class FilterList extends React.Component {
             list.push(
               <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
                 <ActionItem
-                  onClick={evt => {
+                  onClick={(evt) => {
                     evt.stopPropagation();
                     this.props.deleteFilter(filter);
                   }}
@@ -98,7 +98,7 @@ export default class FilterList extends React.Component {
             list.push(
               <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
                 <ActionItem
-                  onClick={evt => {
+                  onClick={(evt) => {
                     evt.stopPropagation();
                     this.props.deleteFilter(filter);
                   }}
@@ -114,7 +114,7 @@ export default class FilterList extends React.Component {
             list.push(
               <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
                 <ActionItem
-                  onClick={evt => {
+                  onClick={(evt) => {
                     evt.stopPropagation();
                     this.props.deleteFilter(filter);
                   }}
@@ -147,12 +147,12 @@ export default class FilterList extends React.Component {
         } else if (['executedFlowNodes', 'executingFlowNodes'].includes(filter.type)) {
           const {values, operator} = filter.data;
           const flowNodeNames = this.props.flowNodeNames || {};
-          const selectedNodes = values.map(id => ({name: flowNodeNames[id], id}));
+          const selectedNodes = values.map((id) => ({name: flowNodeNames[id], id}));
 
           list.push(
             <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
               <ActionItem
-                onClick={evt => {
+                onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
@@ -167,7 +167,7 @@ export default class FilterList extends React.Component {
           list.push(
             <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
               <ActionItem
-                onClick={evt => {
+                onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
@@ -186,7 +186,7 @@ export default class FilterList extends React.Component {
           list.push(
             <li key={i} className="listItem notEditable">
               <ActionItem
-                onClick={evt => {
+                onClick={(evt) => {
                   evt.stopPropagation();
                   this.props.deleteFilter(filter);
                 }}
@@ -212,5 +212,5 @@ export default class FilterList extends React.Component {
 }
 
 FilterList.defaultProps = {
-  flowNodeNames: {}
+  flowNodeNames: {},
 };

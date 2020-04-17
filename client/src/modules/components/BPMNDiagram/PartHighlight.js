@@ -12,7 +12,7 @@ import './PartHighlight.scss';
 
 export default class PartHighlight extends React.Component {
   static defaultProps = {
-    setHasPath: () => {}
+    setHasPath: () => {},
   };
 
   render() {

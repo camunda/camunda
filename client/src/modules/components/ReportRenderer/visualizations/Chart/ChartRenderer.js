@@ -13,7 +13,7 @@ Chart.defaults.global.defaultFontFamily =
   "'IBM Plex Sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
 
 export default class ChartRenderer extends React.Component {
-  storeContainer = container => {
+  storeContainer = (container) => {
     this.container = container;
   };
 

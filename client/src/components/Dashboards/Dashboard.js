@@ -38,7 +38,7 @@ export class Dashboard extends React.Component {
       reports: [],
       serverError: null,
       isAuthorizedToShare: false,
-      sharingEnabled: false
+      sharingEnabled: false,
     };
   }
 
@@ -65,14 +65,14 @@ export class Dashboard extends React.Component {
       lastModifier: user.id,
       currentUserRole: 'editor',
       reports: [],
-      isAuthorizedToShare: true
+      isAuthorizedToShare: true,
     });
   };
 
   loadDashboard = () => {
     this.props.mightFail(
       loadEntity('dashboard', this.getId()),
-      async response => {
+      async (response) => {
         const {name, lastModifier, currentUserRole, lastModified, reports} = response;
 
         this.setState({
@@ -82,10 +82,10 @@ export class Dashboard extends React.Component {
           loaded: true,
           name,
           reports: reports || [],
-          isAuthorizedToShare: await isAuthorizedToShareDashboard(this.getId())
+          isAuthorizedToShare: await isAuthorizedToShareDashboard(this.getId()),
         });
       },
-      err => {
+      (err) => {
         if (!this.state.loaded) {
           this.setState({serverError: err.status});
         } else {
@@ -97,7 +97,7 @@ export class Dashboard extends React.Component {
 
   goHome = () => {
     this.setState({
-      redirect: '../../'
+      redirect: '../../',
     });
   };
 
@@ -106,7 +106,7 @@ export class Dashboard extends React.Component {
       this.props.mightFail(
         updateEntity('dashboard', id, {
           name,
-          reports
+          reports,
         }),
         () => resolve(this.updateDashboardState(id, name, reports)),
         () => reject(addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'}))
@@ -123,7 +123,7 @@ export class Dashboard extends React.Component {
       redirect: this.isNew() ? `../${id}/` : './',
       isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
       lastModified: getFormattedNowDate(),
-      lastModifier: user.id
+      lastModifier: user.id,
     });
   };
 
@@ -134,7 +134,7 @@ export class Dashboard extends React.Component {
 
         this.props.mightFail(
           createEntity('dashboard', {collectionId, name, reports}),
-          id => resolve(this.updateDashboardState(id, name, reports)),
+          (id) => resolve(this.updateDashboardState(id, name, reports)),
           () => reject(addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'}))
         );
       } else {
@@ -162,7 +162,7 @@ export class Dashboard extends React.Component {
       lastModifier,
       sharingEnabled,
       isAuthorizedToShare,
-      reports
+      reports,
     } = this.state;
 
     if (serverError) {
@@ -181,7 +181,7 @@ export class Dashboard extends React.Component {
       name,
       lastModified,
       lastModifier,
-      id: this.getId()
+      id: this.getId(),
     };
 
     return (

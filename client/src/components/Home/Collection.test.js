@@ -41,14 +41,14 @@ jest.mock('services', () => {
           {
             identity: {
               id: 'kermit',
-              type: 'user' // or group
+              type: 'user', // or group
             },
-            role: 'manager' // or editor, viewer
-          }
+            role: 'manager', // or editor, viewer
+          },
         ], // array of role objects, for details see role endpoints
-        scope: [] // array of scope objects, for details see scope endpoints
-      }
-    })
+        scope: [], // array of scope objects, for details see scope endpoints
+      },
+    }),
   };
 });
 
@@ -65,10 +65,10 @@ jest.mock('./service', () => ({
       currentUserRole: 'editor', // or viewer
       data: {
         subEntityCounts: {
-          report: 8
+          report: 8,
         },
-        roleCounts: {}
-      }
+        roleCounts: {},
+      },
     },
     {
       id: 'aReportId',
@@ -82,25 +82,22 @@ jest.mock('./service', () => ({
       entityType: 'report',
       data: {
         subEntityCounts: {},
-        roleCounts: {}
+        roleCounts: {},
       },
-      currentUserRole: 'editor' // or viewer
-    }
-  ])
+      currentUserRole: 'editor', // or viewer
+    },
+  ]),
 }));
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  match: {params: {id: 'aCollectionId'}}
+  match: {params: {id: 'aCollectionId'}},
 };
 
 it('should pass Entity to Deleter', () => {
   const node = shallow(<Collection {...props} />);
 
-  node
-    .find(EntityList)
-    .prop('data')[0]
-    .actions[2].action();
+  node.find(EntityList).prop('data')[0].actions[2].action();
 
   expect(node.find(Deleter).prop('entity').id).toBe('aDashboardId');
 });
@@ -108,10 +105,7 @@ it('should pass Entity to Deleter', () => {
 it('should show an edit modal when clicking the edit button', () => {
   const node = shallow(<Collection {...props} />);
 
-  node
-    .find(Dropdown.Option)
-    .at(0)
-    .simulate('click');
+  node.find(Dropdown.Option).at(0).simulate('click');
 
   expect(node.find(CollectionModal)).toExist();
 });
@@ -133,7 +127,7 @@ it('should hide edit/delete from context menu for collection items that does not
     owner: 'user_id',
     lastModifier: 'user_id',
     currentUserRole: 'editor',
-    data: {}
+    data: {},
   });
   const node = shallow(<Collection {...props} />);
 
@@ -152,10 +146,7 @@ it('should render content depending on the selected tab', () => {
 it('should show the copy modal when clicking the copy button', () => {
   const node = shallow(<Collection {...props} />);
 
-  node
-    .find(Dropdown.Option)
-    .at(1)
-    .simulate('click');
+  node.find(Dropdown.Option).at(1).simulate('click');
 
   expect(node.find(Copier)).toExist();
 });
@@ -169,7 +160,7 @@ it('should hide create new button if the user role is viewer', () => {
     owner: 'user_id',
     lastModifier: 'user_id',
     currentUserRole: 'viewer',
-    data: {}
+    data: {},
   });
   const node = shallow(<Collection {...props} />);
 

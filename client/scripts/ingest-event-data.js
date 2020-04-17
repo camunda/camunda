@@ -16,9 +16,9 @@ console.debug('ingesting event data');
       method: 'POST',
       headers: {
         Authorization: 'secret',
-        'Content-Type': 'application/cloudevents-batch+json'
+        'Content-Type': 'application/cloudevents-batch+json',
       },
-      body: JSON.stringify(eventData)
+      body: JSON.stringify(eventData),
     });
 
     if (response && response.status != 204) {

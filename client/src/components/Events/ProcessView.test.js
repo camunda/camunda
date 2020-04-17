@@ -23,15 +23,15 @@ jest.mock('./service', () => ({
     name: 'Process Name',
     xml: 'Process XML',
     mappings: {},
-    state: 'mapped'
+    state: 'mapped',
   }),
-  cancelPublish: jest.fn()
+  cancelPublish: jest.fn(),
 }));
 
 const props = {
   id: 'processId',
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  onDelete: jest.fn()
+  onDelete: jest.fn(),
 };
 
 it('should match snapshot', () => {
@@ -85,7 +85,7 @@ it('should correctly set the republish prop on the PublishModal', () => {
     name: 'Process Name',
     xml: 'Process XML',
     mappings: {},
-    state: 'unpublished_changes'
+    state: 'unpublished_changes',
   });
   const node = shallow(<ProcessView {...props} />);
 
@@ -101,7 +101,7 @@ it('should allow cancel of an ongoing publish', () => {
     xml: 'Process XML',
     mappings: {},
     state: 'publish_pending',
-    publishingProgress: 14
+    publishingProgress: 14,
   });
 
   const node = shallow(<ProcessView {...props} />);

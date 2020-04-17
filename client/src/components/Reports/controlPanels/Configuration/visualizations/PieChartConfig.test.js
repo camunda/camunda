@@ -10,12 +10,12 @@ import PieChartConfig from './PieChartConfig';
 
 const configuration = {
   alwaysShowAbsolute: true,
-  alwaysShowRelative: false
+  alwaysShowRelative: false,
 };
 
 const pieReport = {
   combined: false,
-  data: {visualization: 'pie', view: {property: 'frequency'}, configuration}
+  data: {visualization: 'pie', view: {property: 'frequency'}, configuration},
 };
 
 it('it should display correct configuration for piechart', () => {

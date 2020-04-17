@@ -12,7 +12,7 @@ const {
   options: {view, groupBy, visualization},
   getLabelFor,
   isAllowed,
-  update
+  update,
 } = reportConfig(process);
 
 it('should get a label for a simple visualization', () => {
@@ -35,7 +35,7 @@ it('should get a label for group by variables for dmn', () => {
   expect(
     getLabelFor('groupBy', decision.groupBy, {
       type: 'inputVariable',
-      value: {id: 'anId', name: 'aName'}
+      value: {id: 'anId', name: 'aName'},
     })
   ).toBe('Input Variable: aName');
 });
@@ -66,13 +66,13 @@ it('should allow only visualization options that make sense for the selected vie
       null,
       {
         entity: 'processInstance',
-        property: 'duration'
+        property: 'duration',
       },
       {
         type: 'startDate',
         value: {
-          unit: 'day'
-        }
+          unit: 'day',
+        },
       },
       'pie'
     )
@@ -82,11 +82,11 @@ it('should allow only visualization options that make sense for the selected vie
       null,
       {
         entity: 'processInstance',
-        property: 'duration'
+        property: 'duration',
       },
       {
         type: 'none',
-        value: null
+        value: null,
       },
       'pie'
     )
@@ -117,12 +117,12 @@ it('should forbid line, pie charts and heatmap for distributed userTask reports'
 describe('update', () => {
   const countProcessInstances = {
     entity: 'processInstance',
-    property: 'frequency'
+    property: 'frequency',
   };
 
   const startDate = {
     type: 'startDate',
-    value: {unit: 'month'}
+    value: {unit: 'month'},
   };
 
   it('should just update visualization', () => {
@@ -135,9 +135,9 @@ describe('update', () => {
         report: {
           data: {
             view: countProcessInstances,
-            visualization: 'bar'
-          }
-        }
+            visualization: 'bar',
+          },
+        },
       })
     ).toEqual({groupBy: {$set: startDate}});
   });
@@ -148,9 +148,9 @@ describe('update', () => {
         report: {
           data: {
             view: countProcessInstances,
-            visualization: 'number'
-          }
-        }
+            visualization: 'number',
+          },
+        },
       })
     ).toEqual({groupBy: {$set: startDate}, visualization: {$set: null}});
   });
@@ -164,9 +164,9 @@ describe('update', () => {
           report: {
             data: {
               view: countProcessInstances,
-              visualization: 'heat'
-            }
-          }
+              visualization: 'heat',
+            },
+          },
         }
       )
     ).toEqual({groupBy: {$set: {type: 'none', value: null}}, visualization: {$set: 'number'}});
@@ -178,9 +178,9 @@ describe('update', () => {
         report: {
           data: {
             groupBy: startDate,
-            visualization: 'bar'
-          }
-        }
+            visualization: 'bar',
+          },
+        },
       })
     ).toEqual({view: {$set: countProcessInstances}});
   });
@@ -191,14 +191,14 @@ describe('update', () => {
         report: {
           data: {
             groupBy: {type: 'flowNodes', value: null},
-            visualization: 'heat'
-          }
-        }
+            visualization: 'heat',
+          },
+        },
       })
     ).toEqual({
       view: {$set: countProcessInstances},
       groupBy: {$set: null},
-      visualization: {$set: null}
+      visualization: {$set: null},
     });
   });
 });

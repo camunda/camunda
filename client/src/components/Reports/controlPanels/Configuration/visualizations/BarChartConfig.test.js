@@ -16,12 +16,12 @@ const configuration = {
   xLabel: '',
   yLabel: '',
   targetValue: {active: false},
-  distributedBy: 'none'
+  distributedBy: 'none',
 };
 
 const barReport = {
   combined: false,
-  data: {visualization: 'bar', view: {property: 'frequency'}, groupBy: {}, configuration}
+  data: {visualization: 'bar', view: {property: 'frequency'}, groupBy: {}, configuration},
 };
 
 it('it should display correct configuration for barchart', () => {
@@ -35,7 +35,7 @@ it('should not display show instance count and color picker for combined reports
       report={{
         ...barReport,
         combined: true,
-        result: {data: {test: {data: {view: {property: 'frequency'}}}}}
+        result: {data: {test: {data: {view: {property: 'frequency'}}}}},
       }}
     />
   );
@@ -52,8 +52,8 @@ it('should not display color picker for hyper reports (distributed by user task)
         data: {
           ...barReport.data,
           groupBy: {type: 'assignee'},
-          configuration: {...configuration, distributedBy: 'userTask'}
-        }
+          configuration: {...configuration, distributedBy: 'userTask'},
+        },
       }}
     />
   );

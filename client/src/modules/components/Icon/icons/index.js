@@ -97,7 +97,7 @@ const icons = {
   dashboard,
   'data-source': dataSource,
   report,
-  process
+  process,
 };
 
 export default icons;

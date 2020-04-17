@@ -20,14 +20,14 @@ import {t} from 'translation';
 export default class Filter extends React.Component {
   state = {
     newFilterType: null,
-    editFilter: null
+    editFilter: null,
   };
 
-  openNewFilterModal = type => evt => {
+  openNewFilterModal = (type) => (evt) => {
     this.setState({newFilterType: type});
   };
 
-  openEditFilterModal = filter => evt => {
+  openEditFilterModal = (filter) => (evt) => {
     this.setState({editFilter: filter});
   };
 
@@ -35,7 +35,7 @@ export default class Filter extends React.Component {
     this.setState({newFilterType: null, editFilter: null});
   };
 
-  getFilterModal = type => {
+  getFilterModal = (type) => {
     switch (type) {
       case 'startDate':
       case 'endDate':
@@ -52,7 +52,7 @@ export default class Filter extends React.Component {
     }
   };
 
-  getFilterConfig = type => {
+  getFilterConfig = (type) => {
     if (type === 'variable') {
       const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
       return {
@@ -68,26 +68,26 @@ export default class Filter extends React.Component {
             0,
             numResults,
             valueFilter
-          )
+          ),
       };
     }
   };
 
-  editFilter = newFilter => {
+  editFilter = (newFilter) => {
     const filters = this.props.data;
 
-    const index = filters.indexOf(filters.find(v => this.state.editFilter.data === v.data));
+    const index = filters.indexOf(filters.find((v) => this.state.editFilter.data === v.data));
 
     this.props.onChange({filter: {[index]: {$set: newFilter}}}, true);
     this.closeModal();
   };
 
-  addFilter = newFilter => {
+  addFilter = (newFilter) => {
     let filters = this.props.data;
     filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['startDate']);
     filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['endDate']);
     filters = filterIncompatibleExistingFilters(filters, newFilter.type, [
-      'completedInstancesOnly'
+      'completedInstancesOnly',
     ]);
     filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['runningInstancesOnly']);
     filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['canceledInstancesOnly']);
@@ -96,10 +96,10 @@ export default class Filter extends React.Component {
     this.closeModal();
   };
 
-  deleteFilter = oldFilter => {
+  deleteFilter = (oldFilter) => {
     this.props.onChange(
       {
-        filter: {$set: this.props.data.filter(filter => oldFilter !== filter)}
+        filter: {$set: this.props.data.filter((filter) => oldFilter !== filter)},
       },
       true
     );
@@ -108,7 +108,7 @@ export default class Filter extends React.Component {
   definitionConfig = () => {
     return {
       processDefinitionKey: this.props.processDefinitionKey,
-      processDefinitionVersions: this.props.processDefinitionVersions
+      processDefinitionVersions: this.props.processDefinitionVersions,
     };
   };
 
@@ -121,10 +121,10 @@ export default class Filter extends React.Component {
     );
   };
 
-  filterByInstancesOnly = type => evt => {
+  filterByInstancesOnly = (type) => (evt) => {
     this.addFilter({
       type,
-      data: null
+      data: null,
     });
   };
 

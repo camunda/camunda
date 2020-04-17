@@ -18,7 +18,7 @@ Enzyme.configure({adapter: new Adapter()});
 document.execCommand = jest.fn();
 
 it('load translation', async () => {
-  jest.spyOn(request, 'get').mockImplementationOnce(async url => ({json: () => translation}));
+  jest.spyOn(request, 'get').mockImplementationOnce(async (url) => ({json: () => translation}));
   await init();
 });
 

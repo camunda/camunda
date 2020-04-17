@@ -14,9 +14,9 @@ jest.mock('services', () => {
   return {
     ...jest.requireActual('services'),
     formatters: {
-      camelCaseToLabel: text =>
-        text.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
-    }
+      camelCaseToLabel: (text) =>
+        text.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()),
+    },
   };
 });
 
@@ -35,9 +35,9 @@ it('should display date preview if the filter is a date filter', () => {
       data: {
         type: 'fixed',
         start: startDate,
-        end: endDate
-      }
-    }
+        end: endDate,
+      },
+    },
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
@@ -61,10 +61,10 @@ it('should display a simple variable filter', () => {
         type: 'String',
         data: {
           operator: 'in',
-          values: ['varValue']
-        }
-      }
-    }
+          values: ['varValue'],
+        },
+      },
+    },
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
@@ -80,9 +80,9 @@ it('should display a variable filter with filter for undefined values selected',
         name: 'varName',
         type: 'String',
         filterForUndefined: true,
-        data: {}
-      }
-    }
+        data: {},
+      },
+    },
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
@@ -99,10 +99,10 @@ it('should use the variables prop to resolve variable names', () => {
         type: 'String',
         data: {
           operator: 'in',
-          values: ['varValue']
-        }
-      }
-    }
+          values: ['varValue'],
+        },
+      },
+    },
   ];
 
   const node = shallow(
@@ -113,8 +113,8 @@ it('should use the variables prop to resolve variable names', () => {
 
   node.setProps({
     variables: {
-      inputVariable: [{id: 'notANameButAnId', name: 'Resolved Name', type: 'String'}]
-    }
+      inputVariable: [{id: 'notANameButAnId', name: 'Resolved Name', type: 'String'}],
+    },
   });
 
   expect(node.find('ActionItem span').first()).toIncludeText('Resolved Name');
@@ -132,10 +132,10 @@ it('should display a date variable filter as a range', () => {
         data: {
           type: 'fixed',
           start: startDate,
-          end: endDate
-        }
-      }
-    }
+          end: endDate,
+        },
+      },
+    },
   ];
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
@@ -153,10 +153,10 @@ it('should combine multiple variable values with or', () => {
         type: 'String',
         data: {
           operator: 'in',
-          values: ['varValue', 'varValue2']
-        }
-      }
-    }
+          values: ['varValue', 'varValue2'],
+        },
+      },
+    },
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
@@ -173,10 +173,10 @@ it('should combine multiple variable names with neither/nor for the not in opera
         type: 'String',
         data: {
           operator: 'not in',
-          values: ['varValue', 'varValue2']
-        }
-      }
-    }
+          values: ['varValue', 'varValue2'],
+        },
+      },
+    },
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
@@ -190,9 +190,9 @@ it('should display nodeListPreview for flow node filter', async () => {
       type: 'executedFlowNodes',
       data: {
         operator: 'in',
-        values: ['flowNode']
-      }
-    }
+        values: ['flowNode'],
+      },
+    },
   ];
 
   const node = shallow(
@@ -206,7 +206,7 @@ it('should display nodeListPreview for flow node filter', async () => {
 
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'flowNode', name: 'flow node name'}],
-    operator: 'in'
+    operator: 'in',
   });
 });
 
@@ -215,16 +215,16 @@ it('should display a flow node filter with executing nodes', () => {
     {
       type: 'executingFlowNodes',
       data: {
-        values: ['flowNode1']
-      }
-    }
+        values: ['flowNode1'],
+      },
+    },
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'flowNode1', name: undefined}],
-    operator: undefined
+    operator: undefined,
   });
 });
 
@@ -235,9 +235,9 @@ it('should display a duration filter', () => {
       data: {
         operator: '<',
         value: 18,
-        unit: 'hours'
-      }
-    }
+        unit: 'hours',
+      },
+    },
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
@@ -249,8 +249,8 @@ it('should display a running instances only filter', () => {
   const data = [
     {
       type: 'runningInstancesOnly',
-      data: null
-    }
+      data: null,
+    },
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} a />);
@@ -262,8 +262,8 @@ it('should display a completed instances only filter', () => {
   const data = [
     {
       type: 'completedInstancesOnly',
-      data: null
-    }
+      data: null,
+    },
   ];
 
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} a />);

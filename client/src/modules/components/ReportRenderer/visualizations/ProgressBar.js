@@ -39,7 +39,7 @@ export default function ProgressBar({min, max, value, formatter, precision}) {
         <div
           className="goalOverlay"
           style={{
-            width: `${goalPercentage}%`
+            width: `${goalPercentage}%`,
           }}
         >
           <span className={classnames('goalLabel', {rightSide: goalPercentage > 50})}>

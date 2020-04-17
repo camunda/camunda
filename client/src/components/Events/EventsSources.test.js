@@ -12,7 +12,7 @@ import EventsSources from './EventsSources';
 import {Dropdown} from 'components';
 
 const props = {
-  sources: [{type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}]
+  sources: [{type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}],
 };
 
 it('should match snapshot', () => {
@@ -33,10 +33,7 @@ it('should remove a source from the list', () => {
   const spy = jest.fn();
   const node = shallow(<EventsSources {...props} onChange={spy} />);
 
-  node
-    .find(Dropdown.Option)
-    .at(2)
-    .simulate('click');
+  node.find(Dropdown.Option).at(2).simulate('click');
 
   node.find('DeleterErrorHandler').prop('deleteEntity')(props.sources[0]);
 
@@ -47,10 +44,7 @@ it('should hide/show source', () => {
   const spy = jest.fn();
   const node = shallow(<EventsSources {...props} onChange={spy} />);
 
-  node
-    .find(Dropdown.Option)
-    .at(0)
-    .simulate('click');
+  node.find(Dropdown.Option).at(0).simulate('click');
 
   expect(spy).toHaveBeenCalledWith(
     [{hidden: true, type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}],
@@ -61,13 +55,10 @@ it('should hide/show source', () => {
 it('should edit a source from the list', () => {
   const node = shallow(<EventsSources {...props} />);
 
-  node
-    .find(Dropdown.Option)
-    .at(1)
-    .simulate('click');
+  node.find(Dropdown.Option).at(1).simulate('click');
 
   expect(node.find(EventsSourceModal).prop('initialSource')).toEqual({
     processDefinitionKey: 'src1',
-    type: 'camunda'
+    type: 'camunda',
   });
 });

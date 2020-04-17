@@ -24,7 +24,7 @@ export default function EntityList({
   data,
   empty,
   embedded,
-  columns
+  columns,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
@@ -43,7 +43,7 @@ export default function EntityList({
   return (
     <div
       className={classnames('EntityList', {scrolled, embedded})}
-      onScroll={evt => setScrolled(evt.target.scrollTop > 0)}
+      onScroll={(evt) => setScrolled(evt.target.scrollTop > 0)}
     >
       <div className="header">
         <div className="titleBar">

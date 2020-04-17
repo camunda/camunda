@@ -18,7 +18,7 @@ export function convertFilterToState(filter) {
       state = {
         dateType: 'custom',
         unit: unit,
-        customNum: value
+        customNum: value,
       };
     } else if (value === 0) {
       const dateType = unit === 'days' ? 'today' : 'this';
@@ -47,21 +47,21 @@ export function convertStateToFilter({dateType, unit, customNum, startDate, endD
     case 'last':
       filter.start = {
         value: 1,
-        unit: unit
+        unit: unit,
       };
       break;
     case 'fixed':
       filter = {
         type: 'fixed',
         start: startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-        end: endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')
+        end: endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
       };
       break;
     case 'custom':
       filter = {
         type: 'relative',
         start: {value: customNum, unit},
-        end: null
+        end: null,
       };
       break;
     default:

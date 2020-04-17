@@ -28,7 +28,7 @@ export default function CountTargetInput({baseline, target, disabled, onChange})
           value={baseline}
           disabled={disabled}
           isInvalid={baselineInvalid}
-          onChange={evt => onChange('baseline', evt.target.value)}
+          onChange={(evt) => onChange('baseline', evt.target.value)}
         />
         <LabeledInput
           label={t('report.config.goal.target')}
@@ -37,7 +37,7 @@ export default function CountTargetInput({baseline, target, disabled, onChange})
           value={target}
           disabled={disabled}
           isInvalid={targetInvalid || tooLow}
-          onChange={evt => onChange('target', evt.target.value)}
+          onChange={(evt) => onChange('target', evt.target.value)}
         />
       </Form.InputGroup>
       {(targetInvalid || baselineInvalid) && (

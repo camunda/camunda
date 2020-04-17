@@ -10,7 +10,10 @@ import {uniteResults} from '../../service';
 
 jest.mock('../../service', () => {
   return {
-    uniteResults: jest.fn().mockReturnValue([{key: 'foo', value: 123}, {key: 'bar', value: 5}])
+    uniteResults: jest.fn().mockReturnValue([
+      {key: 'foo', value: 123},
+      {key: 'bar', value: 5},
+    ]),
   };
 });
 
@@ -18,13 +21,18 @@ jest.mock('../colorsUtils', () => {
   const rest = jest.requireActual('../colorsUtils');
   return {
     ...rest,
-    createColors: jest.fn().mockReturnValue([])
+    createColors: jest.fn().mockReturnValue([]),
   };
 });
 
 it('should return correct chart data object for a single report', () => {
   uniteResults.mockClear();
-  const result = {data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]};
+  const result = {
+    data: [
+      {key: 'foo', value: 123},
+      {key: 'bar', value: 5},
+    ],
+  };
   uniteResults.mockReturnValue([result]);
 
   const chartData = createDefaultChartData({
@@ -35,14 +43,14 @@ it('should return correct chart data object for a single report', () => {
         visualization: 'line',
         groupBy: {
           type: '',
-          value: ''
+          value: '',
         },
-        view: {}
+        view: {},
       },
       targetValue: false,
-      combined: false
+      combined: false,
     },
-    theme: 'light'
+    theme: 'light',
   });
 
   expect(chartData).toEqual({
@@ -53,8 +61,8 @@ it('should return correct chart data object for a single report', () => {
         data: [5, 123],
         borderColor: 'testColor',
         backgroundColor: 'transparent',
-        borderWidth: 2
-      }
-    ]
+        borderWidth: 2,
+      },
+    ],
   });
 });

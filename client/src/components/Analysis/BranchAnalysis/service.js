@@ -41,14 +41,14 @@ function createFlowNodeFrequencyReport(
       filter,
       view: {
         entity: 'flowNode',
-        property: 'frequency'
+        property: 'frequency',
       },
       groupBy: {
         type: 'flowNodes',
-        unit: null
+        unit: null,
       },
-      visualization: 'heat'
-    }
+      visualization: 'heat',
+    },
   };
 }
 
@@ -66,7 +66,7 @@ export async function loadCorrelationData(
     tenantIds,
     filter,
     gateway,
-    end
+    end,
   });
 
   return await response.json();

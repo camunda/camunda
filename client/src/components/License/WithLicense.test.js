@@ -11,11 +11,11 @@ import {addHandler} from 'request';
 
 import WithLicense from './WithLicense';
 
-jest.mock('react', () => ({...jest.requireActual('react'), useEffect: fn => fn()}));
+jest.mock('react', () => ({...jest.requireActual('react'), useEffect: (fn) => fn()}));
 
 jest.mock('request', () => ({
   addHandler: jest.fn(),
-  removeHandler: jest.fn()
+  removeHandler: jest.fn(),
 }));
 
 it('should render child content', () => {
@@ -33,7 +33,7 @@ it('should should instead render the License page if a response has a 403 status
 
   await addHandler.mock.calls[0][0]({
     status: 403,
-    clone: () => ({json: () => ({errorCode: 'noLicenseStoredError'})})
+    clone: () => ({json: () => ({errorCode: 'noLicenseStoredError'})}),
   });
 
   const content = node.renderProp('render')();

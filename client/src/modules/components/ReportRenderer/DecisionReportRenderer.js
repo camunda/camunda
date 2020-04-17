@@ -29,7 +29,7 @@ export default function DecisionReportRenderer(props) {
   const {
     visualization,
     view,
-    groupBy: {type}
+    groupBy: {type},
   } = props.report.data;
   const Component = getComponent(type, visualization);
 

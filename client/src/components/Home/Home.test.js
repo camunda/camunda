@@ -20,16 +20,16 @@ jest.mock('./service', () => ({
       name: 'Test Report',
       data: {
         roleCounts: {},
-        subEntityCounts: {}
+        subEntityCounts: {},
       },
       reportType: 'process',
-      combined: false
-    }
-  ])
+      combined: false,
+    },
+  ]),
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should load entities', () => {

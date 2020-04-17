@@ -10,7 +10,7 @@ import StringInput from './StringInput';
 
 import {shallow} from 'enzyme';
 
-jest.mock('debounce', () => foo => foo);
+jest.mock('debounce', () => (foo) => foo);
 
 const props = {
   processDefinitionKey: 'procDefKey',
@@ -18,7 +18,7 @@ const props = {
   variable: {name: 'foo', type: 'String'},
   filter: StringInput.defaultFilter,
   config: {getValues: jest.fn().mockReturnValue(['val1', 'val2'])},
-  setValid: jest.fn()
+  setValid: jest.fn(),
 };
 
 it('should show a typeahead', () => {
@@ -37,7 +37,7 @@ it('should pass available values to the typeahead', () => {
   const availableValues = ['value1', 'value2', 'value3'];
   const node = shallow(<StringInput {...props} />);
   node.setState({
-    availableValues
+    availableValues,
   });
 
   expect(node.find('TypeaheadMultipleSelection').props().availableValues).toEqual(availableValues);
@@ -49,7 +49,7 @@ it('should load 10 more values if the user wants more', () => {
     availableValues: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     valuesAreComplete: false,
     valuesLoaded: 10,
-    loading: false
+    loading: false,
   });
 
   node.find('.StringInput__load-more-button').simulate('click', {preventDefault: jest.fn()});

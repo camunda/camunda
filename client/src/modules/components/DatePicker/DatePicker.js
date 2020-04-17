@@ -20,27 +20,27 @@ export default class DatePicker extends React.Component {
       this.state = {
         startDate: startDate.format(DATE_FORMAT),
         endDate: endDate.format(DATE_FORMAT),
-        valid: true
+        valid: true,
       };
     } else {
       this.state = {
         startDate: '',
         endDate: '',
-        valid: false
+        valid: false,
       };
     }
   }
 
-  setValidState = valid => this.setState({valid});
+  setValidState = (valid) => this.setState({valid});
 
-  setDates = dates => this.setState({...dates});
+  setDates = (dates) => this.setState({...dates});
 
   onDateChange = (name, date) => {
     const dateObj = moment(date, DATE_FORMAT);
 
     this.setState(
       {
-        [name]: date
+        [name]: date,
       },
       () => {
         const isAllValid = isDateValid(this.state.startDate) && isDateValid(this.state.endDate);
@@ -49,7 +49,7 @@ export default class DatePicker extends React.Component {
         this.props.onDateChange({
           startDate: moment(this.state.startDate, DATE_FORMAT),
           endDate: moment(this.state.endDate, DATE_FORMAT),
-          valid: isAllValid
+          valid: isAllValid,
         });
 
         if (
@@ -59,7 +59,7 @@ export default class DatePicker extends React.Component {
         ) {
           return this.setState({
             startDate: date,
-            endDate: date
+            endDate: date,
           });
         }
       }

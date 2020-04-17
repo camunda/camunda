@@ -16,7 +16,7 @@ jest.mock('notifications', () => ({showError: jest.fn()}));
 
 jest.mock('./service', () => {
   return {
-    isAuthorizedToShareDashboard: jest.fn()
+    isAuthorizedToShareDashboard: jest.fn(),
   };
 });
 
@@ -26,7 +26,7 @@ jest.mock('services', () => {
     ...rest,
     loadEntity: jest.fn().mockReturnValue({}),
     deleteEntity: jest.fn(),
-    createEntity: jest.fn().mockReturnValue('id')
+    createEntity: jest.fn().mockReturnValue('id'),
   };
 });
 
@@ -34,7 +34,7 @@ const props = {
   match: {params: {id: '1'}},
   location: {},
   mightFail: (promise, cb) => cb(promise),
-  getUser: () => ({id: 'demo'})
+  getUser: () => ({id: 'demo'}),
 };
 
 beforeEach(() => {
@@ -45,7 +45,7 @@ it("should show an error page if dashboard doesn't exist", () => {
   const node = shallow(<Dashboard {...props} />);
 
   node.setState({
-    serverError: 404
+    serverError: 404,
   });
 
   expect(node).toIncludeText('ErrorPage');
@@ -55,7 +55,7 @@ it('should show a notification error if dashboard fails to load on refresh', () 
   const node = shallow(<Dashboard {...props} />);
 
   node.setState({
-    loaded: true
+    loaded: true,
   });
 
   node.setProps({mightFail: (promise, cb, error) => error('Loading failed')});
@@ -92,7 +92,7 @@ it('should create a new dashboard when saving a new one', async () => {
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: null,
     name: 'testname',
-    reports: [{id: 'reportID'}]
+    reports: [{id: 'reportID'}],
   });
 });
 
@@ -110,7 +110,7 @@ it('should create a new dashboard in a collection', async () => {
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: '123',
     name: 'testname',
-    reports: []
+    reports: [],
   });
 });
 
@@ -121,7 +121,7 @@ it('should redirect to the Overview page on dashboard deletion', async () => {
   node.instance().componentDidUpdate = jest.fn();
 
   node.setState({
-    loaded: true
+    loaded: true,
   });
 
   await node.find(DashboardView).prop('onDelete')();

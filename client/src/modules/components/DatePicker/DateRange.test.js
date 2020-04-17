@@ -14,7 +14,7 @@ import {shallow} from 'enzyme';
 const props = {
   startDate: moment.utc('2012-12-15'),
   endDate: moment.utc('2018-05-02'),
-  onDateChange: jest.fn()
+  onDateChange: jest.fn(),
 };
 
 it('match snapshot', () => {

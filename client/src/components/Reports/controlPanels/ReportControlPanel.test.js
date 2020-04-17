@@ -15,7 +15,7 @@ import {DefinitionSelection} from 'components';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
 
-const flushPromises = () => new Promise(resolve => setImmediate(resolve));
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -31,19 +31,19 @@ jest.mock('services', () => {
           view: {foo: {data: 'foo', label: 'viewfoo'}},
           groupBy: {
             foo: {data: 'foo', label: 'groupbyfoo'},
-            variable: {data: {value: []}, label: 'Variables'}
+            variable: {data: {value: []}, label: 'Variables'},
           },
-          visualization: {foo: {data: 'foo', label: 'visualizationfoo'}}
+          visualization: {foo: {data: 'foo', label: 'visualizationfoo'}},
         },
         isAllowed: jest.fn().mockReturnValue(true),
         getNext: jest.fn(),
-        update: jest.fn()
-      }
+        update: jest.fn(),
+      },
     },
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
-      b: 'bar'
-    })
+      b: 'bar',
+    }),
   };
 });
 
@@ -56,24 +56,21 @@ const report = {
     groupBy: {type: 'none', unit: null},
     visualization: 'number',
     filter: [],
-    configuration: {xml: 'fooXml'}
+    configuration: {xml: 'fooXml'},
   },
-  result: {instanceCount: 3}
+  result: {instanceCount: 3},
 };
 
 const props = {
   report,
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
   const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
 
-  node
-    .find(ReportSelect)
-    .at(0)
-    .prop('onChange')('newSetting');
+  node.find(ReportSelect).at(0).prop('onChange')('newSetting');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -100,14 +97,14 @@ it('should load the variables of the process', () => {
   node.setProps({
     report: {
       ...report,
-      data: {...report.data, processDefinitionKey: 'bar', processDefinitionVersions: ['ALL']}
-    }
+      data: {...report.data, processDefinitionKey: 'bar', processDefinitionVersions: ['ALL']},
+    },
   });
 
   expect(loadVariables).toHaveBeenCalledWith({
     processDefinitionKey: 'bar',
     processDefinitionVersions: ['ALL'],
-    tenantIds: []
+    tenantIds: [],
   });
 });
 
@@ -134,7 +131,7 @@ it('should load the flownode names and hand them to the filter and process part'
       {...props}
       report={{
         ...report,
-        data: {...report.data, view: {entity: 'processInstance', property: 'duration'}}
+        data: {...report.data, view: {entity: 'processInstance', property: 'duration'}},
       }}
     />
   );
@@ -153,7 +150,7 @@ it('should only display process part button if view is process instance duration
       {...props}
       report={{
         ...report,
-        data: {...report.data, view: {entity: 'processInstance', property: 'duration'}}
+        data: {...report.data, view: {entity: 'processInstance', property: 'duration'}},
       }}
     />
   );
@@ -163,8 +160,8 @@ it('should only display process part button if view is process instance duration
   node.setProps({
     report: {
       ...report,
-      data: {...report.data, view: {entity: 'processInstance', property: 'frequency'}}
-    }
+      data: {...report.data, view: {entity: 'processInstance', property: 'frequency'}},
+    },
   });
 
   expect(node.find('ProcessPart')).not.toExist();
@@ -179,8 +176,8 @@ it('should only display target value button if view is flownode duration', () =>
         data: {
           ...report.data,
           visualization: 'heat',
-          view: {entity: 'flowNode', property: 'duration'}
-        }
+          view: {entity: 'flowNode', property: 'duration'},
+        },
       }}
     />
   );
@@ -188,7 +185,7 @@ it('should only display target value button if view is flownode duration', () =>
   expect(node.find('TargetValueComparison')).toExist();
 
   node.setProps({
-    report: {...report, data: {...report.data, view: {entity: 'flowNode', property: 'frequency'}}}
+    report: {...report, data: {...report.data, view: {entity: 'flowNode', property: 'frequency'}}},
   });
 
   expect(node.find('TargetValueComparison')).not.toExist();
@@ -203,7 +200,7 @@ it('should load the process definition xml when a new definition is selected', a
   await node.find(DefinitionSelection).prop('onChange')({
     key: 'newDefinition',
     versions: ['1'],
-    tenantIds: ['a', 'b']
+    tenantIds: ['a', 'b'],
   });
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', '1', 'a');
@@ -222,9 +219,9 @@ it('should remove incompatible filters when changing the process definition', as
             {type: 'startDate'},
             {type: 'executingFlowNodes'},
             {type: 'executedFlowNodes'},
-            {type: 'variable'}
-          ]
-        }
+            {type: 'variable'},
+          ],
+        },
       }}
       updateReport={spy}
     />

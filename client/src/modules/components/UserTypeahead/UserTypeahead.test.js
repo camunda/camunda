@@ -11,18 +11,18 @@ import UserTypeahead from './UserTypeahead';
 import {searchIdentities} from './service';
 
 jest.mock('debounce', () =>
-  jest.fn(fn => {
+  jest.fn((fn) => {
     fn.clear = jest.fn();
     return fn;
   })
 );
 
 jest.mock('./service', () => ({
-  searchIdentities: jest.fn().mockReturnValue({result: [], total: 50})
+  searchIdentities: jest.fn().mockReturnValue({result: [], total: 50}),
 }));
 
 const props = {
-  onChange: jest.fn()
+  onChange: jest.fn(),
 };
 
 it('should render a Typeahead', () => {
@@ -62,8 +62,8 @@ it('should format user list information correctly', () => {
     identities: [
       {id: 'testUser'},
       {id: 'user2', email: 'testUser@test.com'},
-      {id: 'groupId', name: 'groupName', email: 'group@test.com', type: 'group'}
-    ]
+      {id: 'groupId', name: 'groupName', email: 'group@test.com', type: 'group'},
+    ],
   });
 
   expect(node).toMatchSnapshot();

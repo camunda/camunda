@@ -16,7 +16,7 @@ const timeUnits = {
   days: {value: 24 * 60 * 60 * 1000, abbreviation: 'd', label: 'day'},
   weeks: {value: 7 * 24 * 60 * 60 * 1000, abbreviation: 'wk', label: 'week'},
   months: {value: 30 * 24 * 60 * 60 * 1000, abbreviation: 'm', label: 'month'},
-  years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y', label: 'year'}
+  years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y', label: 'year'},
 };
 
 export function frequency(number, precision) {
@@ -72,10 +72,10 @@ export function duration(timeObject, precision) {
   let remainingTime = time;
   let remainingPrecision = precision;
   Object.keys(timeUnits)
-    .map(key => timeUnits[key])
+    .map((key) => timeUnits[key])
     .sort((a, b) => b.value - a.value)
     .filter(({value}) => value <= time)
-    .forEach(currentUnit => {
+    .forEach((currentUnit) => {
       if (precision) {
         if (remainingPrecision-- > 0) {
           let number = Math.floor(remainingTime / currentUnit.value);
@@ -112,28 +112,28 @@ export function getRelativeValue(data, total) {
   return Math.round((data / total) * 1000) / 10 + '%';
 }
 
-export const convertDurationToObject = value => {
+export const convertDurationToObject = (value) => {
   // sort the time units in descending order, then find the first one
   // that fits the provided value without any decimal places
   const [divisor, unit] = Object.keys(timeUnits)
-    .map(key => [timeUnits[key].value, key])
+    .map((key) => [timeUnits[key].value, key])
     .sort(([a], [b]) => b - a)
     .find(([divisor]) => ~~(value / divisor) === value / divisor);
 
   return {
     value: (value / divisor).toString(),
-    unit
+    unit,
   };
 };
 
-export const convertDurationToSingleNumber = threshold => {
+export const convertDurationToSingleNumber = (threshold) => {
   if (typeof threshold.value === 'undefined') {
     return threshold;
   }
   return threshold.value * timeUnits[threshold.unit].value;
 };
 
-export const convertCamelToSpaces = label => {
+export const convertCamelToSpaces = (label) => {
   let formattedLabel = label.replace(/([A-Z])/g, ' $1');
   return formattedLabel.charAt(0).toUpperCase() + formattedLabel.slice(1);
 };
@@ -163,7 +163,7 @@ export function getHighlightedText(text, highlight, matchFromStart) {
 }
 
 export function camelCaseToLabel(type) {
-  return type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  return type.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
 }
 
 export function objectifyResult(result) {
@@ -194,9 +194,9 @@ export function formatReportResult(data, result) {
     dateFormat += ' ';
   }
 
-  const formattedResult = result.map(entry => ({
+  const formattedResult = result.map((entry) => ({
     ...entry,
-    label: moment(entry.label).format(dateFormat)
+    label: moment(entry.label).format(dateFormat),
   }));
 
   return formattedResult;
@@ -226,7 +226,7 @@ export function createDurationFormattingOptions(targetLine, dataMinStep) {
     {value: 1000 * 60 * 60 * 24 * 30 * 6, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
     {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12},
     {value: 10 * 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}, //10s of years
-    {value: 100 * 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12} //100s of years
+    {value: 100 * 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}, //100s of years
   ];
 
   const niceStepSize = steps.find(({value}) => value > minimumStepSize);
@@ -235,8 +235,8 @@ export function createDurationFormattingOptions(targetLine, dataMinStep) {
   }
 
   return {
-    callback: v => +(v / niceStepSize.base).toFixed(2) + niceStepSize.unit,
-    stepSize: niceStepSize.value
+    callback: (v) => +(v / niceStepSize.base).toFixed(2) + niceStepSize.unit,
+    stepSize: niceStepSize.value,
   };
 }
 
@@ -262,7 +262,7 @@ function determineUnitForAutomaticIntervalSelection(resultData) {
       {value: 1000 * 60 * 60 * 24, unit: 'day'},
       {value: 1000 * 60 * 60, unit: 'hour'},
       {value: 0, unit: 'second'},
-      {value: -Infinity, unit: 'day'}
+      {value: -Infinity, unit: 'day'},
     ];
     return intervals.find(({value}) => intervalInMs >= value).unit;
   } else {

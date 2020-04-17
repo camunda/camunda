@@ -48,7 +48,7 @@ export default function License() {
         )}
         <Form
           compact
-          onSubmit={async evt => {
+          onSubmit={async (evt) => {
             evt.preventDefault();
 
             const result = await storeLicense(licenseText);
@@ -66,7 +66,7 @@ export default function License() {
               rows="12"
               placeholder={t('license.enterLicense')}
               value={licenseText}
-              onChange={evt => setLicenseText(evt.target.value)}
+              onChange={(evt) => setLicenseText(evt.target.value)}
             ></textarea>
           </Labeled>
           <Button type="submit">{t('license.submit')}</Button>

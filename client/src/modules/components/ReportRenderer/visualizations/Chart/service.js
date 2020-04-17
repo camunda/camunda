@@ -44,13 +44,13 @@ export function getTooltipLabelColor(tooltipItem, chart, type) {
     const color = datasetOptions.backgroundColor[tooltipItem.index];
     return {
       borderColor: color,
-      backgroundColor: color
+      backgroundColor: color,
     };
   }
 
   return {
     borderColor: datasetOptions.legendColor,
-    backgroundColor: datasetOptions.legendColor
+    backgroundColor: datasetOptions.legendColor,
   };
 }
 

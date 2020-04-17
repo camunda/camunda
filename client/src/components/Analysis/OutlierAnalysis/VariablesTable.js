@@ -12,7 +12,7 @@ import './VariablesTable.scss';
 
 export default class VariablesTable extends React.Component {
   state = {
-    data: []
+    data: [],
   };
 
   async componentDidMount() {
@@ -20,16 +20,16 @@ export default class VariablesTable extends React.Component {
     const data = await loadCommonOutliersVariables({
       ...this.props.config,
       flowNodeId: id,
-      higherOutlierBound: higherOutlier.boundValue
+      higherOutlierBound: higherOutlier.boundValue,
     });
 
     this.setState({data});
   }
 
-  constructTableBody = data => {
+  constructTableBody = (data) => {
     const {id, higherOutlier} = this.props.selectedNode;
 
-    return data.map(row => [
+    return data.map((row) => [
       <div className="outliersCount">
         {row.instanceCount}{' '}
         {t(`analysis.outlier.tooltip.instance.label${row.instanceCount !== 1 ? '-plural' : ''}`)}
@@ -40,7 +40,7 @@ export default class VariablesTable extends React.Component {
             higherOutlierBound: higherOutlier.boundValue,
             variableName: row.variableName,
             variableTerm: row.variableTerm,
-            fileName: `${row.variableName}_Outliers.csv`
+            fileName: `${row.variableName}_Outliers.csv`,
           })}
         >
           <Button>
@@ -51,7 +51,7 @@ export default class VariablesTable extends React.Component {
       </div>,
       +(row.outlierToAllInstancesRatio * 100).toFixed(2),
       +(row.outlierRatio * 100).toFixed(2),
-      row.variableName + '=' + row.variableTerm
+      row.variableName + '=' + row.variableTerm,
     ]);
   };
 
@@ -64,14 +64,14 @@ export default class VariablesTable extends React.Component {
           t('analysis.outlier.detailsModal.table.outliersNumber'),
           t('analysis.outlier.detailsModal.table.ofTotalPercentage'),
           t('analysis.outlier.detailsModal.table.ofOutliersPercentage'),
-          t('report.variables.default')
+          t('report.variables.default'),
         ],
-        body: this.constructTableBody(data)
+        body: this.constructTableBody(data),
       };
     } else {
       tableData = {
         head: [t('report.table.noData.head')],
-        body: [[t('analysis.outlier.detailsModal.table.emptyTableMessage')]]
+        body: [[t('analysis.outlier.detailsModal.table.emptyTableMessage')]],
       };
     }
 

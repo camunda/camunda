@@ -27,7 +27,7 @@ export default withErrorHandling(
       deleting: null,
       publishing: null,
       redirect: null,
-      editingAccess: null
+      editingAccess: null,
     };
 
     fileInput = React.createRef();
@@ -57,12 +57,12 @@ export default withErrorHandling(
 
       if (processesWaiting && processesWaiting.length > 0) {
         await this.loadList();
-        processesWaiting.forEach(process => {
+        processesWaiting.forEach((process) => {
           const updatedProcess = this.state.processes.find(({id}) => process.id === id);
           if (updatedProcess.state === 'published') {
             addNotification({
               type: 'success',
-              text: t('events.publishSuccess', {name: updatedProcess.name})
+              text: t('events.publishSuccess', {name: updatedProcess.name}),
             });
           }
         });
@@ -73,8 +73,8 @@ export default withErrorHandling(
       return new Promise((resolve, reject) => {
         this.props.mightFail(
           loadProcesses(),
-          processes => this.setState({processes}, resolve),
-          error => reject(showError(error))
+          (processes) => this.setState({processes}, resolve),
+          (error) => reject(showError(error))
         );
       });
     };
@@ -125,7 +125,7 @@ export default withErrorHandling(
             columns={[t('common.name'), t('common.entity.modified'), t('events.stateColumn')]}
             data={
               processes &&
-              processes.map(process => {
+              processes.map((process) => {
                 const {id, name, lastModified, state, publishingProgress} = process;
 
                 const link = `/eventBasedProcess/${id}/`;
@@ -134,25 +134,25 @@ export default withErrorHandling(
                   {
                     icon: 'edit',
                     text: t('common.edit'),
-                    action: () => this.setState({redirect: link + 'edit'})
+                    action: () => this.setState({redirect: link + 'edit'}),
                   },
                   {
                     icon: 'user',
                     text: t('common.editAccess'),
-                    action: () => this.setState({editingAccess: process})
+                    action: () => this.setState({editingAccess: process}),
                   },
                   {
                     icon: 'delete',
                     text: t('common.delete'),
-                    action: () => this.setState({deleting: process})
-                  }
+                    action: () => this.setState({deleting: process}),
+                  },
                 ];
 
                 if (state === 'mapped' || state === 'unpublished_changes') {
                   actions.unshift({
                     icon: 'publish',
                     text: t('events.publish'),
-                    action: () => this.setState({publishing: process})
+                    action: () => this.setState({publishing: process}),
                   });
                 }
 
@@ -162,7 +162,7 @@ export default withErrorHandling(
                     text: t('events.cancelPublish'),
                     action: () => {
                       this.props.mightFail(cancelPublish(id), this.loadList, showError);
-                    }
+                    },
                   });
                 }
 
@@ -173,9 +173,9 @@ export default withErrorHandling(
                   link,
                   meta: [
                     moment(lastModified).format('YYYY-MM-DD HH:mm'),
-                    t(`events.state.${state}`, {publishingProgress})
+                    t(`events.state.${state}`, {publishingProgress}),
                   ],
-                  actions
+                  actions,
                 };
               })
             }
@@ -183,7 +183,7 @@ export default withErrorHandling(
           <Deleter
             type="process"
             descriptionText={t('events.deleteWarning', {
-              name: (deleting && deleting.name) || ''
+              name: (deleting && deleting.name) || '',
             })}
             entity={deleting}
             checkConflicts={({id}) => checkDeleteConflict(id, 'eventBasedProcess')}

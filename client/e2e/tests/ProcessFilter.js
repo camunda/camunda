@@ -11,12 +11,9 @@ import * as u from '../utils';
 import * as Report from './ProcessReport.elements.js';
 import * as Filter from './Filter.elements.js';
 
-fixture('Process Report Filter')
-  .page(config.endpoint)
-  .beforeEach(u.login)
-  .afterEach(cleanEntities);
+fixture('Process Report Filter').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
-test('variable filter modal dependent on variable type', async t => {
+test('variable filter modal dependent on variable type', async (t) => {
   await u.createNewReport(t);
 
   await u.selectDefinition(t, 'Lead Qualification', 'All');
@@ -77,7 +74,7 @@ test('variable filter modal dependent on variable type', async t => {
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-date.png');
 });
 
-test('should apply a filter to the report result', async t => {
+test('should apply a filter to the report result', async (t) => {
   await u.createNewReport(t);
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
@@ -108,7 +105,7 @@ test('should apply a filter to the report result', async t => {
   await t.expect(unfiltered).gt(filtered);
 });
 
-test('instance state filters', async t => {
+test('instance state filters', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -137,7 +134,7 @@ test('instance state filters', async t => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('pick a start date from the date picker', async t => {
+test('pick a start date from the date picker', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -162,7 +159,7 @@ test('pick a start date from the date picker', async t => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('add relative current month start date filter', async t => {
+test('add relative current month start date filter', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -183,7 +180,7 @@ test('add relative current month start date filter', async t => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('add rolling last 5 days end date filter', async t => {
+test('add rolling last 5 days end date filter', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -200,7 +197,7 @@ test('add rolling last 5 days end date filter', async t => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('add duration filter', async t => {
+test('add duration filter', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -218,7 +215,7 @@ test('add duration filter', async t => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('add Flow Node filter', async t => {
+test('add Flow Node filter', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -240,7 +237,7 @@ test('add Flow Node filter', async t => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('the filter is visible in the control panel and contains correct information', async t => {
+test('the filter is visible in the control panel and contains correct information', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 

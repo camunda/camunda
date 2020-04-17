@@ -14,7 +14,7 @@ import './Process.scss';
 
 export default class Process extends React.Component {
   state = {
-    redirect: null
+    redirect: null,
   };
 
   componentDidUpdate() {
@@ -34,7 +34,7 @@ export default class Process extends React.Component {
     return (
       <div className="Process">
         {viewMode === 'edit' ? (
-          <ProcessEdit id={id} onSave={id => this.setState({redirect: `../${id}/`})} />
+          <ProcessEdit id={id} onSave={(id) => this.setState({redirect: `../${id}/`})} />
         ) : (
           <ProcessView id={id} onDelete={() => this.setState({redirect: '../'})} />
         )}

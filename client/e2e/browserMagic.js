@@ -88,7 +88,7 @@ export const addAnnotation = ClientFunction((selector, text, options = {x: 0, y:
 export const clearAllAnnotations = ClientFunction(() => {
   const nodes = document.querySelectorAll('.SCREENSHOT__ANNOTATION');
 
-  nodes.forEach(node => {
+  nodes.forEach((node) => {
     document.body.removeChild(node);
   });
 });

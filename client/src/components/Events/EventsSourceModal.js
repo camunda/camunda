@@ -15,7 +15,7 @@ import {
   Typeahead,
   Form,
   Message,
-  ButtonGroup
+  ButtonGroup,
 } from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -37,11 +37,11 @@ export default withErrorHandling(
         tenants: [],
         eventScope: 'start_end',
         tracedByBusinessKey: false,
-        traceVariable: null
+        traceVariable: null,
       },
       variables: null,
       type: 'camunda',
-      externalExist: false
+      externalExist: false,
     };
 
     componentDidMount = async () => {
@@ -57,7 +57,7 @@ export default withErrorHandling(
 
       this.props.mightFail(
         loadEvents({eventSources: [{type: 'external'}]}),
-        events => this.setState({externalExist: !!events.length}),
+        (events) => this.setState({externalExist: !!events.length}),
         showError
       );
     };
@@ -71,7 +71,7 @@ export default withErrorHandling(
       } else {
         const newSource = {
           ...source,
-          traceVariable: source.tracedByBusinessKey ? null : source.traceVariable
+          traceVariable: source.tracedByBusinessKey ? null : source.traceVariable,
         };
 
         if (this.isEditing()) {
@@ -91,7 +91,7 @@ export default withErrorHandling(
 
     alreadyExists = () =>
       this.props.existingSources.some(
-        source => source.processDefinitionKey === this.state.source.processDefinitionKey
+        (source) => source.processDefinitionKey === this.state.source.processDefinitionKey
       );
 
     isValid = () => {
@@ -114,9 +114,9 @@ export default withErrorHandling(
           loadVariables({
             processDefinitionKey,
             processDefinitionVersions,
-            tenantIds
+            tenantIds,
           }),
-          variables => this.setState({variables}),
+          (variables) => this.setState({variables}),
           showError
         );
       }
@@ -135,10 +135,10 @@ export default withErrorHandling(
         tenants,
         eventScope,
         tracedByBusinessKey,
-        traceVariable
+        traceVariable,
       } = source;
       const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/user-guide/event-based-processes/#camunda-events`;
-      const externalAlreadyAdded = existingSources.some(src => src.type === 'external');
+      const externalAlreadyAdded = existingSources.some((src) => src.type === 'external');
 
       return (
         <Modal open onClose={onClose} onConfirm={this.updateSources} className="EventsSourceModal">
@@ -177,9 +177,9 @@ export default withErrorHandling(
                           processDefinitionKey: key,
                           versions,
                           tenants: tenantIds,
-                          traceVariable: null
-                        }
-                      })
+                          traceVariable: null,
+                        },
+                      }),
                     });
                   }}
                 />
@@ -200,7 +200,9 @@ export default withErrorHandling(
                       noValuesMessage={getDisabledMessage(tracedByBusinessKey, variables)}
                       disabled={tracedByBusinessKey}
                       placeholder={t('common.filter.variableModal.inputPlaceholder')}
-                      onChange={traceVariable => this.updateSource('traceVariable', traceVariable)}
+                      onChange={(traceVariable) =>
+                        this.updateSource('traceVariable', traceVariable)
+                      }
                     >
                       {variables &&
                         variables.map(({name}) => (

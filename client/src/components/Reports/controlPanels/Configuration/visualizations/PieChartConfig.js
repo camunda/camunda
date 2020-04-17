@@ -11,7 +11,7 @@ import {t} from 'translation';
 
 export default function PieChartConfig({onChange, report}) {
   const {
-    data: {configuration}
+    data: {configuration},
   } = report;
 
   return (

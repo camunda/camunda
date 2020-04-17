@@ -18,7 +18,7 @@ export const ColorPicker = ({onChange, className, selectedColor = ColorPicker.da
   return (
     <div className={classnames('ColorPicker', className)}>
       <div className="colorsContainer">
-        {colors.map(color => (
+        {colors.map((color) => (
           <div
             key={color}
             className={classnames('color', {active: color === selectedColor})}
@@ -40,7 +40,7 @@ ColorPicker.dark = {
   teal: '#009688',
   paleGreen: '#00d0a3',
   blue: '#00bcd4',
-  steelBlue: '#1991c8'
+  steelBlue: '#1991c8',
 };
 
 ColorPicker.light = {
@@ -51,13 +51,13 @@ ColorPicker.light = {
   teal: '#b3e5e1',
   paleGreen: '#b5eee2',
   blue: '#b3e0e5',
-  steelBlue: '#b3d5e5'
+  steelBlue: '#b3d5e5',
 };
 
-ColorPicker.getColors = amount => {
+ColorPicker.getColors = (amount) => {
   const allColors = [
     ...Object.values(ColorPicker.dark).reverse(),
-    ...Object.values(ColorPicker.light)
+    ...Object.values(ColorPicker.light),
   ];
   if (amount > colorsAmount) {
     return [...allColors, ...new Array(amount - colorsAmount).fill(ColorPicker.dark.steelBlue)];

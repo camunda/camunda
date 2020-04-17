@@ -14,7 +14,7 @@ const data = {
   visualization: 'line',
   view: {entity: 'userTask'},
   configuration: {},
-  groupBy: {type: 'userTasks'}
+  groupBy: {type: 'userTasks'},
 };
 
 it('should match snapshot', () => {
@@ -30,8 +30,8 @@ it('should change the visualization if it is incompatible with the new configura
       report={{
         data: {
           ...data,
-          groupBy: {type: 'assignee'}
-        }
+          groupBy: {type: 'assignee'},
+        },
       }}
       onChange={spy}
     />
@@ -44,7 +44,7 @@ it('should change the visualization if it is incompatible with the new configura
   expect(spy).toHaveBeenCalledWith(
     {
       configuration: {distributedBy: {$set: 'userTask'}},
-      visualization: {$set: 'bar'}
+      visualization: {$set: 'bar'},
     },
     true
   );

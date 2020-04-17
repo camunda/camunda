@@ -26,7 +26,7 @@ export default function NumberConfig({report, onChange}) {
         <legend>
           <Switch
             checked={precisionSet}
-            onChange={evt => onChange({precision: {$set: evt.target.checked ? 1 : null}})}
+            onChange={(evt) => onChange({precision: {$set: evt.target.checked ? 1 : null}})}
             label={t('report.config.limitPrecision.legend')}
           />
         </legend>
@@ -35,7 +35,7 @@ export default function NumberConfig({report, onChange}) {
           label={t(`report.config.limitPrecision.numberOf.${countOperation ? 'digits' : 'units'}`)}
           disabled={typeof configuration.precision !== 'number'}
           onChange={() => {}}
-          onKeyDown={evt => {
+          onKeyDown={(evt) => {
             const number = parseInt(evt.key, 10);
             if (number) {
               onChange({precision: {$set: number}});
@@ -48,7 +48,7 @@ export default function NumberConfig({report, onChange}) {
         <legend>
           <Switch
             checked={goalSet}
-            onChange={evt => onChange({targetValue: {active: {$set: evt.target.checked}}})}
+            onChange={(evt) => onChange({targetValue: {active: {$set: evt.target.checked}}})}
             label={t('report.config.goal.legend')}
           />
         </legend>

@@ -29,13 +29,13 @@ jest.mock('../service', () => ({
       data: {
         subEntityCounts: {
           dashboard: 2,
-          report: 8
+          report: 8,
         },
         roleCounts: {
           user: 5,
-          group: 2
-        }
-      }
+          group: 2,
+        },
+      },
     },
     {
       id: 'aDashboardId',
@@ -48,10 +48,10 @@ jest.mock('../service', () => ({
       currentUserRole: 'editor',
       data: {
         subEntityCounts: {
-          report: 8
+          report: 8,
         },
-        roleCounts: {}
-      }
+        roleCounts: {},
+      },
     },
     {
       id: 'aReportId',
@@ -64,14 +64,14 @@ jest.mock('../service', () => ({
       lastModifier: 'user_id',
       reportType: 'process', // or 'decision'
       combined: false,
-      entityType: 'report'
+      entityType: 'report',
     },
     {
       id: 'anotherCollection',
       name: 'Another Collection',
-      entityType: 'collection'
-    }
-  ])
+      entityType: 'collection',
+    },
+  ]),
 }));
 
 const props = {
@@ -81,7 +81,7 @@ const props = {
   moving: true,
   setMoving: jest.fn(),
   setCollection: jest.fn(),
-  parentCollection: 'aCollectionId'
+  parentCollection: 'aCollectionId',
 };
 
 it('should match snapshot', () => {
@@ -107,14 +107,11 @@ it('should invoke setCopy on copy switch change', async () => {
 it('should invoke setCollection on collection selection', () => {
   const node = shallow(<MoveCopy {...props} />);
 
-  node
-    .find('Typeahead')
-    .props()
-    .onChange('anotherCollection');
+  node.find('Typeahead').props().onChange('anotherCollection');
 
   expect(props.setCollection).toHaveBeenCalledWith({
     id: 'anotherCollection',
     name: 'Another Collection',
-    entityType: 'collection'
+    entityType: 'collection',
   });
 });

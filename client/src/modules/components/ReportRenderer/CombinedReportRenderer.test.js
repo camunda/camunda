@@ -16,9 +16,9 @@ const CombinedReportRenderer = CombinedReportRendererWithErrorHandling.WrappedCo
 
 jest.mock('./service', () => {
   return {
-    isEmpty: str => !str,
-    getFormatter: view => v => v,
-    processResult: jest.fn().mockImplementation(({result}) => result)
+    isEmpty: (str) => !str,
+    getFormatter: (view) => (v) => v,
+    processResult: jest.fn().mockImplementation(({result}) => result),
   };
 });
 
@@ -26,7 +26,7 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    formatters: {formatReportResult: (data, result) => result}
+    formatters: {formatReportResult: (data, result) => result},
   };
 });
 
@@ -36,22 +36,22 @@ const reportA = {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
     view: {
-      property: 'foo'
+      property: 'foo',
     },
     groupBy: {
       type: 'processInstance',
-      unit: 'day'
+      unit: 'day',
     },
     visualization: 'table',
-    configuration: {}
+    configuration: {},
   },
 
   result: {
     instanceCount: 100,
     data: {
-      '2015-03-25T12:00:00Z': 2
-    }
-  }
+      '2015-03-25T12:00:00Z': 2,
+    },
+  },
 };
 
 const CombinedReport = {
@@ -60,13 +60,13 @@ const CombinedReport = {
   data: {
     configuration: {},
     reports: ['report A'],
-    visualization: 'table'
+    visualization: 'table',
   },
   result: {
     data: {
-      'report A': reportA
-    }
-  }
+      'report A': reportA,
+    },
+  },
 };
 
 const mightFail = jest.fn().mockImplementation((data, cb) => cb(data));
@@ -91,11 +91,11 @@ it('should render a chart if visualization is number', () => {
               ...reportA,
               data: {
                 ...reportA.data,
-                visualization: 'number'
-              }
-            }
-          }
-        }
+                visualization: 'number',
+              },
+            },
+          },
+        },
       }}
     />
   );
@@ -117,7 +117,7 @@ it('should process the result of every report it combined', () => {
 
   const report = {...CombinedReport};
   report.result = {
-    data: {a: reportA, b: reportB, c: reportC}
+    data: {a: reportA, b: reportB, c: reportC},
   };
 
   shallow(<CombinedReportRenderer mightFail={jest.fn()} report={report} />);

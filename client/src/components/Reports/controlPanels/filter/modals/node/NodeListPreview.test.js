@@ -12,7 +12,7 @@ import {shallow} from 'enzyme';
 it('should create preview of nodes', () => {
   const props = {
     nodes: [{id: 'bar', name: 'foo'}],
-    operator: 'in'
+    operator: 'in',
   };
 
   const node = shallow(<NodeListPreview {...props} />);
@@ -23,7 +23,7 @@ it('should create preview of nodes', () => {
 it('should show the id of the flow node if the name is null', () => {
   const props = {
     nodes: [{id: 'bar', name: undefined}],
-    operator: 'in'
+    operator: 'in',
   };
 
   const node = shallow(<NodeListPreview {...props} />);
@@ -34,17 +34,17 @@ it('should show the id of the flow node if the name is null', () => {
 it('should create preview of selected nodes linked by or', () => {
   const flowNode1 = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   const flowNode2 = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   const props = {
     nodes: [flowNode1, flowNode2],
-    operator: 'in'
+    operator: 'in',
   };
 
   const node = shallow(<NodeListPreview {...props} />);
@@ -55,17 +55,17 @@ it('should create preview of selected nodes linked by or', () => {
 it('should create preview of selected nodes linked by nor', () => {
   const flowNode1 = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   const flowNode2 = {
     name: 'foo',
-    id: 'bar'
+    id: 'bar',
   };
 
   const props = {
     nodes: [flowNode1, flowNode2],
-    operator: 'not in'
+    operator: 'not in',
   };
 
   const node = shallow(<NodeListPreview {...props} />);
@@ -76,7 +76,7 @@ it('should create preview of selected nodes linked by nor', () => {
 it('should show executing node filter if operator is undefined', () => {
   const props = {
     nodes: [{id: 'bar', name: undefined}],
-    operator: undefined
+    operator: undefined,
   };
 
   const node = shallow(<NodeListPreview {...props} />);

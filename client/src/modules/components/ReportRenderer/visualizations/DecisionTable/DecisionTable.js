@@ -21,7 +21,7 @@ import {showError} from 'notifications';
 
 export class DecisionTable extends React.Component {
   state = {
-    entryPoints: {rules: {}}
+    entryPoints: {rules: {}},
   };
 
   container = React.createRef();
@@ -29,7 +29,7 @@ export class DecisionTable extends React.Component {
   componentDidMount() {
     const {
       configuration: {xml},
-      decisionDefinitionKey
+      decisionDefinitionKey,
     } = this.props.report.data;
 
     this.loadXML(xml, decisionDefinitionKey);
@@ -39,13 +39,13 @@ export class DecisionTable extends React.Component {
     report: {
       data: {
         decisionDefinitionKey: prevKey,
-        configuration: {xml: prevXml}
-      }
-    }
+        configuration: {xml: prevXml},
+      },
+    },
   }) {
     const {
       configuration: {xml},
-      decisionDefinitionKey
+      decisionDefinitionKey,
     } = this.props.report.data;
 
     if (prevXml !== xml || prevKey !== decisionDefinitionKey) {
@@ -62,7 +62,7 @@ export class DecisionTable extends React.Component {
 
     this.viewer = new Viewer({
       container: this.container.current,
-      decisionTable: {additionalModules: [HitsColumn]}
+      decisionTable: {additionalModules: [HitsColumn]},
     });
 
     const dmn13Xml = await this.migrateDiagram(xml);
@@ -78,18 +78,18 @@ export class DecisionTable extends React.Component {
     });
   };
 
-  migrateDiagram = xml => {
+  migrateDiagram = (xml) => {
     return new Promise((resolve, reject) => {
-      this.props.mightFail(migrateDiagram(xml), resolve, error => reject(showError(error)));
+      this.props.mightFail(migrateDiagram(xml), resolve, (error) => reject(showError(error)));
     });
   };
 
-  renderRuleCell = ruleId => {
+  renderRuleCell = (ruleId) => {
     const {
       result: {data, instanceCount},
       data: {
-        configuration: {hideAbsoluteValue, hideRelativeValue, showGradientBars}
-      }
+        configuration: {hideAbsoluteValue, hideRelativeValue, showGradientBars},
+      },
     } = this.props.report;
 
     const resultObj = formatters.objectifyResult(data);
@@ -128,7 +128,7 @@ export class DecisionTable extends React.Component {
   render() {
     const {rules, summary} = this.state.entryPoints;
     const {
-      result: {instanceCount, data}
+      result: {instanceCount, data},
     } = this.props.report;
 
     const hitCount = data.map(({value}) => value).reduce((sum, current) => sum + current, 0);

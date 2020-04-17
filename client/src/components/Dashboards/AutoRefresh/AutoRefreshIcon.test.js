@@ -15,7 +15,7 @@ jest.mock('components', () => {
       <span>
         Type: {type} {children}
       </span>
-    )
+    ),
   };
 });
 

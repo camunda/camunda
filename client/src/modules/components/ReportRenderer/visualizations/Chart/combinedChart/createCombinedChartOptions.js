@@ -12,14 +12,14 @@ import {isDurationReport} from 'services';
 export default function createCombinedChartOptions({report, targetValue, theme, formatter}) {
   const {
     data: {visualization, configuration},
-    result
+    result,
   } = report;
 
   const {groupBy} = Object.values(result.data)[0].data;
 
   const isDark = theme === 'dark';
   const isNumber = visualization === 'number';
-  const instanceCountArr = Object.values(result.data).map(report => report.result.instanceCount);
+  const instanceCountArr = Object.values(result.data).map((report) => report.result.instanceCount);
   const isDuration = isDurationReport(Object.values(result.data)[0]);
   const maxDuration = isDuration ? findMaxDurationAcrossReports(result) : 0;
   const isPersistedTooltips = isDuration
@@ -34,15 +34,15 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       maxDuration,
       isDark,
       isPersistedTooltips,
-      autoSkip: canBeInterpolated(groupBy)
+      autoSkip: canBeInterpolated(groupBy),
     }),
     legend: {
       display: true,
       labels: {
-        generateLabels: generateLegendLabels
+        generateLabels: generateLegendLabels,
       },
       // prevent hiding datasets when clicking on their legends
-      onClick: e => e.stopPropagation()
+      onClick: (e) => e.stopPropagation(),
     },
     responsive: true,
     maintainAspectRatio: false,
@@ -53,7 +53,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       ...(isPersistedTooltips && {
         yAlign: 'bottom',
         xAlign: 'center',
-        displayColors: false
+        displayColors: false,
       }),
       callbacks: {
         ...(isPersistedTooltips && {title: () => ''}),
@@ -69,14 +69,14 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
             visualization
           );
         },
-        labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization)
-      }
-    }
+        labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
+      },
+    },
   };
 }
 
 function findMaxDurationAcrossReports(result) {
-  const reportsMaxDurations = Object.values(result.data).map(report => {
+  const reportsMaxDurations = Object.values(result.data).map((report) => {
     if (typeof report.result.data === 'number') {
       return report.result.data;
     }

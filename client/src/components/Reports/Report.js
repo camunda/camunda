@@ -27,7 +27,7 @@ export class Report extends React.Component {
       report: undefined,
       collections: [],
       creatingCollection: false,
-      serverError: null
+      serverError: null,
     };
   }
 
@@ -51,26 +51,26 @@ export class Report extends React.Component {
         name: t('report.new'),
         lastModified: now,
         created: now,
-        lastModifier: user.id
-      }
+        lastModifier: user.id,
+      },
     });
   };
 
   loadReport = () => {
     this.props.mightFail(
       evaluateReport(this.getId()),
-      async response => {
+      async (response) => {
         this.setState({
-          report: response
+          report: response,
         });
       },
-      async e => {
+      async (e) => {
         const report = (await e.json()).reportDefinition;
         if (report) {
           this.setState({report});
         } else {
           this.setState({
-            serverError: e.status
+            serverError: e.status,
           });
         }
         return;
@@ -96,14 +96,14 @@ export class Report extends React.Component {
         {viewMode === 'edit' ? (
           <ReportEdit
             isNew={this.isNew()}
-            updateOverview={async newReport => {
+            updateOverview={async (newReport) => {
               const user = await this.props.getUser();
               this.setState({
                 report: {
                   ...newReport,
                   lastModified: getFormattedNowDate(),
-                  lastModifier: user.id
-                }
+                  lastModifier: user.id,
+                },
               });
             }}
             report={report}

@@ -12,7 +12,7 @@ import {default as NavItem, refreshBreadcrumbs} from './NavItem';
 import {loadEntitiesNames} from './service';
 
 jest.mock('./service', () => ({
-  loadEntitiesNames: jest.fn()
+  loadEntitiesNames: jest.fn(),
 }));
 
 jest.mock('react-router-dom', () => {
@@ -20,7 +20,7 @@ jest.mock('react-router-dom', () => {
     Link: ({children, to}) => {
       return <a href={to}>{children}</a>;
     },
-    withRouter: fn => fn
+    withRouter: (fn) => fn,
   };
 });
 

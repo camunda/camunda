@@ -12,7 +12,7 @@ import {Input} from 'components';
 
 const props = {
   entity: 'Report',
-  mightFail: (promise, cb) => cb(promise)
+  mightFail: (promise, cb) => cb(promise),
 };
 
 it('should provide name edit input', async () => {

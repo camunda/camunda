@@ -16,12 +16,12 @@ const {WrappedComponent: BPMNDiagram} = BPMNDiagramWithErrorHandling;
 
 const props = {
   mightFail: jest.fn().mockImplementation(async (data, cb) => cb(await data)),
-  xml: 'diagram-xml'
+  xml: 'diagram-xml',
 };
 
 // since jest does not offer an out of the box way to flush promises:
 // https://github.com/facebook/jest/issues/2157
-const flushPromises = () => new Promise(resolve => setImmediate(resolve));
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class NavigatedViewer {
@@ -29,11 +29,11 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
       this.canvas = {
         resized: jest.fn(),
         zoom: jest.fn(),
-        viewbox: jest.fn().mockReturnValue({})
+        viewbox: jest.fn().mockReturnValue({}),
       };
 
       this.zoomScroll = {
-        stepZoom: jest.fn()
+        stepZoom: jest.fn(),
       };
     }
     attachTo = jest.fn();
@@ -46,16 +46,16 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
             return {
               cloneNode: () => {
                 return {
-                  setAttribute: jest.fn()
+                  setAttribute: jest.fn(),
                 };
-              }
+              },
             };
           },
-          appendChild: jest.fn()
+          appendChild: jest.fn(),
         };
-      }
+      },
     };
-    get = prop => {
+    get = (prop) => {
       return this[prop];
     };
   };
@@ -67,7 +67,7 @@ jest.mock('bpmn-js/lib/Viewer', () => {
       this.canvas = {
         resized: jest.fn(),
         zoom: jest.fn(),
-        viewbox: jest.fn().mockReturnValue({})
+        viewbox: jest.fn().mockReturnValue({}),
       };
     }
     attachTo = jest.fn();
@@ -80,14 +80,14 @@ jest.mock('bpmn-js/lib/Viewer', () => {
             return {
               cloneNode: () => {
                 return {
-                  setAttribute: jest.fn()
+                  setAttribute: jest.fn(),
                 };
-              }
+              },
             };
           },
-          appendChild: jest.fn()
+          appendChild: jest.fn(),
         };
-      }
+      },
     };
     get = () => {
       return this.canvas;

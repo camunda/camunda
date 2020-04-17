@@ -23,17 +23,17 @@ const props = {
     definitionName: 'defName',
     tenants: [
       {id: null, name: 'Not defined'},
-      {id: '__unauthorizedTenantId__', name: 'unauthorizedTenant'}
-    ]
-  }
+      {id: '__unauthorizedTenantId__', name: 'unauthorizedTenant'},
+    ],
+  },
 };
 
 getDefinitionTenants.mockReturnValue({
   ...props.source,
   tenants: [
     {id: null, name: 'Not defined'},
-    {id: 'test', name: 'testName'}
-  ]
+    {id: 'test', name: 'testName'},
+  ],
 });
 
 it('should match snapshot', () => {
@@ -64,12 +64,9 @@ it('should update selected tenants on itemList change', () => {
 it('should not deselect unauthorized tenants', () => {
   const node = shallow(<EditSourceModal {...props} />);
 
-  node
-    .find('ItemsList')
-    .props()
-    .onChange([]);
+  node.find('ItemsList').props().onChange([]);
 
   expect(node.find('ItemsList').props().selectedItems).toEqual([
-    {id: '__unauthorizedTenantId__', name: 'unauthorizedTenant'}
+    {id: '__unauthorizedTenantId__', name: 'unauthorizedTenant'},
   ]);
 });

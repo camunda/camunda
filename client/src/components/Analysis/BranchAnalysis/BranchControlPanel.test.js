@@ -16,19 +16,19 @@ jest.mock('services', () => {
     ...jest.requireActual('services'),
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
-      b: 'bar'
-    })
+      b: 'bar',
+    }),
   };
 });
 
-const flushPromises = () => new Promise(resolve => setImmediate(resolve));
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 const data = {
   processDefinitionKey: 'aKey',
   processDefinitionVersions: ['aVersion'],
   tenantIds: [],
   filter: null,
-  xml: 'aFooXml'
+  xml: 'aFooXml',
 };
 
 const emptyData = {
@@ -36,7 +36,7 @@ const emptyData = {
   processDefinitionVersions: [],
   tenantIds: [],
   filter: null,
-  xml: null
+  xml: null,
 };
 
 const spy = jest.fn();
@@ -51,18 +51,8 @@ it('should contain a gateway and end Event field', () => {
 it('should show a please select message if an entity is not selected', () => {
   const node = shallow(<BranchControlPanel {...data} onChange={spy} />);
 
-  expect(
-    node
-      .find('ActionItem')
-      .at(0)
-      .dive()
-  ).toIncludeText('Select Gateway');
-  expect(
-    node
-      .find('ActionItem')
-      .at(1)
-      .dive()
-  ).toIncludeText('Select End Event');
+  expect(node.find('ActionItem').at(0).dive()).toIncludeText('Select Gateway');
+  expect(node.find('ActionItem').at(1).dive()).toIncludeText('Select End Event');
 });
 
 it('should show the element name if an element is selected', () => {
@@ -72,23 +62,13 @@ it('should show the element name if an element is selected', () => {
       onChange={spy}
       gateway={{
         name: 'I am a Gateway',
-        id: 'gatewayId'
+        id: 'gatewayId',
       }}
     />
   );
 
-  expect(
-    node
-      .find('ActionItem')
-      .at(0)
-      .dive()
-  ).toIncludeText('I am a Gateway');
-  expect(
-    node
-      .find('ActionItem')
-      .at(0)
-      .dive()
-  ).not.toIncludeText('gatewayId');
+  expect(node.find('ActionItem').at(0).dive()).toIncludeText('I am a Gateway');
+  expect(node.find('ActionItem').at(0).dive()).not.toIncludeText('gatewayId');
 });
 
 it('should show the element id if an element has no name', () => {
@@ -98,17 +78,12 @@ it('should show the element id if an element has no name', () => {
       onChange={spy}
       gateway={{
         name: undefined,
-        id: 'gatewayId'
+        id: 'gatewayId',
       }}
     />
   );
 
-  expect(
-    node
-      .find('ActionItem')
-      .at(0)
-      .dive()
-  ).toIncludeText('gatewayId');
+  expect(node.find('ActionItem').at(0).dive()).toIncludeText('gatewayId');
 });
 
 it('should disable gateway and EndEvent elements if no ProcDef selected', async () => {
@@ -130,7 +105,7 @@ it('should load the flownode names and hand them to the filter if process defini
   const node = shallow(<BranchControlPanel {...data} />);
   node.setProps({
     processDefinitionKey: 'fooKey',
-    processDefinitionVersions: ['fooVersion']
+    processDefinitionVersions: ['fooVersion'],
   });
 
   await flushPromises();

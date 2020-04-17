@@ -12,7 +12,7 @@ import './DateFilterPreview.scss';
 export default function DateFilterPreview({filter, filterType}) {
   const {dateType, unit, customNum, startDate, endDate} = convertFilterToState(filter);
 
-  const highlight = text => <span className="previewItemValue">{text}</span>;
+  const highlight = (text) => <span className="previewItemValue">{text}</span>;
 
   let previewText;
 

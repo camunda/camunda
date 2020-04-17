@@ -13,7 +13,7 @@ const props = {
   type: 'report',
   shareEntity: jest.fn(),
   revokeEntitySharing: jest.fn(),
-  getSharedEntity: jest.fn()
+  getSharedEntity: jest.fn(),
 };
 
 beforeAll(() => {
@@ -21,7 +21,7 @@ beforeAll(() => {
   delete window.location;
 
   Object.defineProperty(window, 'location', {
-    value: JSON.parse(windowProps)
+    value: JSON.parse(windowProps),
   });
   window.location.href = 'http://example.com/#/dashboard/1';
 });
@@ -67,7 +67,7 @@ it('should construct special link', () => {
 it('should construct special link for embedding', () => {
   const node = shallow(<ShareEntity type="report" {...props} />);
   Object.defineProperty(window.location, 'origin', {
-    value: 'http://example.com'
+    value: 'http://example.com',
   });
 
   node.setState({loaded: true, id: 10});

@@ -12,7 +12,7 @@ import DropdownOption from './DropdownOption';
 import {findLetterOption} from './service';
 
 jest.mock('./DropdownOption', () => {
-  return props => {
+  return (props) => {
     return (
       <div tabIndex="0" className="DropdownOption">
         {props.children}
@@ -54,11 +54,7 @@ it('should change focus after pressing an arrow key', () => {
 
   const container = node.find('.childrenContainer');
 
-  container
-    .find(DropdownOption)
-    .first()
-    .getDOMNode()
-    .focus();
+  container.find(DropdownOption).first().getDOMNode().focus();
 
   container.simulate('keyDown', {key: 'ArrowDown'});
   expect(document.activeElement.textContent).toBe('bar');
@@ -92,11 +88,11 @@ it('should shift the submenu up when there is no space available', () => {
       // submenu dimensions
       querySelector: () => ({
         clientWidth: 40,
-        clientHeight: 60
+        clientHeight: 60,
       }),
       //parentMenu.top
-      getBoundingClientRect: () => ({top: 50})
-    }
+      getBoundingClientRect: () => ({top: 50}),
+    },
   };
 
   const footer = document.createElement('div');
@@ -121,11 +117,11 @@ it('should show a scrollbar when submenu is bigger than the viewport height', ()
     current: {
       // submenu dimensions
       querySelector: () => ({
-        clientHeight: 100
+        clientHeight: 100,
       }),
       //parentMenu.top
-      getBoundingClientRect: () => ({top: 50})
-    }
+      getBoundingClientRect: () => ({top: 50}),
+    },
   };
 
   const footer = document.createElement('div');
@@ -150,8 +146,8 @@ it('should invoke findLetterOption when typing a character', () => {
 
   node.instance().containerRef = {
     current: {
-      querySelectorAll: () => []
-    }
+      querySelectorAll: () => [],
+    },
   };
 
   const container = node.find('.childrenContainer');

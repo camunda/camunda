@@ -24,7 +24,7 @@ export async function loadValues(
     type,
     resultOffset,
     numResults,
-    valueFilter
+    valueFilter,
   });
 
   return await response.json();
@@ -51,7 +51,7 @@ export async function loadDecisionValues(
     variableType,
     resultOffset,
     numResults,
-    valueFilter
+    valueFilter,
   });
 
   return await response.json();

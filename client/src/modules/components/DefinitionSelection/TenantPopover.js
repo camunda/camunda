@@ -39,7 +39,7 @@ export default function TenantPopover({tenants, selected, onChange}) {
             </Button>
             <Button onClick={() => onChange([])}>{t('common.disableAll')}</Button>
           </ButtonGroup>
-          {tenants.map(tenant => {
+          {tenants.map((tenant) => {
             return (
               <Switch
                 key={tenant.id}
@@ -48,7 +48,7 @@ export default function TenantPopover({tenants, selected, onChange}) {
                   if (target.checked) {
                     onChange(selected.concat([tenant.id]));
                   } else {
-                    onChange(selected.filter(id => id !== tenant.id));
+                    onChange(selected.filter((id) => id !== tenant.id));
                   }
                 }}
                 label={formatTenantName(tenant)}

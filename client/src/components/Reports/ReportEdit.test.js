@@ -20,7 +20,7 @@ jest.mock('services', () => {
     evaluateReport: jest.fn(),
     updateEntity: jest.fn(),
     createEntity: jest.fn(),
-    incompatibleFilters: jest.fn()
+    incompatibleFilters: jest.fn(),
   };
 });
 
@@ -39,16 +39,16 @@ const report = {
     configuration: {},
     view: {proeprty: 'rawData', entity: null},
     groupBy: {type: 'none', value: null},
-    visualization: 'table'
+    visualization: 'table',
   },
-  result: {data: [1, 2, 3]}
+  result: {data: [1, 2, 3]},
 };
 
 const props = {
   report,
   mightFail: (promise, cb) => cb(promise),
   updateOverview: jest.fn(),
-  location: {pathname: '/report/1'}
+  location: {pathname: '/report/1'},
 };
 
 it('should not contain a Control Panel in edit mode for a combined report', () => {
@@ -58,11 +58,11 @@ it('should not contain a Control Panel in edit mode for a combined report', () =
       data: {
         test: {
           data: {
-            visualization: 'test'
-          }
-        }
-      }
-    }
+            visualization: 'test',
+          },
+        },
+      },
+    },
   };
 
   const node = shallow(<ReportEdit {...props} report={{...report, ...combinedReport}} />);
@@ -145,9 +145,9 @@ it('should use original data as result data if report cant be evaluated on cance
       ...report,
       data: {
         processDefinitionKey: '123',
-        configuration: {}
-      }
-    }
+        configuration: {},
+      },
+    },
   });
 
   evaluateReport.mockReturnValueOnce(null);
@@ -162,8 +162,8 @@ it('should show a warning message when the data is not complete', async () => {
   node.setState({
     report: {
       ...report,
-      result: {data: new Array(1000), isComplete: false, instanceCount: 1500}
-    }
+      result: {data: new Array(1000), isComplete: false, instanceCount: 1500},
+    },
   });
 
   expect(node.find('MessageBox')).toExist();
@@ -181,11 +181,11 @@ it('should show a warning message when there are incompatible filter ', async ()
       data: {
         visualization: 'table',
         view: {
-          property: 'rawData'
+          property: 'rawData',
         },
-        filter: ['some data']
-      }
-    }
+        filter: ['some data'],
+      },
+    },
   });
 
   expect(node.find('MessageBox')).toExist();
@@ -202,14 +202,14 @@ it('should show a warning when node status is running on a grouped by endDate us
         visualization: 'table',
         view: {
           entity: 'UserTask',
-          property: 'count'
+          property: 'count',
         },
         groupBy: {
-          type: 'endDate'
+          type: 'endDate',
         },
-        configuration: {flowNodeExecutionState: 'running'}
-      }
-    }
+        configuration: {flowNodeExecutionState: 'running'},
+      },
+    },
   });
 
   expect(node.find('MessageBox')).toExist();
@@ -239,7 +239,7 @@ it('should create a new report if the report is new', () => {
   expect(createEntity).toHaveBeenCalledWith('report/process/single', {
     collectionId: null,
     data: report.data,
-    name: report.name
+    name: report.name,
   });
 });
 
@@ -258,7 +258,7 @@ it('should create a new report in a collection', async () => {
   expect(createEntity).toHaveBeenCalledWith('report/process/single', {
     collectionId: '123',
     data: report.data,
-    name: report.name
+    name: report.name,
   });
 });
 
@@ -292,8 +292,8 @@ describe('showIncompleteResultWarning', () => {
     node.setState({
       report: {
         ...report,
-        result: {...report.result, isComplete: false}
-      }
+        result: {...report.result, isComplete: false},
+      },
     });
 
     expect(node.instance().showIncompleteResultWarning()).toBe(true);
@@ -307,10 +307,10 @@ describe('showIncompleteResultWarning', () => {
         ...report,
         data: {
           ...report.data,
-          visualization: null
+          visualization: null,
         },
-        result: {...report.result, isComplete: false}
-      }
+        result: {...report.result, isComplete: false},
+      },
     });
 
     expect(node.instance().showIncompleteResultWarning()).toBe(false);

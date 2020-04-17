@@ -20,23 +20,23 @@ jest.mock('./service', () => ({
       id: 'USER:kermit',
       identity: {
         id: 'kermit',
-        type: 'user' // or group
+        type: 'user', // or group
       },
       role: 'manager', // or editor, viewer
-      hasFullScopeAuthorizations: false
+      hasFullScopeAuthorizations: false,
     },
     {
       id: 'GROUP:sales',
       identity: {
         id: 'sales',
         type: 'group',
-        memberCount: 2
+        memberCount: 2,
       },
-      role: 'manager'
-    }
+      role: 'manager',
+    },
   ]),
   editUser: jest.fn(),
-  removeUser: jest.fn()
+  removeUser: jest.fn(),
 }));
 
 const UserList = UserListWithErrorHandling.WrappedComponent;
@@ -45,7 +45,7 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   collection: 'collectionId',
   readOnly: false,
-  onChange: jest.fn()
+  onChange: jest.fn(),
 };
 
 it('should match snapshot', () => {
@@ -63,10 +63,7 @@ it('should hide add button and edit menu when in readOnly mode', () => {
 it('should pass Entity to Deleter', () => {
   const node = shallow(<UserList {...props} />);
 
-  node
-    .find(EntityList)
-    .prop('data')[0]
-    .actions[1].action();
+  node.find(EntityList).prop('data')[0].actions[1].action();
 
   expect(node.find(Deleter).prop('entity').id).toBe('kermit');
 });
@@ -83,10 +80,7 @@ it('should delete collection', () => {
 it('should show an edit modal when clicking the edit button', () => {
   const node = shallow(<UserList {...props} />);
 
-  node
-    .find(EntityList)
-    .prop('data')[0]
-    .actions[0].action();
+  node.find(EntityList).prop('data')[0].actions[0].action();
 
   expect(node.find(EditUserModal)).toExist();
 });

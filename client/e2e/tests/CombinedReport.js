@@ -12,10 +12,7 @@ import * as Homepage from './Homepage.elements.js';
 import * as Report from './ProcessReport.elements.js';
 import * as Combined from './CombinedReport.elements.js';
 
-fixture('Combined Report')
-  .page(config.endpoint)
-  .beforeEach(u.login)
-  .afterEach(cleanEntities);
+fixture('Combined Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
 async function createReport(
   t,
@@ -42,7 +39,7 @@ async function createReport(
   await u.gotoOverview(t);
 }
 
-test('combine two single number reports', async t => {
+test('combine two single number reports', async (t) => {
   await createReport(t, 'Leads');
   await createReport(t, 'Monthly Sales');
   await createReport(t, 'Invoice Count');
@@ -86,7 +83,7 @@ test('combine two single number reports', async t => {
   await t.expect(Homepage.reportLabel.textContent).contains('Combined');
 });
 
-test('combine two single table reports and reorder them', async t => {
+test('combine two single table reports and reorder them', async (t) => {
   await createReport(t, 'Another Table Report', 'Lead Qualification', 'Table');
   await createReport(t, 'Table Report', 'Lead Qualification', 'Table', true);
 
@@ -111,7 +108,7 @@ test('combine two single table reports and reorder them', async t => {
   await t.expect(Combined.reportTable.visible).ok();
 });
 
-test('combine two single chart reports and change their colors', async t => {
+test('combine two single chart reports and change their colors', async (t) => {
   await createReport(t, 'Line Report - 1', 'Lead Qualification', 'Line Chart');
   await createReport(t, 'Line Report - 2', 'Lead Qualification', 'Line Chart', true);
 
@@ -139,7 +136,7 @@ test('combine two single chart reports and change their colors', async t => {
   await t.expect(Combined.reportChart.visible).ok();
 });
 
-test('open the configuration popover and add a goal line', async t => {
+test('open the configuration popover and add a goal line', async (t) => {
   await createReport(t, 'Bar Report - 1', 'Lead Qualification', 'Bar Chart');
   await createReport(t, 'Bar Report - 2', 'Lead Qualification', 'Bar Chart', true);
 

@@ -20,17 +20,17 @@ export default class Login extends React.Component {
       username: '',
       password: '',
       waitingForServer: false,
-      error: null
+      error: null,
     };
   }
 
   handleInputChange = ({target: {name, value}}) => {
     this.setState({
-      [name]: value
+      [name]: value,
     });
   };
 
-  submit = async evt => {
+  submit = async (evt) => {
     evt.preventDefault();
 
     const {username, password} = this.state;
@@ -81,7 +81,7 @@ export default class Login extends React.Component {
                 onChange={this.handleInputChange}
                 type="password"
                 name="password"
-                ref={input => (this.passwordField = input)}
+                ref={(input) => (this.passwordField = input)}
               />
             </Labeled>
           </div>

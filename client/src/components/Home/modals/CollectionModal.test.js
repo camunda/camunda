@@ -16,7 +16,7 @@ const props = {
   initialName: 'aCollectionName',
   onClose: jest.fn(),
   onConfirm: jest.fn(),
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should provide name edit input', async () => {

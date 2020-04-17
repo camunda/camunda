@@ -19,8 +19,8 @@ const Heatmap = ({report, formatter, errorMessage}) => {
     result,
     data: {
       view: {property},
-      configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml}
-    }
+      configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml},
+    },
   } = report;
 
   const isDuration = property.toLowerCase().includes('duration');
@@ -62,7 +62,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
 
             tooltipHTML += t('report.heatTarget.actualDuration', {
               duration: formatters.duration(real),
-              percentage: relation < 1 ? '< 1' : Math.round(relation)
+              percentage: relation < 1 ? '< 1' : Math.round(relation),
             });
           } else {
             tooltipHTML += t('report.heatTarget.noValueAvailable');
@@ -74,14 +74,14 @@ const Heatmap = ({report, formatter, errorMessage}) => {
           return <span dangerouslySetInnerHTML={{__html: tooltipHTML}} />;
         }}
       />,
-      <TargetValueBadge key="targetValueBadge" values={targetValue.values} />
+      <TargetValueBadge key="targetValueBadge" values={targetValue.values} />,
     ];
   } else {
     heatmapComponent = (
       <HeatmapOverlay
         data={resultObj}
         tooltipOptions={{alwaysShow}}
-        formatter={data =>
+        formatter={(data) =>
           getTooltipText(
             data,
             formatter,

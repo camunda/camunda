@@ -17,7 +17,7 @@ export default class BooleanInput extends React.Component {
     this.props.setValid(true);
   }
 
-  setOperator = value => evt => {
+  setOperator = (value) => (evt) => {
     evt.preventDefault();
     this.props.changeFilter({value});
   };

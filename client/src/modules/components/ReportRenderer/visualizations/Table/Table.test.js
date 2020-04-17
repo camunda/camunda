@@ -14,7 +14,7 @@ import {getWebappEndpoints} from 'config';
 
 jest.mock('./processRawData', () => ({
   process: jest.fn(),
-  decision: jest.fn()
+  decision: jest.fn(),
 }));
 
 jest.mock('config', () => ({getWebappEndpoints: jest.fn()}));
@@ -25,18 +25,18 @@ const report = {
   data: {
     groupBy: {
       value: {},
-      type: ''
+      type: '',
     },
     view: {property: 'duration'},
     configuration: {
-      excludedColumns: []
+      excludedColumns: [],
     },
-    visualization: 'table'
+    visualization: 'table',
   },
   result: {
     instanceCount: 5,
-    data: []
-  }
+    data: [],
+  },
 };
 
 const Table = WrappedTable.WrappedComponent;
@@ -44,7 +44,7 @@ const Table = WrappedTable.WrappedComponent;
 const props = {
   mightFail: jest.fn().mockImplementation((a, b) => b(a)),
   error: '',
-  report
+  report,
 };
 
 it('should get the camunda endpoints for raw data', () => {
@@ -55,7 +55,7 @@ it('should get the camunda endpoints for raw data', () => {
       report={{
         ...report,
         data: {...report.data, view: {property: 'rawData'}},
-        result: {data: [1, 2, 3]}
+        result: {data: [1, 2, 3]},
       }}
     />
   );
@@ -79,11 +79,11 @@ it('should process raw data', async () => {
         result: {
           data: [
             {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
-            {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
-          ]
-        }
+            {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}},
+          ],
+        },
       }}
-      formatter={v => v}
+      formatter={(v) => v}
     />
   );
 
@@ -100,6 +100,6 @@ it('should set the correct configuration when updating sorting', () => {
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].configuration.sorting).toEqual({
-    $set: {by: 'columnId', order: 'desc'}
+    $set: {by: 'columnId', order: 'desc'},
   });
 });

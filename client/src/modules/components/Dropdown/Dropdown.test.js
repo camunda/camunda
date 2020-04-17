@@ -14,17 +14,17 @@ jest.mock('components', () => {
   return {
     Button: ({active, ...props}) => <button {...props} />,
     Icon: () => <span />,
-    Select: () => ({Submenu: <div />})
+    Select: () => ({Submenu: <div />}),
   };
 });
 
 jest.mock('./DropdownOption', () => {
-  return props => {
+  return (props) => {
     return <button className="DropdownOption">{props.children}</button>;
   };
 });
 
-jest.mock('./Submenu', () => props => (
+jest.mock('./Submenu', () => (props) => (
   <div tabIndex="0" className="Submenu">
     Submenu: {JSON.stringify(props)}
   </div>
@@ -51,16 +51,16 @@ function simulateDropdown(
   node.instance().container = {
     querySelector: () => ({
       offsetHeight: buttonHeight,
-      getBoundingClientRect: () => buttonPosition
-    })
+      getBoundingClientRect: () => buttonPosition,
+    }),
   };
 
   node.instance().menuContainer = {
     current: {
       clientHeight: menuHeight,
       querySelector: () => ({clientHeight: oneItemHeight}),
-      getBoundingClientRect: () => menuPosition
-    }
+      getBoundingClientRect: () => menuPosition,
+    },
   };
 
   const footer = document.createElement('div');
@@ -244,11 +244,7 @@ it('should not change focus after pressing an arrow key if closed', () => {
     </Dropdown>
   );
 
-  node
-    .find('button')
-    .first()
-    .getDOMNode()
-    .focus();
+  node.find('button').first().getDOMNode().focus();
 
   node.simulate('keyDown', {key: 'ArrowDown'});
   expect(document.activeElement.textContent).toBe('Click me');
@@ -262,11 +258,7 @@ it('should change focus after pressing an arrow key if opened', () => {
     </Dropdown>
   );
 
-  node
-    .find('button')
-    .first()
-    .getDOMNode()
-    .focus();
+  node.find('button').first().getDOMNode().focus();
 
   node.instance().setState({open: true});
 
@@ -327,11 +319,7 @@ it('should open a submenu when pressing the right arrow on a submenu entry', () 
   );
 
   node.instance().setState({open: true});
-  node
-    .find(Dropdown.Submenu)
-    .first()
-    .getDOMNode()
-    .focus();
+  node.find(Dropdown.Submenu).first().getDOMNode().focus();
 
   node.simulate('keyDown', {key: 'ArrowRight'});
 
@@ -356,7 +344,7 @@ it('should add scrollable class when there is no enough space to show all items'
     menuHeight: 160,
     menuPosition: {top: 0},
     footerTop: 150,
-    headerBottom: 0
+    headerBottom: 0,
   };
 
   simulateDropdown(node, specs);
@@ -386,7 +374,7 @@ it('flip dropdown vertically when there is no enough space for four items', () =
     menuPosition: {top: 53},
     footerTop: 110,
     headerBottom: 0,
-    buttonHeight: 50
+    buttonHeight: 50,
   };
 
   simulateDropdown(node, specs);
@@ -414,7 +402,7 @@ it('should not add scrollable class when the item is flipped and there is enough
     menuHeight: 400,
     menuPosition: {top: 503},
     footerTop: 550,
-    headerBottom: 10
+    headerBottom: 10,
   });
 
   node.instance().calculateMenuStyle(true);
@@ -432,11 +420,7 @@ it('should invoke findLetterOption when typing a character', () => {
     </Dropdown>
   );
 
-  node
-    .find(Dropdown.Option)
-    .last()
-    .getDOMNode()
-    .focus();
+  node.find(Dropdown.Option).last().getDOMNode().focus();
 
   node.simulate('keyDown', {key: 'f', keyCode: 70});
   expect(findLetterOption.mock.calls[0][1]).toBe('f');

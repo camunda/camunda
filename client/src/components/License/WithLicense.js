@@ -15,7 +15,7 @@ export default function WithLicense({children}) {
   const [showLicensePage, setShowLicensePage] = useState(false);
 
   useEffect(() => {
-    const handleResponse = async response => {
+    const handleResponse = async (response) => {
       if (response.status === 403) {
         try {
           const {errorCode} = await response.clone().json();

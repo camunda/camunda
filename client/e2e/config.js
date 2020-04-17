@@ -13,24 +13,24 @@ export default {
     Chrome: [
       createMapOfUsers(users.slice(0, 2)),
       createMapOfUsers(users.slice(2, 4)),
-      createMapOfUsers(users.slice(4, 6))
+      createMapOfUsers(users.slice(4, 6)),
     ],
     headless: [
       createMapOfUsers(users.slice(6, 8)),
       createMapOfUsers(users.slice(8, 10)),
-      createMapOfUsers(users.slice(10, 12))
+      createMapOfUsers(users.slice(10, 12)),
     ],
     Firefox: [
       createMapOfUsers(users.slice(12, 14)),
       createMapOfUsers(users.slice(14, 16)),
-      createMapOfUsers(users.slice(16, 18))
+      createMapOfUsers(users.slice(16, 18)),
     ],
     'Microsoft Edge': [
       createMapOfUsers(users.slice(18, 20)),
       createMapOfUsers(users.slice(20, 22)),
-      createMapOfUsers(users.slice(22, 24))
-    ]
-  }
+      createMapOfUsers(users.slice(22, 24)),
+    ],
+  },
 };
 
 function createMapOfUsers(users) {

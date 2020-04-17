@@ -14,7 +14,7 @@ export {
   checkDeleteConflict,
   loadVariables,
   loadInputVariables,
-  loadOutputVariables
+  loadOutputVariables,
 } from './dataLoaders';
 export {numberParser} from './NumberParser';
 export {incompatibleFilters} from './incompatibleFilters';
@@ -29,7 +29,7 @@ export {
   createEntity,
   updateEntity,
   deleteEntity,
-  copyReport
+  copyReport,
 } from './entityService';
 
 export {evaluateReport, isDurationReport} from './reportService';
@@ -38,9 +38,7 @@ export {evaluateReport, isDurationReport} from './reportService';
 export const formatters = formattersImport;
 
 export function getRandomId() {
-  return Math.random()
-    .toString(36)
-    .slice(2);
+  return Math.random().toString(36).slice(2);
 }
 
 export function capitalize(string) {

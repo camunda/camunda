@@ -34,23 +34,23 @@ export function formatTenants(tenants, selectedTenants) {
         id: index,
         label: t('home.sources.unauthorizedTenant'),
         checked: true,
-        disabled: true
+        disabled: true,
       };
     }
 
     return {
       id,
       label: formatTenantName({id, name}),
-      checked: selectedTenants.some(tenant => tenant.id === id)
+      checked: selectedTenants.some((tenant) => tenant.id === id),
     };
   });
 }
 
 export function formatDefinitions(definitions, selectedDefinitions) {
-  return definitions.map(def => ({
+  return definitions.map((def) => ({
     id: def.key,
     label: formatDefintionName(def),
-    checked: selectedDefinitions.some(({key}) => key === def.key)
+    checked: selectedDefinitions.some(({key}) => key === def.key),
   }));
 }
 

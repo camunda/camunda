@@ -17,24 +17,24 @@ export default class NodeFilter extends React.Component {
 
     this.state = {
       selectedNodes: this.props.filterData ? this.props.filterData.data.values : [],
-      operator: this.props.filterData ? this.props.filterData.data.operator : 'in'
+      operator: this.props.filterData ? this.props.filterData.data.operator : 'in',
     };
   }
 
-  toggleNode = toggledNode => {
+  toggleNode = (toggledNode) => {
     if (this.state.selectedNodes.includes(toggledNode)) {
       this.setState({
-        selectedNodes: this.state.selectedNodes.filter(node => node !== toggledNode)
+        selectedNodes: this.state.selectedNodes.filter((node) => node !== toggledNode),
       });
     } else {
       this.setState({
-        selectedNodes: this.state.selectedNodes.concat([toggledNode])
+        selectedNodes: this.state.selectedNodes.concat([toggledNode]),
       });
     }
   };
 
   createFilter = () => {
-    const values = this.state.selectedNodes.map(node => node.id);
+    const values = this.state.selectedNodes.map((node) => node.id);
     const {operator} = this.state;
     const type = operator ? 'executedFlowNodes' : 'executingFlowNodes';
     this.props.addFilter({type, data: {operator, values}});
@@ -44,9 +44,9 @@ export default class NodeFilter extends React.Component {
     return this.state.selectedNodes.length > 0;
   };
 
-  setSelectedNodes = nodes => {
+  setSelectedNodes = (nodes) => {
     this.setState({
-      selectedNodes: nodes
+      selectedNodes: nodes,
     });
   };
 
@@ -62,7 +62,7 @@ export default class NodeFilter extends React.Component {
       >
         <Modal.Header>
           {t('common.filter.modalHeader', {
-            type: t(`common.filter.types.flowNode`)
+            type: t(`common.filter.types.flowNode`),
           })}
         </Modal.Header>
         <Modal.Content className="modalContent">

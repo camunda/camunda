@@ -9,7 +9,7 @@ import {t} from 'translation';
 
 export default function NodeListPreview({nodes, operator}) {
   const previewList = [];
-  const createOperator = name => {
+  const createOperator = (name) => {
     return <span className="previewItemOperator"> {name} </span>;
   };
 

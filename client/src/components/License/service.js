@@ -18,7 +18,7 @@ export async function validateLicense() {
 export async function storeLicense(license) {
   try {
     const response = await post('api/license/validate-and-store', license, {
-      headers: {'Content-Type': 'text/plain'}
+      headers: {'Content-Type': 'text/plain'},
     });
     return await response.json();
   } catch (response) {

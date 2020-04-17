@@ -10,12 +10,9 @@ import * as u from '../utils';
 
 import * as e from './Dashboard.elements.js';
 
-fixture('Dashboard')
-  .page(config.endpoint)
-  .beforeEach(u.login)
-  .afterEach(cleanEntities);
+fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
-test('create a report and add it to the Dashboard', async t => {
+test('create a report and add it to the Dashboard', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
@@ -31,7 +28,7 @@ test('create a report and add it to the Dashboard', async t => {
   await t.expect(e.report.textContent).contains('Start Date');
 });
 
-test('renaming a dashboard', async t => {
+test('renaming a dashboard', async (t) => {
   await u.createNewDashboard(t);
   await t.typeText(e.nameEditField, 'New Name', {replace: true});
 
@@ -40,7 +37,7 @@ test('renaming a dashboard', async t => {
   await t.expect(e.dashboardName.textContent).eql('New Name');
 });
 
-test('cancel changes', async t => {
+test('cancel changes', async (t) => {
   await u.createNewDashboard(t);
   await u.save(t);
 
@@ -64,7 +61,7 @@ test('cancel changes', async t => {
 //   await t.expect(e.fullscreenContent.getStyleProperty('background-color')).eql('#222');
 // });
 
-test('sharing', async t => {
+test('sharing', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
@@ -89,7 +86,7 @@ test('sharing', async t => {
   await t.expect(e.report.textContent).contains('Start Date');
 });
 
-test('remove a report from a dashboard', async t => {
+test('remove a report from a dashboard', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
@@ -105,7 +102,7 @@ test('remove a report from a dashboard', async t => {
   await t.expect(e.report.exists).notOk();
 });
 
-test('external datasources', async t => {
+test('external datasources', async (t) => {
   await u.createNewDashboard(t);
 
   await t.click(e.addButton);
@@ -122,7 +119,7 @@ test('external datasources', async t => {
   await t.expect(e.exampleHeading.textContent).contains('Example Domain');
 });
 
-test('deleting', async t => {
+test('deleting', async (t) => {
   await u.createNewDashboard(t);
 
   await u.save(t);

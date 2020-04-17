@@ -8,7 +8,7 @@ export function isDurationHeatmap({
   view,
   visualization,
   processDefinitionKey,
-  processDefinitionVersions
+  processDefinitionVersions,
 }) {
   return (
     view &&

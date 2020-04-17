@@ -13,7 +13,7 @@ const asMapping = ({group, source, eventName, eventLabel}) => ({
   group,
   source,
   eventName,
-  eventLabel
+  eventLabel,
 });
 
 export default function ProcessRenderer({
@@ -22,7 +22,7 @@ export default function ProcessRenderer({
   mappings = {},
   onChange = () => {},
   onSelectNode = () => {},
-  selectedEvent
+  selectedEvent,
 }) {
   let isRemoveEvent = false;
 
@@ -59,9 +59,9 @@ export default function ProcessRenderer({
           position,
           show: {
             minZoom: -Infinity,
-            maxZoom: +Infinity
+            maxZoom: +Infinity,
           },
-          html: overlayHtml
+          html: overlayHtml,
         });
       });
     }
@@ -106,7 +106,7 @@ export default function ProcessRenderer({
 
 function findSelectedNode(viewer, mappings, event) {
   let selected;
-  viewer.get('elementRegistry').forEach(element => {
+  viewer.get('elementRegistry').forEach((element) => {
     const {start, end} = mappings[element.id] || {};
     if (deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event))) {
       selected = element;
@@ -124,13 +124,13 @@ function centerElement(viewer, el) {
 
   var elementMid = {
     x: el.x + el.width / 2,
-    y: el.y + el.height / 2
+    y: el.y + el.height / 2,
   };
 
   canvas.viewbox({
     x: elementMid.x - currentViewbox.width / 2,
     y: elementMid.y - currentViewbox.height / 2,
     width: currentViewbox.width,
-    height: currentViewbox.height
+    height: currentViewbox.height,
   });
 }

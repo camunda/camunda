@@ -18,27 +18,27 @@ export default class AddButton extends React.Component {
 
   openModal = () => {
     this.setState({
-      open: true
+      open: true,
     });
   };
 
-  closeModal = evt => {
+  closeModal = (evt) => {
     if (evt) {
       evt.stopPropagation();
     }
     this.setState({
-      open: false
+      open: false,
     });
   };
 
-  addReport = props => {
+  addReport = (props) => {
     this.closeModal();
 
     // position does not matter because the report will be positioned by the user
     const payload = {
       position: {x: 0, y: 0},
       dimensions: size,
-      ...props
+      ...props,
     };
 
     this.props.addReport(payload);

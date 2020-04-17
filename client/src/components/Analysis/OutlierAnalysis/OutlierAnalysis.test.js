@@ -16,9 +16,9 @@ import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
 jest.mock('./service', () => {
   return {
     loadNodesOutliers: jest.fn().mockReturnValue({
-      nodeKey: {heat: 50, higherOutlierHeat: 20, higherOutlier: {count: 20, relation: 1.3}}
+      nodeKey: {heat: 50, higherOutlierHeat: 20, higherOutlier: {count: 20, relation: 1.3}},
     }),
-    loadDurationData: jest.fn().mockReturnValue([{key: 'test', value: 'testVal', outlier: false}])
+    loadDurationData: jest.fn().mockReturnValue([{key: 'test', value: 'testVal', outlier: false}]),
   };
 });
 
@@ -26,7 +26,7 @@ jest.mock('services', () => {
   return {
     ...jest.requireActual('services'),
     loadProcessDefinitionXml: jest.fn(),
-    getFlowNodeNames: jest.fn().mockReturnValue({nodeKey: 'nodeName'})
+    getFlowNodeNames: jest.fn().mockReturnValue({nodeKey: 'nodeName'}),
   };
 });
 
@@ -43,7 +43,7 @@ it('should load the process definition xml when the process definition id is upd
   node.instance().updateConfig({
     processDefinitionKey: 'someKey',
     processDefinitionVersions: ['someVersion'],
-    tenantIds: ['a', 'b']
+    tenantIds: ['a', 'b'],
   });
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion', 'a');
@@ -82,7 +82,7 @@ it('should create correct flownodes higher outlier heat object', async () => {
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
     processDefinitionVersions: ['someVersion'],
-    tenantIds: ['a', 'b']
+    tenantIds: ['a', 'b'],
   });
 
   expect(node.state().heatData).toEqual({nodeKey: 20});
@@ -97,7 +97,7 @@ it('display load chart data and display details modal when loadChartData is call
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
     processDefinitionVersions: ['someVersion'],
-    tenantIds: ['a', 'b']
+    tenantIds: ['a', 'b'],
   });
 
   const nodeData = {higherOutlier: {boundValue: 20}};
@@ -111,7 +111,7 @@ it('display load chart data and display details modal when loadChartData is call
     name: 'nodeName',
     id: 'nodeKey',
     ...nodeData,
-    data: [{key: 'test', outlier: false, value: 'testVal'}]
+    data: [{key: 'test', outlier: false, value: 'testVal'}],
   });
 });
 

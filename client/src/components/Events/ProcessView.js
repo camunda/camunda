@@ -25,7 +25,7 @@ export default withErrorHandling(
       data: null,
       deleting: null,
       publishing: null,
-      isPublishing: false
+      isPublishing: false,
     };
 
     componentDidMount() {
@@ -52,7 +52,7 @@ export default withErrorHandling(
         if (this.state.data.state === 'published') {
           addNotification({
             type: 'success',
-            text: t('events.publishSuccess', {name: this.state.data.name})
+            text: t('events.publishSuccess', {name: this.state.data.name}),
           });
         }
       }
@@ -62,8 +62,8 @@ export default withErrorHandling(
       return new Promise((resolve, reject) => {
         this.props.mightFail(
           loadProcess(this.props.id),
-          data => this.setState({data}, resolve),
-          error => reject(showError(error))
+          (data) => this.setState({data}, resolve),
+          (error) => reject(showError(error))
         );
       });
     };
@@ -80,7 +80,7 @@ export default withErrorHandling(
       const {
         deleting,
         publishing,
-        data: {id, name, xml, mappings, state, publishingProgress}
+        data: {id, name, xml, mappings, state, publishingProgress},
       } = this.state;
 
       const isPublishing = state === 'publish_pending';
@@ -138,7 +138,7 @@ export default withErrorHandling(
           <Deleter
             type="process"
             descriptionText={t('events.deleteWarning', {
-              name: (deleting && deleting.name) || ''
+              name: (deleting && deleting.name) || '',
             })}
             entity={deleting}
             onDelete={this.props.onDelete}

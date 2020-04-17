@@ -9,7 +9,7 @@ import {t} from 'translation';
 
 const {
   options: {view, groupBy},
-  getLabelFor
+  getLabelFor,
 } = reportConfig.process;
 
 const {formatReportResult, getRelativeValue} = formatters;
@@ -27,9 +27,9 @@ export function getFormattedLabels(
         label: reportsNames[i],
         columns: [
           ...(displayAbsoluteValue ? reportLabels.slice(1) : []),
-          ...(displayRelativeValue ? [t('report.table.relativeFrequency')] : [])
-        ]
-      }
+          ...(displayRelativeValue ? [t('report.table.relativeFrequency')] : []),
+        ],
+      },
     ],
     []
   );
@@ -65,7 +65,7 @@ export function getCombinedTableProps(reportResult, reports) {
     labels: [],
     reportsNames: [],
     combinedResult: [],
-    instanceCount: []
+    instanceCount: [],
   };
 
   const combinedProps = reports.reduce((prevReport, {id}) => {
@@ -91,7 +91,7 @@ export function getCombinedTableProps(reportResult, reports) {
       labels,
       reportsNames,
       combinedResult: reportsResult,
-      instanceCount: reportsInstanceCount
+      instanceCount: reportsInstanceCount,
     };
   }, initialData);
 

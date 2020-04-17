@@ -19,7 +19,7 @@ export default class AutoRefreshIcon extends React.Component {
     super(props);
 
     this.state = {
-      animationStarted: Date.now()
+      animationStarted: Date.now(),
     };
   }
 
@@ -69,7 +69,7 @@ export default class AutoRefreshIcon extends React.Component {
           <circle cx={center} cy={center} r={radius} strokeWidth="0" fillOpacity="0.2" />
           <path
             strokeWidth="2"
-            ref={path => (this.path = path)}
+            ref={(path) => (this.path = path)}
             className="AutoRefreshIcon__outline"
           />
         </svg>

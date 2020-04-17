@@ -19,18 +19,18 @@ export default withErrorHandling(
 
       this.state = {
         selectedTenants: this.props.source.tenants,
-        definitionTenants: null
+        definitionTenants: null,
       };
     }
 
     getUnauthorizedTenants = () =>
-      this.state.selectedTenants.filter(tenant => tenant.id === '__unauthorizedTenantId__');
+      this.state.selectedTenants.filter((tenant) => tenant.id === '__unauthorizedTenantId__');
 
     componentDidMount() {
       const {definitionKey, definitionType} = this.props.source;
       this.props.mightFail(getDefinitionTenants(definitionKey, definitionType), ({tenants}) => {
         this.setState({
-          definitionTenants: [...tenants, ...this.getUnauthorizedTenants()]
+          definitionTenants: [...tenants, ...this.getUnauthorizedTenants()],
         });
       });
     }
@@ -42,7 +42,7 @@ export default withErrorHandling(
       }
     };
 
-    updateSelectedTenants = selectedTenants => {
+    updateSelectedTenants = (selectedTenants) => {
       if (!selectedTenants.length) {
         this.setState({selectedTenants: this.getUnauthorizedTenants()});
       } else {
@@ -53,7 +53,7 @@ export default withErrorHandling(
     render() {
       const {
         onClose,
-        source: {definitionName, definitionKey}
+        source: {definitionName, definitionKey},
       } = this.props;
 
       const {selectedTenants, definitionTenants} = this.state;

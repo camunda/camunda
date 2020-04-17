@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import ProcessRenderer from './ProcessRenderer';
 import Modeler from 'bpmn-js/lib/Modeler';
 
-jest.mock('react', () => ({...jest.requireActual('react'), useEffect: fn => fn()}));
+jest.mock('react', () => ({...jest.requireActual('react'), useEffect: (fn) => fn()}));
 
 it('should call onChange with the xml', () => {
   const viewer = new Modeler();
@@ -43,7 +43,7 @@ it('should create mapping overlays', () => {
 
   const props = {
     viewer,
-    mappings: {a: {start: {eventName: '1'}, end: null}}
+    mappings: {a: {start: {eventName: '1'}, end: null}},
   };
 
   shallow(<ProcessRenderer {...props} />);

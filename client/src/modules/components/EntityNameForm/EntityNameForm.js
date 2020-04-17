@@ -15,7 +15,7 @@ import {t} from 'translation';
 
 export class EntityNameForm extends React.Component {
   state = {
-    loading: false
+    loading: false,
   };
 
   nameInput = React.createRef();

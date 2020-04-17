@@ -22,7 +22,7 @@ function convertToChangeset(config) {
   return Object.keys(config).reduce(
     (obj, curr) => ({
       ...obj,
-      [curr]: {$set: config[curr]}
+      [curr]: {$set: config[curr]},
     }),
     {}
   );
@@ -41,27 +41,27 @@ export default class Configuration extends React.Component {
           active: false,
           countProgress: {
             baseline: '0',
-            target: '100'
+            target: '100',
           },
           durationProgress: {
             baseline: {
               value: '0',
-              unit: 'hours'
+              unit: 'hours',
             },
             target: {
               value: '2',
-              unit: 'hours'
-            }
+              unit: 'hours',
+            },
           },
           countChart: {
             value: '100',
-            isBelow: false
+            isBelow: false,
           },
           durationChart: {
             value: '2',
             unit: 'hours',
-            isBelow: false
-          }
+            isBelow: false,
+          },
         },
         hideRelativeValue: false,
         hideAbsoluteValue: false,
@@ -76,8 +76,8 @@ export default class Configuration extends React.Component {
         color: ColorPicker.dark.steelBlue,
         hiddenNodes: {
           active: false,
-          keys: []
-        }
+          keys: [],
+        },
       }),
       true
     );

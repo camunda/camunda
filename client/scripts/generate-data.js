@@ -15,7 +15,7 @@ const e2ePresetsFile = path.resolve(__dirname, '..', 'e2e_presets.json');
 
 const e2ePresets = JSON.parse(fs.readFileSync(e2ePresetsFile));
 const dataGenerationParameters = Object.keys(e2ePresets)
-  .map(key => `--${key} ${e2ePresets[key]}`)
+  .map((key) => `--${key} ${e2ePresets[key]}`)
   .join('');
 
 const generateDataProcess = spawn(
@@ -24,27 +24,21 @@ const generateDataProcess = spawn(
   {
     cwd: path.resolve(__dirname, '..', '..'),
     stdio: 'inherit',
-    shell: true
+    shell: true,
   }
 );
 
 process.on('SIGINT', () => generateDataProcess.kill('SIGINT'));
 process.on('SIGTERM', () => generateDataProcess.kill('SIGTERM'));
 
-generateDataProcess.on(
-  'error',
-  () => {
-    process.exit(1);
+generateDataProcess.on('error', () => {
+  process.exit(1);
+});
+generateDataProcess.on('close', (code) => {
+  if (code == 0) {
+    console.debug('generate-data script execution finished successfully');
+  } else {
+    console.error('generate-data script execution failed');
   }
-);
-generateDataProcess.on(
-  'close',
-  code => {
-    if (code == 0) {
-      console.debug("generate-data script execution finished successfully");
-    } else {
-      console.error("generate-data script execution failed");
-    }
-    process.exit(code);
-  }
-);
+  process.exit(code);
+});

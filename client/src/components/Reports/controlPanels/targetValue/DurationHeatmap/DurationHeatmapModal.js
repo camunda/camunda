@@ -20,7 +20,7 @@ import {
   TargetValueBadge,
   Message,
   LoadingIndicator,
-  ClickBehavior
+  ClickBehavior,
 } from 'components';
 import {formatters, numberParser} from 'services';
 
@@ -37,7 +37,7 @@ export default class DurationHeatmapModal extends React.Component {
       focus: null,
       values: {},
       nodeNames: {},
-      loading: false
+      loading: false,
     };
   }
 
@@ -51,12 +51,12 @@ export default class DurationHeatmapModal extends React.Component {
     // this function removes all entries without value and converts values into numbers
     const values = {};
 
-    Object.keys(this.state.values).forEach(key => {
+    Object.keys(this.state.values).forEach((key) => {
       const entry = this.state.values[key];
       if (entry && entry.value.trim()) {
         values[key] = {
           value: parseFloat(entry.value),
-          unit: entry.unit
+          unit: entry.unit,
         };
       }
     });
@@ -66,7 +66,7 @@ export default class DurationHeatmapModal extends React.Component {
 
   constructValues = () => {
     const {data} = this.props.report;
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const viewer = new Viewer();
       viewer.importXML(data.configuration.xml, () => {
         const predefinedValues = this.getConfig().values || {};
@@ -76,10 +76,10 @@ export default class DurationHeatmapModal extends React.Component {
         const set = new Set();
         viewer
           .get('elementRegistry')
-          .filter(element => element.businessObject.$instanceOf('bpmn:' + this.getNodeType()))
-          .map(element => element.businessObject)
-          .forEach(element => set.add(element));
-        set.forEach(element => {
+          .filter((element) => element.businessObject.$instanceOf('bpmn:' + this.getNodeType()))
+          .map((element) => element.businessObject)
+          .forEach((element) => set.add(element));
+        set.forEach((element) => {
           values[element.id] = this.copyObjectIfExistsAndStringifyValue(
             predefinedValues[element.id]
           );
@@ -91,25 +91,25 @@ export default class DurationHeatmapModal extends React.Component {
     });
   };
 
-  copyObjectIfExistsAndStringifyValue = obj => {
+  copyObjectIfExistsAndStringifyValue = (obj) => {
     if (obj) {
       return {
         ...obj,
-        value: '' + obj.value
+        value: '' + obj.value,
       };
     }
     return obj;
   };
 
-  setTarget = (type, id) => value => {
+  setTarget = (type, id) => (value) => {
     if (this.state.values[id]) {
       this.setState(
         update(this.state, {
           values: {
             [id]: {
-              [type]: {$set: value}
-            }
-          }
+              [type]: {$set: value},
+            },
+          },
         })
       );
     } else {
@@ -120,23 +120,23 @@ export default class DurationHeatmapModal extends React.Component {
               $set: {
                 value: '0',
                 unit: 'hours',
-                [type]: value
-              }
-            }
-          }
+                [type]: value,
+              },
+            },
+          },
         })
       );
     }
   };
 
-  storeInputReferenceFor = id => input => {
+  storeInputReferenceFor = (id) => (input) => {
     this.inputRefs[id] = input;
   };
 
   constructTableBody = () => {
     const resultObj = formatters.objectifyResult(this.props.report.result.data);
 
-    return Object.keys(this.state.values).map(id => {
+    return Object.keys(this.state.values).map((id) => {
       const settings = this.state.values[id] || {value: '', unit: 'hours'};
       const resultEntry = resultObj[id];
       return [
@@ -148,7 +148,7 @@ export default class DurationHeatmapModal extends React.Component {
               value={settings.value}
               type="number"
               ref={this.storeInputReferenceFor(id)}
-              onChange={evt => this.setTarget('value', id)(evt.target.value)}
+              onChange={(evt) => this.setTarget('value', id)(evt.target.value)}
               onFocus={() => {
                 this.updateFocus(id);
               }}
@@ -159,7 +159,7 @@ export default class DurationHeatmapModal extends React.Component {
             />
             <Select
               value={settings.unit}
-              onChange={value => {
+              onChange={(value) => {
                 this.setTarget('unit', id)(value);
                 this.updateFocus(id);
               }}
@@ -174,7 +174,7 @@ export default class DurationHeatmapModal extends React.Component {
               <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
             </Select>
           </div>
-        </React.Fragment>
+        </React.Fragment>,
       ];
     });
   };
@@ -183,7 +183,7 @@ export default class DurationHeatmapModal extends React.Component {
     return this.hasSomethingChanged() && this.areAllFieldsNumbers();
   };
 
-  isValidInput = value => {
+  isValidInput = (value) => {
     return value.trim() === '' || numberParser.isPositiveNumber(value);
   };
 
@@ -196,8 +196,8 @@ export default class DurationHeatmapModal extends React.Component {
 
   areAllFieldsNumbers = () => {
     return Object.keys(this.state.values)
-      .filter(key => this.state.values[key])
-      .every(key => {
+      .filter((key) => this.state.values[key])
+      .every((key) => {
         const entry = this.state.values[key];
         const value = entry && entry.value;
 
@@ -205,7 +205,7 @@ export default class DurationHeatmapModal extends React.Component {
       });
   };
 
-  updateFocus = focus => this.setState({focus});
+  updateFocus = (focus) => this.setState({focus});
 
   async componentDidUpdate(prevProps, prevState) {
     if (this.state.focus && this.state.focus !== prevState.focus) {
@@ -221,14 +221,14 @@ export default class DurationHeatmapModal extends React.Component {
           focus: null,
           values,
           nodeNames,
-          loading: false
+          loading: false,
         });
       } else {
         this.setState({
           focus: null,
           values: {},
           nodeNames: {},
-          loading: false
+          loading: false,
         });
       }
     }
@@ -275,7 +275,7 @@ export default class DurationHeatmapModal extends React.Component {
               head={[
                 t('report.heatTarget.table.activity'),
                 t('report.heatTarget.table.value'),
-                t('report.heatTarget.table.target')
+                t('report.heatTarget.table.target'),
               ]}
               body={this.constructTableBody()}
               foot={[]}

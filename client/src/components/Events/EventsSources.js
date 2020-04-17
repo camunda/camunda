@@ -17,21 +17,21 @@ import './EventsSources.scss';
 export default class EventSources extends React.Component {
   state = {
     editing: null,
-    deleting: null
+    deleting: null,
   };
 
   openAddSourceModal = () => this.setState({editing: {}});
-  openEditSourceModal = editing => this.setState({editing});
+  openEditSourceModal = (editing) => this.setState({editing});
   closeSourceModal = () => this.setState({editing: null});
 
-  removeSource = target => {
+  removeSource = (target) => {
     this.props.onChange(
-      this.props.sources.filter(src => src !== target),
+      this.props.sources.filter((src) => src !== target),
       true
     );
   };
 
-  toggleSource = targetSource => {
+  toggleSource = (targetSource) => {
     const sourceIndex = this.props.sources.indexOf(targetSource);
     this.props.onChange(update(this.props.sources, {[sourceIndex]: {$toggle: ['hidden']}}), false);
   };
@@ -43,7 +43,7 @@ export default class EventSources extends React.Component {
     return (
       <div className="EventsSources">
         <div className="sourcesList">
-          {sources.map(source => {
+          {sources.map((source) => {
             return (
               <Dropdown
                 className={classnames({isActive: !source.hidden})}
@@ -80,7 +80,7 @@ export default class EventSources extends React.Component {
           <EventsSourceModal
             initialSource={editing}
             existingSources={sources}
-            onConfirm={sources => {
+            onConfirm={(sources) => {
               const isEditing = Object.keys(editing).length > 0;
               this.props.onChange(sources, isEditing);
               this.closeSourceModal();
@@ -97,12 +97,12 @@ function getDropdownProps({processDefinitionKey, processDefinitionName, type}) {
   if (type === 'external') {
     return {
       label: t('events.sources.externalEvents'),
-      key: 'externalEvents'
+      key: 'externalEvents',
     };
   } else {
     return {
       label: processDefinitionName || processDefinitionKey,
-      key: processDefinitionKey
+      key: processDefinitionKey,
     };
   }
 }
