@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -50,7 +51,7 @@ public class HealthMonitoringTest {
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Test
-  public void shouldReportUnhealthyWhenLeaderTransitionFailed() {
+  public void shouldStepDownWhenLeaderTransitionFailed() throws InterruptedException {
     // given
     final int partition = START_PARTITION_ID;
     final int leaderNodeId = clusteringRule.getLeaderForPartition(partition).getNodeId();
@@ -68,12 +69,15 @@ public class HealthMonitoringTest {
     // when
     // corrupt snapshot on all followers because we cannot control which one will become leader
     followers.forEach(this::corruptAllSnapshots);
-    followers.forEach(b -> b.addPartitionListener(new FailingPartitionListener()));
+    final CountDownLatch followerInstall = new CountDownLatch(1);
+    followers.stream().forEach(b -> b.addPartitionListener(new InstallListener(followerInstall)));
     // cannot use clusteringRule.stopbroker() as it waits for new leader to be installed.
     leader.close();
 
     // then
-    waitUntil(() -> followers.stream().anyMatch(follower -> !isBrokerHealthy(follower)));
+    // steps down after leader install fails and install follower services
+    followerInstall.await();
+    assertThat(followerInstall.getCount()).isZero();
   }
 
   @Test
@@ -127,11 +131,18 @@ public class HealthMonitoringTest {
     }
   }
 
-  private static class FailingPartitionListener implements PartitionListener {
+  private static final class InstallListener implements PartitionListener {
+
+    final CountDownLatch followerInstall;
+
+    private InstallListener(final CountDownLatch followerInstall) {
+      this.followerInstall = followerInstall;
+    }
 
     @Override
     public ActorFuture<Void> onBecomingFollower(
         final int partitionId, final long term, final LogStream logStream) {
+      followerInstall.countDown();
       return CompletableActorFuture.completedExceptionally(
           new RuntimeException("fail follower installation"));
     }
