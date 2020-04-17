@@ -66,26 +66,26 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
    * Defines the domain which the user always sees<br/>
    * auth0.com call it <b>Custom Domain</b>
    */
-  @Value(value = "${camunda.operate.auth0.domain:login.cloud.ultrawombat.com}")
+  @Value(value = "${camunda.operate.auth0.domain}")
   private String domain;
 
   /**
    * Defines the domain which provides information about the user<br/>
    * auth0.com call it <b>Domain</b>
    */
-  @Value(value = "${camunda.operate.auth0.backendDomain:camunda-dev.eu.auth0.com}")
+  @Value(value = "${camunda.operate.auth0.backendDomain}")
   private String backendDomain;
 
   /**
    * This is the client id of auth0 application (see Settings page on auth0
-   * dashboard) It's like an user name for the application - MUST given
+   * dashboard) It's like an user name for the application 
    */
   @Value(value = "${camunda.operate.auth0.clientId}")
   private String clientId;
 
   /**
    * This is the client secret of auth0 application (see Settings page on auth0
-   * dashboard) It's like a password for the application - MUST given 
+   * dashboard) It's like a password for the application 
    */
   @Value(value = "${camunda.operate.auth0.clientSecret}") 
   private String clientSecret;
@@ -93,7 +93,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   /**
    * The claim we want to check It's like a permission name
    */
-  @Value(value = "${camunda.operate.auth0.claimName:https://camunda.com/orgs}")
+  @Value(value = "${camunda.operate.auth0.claimName}")
   private String claimName;
 
   /**

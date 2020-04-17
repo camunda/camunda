@@ -52,7 +52,10 @@ import com.auth0.Tokens;
   properties = {
       "camunda.operate.auth0.clientId=1",
       "camunda.operate.auth0.clientSecret=2",
-      "camunda.operate.auth0.organization=3"
+      "camunda.operate.auth0.organization=3",
+      "camunda.operate.auth0.domain=domain",
+      "camunda.operate.auth0.backendDomain=backendDomain",
+      "camunda.operate.auth0.claimName=claimName"
   },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
@@ -75,10 +78,10 @@ public class AuthenticationTest {
   public void setUp() throws Throwable{
     // mock building authorizeUrl
     AuthorizeUrl mockedAuthorizedUrl = mock(AuthorizeUrl.class);
-    given(authenticationController.buildAuthorizeUrl(isNotNull(), isNotNull())).willReturn(mockedAuthorizedUrl);
+    given(authenticationController.buildAuthorizeUrl(isNotNull(), isNotNull(), isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.withAudience(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.withScope(isNotNull())).willReturn(mockedAuthorizedUrl);
-    given(mockedAuthorizedUrl.build()).willReturn("https://login.cloud.ultrawombat.com/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://camunda-dev.eu.auth0.com/userinfo"); 
+    given(mockedAuthorizedUrl.build()).willReturn("https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://backendDomain/userinfo"); 
   }
   
   @Test
@@ -99,7 +102,7 @@ public class AuthenticationTest {
     );
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
-    given(authenticationController.handle(isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
+    given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
     
     response = get(SSOWebSecurityConfig.CALLBACK_URI,cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.ROOT));
@@ -126,7 +129,7 @@ public class AuthenticationTest {
         ssoConfig.getBackendDomain()
     );
     // Step 3 Call back uri with invalid userdata  
-    given(authenticationController.handle(isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), "wrong-organization"));
+    given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), "wrong-organization"));
     
     response = get(SSOWebSecurityConfig.CALLBACK_URI,cookies);
     assertThat(redirectLocationIn(response)).contains(
@@ -158,7 +161,7 @@ public class AuthenticationTest {
         ssoConfig.getBackendDomain()
     );
     // Step 3 Call back uri, but there is an IdentityVerificationException.
-    doThrow(IdentityVerificationException.class).when(authenticationController).handle(any());
+    doThrow(IdentityVerificationException.class).when(authenticationController).handle(any(), any());
     
     response = get(SSOWebSecurityConfig.CALLBACK_URI,cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.NO_PERMISSION));
@@ -170,7 +173,7 @@ public class AuthenticationTest {
     ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
     HttpEntity<?> cookies = httpEntityWithCookie(response);
     response = get(SSOWebSecurityConfig.LOGIN_RESOURCE,cookies);    
-    given(authenticationController.handle(isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
+    given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
     response = get(SSOWebSecurityConfig.CALLBACK_URI,cookies);
     response = get(SSOWebSecurityConfig.ROOT,cookies);
 
@@ -208,7 +211,7 @@ public class AuthenticationTest {
         ssoConfig.getBackendDomain()
     );
     // Step 3 Call back uri
-    given(authenticationController.handle(isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
+    given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
     
     response = get(SSOWebSecurityConfig.CALLBACK_URI,httpEntity);
     assertThatRequestIsRedirectedTo(response, urlFor(userInfoUrl));

@@ -46,8 +46,8 @@ public class SSOController {
    * @return a redirect command to auth0 authorize url 
    */
   @RequestMapping(value = SSOWebSecurityConfig.LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
-  public String login(final HttpServletRequest req) {
-    String authorizeUrl = authenticationController.buildAuthorizeUrl(req, getRedirectURI(req, SSOWebSecurityConfig.CALLBACK_URI))
+  public String login(final HttpServletRequest req,final HttpServletResponse res) {
+    String authorizeUrl = authenticationController.buildAuthorizeUrl(req, res, getRedirectURI(req, SSOWebSecurityConfig.CALLBACK_URI))
         .withAudience(String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
         .withScope("openid profile email") // which info we request
         .build();
@@ -68,7 +68,7 @@ public class SSOController {
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws ServletException, IOException {
     logger.debug("Called back by auth0.");
     try {
-      Tokens tokens = authenticationController.handle(req);
+      Tokens tokens = authenticationController.handle(req, res);
       TokenAuthentication authentication =  beanFactory.getBean(TokenAuthentication.class);
       authentication.authenticate(tokens);
       SecurityContextHolder.getContext().setAuthentication(authentication);
