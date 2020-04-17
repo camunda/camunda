@@ -129,7 +129,8 @@ public final class TimerIncidentTest {
         .hasErrorMessage(
             "Expected result of the expression '"
                 + DURATION_VARIABLE
-                + "' to be parsed to a duration, but was 'not_a_duration_expression'");
+                + "' to be parsed to a duration, but was 'not_a_duration_expression'"
+                + " and encountered error: Text cannot be parsed to a Period");
   }
 
   @Test

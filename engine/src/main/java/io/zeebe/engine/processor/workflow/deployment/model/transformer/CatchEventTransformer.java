@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
 import io.zeebe.el.Expression;
 import io.zeebe.el.ExpressionLanguage;
+import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
@@ -24,6 +25,8 @@ import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.util.Either;
+import java.time.format.DateTimeParseException;
 
 public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
 
@@ -87,24 +90,33 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       expression = expressionLanguage.parseExpression(duration);
       executableElement.setTimerFactory(
           (expressionProcessor, scopeKey) ->
-              new RepeatingInterval(
-                  1, expressionProcessor.evaluateIntervalExpression(expression, scopeKey)));
+              expressionProcessor
+                  .evaluateIntervalExpression(expression, scopeKey)
+                  .map(interval -> new RepeatingInterval(1, interval)));
 
     } else if (timerEventDefinition.getTimeCycle() != null) {
       final String cycle = timerEventDefinition.getTimeCycle().getTextContent();
       expression = expressionLanguage.parseExpression(cycle);
       executableElement.setTimerFactory(
-          (expressionProcessor, scopeKey) ->
-              RepeatingInterval.parse(
-                  expressionProcessor.evaluateStringExpression(expression, scopeKey)));
+          (expressionProcessor, scopeKey) -> {
+            try {
+              return expressionProcessor
+                  .evaluateStringExpression(expression, scopeKey)
+                  .map(RepeatingInterval::parse);
+            } catch (DateTimeParseException e) {
+              // todo(#4323): replace this caught exception with Either
+              return Either.left(new Failure(e.getMessage()));
+            }
+          });
 
     } else if (timerEventDefinition.getTimeDate() != null) {
       final String timeDate = timerEventDefinition.getTimeDate().getTextContent();
       expression = expressionLanguage.parseExpression(timeDate);
       executableElement.setTimerFactory(
           (expressionProcessor, scopeKey) ->
-              new TimeDateTimer(
-                  expressionProcessor.evaluateDateTimeExpression(expression, scopeKey)));
+              expressionProcessor
+                  .evaluateDateTimeExpression(expression, scopeKey)
+                  .map(TimeDateTimer::new));
     }
   }
 
