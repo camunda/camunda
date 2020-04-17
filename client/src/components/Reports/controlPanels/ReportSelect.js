@@ -74,10 +74,11 @@ export default React.memo(ReportSelect, (prevProps, nextProps) => {
   const prevData = excludeConfig(prevProps.report.data);
   const nextData = excludeConfig(nextProps.report.data);
 
-  if (!equal(prevData, nextData)) {
-    return false;
+  if (equal(prevData, nextData) && equal(prevProps.variables, nextProps.variables)) {
+    return true;
   }
-  return true;
+
+  return false;
 });
 
 function excludeConfig(data) {
