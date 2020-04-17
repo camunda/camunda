@@ -53,6 +53,7 @@ export default class DateInput extends React.Component {
         type: variable.type,
         filterForUndefined,
         data: {
+          type: 'fixed',
           start: filter.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
           end: filter.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
         },
