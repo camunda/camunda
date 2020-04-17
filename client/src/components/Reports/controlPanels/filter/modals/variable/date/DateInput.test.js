@@ -10,15 +10,6 @@ import moment from 'moment';
 
 import DateInput from './DateInput';
 
-<<<<<<< HEAD
-jest.mock('components', () => {
-  return {
-    DatePicker: () => 'DatePicker',
-  };
-});
-
-=======
->>>>>>> chore(DateInput): include static data type for existing date filter
 const props = {
   setValid: jest.fn(),
   changeFilter: jest.fn(),
@@ -37,10 +28,7 @@ const exampleFilter = {
     data: {
       start: '2018-07-09T00:00:00',
       end: '2018-07-12T23:59:59',
-<<<<<<< HEAD
-=======
       type: 'fixed',
->>>>>>> chore(DateInput): include static data type for existing date filter
     },
   },
 };
