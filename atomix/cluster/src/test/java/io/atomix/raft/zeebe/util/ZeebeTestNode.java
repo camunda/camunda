@@ -45,7 +45,6 @@ public class ZeebeTestNode {
 
   public static final String CLUSTER_ID = "zeebe";
   private static final String DATA_PARTITION_GROUP_NAME = "data";
-  private static final String SYSTEM_PARTITION_GROUP_NAME = "system";
   private static final String HOST = "localhost";
   private static final int BASE_PORT = 10_000;
   private final Member member;
@@ -53,7 +52,6 @@ public class ZeebeTestNode {
   private final File directory;
 
   private RaftPartitionGroup dataPartitionGroup;
-  private RaftPartitionGroup systemPartitionGroup;
   private ManagedPartitionService partitionService;
   private AtomixCluster cluster;
 
@@ -79,8 +77,6 @@ public class ZeebeTestNode {
 
   public CompletableFuture<Void> start(final Collection<ZeebeTestNode> nodes) {
     cluster = buildCluster(nodes);
-    systemPartitionGroup =
-        buildPartitionGroup(RaftPartitionGroup.builder(SYSTEM_PARTITION_GROUP_NAME), nodes).build();
     dataPartitionGroup =
         buildPartitionGroup(RaftPartitionGroup.builder(DATA_PARTITION_GROUP_NAME), nodes)
             .withStateMachineFactory(ZeebeRaftStateMachine::new)
@@ -147,7 +143,6 @@ public class ZeebeTestNode {
         clusterMembershipService,
         messagingService,
         new DefaultPrimitiveTypeRegistry(registry.getPrimitiveTypes()),
-        systemPartitionGroup,
         partitionGroups,
         new DefaultPartitionGroupTypeRegistry(Collections.singleton(RaftPartitionGroup.TYPE)));
   }
@@ -155,7 +150,6 @@ public class ZeebeTestNode {
   public CompletableFuture<Void> stop() {
     return partitionService
         .stop()
-        .thenCompose(ignored -> systemPartitionGroup.close())
         .thenCompose(ignored -> dataPartitionGroup.close())
         .thenCompose(ignored -> cluster.stop());
   }

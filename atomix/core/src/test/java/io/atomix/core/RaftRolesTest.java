@@ -18,6 +18,7 @@ package io.atomix.core;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
@@ -168,7 +169,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
               final Map<Integer, RaftServer.Role> roleMap = nodeRoles.get(0);
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  (role) -> {
+                  (role, term) -> {
                     final Integer partitionId = partition.id().id();
                     roleMap.put(partitionId, role);
 
@@ -193,7 +194,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
               final Map<Integer, RaftServer.Role> roleMap = nodeRoles.get(1);
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  (role) -> {
+                  (role, term) -> {
                     final Integer partitionId = partition.id().id();
                     roleMap.put(partitionId, role);
 
@@ -218,7 +219,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
               final Map<Integer, RaftServer.Role> roleMap = nodeRoles.get(2);
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  (role) -> {
+                  (role, term) -> {
                     final Integer partitionId = partition.id().id();
                     roleMap.put(partitionId, role);
 
@@ -234,7 +235,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
 
     // then
     CompletableFuture.allOf(nodeOneFuture, nodeTwoFuture, nodeThreeFuture).join();
-    latch.await(15, TimeUnit.SECONDS);
+    assertTrue(latch.await(15, TimeUnit.SECONDS));
 
     // expect normal leaders are not the leaders this time
     assertEquals(Role.FOLLOWER, nodeRoles.get(0).get(1));
@@ -285,7 +286,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
         nodeIds,
         builder -> {
           final RaftPartitionGroup partitionGroup =
-              RaftPartitionGroup.builder("system")
+              RaftPartitionGroup.builder("normal")
                   .withNumPartitions(partitionCount)
                   .withPartitionSize(memberIds.size())
                   .withMembers(memberIds)
@@ -293,15 +294,16 @@ public final class RaftRolesTest extends AbstractAtomixTest {
                       new File(new File(atomixRule.getDataDir(), "log"), "" + nodeId))
                   .build();
 
-          final Atomix atomix = builder.withManagementGroup(partitionGroup).build();
+          final Atomix atomix = builder.withPartitionGroups(partitionGroup).build();
 
           final DefaultPartitionService partitionService =
               (DefaultPartitionService) atomix.getPartitionService();
-          final RaftPartitionGroup raftPartitionGroup =
-              (RaftPartitionGroup) partitionService.getSystemPartitionGroup();
 
-          // when
-          raftPartitionGroup.getPartitions().forEach(partitionConsumer);
+          partitionService.getPartitionGroups().stream()
+              .findFirst()
+              .ifPresent(
+                  raftPartitionGroup ->
+                      raftPartitionGroup.getPartitions().forEach(partitionConsumer));
           return atomix;
         });
   }

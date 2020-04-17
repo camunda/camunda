@@ -24,13 +24,6 @@ import java.util.Collection;
 public interface PartitionService {
 
   /**
-   * Returns the system partition group.
-   *
-   * @return the system partition group
-   */
-  PartitionGroup getSystemPartitionGroup();
-
-  /**
    * Returns a partition group by name.
    *
    * @param name the name of the partition group
@@ -61,15 +54,7 @@ public interface PartitionService {
   @SuppressWarnings("unchecked")
   default PartitionGroup getPartitionGroup(final ProxyProtocol protocol) {
     if (protocol.group() != null) {
-      final PartitionGroup group = getPartitionGroup(protocol.group());
-      if (group != null) {
-        return group;
-      }
-      final PartitionGroup systemGroup = getSystemPartitionGroup();
-      if (systemGroup != null && systemGroup.name().equals(protocol.group())) {
-        return systemGroup;
-      }
-      return null;
+      return getPartitionGroup(protocol.group());
     }
 
     for (final PartitionGroup partitionGroup : getPartitionGroups()) {

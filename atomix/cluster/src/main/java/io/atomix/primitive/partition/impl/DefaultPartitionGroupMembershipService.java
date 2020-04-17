@@ -77,7 +77,6 @@ public class DefaultPartitionGroupMembershipService
   private final ClusterMembershipService membershipService;
   private final ClusterCommunicationService messagingService;
   private final Serializer serializer;
-  private volatile PartitionGroupMembership systemGroup;
   private final Map<String, PartitionGroupMembership> groups = Maps.newConcurrentMap();
   private final AtomicBoolean started = new AtomicBoolean();
   private volatile ThreadContext threadContext;
@@ -88,19 +87,10 @@ public class DefaultPartitionGroupMembershipService
   public DefaultPartitionGroupMembershipService(
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService messagingService,
-      final ManagedPartitionGroup systemGroup,
       final Collection<ManagedPartitionGroup> groups,
       final PartitionGroupTypeRegistry groupTypeRegistry) {
     this.membershipService = membershipService;
     this.messagingService = messagingService;
-    this.systemGroup =
-        systemGroup != null
-            ? new PartitionGroupMembership(
-                systemGroup.name(),
-                systemGroup.config(),
-                ImmutableSet.of(membershipService.getLocalMember().id()),
-                true)
-            : null;
     groups.forEach(
         group -> {
           this.groups.put(
@@ -132,17 +122,8 @@ public class DefaultPartitionGroupMembershipService
   }
 
   @Override
-  public PartitionGroupMembership getSystemMembership() {
-    return systemGroup;
-  }
-
-  @Override
   public PartitionGroupMembership getMembership(final String group) {
-    final PartitionGroupMembership membership = groups.get(group);
-    if (membership != null) {
-      return membership;
-    }
-    return systemGroup.group().equals(group) ? systemGroup : null;
+    return groups.get(group);
   }
 
   @Override
@@ -157,20 +138,6 @@ public class DefaultPartitionGroupMembershipService
     } else if (event.type() == ClusterMembershipEvent.Type.MEMBER_REMOVED) {
       threadContext.execute(
           () -> {
-            final PartitionGroupMembership systemGroup = this.systemGroup;
-            if (systemGroup != null && systemGroup.members().contains(event.subject().id())) {
-              final Set<MemberId> newMembers = Sets.newHashSet(systemGroup.members());
-              newMembers.remove(event.subject().id());
-              final PartitionGroupMembership newMembership =
-                  new PartitionGroupMembership(
-                      systemGroup.group(),
-                      systemGroup.config(),
-                      ImmutableSet.copyOf(newMembers),
-                      true);
-              this.systemGroup = newMembership;
-              post(new PartitionGroupMembershipEvent(MEMBERS_CHANGED, newMembership));
-            }
-
             groups
                 .values()
                 .forEach(
@@ -211,14 +178,7 @@ public class DefaultPartitionGroupMembershipService
         .whenComplete(
             (result, error) -> {
               if (error == null) {
-                if (systemGroup == null) {
-                  LOGGER.warn(
-                      "Failed to locate management group via bootstrap nodes. Please ensure partition "
-                          + "groups are configured either locally or remotely and the node is able to reach partition group members.");
-                  threadContext.schedule(
-                      Duration.ofSeconds(FIBONACCI_NUMBERS[Math.min(attempt, 4)]),
-                      () -> bootstrap(attempt + 1, future));
-                } else if (groups.isEmpty() && attempt < MAX_PARTITION_GROUP_ATTEMPTS) {
+                if (groups.isEmpty() && attempt < MAX_PARTITION_GROUP_ATTEMPTS) {
                   LOGGER.warn(
                       "Failed to locate partition group(s) via bootstrap nodes. Please ensure partition "
                           + "groups are configured either locally or remotely and the node is able to reach partition group members.");
@@ -251,9 +211,7 @@ public class DefaultPartitionGroupMembershipService
         .<PartitionGroupInfo, PartitionGroupInfo>send(
             BOOTSTRAP_SUBJECT,
             new PartitionGroupInfo(
-                membershipService.getLocalMember().id(),
-                systemGroup,
-                Lists.newArrayList(groups.values())),
+                membershipService.getLocalMember().id(), Lists.newArrayList(groups.values())),
             serializer::encode,
             serializer::decode,
             member.id())
@@ -286,40 +244,6 @@ public class DefaultPartitionGroupMembershipService
   }
 
   private void updatePartitionGroups(final PartitionGroupInfo info) {
-    if (systemGroup == null && info.systemGroup != null) {
-      systemGroup = info.systemGroup;
-      post(new PartitionGroupMembershipEvent(MEMBERS_CHANGED, systemGroup));
-      LOGGER.info(
-          "{} - Bootstrapped management group {} from {}",
-          membershipService.getLocalMember().id(),
-          systemGroup,
-          info.memberId);
-    } else if (systemGroup != null && info.systemGroup != null) {
-      if (!systemGroup.group().equals(info.systemGroup.group())
-          || !systemGroup
-              .config()
-              .getType()
-              .name()
-              .equals(info.systemGroup.config().getType().name())) {
-        throw new ConfigurationException("Duplicate system group detected");
-      } else {
-        final Set<MemberId> newMembers =
-            Stream.concat(systemGroup.members().stream(), info.systemGroup.members().stream())
-                .filter(memberId -> membershipService.getMember(memberId) != null)
-                .collect(Collectors.toSet());
-        if (!Sets.difference(newMembers, systemGroup.members()).isEmpty()) {
-          systemGroup =
-              new PartitionGroupMembership(
-                  systemGroup.group(), systemGroup.config(), ImmutableSet.copyOf(newMembers), true);
-          post(new PartitionGroupMembershipEvent(MEMBERS_CHANGED, systemGroup));
-          LOGGER.debug(
-              "{} - Updated management group {} from {}",
-              membershipService.getLocalMember().id(),
-              systemGroup,
-              info.memberId);
-        }
-      }
-    }
 
     for (final PartitionGroupMembership newMembership : info.groups) {
       final PartitionGroupMembership oldMembership = groups.get(newMembership.group());
@@ -371,7 +295,7 @@ public class DefaultPartitionGroupMembershipService
       LOGGER.warn("{}", e.getMessage());
     }
     return new PartitionGroupInfo(
-        membershipService.getLocalMember().id(), systemGroup, Lists.newArrayList(groups.values()));
+        membershipService.getLocalMember().id(), Lists.newArrayList(groups.values()));
   }
 
   @Override
@@ -416,15 +340,10 @@ public class DefaultPartitionGroupMembershipService
 
   private static class PartitionGroupInfo {
     private final MemberId memberId;
-    private final PartitionGroupMembership systemGroup;
     private final Collection<PartitionGroupMembership> groups;
 
-    PartitionGroupInfo(
-        final MemberId memberId,
-        final PartitionGroupMembership systemGroup,
-        final Collection<PartitionGroupMembership> groups) {
+    PartitionGroupInfo(final MemberId memberId, final Collection<PartitionGroupMembership> groups) {
       this.memberId = memberId;
-      this.systemGroup = systemGroup;
       this.groups = groups;
     }
   }

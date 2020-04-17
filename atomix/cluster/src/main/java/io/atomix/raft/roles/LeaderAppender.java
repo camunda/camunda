@@ -268,7 +268,7 @@ final class LeaderAppender extends AbstractAppender {
     else if (member.getConfigTerm() < raft.getTerm()
         || member.getConfigIndex() < raft.getCluster().getConfiguration().index()) {
       if (member.canConfigure()) {
-        sendConfigureRequest(member, buildConfigureRequest(member));
+        sendConfigureRequest(member, buildConfigureRequest());
       } else if (member.canHeartbeat()) {
         sendAppendRequest(member, buildAppendEmptyRequest(member));
       }

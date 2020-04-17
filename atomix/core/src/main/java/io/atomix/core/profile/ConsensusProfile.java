@@ -55,18 +55,6 @@ public class ConsensusProfile implements Profile {
 
   @Override
   public void configure(final AtomixConfig config) {
-    config.setManagementGroup(
-        new RaftPartitionGroupConfig()
-            .setName(this.config.getManagementGroup())
-            .setPartitionSize(this.config.getMembers().size())
-            .setPartitions(1)
-            .setMembers(this.config.getMembers())
-            .setStorageConfig(
-                new RaftStorageConfig()
-                    .setDirectory(
-                        String.format(
-                            "%s/%s",
-                            this.config.getDataPath(), this.config.getManagementGroup()))));
     config.addPartitionGroup(
         new RaftPartitionGroupConfig()
             .setName(this.config.getDataGroup())

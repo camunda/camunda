@@ -24,13 +24,6 @@ public interface PartitionGroupMembershipService
     extends ListenerService<PartitionGroupMembershipEvent, PartitionGroupMembershipEventListener> {
 
   /**
-   * Returns the system group membership.
-   *
-   * @return the system group membership
-   */
-  PartitionGroupMembership getSystemMembership();
-
-  /**
    * Returns the members for the given group.
    *
    * @param group the group for which to return the members

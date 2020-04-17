@@ -209,7 +209,4 @@ public interface MessagingService {
    * @param type message type
    */
   void unregisterHandler(String type);
-
-  /** Messaging service builder. */
-  abstract class Builder implements io.atomix.utils.Builder<MessagingService> {}
 }
