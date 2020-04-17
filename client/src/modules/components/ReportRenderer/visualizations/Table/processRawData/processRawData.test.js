@@ -5,6 +5,8 @@
  */
 
 import processRawData from './processRawData';
+import {NoDataNotice} from 'components';
+import React from 'react';
 
 const data = {
   configuration: {
@@ -144,7 +146,8 @@ it('should show no data message when all column are excluded', () => {
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({
-    head: ['No Data'],
-    body: [['You need to enable at least one table column']],
+    body: [],
+    head: [],
+    noData: <NoDataNotice>You need to enable at least one table column</NoDataNotice>,
   });
 });

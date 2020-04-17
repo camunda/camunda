@@ -4,28 +4,45 @@
   font-size: 14px;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 
   table {
     border: 1px solid $silver-darken-87;
     border-collapse: collapse;
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
+    height: 0;
+    min-height: 0;
+    min-width: 100% !important;
+    overflow: scroll;
   }
 
   thead tr {
-    border-bottom: 1px solid $silver-darken-87;
     user-select: none;
     overflow: hidden;
+    min-width: max-content !important;
+
+    &:not(.groupRow) {
+      border-bottom: 1px solid $silver-darken-87;
+    }
+
+    &.groupRow th {
+      font-weight: normal;
+    }
 
     .tableHeader {
       padding: 0;
+      display: flex;
+      align-items: center;
 
       &:not(:first-child):not(.placeholder):before {
         content: ' ';
         position: absolute;
-        bottom: 3px;
+        bottom: 0px;
         left: 0;
-        height: 31px;
+        height: 38px;
         width: 1px;
         background: $silver-darken-87;
       }
@@ -62,6 +79,7 @@
 
   tbody {
     overflow-y: auto;
+    min-width: max-content;
     overflow-x: hidden;
 
     tr {
@@ -91,15 +109,46 @@
     background-color: $silver-darken-94;
   }
 
-  .controls {
-    margin: 20px auto;
+  .tableFooter {
+    background: $silver-base-97;
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    border: 1px solid $silver-darken-87;
+    border-top: none;
+    white-space: nowrap;
 
-    .Button {
-      margin: 0 10px;
-    }
-    .Input {
+    .size {
+      flex-grow: 1;
       margin-right: 10px;
-      width: 70px;
+
+      .Select {
+        margin-left: 10px;
+        min-width: 85px;
+
+        .menu {
+          top: -130px;
+          height: max-content;
+        }
+      }
+    }
+
+    .controls {
+      margin-left: 50px;
+      display: flex;
+      align-items: center;
+
+      .Button:nth-child(2) {
+        margin-right: 10px;
+      }
+
+      .Button:nth-child(4) {
+        margin-left: 10px;
+      }
+
+      .Button:nth-child(odd) svg {
+        transform: rotate(-90deg);
+      }
     }
   }
 

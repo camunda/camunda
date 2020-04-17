@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Table, Button, Icon} from 'components';
+import {Table, Button, Icon, NoDataNotice} from 'components';
 import {loadCommonOutliersVariables, getInstancesDownloadUrl} from './service';
 import {t} from 'translation';
 import './VariablesTable.scss';
@@ -70,8 +70,11 @@ export default class VariablesTable extends React.Component {
       };
     } else {
       tableData = {
-        head: [t('report.table.noData.head')],
-        body: [[t('analysis.outlier.detailsModal.table.emptyTableMessage')]],
+        head: [],
+        body: [],
+        noData: (
+          <NoDataNotice>{t('analysis.outlier.detailsModal.table.emptyTableMessage')}</NoDataNotice>
+        ),
       };
     }
 

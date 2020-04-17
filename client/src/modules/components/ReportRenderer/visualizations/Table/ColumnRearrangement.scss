@@ -2,6 +2,7 @@
 .ColumnRearrangement {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .ColumnRearrangement .tableHeader {
@@ -46,5 +47,9 @@
     .placeholder {
       display: none;
     }
+  }
+
+  .tableFooter {
+    display: none;
   }
 }

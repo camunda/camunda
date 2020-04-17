@@ -308,10 +308,11 @@
       "output": "Output Variables"
     },
     "table": {
-      "noData": {
-        "head": "No Data",
-        "body": "You need to enable at least one table column"
-      },
+      "noData": "You need to enable at least one table column",
+      "info": "Showing <b>{firstRowIndex}</b> to <b>{lastRowIndex}</b> of <b>{totalRows}</b>",
+      "page": "page",
+      "of": "of",
+      "rows": "Rows per page",
       "relativeFrequency": "Relative Frequency "
     },
     "progressBar": {

@@ -6,7 +6,7 @@
 
 import React from 'react';
 import classnames from 'classnames';
-import {Input, Button} from 'components';
+import {Select, Icon, Button} from 'components';
 import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
 import {flatten} from 'services';
 
@@ -46,8 +46,9 @@ export default function Table({
     canNextPage,
     page,
     pageCount,
+    setPageSize,
     gotoPage,
-    state: {pageIndex},
+    state: {pageSize, pageIndex},
   } = useTable(
     {
       columns,
@@ -65,22 +66,20 @@ export default function Table({
     useFlexLayout,
     useResizeColumns
   );
+  const firstRowIndex = pageIndex * pageSize;
+  const maxLastRow = firstRowIndex + pageSize;
+  const totalRows = body.length;
+  const lastRowIndex = maxLastRow > totalRows ? totalRows : maxLastRow;
 
   function getSortingProps(column) {
-    const boxShadow =
-      column.isSorted && sorting
-        ? `inset 0 ${sorting.order === 'desc' ? '-' : ''}3px 0 0 rgba(0,0,0,.6)`
-        : 'none';
-
     if (!updateSorting) {
-      return {style: {boxShadow}};
+      return {};
     }
     const props = column.getSortByToggleProps();
     return {
       ...props,
       style: {
         cursor: 'pointer',
-        boxShadow,
       },
       onClick: (evt) => {
         if (props.onClick) {
@@ -103,8 +102,11 @@ export default function Table({
     <div className={classnames('Table', className, {highlight: !noHighlight})}>
       <table {...getTableProps()}>
         <thead>
-          {headerGroups.map((headerGroup) => (
-            <tr {...headerGroup.getHeaderGroupProps()}>
+          {headerGroups.map((headerGroup, i) => (
+            <tr
+              {...headerGroup.getHeaderGroupProps()}
+              className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
+            >
               {headerGroup.headers.map((column) => (
                 <th
                   className={classnames('tableHeader', {placeholder: column.placeholderOf})}
@@ -113,6 +115,9 @@ export default function Table({
                   <div className="cellContent" {...getSortingProps(column)}>
                     {column.render('Header')}
                   </div>
+                  {column.isSorted && sorting && (
+                    <Icon type={sorting?.order === 'asc' ? 'up' : 'down'} />
+                  )}
                   <div {...column.getResizerProps()} className="resizer" />
                 </th>
               ))}
@@ -132,24 +137,42 @@ export default function Table({
           })}
         </tbody>
       </table>
-      {body.length === 0 && <div className="noData">{noData}</div>}
-      {!disablePagination && pageCount !== 1 && (
-        <div className="controls">
-          <Button onClick={() => previousPage()} disabled={!canPreviousPage}>
-            Previous
-          </Button>
-          <Input
-            type="number"
-            value={pageIndex + 1}
-            onChange={(e) => {
-              const page = e.target.value ? Number(e.target.value) - 1 : 0;
-              gotoPage(page);
+      {totalRows === 0 && <div className="noData">{noData}</div>}
+      {!disablePagination && totalRows > defaultPageSize && (
+        <div className="tableFooter">
+          <div className="size">
+            {t('report.table.rows')}
+            <Select value={pageSize} onChange={(val) => setPageSize(Number(val))}>
+              <Select.Option value={20}>20</Select.Option>
+              <Select.Option value={100}>100</Select.Option>
+              <Select.Option value={500}>500</Select.Option>
+              <Select.Option value={1000}>1000</Select.Option>
+            </Select>
+          </div>
+          <div
+            className="info"
+            dangerouslySetInnerHTML={{
+              __html: t('report.table.info', {firstRowIndex, lastRowIndex, totalRows}),
             }}
           />
-          of {pageCount}
-          <Button onClick={() => nextPage()} disabled={!canNextPage}>
-            Next
-          </Button>
+          <div className="controls">
+            <Button icon onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
+              <Icon type="expand" />
+            </Button>
+            <Button icon onClick={() => previousPage()} disabled={!canPreviousPage}>
+              <Icon type="left" />
+            </Button>
+            <span>
+              {t('report.table.page')} <b>{pageIndex + 1}</b> {t('report.table.of')}{' '}
+              <b>{pageCount}</b>
+            </span>
+            <Button icon onClick={() => nextPage()} disabled={!canNextPage}>
+              <Icon type="right" />
+            </Button>
+            <Button icon onClick={() => gotoPage(pageCount - 1)} disabled={!canNextPage}>
+              <Icon type="collapse" />
+            </Button>
+          </div>
         </div>
       )}
     </div>

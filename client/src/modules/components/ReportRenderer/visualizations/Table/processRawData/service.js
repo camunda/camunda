@@ -7,10 +7,12 @@
 import {flatten} from 'services';
 import React from 'react';
 import {t} from 'translation';
+import {NoDataNotice} from 'components';
 
 export const getNoDataMessage = () => ({
-  head: [t('report.table.noData.head')],
-  body: [[t('report.table.noData.body')]],
+  head: [],
+  body: [],
+  noData: <NoDataNotice>{t('report.table.noData')}</NoDataNotice>,
 });
 
 export function cockpitLink(endpoints, instance, type) {

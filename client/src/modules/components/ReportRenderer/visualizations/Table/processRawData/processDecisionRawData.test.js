@@ -5,6 +5,8 @@
  */
 
 import processDecisionRawData from './processDecisionRawData';
+import {NoDataNotice} from 'components';
+import React from 'react';
 
 const data = {
   configuration: {
@@ -113,7 +115,8 @@ it('should show no data message when all column are excluded for decision tables
       },
     })
   ).toEqual({
-    head: ['No Data'],
-    body: [['You need to enable at least one table column']],
+    body: [],
+    head: [],
+    noData: <NoDataNotice>You need to enable at least one table column</NoDataNotice>,
   });
 });

@@ -64,71 +64,74 @@
     }
   }
 
-  .Table.collapsed table {
-    height: 0;
-    overflow: hidden;
-  }
-
-  table {
+  .Table {
     height: 300px;
-    border: none;
     transition: height 0.25s;
 
-    thead tr {
-      .tableHeader:first-child {
-        min-width: 0;
-        visibility: hidden;
-      }
-
-      .tableHeader:nth-child(2):before {
-        width: 0;
-      }
+    &.collapsed {
+      height: 0;
+      overflow: hidden;
     }
 
-    tr > :first-child {
-      min-width: 0 !important;
-      width: 60px !important;
-      max-width: 60px !important;
-    }
+    table {
+      border: none;
 
-    tbody {
-      .Dropdown {
-        position: static;
-
-        .activateButton {
-          border: 0;
-          background: none;
-          padding: 0 30px 0 0;
-          font-size: 1em;
+      thead tr {
+        .tableHeader:first-child {
+          min-width: 0;
+          visibility: hidden;
         }
 
-        .menu {
-          left: auto !important;
-          width: 100px;
+        .tableHeader:nth-child(2):before {
+          width: 0;
         }
       }
 
-      tr {
-        &.mapped:hover {
-          background-color: $silver-darken-94;
-          cursor: pointer;
-        }
+      tr > :first-child {
+        min-width: 0 !important;
+        width: 60px !important;
+        max-width: 60px !important;
+      }
 
-        &:not(.disabled).mapped {
-          color: white;
-          background-color: $blue-darken-62;
+      tbody {
+        .Dropdown {
+          position: static;
 
-          .Button {
-            color: White;
+          .activateButton {
+            border: 0;
+            background: none;
+            padding: 0 30px 0 0;
+            font-size: 1em;
+          }
+
+          .menu {
+            left: auto !important;
+            width: 100px;
           }
         }
 
-        &.suggested {
-          border-left: 10px solid $blue-darken-62;
-        }
+        tr {
+          &.mapped:hover {
+            background-color: $silver-darken-94;
+            cursor: pointer;
+          }
 
-        span.disabled {
-          opacity: 0.36;
+          &:not(.disabled).mapped {
+            color: white;
+            background-color: $blue-darken-62;
+
+            .Button {
+              color: White;
+            }
+          }
+
+          &.suggested {
+            border-left: 10px solid $blue-darken-62;
+          }
+
+          span.disabled {
+            opacity: 0.36;
+          }
         }
       }
     }
