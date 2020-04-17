@@ -23,7 +23,7 @@ import {
   evaluateReport,
   getCollection,
 } from 'services';
-import {addNotification} from 'notifications';
+import {addNotification, showError} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
@@ -165,12 +165,7 @@ export class ReportEdit extends React.Component {
           this.setState({
             report: response,
           }),
-        async (e) => {
-          const report = (await e.json()).reportDefinition;
-          if (report) {
-            this.setState({report});
-          }
-        }
+        showError
       );
       this.setState({loadingReportData: false});
     }
