@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.engine.service;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
-import org.camunda.optimize.plugin.ImportAdapterProvider;
+import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -30,7 +30,7 @@ import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSup
 public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  private ImportAdapterProvider importAdapterProvider;
+  private VariableImportAdapterProvider variableImportAdapterProvider;
   protected EngineContext engineContext;
   private ProcessVariableUpdateWriter variableWriter;
   private CamundaEventImportService camundaEventService;
@@ -38,7 +38,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   public VariableUpdateInstanceImportService(
     ProcessVariableUpdateWriter variableWriter,
     CamundaEventImportService camundaEventService,
-    ImportAdapterProvider importAdapterProvider,
+    VariableImportAdapterProvider variableImportAdapterProvider,
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
     EngineContext engineContext
   ) {
@@ -46,7 +46,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.variableWriter = variableWriter;
-    this.importAdapterProvider = importAdapterProvider;
+    this.variableImportAdapterProvider = variableImportAdapterProvider;
   }
 
   @Override
@@ -73,7 +73,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     List<HistoricVariableUpdateInstanceDto> engineEntities) {
     List<PluginVariableDto> pluginVariableList = mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates
       (engineEntities);
-    for (VariableImportAdapter variableImportAdapter : importAdapterProvider.getPlugins()) {
+    for (VariableImportAdapter variableImportAdapter : variableImportAdapterProvider.getPlugins()) {
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
     return convertPluginListToImportList(pluginVariableList);

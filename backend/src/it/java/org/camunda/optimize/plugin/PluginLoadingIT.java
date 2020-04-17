@@ -30,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class PluginLoadingIT extends AbstractIT {
 
   private ConfigurationService configurationService;
-  private ImportAdapterProvider pluginProvider;
+  private VariableImportAdapterProvider pluginProvider;
 
   @TempDir
   File tempDirectory;
@@ -38,7 +38,7 @@ public class PluginLoadingIT extends AbstractIT {
   @BeforeEach
   public void setup() {
     configurationService = embeddedOptimizeExtension.getConfigurationService();
-    pluginProvider = embeddedOptimizeExtension.getApplicationContext().getBean(ImportAdapterProvider.class);
+    pluginProvider = embeddedOptimizeExtension.getApplicationContext().getBean(VariableImportAdapterProvider.class);
   }
 
   @Test

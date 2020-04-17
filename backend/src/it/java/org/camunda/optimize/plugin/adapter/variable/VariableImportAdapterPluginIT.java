@@ -195,13 +195,14 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variableRequestDto.setProcessDefinitionKey(processDefinition.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(processDefinition.getProcessDefinitionVersion());
     return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildProcessVariableNamesRequest(variableRequestDto)
-            .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+      .getRequestExecutor()
+      .buildProcessVariableNamesRequest(variableRequestDto)
+      .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables) throws
-                                                                                                       Exception {
+  private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables)
+    throws Exception {
+    // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .name("aProcessName" + System.currentTimeMillis())
         .startEvent()
@@ -209,7 +210,11 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
           .camundaExpression("${true}")
         .endEvent()
       .done();
-    ProcessInstanceEngineDto procInstance = engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    // @formatter:on
+    ProcessInstanceEngineDto procInstance = engineIntegrationExtension.deployAndStartProcessWithVariables(
+      processModel,
+      variables
+    );
     engineIntegrationExtension.waitForAllProcessesToFinish();
     return procInstance;
   }

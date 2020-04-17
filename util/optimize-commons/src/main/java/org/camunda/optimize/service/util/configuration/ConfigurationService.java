@@ -125,8 +125,9 @@ public class ConfigurationService {
   private List<String> variableImportPluginBasePackages;
   private List<String> engineRestFilterPluginBasePackages;
   private List<String> authenticationExtractorPluginBasePackages;
-  private List<String> DecisionOutputImportPluginBasePackages;
-  private List<String> DecisionInputImportPluginBasePackages;
+  private List<String> decisionOutputImportPluginBasePackages;
+  private List<String> decisionInputImportPluginBasePackages;
+  private List<String> businessKeyImportPluginBasePackages;
   private String pluginDirectory;
 
   private String containerHost;
@@ -252,12 +253,12 @@ public class ConfigurationService {
   }
 
   public List<String> getDecisionOutputImportPluginBasePackages() {
-    if (DecisionOutputImportPluginBasePackages == null) {
-      DecisionOutputImportPluginBasePackages = configJsonContext.read(
+    if (decisionOutputImportPluginBasePackages == null) {
+      decisionOutputImportPluginBasePackages = configJsonContext.read(
         ConfigurationServiceConstants.DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
       );
     }
-    return DecisionOutputImportPluginBasePackages;
+    return decisionOutputImportPluginBasePackages;
   }
 
   public String getUserValidationEndpoint() {
@@ -524,7 +525,6 @@ public class ConfigurationService {
     return engineImportDecisionInstanceMaxPageSize;
   }
 
-
   public int getEngineImportTenantMaxPageSize() {
     if (engineImportTenantMaxPageSize == null) {
       engineImportTenantMaxPageSize = configJsonContext.read(
@@ -611,6 +611,15 @@ public class ConfigurationService {
     return variableImportPluginBasePackages;
   }
 
+  public List<String> getBusinessKeyImportPluginBasePackages() {
+    if (businessKeyImportPluginBasePackages == null) {
+      businessKeyImportPluginBasePackages = configJsonContext.read(
+        ConfigurationServiceConstants.BUSINESS_KEY_IMPORT_PLUGIN_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
+      );
+    }
+    return businessKeyImportPluginBasePackages;
+  }
+
   public List<String> getEngineRestFilterPluginBasePackages() {
     if (engineRestFilterPluginBasePackages == null) {
       engineRestFilterPluginBasePackages = configJsonContext.read(
@@ -659,13 +668,13 @@ public class ConfigurationService {
   }
 
   public List<String> getDecisionInputImportPluginBasePackages() {
-    if (DecisionInputImportPluginBasePackages == null) {
-      DecisionInputImportPluginBasePackages =
+    if (decisionInputImportPluginBasePackages == null) {
+      decisionInputImportPluginBasePackages =
         configJsonContext.read(
           ConfigurationServiceConstants.DECISION_INPUT_IMPORT_PLUGIN_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
         );
     }
-    return DecisionInputImportPluginBasePackages;
+    return decisionInputImportPluginBasePackages;
   }
 
   public String getContainerKeystoreLocation() {

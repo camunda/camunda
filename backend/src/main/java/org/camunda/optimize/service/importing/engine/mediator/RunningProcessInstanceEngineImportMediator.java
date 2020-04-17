@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
+import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
@@ -35,6 +36,8 @@ public class RunningProcessInstanceEngineImportMediator
   private CamundaEventImportService camundaEventService;
   @Autowired
   private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
+  @Autowired
+  private BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
 
   private final EngineContext engineContext;
 
@@ -44,11 +47,13 @@ public class RunningProcessInstanceEngineImportMediator
 
   @PostConstruct
   public void init() {
-    importIndexHandler = importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
+    importIndexHandler =
+      importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(RunningProcessInstanceFetcher.class, engineContext);
     importService = new RunningProcessInstanceImportService(
       elasticsearchImportJobExecutor,
       engineContext,
+      businessKeyImportAdapterProvider,
       runningProcessInstanceWriter,
       camundaEventService
     );

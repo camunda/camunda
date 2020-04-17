@@ -36,7 +36,4 @@ public class HistoricProcessInstanceDto implements EngineDto {
     return processDefinitionVersion != null ? processDefinitionVersion.toString() : null;
   }
 
-  public Optional<String> getTenantId() {
-    return Optional.ofNullable(tenantId);
-  }
 }

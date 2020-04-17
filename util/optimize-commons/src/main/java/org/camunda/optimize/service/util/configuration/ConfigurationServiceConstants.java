@@ -55,6 +55,7 @@ public interface ConfigurationServiceConstants {
   String AUTHENTICATION_EXTRACTOR_BASE_PACKAGES = "$.plugin.authenticationExtractor.basePackages";
   String DECISION_INPUT_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.decisionInputImport.basePackages";
   String DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.decisionOutputImport.basePackages";
+  String BUSINESS_KEY_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.businessKeyImport.basePackages";
   String ELASTIC_SEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
   String ELASTIC_SEARCH_SCROLL_TIMEOUT = "$.es.scrollTimeout";
   String ELASTIC_SEARCH_CONNECTION_NODES = "$.es.connection.nodes";

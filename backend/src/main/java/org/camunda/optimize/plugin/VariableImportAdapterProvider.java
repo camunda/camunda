@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class ImportAdapterProvider extends PluginProvider<VariableImportAdapter> {
+public class VariableImportAdapterProvider extends PluginProvider<VariableImportAdapter> {
 
-  public ImportAdapterProvider(final ConfigurationService configurationService,
-                               final PluginJarFileLoader pluginJarLoader) {
+  public VariableImportAdapterProvider(final ConfigurationService configurationService,
+                                       final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }
 

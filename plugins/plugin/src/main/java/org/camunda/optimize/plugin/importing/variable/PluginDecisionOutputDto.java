@@ -57,28 +57,28 @@ public class PluginDecisionOutputDto {
   private String value;
 
   /**
-   * The key of the decision definition, current output corresponds to.
+   * The key of the decision definition the current output corresponds to.
    */
   private String decisionDefinitionKey;
 
   /**
-   * The version of the decision definition, current output corresponds to.
+   * The version of the decision definition the current output corresponds to.
    */
   private String decisionDefinitionVersion;
 
   /**
-   * The ID of the decision definition, current output corresponds to.
+   * The ID of the decision definition the current output corresponds to.
    */
   private String decisionDefinitionId;
 
 
   /**
-   * The ID of the decision instance, current output corresponds to.
+   * The ID of the decision instance the current output corresponds to.
    */
   private String decisionInstanceId;
 
   /**
-   * Alias of the engine, from which the current Decision Instance is imported.
+   * Alias of the engine from which the current Decision Instance is imported.
    */
   private String engineAlias;
 

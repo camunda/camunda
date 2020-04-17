@@ -293,6 +293,10 @@ plugin:
     # Look in the given base package list for Decision output import adaption plugins.
     # If empty, the import is not influenced.
     basePackages: []
+  businessKeyImport:
+    # Look in the given base package list for business key import adaption plugins.
+    # If empty, the import is not influenced.
+    basePackages: []
 
 serialization:
   # Define a custom date format that should be used for
