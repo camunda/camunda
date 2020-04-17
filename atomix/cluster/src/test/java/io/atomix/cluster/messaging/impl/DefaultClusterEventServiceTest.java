@@ -16,6 +16,7 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -34,13 +35,17 @@ import io.atomix.cluster.messaging.ManagedClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.protocol.HeartbeatMembershipProtocol;
 import io.atomix.cluster.protocol.HeartbeatMembershipProtocolConfig;
+import io.atomix.utils.Managed;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -53,6 +58,15 @@ import org.junit.Test;
 /** Cluster event service test. */
 public class DefaultClusterEventServiceTest {
   private static final Serializer SERIALIZER = Serializer.using(Namespaces.BASIC);
+
+  private final TestMessagingServiceFactory messagingServiceFactory =
+      new TestMessagingServiceFactory();
+  private final TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
+  private final TestBroadcastServiceFactory broadcastServiceFactory =
+      new TestBroadcastServiceFactory();
+
+  private final List<Managed> managedServices = new ArrayList<>();
+  private CountDownLatch membersDiscovered;
 
   private Member buildNode(final int memberId) {
     return Member.builder(String.valueOf(memberId))
@@ -72,86 +86,52 @@ public class DefaultClusterEventServiceTest {
         .collect(Collectors.toList());
   }
 
-  @Test
-  public void testClusterEventService() throws Exception {
-    final TestMessagingServiceFactory messagingServiceFactory = new TestMessagingServiceFactory();
-    final TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
-    final TestBroadcastServiceFactory broadcastServiceFactory = new TestBroadcastServiceFactory();
+  private ClusterEventService buildServices(
+      final int memberId, final Collection<Node> bootstrapLocations) {
 
-    final Collection<Node> bootstrapLocations = buildBootstrapNodes(3);
-
-    final Member localMember1 = buildNode(1);
-    final MessagingService messagingService1 =
-        messagingServiceFactory.newMessagingService(localMember1.address()).start().join();
+    final Member localMember = buildNode(memberId);
+    final MessagingService messagingService =
+        messagingServiceFactory.newMessagingService(localMember.address()).start().join();
     final BootstrapService bootstrapService1 =
         new TestBootstrapService(
-            messagingService1,
-            unicastServiceFactory.newUnicastService(localMember1.address()).start().join(),
+            messagingService,
+            unicastServiceFactory.newUnicastService(localMember.address()).start().join(),
             broadcastServiceFactory.newBroadcastService().start().join());
-    final ManagedClusterMembershipService clusterService1 =
+    final ManagedClusterMembershipService managedClusterMembershipService =
         new DefaultClusterMembershipService(
-            localMember1,
+            localMember,
             Version.from("1.0.0"),
             new DefaultNodeDiscoveryService(
-                bootstrapService1,
-                localMember1,
-                new BootstrapDiscoveryProvider(bootstrapLocations)),
+                bootstrapService1, localMember, new BootstrapDiscoveryProvider(bootstrapLocations)),
             bootstrapService1,
             new HeartbeatMembershipProtocol(new HeartbeatMembershipProtocolConfig()));
-    final ClusterMembershipService clusterMembershipService1 = clusterService1.start().join();
+    managedServices.add(managedClusterMembershipService);
+    managedClusterMembershipService.addListener(event -> membersDiscovered.countDown());
+    final ClusterMembershipService clusterMembershipService =
+        managedClusterMembershipService.start().join();
     final ManagedClusterEventService clusterEventingService1 =
-        new DefaultClusterEventService(clusterMembershipService1, messagingService1);
-    final ClusterEventService eventService1 = clusterEventingService1.start().join();
+        new DefaultClusterEventService(clusterMembershipService, messagingService);
+    managedServices.add(clusterEventingService1);
+    return clusterEventingService1.start().join();
+  }
 
-    final Member localMember2 = buildNode(2);
-    final MessagingService messagingService2 =
-        messagingServiceFactory.newMessagingService(localMember2.address()).start().join();
-    final BootstrapService bootstrapService2 =
-        new TestBootstrapService(
-            messagingService2,
-            unicastServiceFactory.newUnicastService(localMember2.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
-    final ManagedClusterMembershipService clusterService2 =
-        new DefaultClusterMembershipService(
-            localMember2,
-            Version.from("1.0.0"),
-            new DefaultNodeDiscoveryService(
-                bootstrapService2,
-                localMember2,
-                new BootstrapDiscoveryProvider(bootstrapLocations)),
-            bootstrapService2,
-            new HeartbeatMembershipProtocol(new HeartbeatMembershipProtocolConfig()));
-    final ClusterMembershipService clusterMembershipService2 = clusterService2.start().join();
-    final ManagedClusterEventService clusterEventingService2 =
-        new DefaultClusterEventService(clusterMembershipService2, messagingService2);
-    final ClusterEventService eventService2 = clusterEventingService2.start().join();
+  private void tearDown() {
+    CompletableFuture.allOf(
+            managedServices.stream().map(Managed::stop).toArray(CompletableFuture[]::new))
+        .join();
+  }
 
-    final Member localMember3 = buildNode(3);
-    final MessagingService messagingService3 =
-        messagingServiceFactory.newMessagingService(localMember3.address()).start().join();
-    final BootstrapService bootstrapService3 =
-        new TestBootstrapService(
-            messagingService3,
-            unicastServiceFactory.newUnicastService(localMember1.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
-    final ManagedClusterMembershipService clusterService3 =
-        new DefaultClusterMembershipService(
-            localMember3,
-            Version.from("1.0.0"),
-            new DefaultNodeDiscoveryService(
-                bootstrapService3,
-                localMember3,
-                new BootstrapDiscoveryProvider(bootstrapLocations)),
-            bootstrapService3,
-            new HeartbeatMembershipProtocol(new HeartbeatMembershipProtocolConfig()));
-    final ClusterMembershipService clusterMembershipService3 = clusterService3.start().join();
-    final ManagedClusterEventService clusterEventingService3 =
-        new DefaultClusterEventService(clusterMembershipService3, messagingService3);
-    final ClusterEventService eventService3 = clusterEventingService3.start().join();
-
-    Thread.sleep(250);
-
+  @Test
+  public void shouldBroadcast() throws InterruptedException {
+    // given
+    this.membersDiscovered = new CountDownLatch(6);
+    final Collection<Node> bootstrapLocations = buildBootstrapNodes(3);
+    final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
+    final ClusterEventService eventService2 = buildServices(2, bootstrapLocations);
+    final ClusterEventService eventService3 = buildServices(3, bootstrapLocations);
+    membersDiscovered.await();
     final Set<Integer> events = new CopyOnWriteArraySet<>();
+    final CountDownLatch latch = new CountDownLatch(3);
 
     eventService1
         .<String>subscribe(
@@ -160,6 +140,7 @@ public class DefaultClusterEventServiceTest {
             message -> {
               assertEquals("Hello world!", message);
               events.add(1);
+              latch.countDown();
             },
             MoreExecutors.directExecutor())
         .join();
@@ -171,6 +152,66 @@ public class DefaultClusterEventServiceTest {
             message -> {
               assertEquals("Hello world!", message);
               events.add(2);
+              latch.countDown();
+            },
+            MoreExecutors.directExecutor())
+        .join();
+
+    eventService3
+        .<String>subscribe(
+            "test1",
+            SERIALIZER::decode,
+            message -> {
+              assertEquals("Hello world!", message);
+              events.add(3);
+              latch.countDown();
+            },
+            MoreExecutors.directExecutor())
+        .join();
+
+    // when
+    eventService3.broadcast("test1", "Hello world!", SERIALIZER::encode);
+
+    // then
+    latch.await();
+    assertEquals(3, events.size());
+
+    tearDown();
+  }
+
+  @Test
+  public void shouldUnicastInOrder() throws InterruptedException {
+    // given
+    this.membersDiscovered = new CountDownLatch(6);
+    final Collection<Node> bootstrapLocations = buildBootstrapNodes(3);
+    final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
+    final ClusterEventService eventService2 = buildServices(2, bootstrapLocations);
+    final ClusterEventService eventService3 = buildServices(3, bootstrapLocations);
+    membersDiscovered.await();
+
+    final List<Integer> events = new CopyOnWriteArrayList<>();
+    final CountDownLatch eventsReceived = new CountDownLatch(4);
+
+    eventService1
+        .<String>subscribe(
+            "test1",
+            SERIALIZER::decode,
+            message -> {
+              assertEquals("Hello world!", message);
+              events.add(1);
+              eventsReceived.countDown();
+            },
+            MoreExecutors.directExecutor())
+        .join();
+
+    eventService2
+        .<String>subscribe(
+            "test1",
+            SERIALIZER::decode,
+            message -> {
+              assertEquals("Hello world!", message);
+              events.add(2);
+              eventsReceived.countDown();
             },
             MoreExecutors.directExecutor())
         .join();
@@ -182,40 +223,36 @@ public class DefaultClusterEventServiceTest {
             message -> {
               assertEquals("Hello world!", message);
               events.add(3);
+              eventsReceived.countDown();
             },
             MoreExecutors.directExecutor())
         .join();
 
-    eventService3.broadcast("test1", "Hello world!", SERIALIZER::encode);
-
-    Thread.sleep(100);
-
-    assertEquals(3, events.size());
-    events.clear();
-
+    // when
     eventService3.unicast("test1", "Hello world!");
-    Thread.sleep(100);
-    assertEquals(1, events.size());
-    assertTrue(events.contains(3));
-    events.clear();
-
     eventService3.unicast("test1", "Hello world!");
-    Thread.sleep(100);
-    assertEquals(1, events.size());
-    assertTrue(events.contains(1));
-    events.clear();
-
     eventService3.unicast("test1", "Hello world!");
-    Thread.sleep(100);
-    assertEquals(1, events.size());
-    assertTrue(events.contains(2));
-    events.clear();
-
     eventService3.unicast("test1", "Hello world!");
-    Thread.sleep(100);
-    assertEquals(1, events.size());
-    assertTrue(events.contains(3));
-    events.clear();
+
+    // then
+    eventsReceived.await();
+    assertEquals(4, events.size());
+    assertThat(events).containsExactly(3, 1, 2, 3);
+
+    tearDown();
+  }
+
+  @Test
+  public void shouldSendInOrder() throws InterruptedException {
+    // given
+    this.membersDiscovered = new CountDownLatch(6);
+    final Collection<Node> bootstrapLocations = buildBootstrapNodes(3);
+    final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
+    final ClusterEventService eventService2 = buildServices(2, bootstrapLocations);
+    final ClusterEventService eventService3 = buildServices(3, bootstrapLocations);
+    membersDiscovered.await();
+
+    final Set<Integer> events = new CopyOnWriteArraySet<>();
 
     eventService1
         .<String, String>subscribe(
@@ -240,6 +277,7 @@ public class DefaultClusterEventServiceTest {
             MoreExecutors.directExecutor())
         .join();
 
+    // then
     assertEquals("Hello world!", eventService3.send("test2", "Hello world!").join());
     assertEquals(1, events.size());
     assertTrue(events.contains(1));
@@ -253,51 +291,12 @@ public class DefaultClusterEventServiceTest {
     assertEquals("Hello world!", eventService3.send("test2", "Hello world!").join());
     assertEquals(1, events.size());
     assertTrue(events.contains(1));
-
-    CompletableFuture.allOf(
-            new CompletableFuture[] {
-              clusterEventingService1.stop(),
-              clusterEventingService2.stop(),
-              clusterEventingService3.stop()
-            })
-        .join();
-
-    CompletableFuture.allOf(
-            new CompletableFuture[] {
-              clusterService1.stop(), clusterService2.stop(), clusterService3.stop()
-            })
-        .join();
   }
 
   @Test
   public void shouldLogHandlerFailuresWithoutCrashing() throws InterruptedException {
-    final TestMessagingServiceFactory messagingServiceFactory = new TestMessagingServiceFactory();
-    final TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
-    final TestBroadcastServiceFactory broadcastServiceFactory = new TestBroadcastServiceFactory();
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(1);
-
-    final Member localMember1 = buildNode(1);
-    final MessagingService messagingService1 =
-        messagingServiceFactory.newMessagingService(localMember1.address()).start().join();
-    final BootstrapService bootstrapService1 =
-        new TestBootstrapService(
-            messagingService1,
-            unicastServiceFactory.newUnicastService(localMember1.address()).start().join(),
-            broadcastServiceFactory.newBroadcastService().start().join());
-    final ManagedClusterMembershipService clusterService1 =
-        new DefaultClusterMembershipService(
-            localMember1,
-            Version.from("1.0.0"),
-            new DefaultNodeDiscoveryService(
-                bootstrapService1,
-                localMember1,
-                new BootstrapDiscoveryProvider(bootstrapLocations)),
-            bootstrapService1,
-            new HeartbeatMembershipProtocol(new HeartbeatMembershipProtocolConfig()));
-    final ClusterMembershipService clusterMembershipService1 = clusterService1.start().join();
-    final ManagedClusterEventService clusterEventingService1 =
-        new DefaultClusterEventService(clusterMembershipService1, messagingService1);
-    final ClusterEventService eventService1 = clusterEventingService1.start().join();
+    final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
 
     final AtomicInteger eventsCounter = new AtomicInteger(0);
     final CountDownLatch awaitCompletion = new CountDownLatch(1);
@@ -321,5 +320,7 @@ public class DefaultClusterEventServiceTest {
     eventService1.broadcast("test", "bar");
     awaitCompletion.await(10, TimeUnit.SECONDS);
     assertEquals("bar", received.get());
+
+    tearDown();
   }
 }
