@@ -46,6 +46,14 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
     }
   }
 
+  @Override
+  public void onFailed() {
+    if (timer != null) {
+      timer.cancel();
+      timer = null;
+    }
+  }
+
   void deactivateTimedOutJobs() {
     final long now = currentTimeMillis();
     state.forEachTimedOutEntry(

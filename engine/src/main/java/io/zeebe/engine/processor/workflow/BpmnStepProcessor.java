@@ -50,6 +50,11 @@ public final class BpmnStepProcessor implements TypedRecordProcessor<WorkflowIns
   }
 
   @Override
+  public void onFailed() {
+    state.onClose();
+  }
+
+  @Override
   public void processRecord(
       final TypedRecord<WorkflowInstanceRecord> record,
       final TypedResponseWriter responseWriter,
