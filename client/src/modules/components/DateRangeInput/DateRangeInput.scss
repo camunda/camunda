@@ -1,0 +1,33 @@
+.DateRangeInput {
+  .selectGroup {
+    align-items: flex-start;
+    position: relative;
+  }
+
+  .unitSelection {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+
+    .Input.number {
+      max-width: 50px;
+      margin: 0 10px;
+    }
+
+    .Select {
+      flex: 1;
+    }
+
+    .customDate {
+      border-top: 1px solid #bbb;
+    }
+  }
+
+  .Message {
+    margin-top: 10px;
+
+    &.error {
+      width: 100%;
+    }
+  }
+}

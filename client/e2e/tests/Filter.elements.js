@@ -15,6 +15,9 @@ export const variableFilterOperatorButton = (text) =>
 export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input').nth(
   -1
 );
+export const dateFilterTypeSelect = Selector('.DateRangeInput .Dropdown');
+export const dateFilterTypeOption = (text) =>
+  Selector('.DateRangeInput .DropdownOption').withText(text);
 export const dateFilterStartInput = Selector('.DateFields .DateInput:first-child input');
 export const dateFilterEndInput = Selector('.DateFields .DateInput:last-child input');
 export const pickerDate = (number) =>

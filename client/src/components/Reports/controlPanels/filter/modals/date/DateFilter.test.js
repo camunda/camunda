@@ -9,7 +9,8 @@ import React from 'react';
 import DateFilter from './DateFilter';
 import {shallow} from 'enzyme';
 
-import {convertFilterToState} from './service';
+import {convertFilterToState, isValid} from './service';
+isValid.mockReturnValue(true);
 
 jest.mock('./service');
 
@@ -18,21 +19,10 @@ const props = {
   filterData: null,
 };
 
-const dateTypeSelect = (node) => node.find('Select').at(0);
-const unitSelect = (node) => node.find('Select').at(1);
-
 it('should contain a modal', () => {
   const node = shallow(<DateFilter {...props} />);
 
   expect(node.find('Modal')).toExist();
-});
-
-it('should disable the unit selection when not selecting this or last', () => {
-  const node = shallow(<DateFilter {...props} />);
-
-  dateTypeSelect(node).prop('onChange')('today');
-
-  expect(unitSelect(node).prop('disabled')).toBe(true);
 });
 
 it('should render preview if the filter is valid', async () => {
@@ -43,22 +33,6 @@ it('should render preview if the filter is valid', async () => {
   expect(convertFilterToState).toHaveBeenCalledWith(filter.data);
 
   expect(node.find('DateFilterPreview')).toExist();
-});
-
-it('should reset the unit selection when changing the date type', () => {
-  const node = shallow(<DateFilter {...props} />);
-  dateTypeSelect(node).prop('onChange')('this');
-  unitSelect(node).prop('onChange')('week');
-  dateTypeSelect(node).prop('onChange')('last');
-  expect(unitSelect(node).prop('value')).toBe('');
-});
-
-it('should have isInvalid prop on the input if value is invalid', async () => {
-  const node = shallow(<DateFilter {...props} />);
-  dateTypeSelect(node).prop('onChange')('custom');
-  node.find('.number').simulate('change', {target: {value: '-1'}});
-
-  expect(node.find({error: true})).toExist();
 });
 
 it('should have a create filter button', () => {

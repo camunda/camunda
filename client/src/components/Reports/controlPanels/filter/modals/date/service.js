@@ -5,36 +5,37 @@
  */
 
 import moment from 'moment';
+import {numberParser} from 'services';
 
 export function convertFilterToState(filter) {
   const {type, start, end} = filter;
   let state;
 
   if (type === 'fixed') {
-    state = {dateType: 'fixed', startDate: moment(start), endDate: moment(end), pickerValid: true};
+    state = {type: 'fixed', startDate: moment(start), endDate: moment(end), pickerValid: true};
   } else {
     const {value, unit} = start;
     if (type === 'relative') {
       state = {
-        dateType: 'custom',
+        type: 'custom',
         unit: unit,
         customNum: value,
       };
     } else if (value === 0) {
-      const dateType = unit === 'days' ? 'today' : 'this';
-      state = {dateType, unit};
+      const type = unit === 'days' ? 'today' : 'this';
+      state = {type, unit};
     } else if (value === 1) {
-      const dateType = unit === 'days' ? 'yesterday' : 'last';
-      state = {dateType, unit};
+      const type = unit === 'days' ? 'yesterday' : 'last';
+      state = {type, unit};
     }
   }
 
   return state;
 }
 
-export function convertStateToFilter({dateType, unit, customNum, startDate, endDate}) {
+export function convertStateToFilter({type, unit, customNum, startDate, endDate}) {
   let filter = {type: 'rolling', end: null};
-  switch (dateType) {
+  switch (type) {
     case 'today':
       filter.start = {value: 0, unit: 'days'};
       break;
@@ -68,4 +69,21 @@ export function convertStateToFilter({dateType, unit, customNum, startDate, endD
       return null;
   }
   return filter;
+}
+
+export function isValid({type, unit, customNum, valid}) {
+  switch (type) {
+    case 'today':
+    case 'yesterday':
+      return true;
+    case 'this':
+    case 'last':
+      return unit;
+    case 'fixed':
+      return valid;
+    case 'custom':
+      return numberParser.isPostiveInt(customNum);
+    default:
+      return false;
+  }
 }

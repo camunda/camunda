@@ -33,10 +33,10 @@ const exampleFilter = {
   },
 };
 
-it('should show a DatePicker', () => {
+it('should use the DateRangeInput', () => {
   const node = shallow(<DateInput {...props} />);
 
-  expect(node.find('DatePicker')).toExist();
+  expect(node.find('DateRangeInput')).toExist();
 });
 
 it('should parse an existing filter', () => {
@@ -52,6 +52,10 @@ it('should convert a start and end-date to two compatible variable filters', () 
     spy,
     {name: 'aVariableName', type: 'Date'},
     {
+      valid: false,
+      type: 'fixed',
+      unit: '',
+      customNum: '2',
       startDate: moment('2018-07-09'),
       endDate: moment('2018-07-12'),
     },

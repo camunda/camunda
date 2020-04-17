@@ -66,6 +66,8 @@ test('variable filter modal dependent on variable type', async (t) => {
 
   await t.typeText(Filter.variableFilterTypeaheadInput, 'dateVar', {replace: true});
   await t.click(Filter.variableFilterTypeaheadOption('dateVar'));
+  await t.click(Filter.dateFilterTypeSelect);
+  await t.click(Filter.dateFilterTypeOption('Fixed Date'));
   await t.click(Filter.dateFilterStartInput);
   await t.click(Filter.pickerDate('5'));
   await t.click(Filter.pickerDate('22')).wait(200);

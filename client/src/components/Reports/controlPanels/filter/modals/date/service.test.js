@@ -9,7 +9,7 @@ import moment from 'moment';
 
 it('create correct filter from state object', () => {
   const filter1 = convertStateToFilter({
-    dateType: 'today',
+    type: 'today',
     unit: 'days',
   });
 
@@ -19,7 +19,7 @@ it('create correct filter from state object', () => {
   });
 
   const filter2 = convertStateToFilter({
-    dateType: 'this',
+    type: 'this',
     unit: 'weeks',
   });
 
@@ -29,7 +29,7 @@ it('create correct filter from state object', () => {
   });
 
   const filter3 = convertStateToFilter({
-    dateType: 'fixed',
+    type: 'fixed',
     startDate: moment('2015-01-20T00:00:00'),
     endDate: moment('2019-05-11T00:00:00'),
   });

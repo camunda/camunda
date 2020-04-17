@@ -5,12 +5,19 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 
-import {DatePicker} from 'components';
+import {Form, DateRangeInput} from 'components';
+import {convertFilterToState, convertStateToFilter, isValid} from '../../date';
 
 export default class DateInput extends React.Component {
-  static defaultFilter = {type: 'fixed', startDate: null, endDate: null};
+  static defaultFilter = {
+    valid: false,
+    type: '',
+    unit: '',
+    customNum: '2',
+    startDate: null,
+    endDate: null,
+  };
 
   componentDidMount() {
     this.props.setValid(false);
@@ -18,32 +25,21 @@ export default class DateInput extends React.Component {
 
   render() {
     return (
-      <DatePicker
-        onDateChange={this.onDateChange}
-        initialDates={{
-          startDate: this.props.filter.startDate,
-          endDate: this.props.filter.endDate,
-        }}
-        disabled={this.props.disabled}
-      />
+      <Form>
+        <DateRangeInput
+          {...this.props.filter}
+          disabled={this.props.disabled}
+          onChange={(change) => {
+            const newFilter = {...this.props.filter, ...change};
+            this.props.changeFilter(newFilter);
+            this.props.setValid(isValid(newFilter));
+          }}
+        />
+      </Form>
     );
   }
 
-  onDateChange = ({startDate, endDate, valid}) => {
-    this.props.changeFilter({startDate, endDate});
-    this.props.setValid(valid);
-  };
-
-  static parseFilter = ({
-    data: {
-      data: {start, end},
-    },
-  }) => {
-    return {
-      startDate: moment(start),
-      endDate: moment(end),
-    };
-  };
+  static parseFilter = ({data}) => convertFilterToState(data.data);
 
   static addFilter = (addFilter, variable, filter, filterForUndefined) => {
     addFilter({
@@ -52,11 +48,7 @@ export default class DateInput extends React.Component {
         name: variable.name,
         type: variable.type,
         filterForUndefined,
-        data: {
-          type: 'fixed',
-          start: filter.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-          end: filter.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-        },
+        data: convertStateToFilter(filter),
       },
     });
   };

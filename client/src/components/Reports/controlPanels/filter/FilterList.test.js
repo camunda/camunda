@@ -120,7 +120,7 @@ it('should use the variables prop to resolve variable names', () => {
   expect(node.find('ActionItem span').first()).toIncludeText('Resolved Name');
 });
 
-it('should display a date variable filter as a range', () => {
+it('should use the DateFilterPreview component for date variables', () => {
   const startDate = '2017-11-16T00:00:00';
   const endDate = '2017-11-26T23:59:59';
   const data = [
@@ -139,9 +139,7 @@ it('should display a date variable filter as a range', () => {
   ];
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
-  expect(node.find('ActionItem').dive()).toIncludeText(
-    'aDateVar is between 2017-11-16 and 2017-11-26'
-  );
+  expect(node.find('ActionItem').find('DateFilterPreview')).toExist();
 });
 
 it('should combine multiple variable values with or', () => {

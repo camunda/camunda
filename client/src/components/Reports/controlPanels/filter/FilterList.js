@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 
 import {ActionItem} from 'components';
 import {NodeListPreview, DateFilterPreview} from './modals';
@@ -84,13 +83,11 @@ export default class FilterList extends React.Component {
                     this.props.deleteFilter(filter);
                   }}
                 >
-                  <span className="parameterName">{this.getVariableName(filter.type, name)}</span>
-                  {this.createOperator(t('common.filter.list.operators.isBetween'))}
-                  <span className="previewItemValue">
-                    {moment(data.start).format('YYYY-MM-DD')}
-                  </span>
-                  {this.createOperator(t('common.and'))}
-                  <span className="previewItemValue">{moment(data.end).format('YYYY-MM-DD')}</span>
+                  <DateFilterPreview
+                    filterType="variable"
+                    variableName={this.getVariableName(filter.type, name)}
+                    filter={filter.data.data}
+                  />
                 </ActionItem>
               </li>
             );

@@ -9,26 +9,25 @@ import {t} from 'translation';
 import {convertFilterToState} from './service';
 import './DateFilterPreview.scss';
 
-export default function DateFilterPreview({filter, filterType}) {
-  const {dateType, unit, customNum, startDate, endDate} = convertFilterToState(filter);
+export default function DateFilterPreview({filter, filterType, variableName}) {
+  const {type, unit, customNum, startDate, endDate} = convertFilterToState(filter);
 
   const highlight = (text) => <span className="previewItemValue">{text}</span>;
 
   let previewText;
 
-  if (['today', 'yesterday'].includes(dateType)) {
-    previewText = highlight(t(`common.filter.dateModal.unit.${dateType}`));
-  } else if (['this', 'last'].includes(dateType)) {
+  if (['today', 'yesterday'].includes(type)) {
+    previewText = highlight(t(`common.filter.dateModal.unit.${type}`));
+  } else if (['this', 'last'].includes(type)) {
     const translationType = unit === 'weeks' ? 'week' : 'all';
     previewText = (
       <>
-        {t(`common.filter.dateModal.preview.${dateType}.${translationType}`)}{' '}
-        {dateType === 'last' &&
-          t(`common.filter.dateModal.preview.completed.${translationType}`) + ' '}
+        {t(`common.filter.dateModal.preview.${type}.${translationType}`)}{' '}
+        {type === 'last' && t(`common.filter.dateModal.preview.completed.${translationType}`) + ' '}
         {highlight(t(`common.unit.${makeSingular(unit)}.label`))}
       </>
     );
-  } else if (dateType === 'custom') {
+  } else if (type === 'custom') {
     const highlighted = `${+customNum} ${t(
       `common.unit.${makeSingular(unit)}.${+customNum === 1 ? 'label' : 'label-plural'}`
     )}`;
@@ -37,7 +36,7 @@ export default function DateFilterPreview({filter, filterType}) {
         {t(`common.filter.dateModal.preview.last.all`)} {highlight(highlighted)}
       </>
     );
-  } else if (dateType === 'fixed') {
+  } else if (type === 'fixed') {
     previewText = (
       <>
         {t('common.filter.list.operators.between')} {highlight(startDate.format('YYYY-MM-DD'))}
@@ -46,12 +45,21 @@ export default function DateFilterPreview({filter, filterType}) {
     );
   }
 
-  return (
-    <div className="DateFilterPreview">
-      <span className="parameterName">{t(`common.filter.types.${filterType}`)} </span>
-      {t('common.filter.list.operators.occurs')}: {previewText}
-    </div>
-  );
+  if (filterType === 'variable') {
+    return (
+      <div className="DateFilterPreview">
+        <span className="parameterName">{variableName}</span> {t('common.filter.list.operators.is')}{' '}
+        {previewText}
+      </div>
+    );
+  } else {
+    return (
+      <div className="DateFilterPreview">
+        <span className="parameterName">{t(`common.filter.types.${filterType}`)} </span>
+        {t('common.filter.list.operators.occurs')}: {previewText}
+      </div>
+    );
+  }
 }
 
 function makeSingular(unit) {

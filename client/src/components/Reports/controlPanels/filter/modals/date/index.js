@@ -6,3 +6,5 @@
 
 export {default as DateFilter} from './DateFilter';
 export {default as DateFilterPreview} from './DateFilterPreview';
+
+export {convertFilterToState, convertStateToFilter, isValid} from './service';
