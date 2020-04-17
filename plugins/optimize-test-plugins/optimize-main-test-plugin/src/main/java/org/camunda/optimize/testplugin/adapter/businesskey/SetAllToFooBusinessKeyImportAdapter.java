@@ -6,17 +6,11 @@
 package org.camunda.optimize.testplugin.adapter.businesskey;
 
 import org.camunda.optimize.plugin.importing.businesskey.BusinessKeyImportAdapter;
-import org.camunda.optimize.plugin.importing.businesskey.PluginProcessInstanceDto;
-
-import java.util.List;
 
 public class SetAllToFooBusinessKeyImportAdapter implements BusinessKeyImportAdapter {
-  private static String newBusinessKey = "foo";
 
   @Override
-  public List<PluginProcessInstanceDto> adaptBusinessKeys(final List<PluginProcessInstanceDto> processInstances) {
-    processInstances.stream()
-      .forEach(instance -> instance.setBusinessKey(newBusinessKey));
-    return processInstances;
+  public String adaptBusinessKey(final String businessKey) {
+    return "foo";
   }
 }

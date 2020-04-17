@@ -5,14 +5,12 @@
  */
 package org.camunda.optimize.plugin.importing.businesskey;
 
-import java.util.List;
-
 public interface BusinessKeyImportAdapter {
   /**
-   * Adapts the business key of each process instance to be imported.
+   * Adapts the business key a process instance to be imported.
    *
-   * @param processInstances The processInstances that would be imported by Optimize whose businessKeys to change.
-   * @return An adapted list of process instances that is imported to Optimize.
+   * @param businessKey The businessKey that will be changed before importing to Optimize.
+   * @return An adapted businessKey that is imported to Optimize.
    */
-  List<PluginProcessInstanceDto> adaptBusinessKeys(List<PluginProcessInstanceDto> processInstances);
+  String adaptBusinessKey(String businessKey);
 }
