@@ -141,7 +141,7 @@ public class CamundaEventImportService {
         toCamundaActivityEvent(flowNodeEventDto).toBuilder()
           .activityId(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getActivityId()))
           .activityName(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getActivityName()))
-          .activityInstanceId(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getActivityInstanceId()))
+          .activityInstanceId(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getId()))
           .timestamp(flowNodeEventDto.getEndDate())
           .build()
       );
@@ -157,7 +157,7 @@ public class CamundaEventImportService {
     return toCamundaActivityEvent(flowNodeEventDto).toBuilder()
       .activityId(applyCamundaTaskStartEventSuffix(flowNodeEventDto.getActivityId()))
       .activityName(applyCamundaTaskStartEventSuffix(flowNodeEventDto.getActivityName()))
-      .activityInstanceId(applyCamundaTaskStartEventSuffix(flowNodeEventDto.getActivityInstanceId()))
+      .activityInstanceId(applyCamundaTaskStartEventSuffix(flowNodeEventDto.getId()))
       .build();
   }
 
@@ -232,7 +232,7 @@ public class CamundaEventImportService {
       .activityId(idSuffixerFunction.apply(processInstanceDto.getProcessDefinitionKey()))
       .activityName(processEventType)
       .activityType(processEventType)
-      .activityInstanceId(idSuffixerFunction.apply(processInstanceDto.getProcessDefinitionKey()))
+      .activityInstanceId(idSuffixerFunction.apply(processInstanceDto.getProcessInstanceId()))
       .processDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .processInstanceId(processInstanceDto.getProcessInstanceId())
       .processDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())

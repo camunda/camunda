@@ -40,6 +40,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   private static final String START_EVENT = ActivityTypes.START_EVENT;
   private static final String END_EVENT = ActivityTypes.END_EVENT_NONE;
   private static final String USER_TASK = ActivityTypes.TASK_USER_TASK;
+  private static final String USER_TASK_2 = USER_TASK + "_2";
 
   @BeforeEach
   public void init() {
@@ -64,7 +65,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       .hasSize(6)
       .usingElementComparatorIgnoringFields(
         CamundaActivityEventDto.Fields.activityInstanceId,
-        CamundaActivityEventDto.Fields.processDefinitionName,
+        CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
         CamundaActivityEventDto.Fields.timestamp
       )
@@ -95,6 +96,11 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
           PROCESS_END_TYPE,
           processInstanceEngineDto
         )
+      )
+      .extracting(CamundaActivityEventDto.Fields.activityInstanceId)
+      .contains(
+        applyCamundaProcessInstanceEndEventSuffix(processInstanceEngineDto.getId()),
+        applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getId())
       );
   }
 
@@ -115,7 +121,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       .hasSize(3)
       .usingElementComparatorIgnoringFields(
         CamundaActivityEventDto.Fields.activityInstanceId,
-        CamundaActivityEventDto.Fields.processDefinitionName,
+        CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
         CamundaActivityEventDto.Fields.timestamp
       )
@@ -133,6 +139,138 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
           USER_TASK,
           processInstanceEngineDto
         )
+      )
+      .extracting(CamundaActivityEventDto.Fields.activityInstanceId)
+      .contains(applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getId()));
+  }
+
+  @Test
+  public void expectedEventsCreatedOnImportOfMultipleInstances() throws IOException {
+    // given
+    final ProcessInstanceEngineDto firstInstance = deployAndStartUserTaskProcessWithName("processName");
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
+      firstInstance.getDefinitionId());
+    secondInstance.setProcessDefinitionKey(firstInstance.getProcessDefinitionKey());
+    secondInstance.setProcessDefinitionVersion(firstInstance.getProcessDefinitionVersion());
+
+    // when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    List<CamundaActivityEventDto> storedEvents =
+      getSavedEventsForProcessDefinitionKey(firstInstance.getProcessDefinitionKey());
+
+    assertThat(storedEvents)
+      .hasSize(6)
+      .usingElementComparatorIgnoringFields(
+        CamundaActivityEventDto.Fields.activityInstanceId,
+        CamundaActivityEventDto.Fields.processDefinitionVersion,
+        CamundaActivityEventDto.Fields.engine,
+        CamundaActivityEventDto.Fields.timestamp
+      )
+      .containsExactlyInAnyOrder(
+        createAssertionEvent(
+          applyCamundaProcessInstanceStartEventSuffix(firstInstance.getProcessDefinitionKey()),
+          PROCESS_START_TYPE,
+          PROCESS_START_TYPE,
+          firstInstance
+        ),
+        createAssertionEvent(START_EVENT, START_EVENT, START_EVENT, firstInstance),
+        createAssertionEvent(
+          applyCamundaTaskStartEventSuffix(USER_TASK),
+          applyCamundaTaskStartEventSuffix(USER_TASK),
+          USER_TASK,
+          firstInstance
+        ),
+        createAssertionEvent(
+          applyCamundaProcessInstanceStartEventSuffix(secondInstance.getProcessDefinitionKey()),
+          PROCESS_START_TYPE,
+          PROCESS_START_TYPE,
+          secondInstance
+        ),
+        createAssertionEvent(START_EVENT, START_EVENT, START_EVENT, secondInstance),
+        createAssertionEvent(
+          applyCamundaTaskStartEventSuffix(USER_TASK),
+          applyCamundaTaskStartEventSuffix(USER_TASK),
+          USER_TASK,
+          secondInstance
+        )
+      )
+      .extracting(CamundaActivityEventDto.Fields.activityInstanceId)
+      .contains(
+        applyCamundaProcessInstanceStartEventSuffix(firstInstance.getId()),
+        applyCamundaProcessInstanceStartEventSuffix(secondInstance.getId())
+      );
+  }
+
+  @Test
+  public void expectedEventsCreatedOnImportOfMultipleSplitEventsFromSameModel() throws IOException {
+    // given
+    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksProcess("processName");
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
+
+    // when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    List<CamundaActivityEventDto> storedEvents =
+      getSavedEventsForProcessDefinitionKey(processInstance.getProcessDefinitionKey());
+
+    assertThat(storedEvents)
+      .hasSize(8)
+      .usingElementComparatorIgnoringFields(
+        CamundaActivityEventDto.Fields.activityInstanceId,
+        CamundaActivityEventDto.Fields.processDefinitionVersion,
+        CamundaActivityEventDto.Fields.engine,
+        CamundaActivityEventDto.Fields.timestamp
+      )
+      .containsExactlyInAnyOrder(
+        createAssertionEvent(
+          applyCamundaProcessInstanceStartEventSuffix(processInstance.getProcessDefinitionKey()),
+          PROCESS_START_TYPE,
+          PROCESS_START_TYPE,
+          processInstance
+        ),
+        createAssertionEvent(START_EVENT, START_EVENT, START_EVENT, processInstance),
+        createAssertionEvent(
+          applyCamundaTaskStartEventSuffix(USER_TASK),
+          applyCamundaTaskStartEventSuffix(USER_TASK),
+          USER_TASK,
+          processInstance
+        ),
+        createAssertionEvent(
+          applyCamundaTaskEndEventSuffix(USER_TASK),
+          applyCamundaTaskEndEventSuffix(USER_TASK),
+          USER_TASK,
+          processInstance
+        ),
+        createAssertionEvent(
+          applyCamundaTaskStartEventSuffix(USER_TASK_2),
+          applyCamundaTaskStartEventSuffix(USER_TASK_2),
+          USER_TASK,
+          processInstance
+        ),
+        createAssertionEvent(
+          applyCamundaTaskEndEventSuffix(USER_TASK_2),
+          applyCamundaTaskEndEventSuffix(USER_TASK_2),
+          USER_TASK,
+          processInstance
+        ),
+        createAssertionEvent(END_EVENT, END_EVENT, END_EVENT, processInstance),
+        createAssertionEvent(
+          applyCamundaProcessInstanceEndEventSuffix(processInstance.getProcessDefinitionKey()),
+          PROCESS_END_TYPE,
+          PROCESS_END_TYPE,
+          processInstance
+        )
+      )
+      .extracting(CamundaActivityEventDto.Fields.activityInstanceId)
+      .contains(
+        applyCamundaProcessInstanceStartEventSuffix(processInstance.getId())
+        //applyCamundaProcessInstanceStartEventSuffix(secondInstance.getId())
       );
   }
 
@@ -251,8 +389,10 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     assertThat(esClient.exists(request, RequestOptions.DEFAULT)).isFalse();
   }
 
-  private CamundaActivityEventDto createAssertionEvent(String activityId, String activityName, String activityType,
-                                                       ProcessInstanceEngineDto processInstanceEngineDto) {
+  private CamundaActivityEventDto createAssertionEvent(final String activityId,
+                                                       final String activityName,
+                                                       final String activityType,
+                                                       final ProcessInstanceEngineDto processInstanceEngineDto) {
     return CamundaActivityEventDto.builder()
       .activityId(activityId)
       .activityName(activityName)
@@ -290,6 +430,16 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       .endEvent(END_EVENT)
       .done();
     // @formatter:on
+    return engineIntegrationExtension.deployAndStartProcess(processModel);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess(String processName) {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess(processName)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK)
+      .userTask(USER_TASK_2)
+      .endEvent(END_EVENT)
+      .done();
     return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 

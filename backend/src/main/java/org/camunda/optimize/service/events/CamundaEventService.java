@@ -270,12 +270,12 @@ public class CamundaEventService {
       .build();
   }
 
-  public static String applyCamundaProcessInstanceStartEventSuffix(final String definitionKey) {
-    return addDelimiterForStrings(definitionKey, PROCESS_START_TYPE);
+  public static String applyCamundaProcessInstanceStartEventSuffix(final String identifier) {
+    return addDelimiterForStrings(identifier, PROCESS_START_TYPE);
   }
 
-  public static String applyCamundaProcessInstanceEndEventSuffix(final String definitionKey) {
-    return addDelimiterForStrings(definitionKey, PROCESS_END_TYPE);
+  public static String applyCamundaProcessInstanceEndEventSuffix(final String identifier) {
+    return addDelimiterForStrings(identifier, PROCESS_END_TYPE);
   }
 
   public static String applyCamundaTaskStartEventSuffix(final String identifier) {

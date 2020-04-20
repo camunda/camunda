@@ -192,7 +192,6 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .build()
                   )
             );
-
         }
       );
   }

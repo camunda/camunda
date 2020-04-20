@@ -974,7 +974,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return startProcessInstance(processDefinitionId, variables, "aBusinessKey");
   }
 
-  private ProcessInstanceEngineDto startProcessInstance(String procDefId,
+  public ProcessInstanceEngineDto startProcessInstance(String procDefId,
                                                         Map<String, Object> variables,
                                                         String businessKey) {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));

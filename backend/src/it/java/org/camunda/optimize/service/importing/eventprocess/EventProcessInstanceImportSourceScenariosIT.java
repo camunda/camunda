@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.eventprocess;
 import lombok.SneakyThrows;
 import org.assertj.core.util.Maps;
 import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
@@ -38,13 +39,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceEndEventSuffix;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceStartEventSuffix;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler.RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
-public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractEventProcessIT {
+public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventProcessIT {
 
   @Test
   public void instancesAreGeneratedFromCamundaEventImportSource() {
@@ -78,17 +80,59 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
   }
 
   @Test
-  public void multipleInstancesAreGeneratedFromCamundaEventImportSource() {
+  public void multipleInstancesAreGeneratedFromCamundaEventImportSource_processStartEnd() {
     // given
-    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
+    final ProcessInstanceEngineDto firstInstance = deployAndStartProcess();
+    final String otherBusinessKey = "someOtherBusinessKey";
+    engineIntegrationExtension.startProcessInstance(
+      firstInstance.getDefinitionId(),
+      Collections.emptyMap(),
+      otherBusinessKey
+    );
     publishEventMappingUsingProcessInstanceCamundaEvents(
-      processInstanceEngineDto,
+      firstInstance,
       createMappingsForEventProcess(
-        processInstanceEngineDto,
-        BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+        firstInstance,
+        applyCamundaProcessInstanceStartEventSuffix(firstInstance.getProcessDefinitionKey()),
+        applyCamundaProcessInstanceEndEventSuffix(firstInstance.getProcessDefinitionKey()),
         BPMN_END_EVENT_ID
       )
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importEngineEntities();
+
+    // when
+    executeImportCycle();
+
+    // then
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances)
+      .hasSize(2)
+      .anySatisfy(processInstance -> {
+        assertProcessInstance(
+          processInstance,
+          firstInstance.getBusinessKey(),
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
+        );
+      })
+      .anySatisfy(processInstance -> {
+        assertProcessInstance(
+          processInstance,
+          otherBusinessKey,
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
+        );
+      });
+  }
+
+  @Test
+  public void multipleInstancesAreGeneratedFromCamundaEventImportSource() {
+    // given
+    final String otherBusinessKey = "someOtherBusinessKey";
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
+    engineIntegrationExtension.startProcessInstance(
+      processInstanceEngineDto.getDefinitionId(),
+      Collections.emptyMap(),
+      otherBusinessKey
     );
     publishEventMappingUsingProcessInstanceCamundaEvents(
       processInstanceEngineDto,
@@ -109,10 +153,17 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(2)
-      .allSatisfy(processInstanceDto -> {
+      .anySatisfy(processInstance -> {
         assertProcessInstance(
-          processInstanceDto,
+          processInstance,
           processInstanceEngineDto.getBusinessKey(),
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
+        );
+      })
+      .anySatisfy(processInstance -> {
+        assertProcessInstance(
+          processInstance,
+          otherBusinessKey,
           Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
@@ -191,6 +242,38 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
           Arrays.asList(BPMN_START_EVENT_ID, BPMN_END_EVENT_ID)
+        );
+      });
+  }
+
+  @Test
+  public void instancesAreGeneratedCorrectlyWithMappingsFromCamundaEventImportSourceWithMultipleSplitEvents() {
+    // given
+    final ProcessInstanceEngineDto firstInstance = deployAndStartTwoUserTasksProcess("processName");
+    engineIntegrationExtension.finishAllRunningUserTasks(firstInstance.getId());
+    publishEventMappingUsingProcessInstanceCamundaEvents(
+      firstInstance,
+      createMappingsForEventProcess(
+        firstInstance,
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+        applyCamundaTaskEndEventSuffix(USER_TASK_ID_ONE),
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_TWO)
+      )
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importEngineEntities();
+
+    // when
+    executeImportCycle();
+
+    // then
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances)
+      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+        assertProcessInstance(
+          processInstanceDto,
+          firstInstance.getBusinessKey(),
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
   }
@@ -374,9 +457,11 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         .build()
     );
 
-    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
+    List<EventSourceEntryDto> firstEventSource =
+      createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
       firstProcessInstanceEngineDto);
-    List<EventSourceEntryDto> secondEventSource = createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
+    List<EventSourceEntryDto> secondEventSource =
+      createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
       secondProcessInstanceEngineDto);
 
     createAndPublishEventMapping(mappingsForEventProcess, Stream.of(firstEventSource, secondEventSource).flatMap(
@@ -423,7 +508,8 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         .build()
     );
 
-    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
+    List<EventSourceEntryDto> firstEventSource =
+      createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
       processInstanceEngineDto);
     List<EventSourceEntryDto> secondEventSource = createExternalEventSourceAsList();
 
@@ -573,6 +659,16 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
         .id(processInstanceId)
         .setRefreshPolicy(IMMEDIATE);
     elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request, RequestOptions.DEFAULT);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess(String processName) {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess(processName)
+      .startEvent(BPMN_START_EVENT_ID)
+      .userTask(USER_TASK_ID_ONE)
+      .userTask(USER_TASK_ID_TWO)
+      .endEvent(BPMN_END_EVENT_ID)
+      .done();
+    return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 
 }

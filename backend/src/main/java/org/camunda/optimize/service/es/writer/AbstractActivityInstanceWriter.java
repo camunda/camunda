@@ -56,20 +56,20 @@ public abstract class AbstractActivityInstanceWriter {
 
     return processInstanceToEvents.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()
-               .importName(importItemName)
-               .esClient(esClient)
-               .request(createImportRequestForActivityInstance(entry))
-               .build())
+        .importName(importItemName)
+        .esClient(esClient)
+        .request(createImportRequestForActivityInstance(entry))
+        .build())
       .collect(Collectors.toList());
   }
 
-  private UpdateRequest createImportRequestForActivityInstance(Map.Entry<String, List<OptimizeDto>> activityInstanceEntry) {
-    if (!activityInstanceEntry.getValue().stream().allMatch(dto -> dto instanceof FlowNodeEventDto)) {
+  private UpdateRequest createImportRequestForActivityInstance(Map.Entry<String, List<OptimizeDto>> activitiesByProcessInstance) {
+    if (!activitiesByProcessInstance.getValue().stream().allMatch(dto -> dto instanceof FlowNodeEventDto)) {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
     final List<FlowNodeEventDto> activityInstances =
-      (List<FlowNodeEventDto>) (List<?>) activityInstanceEntry.getValue();
-    final String activityInstanceId = activityInstanceEntry.getKey();
+      (List<FlowNodeEventDto>) (List<?>) activitiesByProcessInstance.getValue();
+    final String processInstanceId = activitiesByProcessInstance.getKey();
 
     final List<FlowNodeInstanceDto> simpleEvents = getSimpleEventDtos(activityInstances);
     final Map<String, Object> params = new HashMap<>();
@@ -80,22 +80,21 @@ public abstract class AbstractActivityInstanceWriter {
       params.put(EVENTS, jsonMap);
       final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
 
-      final FlowNodeEventDto e = getFirst(activityInstances);
       final ProcessInstanceDto procInst = new ProcessInstanceDto()
-        .setProcessInstanceId(e.getProcessInstanceId())
-        .setEngine(e.getEngineAlias())
+        .setProcessInstanceId(processInstanceId)
+        .setEngine(activityInstances.get(0).getEngineAlias())
         .setEvents(simpleEvents);
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
       return new UpdateRequest()
         .index(PROCESS_INSTANCE_INDEX_NAME)
-        .id(activityInstanceId)
+        .id(processInstanceId)
         .script(updateScript)
         .upsert(newEntryIfAbsent, XContentType.JSON)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
     } catch (IOException e) {
       String reason = String.format(
         "Error while processing JSON for activity instances with ID [%s].",
-        activityInstanceId
+        processInstanceId
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -104,23 +103,17 @@ public abstract class AbstractActivityInstanceWriter {
 
   protected abstract String createInlineUpdateScript();
 
-  private FlowNodeEventDto getFirst(List<FlowNodeEventDto> processEvents) {
-    return processEvents.get(0);
-  }
-
   private List<FlowNodeInstanceDto> getSimpleEventDtos(List<FlowNodeEventDto> activityInstances) {
-    List<FlowNodeInstanceDto> simpleEvents = new ArrayList<>();
-    for (FlowNodeEventDto e : activityInstances) {
-      FlowNodeInstanceDto simpleEventDto = new FlowNodeInstanceDto();
-      simpleEventDto.setDurationInMs(e.getDurationInMs());
-      simpleEventDto.setActivityId(e.getActivityId());
-      simpleEventDto.setId(e.getId());
-      simpleEventDto.setActivityType(e.getActivityType());
-      simpleEventDto.setStartDate(e.getStartDate());
-      simpleEventDto.setEndDate(e.getEndDate());
-      simpleEvents.add(simpleEventDto);
-    }
-    return simpleEvents;
+    return activityInstances.stream()
+      .map(activity -> FlowNodeInstanceDto.builder()
+        .durationInMs(activity.getDurationInMs())
+        .activityId(activity.getActivityId())
+        .id(activity.getId())
+        .activityType(activity.getActivityType())
+        .startDate(activity.getStartDate())
+        .endDate(activity.getEndDate())
+        .build()
+      ).collect(Collectors.toList());
   }
 
 }

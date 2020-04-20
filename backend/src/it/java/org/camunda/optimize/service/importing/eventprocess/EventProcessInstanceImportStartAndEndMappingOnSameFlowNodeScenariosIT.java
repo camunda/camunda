@@ -64,9 +64,7 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
     executeImportCycle();
 
     // then
-    assertProcessInstanceIsAsExpected(
-      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, fourthEventId
-    );
+    assertProcessInstanceIsAsExpected(firstEventId, secondEventId, fourthEventId);
   }
 
   @ParameterizedTest
@@ -91,9 +89,7 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
     executeImportCycle();
 
     // then
-    assertProcessInstanceIsAsExpected(
-      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, fourthEventId
-    );
+    assertProcessInstanceIsAsExpected(firstEventId, secondEventId, fourthEventId);
   }
 
   @ParameterizedTest
@@ -119,9 +115,7 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
     executeImportCycle();
 
     // then
-    assertProcessInstanceIsAsExpected(
-      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, fourthEventId
-    );
+    assertProcessInstanceIsAsExpected(firstEventId, secondEventId, fourthEventId);
   }
 
   private void createAndPublishMapping(final EventMappingDto startEventMapping,
@@ -133,10 +127,7 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
     eventProcessClient.publishEventProcessMapping(eventProcessId);
   }
 
-  private void assertProcessInstanceIsAsExpected(final EventMappingDto startEventMapping,
-                                                 final EventMappingDto intermediateEventMapping,
-                                                 final EventMappingDto endEventMapping,
-                                                 final String firstEventId,
+  private void assertProcessInstanceIsAsExpected(final String firstEventId,
                                                  final String secondEventId,
                                                  final String fourthEventId) {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
