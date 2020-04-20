@@ -8,6 +8,8 @@ import Enzyme from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
 import 'jest-enzyme';
 import 'jest-styled-components';
+import '@testing-library/jest-dom';
+import MutationObserver from '@sheerun/mutationobserver-shim';
 
 // configure enzyme
 Enzyme.configure({adapter: new Adapter()});
@@ -40,3 +42,5 @@ global.localStorage = (function () {
     removeItem: jest.fn(),
   };
 })();
+
+window.MutationObserver = MutationObserver;
