@@ -16,7 +16,7 @@
     height: 0;
     min-height: 0;
     min-width: 100% !important;
-    overflow: scroll;
+    overflow: auto;
   }
 
   thead tr {
@@ -54,9 +54,15 @@
       .cellContent {
         padding: 10px 5px;
         text-align: left;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
+        display: flex;
+        align-items: center;
+        min-width: 0;
+
+        .text {
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        }
       }
 
       .resizer {
@@ -138,15 +144,16 @@
       display: flex;
       align-items: center;
 
-      .Button:nth-child(2) {
+      .Button.previous {
         margin-right: 10px;
       }
 
-      .Button:nth-child(4) {
+      .Button.next {
         margin-left: 10px;
       }
 
-      .Button:nth-child(odd) svg {
+      .Button.first,
+      .Button.last {
         transform: rotate(-90deg);
       }
     }

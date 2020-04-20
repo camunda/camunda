@@ -113,11 +113,11 @@ export default function Table({
                   {...column.getHeaderProps()}
                 >
                   <div className="cellContent" {...getSortingProps(column)}>
-                    {column.render('Header')}
+                    <span className="text">{column.render('Header')}</span>
+                    {column.isSorted && sorting && (
+                      <Icon type={sorting?.order === 'asc' ? 'up' : 'down'} />
+                    )}
                   </div>
-                  {column.isSorted && sorting && (
-                    <Icon type={sorting?.order === 'asc' ? 'up' : 'down'} />
-                  )}
                   <div {...column.getResizerProps()} className="resizer" />
                 </th>
               ))}
@@ -156,20 +156,30 @@ export default function Table({
             }}
           />
           <div className="controls">
-            <Button icon onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
+            <Button className="first" icon onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
               <Icon type="expand" />
             </Button>
-            <Button icon onClick={() => previousPage()} disabled={!canPreviousPage}>
+            <Button
+              className="previous"
+              icon
+              onClick={() => previousPage()}
+              disabled={!canPreviousPage}
+            >
               <Icon type="left" />
             </Button>
             <span>
               {t('report.table.page')} <b>{pageIndex + 1}</b> {t('report.table.of')}{' '}
               <b>{pageCount}</b>
             </span>
-            <Button icon onClick={() => nextPage()} disabled={!canNextPage}>
+            <Button className="next" icon onClick={() => nextPage()} disabled={!canNextPage}>
               <Icon type="right" />
             </Button>
-            <Button icon onClick={() => gotoPage(pageCount - 1)} disabled={!canNextPage}>
+            <Button
+              className="last"
+              icon
+              onClick={() => gotoPage(pageCount - 1)}
+              disabled={!canNextPage}
+            >
               <Icon type="collapse" />
             </Button>
           </div>

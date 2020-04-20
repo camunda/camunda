@@ -41,11 +41,14 @@
   position: absolute;
   overflow: hidden;
 
-  tr {
-    max-width: max-content;
+  table {
+    overflow: hidden;
+    tr {
+      max-width: max-content;
 
-    .placeholder {
-      display: none;
+      .placeholder {
+        display: none;
+      }
     }
   }
 

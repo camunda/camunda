@@ -289,6 +289,13 @@
       box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
       transition: box-shadow 0.05s ease-out 0s;
     }
+
+    &:disabled {
+      cursor: not-allowed;
+      color: $grey-lighten-56;
+      border-color: $silver-darken-87;
+      background-color: $silver-base-97;
+    }
   }
 
   &.link {
