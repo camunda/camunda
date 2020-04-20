@@ -5,20 +5,30 @@
 Ensure that Node.js and yarn are installed on your computer and run the following command:
 
 ```sh
-cd e2e
+cd client/e2e
 yarn install
 ```
 
-## Run Tests
+## Run Operate backend
 
-Start the Operate local build:
+To run E2E dedicated backend (Zeebe on port 26503 + Operate on port 8081):
 
 ```sh
-make start-backend
-cd client && yarn start
+make start-e2e
 ```
 
-start the E2E tests
+To rerun (and clean up data), press Ctrl+C and run the same command again.
+
+## Start Development Server
+
+To start dev server and connect it to E2E related backend:
+
+```sh
+cd client
+yarn start-e2e
+```
+
+## Run Tests
 
 ```sh
 cd e2e

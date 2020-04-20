@@ -1,12 +1,15 @@
 ## Environment
 
 .PHONY: env-up
-env-up: env-down
-	docker-compose up --force-recreate --build -d elasticsearch kibana zeebe operate generator
+env-up:
+	docker-compose up -d elasticsearch zeebe \
+	&& mvn compile -DskipTests=true -Dskip.fe.build=true \
+	&& mvn -f webapp/pom.xml exec:java -Dexec.mainClass="org.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
 
 .PHONY: env-down
 env-down:
-	docker-compose down -v
+	docker-compose down -v \
+	&& mvn clean
 
 .PHONY: env-status
 env-status:
@@ -16,14 +19,15 @@ env-status:
 env-clean: env-down
 	docker system prune -a
 
-.PHONY: start-backend
-start-backend:
-	docker-compose up -d elasticsearch zeebe \
-	&& mvn clean install -DskipTests=true -Dskip.fe.build=true \
-    && mvn -f webapp/pom.xml exec:java -Dexec.mainClass="org.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
-
 .PHONY: start-e2e
 start-e2e:
-	docker-compose up -d elasticsearch zeebe \
-	&& mvn clean install -DskipTests=true -Dskip.fe.build=true \
-    && mvn -f webapp/pom.xml exec:java -Dexec.mainClass="org.camunda.operate.Application" -Dspring.profiles.active=dev,auth
+	curl --request DELETE --url http://localhost:9200/e2e* \
+	&& docker rm -f zeebe-e2e || true \
+	&& docker-compose up --force-recreate -d zeebe-e2e \
+	&& mvn compile -DskipTests=true -Dskip.fe.build=true \
+	&& CAMUNDA_OPERATE_ZEEBE_BROKERCONTACTPOINT=localhost:26503 \
+	CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX=e2e \
+	CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX=e2eoperate \
+	CAMUNDA_OPERATE_IMPORTER_READERBACKOFF=0 \
+	CAMUNDA_OPERATE_IMPORTER_SCHEDULERBACKOFF=0 \
+	mvn -f webapp/pom.xml exec:java -Dexec.mainClass="org.camunda.operate.Application" -Dserver.port=8081

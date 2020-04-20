@@ -17,6 +17,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:e2e": "PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build && node license-build.js",
     "test": "react-scripts test --env=jsdom",
     "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit",
@@ -43,6 +44,7 @@
     "eslint-plugin-camunda-licensed": "^0.4.3",
     "eslint-plugin-prettier": "^3.1.2",
     "glob": "^7.1.6",
+    "http-proxy-middleware": "^1.0.3",
     "husky": "^4.2.5",
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^10.0.0",
@@ -58,7 +60,6 @@
       "prettier --write"
     ]
   },
-  "proxy": "http://localhost:8080",
   "browserslist": [
     ">0.2%",
     "not dead",

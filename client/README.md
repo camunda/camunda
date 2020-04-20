@@ -30,10 +30,10 @@ While developing the frontend, you might need to have Elasticsearch, Zeebe and t
 In this case you can run the following command in the root of this project:
 
 ```sh
-make start-backend
+make env-up
 ```
 
-You can then destroy the environment using:
+You can then destroy the environment by pressing Ctrl+C and running:
 
 ```sh
 make env-down

@@ -68,10 +68,10 @@ public class WorkflowCache {
       attemptsCount++;
       foundWorkflow = readWorkflowByKey(workflowKey);
       if (!foundWorkflow.isPresent()) {
-        logger.debug("{} attempts left. Waiting {} ms.", attempts - attemptsCount, sleepInMilliseconds);
+        logger.debug("Unable to find workflow {}. {} attempts left. Waiting {} ms.", workflowKey, attempts - attemptsCount, sleepInMilliseconds);
         sleepFor(sleepInMilliseconds);
       } else {
-        logger.debug("Found workflow after {} attempts. Waited {} ms.", attemptsCount, (attemptsCount - 1) * sleepInMilliseconds);
+        logger.debug("Found workflow {} after {} attempts. Waited {} ms.", workflowKey, attemptsCount, (attemptsCount - 1) * sleepInMilliseconds);
       }
     }
     return foundWorkflow;

@@ -4,7 +4,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "test": "PORT=3000 testcafe chrome tests/*.js",
+    "test": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome tests/*.js",
     "test:ci": "PORT=8080 testcafe chrome:headless tests/*.js"
   },
   "devDependencies": {
