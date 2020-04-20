@@ -7,8 +7,10 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
+import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.model.bpmn.util.time.Timer;
+import io.zeebe.util.Either;
 import java.util.function.BiFunction;
 
 public class ExecutableReceiveTask extends ExecutableActivity implements ExecutableCatchEvent {
@@ -43,7 +45,7 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
   }
 
   @Override
-  public BiFunction<ExpressionProcessor, Long, Timer> getTimerFactory() {
+  public BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> getTimerFactory() {
     return (expressionProcessor, context) -> null;
   }
 

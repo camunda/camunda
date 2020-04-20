@@ -14,10 +14,12 @@ import io.zeebe.el.EvaluationResult;
 import io.zeebe.el.Expression;
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.el.ResultType;
+import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.protocol.record.value.ErrorType;
+import io.zeebe.util.Either;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -69,22 +71,24 @@ public final class ExpressionProcessor {
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
-   * @return the evaluation result as string
-   * @throws EvaluationException if expression evaluation failed
+   * @return either the evaluation result as string, or a failure
    */
-  public String evaluateStringExpression(final Expression expression, final long scopeKey) {
-
+  public Either<Failure, String> evaluateStringExpression(
+      final Expression expression, final long scopeKey) {
     final var evaluationResult = evaluateExpression(expression, scopeKey);
     if (evaluationResult.isFailure()) {
-      throw new EvaluationException(evaluationResult.getFailureMessage());
+      return Either.left(new Failure(evaluationResult.getFailureMessage()));
     }
     if (!evaluationResult.getType().equals(ResultType.STRING)) {
-      throw new EvaluationException(
-          String.format(
-              "Expected result of the expression '%s' to be '%s', but was '%s'.",
-              evaluationResult.getExpression(), ResultType.STRING, evaluationResult.getType()));
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Expected result of the expression '%s' to be '%s', but was '%s'.",
+                  evaluationResult.getExpression(),
+                  ResultType.STRING,
+                  evaluationResult.getType())));
     }
-    return evaluationResult.getString();
+    return Either.right(evaluationResult.getString());
   }
 
   /**
@@ -131,35 +135,36 @@ public final class ExpressionProcessor {
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
-   * @return the evaluation result as interval
-   * @throws EvaluationException if expression evaluation failed
+   * @return either the evaluation result as interval or a failure
    */
-  public Interval evaluateIntervalExpression(final Expression expression, final long scopeKey) {
+  public Either<Failure, Interval> evaluateIntervalExpression(
+      final Expression expression, final long scopeKey) {
     final var result = evaluateExpression(expression, scopeKey);
     if (result.isFailure()) {
-      throw new EvaluationException(result.getFailureMessage());
+      return Either.left(new Failure(result.getFailureMessage()));
     }
     switch (result.getType()) {
       case DURATION:
-        return new Interval(result.getDuration());
+        return Either.right(new Interval(result.getDuration()));
       case PERIOD:
-        return new Interval(result.getPeriod());
+        return Either.right(new Interval(result.getPeriod()));
       case STRING:
         try {
-          return Interval.parse(result.getString());
+          return Either.right(Interval.parse(result.getString()));
         } catch (DateTimeParseException e) {
-          throw new EvaluationException(
-              String.format(
-                  "Expected result of the expression '%s' to be parsed to a duration, but was '%s'",
-                  expression.getExpression(), result.getString()),
-              e);
+          return Either.left(
+              new Failure(
+                  String.format(
+                      "Expected result of the expression '%s' to be parsed to a duration, but was '%s' and encountered error: %s",
+                      expression.getExpression(), result.getString(), e.getMessage())));
         }
       default:
         final var expected = List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
-        throw new EvaluationException(
-            String.format(
-                "Expected result of the expression '%s' to be one of '%s', but was '%s'",
-                expression.getExpression(), expected, result.getType()));
+        return Either.left(
+            new Failure(
+                String.format(
+                    "Expected result of the expression '%s' to be one of '%s', but was '%s'",
+                    expression.getExpression(), expected, result.getType())));
     }
   }
 
@@ -170,26 +175,27 @@ public final class ExpressionProcessor {
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
-   * @return the evaluation result as ZonedDateTime
+   * @return either the evaluation result as ZonedDateTime or a failure
    * @throws EvaluationException if expression evaluation failed
    */
-  public ZonedDateTime evaluateDateTimeExpression(
+  public Either<Failure, ZonedDateTime> evaluateDateTimeExpression(
       final Expression expression, final Long scopeKey) {
     final var result = evaluateExpression(expression, scopeKey);
     if (result.isFailure()) {
-      throw new EvaluationException(result.getFailureMessage());
+      return Either.left(new Failure(result.getFailureMessage()));
     }
     if (result.getType() == ResultType.DATE_TIME) {
-      return result.getDateTime();
+      return Either.right(result.getDateTime());
     }
     if (result.getType() == ResultType.STRING) {
-      return ZonedDateTime.parse(result.getString());
+      return Either.right(ZonedDateTime.parse(result.getString()));
     }
     final var expected = List.of(ResultType.DATE_TIME, ResultType.STRING);
-    throw new EvaluationException(
-        String.format(
-            "Expected result of the expression '%s' to be one of '%s', but was '%s'",
-            expression.getExpression(), expected, result.getType()));
+    return Either.left(
+        new Failure(
+            String.format(
+                "Expected result of the expression '%s' to be one of '%s', but was '%s'",
+                expression.getExpression(), expected, result.getType())));
   }
 
   /**
@@ -312,25 +318,8 @@ public final class ExpressionProcessor {
   }
 
   public static final class EvaluationException extends RuntimeException {
-
     public EvaluationException(final String message) {
       super(message);
-    }
-
-    public EvaluationException(final String message, final Throwable cause) {
-      super(message, cause);
-    }
-
-    public EvaluationException(final Throwable cause) {
-      super(cause);
-    }
-
-    public EvaluationException(
-        final String message,
-        final Throwable cause,
-        final boolean enableSuppression,
-        final boolean writableStackTrace) {
-      super(message, cause, enableSuppression, writableStackTrace);
     }
   }
 

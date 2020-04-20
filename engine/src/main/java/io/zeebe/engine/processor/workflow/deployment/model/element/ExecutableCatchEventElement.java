@@ -7,8 +7,10 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
+import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.model.bpmn.util.time.Timer;
+import io.zeebe.util.Either;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +24,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   private ExecutableMessage message;
   private ExecutableError error;
   private boolean interrupting;
-  private BiFunction<ExpressionProcessor, Long, Timer> timerFactory;
+  private BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> timerFactory;
 
   public ExecutableCatchEventElement(final String id) {
     super(id);
@@ -53,11 +55,12 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   }
 
   @Override
-  public BiFunction<ExpressionProcessor, Long, Timer> getTimerFactory() {
+  public BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> getTimerFactory() {
     return timerFactory;
   }
 
-  public void setTimerFactory(final BiFunction<ExpressionProcessor, Long, Timer> timerFactory) {
+  public void setTimerFactory(
+      final BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> timerFactory) {
     this.timerFactory = timerFactory;
   }
 

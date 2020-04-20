@@ -10,7 +10,9 @@ package io.zeebe.engine.processor.workflow;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.zeebe.el.Expression;
+import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.TypedStreamWriter;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor.EvaluationException;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
@@ -27,6 +29,7 @@ import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
@@ -292,8 +295,13 @@ public final class CatchEventBehavior {
 
     for (final ExecutableCatchEvent event : events) {
       if (event.isTimer()) {
-        final var timer = event.getTimerFactory().apply(expressionProcessor, key);
-        evaluatedTimers.put(event.getId(), timer);
+        final Either<Failure, Timer> timerOrError =
+            event.getTimerFactory().apply(expressionProcessor, key);
+        if (timerOrError.isLeft()) {
+          // todo(#4323): deal with this exceptional case without throwing an exception
+          throw new EvaluationException(timerOrError.getLeft().toString());
+        }
+        evaluatedTimers.put(event.getId(), timerOrError.get());
       }
     }
 
