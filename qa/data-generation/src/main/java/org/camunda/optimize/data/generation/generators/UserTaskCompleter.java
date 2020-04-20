@@ -6,8 +6,8 @@
 package org.camunda.optimize.data.generation.generators;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
-import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.dto.TaskDto;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;

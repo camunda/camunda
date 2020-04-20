@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.data.generation.generators.client.dto;
+package org.camunda.optimize.test.util.client.dto;
 
 import java.util.HashMap;
 import java.util.Map;

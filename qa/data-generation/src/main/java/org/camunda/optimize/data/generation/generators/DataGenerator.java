@@ -8,7 +8,7 @@ package org.camunda.optimize.data.generation.generators;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.xml.ModelInstance;
-import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.slf4j.Logger;

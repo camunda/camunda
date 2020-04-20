@@ -11,7 +11,7 @@ import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.engine.rest.dto.identity.UserCredentialsDto;
 import org.camunda.bpm.engine.rest.dto.identity.UserDto;
 import org.camunda.bpm.engine.rest.dto.identity.UserProfileDto;
-import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;

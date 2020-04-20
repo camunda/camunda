@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.data.generation.generators.client;
+package org.camunda.optimize.test.util.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -33,15 +33,17 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.data.generation.generators.client.dto.MessageCorrelationDto;
-import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
-import org.camunda.optimize.data.generation.generators.client.dto.VariableValue;
+import org.camunda.optimize.test.util.client.dto.MessageCorrelationDto;
+import org.camunda.optimize.test.util.client.dto.TaskDto;
+import org.camunda.optimize.test.util.client.dto.VariableValue;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
 import org.elasticsearch.common.io.Streams;
@@ -483,6 +485,76 @@ public class SimpleEngineClient {
     return result;
   }
 
+  public List<ProcessDefinitionEngineDto> getLatestProcessDefinitions() {
+    HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
+    URI uri = null;
+    try {
+      uri = new URIBuilder(get.getURI())
+        .addParameter("latestVersion", "true")
+        .build();
+    } catch (URISyntaxException e) {
+      log.error("Could not build uri!", e);
+    }
+    get.setURI(uri);
+    List<ProcessDefinitionEngineDto> result = new ArrayList<>();
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+      result = objectMapper.readValue(
+        responseString,
+        new TypeReference<List<ProcessDefinitionEngineDto>>() {
+        }
+      );
+    } catch (Exception e) {
+      log.error("Could not fetch all process definitions for given deployment!", e);
+    }
+
+    return result;
+  }
+
+  public List<DecisionDefinitionEngineDto> getLatestDecisionDefinitions() {
+    HttpRequestBase get = new HttpGet(getDecisionDefinitionUri());
+    URI uri = null;
+    try {
+      uri = new URIBuilder(get.getURI())
+        .addParameter("latestVersion", "true")
+        .build();
+    } catch (URISyntaxException e) {
+      log.error("Could not build uri!", e);
+    }
+    get.setURI(uri);
+    List<DecisionDefinitionEngineDto> result = new ArrayList<>();
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+      result = objectMapper.readValue(
+        responseString,
+        new TypeReference<List<DecisionDefinitionEngineDto>>() {
+        }
+      );
+    } catch (Exception e) {
+      log.error("Could not fetch all decision definitions for given deployment!", e);
+    }
+
+    return result;
+  }
+
+  public ProcessDefinitionXmlEngineDto getProcessDefinitionXml(String processDefinitionId) {
+    HttpRequestBase get = new HttpGet(getProcessDefinitionXmlUri(processDefinitionId));
+    CloseableHttpResponse response;
+    try {
+      response = client.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      ProcessDefinitionXmlEngineDto xml =
+        objectMapper.readValue(responseString, ProcessDefinitionXmlEngineDto.class);
+      response.close();
+      return xml;
+    } catch (IOException e) {
+      String errorMessage =
+        String.format("Could not fetch the process definition xml for id [%s]!", processDefinitionId);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+
   private List<DeploymentDto> deployProcess(BpmnModelInstance bpmnModelInstance, List<String> tenants) {
     String process = Bpmn.convertToString(bpmnModelInstance);
     List<HttpPost> deploymentRequest = createProcessDeploymentRequest(process, tenants);
@@ -680,5 +752,8 @@ public class SimpleEngineClient {
     return engineRestEndpoint + "/task/" + taskId + "/complete";
   }
 
+  private String getProcessDefinitionXmlUri(String processDefinitionId) {
+    return getProcessDefinitionUri() + "/" + processDefinitionId + "/xml";
+  }
 
 }

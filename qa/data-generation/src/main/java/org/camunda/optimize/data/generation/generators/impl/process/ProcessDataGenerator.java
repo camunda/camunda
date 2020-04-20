@@ -8,7 +8,7 @@ package org.camunda.optimize.data.generation.generators.impl.process;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
-import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.io.InputStream;
 import java.util.List;

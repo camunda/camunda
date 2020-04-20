@@ -18,20 +18,14 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
@@ -39,15 +33,15 @@ import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.DashboardClient;
 import org.camunda.optimize.test.optimize.ReportClient;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ReportsGenerator;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -88,7 +82,6 @@ public class Generator {
     generator.generateAlerts();
     generator.generateDashboards(reportIds);
     generator.generateCollection();
-
   }
 
   private void setDefaultProcessDefinition() {
@@ -144,74 +137,48 @@ public class Generator {
   private List<String> generateReports() {
     final List<String> reportIds = new ArrayList<>();
 
-    final ProcessReportDataDto processInstanceDurationReport = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
-      .setFilter(prepareFilters())
-      .build();
-    reportIds.add(createProcessReport(processInstanceDurationReport));
-
-    final ProcessReportDataDto flowNodeDurationReport = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
-      .setFilter(prepareFilters())
-      .build();
-    reportIds.add(createProcessReport(flowNodeDurationReport));
-
-    final ProcessReportDataDto maxFlowNodeDurationGroupByFlowNodeHeatmapReport = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
-      .setFilter(prepareFilters())
-      .build();
-    maxFlowNodeDurationGroupByFlowNodeHeatmapReport.getConfiguration().setAggregationType(AggregationType.MAX);
-    reportIds.add(createProcessReport(maxFlowNodeDurationGroupByFlowNodeHeatmapReport));
-
-    final ProcessReportDataDto processInstanceDurationByStartDateBarChart = TemplatedProcessReportDataBuilder
+    final ProcessReportDataDto combinableProcessBarReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
       .setDateInterval(GroupByDateUnit.DAY)
-      .setFilter(prepareFilters())
+      .setVisualization(ProcessVisualization.BAR)
       .build();
-    processInstanceDurationByStartDateBarChart.setVisualization(ProcessVisualization.BAR);
     // here we want two of the same type to be combined in a combined report to follow
-    final String durationByStartDateReportId1 = createProcessReport(maxFlowNodeDurationGroupByFlowNodeHeatmapReport);
-    reportIds.add(durationByStartDateReportId1);
-    final String durationByStartDateReportId2 = createProcessReport(maxFlowNodeDurationGroupByFlowNodeHeatmapReport);
-    reportIds.add(durationByStartDateReportId2);
+    final String combinableReport1 = createProcessReport(combinableProcessBarReport);
+    reportIds.add(combinableReport1);
+    final String combinableReport2 = createProcessReport(combinableProcessBarReport);
+    reportIds.add(combinableReport2);
 
     reportIds.add(
       reportClient.createCombinedReport(
-        null, Lists.newArrayList(durationByStartDateReportId1, durationByStartDateReportId2)
+        null, Lists.newArrayList(combinableReport1, combinableReport2)
       )
     );
 
-    final ProcessReportDataDto processInstanceDurationGroupByVariableProcessPartBarChart = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
-      .setVariableType(VariableType.STRING)
-      .setVariableName("var")
-      .setStartFlowNodeId("startNode")
-      .setEndFlowNodeId("endNode")
-      .setFilter(prepareFilters())
-      .build();
-    processInstanceDurationGroupByVariableProcessPartBarChart.setVisualization(ProcessVisualization.BAR);
-    reportIds.add(createProcessReport(processInstanceDurationGroupByVariableProcessPartBarChart));
+    List<String> generatedReports = ReportsGenerator.createAllPossibleReports().stream().map(r -> {
+      if (r instanceof DecisionReportDataDto) {
+        return createDecisionReport((DecisionReportDataDto) r);
+      }
+      if (r instanceof ProcessReportDataDto) {
+        return createProcessReport((ProcessReportDataDto) r);
+      }
+      throw new OptimizeRuntimeException("Unknown object type provided from the ReportsGenerator");
+
+    }).collect(Collectors.toList());
+
+    reportIds.addAll(generatedReports);
 
     return reportIds;
   }
 
   private String createProcessReport(final ProcessReportDataDto reportData) {
     return reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData));
+  }
+
+  private String createDecisionReport(final DecisionReportDataDto reportData) {
+    return reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionDto(reportData));
   }
 
   private static List<ProcessDefinitionEngineDto> getEngineProcessDefinitions() {
@@ -272,52 +239,5 @@ public class Generator {
     dashboard.setReports(reportLocations);
 
     return dashboard;
-  }
-
-  private static List<ProcessFilterDto> prepareFilters() {
-    List<ProcessFilterDto> filters = new ArrayList<>();
-
-    StartDateFilterDto dateFilter = prepareStartDateFilter();
-    VariableFilterDto variableFilter = prepareBooleanVariableFilter();
-    ExecutedFlowNodeFilterDto executedFlowNodeFilter = prepareFlowNodeFilter();
-
-    filters.add(dateFilter);
-    filters.add(variableFilter);
-    filters.add(executedFlowNodeFilter);
-    return filters;
-  }
-
-  private static StartDateFilterDto prepareStartDateFilter() {
-
-    FixedDateFilterDataDto dateFilterData = new FixedDateFilterDataDto();
-    dateFilterData.setStart(OffsetDateTime.now());
-    dateFilterData.setEnd(OffsetDateTime.now().plusDays(1L));
-    return new StartDateFilterDto(dateFilterData);
-  }
-
-  private static ExecutedFlowNodeFilterDto prepareFlowNodeFilter() {
-    ExecutedFlowNodeFilterDto executedFlowNodeFilter = new ExecutedFlowNodeFilterDto();
-    ExecutedFlowNodeFilterDataDto executedFlowNodeFilterData = new ExecutedFlowNodeFilterDataDto();
-
-    executedFlowNodeFilterData.setOperator("in");
-
-    List<String> values = new ArrayList<>();
-    values.add("flowNode1");
-    values.add("flowNode2");
-    executedFlowNodeFilterData.setValues(values);
-
-    executedFlowNodeFilter.setData(executedFlowNodeFilterData);
-    return executedFlowNodeFilter;
-  }
-
-  private static VariableFilterDto prepareBooleanVariableFilter() {
-    VariableFilterDto variableFilter = new VariableFilterDto();
-
-    BooleanVariableFilterDataDto booleanVariableFilterDataDto = new BooleanVariableFilterDataDto(true);
-    booleanVariableFilterDataDto.setName("var");
-
-    variableFilter.setData(booleanVariableFilterDataDto);
-
-    return variableFilter;
   }
 }

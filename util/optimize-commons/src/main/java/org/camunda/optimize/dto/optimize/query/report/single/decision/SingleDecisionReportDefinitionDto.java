@@ -11,7 +11,11 @@ import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 public class SingleDecisionReportDefinitionDto extends SingleReportDefinitionDto<DecisionReportDataDto> {
 
   public SingleDecisionReportDefinitionDto() {
-    super(new DecisionReportDataDto(), false, ReportType.DECISION);
+    this(new DecisionReportDataDto());
+  }
+
+  public SingleDecisionReportDefinitionDto(final DecisionReportDataDto data) {
+    super(data, false, ReportType.DECISION);
   }
 
   @Override

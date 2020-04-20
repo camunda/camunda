@@ -9,12 +9,11 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class ExampleDmn13DataGenerator extends DecisionDataGenerator {
 

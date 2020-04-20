@@ -6,11 +6,10 @@
 package org.camunda.optimize.data.generation.generators.impl.decision;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.util.HashMap;
 import java.util.List;

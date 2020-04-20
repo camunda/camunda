@@ -7,7 +7,7 @@ package org.camunda.optimize.data.generation.generators.impl.process;
 
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.util.Arrays;
 import java.util.HashMap;

@@ -6,7 +6,7 @@
 package org.camunda.optimize.data.generation.generators;
 
 import lombok.Getter;
-import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 public class MessageEventCorrelater {
 

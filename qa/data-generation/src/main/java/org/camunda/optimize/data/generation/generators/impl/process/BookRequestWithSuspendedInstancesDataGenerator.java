@@ -6,7 +6,7 @@
 package org.camunda.optimize.data.generation.generators.impl.process;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 import java.util.HashMap;
