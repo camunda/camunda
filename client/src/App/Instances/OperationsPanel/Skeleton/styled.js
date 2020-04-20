@@ -11,17 +11,17 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 export const Entry = themed(styled.li`
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
-    light: Colors.uiLight04
+    light: Colors.uiLight04,
   })};
 
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)'
+    light: 'rgba(98, 98, 110, 0.9)',
   })};
 
   border-top: ${themeStyle({
     dark: `solid 1px ${Colors.uiDark04}`,
-    light: `solid 1px ${Colors.uiLight05}`
+    light: `solid 1px ${Colors.uiLight05}`,
   })};
   display: flex;
   flex-direction: column;

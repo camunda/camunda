@@ -15,7 +15,6 @@ import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
 import {HashRouter as Router} from 'react-router-dom';
-import {LOADING_STATE} from 'modules/constants';
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
 
 import {

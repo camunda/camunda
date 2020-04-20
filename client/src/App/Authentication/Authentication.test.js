@@ -13,7 +13,6 @@ import * as wrappers from 'modules/request/wrappers';
 
 import AuthenticationWithRouter from './Authentication';
 import {mockResolvedAsyncFn} from 'modules/testUtils';
-import {setProps} from 'modules/testUtils';
 
 const {WrappedComponent: Authentication} = AuthenticationWithRouter;
 

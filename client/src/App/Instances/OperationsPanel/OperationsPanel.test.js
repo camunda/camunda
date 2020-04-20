@@ -59,7 +59,7 @@ describe('OperationsPanel', () => {
     useBatchOperations.mockReturnValue({
       batchOperations: [],
       requestBatchOperations: jest.fn(),
-      isLoading: true
+      isLoading: true,
     });
 
     // when

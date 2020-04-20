@@ -18,7 +18,7 @@ export const OperationsList = themed(styled.ul`
       isLoading
         ? themeStyle({
             dark: `1px solid ${Colors.uiDark04}`,
-            light: `1px solid ${Colors.uiLight05}`
+            light: `1px solid ${Colors.uiLight05}`,
           })
         : 'none'};
 `);
