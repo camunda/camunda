@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.test.util;
 
-import org.apache.commons.collections.ListUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
@@ -32,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.YEARS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
@@ -54,15 +54,14 @@ public class ReportsGenerator {
 
     List<ProcessReportDataDto> processReportDataDtos = latestDefinitionVersions
       .stream()
-      .map(ReportsGenerator::createProcessReportsFromDefinition)
-      .reduce(ListUtils::union)
-      .orElse(Collections.emptyList());
+      .flatMap(v -> createProcessReportsFromDefinition(v).stream())
+      .collect(Collectors.toList());
 
     List<DecisionReportDataDto> decisionReportDataDtos = latestDecisionDefs
       .stream()
-      .map(ReportsGenerator::createDecisionReportsFromDefinition)
-      .reduce(ListUtils::union)
-      .orElse(Collections.emptyList());
+      .flatMap(v -> createDecisionReportsFromDefinition(v).stream())
+      .collect(Collectors.toList());
+
     List<SingleReportDataDto> reports = new ArrayList<>();
     reports.addAll(decisionReportDataDtos);
     reports.addAll(processReportDataDtos);
