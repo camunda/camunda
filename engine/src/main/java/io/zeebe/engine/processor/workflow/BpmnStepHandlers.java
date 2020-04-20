@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow;
 
+import io.zeebe.engine.nwe.BpmnStreamProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
@@ -66,6 +67,7 @@ import java.util.Map;
 
 public final class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler<?>> stepHandlers = new EnumMap<>(BpmnStep.class);
+  private final BpmnStreamProcessor bpmnStreamProcessor;
 
   BpmnStepHandlers(
       final ZeebeState state,
@@ -187,24 +189,26 @@ public final class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_ACTIVATING,
         new MultiInstanceBodyActivatingHandler(
-            stepHandlers::get, catchEventSubscriber, expressionProcessor));
+            this::handle, catchEventSubscriber, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_ACTIVATED,
-        new MultiInstanceBodyActivatedHandler(stepHandlers::get, expressionProcessor));
+        new MultiInstanceBodyActivatedHandler(this::handle, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_COMPLETING,
         new MultiInstanceBodyCompletingHandler(
-            stepHandlers::get, catchEventSubscriber, expressionProcessor));
+            this::handle, catchEventSubscriber, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_COMPLETED,
-        new MultiInstanceBodyCompletedHandler(stepHandlers::get, expressionProcessor));
+        new MultiInstanceBodyCompletedHandler(
+            stepHandlers::get, this::handle, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_TERMINATING,
         new MultiInstanceBodyTerminatingHandler(
-            stepHandlers::get, catchEventSubscriber, expressionProcessor));
+            this::handle, catchEventSubscriber, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED,
-        new MultiInstanceBodyEventOccurredHandler(stepHandlers::get, expressionProcessor));
+        new MultiInstanceBodyEventOccurredHandler(
+            stepHandlers::get, this::handle, expressionProcessor));
 
     stepHandlers.put(
         BpmnStep.CALL_ACTIVITY_ACTIVATING,
@@ -215,12 +219,25 @@ public final class BpmnStepHandlers {
         new CallActivityTerminatingHandler(catchEventSubscriber));
 
     stepHandlers.put(BpmnStep.THROW_ERROR, new ThrowErrorHandler(errorEventHandler));
+
+    // ---------- new -----------------
+    bpmnStreamProcessor =
+        new BpmnStreamProcessor(expressionProcessor, catchEventBehavior, state, this::handle);
   }
 
   public void handle(final BpmnStepContext context) {
     final ExecutableFlowElement flowElement = context.getElement();
     final WorkflowInstanceIntent state = context.getState();
     final BpmnStep step = flowElement.getStep(state);
+
+    if (step == BpmnStep.BPMN_ELEMENT_PROCESSOR) {
+      bpmnStreamProcessor.processRecord(
+          context.getRecord(),
+          context.getOutput().getResponseWriter(),
+          context.getOutput().getStreamWriter(),
+          context.getSideEffectConsumer());
+      return;
+    }
 
     if (step != null) {
       final BpmnStepHandler stepHandler = stepHandlers.get(step);

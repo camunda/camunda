@@ -7,20 +7,49 @@
  */
 package io.zeebe.engine.processor;
 
+import io.zeebe.protocol.record.value.ErrorType;
 import java.util.Objects;
 
 /** Simple String wrapper for when something fails and a message needs to be used. */
 public final class Failure {
 
   private final String message;
+  private final ErrorType errorType;
+  private final long variableScopeKey;
 
   public Failure(final String message) {
     this.message = message;
+    errorType = null;
+    variableScopeKey = -1L;
+  }
+
+  public Failure(final String message, final ErrorType errorType) {
+    this.message = message;
+    this.errorType = errorType;
+    variableScopeKey = -1L;
+  }
+
+  public Failure(final String message, final ErrorType errorType, final long variableScopeKey) {
+    this.message = message;
+    this.errorType = errorType;
+    this.variableScopeKey = variableScopeKey;
+  }
+
+  public String getMessage() {
+    return message;
+  }
+
+  public ErrorType getErrorType() {
+    return errorType;
+  }
+
+  public long getVariableScopeKey() {
+    return variableScopeKey;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message);
+    return Objects.hash(message, errorType, variableScopeKey);
   }
 
   @Override
@@ -32,11 +61,21 @@ public final class Failure {
       return false;
     }
     final Failure failure = (Failure) o;
-    return Objects.equals(message, failure.message);
+    return variableScopeKey == failure.variableScopeKey
+        && Objects.equals(message, failure.message)
+        && errorType == failure.errorType;
   }
 
   @Override
   public String toString() {
-    return message;
+    return "Failure{"
+        + "message='"
+        + message
+        + '\''
+        + ", errorType="
+        + errorType
+        + ", variableScopeKey="
+        + variableScopeKey
+        + '}';
   }
 }

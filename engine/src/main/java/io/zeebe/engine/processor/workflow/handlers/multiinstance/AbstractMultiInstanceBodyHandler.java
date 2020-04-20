@@ -9,9 +9,7 @@ package io.zeebe.engine.processor.workflow.handlers.multiinstance;
 
 import io.zeebe.el.Expression;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
-import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
@@ -21,7 +19,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,7 +31,7 @@ public abstract class AbstractMultiInstanceBodyHandler
   private static final DirectBuffer LOOP_COUNTER_VARIABLE = BufferUtil.wrapString("loopCounter");
   protected final ExpressionProcessor expressionProcessor;
 
-  private final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup;
+  private final Consumer<BpmnStepContext<?>> innerHandler;
 
   private final MutableDirectBuffer loopCounterVariableBuffer =
       new UnsafeBuffer(new byte[Long.BYTES + 1]);
@@ -42,10 +40,10 @@ public abstract class AbstractMultiInstanceBodyHandler
 
   public AbstractMultiInstanceBodyHandler(
       final WorkflowInstanceIntent nextState,
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final Consumer<BpmnStepContext<?>> innerHandler,
       final ExpressionProcessor expressionProcessor) {
     super(nextState);
-    this.innerHandlerLookup = innerHandlerLookup;
+    this.innerHandler = innerHandler;
     this.expressionProcessor = expressionProcessor;
   }
 
@@ -78,11 +76,9 @@ public abstract class AbstractMultiInstanceBodyHandler
 
   protected void handleInnerActivity(final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     final ExecutableActivity innerActivity = context.getElement().getInnerActivity();
-    final BpmnStep innerStep = innerActivity.getStep(context.getState());
-
     context.setElement(innerActivity);
 
-    innerHandlerLookup.apply(innerStep).handle(context);
+    innerHandler.accept(context);
   }
 
   protected abstract boolean handleMultiInstanceBody(

@@ -7,7 +7,9 @@
  */
 package io.zeebe.engine.processor.workflow;
 
+import io.zeebe.engine.processor.SideEffectProducer;
 import io.zeebe.engine.processor.TypedCommandWriter;
+import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
@@ -19,6 +21,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
+import java.util.function.Consumer;
 
 public final class BpmnStepContext<T extends ExecutableFlowElement> {
 
@@ -34,6 +37,9 @@ public final class BpmnStepContext<T extends ExecutableFlowElement> {
 
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
+
+  private TypedRecord<WorkflowInstanceRecord> record;
+  private Consumer<SideEffectProducer> sideEffectConsumer;
 
   public BpmnStepContext(final WorkflowState stateDb, final EventOutput eventOutput) {
     this.stateDb = stateDb;
@@ -74,12 +80,12 @@ public final class BpmnStepContext<T extends ExecutableFlowElement> {
   }
 
   public void setStreamWriter(final TypedStreamWriter streamWriter) {
-    this.eventOutput.setStreamWriter(streamWriter);
-    this.commandWriter = streamWriter;
+    eventOutput.setStreamWriter(streamWriter);
+    commandWriter = streamWriter;
   }
 
   public void setResponseWriter(final TypedResponseWriter responseWriter) {
-    this.eventOutput.setResponseWriter(responseWriter);
+    eventOutput.setResponseWriter(responseWriter);
   }
 
   public TypedCommandWriter getCommandWriter() {
@@ -131,5 +137,21 @@ public final class BpmnStepContext<T extends ExecutableFlowElement> {
 
   public ElementInstanceState getElementInstanceState() {
     return stateDb.getElementInstanceState();
+  }
+
+  public TypedRecord<WorkflowInstanceRecord> getRecord() {
+    return record;
+  }
+
+  public void setRecord(final TypedRecord<WorkflowInstanceRecord> record) {
+    this.record = record;
+  }
+
+  public Consumer<SideEffectProducer> getSideEffectConsumer() {
+    return sideEffectConsumer;
+  }
+
+  public void setSideEffectConsumer(final Consumer<SideEffectProducer> sideEffect) {
+    sideEffectConsumer = sideEffect;
   }
 }

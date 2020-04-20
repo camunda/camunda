@@ -40,9 +40,16 @@ public class ExecutableWorkflow extends ExecutableFlowElementContainer {
 
   public <T extends ExecutableFlowElement> T getElementById(
       final DirectBuffer id, final Class<T> expectedType) {
-    final ExecutableFlowElement element = flowElements.get(id);
+    ExecutableFlowElement element = flowElements.get(id);
     if (element == null) {
       return null;
+    }
+
+    if (element instanceof ExecutableMultiInstanceBody
+        && !expectedType.isAssignableFrom(ExecutableMultiInstanceBody.class)) {
+      // the multi-instance body and the inner activity have the same element id
+      final var multiInstanceBody = (ExecutableMultiInstanceBody) element;
+      element = multiInstanceBody.getInnerActivity();
     }
 
     if (expectedType.isAssignableFrom(element.getClass())) {

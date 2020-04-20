@@ -16,6 +16,7 @@ import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import java.util.List;
 
 public final class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
@@ -51,6 +52,10 @@ public final class WorkflowEngineState implements StreamProcessorLifecycleAware 
       final WorkflowInstanceRecord value,
       final WorkflowInstanceIntent state) {
     elementInstanceState.storeRecord(key, scopeKey, value, state, Purpose.DEFERRED);
+  }
+
+  public List<IndexedRecord> getDeferredRecords(final long scopeKey) {
+    return elementInstanceState.getDeferredRecords(scopeKey);
   }
 
   public void removeStoredRecord(final long scopeKey, final long key, final Purpose purpose) {

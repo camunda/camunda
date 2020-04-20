@@ -60,9 +60,19 @@ public final class ServiceTaskTransformer implements ModelElementTransformer<Ser
 
   private void bindLifecycle(final ExecutableServiceTask serviceTask) {
     serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SERVICE_TASK_ELEMENT_ACTIVATED);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
     serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.SERVICE_TASK_ELEMENT_TERMINATING);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    serviceTask.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    serviceTask.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    serviceTask.bindLifecycleState(
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    serviceTask.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    serviceTask.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 
   private void transformTaskDefinition(

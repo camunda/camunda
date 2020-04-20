@@ -72,5 +72,8 @@ public enum BpmnStep {
   CALL_ACTIVITY_ACTIVATING,
   CALL_ACTIVITY_TERMINATING,
 
-  THROW_ERROR
+  THROW_ERROR,
+
+  // ---- delegate to the new BPMN lifecycle processor  ----
+  BPMN_ELEMENT_PROCESSOR
 }

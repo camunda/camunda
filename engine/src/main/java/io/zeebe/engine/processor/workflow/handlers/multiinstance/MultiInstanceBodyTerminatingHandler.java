@@ -8,25 +8,23 @@
 package io.zeebe.engine.processor.workflow.handlers.multiinstance;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
-import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 public final class MultiInstanceBodyTerminatingHandler extends AbstractMultiInstanceBodyHandler {
 
   private final CatchEventSubscriber catchEventSubscriber;
 
   public MultiInstanceBodyTerminatingHandler(
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final Consumer<BpmnStepContext<?>> handlerLookup,
       final CatchEventSubscriber catchEventSubscriber,
       final ExpressionProcessor expressionProcessor) {
-    super(WorkflowInstanceIntent.ELEMENT_TERMINATED, innerHandlerLookup, expressionProcessor);
+    super(WorkflowInstanceIntent.ELEMENT_TERMINATED, handlerLookup, expressionProcessor);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 

@@ -8,15 +8,13 @@
 package io.zeebe.engine.processor.workflow.handlers.multiinstance;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
-import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 
@@ -26,9 +24,9 @@ public final class MultiInstanceBodyActivatedHandler extends AbstractMultiInstan
   private final MsgPackWriter variableWriter = new MsgPackWriter();
 
   public MultiInstanceBodyActivatedHandler(
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final Consumer<BpmnStepContext<?>> innerHandler,
       final ExpressionProcessor expressionProcessor) {
-    super(WorkflowInstanceIntent.ELEMENT_COMPLETING, innerHandlerLookup, expressionProcessor);
+    super(WorkflowInstanceIntent.ELEMENT_COMPLETING, innerHandler, expressionProcessor);
   }
 
   @Override

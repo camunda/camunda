@@ -23,7 +23,6 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
 public final class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceRecord> {
 
   private final WorkflowEngineState state;
@@ -37,11 +36,11 @@ public final class BpmnStepProcessor implements TypedRecordProcessor<WorkflowIns
       final ExpressionProcessor exporessionProcessor,
       final CatchEventBehavior catchEventBehavior) {
     this.state = state;
-    this.workflowState = state.getWorkflowState();
-    this.stepHandlers = new BpmnStepHandlers(zeebeState, exporessionProcessor, catchEventBehavior);
+    workflowState = state.getWorkflowState();
+    stepHandlers = new BpmnStepHandlers(zeebeState, exporessionProcessor, catchEventBehavior);
 
     final EventOutput eventOutput = new EventOutput(state, zeebeState.getKeyGenerator());
-    this.context = new BpmnStepContext<>(workflowState, eventOutput);
+    context = new BpmnStepContext<>(workflowState, eventOutput);
   }
 
   @Override
@@ -61,6 +60,7 @@ public final class BpmnStepProcessor implements TypedRecordProcessor<WorkflowIns
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     processRecordValue(
+        record,
         record.getKey(),
         record.getValue(),
         (WorkflowInstanceIntent) record.getIntent(),
@@ -70,17 +70,20 @@ public final class BpmnStepProcessor implements TypedRecordProcessor<WorkflowIns
   }
 
   public void processRecordValue(
+      final TypedRecord<WorkflowInstanceRecord> record,
       final long key,
       final WorkflowInstanceRecord recordValue,
       final WorkflowInstanceIntent intent,
       final TypedStreamWriter streamWriter,
       final TypedResponseWriter responseWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    populateEventContext(key, recordValue, intent, streamWriter, responseWriter, sideEffect);
+    populateEventContext(
+        record, key, recordValue, intent, streamWriter, responseWriter, sideEffect);
     stepHandlers.handle(context);
   }
 
   private void populateEventContext(
+      final TypedRecord<WorkflowInstanceRecord> record,
       final long key,
       final WorkflowInstanceRecord recordValue,
       final WorkflowInstanceIntent intent,
@@ -91,6 +94,9 @@ public final class BpmnStepProcessor implements TypedRecordProcessor<WorkflowIns
     context.init(key, recordValue, intent);
     context.setStreamWriter(streamWriter);
     context.setResponseWriter(responseWriter);
+
+    context.setRecord(record);
+    context.setSideEffectConsumer(sideEffect);
 
     context.getSideEffect().clear();
     sideEffect.accept(context.getSideEffect());

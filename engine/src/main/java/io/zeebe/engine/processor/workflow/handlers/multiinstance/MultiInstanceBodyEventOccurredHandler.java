@@ -12,6 +12,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public final class MultiInstanceBodyEventOccurredHandler extends AbstractMultiInstanceBodyHandler {
@@ -19,11 +20,12 @@ public final class MultiInstanceBodyEventOccurredHandler extends AbstractMultiIn
   private final BpmnStepHandler eventHandler;
 
   public MultiInstanceBodyEventOccurredHandler(
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final Function<BpmnStep, BpmnStepHandler> handlerLookup,
+      final Consumer<BpmnStepContext<?>> innerHandler,
       final ExpressionProcessor expressionProcessor) {
-    super(null, innerHandlerLookup, expressionProcessor);
+    super(null, innerHandler, expressionProcessor);
 
-    eventHandler = innerHandlerLookup.apply(BpmnStep.ACTIVITY_EVENT_OCCURRED);
+    eventHandler = handlerLookup.apply(BpmnStep.ACTIVITY_EVENT_OCCURRED);
   }
 
   @Override

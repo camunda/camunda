@@ -19,4 +19,6 @@ public interface ExecutableFlowElement {
   BpmnStep getStep(WorkflowInstanceIntent state);
 
   BpmnElementType getElementType();
+
+  ExecutableFlowElement getFlowScope();
 }

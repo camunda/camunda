@@ -13,9 +13,11 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
+import io.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
 public final class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
@@ -34,8 +36,21 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
     final ExecutableFlowNode element =
         workflow.getElementById(flowNode.getId(), ExecutableFlowNode.class);
 
+    setParentReference(flowNode, workflow, element);
     transformIoMappings(flowNode, element, context.getExpressionLanguage());
     bindLifecycle(element);
+  }
+
+  private void setParentReference(
+      final FlowNode flowNode,
+      final ExecutableWorkflow workflow,
+      final ExecutableFlowNode element) {
+
+    final var parentElement = flowNode.getParentElement();
+    Optional.ofNullable(parentElement.getAttributeValue(BpmnModelConstants.BPMN_ATTRIBUTE_ID))
+        .map(BufferUtil::wrapString)
+        .map(workflow::getElementById)
+        .ifPresent(element::setFlowScope);
   }
 
   private void bindLifecycle(final ExecutableFlowNode element) {

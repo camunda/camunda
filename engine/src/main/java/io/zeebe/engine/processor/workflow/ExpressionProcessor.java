@@ -66,7 +66,7 @@ public final class ExpressionProcessor {
 
   /**
    * Evaluates the given expression and returns the result as string. If the evaluation fails or the
-   * result is not a string then an exception is thrown.
+   * result is not a string then a failure is returned.
    *
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
@@ -75,20 +75,9 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, String> evaluateStringExpression(
       final Expression expression, final long scopeKey) {
-    final var evaluationResult = evaluateExpression(expression, scopeKey);
-    if (evaluationResult.isFailure()) {
-      return Either.left(new Failure(evaluationResult.getFailureMessage()));
-    }
-    if (!evaluationResult.getType().equals(ResultType.STRING)) {
-      return Either.left(
-          new Failure(
-              String.format(
-                  "Expected result of the expression '%s' to be '%s', but was '%s'.",
-                  evaluationResult.getExpression(),
-                  ResultType.STRING,
-                  evaluationResult.getType())));
-    }
-    return Either.right(evaluationResult.getString());
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheck(result, ResultType.STRING, scopeKey))
+        .map(EvaluationResult::getString);
   }
 
   /**
@@ -106,6 +95,23 @@ public final class ExpressionProcessor {
     return failureCheck(evaluationResult, ErrorType.EXTRACT_VALUE_ERROR, context)
         .flatMap(
             result -> typeCheck(result, ResultType.NUMBER, ErrorType.EXTRACT_VALUE_ERROR, context))
+        .map(EvaluationResult::getNumber)
+        .map(Number::longValue);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as long. If the evaluation fails or the
+   * result is not a number then a failure is returned.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as long, or a failure
+   */
+  public Either<Failure, Long> evaluateLongExpression(
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheck(result, ResultType.NUMBER, scopeKey))
         .map(EvaluationResult::getNumber)
         .map(Number::longValue);
   }
@@ -129,8 +135,24 @@ public final class ExpressionProcessor {
   }
 
   /**
+   * Evaluates the given expression and returns the result as boolean. If the evaluation fails or
+   * the result is not a boolean then a failure is returned.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as boolean, or a failure
+   */
+  public Either<Failure, Boolean> evaluateBooleanExpression(
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheck(result, ResultType.BOOLEAN, scopeKey))
+        .map(EvaluationResult::getBoolean);
+  }
+
+  /**
    * Evaluates the given expression and returns the result as an Interval. If the evaluation fails
-   * or the result is not an interval then an exception is thrown.
+   * or the result is not an interval then a failure is returned.
    *
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
@@ -151,7 +173,7 @@ public final class ExpressionProcessor {
       case STRING:
         try {
           return Either.right(Interval.parse(result.getString()));
-        } catch (DateTimeParseException e) {
+        } catch (final DateTimeParseException e) {
           return Either.left(
               new Failure(
                   String.format(
@@ -170,7 +192,7 @@ public final class ExpressionProcessor {
 
   /**
    * Evaluates the given expression and returns the result as ZonedDateTime. If the evaluation fails
-   * or the result is not a ZonedDateTime then an exception is thrown.
+   * or the result is not a ZonedDateTime then a failure is returned.
    *
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
@@ -267,6 +289,23 @@ public final class ExpressionProcessor {
         .map(EvaluationResult::toBuffer);
   }
 
+  /**
+   * Evaluates the given expression of a variable mapping and returns the result as buffer. If the
+   * evaluation fails or the result is not a context then a failure is returned.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as buffer, or a failure
+   */
+  public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheck(result, ResultType.OBJECT, scopeKey))
+        .mapLeft(failure -> new Failure(failure.getMessage(), ErrorType.IO_MAPPING_ERROR, scopeKey))
+        .map(EvaluationResult::toBuffer);
+  }
+
   private Optional<EvaluationResult> failureCheck(
       final EvaluationResult result, final ErrorType errorType, final BpmnStepContext<?> context) {
 
@@ -298,6 +337,20 @@ public final class ExpressionProcessor {
     }
   }
 
+  private Either<Failure, EvaluationResult> typeCheck(
+      final EvaluationResult result, final ResultType expectedResultType, final long scopeKey) {
+    if (result.getType() != expectedResultType) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Expected result of the expression '%s' to be '%s', but was '%s'.",
+                  result.getExpression(), expectedResultType, result.getType()),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              scopeKey));
+    }
+    return Either.right(result);
+  }
+
   private EvaluationResult evaluateExpression(
       final Expression expression, final long variableScopeKey) {
 
@@ -310,6 +363,16 @@ public final class ExpressionProcessor {
     }
 
     return expressionLanguage.evaluateExpression(expression, context);
+  }
+
+  private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
+      final Expression expression, final long variableScopeKey) {
+    final var result = evaluateExpression(expression, variableScopeKey);
+    return result.isFailure()
+        ? Either.left(
+            new Failure(
+                result.getFailureMessage(), ErrorType.EXTRACT_VALUE_ERROR, variableScopeKey))
+        : Either.right(result);
   }
 
   private DirectBuffer wrapResult(final String result) {

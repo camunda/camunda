@@ -8,15 +8,13 @@
 package io.zeebe.engine.processor.workflow.handlers.multiinstance;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
-import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class MultiInstanceBodyActivatingHandler extends AbstractMultiInstanceBodyHandler {
@@ -24,10 +22,10 @@ public final class MultiInstanceBodyActivatingHandler extends AbstractMultiInsta
   private final CatchEventSubscriber catchEventSubscriber;
 
   public MultiInstanceBodyActivatingHandler(
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final Consumer<BpmnStepContext<?>> innerHandler,
       final CatchEventSubscriber catchEventSubscriber,
       final ExpressionProcessor expressionProcessor) {
-    super(WorkflowInstanceIntent.ELEMENT_ACTIVATED, innerHandlerLookup, expressionProcessor);
+    super(WorkflowInstanceIntent.ELEMENT_ACTIVATED, innerHandler, expressionProcessor);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
