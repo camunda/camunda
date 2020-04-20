@@ -14,7 +14,7 @@ pipelineJob('generate-cambpm-test-data') {
         stringParam('BRANCH', 'master', 'Branch to use for Camunda BPM test datasets generation.')
         stringParam('POSTGRES_VERSION', '11.2', 'Postgres version to use.')
         stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
-        choiceParam('SQL_DUMP', ['optimize_large_data-performance.sqlc', 'optimize_large_data-stage.sqlc', 'optimize_large_data-e2e.sqlc'])
+        choiceParam('SQL_DUMP', ['optimize_data-large.sqlc', 'optimize_data-medium.sqlc', 'optimize_data-stage.sqlc', 'optimize_data-e2e.sqlc'])
         booleanParam('USE_E2E_PRESETS', false, 'When enabled loads E2E test dataset presets and overwrites all of the below.')
         stringParam('NUM_PROCESS_INSTANCES', '10000000', 'Number of process instances to generate.')
         stringParam('PROCESS_DEFINITIONS', '', 'Optional, comma-separated list of definitions and number of versions to generate data for, e.g. "InvoiceWithAlternativeCorrelationVariable:5,InvoiceDataFor2Tenants:2".')

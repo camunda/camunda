@@ -162,7 +162,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     async function restoreSqlDump() {
       await downloadFile(
-        'https://storage.googleapis.com/optimize-data/optimize_large_data-e2e.sqlc',
+        'https://storage.googleapis.com/optimize-data/optimize_data-e2e.sqlc',
         'databaseDumps/dump.sqlc'
       );
 

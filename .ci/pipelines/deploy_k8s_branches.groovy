@@ -119,7 +119,7 @@ pipeline {
           sh("""
             gcloud components install kubectl --quiet
             apk add --no-cache jq py-pip && pip install yq
-            gsutil stat gs://optimize-data/optimize_large_data-stage.sqlc | grep ETag |  yq -r '.ETag' >> /import/optimize_large_data-stage.etag || true
+            gsutil stat gs://optimize-data/optimize_data-stage.sqlc | grep ETag |  yq -r '.ETag' >> /import/optimize_large_data-stage.etag || true
             gsutil cp   gs://optimize-data/optimize_large_data-stage.etag /import/optimize_large_data-stage.etag.old || true
             diff -Ns /import/optimize_large_data-stage.etag /import/optimize_large_data-stage.etag.new && touch /import/skip || true
           """)
@@ -131,7 +131,7 @@ pipeline {
         container('gcloud') {
           sh("""
             test -f /import/skip && echo "skipped" && exit 0
-            gsutil cp gs://optimize-data/optimize_large_data-stage.sqlc /import/
+            gsutil cp gs://optimize-data/optimize_data-stage.sqlc /import/
           """)
         }
         container('postgres') {

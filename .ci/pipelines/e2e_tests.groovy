@@ -292,7 +292,7 @@ pipeline {
           steps {
             timeout(20) {
               container('gcloud') {
-                sh 'gsutil -q -m cp gs://optimize-data/optimize_large_data-e2e.sqlc /db_dump/dump.sqlc'
+                sh 'gsutil -q -m cp gs://optimize-data/optimize_data-e2e.sqlc /db_dump/dump.sqlc'
               }
               container('postgresql') {
                 sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc'

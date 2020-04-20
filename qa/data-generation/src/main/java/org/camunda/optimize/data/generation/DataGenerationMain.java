@@ -76,8 +76,8 @@ public class DataGenerationMain {
     for (int i = 0; i < args.length; i++) {
       final String identifier = stripLeadingHyphens(args[i]);
       ensureIdentifierIsKnown(arguments, identifier);
-      final String value = args[i + 1];
-      if (value.indexOf("--") != 0 && !StringUtils.isBlank(value)) {
+      final String value = args.length > i + 1 ? args[i + 1] : null;
+      if (!StringUtils.isBlank(value) && value.indexOf("--") != 0) {
         arguments.put(identifier, value);
         // increase i one further as we have a value argument here
         i += 1;
