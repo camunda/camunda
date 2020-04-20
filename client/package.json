@@ -40,7 +40,7 @@
     "eslint-plugin-camunda-licensed": "^0.4.3",
     "eslint-plugin-prettier": "^3.1.2",
     "glob": "^7.1.6",
-    "husky": "^4.2.3",
+    "husky": "^4.2.5",
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^10.0.0",
     "jest-styled-components": "^6.3.4",
