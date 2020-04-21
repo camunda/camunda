@@ -201,6 +201,24 @@ describe('Variables', () => {
           node.find("button[data-test='save-var-inline-btn']").prop('disabled')
         ).toBe(true);
       });
+
+      it('should not allow to save variables which key has invalid characters', () => {
+        const keyWithInvalidCharacter = '"test"';
+        const newValue = '1234';
+
+        // when
+        node
+          .find("input[data-test='add-key']")
+          .simulate('change', {target: {value: keyWithInvalidCharacter}});
+        node
+          .find("textarea[data-test='add-value']")
+          .simulate('change', {target: {value: newValue}});
+
+        // then
+        expect(
+          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
+        ).toBe(true);
+      });
     });
   });
 

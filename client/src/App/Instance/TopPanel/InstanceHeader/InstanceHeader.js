@@ -49,15 +49,6 @@ class InstanceHeader extends React.PureComponent {
     ) {
       this.addSubscriptions();
     }
-
-    if (!!prevProps.instance) {
-      const {hasActiveOperation: prevHasActiveOperation} = prevProps.instance;
-      const {hasActiveOperation} = instance;
-
-      if (hasActiveOperation !== prevHasActiveOperation) {
-        this.setState({hasActiveOperation});
-      }
-    }
   }
 
   componentWillUnmount() {
@@ -78,6 +69,22 @@ class InstanceHeader extends React.PureComponent {
           this.setState({hasActiveOperation: true});
         }
       },
+      [`OPERATION_APPLIED_INSTANCE_${instance.id}`]: ({state}) => {
+        if (state === LOADING_STATE.LOADING) {
+          this.setState({hasActiveOperation: true});
+        }
+      },
+      CONSTANT_REFRESH: ({response, state}) => {
+        if (state === LOADING_STATE.LOADED) {
+          const {LOAD_VARIABLES, LOAD_INSTANCE} = response;
+          if (
+            !LOAD_VARIABLES.find((variable) => variable.hasActiveOperation) &&
+            !LOAD_INSTANCE.hasActiveOperation
+          ) {
+            this.setState({hasActiveOperation: false});
+          }
+        }
+      },
     };
 
     dataManager.subscribe(this.subscriptions);
@@ -85,7 +92,6 @@ class InstanceHeader extends React.PureComponent {
 
   render() {
     const {instance} = this.props;
-
     return (
       <Styled.SplitPaneHeader>
         {!instance ? (

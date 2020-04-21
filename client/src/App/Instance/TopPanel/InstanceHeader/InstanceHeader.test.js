@@ -60,6 +60,8 @@ describe('InstanceHeader', () => {
     expect(Object.keys(subscriptions())).toEqual([
       'OPERATION_APPLIED_INCIDENT_id_1',
       'OPERATION_APPLIED_VARIABLE_id_1',
+      'OPERATION_APPLIED_INSTANCE_id_1',
+      'CONSTANT_REFRESH',
     ]);
   });
 

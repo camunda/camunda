@@ -103,7 +103,9 @@ export default function Variables({
         <Styled.EditButton
           data-test="save-var-inline-btn"
           title="Save variable"
-          disabled={!value || !isValidJSON(value) || isDisabled}
+          disabled={
+            !value || !isValidJSON(value) || key.includes('"') || isDisabled
+          }
           onClick={saveVariable}
           size="large"
           iconButtonTheme="default"
