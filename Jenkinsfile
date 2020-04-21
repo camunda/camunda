@@ -3,6 +3,10 @@
 
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
+//for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
+def daysToKeep = (env.BRANCH_NAME=='develop') ? '7' : '-1'
+def numToKeep = (env.BRANCH_NAME=='develop') ? '-1' : '10'
+
 pipeline {
     agent {
       kubernetes {
@@ -19,7 +23,7 @@ pipeline {
     }
 
     options {
-        buildDiscarder(logRotator(daysToKeepStr: '-1', numToKeepStr: '10'))
+        buildDiscarder(logRotator(daysToKeepStr: daysToKeep, numToKeepStr: numToKeep))
         timestamps()
         timeout(time: 45, unit: 'MINUTES')
     }
