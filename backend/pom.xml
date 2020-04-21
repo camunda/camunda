@@ -277,7 +277,7 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-rest-core</artifactId>
-      <version>${camunda.engine.version}</version>
+      <version>${camunda.model.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
