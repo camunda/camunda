@@ -9575,14 +9575,7 @@ json5@^1.0.1:
   dependencies:
     minimist "^1.2.0"
 
-json5@^2.1.0:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/json5/-/json5-2.1.1.tgz#81b6cb04e9ba496f1c7005d07b4368a2638f90b6"
-  integrity sha512-l+3HXD0GEI3huGq1njuqtzYK8OYJyXMkOLtQ53pjWh89tvWS2h6l+1zMkYWqlb57+SiQodKZyvMEFb2X+KrFhQ==
-  dependencies:
-    minimist "^1.2.0"
-
-json5@^2.1.2:
+json5@^2.1.0, json5@^2.1.2:
   version "2.1.3"
   resolved "https://registry.yarnpkg.com/json5/-/json5-2.1.3.tgz#c9b0f7fa9233bfe5807fe66fcf3a5617ed597d43"
   integrity sha512-KXPvOm8K9IJKFM0bmdn8QXh7udDh1g/giieX0NLCaMnb4hEiVFqnop2ImTXCc5e0/oHz3LTqmHGtExn5hfMkOA==
@@ -14908,10 +14901,10 @@ testcafe-browser-tools@2.0.10:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@16.2.2:
-  version "16.2.2"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-16.2.2.tgz#739861ccb4500d4cf16bf08d4c2a91ce90c06711"
-  integrity sha512-J1lsYn3MuKq91UwhqTTIKX1nX0QEyjWIqaPD2AzrkLl9j3SloAS6edOHM/auN0cq+fd4jH6A6apdG7Owu8gETg==
+testcafe-hammerhead@16.2.3:
+  version "16.2.3"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-16.2.3.tgz#6df9a1ed14e7e421710da1be7adc94073c189609"
+  integrity sha512-5g2awOPP5kUxz5dVX64D0uWutrOjgcjLTbLQ9zSx+Y18wK88F8L8WKLXU74cIG23+dr1z+lyTLUQEor9iUHpNQ==
   dependencies:
     acorn-hammerhead "^0.3.0"
     asar "^2.0.1"
@@ -14981,10 +14974,10 @@ testcafe-reporter-xunit@^2.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.1.0.tgz#e6d66c572ce15af266706af0fd610b2a841dd443"
   integrity sha1-5tZsVyzhWvJmcGrw/WELKoQd1EM=
 
-testcafe@^1.8.3:
-  version "1.8.3"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.8.3.tgz#ec9870be1a55cfac18846a25ab4a91d398cf56c2"
-  integrity sha512-9zVQXvb07IpsvtHAbSzOtfwccyk9lx0jEZwJvTaEj7PHLJdyKdvy8tq1lfHw2rRq6BWaeZt41NAg6bT4HNrD4g==
+testcafe@^1.8.4:
+  version "1.8.4"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.8.4.tgz#3a67ff581fe3ed5d3563b10ba5103693c37960e9"
+  integrity sha512-YGSdM9ydRKQIndqhIV5VE7nNsTwDFXCQIGlfFha/a6KVZfhVXPWx/SjP0A50+1OcHrhUnZSLeB5FrLKlxrehtA==
   dependencies:
     "@types/node" "^10.12.19"
     async-exit-hook "^1.1.2"
@@ -15048,7 +15041,7 @@ testcafe@^1.8.3:
     source-map-support "^0.5.16"
     strip-bom "^2.0.0"
     testcafe-browser-tools "2.0.10"
-    testcafe-hammerhead "16.2.2"
+    testcafe-hammerhead "16.2.3"
     testcafe-legacy-api "3.1.11"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.1.0"
