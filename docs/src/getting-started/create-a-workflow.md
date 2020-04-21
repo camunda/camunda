@@ -38,8 +38,9 @@ Next, we need to add a Service Task:
 
 
 
-*   Click on the Start Event and select the Service Task icon
-*   Label the Service Task "Initiate Payment"
+*   Click on the Start Event and select Task icon
+*   Label the newly created Task "Initiate Payment"
+*   Click the wrench icon and change the Task to a Service Task 
 
 
 
@@ -67,7 +68,9 @@ Next, we'll add a Message Event to the workflow:
 
 
 *   Click on the "Initiate Payment" task on the Modeler
-*   Select the circular icon with an envelope in the middle
+*   Select the circular icon with a double line border
+*   Click on the wrench icon next to the newly created event
+*   Select the Message Intermediate Catch Event
 *   Double-click on the message event and label it "Payment Received"
 
 ![Message Event](/getting-started/img/tutorial-3.2-modeler-message-event.png)
