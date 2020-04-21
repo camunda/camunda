@@ -1,5 +1,5 @@
 .PHONY: all
-all: zeebe starter worker
+all: zeebe starter timer simpleStarter worker
 
 .PHONY: zeebe
 zeebe:
@@ -11,13 +11,21 @@ zeebe:
 starter:
 	kubectl apply -f starter.yaml
 
+.PHONY: timer
+timer:
+	kubectl apply -f timer.yaml
+
+.PHONY: simpleStarter
+simpleStarter:
+	kubectl apply -f simpleStarter.yaml
+
 .PHONY: worker
 worker:
 	kubectl apply -f worker.yaml
 
 
 .PHONY: clean
-clean: clean-starter clean-worker clean-zeebe
+clean: clean-starter clean-timer clean-simpleStarter clean-worker clean-zeebe
 
 .PHONY: clean-zeebe
 clean-zeebe:
@@ -30,6 +38,14 @@ clean-zeebe:
 .PHONY: clean-starter
 clean-starter:
 	-kubectl delete -f starter.yaml
+
+.PHONY: clean-timer
+clean-timer:
+	-kubectl delete -f timer.yaml
+
+.PHONY: clean-simpleStarter
+clean-simpleStarter:
+	-kubectl delete -f simpleStarter.yaml
 
 .PHONY: clean-worker
 clean-worker:

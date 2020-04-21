@@ -19,6 +19,4 @@ kubens $namespace
 cp -rv default/ $namespace
 cd $namespace
 
-sed -i "s/default/$namespace/g" Makefile
-sed -i "s/default/$namespace/g" worker.yaml
-sed -i "s/default/$namespace/g" starter.yaml
+sed -i "s/default/$namespace/g" Makefile starter.yaml timer.yaml simpleStarter.yaml worker.yaml
