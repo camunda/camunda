@@ -1,20 +1,3 @@
-## Event-basierte Prozesse
+## Neue Optionen für Datums-Variablen
 
-Kombinieren Sie Prozessdaten aus Camunda mit Daten aus externen Systemen und erstellen Sie End-To-End Prozesse und Reports.
-
-Lesen Sie mehr über [Event-basierte Prozesse](https://docs.camunda.org/optimize/latest/user-guide/event-based-processes/) in der Dokumentation.  
-
-## Neue Reporting Möglichkeiten
-
-Weitere Reporting Möglichkeiten in dieser Version sind:
-
-- User Tasks gruppiert nach Start- und Enddatum
-- Analyse von User Tasks, die nicht zugewiesen sind bzw. wurden
-- Filter nach pausierten und nicht pausierten Prozessinstanzen
-- Filter nach rollierenden Zeiträumen
-- Filter nach Quartalen
-
-## Alerts an externe Systeme
-
-Senden sie einfach Alerts an externe Systeme indem Sie das System zur Konfiguration hinzufügen.
-Anschließend wird das System direkt im Alert-Setup zur Verfügung stehen.
+Zusätzlich zu den Datums-Variablen Filtern mit festem Datum unterstützt dieses Release gleitende Filter für Datums-Variablen. Damit können Sie Filter für Datums-Variablenwerte wie "Heute", "Diese Woche" oder "in den letzten 5 Monaten" definieren. Im Allgemeinen sind alle Optionen, die bereits für Instanzstart- und Enddatumsfilter verfügbar waren, nun auch für Datums-Variablen verfügbar.
