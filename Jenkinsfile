@@ -104,6 +104,10 @@ pipeline {
                 }
 
                 stage('Unit (Java)') {
+                    environment {
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'java'
+                    }
+
                     steps {
                         container('maven') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -111,8 +115,18 @@ pipeline {
                             }
                         }
                     }
+
+                    post {
+                        always {
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                        }
+                    }
                 }
                 stage('Unit 8 (Java 8)') {
+                    environment {
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'java8'
+                    }
+
                     steps {
                         container('maven-jdk8') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -120,14 +134,30 @@ pipeline {
                             }
                         }
                     }
+
+                    post {
+                        always {
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                        }
+                    }
                 }
 
                 stage('IT (Java)') {
+                    environment {
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'it'
+                    }
+
                     steps {
                         container('maven') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                                 sh '.ci/scripts/distribution/it-java.sh'
                             }
+                        }
+                    }
+
+                    post {
+                        always {
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
                         }
                     }
                 }
@@ -143,10 +173,6 @@ pipeline {
             }
 
             post {
-                always {
-                    junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
-                }
-
                 failure {
                     archive "**/*/surefire-reports/*-output.txt"
                 }
