@@ -1,0 +1,17 @@
+@import 'shared-styles/shared-styles.scss';
+
+.DateInput {
+  .previewContainer {
+    min-height: 50px;
+    font-size: 0.875em;
+    white-space: nowrap;
+
+    .parameterName {
+      font-weight: bold;
+    }
+
+    .previewItemValue {
+      @include highlighted;
+    }
+  }
+}

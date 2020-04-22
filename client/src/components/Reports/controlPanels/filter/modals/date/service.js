@@ -12,7 +12,12 @@ export function convertFilterToState(filter) {
   let state;
 
   if (type === 'fixed') {
-    state = {type: 'fixed', startDate: moment(start), endDate: moment(end), pickerValid: true};
+    state = {
+      type: 'fixed',
+      startDate: start ? moment(start) : null,
+      endDate: end ? moment(end) : null,
+      valid: start && end,
+    };
   } else {
     const {value, unit} = start;
     if (type === 'relative') {
@@ -54,8 +59,8 @@ export function convertStateToFilter({type, unit, customNum, startDate, endDate}
     case 'fixed':
       filter = {
         type: 'fixed',
-        start: startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-        end: endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
+        start: startDate?.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
+        end: endDate?.endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
       };
       break;
     case 'custom':
@@ -66,7 +71,11 @@ export function convertStateToFilter({type, unit, customNum, startDate, endDate}
       };
       break;
     default:
-      return null;
+      filter = {
+        type: 'fixed',
+        start: null,
+        end: null,
+      };
   }
   return filter;
 }

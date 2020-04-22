@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show a date filter preview even if the value should be undefined or null 1`] = `
+<FormGroup
+  className="previewContainer"
+>
+  <span
+    className="parameterName"
+  >
+    aVariableName
+  </span>
+  <span>
+     
+    is
+     
+  </span>
+  <span
+    className="previewItemValue"
+  >
+    null
+  </span>
+  <span>
+     
+    or
+     
+  </span>
+  <span
+    className="previewItemValue"
+  >
+    undefined
+  </span>
+</FormGroup>
+`;

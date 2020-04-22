@@ -6,8 +6,11 @@
 
 import React from 'react';
 
+import {t} from 'translation';
 import {Form, DateRangeInput} from 'components';
-import {convertFilterToState, convertStateToFilter, isValid} from '../../date';
+import {convertFilterToState, convertStateToFilter, DateFilterPreview, isValid} from '../../date';
+
+import './DateInput.scss';
 
 export default class DateInput extends React.Component {
   static defaultFilter = {
@@ -20,21 +23,42 @@ export default class DateInput extends React.Component {
   };
 
   componentDidMount() {
-    this.props.setValid(false);
+    this.props.setValid(isValid(this.props.filter));
   }
 
   render() {
+    const {filter, variable, disabled, changeFilter, setValid} = this.props;
+
     return (
-      <Form>
+      <Form className="DateInput">
         <DateRangeInput
-          {...this.props.filter}
-          disabled={this.props.disabled}
+          {...filter}
+          disabled={disabled}
           onChange={(change) => {
-            const newFilter = {...this.props.filter, ...change};
-            this.props.changeFilter(newFilter);
-            this.props.setValid(isValid(newFilter));
+            const newFilter = {...filter, ...change};
+            changeFilter(newFilter);
+            setValid(isValid(newFilter));
           }}
         />
+        <Form.Group className="previewContainer">
+          {disabled ? (
+            <>
+              <span className="parameterName">{variable.name}</span>
+              <span> {t('common.filter.list.operators.is')} </span>
+              <span className="previewItemValue">{t('common.filter.list.values.null')}</span>
+              <span> {t('common.filter.list.operators.or')} </span>
+              <span className="previewItemValue">{t('common.filter.list.values.undefined')}</span>
+            </>
+          ) : (
+            isValid(filter) && (
+              <DateFilterPreview
+                filterType="variable"
+                variableName={variable.name}
+                filter={convertStateToFilter(filter)}
+              />
+            )
+          )}
+        </Form.Group>
       </Form>
     );
   }

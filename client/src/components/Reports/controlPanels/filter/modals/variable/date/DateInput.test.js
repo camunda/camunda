@@ -7,12 +7,14 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import moment from 'moment';
+import update from 'immutability-helper';
 
 import DateInput from './DateInput';
 
 const props = {
   setValid: jest.fn(),
   changeFilter: jest.fn(),
+  variable: {type: 'Date', name: 'aVariableName'},
   filter: {
     startDate: 'start',
     endDate: 'end',
@@ -63,4 +65,19 @@ it('should convert a start and end-date to two compatible variable filters', () 
   );
 
   expect(spy).toHaveBeenCalledWith(exampleFilter);
+});
+
+it('should show a date filter preview if the filter is valid', () => {
+  const node = shallow(<DateInput {...props} filter={DateInput.parseFilter(exampleFilter)} />);
+
+  expect(node.find('DateFilterPreview')).toExist();
+});
+
+it('should show a date filter preview even if the value should be undefined or null', () => {
+  const nullFilter = update(exampleFilter, {data: {filterForUndefined: {$set: true}}});
+  const node = shallow(
+    <DateInput {...props} filter={DateInput.parseFilter(nullFilter)} disabled />
+  );
+
+  expect(node.find('.previewContainer')).toMatchSnapshot();
 });
