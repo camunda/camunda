@@ -50,7 +50,7 @@ export default class Sharing extends React.Component {
 
   getSharingView = () => {
     if (this.getType() === 'report') {
-      return <ReportRenderer report={this.state.evaluationResult} isExternal />;
+      return <ReportRenderer report={this.state.evaluationResult} context="shared" />;
     } else {
       return (
         <DashboardRenderer

@@ -25,7 +25,7 @@ import './ReportRenderer.scss';
 import {t} from 'translation';
 
 function ReportRenderer(props) {
-  const {report, updateReport, isExternal} = props;
+  const {report, updateReport, context} = props;
   let View, somethingMissing;
   if (report) {
     const isDecision = report.reportType === 'decision';
@@ -43,7 +43,7 @@ function ReportRenderer(props) {
     }
 
     if (somethingMissing) {
-      if (isExternal) {
+      if (context === 'dashboard' || context === 'shared') {
         return <IncompleteReport id={report.id} />;
       } else if (updateReport) {
         return <SetupNotice>{somethingMissing}</SetupNotice>;

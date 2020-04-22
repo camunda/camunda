@@ -513,7 +513,7 @@ test('heatmap target values', async (t) => {
 
   await t.hover(e.flowNode('approveInvoice'));
 
-  await t.expect(e.tooltip.textContent).notContains('target\u00A0duration');
+  await t.expect(e.tooltip.textContent).notContains('Target\u00A0duration');
 
   await t.click(e.targetValueButton);
   await t.typeText(e.targetValueInput('Approve Invoice'), '1');
@@ -530,7 +530,7 @@ test('heatmap target values', async (t) => {
 
   await t.hover(e.flowNode('approveInvoice'));
 
-  await t.expect(e.tooltip.textContent).contains('target\u00A0duration:\u00A01min');
+  await t.expect(e.tooltip.textContent).contains('Target\u00A0duration:\u00A01min');
 
   await addAnnotation(e.targetValueButton, 'Toggle Target Value Mode');
   await addAnnotation(e.tooltip, 'Target Value Tooltip', {x: -50, y: 0});

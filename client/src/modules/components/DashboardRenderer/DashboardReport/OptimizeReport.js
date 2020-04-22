@@ -98,7 +98,7 @@ export default themed(
                 {error ? (
                   <NoDataNotice title={error.title}>{error.text}</NoDataNotice>
                 ) : (
-                  <ReportRenderer report={data} isExternal />
+                  <ReportRenderer report={data} context="dashboard" />
                 )}
               </div>
               {children({loadReportData: this.loadReport})}

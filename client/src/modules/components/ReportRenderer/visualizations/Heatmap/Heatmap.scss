@@ -1,4 +1,18 @@
 .Heatmap {
   display: flex;
   flex-grow: 1;
+
+  .Tooltip .Tooltip__text-top,
+  .Tooltip .Tooltip__text-bottom {
+    text-align: left;
+    line-height: 1.5em;
+    .text {
+      font-weight: normal;
+      display: block;
+    }
+    .Button {
+      margin: 10px 0;
+      text-align: left;
+    }
+  }
 }

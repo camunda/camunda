@@ -7,50 +7,38 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Heatmap from './Heatmap';
-import {HeatmapOverlay} from 'components';
+import {Heatmap} from './Heatmap';
+import {Button, HeatmapOverlay} from 'components';
 import {calculateTargetValueHeat} from './service';
-import {formatters} from 'services';
+import {formatters, evaluateReport} from 'services';
 
 const {convertToMilliseconds} = formatters;
-
-jest.mock('components', () => {
-  return {
-    HeatmapOverlay: (props) => <div {...props}>{props.children}</div>,
-    BPMNDiagram: (props) => (
-      <div id="diagram">
-        Diagram {props.children} {props.xml}
-      </div>
-    ),
-    TargetValueBadge: () => <div>TargetValuesBadge</div>,
-    LoadingIndicator: (props) => (
-      <div {...props} className="sk-circle">
-        Loading...
-      </div>
-    ),
-  };
-});
 
 jest.mock('./service', () => {
   return {
     calculateTargetValueHeat: jest.fn(),
+    createFlowNodeReport: () => 'rawDataReport',
   };
 });
 
 jest.mock('services', () => {
   const durationFct = jest.fn();
+  const rest = jest.requireActual('services');
   return {
+    ...rest,
     formatters: {
       duration: durationFct,
       convertToMilliseconds: jest.fn(),
       objectifyResult: jest.fn().mockReturnValue({a: 1, b: 2}),
     },
+    evaluateReport: jest.fn().mockReturnValue({result: {data: [{processInstanceId: 'test'}]}}),
     isDurationReport: jest.fn().mockReturnValue(false),
     getTooltipText: jest.fn(),
   };
 });
 
 const report = {
+  name: 'test',
   reportType: 'process',
   combined: false,
   data: {
@@ -74,7 +62,7 @@ const report = {
 it('should load the process definition xml', () => {
   const node = shallow(<Heatmap report={report} />);
 
-  expect(node.find('BPMNDiagram').props().xml).toBe('some diagram XML');
+  expect(node.find({xml: 'some diagram XML'})).toExist();
 });
 
 it('should load an updated process definition xml', () => {
@@ -82,7 +70,7 @@ it('should load an updated process definition xml', () => {
 
   node.setProps({report: {...report, data: {...report.data, configuration: {xml: 'another xml'}}}});
 
-  expect(node.find('BPMNDiagram').props().xml).toBe('another xml');
+  expect(node.find({xml: 'another xml'})).toExist();
 });
 
 it('should display a loading indication while loading', () => {
@@ -108,7 +96,7 @@ it('should display a diagram', () => {
 it('should display a heatmap overlay', () => {
   const node = shallow(<Heatmap report={report} />);
 
-  expect(node.find('BPMNDiagram').children().find('HeatmapOverlay')).toExist();
+  expect(node.find('HeatmapOverlay')).toExist();
 });
 
 it('should convert the data to target value heat when target value mode is active', () => {
@@ -143,11 +131,17 @@ it('should show a tooltip with information about actual and target value', () =>
 
   const node = shallow(
     <Heatmap
-      report={{...report, data: {...report.data, configuration: {xml: 'test', heatmapTargetValue}}}}
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+        },
+      }}
     />
   );
 
-  const tooltip = node.find(HeatmapOverlay).renderProp('formatter')('', 'b');
+  const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
 
   expect(tooltip).toMatchSnapshot();
 });
@@ -166,7 +160,13 @@ it('should inform if the actual value is less than 1% of the target value', () =
 
   const node = shallow(
     <Heatmap
-      report={{...report, data: {...report.data, configuration: {xml: 'test', heatmapTargetValue}}}}
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+        },
+      }}
     />
   );
 
@@ -193,7 +193,10 @@ it('should show a tooltip with information if no actual value is available', () 
       report={{
         ...report,
         result: {data: []},
-        data: {...report.data, configuration: {xml: 'test', heatmapTargetValue}},
+        data: {
+          ...report.data,
+          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+        },
       }}
     />
   );
@@ -203,8 +206,31 @@ it('should show a tooltip with information if no actual value is available', () 
   expect(tooltip).toMatchSnapshot();
 });
 
-it('should not display an error message if data is valid', () => {
-  const node = shallow(<Heatmap report={report} errorMessage="Error" />);
+it('should invoke report evaluation when clicking the download instances button', async () => {
+  const heatmapTargetValue = {
+    active: true,
+    values: {
+      b: {value: 1, unit: 'millis'},
+    },
+  };
 
-  expect(node).not.toIncludeText('Error');
+  formatters.duration.mockReturnValueOnce('1ms').mockReturnValueOnce('2ms');
+  const node = shallow(
+    <Heatmap
+      mightFail={jest.fn().mockImplementation((a, b) => b(a))}
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+        },
+      }}
+    />
+  );
+
+  const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
+
+  await tooltip.find(Button).props().onClick();
+
+  expect(evaluateReport).toHaveBeenCalledWith('rawDataReport');
 });

@@ -262,8 +262,16 @@
       },
       "noChangeWarning": "Please change at least one value",
       "invalidValue": "All fields should have a numeric value",
-      "targetDuration": "target duration",
-      "actualDuration": "actual duration: {duration}<br/>{percentage}% of the target value",
+      "targetDuration": "Target duration",
+      "actualDuration": "<b>{duration}</b><br/>{percentage}% of the target value",
+      "instanceIds": "Instance Ids",
+      "duration": {
+        "avg": "Average duration: ",
+        "min": "Minimum duration: ",
+        "median": "Median duration: ",
+        "max": "Max duration: "
+      },
+      "exceededInstances": "Exceeded-instances-{name}",
       "noValueAvailable": "No actual value available.<br/>Cannot compare target and actual value."
     },
     "invalidCombinationError": "Cannot display data for the given report settings. Please choose another combination!",

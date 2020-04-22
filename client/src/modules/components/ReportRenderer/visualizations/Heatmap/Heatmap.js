@@ -6,31 +6,43 @@
 
 import React from 'react';
 
-import {BPMNDiagram, TargetValueBadge, LoadingIndicator, HeatmapOverlay} from 'components';
+import {
+  Icon,
+  BPMNDiagram,
+  TargetValueBadge,
+  Button,
+  LoadingIndicator,
+  HeatmapOverlay,
+} from 'components';
 
-import {calculateTargetValueHeat} from './service';
-import {formatters, getTooltipText} from 'services';
-
-import './Heatmap.scss';
+import {calculateTargetValueHeat, createFlowNodeReport} from './service';
+import {evaluateReport, formatters, getTooltipText} from 'services';
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
 import {t} from 'translation';
 
-const Heatmap = ({report, formatter, errorMessage}) => {
+import './Heatmap.scss';
+
+export function Heatmap({report, formatter, mightFail, context}) {
   const {
+    name,
     result,
     data: {
       view: {property},
-      configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml},
+      configuration: {
+        alwaysShowAbsolute,
+        alwaysShowRelative,
+        heatmapTargetValue: targetValue,
+        xml,
+        aggregationType,
+      },
     },
   } = report;
 
   const isDuration = property.toLowerCase().includes('duration');
   const alwaysShow = isDuration ? alwaysShowAbsolute : alwaysShowAbsolute || alwaysShowRelative;
 
-  if (!result || typeof result.data !== 'object') {
-    return <p>{errorMessage}</p>;
-  }
-
-  if (!xml) {
+  if (!xml || !result) {
     return <LoadingIndicator />;
   }
 
@@ -53,17 +65,19 @@ const Heatmap = ({report, formatter, errorMessage}) => {
           );
           const real = resultObj[id];
 
-          tooltipHTML = `${t('report.heatTarget.targetDuration')}: ${formatters.duration(
+          tooltipHTML = `${t('report.heatTarget.targetDuration')}: <b>${formatters.duration(
             target
-          )}<br/>`;
+          )}</b><br/>`;
 
           if (typeof real === 'number') {
             const relation = (real / target) * 100;
 
-            tooltipHTML += t('report.heatTarget.actualDuration', {
-              duration: formatters.duration(real),
-              percentage: relation < 1 ? '< 1' : Math.round(relation),
-            });
+            tooltipHTML +=
+              t(`report.heatTarget.duration.${aggregationType}`) +
+              t('report.heatTarget.actualDuration', {
+                duration: formatters.duration(real),
+                percentage: relation < 1 ? '< 1' : Math.round(relation),
+              });
           } else {
             tooltipHTML += t('report.heatTarget.noValueAvailable');
           }
@@ -71,7 +85,41 @@ const Heatmap = ({report, formatter, errorMessage}) => {
           // tooltips don't work well with spaces
           tooltipHTML = tooltipHTML.replace(/ /g, '\u00A0');
 
-          return <span dangerouslySetInnerHTML={{__html: tooltipHTML}} />;
+          return (
+            <div>
+              <span className="text" dangerouslySetInnerHTML={{__html: tooltipHTML}} />
+              {context !== 'shared' && (
+                <Button
+                  onClick={async () => {
+                    const reportData = createFlowNodeReport(report.data, id);
+                    mightFail(
+                      evaluateReport(reportData),
+                      (data) => {
+                        const instanceIds = data.result.data
+                          .map(({processInstanceId}) => processInstanceId)
+                          .join('\n');
+
+                        const hiddenElement = document.createElement('a');
+                        hiddenElement.href = `data:text/csv;charset=utf-8,${t(
+                          'report.heatTarget.instanceIds'
+                        )}
+                          ${instanceIds}`;
+                        hiddenElement.target = '_blank';
+                        hiddenElement.download =
+                          t('report.heatTarget.exceededInstances', {name: name.replace(' ', '-')}) +
+                          '.csv';
+                        hiddenElement.click();
+                      },
+                      showError
+                    );
+                  }}
+                >
+                  <Icon type="save" />
+                  {t('report.heatTarget.instanceIds')}
+                </Button>
+              )}
+            </div>
+          );
         }}
       />,
       <TargetValueBadge key="targetValueBadge" values={targetValue.values} />,
@@ -100,6 +148,6 @@ const Heatmap = ({report, formatter, errorMessage}) => {
       <BPMNDiagram xml={xml}>{heatmapComponent}</BPMNDiagram>
     </div>
   );
-};
+}
 
-export default Heatmap;
+export default withErrorHandling(Heatmap);

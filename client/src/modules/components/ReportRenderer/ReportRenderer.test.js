@@ -100,7 +100,7 @@ it('should include the instance count if indicated in the config', () => {
 });
 
 it('should show an incomplete report notice when inside a dashboard', () => {
-  const node = shallow(<ReportRenderer report={{data: {}}} isExternal={true} />);
+  const node = shallow(<ReportRenderer report={{data: {}}} context="dashboard" />);
 
   expect(node.find('IncompleteReport')).toExist();
 });
