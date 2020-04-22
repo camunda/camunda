@@ -5,16 +5,23 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
-import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.util.UpgradeUtil;
 
-@AllArgsConstructor
-public class GenericUpgradeProcedure extends UpgradeProcedure {
+public class TestUpgradeProcedure extends UpgradeProcedure {
 
   private final String fromVersion;
   private final String toVersion;
+
+  public TestUpgradeProcedure(String fromVersion, String toVersion, String customConfigLocation) {
+    super(UpgradeUtil.createUpgradeDependenciesWithAdditionalConfigLocation(
+      "service-config.yaml", "environment-config.yaml", customConfigLocation));
+    this.fromVersion = fromVersion;
+    this.toVersion = toVersion;
+  }
 
   @Override
   protected UpgradePlan buildUpgradePlan() {
@@ -34,4 +41,9 @@ public class GenericUpgradeProcedure extends UpgradeProcedure {
   public String getTargetVersion() {
     return toVersion;
   }
+
+  public void setMetadataVersionInElasticSearch(String version) {
+    upgradeDependencies.getMetadataService().writeMetadata(upgradeDependencies.getEsClient(), new MetadataDto(version));
+  }
+
 }

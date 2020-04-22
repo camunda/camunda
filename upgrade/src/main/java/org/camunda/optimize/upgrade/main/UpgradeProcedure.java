@@ -5,21 +5,31 @@
  */
 package org.camunda.optimize.upgrade.main;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
-
-import static org.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependencies;
+import org.camunda.optimize.upgrade.util.UpgradeUtil;
 
 @Slf4j
 public abstract class UpgradeProcedure {
 
-  protected final UpgradeExecutionDependencies upgradeDependencies = createUpgradeDependencies();
-  private final OptimizeElasticsearchClient esClient = upgradeDependencies.getEsClient();
-  private UpgradeValidationService upgradeValidationService =
-    new UpgradeValidationService(upgradeDependencies.getMetadataService(), esClient);
+  @Getter
+  protected final UpgradeExecutionDependencies upgradeDependencies;
+  private final OptimizeElasticsearchClient esClient;
+  private UpgradeValidationService upgradeValidationService;
+
+  public UpgradeProcedure() {
+    this(UpgradeUtil.createUpgradeDependencies());
+  }
+
+  public UpgradeProcedure(UpgradeExecutionDependencies upgradeDependencies) {
+    this.upgradeDependencies = upgradeDependencies;
+    this.esClient = upgradeDependencies.getEsClient();
+    this.upgradeValidationService = new UpgradeValidationService(upgradeDependencies.getMetadataService(), esClient);
+  }
 
   public abstract String getInitialVersion();
 

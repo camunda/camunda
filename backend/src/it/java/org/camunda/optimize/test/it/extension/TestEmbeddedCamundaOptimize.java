@@ -110,10 +110,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     initAuthenticationToken();
   }
 
-  public boolean isStarted() {
-    return testOptimizeInstance.isOptimizeStarted();
-  }
-
   private boolean isThisTheFirstTimeOptimizeWasStarted() {
     return serializedDefaultConfiguration == null;
   }

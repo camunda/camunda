@@ -538,6 +538,7 @@ void migrationTestSteps() {
   container('maven') {
     sh ("""apt-get update && apt-get install -y jq netcat""")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pengine-latest,it")
+    runMaven("install -Dskip.docker -DskipTests -f upgrade")
     runMaven("install -Dskip.docker -DskipTests -f qa")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl upgrade")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl util/optimize-reimport-preparation -Pengine-latest,it")

@@ -8,8 +8,17 @@ package org.camunda.optimize.test.secured.es;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 
 public class ConnectToElasticsearchSslCustomCertAndCaIT extends AbstractConnectToElasticsearchIT {
+
+  private static final String CONFIG_FILE = "secured-connection-ssl-custom-cert-and-ca.yaml";
+
   @Override
   protected EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
     return new EmbeddedOptimizeExtension("classpath:embeddedOptimizeContext-ssl-custom-cert-and-ca.xml");
   }
+
+  @Override
+  protected String getCustomConfigFile() {
+    return CONFIG_FILE;
+  }
+
 }

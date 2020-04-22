@@ -8,8 +8,17 @@ package org.camunda.optimize.test.secured.es;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 
 public class ConnectToElasticsearchBasicAuthIT extends AbstractConnectToElasticsearchIT {
+
+  private static final String CONFIG_FILE = "secured-connection-basic-auth.yaml";
+
   @Override
   protected EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
     return new EmbeddedOptimizeExtension("classpath:embeddedOptimizeContext-basic-auth.xml");
   }
+
+  @Override
+  protected String getCustomConfigFile() {
+    return CONFIG_FILE;
+  }
+
 }

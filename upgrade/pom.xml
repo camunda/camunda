@@ -124,4 +124,5 @@
     </plugins>
     <finalName>upgrade-optimize-from-${project.previousVersion}-to-${project.version}</finalName>
   </build>
+
 </project>

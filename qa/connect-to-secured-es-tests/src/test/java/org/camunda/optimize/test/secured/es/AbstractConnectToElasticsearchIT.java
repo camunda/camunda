@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.test.secured.es;
 
+import org.camunda.optimize.service.metadata.PreviousVersion;
+import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import org.camunda.optimize.upgrade.main.impl.TestUpgradeProcedure;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +25,8 @@ public abstract class AbstractConnectToElasticsearchIT {
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = getEmbeddedOptimizeExtension();
 
   protected abstract EmbeddedOptimizeExtension getEmbeddedOptimizeExtension();
+
+  protected abstract String getCustomConfigFile();
 
   @BeforeEach
   public void before() throws Exception {
@@ -44,4 +49,23 @@ public abstract class AbstractConnectToElasticsearchIT {
     // then Optimize should be able to successfully perform the underlying request to elasticsearch
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
+
+  @Test
+  public void runUpgradeAgainstSecuredElasticSearch() {
+    // given an upgrade procedure against ES with custom configuration
+    final TestUpgradeProcedure testUpgradeProcedure = new TestUpgradeProcedure(
+      PreviousVersion.PREVIOUS_VERSION,
+      Version.VERSION,
+      getCustomConfigFile()
+    );
+
+    // when
+    getEmbeddedOptimizeExtension().stopOptimize();
+    // the metadata version needs to match the stated versionFrom for the upgrade to pass validation
+    testUpgradeProcedure.setMetadataVersionInElasticSearch(PreviousVersion.PREVIOUS_VERSION);
+
+    // then
+    testUpgradeProcedure.performUpgrade();
+  }
+
 }

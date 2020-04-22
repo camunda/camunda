@@ -211,7 +211,7 @@ spec:
 """
 }
 
-String securityTestPodSpec(def esVersion, def camBpmVersion) {
+String securedEsTestPodSpec(def esVersion, def camBpmVersion) {
   def nginxConfigBasicAuth = nginxContainerSpec(false, true, 80)
   def nginxConfigSslBasicAuth = nginxContainerSpec(true, true, 9200)
   def nginxConfigSsl = nginxContainerSpec(true, false, 9201)
@@ -256,7 +256,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-it-security_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml securityTestPodSpec(env.ES_VERSION, env.CAMBPM_VERSION)
+          yaml securedEsTestPodSpec(env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
       steps {
@@ -284,8 +284,8 @@ pipeline {
 void securityTestSteps() {
   cloneGitRepo()
   container('maven') {
-    // run migration tests
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/connect-to-secured-es-tests -am -Psecured-es-it")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl qa/connect-to-secured-es-tests -am")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/connect-to-secured-es-tests -Psecured-es-it")
   }
 }
 

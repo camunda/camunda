@@ -29,7 +29,16 @@ import java.io.InputStream;
 public class UpgradeUtil {
 
   public static UpgradeExecutionDependencies createUpgradeDependencies() {
-    ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+    return createUpgradeDependenciesWithAdditionalConfigLocation((String[]) null);
+  }
+
+  public static UpgradeExecutionDependencies createUpgradeDependenciesWithAdditionalConfigLocation(String... configLocations) {
+    ConfigurationService configurationService;
+    if (configLocations == null || configLocations.length == 0) {
+      configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+    } else {
+      configurationService = ConfigurationServiceBuilder.createConfigurationFromLocations(configLocations);
+    }
     ObjectMapper objectMapper = new ObjectMapperFactory(
       new OptimizeDateTimeFormatterFactory().getObject(),
       ConfigurationServiceBuilder.createDefaultConfiguration()
