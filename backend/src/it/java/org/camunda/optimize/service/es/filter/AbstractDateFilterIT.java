@@ -93,7 +93,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
     return evaluateReport(reportData, newToken);
   }
 
-  protected List<ProcessFilterDto> createRelativeStartDateFilter(final DateFilterUnit unit, final Long value) {
+  protected List<ProcessFilterDto<?>> createRelativeStartDateFilter(final DateFilterUnit unit, final Long value) {
     return ProcessFilterBuilder
         .filter()
         .relativeStartDate()
@@ -102,7 +102,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
         .buildList();
   }
 
-  protected List<ProcessFilterDto> createRollingStartDateFilter(final DateFilterUnit unit, final Long value) {
+  protected List<ProcessFilterDto<?>> createRollingStartDateFilter(final DateFilterUnit unit, final Long value) {
     return ProcessFilterBuilder
       .filter()
       .rollingStartDate()
@@ -123,7 +123,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(RAW_DATA)
       .build();
-    List<ProcessFilterDto> relativeDateFilter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> relativeDateFilter = ProcessFilterBuilder
       .filter()
       .relativeEndDate()
       .start(1L, unit)

@@ -19,14 +19,14 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
-public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<DecisionFilterDto> {
+public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<DecisionFilterDto<?>> {
 
   private final EvaluationDateQueryFilter evaluationDateQueryFilter;
   private final DecisionInputVariableQueryFilter decisionInputVariableQueryFilter;
   private final DecisionOutputVariableQueryFilter decisionOutputVariableQueryFilter;
 
   @Override
-  public void addFilterToQuery(final BoolQueryBuilder query, final List<DecisionFilterDto> filter) {
+  public void addFilterToQuery(final BoolQueryBuilder query, final List<DecisionFilterDto<?>> filter) {
     if (filter != null) {
       evaluationDateQueryFilter.addFilters(
         query, extractFilters(filter, EvaluationDateFilterDto.class)
@@ -44,8 +44,9 @@ public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<Decision
     return evaluationDateQueryFilter;
   }
 
-  public <T extends FilterDataDto> List<T> extractFilters(final List<DecisionFilterDto> filter,
-                                                          final Class<? extends DecisionFilterDto> filterClass) {
+  @SuppressWarnings("unchecked")
+  public <T extends FilterDataDto> List<T> extractFilters(final List<DecisionFilterDto<?>> filter,
+                                                          final Class<? extends DecisionFilterDto<?>> filterClass) {
     return filter
       .stream()
       .filter(filterClass::isInstance)

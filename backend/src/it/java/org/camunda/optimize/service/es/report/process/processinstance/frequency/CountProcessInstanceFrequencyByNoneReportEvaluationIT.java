@@ -176,7 +176,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // when
     ProcessReportDataDto reportData =
       createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
-    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
       .id("task1")

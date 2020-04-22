@@ -123,7 +123,7 @@ public class ReportsGenerator {
     return processPart;
   }
 
-  private static List<ProcessFilterDto> createProcessFilter() {
+  private static List<ProcessFilterDto<?>> createProcessFilter() {
     // @formatter:off
     return ProcessFilterBuilder
       .filter()

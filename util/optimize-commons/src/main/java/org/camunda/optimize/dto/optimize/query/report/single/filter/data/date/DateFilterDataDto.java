@@ -27,7 +27,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FIL
   @JsonSubTypes.Type(value = RelativeDateFilterDataDto.class, name = RELATIVE_DATE_FILTER),
   @JsonSubTypes.Type(value = RollingDateFilterDataDto.class, name = ROLLING_DATE_FILTER),
 })
-
 @Getter
 @Setter
 public abstract class DateFilterDataDto<START> implements FilterDataDto {
@@ -36,4 +35,10 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
 
   protected START start;
   protected OffsetDateTime end;
+
+  public DateFilterDataDto(final DateFilterType type, final START start, final OffsetDateTime end) {
+    this.type = type;
+    this.start = start;
+    this.end = end;
+  }
 }

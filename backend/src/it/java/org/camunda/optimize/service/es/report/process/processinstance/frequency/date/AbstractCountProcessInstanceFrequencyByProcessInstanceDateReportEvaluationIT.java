@@ -630,7 +630,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setReportDataType(getTestReportDataType())
       .build();
 
-    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder.filter().executedFlowNodes()
+    List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder.filter().executedFlowNodes()
       .id("task1")
       .add()
       .buildList();

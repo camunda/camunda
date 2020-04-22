@@ -58,12 +58,12 @@ public class ProcessGroupByProcessInstanceEndDate extends ProcessGroupByProcessI
 
   @Override
   protected void addFiltersToQuery(final BoolQueryBuilder limitFilterQuery,
-                                   final List<DateFilterDataDto> limitedFilters) {
+                                   final List<DateFilterDataDto<?>> limitedFilters) {
     queryFilterEnhancer.getEndDateQueryFilter().addFilters(limitFilterQuery, limitedFilters);
   }
 
   @Override
-  protected List<DateFilterDataDto> getReportDateFilters(final ProcessReportDataDto reportData) {
+  protected List<DateFilterDataDto<?>> getReportDateFilters(final ProcessReportDataDto reportData) {
     return queryFilterEnhancer.extractFilters(reportData.getFilter(), EndDateFilterDto.class);
   }
 

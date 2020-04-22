@@ -6,7 +6,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
@@ -47,11 +46,16 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE_LOWE
 })
 @Data
 public abstract class VariableFilterDataDto<DATA> implements FilterDataDto {
-  @JsonProperty
   protected VariableType type;
 
   protected String name;
   protected DATA data;
 
   protected boolean filterForUndefined;
+
+  public VariableFilterDataDto(final String name, final VariableType type, final DATA data) {
+    this.name = name;
+    this.type = type;
+    this.data = data;
+  }
 }

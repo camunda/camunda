@@ -9,15 +9,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 public class BooleanVariableFilterDataDto extends VariableFilterDataDto<BooleanVariableFilterSubDataDto> {
-
   protected BooleanVariableFilterDataDto() {
-    this(null);
+    this(null, null);
   }
 
-  public BooleanVariableFilterDataDto(Boolean value) {
-    this.type = VariableType.BOOLEAN;
-    BooleanVariableFilterSubDataDto dataDto = new BooleanVariableFilterSubDataDto();
-    dataDto.setValue(value);
-    setData(dataDto);
+  public BooleanVariableFilterDataDto(final String name, final Boolean value) {
+    super(name, VariableType.BOOLEAN, new BooleanVariableFilterSubDataDto(value));
   }
 }

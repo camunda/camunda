@@ -48,9 +48,7 @@ public class FixedDateFilterBuilder {
   }
 
   public ProcessFilterBuilder add() {
-    FixedDateFilterDataDto dateFilterDataDto = new FixedDateFilterDataDto();
-    dateFilterDataDto.setStart(start);
-    dateFilterDataDto.setEnd(end);
+    FixedDateFilterDataDto dateFilterDataDto = new FixedDateFilterDataDto(start, end);
     if (type.equals("endDate")) {
       EndDateFilterDto filterDto = new EndDateFilterDto(dateFilterDataDto);
       filterBuilder.addFilter(filterDto);

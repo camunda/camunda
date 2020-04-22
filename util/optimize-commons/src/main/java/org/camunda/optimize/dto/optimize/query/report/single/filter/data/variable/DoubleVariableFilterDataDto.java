@@ -11,16 +11,11 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.List;
 
 public class DoubleVariableFilterDataDto extends OperatorMultipleValuesVariableFilterDataDto {
-
   protected DoubleVariableFilterDataDto() {
-    this(null, null);
+    this(null, null, null);
   }
 
-  public DoubleVariableFilterDataDto(String operator, List<String> values) {
-    type = VariableType.DOUBLE;
-    OperatorMultipleValuesVariableFilterSubDataDto dataDto = new OperatorMultipleValuesVariableFilterSubDataDto();
-    dataDto.setOperator(operator);
-    dataDto.setValues(values);
-    setData(dataDto);
+  public DoubleVariableFilterDataDto(final String name, final String operator, final List<String> values) {
+    super(name, VariableType.DOUBLE, new OperatorMultipleValuesVariableFilterSubDataDto(operator, values));
   }
 }

@@ -92,12 +92,12 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
       .dateHistogramInterval(interval)
       .timeZone(ZoneId.systemDefault());
 
-    final List<DateFilterDataDto> dateFilterDataDtos = queryFilterEnhancer.extractFilters(
+    final List<DateFilterDataDto<?>> dateFilterDataDtos = queryFilterEnhancer.extractFilters(
       context.getReportData().getFilter(), EvaluationDateFilterDto.class
     );
     final BoolQueryBuilder limitFilterQuery;
     if (!dateFilterDataDtos.isEmpty()) {
-      final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
+      final List<DateFilterDataDto<?>> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
         dateFilterDataDtos, unit, configurationService.getEsAggregationBucketLimit()
       );
 

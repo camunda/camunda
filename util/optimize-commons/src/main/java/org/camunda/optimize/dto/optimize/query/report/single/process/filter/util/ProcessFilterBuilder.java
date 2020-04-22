@@ -12,7 +12,7 @@ import java.util.List;
 
 public class ProcessFilterBuilder {
 
-  private List<ProcessFilterDto> filters = new ArrayList<>();
+  private List<ProcessFilterDto<?>> filters = new ArrayList<>();
 
   public static ProcessFilterBuilder filter() {
     return new ProcessFilterBuilder();

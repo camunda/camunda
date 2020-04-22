@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
@@ -17,12 +18,10 @@ import org.camunda.optimize.service.util.DecisionVariableHelper;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
@@ -39,29 +38,25 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public abstract class DecisionVariableQueryFilter implements QueryFilter<VariableFilterDataDto> {
+@RequiredArgsConstructor
+public abstract class DecisionVariableQueryFilter implements QueryFilter<VariableFilterDataDto<?>> {
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  protected Logger logger = LoggerFactory.getLogger(getClass());
-
-  private final DateTimeFormatter formatter;
-
-  DecisionVariableQueryFilter(final DateTimeFormatter formatter) {
-    this.formatter = formatter;
-  }
+  private final DateFilterQueryService dateFilterQueryService;
 
   abstract String getVariablePath();
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto> variableFilters) {
+  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto<?>> variableFilters) {
     if (variableFilters != null) {
       List<QueryBuilder> filters = query.filter();
-      for (VariableFilterDataDto variable : variableFilters) {
+      for (VariableFilterDataDto<?> variable : variableFilters) {
         filters.add(createFilterQueryBuilder(variable));
       }
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto dto) {
+  private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto<?> dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
     if (dto.isFilterForUndefined()) {
       return createFilterUndefinedQueryBuilder(dto);
@@ -215,17 +210,23 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
   }
 
   private QueryBuilder createDateQueryBuilder(DateVariableFilterDataDto dto) {
-    final RangeQueryBuilder rangeQuery = createRangeQuery(dto);
+    final BoolQueryBuilder variableBaseQuery = boolQuery()
+      .must(termQuery(getVariableIdField(), dto.getName()));
+
+    dateFilterQueryService.addFilters(
+      variableBaseQuery,
+      Collections.singletonList(dto.getData()),
+      getVariableValueFieldForType(dto.getType())
+    );
+
     return nestedQuery(
       getVariablePath(),
-      boolQuery()
-        .must(termQuery(getVariableIdField(), dto.getName()))
-        .must(rangeQuery),
+      variableBaseQuery,
       ScoreMode.None
     );
   }
 
-  private QueryBuilder createFilterUndefinedQueryBuilder(VariableFilterDataDto dto) {
+  private QueryBuilder createFilterUndefinedQueryBuilder(VariableFilterDataDto<?> dto) {
     return boolQuery()
       .should(
         // undefined
@@ -246,23 +247,6 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
         ))
       )
       .minimumShouldMatch(1);
-  }
-
-  private RangeQueryBuilder createRangeQuery(DateVariableFilterDataDto dto) {
-    ValidationHelper.ensureAtLeastOneNotNull(
-      "date filter date value", dto.getData().getStart(), dto.getData().getEnd()
-    );
-
-    RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(getVariableValueFieldForType(dto.getType()));
-    if (dto.getData().getEnd() != null) {
-      String endAsString = formatter.format(dto.getData().getEnd());
-      queryDate.lte(endAsString);
-    }
-    if (dto.getData().getStart() != null) {
-      String startAsString = formatter.format(dto.getData().getStart());
-      queryDate.gte(startAsString);
-    }
-    return queryDate;
   }
 
   private String getVariableValueFieldForType(final VariableType type) {

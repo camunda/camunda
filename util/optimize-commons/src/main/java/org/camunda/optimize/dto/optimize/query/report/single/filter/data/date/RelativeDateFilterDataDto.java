@@ -6,9 +6,11 @@
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
 public class RelativeDateFilterDataDto extends DateFilterDataDto<RelativeDateFilterStartDto> {
-
-  public RelativeDateFilterDataDto() {
-    this.type = DateFilterType.RELATIVE;
+  protected RelativeDateFilterDataDto() {
+    this(null);
   }
 
+  public RelativeDateFilterDataDto(final RelativeDateFilterStartDto relativeDateFilterStartDto) {
+    super(DateFilterType.RELATIVE, relativeDateFilterStartDto, null);
+  }
 }

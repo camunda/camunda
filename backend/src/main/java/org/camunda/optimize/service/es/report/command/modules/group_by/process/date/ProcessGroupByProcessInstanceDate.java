@@ -96,10 +96,10 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
 
   public abstract String getDateField();
 
-  protected abstract List<DateFilterDataDto> getReportDateFilters(final ProcessReportDataDto reportData);
+  protected abstract List<DateFilterDataDto<?>> getReportDateFilters(final ProcessReportDataDto reportData);
 
   protected abstract void addFiltersToQuery(final BoolQueryBuilder limitFilterQuery,
-                                            final List<DateFilterDataDto> limitedFilters);
+                                            final List<DateFilterDataDto<?>> limitedFilters);
 
   protected abstract BoolQueryBuilder createDefaultLimitingFilter(final GroupByDateUnit unit,
                                                                   final QueryBuilder query,
@@ -128,11 +128,11 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       .dateHistogramInterval(interval)
       .timeZone(ZoneId.systemDefault());
 
-    final List<DateFilterDataDto> reportDateFilters = getReportDateFilters(context.getReportData());
+    final List<DateFilterDataDto<?>> reportDateFilters = getReportDateFilters(context.getReportData());
 
     final BoolQueryBuilder limitFilterQuery;
     if (!reportDateFilters.isEmpty()) {
-      final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
+      final List<DateFilterDataDto<?>> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
         reportDateFilters, unit, configurationService.getEsAggregationBucketLimit()
       );
 

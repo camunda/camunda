@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
@@ -24,8 +31,7 @@ public class VariableFilterBuilder {
   private VariableType type;
   private List<String> values = new ArrayList<>();
   private String operator;
-  private OffsetDateTime start;
-  private OffsetDateTime end;
+  private DateFilterDataDto<?> dateFilterDataDto;
   private String name;
   private boolean filterForUndefined = false;
 
@@ -115,13 +121,18 @@ public class VariableFilterBuilder {
     return this;
   }
 
-  public VariableFilterBuilder start(OffsetDateTime start) {
-    this.start = start;
+  public VariableFilterBuilder relativeDate(final Long value, final DateFilterUnit unit) {
+    this.dateFilterDataDto = new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
     return this;
   }
 
-  public VariableFilterBuilder end(OffsetDateTime end) {
-    this.end = end;
+  public VariableFilterBuilder rollingDate(final Long value, final DateFilterUnit unit) {
+    this.dateFilterDataDto = new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit));
+    return this;
+  }
+
+  public VariableFilterBuilder fixedDate(final OffsetDateTime start, final OffsetDateTime end) {
+    this.dateFilterDataDto = new FixedDateFilterDataDto(start, end);
     return this;
   }
 
@@ -143,10 +154,10 @@ public class VariableFilterBuilder {
   }
 
   public ProcessFilterBuilder createBooleanVariableFilter() {
-    BooleanVariableFilterDataDto dataDto =
-      new BooleanVariableFilterDataDto(values == null || values.isEmpty() ? null : Boolean.valueOf(values.get(0)));
-    dataDto.setName(name);
-    dataDto.setType(type);
+    BooleanVariableFilterDataDto dataDto = new BooleanVariableFilterDataDto(
+      name,
+      values == null || values.isEmpty() ? null : Boolean.valueOf(values.get(0))
+    );
     dataDto.setFilterForUndefined(filterForUndefined);
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dataDto);
@@ -155,9 +166,11 @@ public class VariableFilterBuilder {
   }
 
   public ProcessFilterBuilder createVariableDateFilter() {
-    DateVariableFilterDataDto dateVariableFilterDataDto = new DateVariableFilterDataDto(start, end);
-    dateVariableFilterDataDto.setName(name);
-    dateVariableFilterDataDto.setType(type);
+
+    DateVariableFilterDataDto dateVariableFilterDataDto = new DateVariableFilterDataDto(
+      name,
+      dateFilterDataDto != null ? dateFilterDataDto : new FixedDateFilterDataDto(null, null)
+    );
     dateVariableFilterDataDto.setFilterForUndefined(filterForUndefined);
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dateVariableFilterDataDto);
@@ -169,25 +182,23 @@ public class VariableFilterBuilder {
     VariableFilterDto filter = new VariableFilterDto();
     switch (type) {
       case INTEGER:
-        filter.setData(new IntegerVariableFilterDataDto(operator, values));
+        filter.setData(new IntegerVariableFilterDataDto(name, operator, values));
         break;
       case STRING:
-        filter.setData(new StringVariableFilterDataDto(operator, values));
+        filter.setData(new StringVariableFilterDataDto(name, operator, values));
         break;
       case DOUBLE:
-        filter.setData(new DoubleVariableFilterDataDto(operator, values));
+        filter.setData(new DoubleVariableFilterDataDto(name, operator, values));
         break;
       case SHORT:
-        filter.setData(new ShortVariableFilterDataDto(operator, values));
+        filter.setData(new ShortVariableFilterDataDto(name, operator, values));
         break;
       case LONG:
-        filter.setData(new LongVariableFilterDataDto(operator, values));
+        filter.setData(new LongVariableFilterDataDto(name, operator, values));
         break;
       default:
         break;
     }
-    filter.getData().setName(name);
-    filter.getData().setType(type);
     filter.getData().setFilterForUndefined(filterForUndefined);
     filterBuilder.addFilter(filter);
     return filterBuilder;

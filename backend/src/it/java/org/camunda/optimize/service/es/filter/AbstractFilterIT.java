@@ -52,16 +52,6 @@ public abstract class AbstractFilterIT extends AbstractIT {
       .build();
   }
 
-  protected ProcessDefinitionEngineDto deployUserTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
-  }
-
   protected Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -91,6 +81,24 @@ public abstract class AbstractFilterIT extends AbstractIT {
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
       // @formatter:on
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
+      .startEvent()
+      .endEvent()
+      .done();
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
+  protected ProcessDefinitionEngineDto deployUserTaskProcess() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+      .startEvent()
+      .userTask()
+      .endEvent()
+      .done();
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   protected ProcessDefinitionEngineDto deployTwoUserTasksProcessDefinition() {

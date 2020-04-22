@@ -483,7 +483,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
       .runningInstancesOnly()
       .add()
       .buildList();
@@ -539,7 +539,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
       .completedInstancesOnly()
       .add()
       .buildList();
@@ -649,7 +649,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(GREATER_THAN_EQUALS)
       .unit(DateFilterUnit.HOURS.getId())

@@ -31,9 +31,9 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected List<String> processDefinitionVersions = new ArrayList<>();
   protected String processDefinitionName;
   protected List<String> tenantIds = Collections.singletonList(null);
-  protected List<ProcessFilterDto> filter = new ArrayList<>();
+  protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
-  protected ProcessGroupByDto groupBy;
+  protected ProcessGroupByDto<?> groupBy;
   protected ProcessVisualization visualization;
 
   @JsonIgnore

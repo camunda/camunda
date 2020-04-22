@@ -36,7 +36,7 @@ public class DecisionReportDataBuilder {
   private VariableType variableType;
   private GroupByDateUnit dateInterval;
 
-  private List<DecisionFilterDto> filter = new ArrayList<>();
+  private List<DecisionFilterDto<?>> filter = new ArrayList<>();
 
   public static DecisionReportDataBuilder create() {
     return new DecisionReportDataBuilder();
@@ -122,7 +122,7 @@ public class DecisionReportDataBuilder {
     return this;
   }
 
-  public DecisionReportDataBuilder setFilter(List<DecisionFilterDto> newFilter) {
+  public DecisionReportDataBuilder setFilter(List<DecisionFilterDto<?>> newFilter) {
     this.filter = newFilter;
     return this;
   }

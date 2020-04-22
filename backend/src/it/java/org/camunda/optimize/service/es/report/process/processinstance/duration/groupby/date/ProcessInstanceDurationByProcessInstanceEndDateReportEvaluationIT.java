@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.date;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
@@ -17,8 +17,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -129,8 +129,9 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
-    dateFilterDataDto.setStart(new RelativeDateFilterStartDto(4L, DateFilterUnit.DAYS));
+    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto(
+      new RelativeDateFilterStartDto(4L, DateFilterUnit.DAYS)
+    );
     final EndDateFilterDto endDateFilterDto = new EndDateFilterDto(dateFilterDataDto);
 
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()

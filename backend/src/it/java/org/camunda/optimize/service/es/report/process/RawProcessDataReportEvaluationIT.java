@@ -658,9 +658,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
   }
 
-  private List<ProcessFilterDto> createVariableFilter() {
-    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(true);
-    data.setName("var");
+  private List<ProcessFilterDto<?>> createVariableFilter() {
+    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto("var", true);
 
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);
@@ -690,7 +689,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .build();
 
 
-    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
       .id("task1")

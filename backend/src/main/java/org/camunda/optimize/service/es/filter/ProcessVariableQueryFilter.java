@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.filter;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
@@ -14,16 +16,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
@@ -45,24 +44,22 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @RequiredArgsConstructor
+@Slf4j
 @Component
-public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDataDto> {
-
-  private Logger logger = LoggerFactory.getLogger(getClass());
-
-  private final DateTimeFormatter formatter;
+public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDataDto<?>> {
+  private final DateFilterQueryService dateFilterQueryService;
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto> variables) {
+  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto<?>> variables) {
     if (variables != null) {
       List<QueryBuilder> filters = query.filter();
-      for (VariableFilterDataDto variable : variables) {
+      for (VariableFilterDataDto<?> variable : variables) {
         filters.add(createFilterQueryBuilder(variable));
       }
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto dto) {
+  private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto<?> dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
     if (dto.isFilterForUndefined()) {
       return createFilterUndefinedOrNullQueryBuilder(dto);
@@ -90,7 +87,7 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
         queryBuilder = createBoolQueryBuilder(booleanVarDto);
         break;
       default:
-        logger.warn(
+        log.warn(
           "Could not filter for variables! " +
             "Type [{}] is not supported for variable filters. Ignoring filter.",
           dto.getType()
@@ -107,7 +104,7 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     } else if (operator.equals(NOT_IN)) {
       return createInequalityMultiValueQueryBuilder(dto);
     } else {
-      logger.warn(
+      log.warn(
         "Could not filter for variables! Operator [{}] is not allowed for type [String]. Ignoring filter.",
         operator
       );
@@ -116,6 +113,7 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
   }
 
   private BoolQueryBuilder createEqualityMultiValueQueryBuilder(OperatorMultipleValuesVariableFilterDataDto dto) {
+    validateMultipleValuesFilterDataDto(dto);
 
     BoolQueryBuilder boolQueryBuilder = boolQuery();
     String nestedVariableNameFieldLabel = getNestedVariableNameField();
@@ -136,6 +134,8 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
   }
 
   private BoolQueryBuilder createInequalityMultiValueQueryBuilder(OperatorMultipleValuesVariableFilterDataDto dto) {
+    validateMultipleValuesFilterDataDto(dto);
+
     BoolQueryBuilder boolQueryBuilder = boolQuery();
     String nestedVariableNameFieldLabel = getNestedVariableNameField();
     String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
@@ -155,22 +155,13 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
   }
 
   private QueryBuilder createNumericQueryBuilder(OperatorMultipleValuesVariableFilterDataDto dto) {
-    ValidationHelper.ensureNotNull("numeric filter values", dto.getData().getValues());
+    validateMultipleValuesFilterDataDto(dto);
 
     String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
     final OperatorMultipleValuesVariableFilterSubDataDto data = dto.getData();
     final BoolQueryBuilder boolQueryBuilder = boolQuery()
       .must(termQuery(getNestedVariableNameField(), dto.getName()))
       .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
-
-    if (data.getValues().size() < 1) {
-      logger.warn(
-        "Could not filter for variables! No values provided for operator [{}] and type [{}]. Ignoring filter.",
-        data.getOperator(),
-        dto.getType()
-      );
-      return boolQueryBuilder;
-    }
 
     QueryBuilder resultQuery = nestedQuery(VARIABLES, boolQueryBuilder, ScoreMode.None);
     Object value = retrieveValue(dto);
@@ -194,12 +185,18 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
         boolQueryBuilder.must(rangeQuery(nestedVariableValueFieldLabel).gte(value));
         break;
       default:
-        logger.warn(
+        log.warn(
           "Could not filter for variables! Operator [{}] is not supported for type [{}]. Ignoring filter.",
           data.getOperator(), dto.getType()
         );
     }
     return resultQuery;
+  }
+
+  private void validateMultipleValuesFilterDataDto(final OperatorMultipleValuesVariableFilterDataDto dto) {
+    if (CollectionUtils.isEmpty(dto.getData().getValues())) {
+      throw new OptimizeValidationException("Filter values are not allowed to be empty.");
+    }
   }
 
   private String getVariableValueFieldForType(final VariableType type) {
@@ -226,32 +223,23 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
   }
 
   private QueryBuilder createDateQueryBuilder(DateVariableFilterDataDto dto) {
+    ValidationHelper.ensureAtLeastOneNotNull(
+      "date filter start/end value",
+      dto.getData().getStart(),
+      dto.getData().getEnd()
+    );
+
     BoolQueryBuilder filterDateVariables = boolQuery()
       .must(termsQuery(getNestedVariableNameField(), dto.getName()))
-      .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()))
-      .must(createRangeQuery(dto));
-    return nestedQuery(
-      VARIABLES,
+      .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
+
+    dateFilterQueryService.addFilters(
       filterDateVariables,
-      ScoreMode.None
-    );
-  }
-
-  private RangeQueryBuilder createRangeQuery(DateVariableFilterDataDto dto) {
-    ValidationHelper.ensureAtLeastOneNotNull("date filter date value",
-                                             dto.getData().getStart(), dto.getData().getEnd()
+      Collections.singletonList(dto.getData()),
+      getVariableValueFieldForType(dto.getType())
     );
 
-    RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(getVariableValueFieldForType(dto.getType()));
-    if (dto.getData().getEnd() != null) {
-      String endAsString = formatter.format(dto.getData().getEnd());
-      queryDate.lte(endAsString);
-    }
-    if (dto.getData().getStart() != null) {
-      String startAsString = formatter.format(dto.getData().getStart());
-      queryDate.gte(startAsString);
-    }
-    return queryDate;
+    return nestedQuery(VARIABLES, filterDateVariables, ScoreMode.None);
   }
 
   private QueryBuilder createBoolQueryBuilder(BooleanVariableFilterDataDto dto) {
@@ -268,7 +256,7 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     );
   }
 
-  private QueryBuilder createFilterUndefinedOrNullQueryBuilder(final VariableFilterDataDto dto) {
+  private QueryBuilder createFilterUndefinedOrNullQueryBuilder(final VariableFilterDataDto<?> dto) {
     return getVariableUndefinedOrNullQuery(dto.getName(), dto.getType());
   }
 

@@ -38,8 +38,7 @@ public class RollingDateFilterBuilder {
   }
 
   public ProcessFilterBuilder add() {
-    RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto();
-    dateFilterDataDto.setStart(start);
+    RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(start);
     if (type.equals("endDate")) {
       EndDateFilterDto filterDto = new EndDateFilterDto(dateFilterDataDto);
       filterBuilder.addFilter(filterDto);

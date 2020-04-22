@@ -499,7 +499,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(calculatedResult, is(0L));
   }
 
-  private List<ProcessFilterDto> createVariableFilter(String value) {
+  private List<ProcessFilterDto<?>> createVariableFilter(String value) {
     return ProcessFilterBuilder
       .filter()
       .variable()

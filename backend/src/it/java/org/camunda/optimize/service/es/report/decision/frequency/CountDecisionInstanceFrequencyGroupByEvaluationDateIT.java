@@ -300,11 +300,9 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
-    dateFilterDataDto.setStart(new RelativeDateFilterStartDto(
-      4L,
-      DateFilterUnit.DAYS
-    ));
+    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto(
+      new RelativeDateFilterStartDto(4L, DateFilterUnit.DAYS)
+    );
 
     final EvaluationDateFilterDto dateFilterDto = new EvaluationDateFilterDto(dateFilterDataDto);
 

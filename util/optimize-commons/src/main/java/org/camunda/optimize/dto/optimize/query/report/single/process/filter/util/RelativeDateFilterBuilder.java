@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 
@@ -38,8 +38,7 @@ public class RelativeDateFilterBuilder {
   }
 
   public ProcessFilterBuilder add() {
-    RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
-    dateFilterDataDto.setStart(start);
+    RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto(start);
     if (type.equals("endDate")) {
       EndDateFilterDto filterDto = new EndDateFilterDto(dateFilterDataDto);
       filterBuilder.addFilter(filterDto);

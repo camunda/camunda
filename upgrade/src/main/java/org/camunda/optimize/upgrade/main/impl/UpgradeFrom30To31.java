@@ -50,9 +50,50 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .toVersion(TO_VERSION)
       .addUpgradeStep(migrateAxisLabels(SINGLE_PROCESS_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateAxisLabels(SINGLE_DECISION_REPORT_INDEX_NAME))
-      .addUpgradeStep(migrateAxisLabels(COMBINED_REPORT_INDEX_NAME));
+      .addUpgradeStep(migrateAxisLabels(COMBINED_REPORT_INDEX_NAME))
+      .addUpgradeStep(migrateProcessReportDateVariableFilter())
+      .addUpgradeStep(migrateDecisionReportDateVariableFilter());
     upgradeAllCamundaActivityIndexProcessStartEndActivityIds(upgradeBuilder);
     return upgradeBuilder.build();
+  }
+
+  private UpgradeStep migrateProcessReportDateVariableFilter() {
+    //@formatter:off
+    final String script =
+      "if (ctx._source.data.filter != null) {\n" +
+      "  for (filter in ctx._source.data.filter) {\n" +
+      "    if (\"variable\".equalsIgnoreCase(filter.type) && \"Date\".equalsIgnoreCase(filter.data.type)) {\n" +
+      "      filter.data.data.type = \"fixed\";\n" +
+      "    }\n" +
+      "  }\n" +
+      "}\n"
+      ;
+    //@formatter:on
+    return new UpdateDataStep(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+  }
+
+  private UpgradeStep migrateDecisionReportDateVariableFilter() {
+    //@formatter:off
+    final String script =
+      "if (ctx._source.data.filter != null) {\n" +
+      "  for (filter in ctx._source.data.filter) {\n" +
+      "    if (\"inputVariable\".equalsIgnoreCase(filter.type) || \"outputVariable\".equalsIgnoreCase(filter.type)\n" +
+      "         && \"Date\".equalsIgnoreCase(filter.data.type)) {\n" +
+      "      filter.data.data.type = \"fixed\";\n" +
+      "    }\n" +
+      "  }\n" +
+      "}\n"
+      ;
+    //@formatter:on
+    return new UpdateDataStep(
+      SINGLE_DECISION_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
   }
 
   private UpgradeStep migrateAxisLabels(final String index) {

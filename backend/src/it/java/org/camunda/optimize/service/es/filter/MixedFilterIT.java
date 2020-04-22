@@ -30,7 +30,7 @@ public class MixedFilterIT extends AbstractFilterIT {
   @Test
   public void applyCombinationOfFiltersForFinishedInstance() throws Exception {
     // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
 
@@ -58,7 +58,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filterList = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
       .id(USER_TASK_ACTIVITY_ID)
@@ -89,7 +89,7 @@ public class MixedFilterIT extends AbstractFilterIT {
   @Test
   public void applyCombinationOfFiltersForInProgressInstance() throws Exception {
     // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
 
@@ -112,7 +112,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filterList = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .executingFlowNodes()
       .id(USER_TASK_ACTIVITY_ID)
@@ -136,7 +136,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertThat(rawDataReportResultDto.getData().get(0).getProcessInstanceId(), is(expectedInstanceId));
   }
 
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto> filter) {
+  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData =
       createReportWithCompletedInstancesFilter(processDefinition);
     reportData.setFilter(filter);
@@ -149,7 +149,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     return processReportDataDto;
   }
 
-  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
+  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition() {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent()
       .userTask(USER_TASK_ACTIVITY_ID)

@@ -34,7 +34,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> executingFlowNodes = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> executingFlowNodes = ProcessFilterBuilder
       .filter()
       .executingFlowNodes()
       .id(USER_TASK_ACTIVITY_ID)
@@ -63,7 +63,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> executedFlowNodes = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
       .filter()
       .executingFlowNodes()
       .id(USER_TASK_ACTIVITY_ID_2)
@@ -93,7 +93,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> executingFlowNodes = ProcessFilterBuilder.filter()
+    List<ProcessFilterDto<?>> executingFlowNodes = ProcessFilterBuilder.filter()
       .executingFlowNodes()
       .ids(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
       .add()
@@ -108,7 +108,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
   }
 
   private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                                 List<ProcessFilterDto> filter) {
+                                                                 List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData = createReportWithDefinition(processDefinition);
     reportData.setFilter(filter);
     return evaluateReportAndReturnResult(reportData);

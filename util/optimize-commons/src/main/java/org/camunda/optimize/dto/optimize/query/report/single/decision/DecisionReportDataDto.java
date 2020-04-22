@@ -29,9 +29,9 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
   protected List<String> decisionDefinitionVersions = new ArrayList<>();
   protected String decisionDefinitionName;
   protected List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
-  protected List<DecisionFilterDto> filter = new ArrayList<>();
+  protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;
-  protected DecisionGroupByDto groupBy;
+  protected DecisionGroupByDto<?> groupBy;
   protected DecisionVisualization visualization;
 
   @JsonIgnore

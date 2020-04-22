@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -53,7 +51,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .name("var")
@@ -81,7 +79,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .name("stringVar")
@@ -110,7 +108,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .stringType()
@@ -141,7 +139,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .stringType()
@@ -175,7 +173,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     List<String> values = new ArrayList<>();
     values.add("aStringValue");
     values.add("anotherValue");
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .stringType()
@@ -203,7 +201,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .stringType()
@@ -231,7 +229,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .name("var")
@@ -261,7 +259,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .name("var")
@@ -296,7 +294,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     values.add("2");
     values.add("1");
 
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .name("var")
@@ -327,7 +325,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .name("var")
@@ -356,7 +354,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
       .filter()
       .variable()
       .name("var")
@@ -386,7 +384,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
-      List<ProcessFilterDto> filter =
+      List<ProcessFilterDto<?>> filter =
         ProcessFilterBuilder
           .filter()
           .variable()
@@ -404,10 +402,6 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
 
       resetIndexesAndClean();
     }
-  }
-
-  private void resetIndexesAndClean() {
-    embeddedOptimizeExtension.resetImportStartIndexes();
   }
 
   @Test
@@ -431,7 +425,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       values.add("1");
       values.add("2");
 
-      List<ProcessFilterDto> filter =
+      List<ProcessFilterDto<?>> filter =
         ProcessFilterBuilder
           .filter()
           .variable()
@@ -472,7 +466,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       values.add("1");
       values.add("2");
 
-      List<ProcessFilterDto> filter =
+      List<ProcessFilterDto<?>> filter =
         ProcessFilterBuilder
           .filter()
           .variable()
@@ -511,7 +505,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
 
       // when
 
-      List<ProcessFilterDto> filter =
+      List<ProcessFilterDto<?>> filter =
         ProcessFilterBuilder
           .filter()
           .variable()
@@ -548,7 +542,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
-      List<ProcessFilterDto> filter = ProcessFilterBuilder
+      List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
         .filter()
         .variable()
         .type(variableType)
@@ -584,7 +578,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
-      List<ProcessFilterDto> filter = ProcessFilterBuilder
+      List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
         .filter()
         .variable()
         .type(variableType)
@@ -620,7 +614,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
-      List<ProcessFilterDto> filter = ProcessFilterBuilder
+      List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
         .filter()
         .variable()
         .type(variableType)
@@ -656,7 +650,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
-      List<ProcessFilterDto> filter = ProcessFilterBuilder
+      List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
         .filter()
         .variable()
         .type(variableType)
@@ -692,7 +686,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
-      List<ProcessFilterDto> filters = ProcessFilterBuilder
+      List<ProcessFilterDto<?>> filters = ProcessFilterBuilder
         .filter()
         .variable()
         .type(variableType)
@@ -736,7 +730,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
-      List<ProcessFilterDto> filters = ProcessFilterBuilder
+      List<ProcessFilterDto<?>> filters = ProcessFilterBuilder
         .filter()
         .variable()
         .type(variableType)
@@ -758,179 +752,6 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       assertResults(result, 0);
       elasticSearchIntegrationTestExtension.cleanAndVerify();
     }
-  }
-
-  @Test
-  public void dateLessThanOrEqualVariableFilter() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    final OffsetDateTime now = nowDate();
-    variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now.minusSeconds(1));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now.plusSeconds(10));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto> filter =
-      ProcessFilterBuilder
-        .filter()
-        .variable()
-        .dateType()
-        .start(null)
-        .end(now)
-        .name("var")
-        .add()
-        .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 3);
-  }
-
-  @Test
-  public void dateGreaterOrEqualThanVariableFilter() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    final OffsetDateTime now = nowDate();
-    variables.put("var", now);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now.plusSeconds(10));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto> filter =
-      ProcessFilterBuilder
-        .filter()
-        .variable()
-        .dateType()
-        .start(now.minusSeconds(1))
-        .end(null)
-        .name("var")
-        .add()
-        .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 2);
-  }
-
-  @Test
-  public void dateEqualVariableFilter() {
-    // given
-    final OffsetDateTime now = nowDate();
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", now);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now.plusSeconds(10));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto> filter =
-      ProcessFilterBuilder
-        .filter()
-        .variable()
-        .dateType()
-        .start(now)
-        .end(now)
-        .name("var")
-        .add()
-        .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 1);
-  }
-
-  @Test
-  public void dateWithinRangeVariableFilter() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    OffsetDateTime now = nowDate();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", now);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto> filter =
-      ProcessFilterBuilder
-        .filter()
-        .variable()
-        .dateType()
-        .start(now.minusSeconds(1))
-        .end(now.plusSeconds(10))
-        .name("var")
-        .add()
-        .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 1);
-  }
-
-  @Test
-  public void dateOffRangeVariableFilter() {
-    // given
-    OffsetDateTime now = nowDate();
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", now);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", now.plusSeconds(10));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto> filters =
-      ProcessFilterBuilder
-        .filter()
-        .variable()
-        .dateType()
-        .start(now.minusSeconds(2))
-        .end(now.minusSeconds(1))
-        .name("var")
-        .add()
-        .variable()
-        .dateType()
-        .name("var")
-        .start(now.plusSeconds(1))
-        .end(now.plusSeconds(2))
-        .add()
-        .buildList();
-
-    RawDataProcessReportResultDto result =
-      evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
-
-    // then
-    assertResults(result, 0);
   }
 
   @Test
@@ -958,7 +779,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filters =
+    List<ProcessFilterDto<?>> filters =
       ProcessFilterBuilder
         .filter()
         .variable()
@@ -975,18 +796,6 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
 
     // then
     assertResults(result, 4);
-  }
-
-  private Map<String, VariableType> createVarNameToTypeMap() {
-    Map<String, VariableType> varToType = new HashMap<>();
-    varToType.put("dateVar", VariableType.DATE);
-    varToType.put("boolVar", VariableType.BOOLEAN);
-    varToType.put("shortVar", VariableType.SHORT);
-    varToType.put("intVar", VariableType.INTEGER);
-    varToType.put("longVar", VariableType.LONG);
-    varToType.put("doubleVar", VariableType.DOUBLE);
-    varToType.put("stringVar", VariableType.STRING);
-    return varToType;
   }
 
   @Test
@@ -1036,7 +845,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       // when
       VariableType variableType = varNameToTypeMap.get(entry.getKey());
 
-      List<ProcessFilterDto> filters =
+      List<ProcessFilterDto<?>> filters =
         ProcessFilterBuilder
           .filter()
           .variable()
@@ -1059,7 +868,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
   @Test
   public void validationExceptionOnNullValueField() {
     //given
-    List<ProcessFilterDto> variableFilterDto = ProcessFilterBuilder.filter()
+    List<ProcessFilterDto<?>> variableFilterDto = ProcessFilterBuilder.filter()
       .variable()
       .booleanType()
       .values(null)
@@ -1075,14 +884,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void validationExceptionOnNullOnAllDateValueField() {
+  public void validationExceptionOnNullStartDateValueField() {
     //given
-    List<ProcessFilterDto> variableFilterDto = ProcessFilterBuilder.filter()
+    List<ProcessFilterDto<?>> variableFilterDto = ProcessFilterBuilder.filter()
       .variable()
       .dateType()
-      .start(null)
-      .end(null)
       .name("foo")
+      .fixedDate(null, null)
       .add()
       .buildList();
 
@@ -1096,7 +904,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
   @Test
   public void validationExceptionOnNullNumericValuesField() {
     //given
-    List<ProcessFilterDto> variableFilterDto = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> variableFilterDto = ProcessFilterBuilder
       .filter()
       .variable()
       .longType()
@@ -1116,7 +924,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
   @Test
   public void validationExceptionOnNullNameField() {
     //given
-    List<ProcessFilterDto> variableFilterDto = ProcessFilterBuilder.filter()
+    List<ProcessFilterDto<?>> variableFilterDto = ProcessFilterBuilder.filter()
       .variable()
       .booleanTrue()
       .name(null)
@@ -1130,9 +938,20 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
+  private void resetIndexesAndClean() {
+    embeddedOptimizeExtension.resetImportStartIndexes();
+  }
 
-  private OffsetDateTime nowDate() {
-    return OffsetDateTime.now();
+  private Map<String, VariableType> createVarNameToTypeMap() {
+    Map<String, VariableType> varToType = new HashMap<>();
+    varToType.put("dateVar", VariableType.DATE);
+    varToType.put("boolVar", VariableType.BOOLEAN);
+    varToType.put("shortVar", VariableType.SHORT);
+    varToType.put("intVar", VariableType.INTEGER);
+    varToType.put("longVar", VariableType.LONG);
+    varToType.put("doubleVar", VariableType.DOUBLE);
+    varToType.put("stringVar", VariableType.STRING);
+    return varToType;
   }
 
   private Object changeNumericValueToType(int value, VariableType type) {
@@ -1153,15 +972,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     assertThat("PI count", report.getData().size(), is(piCount));
   }
 
-  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
-  }
-
-  private Response evaluateReportWithFilterAndGetResponse(List<ProcessFilterDto> filterList) {
+  private Response evaluateReportWithFilterAndGetResponse(List<ProcessFilterDto<?>> filterList) {
     final String TEST_DEFINITION_KEY = "testDefinition";
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
@@ -1174,7 +985,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
   }
 
   private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                                 List<ProcessFilterDto> filterList) {
+                                                                 List<ProcessFilterDto<?>> filterList) {
     return this.evaluateReportWithFilter(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion()),
@@ -1184,7 +995,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
 
   private RawDataProcessReportResultDto evaluateReportWithFilter(String processDefinitionKey,
                                                                  String processDefinitionVersion,
-                                                                 List<ProcessFilterDto> filter) {
+                                                                 List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)

@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.date;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -20,8 +20,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -61,7 +61,10 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
                                             long durationInSec) {
     OffsetDateTime shiftedEndDate = refDate.plusDays(daysToShift);
     try {
-      engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedEndDate.minusSeconds(durationInSec));
+      engineDatabaseExtension.changeProcessInstanceStartDate(
+        processInstanceId,
+        shiftedEndDate.minusSeconds(durationInSec)
+      );
       engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException("Failed adjusting process instance dates", e);
@@ -121,18 +124,17 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
     adjustProcessInstanceDates(processInstanceDto1.getId(), startDate, 0L, 1L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinitionId);
     adjustProcessInstanceDates(processInstanceDto2.getId(), startDate, -2L, 2L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
-    dateFilterDataDto.setStart(new RelativeDateFilterStartDto(
-      4L,
-      DateFilterUnit.DAYS
-    ));
+    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto(
+      new RelativeDateFilterStartDto(4L, DateFilterUnit.DAYS)
+    );
     final StartDateFilterDto startDateFilterDto = new StartDateFilterDto(dateFilterDataDto);
 
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
@@ -239,7 +241,10 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      completeProcessInstanceDto.getId(),
+      completedProcInstStartDate
+    );
     engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
@@ -253,7 +258,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
       .runningInstancesOnly()
       .add()
       .buildList();
@@ -287,7 +292,10 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      completeProcessInstanceDto.getId(),
+      completedProcInstStartDate
+    );
     engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
@@ -301,7 +309,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(GREATER_THAN_EQUALS)
       .unit(DateFilterUnit.HOURS.getId())

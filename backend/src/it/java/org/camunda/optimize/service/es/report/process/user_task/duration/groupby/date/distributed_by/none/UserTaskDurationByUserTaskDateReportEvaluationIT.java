@@ -584,7 +584,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final List<ProcessFilterDto> processFilterDtoList = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> processFilterDtoList = ProcessFilterBuilder.filter()
       .completedInstancesOnly().add().buildList();
     reportData.setFilter(processFilterDtoList);
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();

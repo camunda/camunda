@@ -8,13 +8,11 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.springframework.stereotype.Component;
 
-import java.time.format.DateTimeFormatter;
-
 @Component
 public class DecisionOutputVariableQueryFilter extends DecisionVariableQueryFilter {
 
-  public DecisionOutputVariableQueryFilter(final DateTimeFormatter formatter) {
-    super(formatter);
+  public DecisionOutputVariableQueryFilter(final DateFilterQueryService dateFilterQueryService) {
+    super(dateFilterQueryService);
   }
 
   @Override

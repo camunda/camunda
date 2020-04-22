@@ -5,13 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.decision.filter;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 
-public class EvaluationDateFilterDto extends DecisionFilterDto<DateFilterDataDto> {
+@JsonTypeName("evaluationDateTime")
+public class EvaluationDateFilterDto extends DecisionFilterDto<DateFilterDataDto<?>> {
   public EvaluationDateFilterDto() {
   }
 
-  public EvaluationDateFilterDto(final DateFilterDataDto dateFilterDataDto) {
+  public EvaluationDateFilterDto(final DateFilterDataDto<?> dateFilterDataDto) {
     super(dateFilterDataDto);
   }
 }

@@ -557,7 +557,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final List<ProcessFilterDto> processFilterDtoList = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> processFilterDtoList = ProcessFilterBuilder.filter()
       .completedInstancesOnly().add().buildList();
     reportData.setFilter(processFilterDtoList);
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();

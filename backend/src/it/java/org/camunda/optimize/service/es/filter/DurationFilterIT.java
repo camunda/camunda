@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -38,7 +38,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
       .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
-    List<ProcessFilterDto> gte = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> gte = ProcessFilterBuilder
       .filter()
       .duration()
       .unit("Seconds")
@@ -46,7 +46,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
       .operator(">=")
       .add()
       .buildList();
-    List<ProcessFilterDto> lt = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> lt = ProcessFilterBuilder
       .filter()
       .duration()
       .unit("Days")

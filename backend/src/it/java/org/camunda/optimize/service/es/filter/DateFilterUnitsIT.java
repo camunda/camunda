@@ -66,7 +66,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
     // when
     ProcessReportDataDto reportData = createReport(processInstance.getProcessDefinitionKey(),
                                                    processInstance.getProcessDefinitionVersion());
-    List<ProcessFilterDto> relativeDateFilter = createRelativeStartDateFilter(DateFilterUnit.QUARTERS, 1L);
+    List<ProcessFilterDto<?>> relativeDateFilter = createRelativeStartDateFilter(DateFilterUnit.QUARTERS, 1L);
     reportData.setFilter(relativeDateFilter);
 
     //then

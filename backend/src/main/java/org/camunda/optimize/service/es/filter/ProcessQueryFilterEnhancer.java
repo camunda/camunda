@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
-public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFilterDto> {
+public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFilterDto<?>> {
 
   private final StartDateQueryFilter startDateQueryFilter;
   private final EndDateQueryFilter endDateQueryFilter;
@@ -44,7 +44,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final NonSuspendedInstancesOnlyQueryFilter nonSuspendedInstancesOnlyQueryFilter;
 
   @Override
-  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto> filter) {
+  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filter) {
     if (filter != null) {
       startDateQueryFilter.addFilters(query, extractFilters(filter, StartDateFilterDto.class));
       endDateQueryFilter.addFilters(query, extractFilters(filter, EndDateFilterDto.class));
@@ -81,8 +81,9 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
     return endDateQueryFilter;
   }
 
-  public <T extends FilterDataDto> List<T> extractFilters(List<ProcessFilterDto> filter,
-                                                          Class<? extends ProcessFilterDto> clazz) {
+  @SuppressWarnings("unchecked")
+  public <T extends FilterDataDto> List<T> extractFilters(List<ProcessFilterDto<?>> filter,
+                                                          Class<? extends ProcessFilterDto<T>> clazz) {
     return filter
       .stream()
       .filter(clazz::isInstance)

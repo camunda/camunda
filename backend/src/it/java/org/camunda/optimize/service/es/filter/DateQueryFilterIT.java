@@ -45,7 +45,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
     //when
     ProcessReportDataDto reportData = createReportWithInstance(engineDto);
 
-    List<ProcessFilterDto> fixedStartDateFilter =
+    List<ProcessFilterDto<?>> fixedStartDateFilter =
       ProcessFilterBuilder.filter()
         .fixedStartDate()
         .start(start.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.util;
 
+import lombok.experimental.UtilityClass;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -34,10 +35,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-
+@UtilityClass
 public class ValidationHelper {
 
-  public static void validate(BranchAnalysisQueryDto dto) throws OptimizeValidationException {
+  public static void validate(BranchAnalysisQueryDto dto) {
     ensureNotEmpty("gateway activity id", dto.getGateway());
     ensureNotEmpty("end activity id", dto.getEnd());
     ensureNotEmpty("query dto", dto);
@@ -111,19 +112,19 @@ public class ValidationHelper {
     }
   }
 
-  private static void validateProcessFilters(List<ProcessFilterDto> filters) {
+  private static void validateProcessFilters(List<ProcessFilterDto<?>> filters) {
     if (filters != null) {
-      for (ProcessFilterDto filterDto : filters) {
+      for (ProcessFilterDto<?> filterDto : filters) {
         if (filterDto instanceof StartDateFilterDto) {
           StartDateFilterDto startDateFilterDto = (StartDateFilterDto) filterDto;
-          DateFilterDataDto startDateFilterDataDto = startDateFilterDto.getData();
+          DateFilterDataDto<?> startDateFilterDataDto = startDateFilterDto.getData();
 
           ensureAtLeastOneNotNull("start date filter ",
                                   startDateFilterDataDto.getStart(), startDateFilterDataDto.getEnd()
           );
         } else if (filterDto instanceof VariableFilterDto) {
           VariableFilterDto variableFilterDto = (VariableFilterDto) filterDto;
-          VariableFilterDataDto variableFilterData = variableFilterDto.getData();
+          VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
           ensureNotEmpty("data", variableFilterData.getData());
           ensureNotEmpty("name", variableFilterData.getName());
           ensureNotEmpty("type", variableFilterData.getType());
@@ -141,12 +142,12 @@ public class ValidationHelper {
     }
   }
 
-  private static void validateDecisionFilters(List<DecisionFilterDto> filters) {
+  private static void validateDecisionFilters(List<DecisionFilterDto<?>> filters) {
     if (filters != null) {
-      for (DecisionFilterDto filterDto : filters) {
+      for (DecisionFilterDto<?> filterDto : filters) {
         if (filterDto instanceof EvaluationDateFilterDto) {
           EvaluationDateFilterDto evaluationDateFilterDto = (EvaluationDateFilterDto) filterDto;
-          DateFilterDataDto evaluationDateFilterDataDto = evaluationDateFilterDto.getData();
+          DateFilterDataDto<?> evaluationDateFilterDataDto = evaluationDateFilterDto.getData();
 
           ensureAtLeastOneNotNull(
             "evaluation date filter ",
@@ -155,13 +156,13 @@ public class ValidationHelper {
           );
         } else if (filterDto instanceof InputVariableFilterDto) {
           InputVariableFilterDto variableFilterDto = (InputVariableFilterDto) filterDto;
-          VariableFilterDataDto variableFilterData = variableFilterDto.getData();
+          VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
           ensureNotEmpty("data", variableFilterData.getData());
           ensureNotEmpty("name", variableFilterData.getName());
           ensureNotEmpty("type", variableFilterData.getType());
         } else if (filterDto instanceof OutputVariableFilterDto) {
           OutputVariableFilterDto variableFilterDto = (OutputVariableFilterDto) filterDto;
-          VariableFilterDataDto variableFilterData = variableFilterDto.getData();
+          VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
           ensureNotEmpty("data", variableFilterData.getData());
           ensureNotEmpty("name", variableFilterData.getName());
           ensureNotEmpty("type", variableFilterData.getType());

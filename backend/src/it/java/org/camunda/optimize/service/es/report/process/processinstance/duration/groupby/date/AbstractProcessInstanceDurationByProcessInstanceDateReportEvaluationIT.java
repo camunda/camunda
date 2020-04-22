@@ -484,7 +484,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
       .completedInstancesOnly()
       .add()
       .buildList();
@@ -530,7 +530,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(LESS_THAN)
       .unit(DateFilterUnit.HOURS.getId())
@@ -815,7 +815,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     assertThat(result.getData().size(), is(0));
   }
 
-  private List<ProcessFilterDto> createVariableFilter(String value) {
+  private List<ProcessFilterDto<?>> createVariableFilter(String value) {
     return ProcessFilterBuilder
       .filter()
       .variable()

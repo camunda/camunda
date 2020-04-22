@@ -58,18 +58,18 @@ public class ProcessGroupByProcessInstanceStartDate extends ProcessGroupByProces
 
   @Override
   protected void addFiltersToQuery(final BoolQueryBuilder limitFilterQuery,
-                                final List<DateFilterDataDto> limitedFilters) {
+                                   final List<DateFilterDataDto<?>> limitedFilters) {
     queryFilterEnhancer.getStartDateQueryFilter().addFilters(limitFilterQuery, limitedFilters);
   }
 
   @Override
-  protected List<DateFilterDataDto> getReportDateFilters(final ProcessReportDataDto reportData) {
+  protected List<DateFilterDataDto<?>> getReportDateFilters(final ProcessReportDataDto reportData) {
     return queryFilterEnhancer.extractFilters(reportData.getFilter(), StartDateFilterDto.class);
   }
 
   @Override
   protected BoolQueryBuilder createDefaultLimitingFilter(final GroupByDateUnit unit, final QueryBuilder query,
-                                                       final ProcessReportDataDto reportData) {
+                                                         final ProcessReportDataDto reportData) {
     final BoolQueryBuilder limitFilterQuery;
     limitFilterQuery = createProcessStartDateHistogramBucketLimitingFilterFor(
       reportData.getFilter(),

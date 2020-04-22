@@ -26,8 +26,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.elasticsearch.action.get.GetRequest;
@@ -329,17 +329,14 @@ public class SingleReportHandlingIT extends AbstractIT {
     assertThat(reportData.getFilter().size(), is(3));
   }
 
-  private List<ProcessFilterDto> createVariableFilter() {
-    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(true);
-    data.setName("foo");
-
+  private List<ProcessFilterDto<?>> createVariableFilter() {
     VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setData(data);
+    variableFilterDto.setData(new BooleanVariableFilterDataDto("foo", true));
     return Collections.singletonList(variableFilterDto);
   }
 
-  private List<ProcessFilterDto> createExecutedFlowNodeFilter() {
-    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
+  private List<ProcessFilterDto<?>> createExecutedFlowNodeFilter() {
+    List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
       .id("task1")

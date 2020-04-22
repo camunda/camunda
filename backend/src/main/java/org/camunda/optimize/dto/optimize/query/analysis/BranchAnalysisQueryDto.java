@@ -23,7 +23,7 @@ public class BranchAnalysisQueryDto {
   private List<String> processDefinitionVersions;
   private List<String> tenantIds = Collections.singletonList(null);
 
-  private List<ProcessFilterDto> filter = new ArrayList<>();
+  private List<ProcessFilterDto<?>> filter = new ArrayList<>();
 
   @JsonIgnore
   public void setProcessDefinitionVersion(String definitionVersion) {

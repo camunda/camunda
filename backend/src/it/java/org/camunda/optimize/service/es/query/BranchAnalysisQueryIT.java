@@ -719,7 +719,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       END_EVENT_ID
     );
 
-    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
       .id("task1")
@@ -1151,7 +1151,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
   }
 
   private void addStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate, BranchAnalysisQueryDto dto) {
-    List<ProcessFilterDto> dateFilter = ProcessFilterBuilder
+    List<ProcessFilterDto<?>> dateFilter = ProcessFilterBuilder
       .filter()
       .fixedStartDate()
       .start(startDate)

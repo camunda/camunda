@@ -8,10 +8,10 @@ package org.camunda.optimize.test.util.decision;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
@@ -28,48 +28,32 @@ public class DecisionFilterUtilHelper {
 
   public static EvaluationDateFilterDto createFixedEvaluationDateFilter(OffsetDateTime startDate,
                                                                         OffsetDateTime endDate) {
+    final FixedDateFilterDataDto fixedDateFilterDataDto = new FixedDateFilterDataDto(startDate, endDate);
     EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
-
-    final FixedDateFilterDataDto fixedDateFilterDataDto = new FixedDateFilterDataDto();
-    fixedDateFilterDataDto.setStart(startDate);
-    fixedDateFilterDataDto.setEnd(endDate);
-
     filter.setData(fixedDateFilterDataDto);
-
     return filter;
   }
 
   public static EvaluationDateFilterDto createRelativeEvaluationDateFilter(Long value, DateFilterUnit unit) {
+    RelativeDateFilterDataDto filterData = new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
     EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
-    RelativeDateFilterDataDto filterData = new RelativeDateFilterDataDto();
-    RelativeDateFilterStartDto evaluationDate = new RelativeDateFilterStartDto(value, unit);
-
-    evaluationDate.setUnit(unit);
-    evaluationDate.setValue(value);
-    filterData.setStart(evaluationDate);
     filter.setData(filterData);
-
     return filter;
   }
 
   public static EvaluationDateFilterDto createRollingEvaluationDateFilter(Long value, DateFilterUnit unit) {
-    EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
-    RollingDateFilterDataDto filterData = new RollingDateFilterDataDto();
     RollingDateFilterStartDto evaluationDate = new RollingDateFilterStartDto(value, unit);
-
-    evaluationDate.setUnit(unit);
-    evaluationDate.setValue(value);
-    filterData.setStart(evaluationDate);
+    RollingDateFilterDataDto filterData = new RollingDateFilterDataDto(evaluationDate);
+    EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
     filter.setData(filterData);
-
     return filter;
   }
 
   public static InputVariableFilterDto createStringInputVariableFilter(String variableName, String operator,
                                                                        String... variableValues) {
-    StringVariableFilterDataDto data = new StringVariableFilterDataDto(operator, Arrays.asList(variableValues));
-    data.setName(variableName);
-
+    StringVariableFilterDataDto data = new StringVariableFilterDataDto(
+      variableName, operator, Arrays.asList(variableValues)
+    );
     InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
     variableFilterDto.setData(data);
 
@@ -78,9 +62,11 @@ public class DecisionFilterUtilHelper {
 
   public static InputVariableFilterDto createDoubleInputVariableFilter(String variableName, String operator,
                                                                        String... variableValues) {
-    DoubleVariableFilterDataDto data = new DoubleVariableFilterDataDto(operator, Arrays.asList(variableValues));
-    data.setName(variableName);
-
+    DoubleVariableFilterDataDto data = new DoubleVariableFilterDataDto(
+      variableName,
+      operator,
+      Arrays.asList(variableValues)
+    );
     InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
     variableFilterDto.setData(data);
 
@@ -88,9 +74,7 @@ public class DecisionFilterUtilHelper {
   }
 
   public static InputVariableFilterDto createBooleanInputVariableFilter(String variableName, Boolean variableValue) {
-    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableValue);
-    data.setName(variableName);
-
+    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableName, variableValue);
     InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
     variableFilterDto.setData(data);
 
@@ -100,9 +84,36 @@ public class DecisionFilterUtilHelper {
   public static InputVariableFilterDto createFixedDateInputVariableFilter(String variableName,
                                                                           OffsetDateTime startDate,
                                                                           OffsetDateTime endDate) {
-    DateVariableFilterDataDto data = new DateVariableFilterDataDto(startDate, endDate);
-    data.setName(variableName);
+    DateVariableFilterDataDto data = new DateVariableFilterDataDto(
+      variableName,
+      new FixedDateFilterDataDto(startDate, endDate)
+    );
+    InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
+    variableFilterDto.setData(data);
 
+    return variableFilterDto;
+  }
+
+  public static InputVariableFilterDto createRelativeDateInputVariableFilter(final String variableName,
+                                                                             final Long value,
+                                                                             final DateFilterUnit unit) {
+    DateVariableFilterDataDto data = new DateVariableFilterDataDto(
+      variableName,
+      new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit))
+    );
+    InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
+    variableFilterDto.setData(data);
+
+    return variableFilterDto;
+  }
+
+  public static InputVariableFilterDto createRollingDateInputVariableFilter(final String variableName,
+                                                                            final Long value,
+                                                                            final DateFilterUnit unit) {
+    DateVariableFilterDataDto data = new DateVariableFilterDataDto(
+      variableName,
+      new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit))
+    );
     InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
     variableFilterDto.setData(data);
 
@@ -110,9 +121,7 @@ public class DecisionFilterUtilHelper {
   }
 
   public static OutputVariableFilterDto createBooleanOutputVariableFilter(String variableName, Boolean variableValue) {
-    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableValue);
-    data.setName(variableName);
-
+    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableName, variableValue);
     OutputVariableFilterDto variableFilterDto = new OutputVariableFilterDto();
     variableFilterDto.setData(data);
 
@@ -121,8 +130,7 @@ public class DecisionFilterUtilHelper {
 
 
   public static VariableFilterDataDto createUndefinedVariableFilterData(String variableName) {
-    VariableFilterDataDto data = new StringVariableFilterDataDto("whatever", Collections.emptyList());
-    data.setName(variableName);
+    VariableFilterDataDto data = new StringVariableFilterDataDto(variableName, "whatever", Collections.emptyList());
     data.setFilterForUndefined(true);
     return data;
   }

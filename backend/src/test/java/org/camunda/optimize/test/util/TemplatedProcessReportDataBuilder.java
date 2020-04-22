@@ -37,7 +37,7 @@ public class TemplatedProcessReportDataBuilder {
   private UserTaskDurationTime userTaskDurationTime;
   private ProcessVisualization visualization;
 
-  private List<ProcessFilterDto> filter = new ArrayList<>();
+  private List<ProcessFilterDto<?>> filter = new ArrayList<>();
 
   public static TemplatedProcessReportDataBuilder createReportData() {
     return new TemplatedProcessReportDataBuilder();
@@ -539,12 +539,12 @@ public class TemplatedProcessReportDataBuilder {
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setFilter(ProcessFilterDto newFilter) {
+  public TemplatedProcessReportDataBuilder setFilter(ProcessFilterDto<?> newFilter) {
     this.filter = Collections.singletonList(newFilter);
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setFilter(List<ProcessFilterDto> newFilter) {
+  public TemplatedProcessReportDataBuilder setFilter(List<ProcessFilterDto<?>> newFilter) {
     this.filter = newFilter;
     return this;
   }
