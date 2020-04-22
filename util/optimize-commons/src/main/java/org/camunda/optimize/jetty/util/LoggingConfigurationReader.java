@@ -22,21 +22,16 @@ import java.util.Objects;
 
 public class LoggingConfigurationReader {
 
-  private LinkedList<String> loggingConfigNames = Lists.newLinkedList(Arrays.asList(
+  private final LinkedList<String> loggingConfigNames = Lists.newLinkedList(Arrays.asList(
     "environment-logback.xml",
     "logback-test.xml",
     "logback.xml"
   ));
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   public LoggingConfigurationReader() {
   }
-
-  public LoggingConfigurationReader(String configXmlName) {
-    this.loggingConfigNames.addFirst(configXmlName);
-  }
-
 
   public void defineLogbackLoggingConfiguration() {
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();

@@ -1,5 +1,12 @@
 <configuration>
-  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+  <appender name="UPGRADE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="RUNTIME" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>log/optimize.log</file>
 
     <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -14,10 +21,18 @@
     </encoder>
   </appender>
 
+  <!-- Change the log level for the Optimize runtime here -->
   <logger name="org.camunda.optimize" level="info" />
+
+  <!-- Change the log level for the upgrade here -->
+  <logger name="org.camunda.optimize.upgrade" level="info">
+    <appender-ref ref="UPGRADE"/>
+  </logger>
+
+  <!-- Change the log level for the communication to Elasticsearch here -->
   <logger name="org.elasticsearch" level="warn" />
 
   <root level="warn">
-    <appender-ref ref="FILE" />
+    <appender-ref ref="RUNTIME" />
   </root>
 </configuration>

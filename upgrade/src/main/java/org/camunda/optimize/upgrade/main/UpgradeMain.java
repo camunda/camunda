@@ -34,7 +34,7 @@ public class UpgradeMain {
   private static Map<String, UpgradeProcedure> upgrades = new HashMap<>();
 
   static {
-    new LoggingConfigurationReader("upgrade-logback.xml").defineLogbackLoggingConfiguration();
+    new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
     upgrades.put(Version.VERSION, new GenericUpgradeProcedure(PreviousVersion.PREVIOUS_VERSION, Version.VERSION));
     upgrades.put("3.0.0", new UpgradeFrom27To30());
     upgrades.put(UpgradeFrom30To31.TO_VERSION, new UpgradeFrom30To31());
