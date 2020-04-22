@@ -10,6 +10,8 @@ import {Route, Redirect} from 'react-router-dom';
 import {addHandler, removeHandler, request} from 'request';
 import {nowPristine} from 'saveGuard';
 import {withUser} from 'HOC';
+import {showError} from 'notifications';
+import {t} from 'translation';
 
 import {Header, Footer} from '..';
 
@@ -126,19 +128,39 @@ function Detachable({container, children}) {
   return ReactDOM.createPortal(children, container);
 }
 
+// keep track of whether we were logged in in the current session
+let isLoggedIn = false;
 const outstandingRequests = [];
 addHandler((response, payload) => {
   if (
-    response.status === 401 &&
-    !['api/authentication', 'api/onboarding/whatsnew', 'api/eventBasedProcess/isEnabled'].includes(
-      payload.url
-    )
+    ![
+      'api/authentication',
+      'api/authentication/logout',
+      'api/onboarding/whatsnew',
+      'api/ui-configuration',
+      'api/localization',
+      'api/eventBasedProcess/isEnabled',
+    ].includes(payload.url)
   ) {
-    return new Promise((resolve, reject) => {
-      outstandingRequests.push({resolve, reject, payload});
-    });
+    if (response.status === 401) {
+      if (isLoggedIn) {
+        // if we were logged in before, the session timed out
+        showError(t('login.timeout'));
+        isLoggedIn = false;
+      }
+      return new Promise((resolve, reject) => {
+        outstandingRequests.push({resolve, reject, payload});
+      });
+    } else {
+      // if we get a non 401 response on a restricted ressource, we know
+      // that we are logged in in the current session
+      isLoggedIn = true;
+    }
   }
 
+  if (payload.url === 'api/authentication/logout') {
+    isLoggedIn = false;
+  }
   return response;
 }, -1);
 

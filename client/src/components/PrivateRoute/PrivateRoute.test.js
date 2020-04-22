@@ -13,6 +13,7 @@ import {PrivateRoute} from './PrivateRoute';
 import {Login} from './Login';
 
 import {addHandler, removeHandler} from 'request';
+import {showError} from 'notifications';
 
 const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 const TestComponent = () => <div>TestComponent</div>;
@@ -23,6 +24,9 @@ jest.mock('request', () => {
     removeHandler: jest.fn(),
   };
 });
+jest.mock('notifications', () => ({
+  showError: jest.fn(),
+}));
 
 it('should render the component if the user is logged in', () => {
   const node = shallow(<PrivateRoute component={TestComponent} />).renderProp('render')({});
@@ -55,6 +59,34 @@ it('should register a response handler', () => {
   shallow(<PrivateRoute component={TestComponent} />);
 
   expect(addHandler).toHaveBeenCalled();
+});
+
+describe('session timeout', () => {
+  const handler = addHandler.mock.calls[0][0];
+  beforeEach(() => {
+    showError.mockClear();
+  });
+
+  it('should not show an error message if the user comes to the page initially', () => {
+    handler({status: 401}, {url: 'api/entities'});
+
+    expect(showError).not.toHaveBeenCalled();
+  });
+
+  it('should show an error message if the session times out', () => {
+    handler({status: 200}, {url: 'api/entities'});
+    handler({status: 401}, {url: 'api/entities'});
+
+    expect(showError).toHaveBeenCalled();
+  });
+
+  it('should not show an error message if the user logs out manually', () => {
+    handler({status: 200}, {url: 'api/entities'});
+    handler({status: 200}, {url: 'api/authentication/logout'});
+    handler({status: 401}, {url: 'api/entities'});
+
+    expect(showError).not.toHaveBeenCalled();
+  });
 });
 
 it('should unregister the response handler when it is destroyed', async () => {

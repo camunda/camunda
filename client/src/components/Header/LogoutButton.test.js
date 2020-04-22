@@ -10,21 +10,19 @@ import {shallow} from 'enzyme';
 import {Dropdown} from 'components';
 
 import {LogoutButton} from './LogoutButton';
-import {get} from 'request';
 
 const props = {
   mightFail: jest.fn(),
+  history: {push: jest.fn()},
 };
 
 it('renders without crashing', () => {
   shallow(<LogoutButton />);
 });
 
-it('should logout from server on click', () => {
+it('should go to the temporary logout route', () => {
   const node = shallow(<LogoutButton {...props} />);
 
   node.find(Dropdown.Option).simulate('click');
-  setImmediate(() => {
-    expect(get).toHaveBeenCalledWith(expect.stringContaining('logout'));
-  });
+  expect(props.history.push).toHaveBeenCalledWith('/logout');
 });

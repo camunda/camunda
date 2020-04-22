@@ -74,7 +74,7 @@ exports[`matches the snapshot 1`] = `
   <Dropdown
     label="Hans Wurst"
   >
-    <withRouter(LogoutButtonErrorHandler) />
+    <withRouter(LogoutButton) />
   </Dropdown>
 </header>
 `;

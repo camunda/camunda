@@ -6,6 +6,7 @@
     "events": "Event Based Processes",
     "logout": "Logout",
     "logoutFailed": "Logout failed.",
+    "logoutSuccess": "You logged out successfully.",
     "configLoadingError": "An error occurred while loading the UI configurations"
   },
   "login": {
@@ -13,7 +14,8 @@
     "username": "Username",
     "password": "Password",
     "btn": "Log in",
-    "error": "An error occurred. Could not log you in."
+    "error": "An error occurred. Could not log you in.",
+    "timeout": "Your session timed out. Please log in again to complete the action."
   },
   "footer": {
     "importing": "is importing...",

@@ -20,6 +20,7 @@ import {
   Sharing,
   License,
   WithLicense,
+  Logout,
 } from './components';
 
 import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
@@ -98,6 +99,7 @@ class App extends React.Component {
                       render={this.renderEntity}
                     />
                     <Route path="/license" component={License} />
+                    <Route path="/logout" component={Logout} />
                     <PrivateRoute path="*" component={ErrorPage} />
                   </Switch>
                 </UserProvider>

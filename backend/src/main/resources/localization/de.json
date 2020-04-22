@@ -6,6 +6,7 @@
     "events": "Eventbasierte Prozesse",
     "logout": "Abmelden",
     "logoutFailed": "Abmeldung fehlgeschlagen",
+    "logoutSuccess": "Sie haben sich erfolgreich abgemeldet.",
     "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten"
   },
   "login": {
@@ -13,7 +14,8 @@
     "username": "Nutzername",
     "password": "Passwort",
     "btn": "Einloggen",
-    "error": "Bei der Anmeldung ist ein Fehler aufgetreten."
+    "error": "Bei der Anmeldung ist ein Fehler aufgetreten.",
+    "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen."
   },
   "footer": {
     "importing": "wird importiert ...",
