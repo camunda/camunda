@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.filter;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
@@ -13,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Dura
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -42,34 +44,32 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final NonCanceledInstancesOnlyQueryFilter nonCanceledInstancesOnlyQueryFilter;
   private final SuspendedInstancesOnlyQueryFilter suspendedInstancesOnlyQueryFilter;
   private final NonSuspendedInstancesOnlyQueryFilter nonSuspendedInstancesOnlyQueryFilter;
+  private final FlowNodeDurationQueryFilter flowNodeDurationQueryFilter;
 
   @Override
-  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filter) {
-    if (filter != null) {
-      startDateQueryFilter.addFilters(query, extractFilters(filter, StartDateFilterDto.class));
-      endDateQueryFilter.addFilters(query, extractFilters(filter, EndDateFilterDto.class));
-      variableQueryFilter.addFilters(query, extractFilters(filter, VariableFilterDto.class));
-      executedFlowNodeQueryFilter.addFilters(query, extractFilters(filter, ExecutedFlowNodeFilterDto.class));
-      executingFlowNodeQueryFilter.addFilters(query, extractFilters(filter, ExecutingFlowNodeFilterDto.class));
-      durationQueryFilter.addFilters(query, extractFilters(filter, DurationFilterDto.class));
-      runningInstancesOnlyQueryFilter.addFilters(query, extractFilters(filter, RunningInstancesOnlyFilterDto.class));
+  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters) {
+    if (!CollectionUtils.isEmpty(filters)) {
+      startDateQueryFilter.addFilters(query, extractFilters(filters, StartDateFilterDto.class));
+      endDateQueryFilter.addFilters(query, extractFilters(filters, EndDateFilterDto.class));
+      variableQueryFilter.addFilters(query, extractFilters(filters, VariableFilterDto.class));
+      executedFlowNodeQueryFilter.addFilters(query, extractFilters(filters, ExecutedFlowNodeFilterDto.class));
+      executingFlowNodeQueryFilter.addFilters(query, extractFilters(filters, ExecutingFlowNodeFilterDto.class));
+      durationQueryFilter.addFilters(query, extractFilters(filters, DurationFilterDto.class));
+      runningInstancesOnlyQueryFilter.addFilters(query, extractFilters(filters, RunningInstancesOnlyFilterDto.class));
       completedInstancesOnlyQueryFilter.addFilters(
-        query,
-        extractFilters(filter, CompletedInstancesOnlyFilterDto.class)
+        query, extractFilters(filters, CompletedInstancesOnlyFilterDto.class)
       );
-      canceledInstancesOnlyQueryFilter.addFilters(query, extractFilters(filter, CanceledInstancesOnlyFilterDto.class));
+      canceledInstancesOnlyQueryFilter.addFilters(query, extractFilters(filters, CanceledInstancesOnlyFilterDto.class));
       nonCanceledInstancesOnlyQueryFilter.addFilters(
-        query,
-        extractFilters(filter, NonCanceledInstancesOnlyFilterDto.class)
+        query, extractFilters(filters, NonCanceledInstancesOnlyFilterDto.class)
       );
       suspendedInstancesOnlyQueryFilter.addFilters(
-        query,
-        extractFilters(filter, SuspendedInstancesOnlyFilterDto.class)
+        query, extractFilters(filters, SuspendedInstancesOnlyFilterDto.class)
       );
       nonSuspendedInstancesOnlyQueryFilter.addFilters(
-        query,
-        extractFilters(filter, NonSuspendedInstancesOnlyFilterDto.class)
+        query, extractFilters(filters, NonSuspendedInstancesOnlyFilterDto.class)
       );
+      flowNodeDurationQueryFilter.addFilters(query, extractFilters(filters, FlowNodeDurationFilterDto.class));
     }
   }
 
@@ -82,8 +82,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends FilterDataDto> List<T> extractFilters(List<ProcessFilterDto<?>> filter,
-                                                          Class<? extends ProcessFilterDto<T>> clazz) {
+  public <T extends FilterDataDto> List<T> extractFilters(final List<ProcessFilterDto<?>> filter,
+                                                          final Class<? extends ProcessFilterDto<T>> clazz) {
     return filter
       .stream()
       .filter(clazz::isInstance)

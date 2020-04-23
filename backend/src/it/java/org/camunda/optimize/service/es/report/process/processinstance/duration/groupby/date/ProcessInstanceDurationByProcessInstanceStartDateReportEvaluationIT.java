@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.processinstance.duration.
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -312,7 +313,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
     final List<ProcessFilterDto<?>> testExecutionStateFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(GREATER_THAN_EQUALS)
-      .unit(DateFilterUnit.HOURS.getId())
+      .unit(DurationFilterUnit.HOURS)
       .value(1L)
       .add()
       .buildList();

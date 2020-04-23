@@ -12,7 +12,7 @@ import java.util.List;
 
 public class ProcessFilterBuilder {
 
-  private List<ProcessFilterDto<?>> filters = new ArrayList<>();
+  private final List<ProcessFilterDto<?>> filters = new ArrayList<>();
 
   public static ProcessFilterBuilder filter() {
     return new ProcessFilterBuilder();
@@ -78,11 +78,16 @@ public class ProcessFilterBuilder {
     return VariableFilterBuilder.construct(this);
   }
 
-  void addFilter(ProcessFilterDto result) {
+  public FlowNodeDurationFilterBuilder flowNodeDuration() {
+    return FlowNodeDurationFilterBuilder.construct(this);
+  }
+
+  void addFilter(ProcessFilterDto<?> result) {
     filters.add(result);
   }
 
-  public <T extends ProcessFilterDto> List<T> buildList() {
+  @SuppressWarnings("unchecked")
+  public <T extends ProcessFilterDto<?>> List<T> buildList() {
     return (List<T>) filters;
   }
 }

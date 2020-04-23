@@ -6,14 +6,19 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.data;
 
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class DurationFilterDataDto implements FilterDataDto {
-  public static final String DURATION = "durationInMs";
 
   protected Long value;
-  protected String unit;
+  protected DurationFilterUnit unit;
   protected String operator;
+
 }

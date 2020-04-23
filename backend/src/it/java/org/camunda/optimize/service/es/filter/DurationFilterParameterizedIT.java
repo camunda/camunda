@@ -5,13 +5,14 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,7 +28,7 @@ public class DurationFilterParameterizedIT extends AbstractDurationFilterIT {
                                                    Long durationInSec,
                                                    String operator,
                                                    int duration,
-                                                   String unit) throws Exception {
+                                                   DurationFilterUnit unit) throws Exception {
     // given
     ProcessInstanceEngineDto processInstance;
     if (deployWithTimeShift) {
@@ -62,16 +63,15 @@ public class DurationFilterParameterizedIT extends AbstractDurationFilterIT {
 
   private static Stream<Arguments> getArguments() {
     return Stream.of(
-      Arguments.of(false, null, null, "<", 1, "Seconds"),
-      Arguments.of(false, null, null, "<", 1, "Minutes"),
-      Arguments.of(false, null, null, "<", 1, "Hours"),
-      Arguments.of(false, null, null, "<", 1, "Half_Days"),
-      Arguments.of(false, null, null, "<", 1, "Days"),
-      Arguments.of(false, null, null, "<", 1, "Weeks"),
-      Arguments.of(false, null, null, "<", 1, "Months"),
-      Arguments.of(false, null, null, "<", 1, "Days"),
-      Arguments.of(true, 0L, 2L, ">", 1, "Seconds"),
-      Arguments.of(true, 0L, 2L, ">=", 2, "Seconds")
+      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.SECONDS),
+      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.MINUTES),
+      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.HOURS),
+      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.HALF_DAYS),
+      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.DAYS),
+      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.WEEKS),
+      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.MONTHS),
+      Arguments.of(true, 0L, 2L, ">", 1, DurationFilterUnit.SECONDS),
+      Arguments.of(true, 0L, 2L, ">=", 2, DurationFilterUnit.SECONDS)
     );
   }
 

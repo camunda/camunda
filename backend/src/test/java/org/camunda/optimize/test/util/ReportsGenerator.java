@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import static java.time.temporal.ChronoUnit.YEARS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 
@@ -143,7 +143,7 @@ public class ReportsGenerator {
         .completedInstancesOnly()
       .add()
         .duration()
-        .unit(YEARS.toString().toLowerCase())
+        .unit(DurationFilterUnit.MONTHS)
         .value((long) 100)
         .operator(LESS_THAN)
       .add()

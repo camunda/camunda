@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process;
 
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -538,7 +539,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData.setFilter(ProcessFilterBuilder
                            .filter()
                            .duration()
-                           .unit("Days")
+                           .unit(DurationFilterUnit.DAYS)
                            .value((long) 1)
                            .operator(">")
                            .add()
@@ -561,7 +562,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData.setFilter(ProcessFilterBuilder
                            .filter()
                            .duration()
-                           .unit("Days")
+                           .unit(DurationFilterUnit.DAYS)
                            .value((long) 1)
                            .operator("<")
                            .add()

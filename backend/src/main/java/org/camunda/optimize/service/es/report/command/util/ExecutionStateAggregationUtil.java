@@ -8,13 +8,10 @@ package org.camunda.optimize.service.es.report.command.util;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,7 +60,6 @@ public class ExecutionStateAggregationUtil {
 
   }
 
-
   public static Script getDurationFilterScript(final long currRequestDateInMs,
                                                final String durationFieldName,
                                                final String referenceDateFieldName,
@@ -86,13 +82,7 @@ public class ExecutionStateAggregationUtil {
   }
 
   private static long getFilterDuration(final DurationFilterDataDto dto) {
-    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    OffsetDateTime plus = now.plus(dto.getValue(), unitOf(dto.getUnit()));
-    return now.until(plus, ChronoUnit.MILLIS);
-  }
-
-  private static TemporalUnit unitOf(String unit) {
-    return ChronoUnit.valueOf(unit.toUpperCase());
+    return ChronoUnit.valueOf(dto.getUnit().name()).getDuration().toMillis() * dto.getValue();
   }
 
   private static String getDurationCalculationScriptPart(final Map<String, Object> params,
@@ -112,7 +102,6 @@ public class ExecutionStateAggregationUtil {
       "} ";
     // @formatter:on
   }
-
 
   private static String mapFilterOperator(String filterOperator) {
     // maps Optimize filter operators to ES relational operators

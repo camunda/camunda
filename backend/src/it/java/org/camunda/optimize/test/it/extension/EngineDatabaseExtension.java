@@ -287,13 +287,13 @@ public class EngineDatabaseExtension implements Extension {
 
   public void changeUserTaskDuration(final String processInstanceId,
                                      final String userTaskId,
-                                     final long duration) throws SQLException {
+                                     final long durationInMs) throws SQLException {
     String sql = "UPDATE ACT_HI_TASKINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ?" +
       "AND TASK_DEF_KEY_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, duration);
+    statement.setLong(1, durationInMs);
     statement.setString(2, processInstanceId);
     statement.setString(3, userTaskId);
     statement.executeUpdate();

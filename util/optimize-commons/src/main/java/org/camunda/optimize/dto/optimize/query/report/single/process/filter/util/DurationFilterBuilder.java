@@ -5,16 +5,18 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 
 public class DurationFilterBuilder {
-  private Long value;
-  private String unit;
-  private String operator;
-  private ProcessFilterBuilder filterBuilder;
+  protected final ProcessFilterBuilder filterBuilder;
 
-  private DurationFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  protected Long value;
+  protected DurationFilterUnit unit;
+  protected String operator;
+
+  protected DurationFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
@@ -27,7 +29,7 @@ public class DurationFilterBuilder {
     return this;
   }
 
-  public DurationFilterBuilder unit(String unit) {
+  public DurationFilterBuilder unit(DurationFilterUnit unit) {
     this.unit = unit;
     return this;
   }
