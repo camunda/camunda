@@ -14,10 +14,11 @@ import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.atomix.utils.logging.ContextualLoggerFactory;
+import io.atomix.utils.logging.LoggerContext;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class ZeebeRaftStateMachine implements RaftStateMachine {
   private final RaftContext raft;
@@ -38,7 +39,9 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
     this.reader = raft.getLog().openReader(1, RaftLogReader.Mode.COMMITS);
 
     this.lastEnqueued = reader.getFirstIndex() - 1;
-    this.logger = LoggerFactory.getLogger(this.getClass());
+    this.logger =
+        ContextualLoggerFactory.getLogger(
+            getClass(), LoggerContext.builder(getClass()).add("partition", raft.getName()).build());
     this.metrics = new RaftServiceMetrics(raft.getName());
   }
 
@@ -56,15 +59,19 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
   @Override
   public CompletableFuture<Void> compact() {
     raft.checkThread();
+
     final var log = raft.getLog();
     if (log.isCompactable(compactableIndex)) {
       final var index = log.getCompactableIndex(compactableIndex);
-      if (index > reader.getFirstIndex()) {
-        final var future = new CompletableFuture<Void>();
-        logger.debug("Compacting log up from {} up to {}", reader.getFirstIndex(), index);
-        compact(index, future);
-        return future;
-      }
+      final var future = new CompletableFuture<Void>();
+      logger.debug("Compacting log up from {} up to {}", reader.getFirstIndex(), index);
+      compact(index, future);
+      return future;
+    } else {
+      logger.debug(
+          "Skipping compaction of non-compactable index {} (first log index: {})",
+          compactableIndex,
+          reader.getFirstIndex());
     }
 
     return CompletableFuture.completedFuture(null);
@@ -99,9 +106,23 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
     reader.close();
   }
 
-  private void compact(final long index, final CompletableFuture<Void> future) {
-    logger.debug("Compacting up to index {}", index);
+  @Override
+  public long getCompactableIndex() {
+    return compactableIndex;
+  }
 
+  @Override
+  public void setCompactableIndex(final long index) {
+    this.compactableIndex = index;
+  }
+
+  @Override
+  public long getCompactableTerm() {
+    throw new UnsupportedOperationException(
+        "getCompactableTerm is not required by this implementation");
+  }
+
+  private void compact(final long index, final CompletableFuture<Void> future) {
     try {
       final var startTime = System.currentTimeMillis();
       raft.getLog().compact(index);
@@ -169,21 +190,5 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
 
     // mark as applied regardless of result
     raft.setLastApplied(indexed.index(), indexed.entry().term());
-  }
-
-  @Override
-  public void setCompactableIndex(final long index) {
-    this.compactableIndex = index;
-  }
-
-  @Override
-  public long getCompactableIndex() {
-    return compactableIndex;
-  }
-
-  @Override
-  public long getCompactableTerm() {
-    throw new UnsupportedOperationException(
-        "getCompactableTerm is not required by this implementation");
   }
 }

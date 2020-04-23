@@ -28,6 +28,7 @@ import io.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.zeebe.broker.logstreams.AtomixLogCompactor;
 import io.zeebe.broker.logstreams.LogCompactor;
 import io.zeebe.broker.logstreams.LogDeletionService;
+import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
@@ -44,7 +45,6 @@ import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
-import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.FileUtil;
@@ -424,23 +424,24 @@ public final class ZeebePartition extends Actor
             : new NoneSnapshotReplication();
 
     return new StateSnapshotController(
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, snapshotStorage, stateReplication);
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        snapshotStorage,
+        stateReplication,
+        StatePositionSupplier::getHighestExportedPosition);
   }
 
   // sonar warns that we should use AtomixRecordEntrySupplierImpl in a try-with-resources, which is
   // not applicable here; it is safe to ignore as we will close the object once we close the storage
   @SuppressWarnings("squid:S2095")
   private SnapshotStorage createSnapshotStorage(final Path pendingDirectory) {
-    final var reader =
-        new AtomixLogStorageReader(
-            zeebeIndexMapping, atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
+    final var reader = atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS);
     final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
 
     return new AtomixSnapshotStorage(
         runtimeDirectory,
         pendingDirectory,
         atomixRaftPartition.getServer().getSnapshotStore(),
-        new AtomixRecordEntrySupplierImpl(reader),
+        new AtomixRecordEntrySupplierImpl(zeebeIndexMapping, reader),
         new SnapshotMetrics(partitionId));
   }
 

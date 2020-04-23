@@ -7,9 +7,9 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
+import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.snapshot.SnapshotListener;
 import io.atomix.raft.storage.snapshot.SnapshotStore;
-import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
@@ -60,7 +60,13 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
   @Override
   public Optional<Snapshot> getPendingSnapshotFor(final long snapshotPosition) {
     final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
-    return optionalIndexed.map(this::getSnapshot);
+
+    final Long previousSnapshotIndex =
+        getLatestSnapshot().map(Snapshot::getCompactionBound).orElse(-1L);
+
+    return optionalIndexed
+        .filter(indexed -> indexed.index() != previousSnapshotIndex)
+        .map(this::getSnapshot);
   }
 
   @Override
@@ -162,7 +168,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
     return pendingDirectory.resolve(metadata.getFileName());
   }
 
-  private Path getPendingDirectoryFor(final Indexed<ZeebeEntry> entry) {
+  private Path getPendingDirectoryFor(final Indexed<? extends RaftLogEntry> entry) {
     final var metadata =
         new DbSnapshotMetadata(
             entry.index(),
@@ -186,7 +192,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
     metrics.setSnapshotCount(snapshots.size());
   }
 
-  private Snapshot getSnapshot(final Indexed<ZeebeEntry> indexed) {
+  private Snapshot getSnapshot(final Indexed<? extends RaftLogEntry> indexed) {
     final var pending = getPendingDirectoryFor(indexed);
     return new SnapshotImpl(indexed.index(), pending);
   }
