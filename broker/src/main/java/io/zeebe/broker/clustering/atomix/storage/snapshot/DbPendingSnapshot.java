@@ -100,7 +100,22 @@ public final class DbPendingSnapshot implements PendingSnapshot {
 
     try (final var channel =
         Files.newByteChannel(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-      channel.write(chunkData);
+      final var expectedToWrite = chunkData.remaining();
+      long actualWrittenBytes = 0L;
+      while (chunkData.hasRemaining()) {
+        actualWrittenBytes += channel.write(chunkData);
+      }
+
+      if (actualWrittenBytes != expectedToWrite) {
+        throw new IllegalStateException(
+            "Expected to write "
+                + expectedToWrite
+                + " bytes of the given snapshot chunk with id "
+                + chunkId
+                + ", but only "
+                + actualWrittenBytes
+                + " bytes were written");
+      }
     } catch (final FileAlreadyExistsException e) {
       LOGGER.debug("Chunk {} of pending snapshot {} already exists at {}", filename, this, path, e);
     } catch (final IOException e) {
