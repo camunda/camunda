@@ -150,7 +150,7 @@ pipeline {
         }
 
         stage('Upload') {
-            when { branch 'develop' }
+            when { anyOf { branch 'develop'; branch 'stable/0.23' } }
             steps {
                 container('maven') {
                     configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
