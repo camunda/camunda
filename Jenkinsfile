@@ -163,7 +163,7 @@ pipeline {
         stage('Post') {
             parallel {
                 stage('Docker') {
-                    when { branch 'develop' }
+                    when { anyOf { branch 'develop'; branch 'stable/0.23' } }
 
                     environment {
                         VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
@@ -172,7 +172,7 @@ pipeline {
                     steps {
                         build job: 'zeebe-docker', parameters: [
                             string(name: 'BRANCH', value: env.BRANCH_NAME),
-                            string(name: 'VERSION', value: env.VERSION),
+                            string(name: 'VERSION', value: 'SNAPSHOT-0.23'),
                             booleanParam(name: 'IS_LATEST', value: env.BRANCH_NAME == 'master')
                         ]
                     }
