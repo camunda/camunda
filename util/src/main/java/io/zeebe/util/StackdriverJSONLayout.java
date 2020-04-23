@@ -69,6 +69,8 @@ public class StackdriverJSONLayout extends AbstractStringLayout {
     putIfNotNull("logger", event.getLoggerName(), map);
     putIfNotNull("message", event.getMessage().getFormattedMessage(), map);
     putIfNotNull("exception", getThrowableAsString(event.getThrownProxy()), map);
+    map.put("context", event.getContextData().toMap());
+
     return map;
   }
 

@@ -7,25 +7,39 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
-import io.atomix.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
-import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
+import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
 import java.util.Optional;
 
 public final class AtomixRecordEntrySupplierImpl implements AtomixRecordEntrySupplier {
-  private final AtomixLogStorageReader reader;
+  private final ZeebeIndexMapping indexMapping;
+  private final RaftLogReader reader;
 
-  public AtomixRecordEntrySupplierImpl(final AtomixLogStorageReader reader) {
+  public AtomixRecordEntrySupplierImpl(
+      final ZeebeIndexMapping indexMapping, final RaftLogReader reader) {
+    this.indexMapping = indexMapping;
     this.reader = reader;
   }
 
   @Override
-  public Optional<Indexed<ZeebeEntry>> getIndexedEntry(final long position) {
-    final var index = reader.lookUpApproximateAddress(position);
-    // since Atomix assumes that a snapshot for index Y means Y is processed, return for the
-    // previous index
-    return reader.findEntry(index - 1);
+  public Optional<Indexed<? extends RaftLogEntry>> getIndexedEntry(final long position) {
+    final var index = indexMapping.lookupPosition(position);
+    if (index == -1) {
+      return Optional.empty();
+    }
+
+    reader.reset(index - 1);
+    if (reader.hasNext()) {
+      final var indexedEntry = reader.next();
+      if (indexedEntry.index() < index) {
+        return Optional.of(indexedEntry);
+      }
+    }
+
+    return Optional.empty();
   }
 
   @Override
