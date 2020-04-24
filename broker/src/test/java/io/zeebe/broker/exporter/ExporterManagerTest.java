@@ -43,6 +43,7 @@ public final class ExporterManagerTest {
             exporterCfg = new ExporterCfg();
             exporterCfg.setClassName(TestExporter.class.getName());
 
+            brokerCfg.getData().setLogIndexDensity(1);
             brokerCfg.getExporters().put(TEST_EXPORTER_ID, exporterCfg);
           });
   public final CommandApiRule clientRule = new CommandApiRule(brokerRule::getAtomix);
