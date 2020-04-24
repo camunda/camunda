@@ -254,10 +254,11 @@ pipeline {
                                 // the line jq -r 'to_entries|map("--\(.key) \(.value|tostring)")| @tsv'
                                 // maps key and values of json to one line, e.g. { "processInstanceCount": 123} => --processInstanceCount 123
                                 sh("""
+                                  mvn -s \$MAVEN_SETTINGS_XML -pl qa/data-generation -am clean install -DskipTests -Dskip.docker -Dskip.fe.build 
                                   if [ "${USE_E2E_PRESETS}" = true ]; then
-                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation compile exec:java -Dexec.args="\$(cat client/e2e_presets.json | jq -r 'to_entries|map("--\\(.key) \\(.value|tostring)")| .[]' | tr '\\n' ' ')"
+                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="\$(cat client/e2e_presets.json | jq -r 'to_entries|map("--\\(.key) \\(.value|tostring)")| .[]' | tr '\\n' ' ')"
                                   else
-                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation compile exec:java -Dexec.args="--processDefinitions '${PROCESS_DEFINITIONS}' --numberOfProcessInstances ${NUM_PROCESS_INSTANCES} --numberOfDecisionInstances ${NUM_DECISION_INSTANCES} --decisionDefinitions '${DECISION_DEFINITIONS}'"
+                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="--processDefinitions '${PROCESS_DEFINITIONS}' --numberOfProcessInstances ${NUM_PROCESS_INSTANCES} --numberOfDecisionInstances ${NUM_DECISION_INSTANCES} --decisionDefinitions '${DECISION_DEFINITIONS}'"
                                   fi
                                 """)
                             }
