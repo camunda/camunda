@@ -53,14 +53,14 @@ public class DateQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
     reportData.setFilter(fixedStartDateFilter);
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertResults(result, 0);
 
     //when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(start).end(null).add().buildList());
-    result = evaluateReportAndReturnResult(reportData);
+    result = reportClient.evaluateRawReport(reportData).getResult();
     //then
     assertResults(result, 1);
 
@@ -71,7 +71,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = evaluateReportAndReturnResult(reportData);
+    result = reportClient.evaluateRawReport(reportData).getResult();
     //then
     assertResults(result, 1);
   }
@@ -91,14 +91,14 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .end(start.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertResults(result, 1);
 
     //when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(null).end(start).add().buildList());
-    result = evaluateReportAndReturnResult(reportData);
+    result = reportClient.evaluateRawReport(reportData).getResult();
     //then
     assertResults(result, 1);
 
@@ -109,7 +109,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .end(start.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
                            .add()
                            .buildList());
-    result = evaluateReportAndReturnResult(reportData);
+    result = reportClient.evaluateRawReport(reportData).getResult();
     //then
     assertResults(result, 0);
   }
@@ -130,7 +130,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .end(end.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertResults(result, 1);
@@ -142,7 +142,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = evaluateReportAndReturnResult(reportData);
+    result = reportClient.evaluateRawReport(reportData).getResult();
     //then
     assertResults(result, 1);
 
@@ -153,7 +153,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = evaluateReportAndReturnResult(reportData);
+    result = reportClient.evaluateRawReport(reportData).getResult();
     //then
     assertResults(result, 0);
   }
@@ -173,7 +173,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertResults(result, 1);
@@ -185,7 +185,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = evaluateReportAndReturnResult(reportData);
+    result = reportClient.evaluateRawReport(reportData).getResult();
     //then
     assertResults(result, 0);
   }
@@ -207,7 +207,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .buildList());
 
     //when
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertResults(result, 1);
@@ -221,7 +221,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .buildList());
 
     //when
-    result = evaluateReportAndReturnResult(reportData);
+    result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertResults(result, 1);
@@ -235,7 +235,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
                            .buildList());
 
     //when
-    result = evaluateReportAndReturnResult(reportData);
+    result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertResults(result, 0);
@@ -285,7 +285,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList()
     );
-    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getData();
@@ -334,7 +334,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
-    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getData();
@@ -391,7 +391,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList()
     );
-    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getData();
@@ -457,7 +457,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList()
     );
-    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getData();

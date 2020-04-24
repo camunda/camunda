@@ -45,7 +45,7 @@ public class SuspendedInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().suspendedInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(2));

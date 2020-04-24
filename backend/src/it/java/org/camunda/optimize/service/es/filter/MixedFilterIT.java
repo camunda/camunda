@@ -140,7 +140,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     ProcessReportDataDto reportData =
       createReportWithCompletedInstancesFilter(processDefinition);
     reportData.setFilter(filter);
-    return evaluateReportWithRawDataResult(reportData).getResult();
+    return reportClient.evaluateRawReport(reportData).getResult();
   }
 
   private ProcessReportDataDto createReportWithCompletedInstancesFilter(ProcessDefinitionEngineDto processDefinition) {

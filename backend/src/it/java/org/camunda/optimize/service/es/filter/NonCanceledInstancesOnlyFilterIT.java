@@ -48,7 +48,7 @@ public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().nonCanceledInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertThat(result.getData().size(), is(1));

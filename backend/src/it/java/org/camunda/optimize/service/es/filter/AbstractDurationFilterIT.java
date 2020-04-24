@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
-import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -29,13 +28,6 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
-  }
-
-  protected Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
   }
 
   private void adjustProcessInstanceDates(String processInstanceId,

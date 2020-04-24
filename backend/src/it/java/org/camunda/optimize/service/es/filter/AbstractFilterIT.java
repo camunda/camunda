@@ -5,22 +5,16 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import javax.ws.rs.core.Response;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 
@@ -52,45 +46,6 @@ public abstract class AbstractFilterIT extends AbstractIT {
       .build();
   }
 
-  protected Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
-  }
-
-  protected RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
-    return evaluateReportWithRawDataResult(reportData).getResult();
-  }
-
-  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithRawDataResult(
-    final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
-      // @formatter:on
-  }
-
-  protected AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateReportWithMapResult(
-    final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  protected ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
-  }
-
   protected ProcessDefinitionEngineDto deployUserTaskProcess() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -99,6 +54,14 @@ public abstract class AbstractFilterIT extends AbstractIT {
       .endEvent()
       .done();
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
+      .startEvent()
+      .endEvent()
+      .done();
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   protected ProcessDefinitionEngineDto deployTwoUserTasksProcessDefinition() {

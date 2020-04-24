@@ -5,26 +5,22 @@
  */
 package org.camunda.optimize.service.es.report;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -79,7 +75,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
       processInstanceDto1.getProcessDefinitionKey(),
       processInstanceDto1.getProcessDefinitionVersion()
     );
-    ReportMapResultDto result = evaluateReportAndReturnResult(reportData);
+    ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -121,7 +117,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
       processInstanceDto1.getProcessDefinitionKey(),
       processInstanceDto1.getProcessDefinitionVersion()
     );
-    ReportMapResultDto result = evaluateReportAndReturnResult(reportData);
+    ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -140,7 +136,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
     // when
     ProcessReportDataDto reportData = getGroupByStartDateReportData(engineDto.getKey(), engineDto.getVersionAsString());
-    ReportMapResultDto result = evaluateReportAndReturnResult(reportData);
+    ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
@@ -159,7 +155,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
       engineDto.getProcessDefinitionKey(),
       engineDto.getProcessDefinitionVersion()
     );
-    ReportMapResultDto result = evaluateReportAndReturnResult(reportData);
+    ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then the single data point should be grouped by month
     final List<MapResultEntryDto> resultData = result.getData();
@@ -183,7 +179,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
+      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
@@ -203,7 +199,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
+      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
@@ -225,7 +221,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
+      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
@@ -266,7 +262,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
+      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
@@ -355,26 +351,6 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
       .endEvent()
       .done();
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
-  }
-
-  private <T extends SingleReportResultDto> CombinedProcessReportResultDataDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {})
-      // @formatter:on
-      .getResult();
-  }
-
-  private ReportMapResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
-      // @formatter:on
-      .getResult();
   }
 
   private String localDateTimeToString(ZonedDateTime time) {

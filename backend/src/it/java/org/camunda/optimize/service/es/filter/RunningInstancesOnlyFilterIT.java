@@ -40,7 +40,7 @@ public class RunningInstancesOnlyFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
     reportData.setFilter(ProcessFilterBuilder.filter().runningInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(1));

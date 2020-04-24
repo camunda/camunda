@@ -15,14 +15,13 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -37,6 +36,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -58,15 +58,16 @@ public class ReportConflictIT extends AbstractIT {
     // given
     String firstSingleReportId = createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
     String secondSingleReportId = createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
-    final CombinedReportDefinitionDto combinedReportDefinition =
-      createCombinedReportDefinition(firstSingleReportId, secondSingleReportId);
-    String combinedReportId = creatCombinedReport(combinedReportDefinition);
+    String combinedReportId = reportClient.createCombinedReport(
+      null,
+      Arrays.asList(firstSingleReportId, secondSingleReportId)
+    );
     String[] expectedReportIds = new String[]{firstSingleReportId, secondSingleReportId, combinedReportId};
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
     // when
     final SingleProcessReportDefinitionDto firstSingleReport =
-      (SingleProcessReportDefinitionDto) getReport(firstSingleReportId);
+      (SingleProcessReportDefinitionDto) reportClient.getReportById(firstSingleReportId);
     final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto groupByStartDateReport = TemplatedProcessReportDataBuilder
       .createReportData()
@@ -95,9 +96,7 @@ public class ReportConflictIT extends AbstractIT {
     // given
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     String singleReportId = createAndStoreProcessReportWithDefinition(collectionId, createRandomRawDataReport());
-    final CombinedReportDefinitionDto combinedReportDefinition = createCombinedReportDefinition(singleReportId);
-    combinedReportDefinition.setCollectionId(collectionId);
-    String combinedReportId = creatCombinedReport(combinedReportDefinition);
+    String combinedReportId = reportClient.createCombinedReport(collectionId, Arrays.asList(singleReportId));
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
     // when
@@ -140,7 +139,7 @@ public class ReportConflictIT extends AbstractIT {
 
     // when
     final SingleProcessReportDefinitionDto singleReport =
-      (SingleProcessReportDefinitionDto) getReport(reportId);
+      (SingleProcessReportDefinitionDto) reportClient.getReportById(reportId);
     final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto groupByStartDateReport = TemplatedProcessReportDataBuilder
       .createReportData()
@@ -166,7 +165,7 @@ public class ReportConflictIT extends AbstractIT {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollection();
     String reportId = createAndStoreDefaultDecisionReportDefinition(collectionId, reportData);
     String alertForReport = createNewAlertForReport(reportId);
     String[] expectedConflictedItemIds = new String[]{alertForReport};
@@ -188,16 +187,26 @@ public class ReportConflictIT extends AbstractIT {
   @Test
   public void getSingleReportDeleteConflictsIfUsedByCombinedReport() {
     // given
-    String firstSingleReportId = createProcessReport();
-    String secondSingleReportId = createProcessReport();
-    final CombinedReportDefinitionDto combinedReportDefinition =
-      createCombinedReportDefinition(firstSingleReportId, secondSingleReportId);
-    String firstCombinedReportId = creatCombinedReport(combinedReportDefinition);
-    String secondCombinedReportId = creatCombinedReport(combinedReportDefinition);
+    String firstSingleReportId = reportClient.createEmptySingleProcessReport();
+    String secondSingleReportId = reportClient.createEmptySingleProcessReport();
+    String firstCombinedReportId = reportClient.createCombinedReport(
+      null,
+      Arrays.asList(
+        firstSingleReportId,
+        secondSingleReportId
+      )
+    );
+    String secondCombinedReportId = reportClient.createCombinedReport(
+      null,
+      Arrays.asList(
+        firstSingleReportId,
+        secondSingleReportId
+      )
+    );
     String[] expectedConflictedItemIds = {firstCombinedReportId, secondCombinedReportId};
 
     // when
-    ConflictResponseDto conflictResponseDto = getReportDeleteConflicts(firstSingleReportId);
+    ConflictResponseDto conflictResponseDto = reportClient.getReportDeleteConflicts(firstSingleReportId);
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
@@ -207,12 +216,22 @@ public class ReportConflictIT extends AbstractIT {
   @MethodSource("provideForceParameterAsBoolean")
   public void deleteSingleReportsFailsWithConflictIfUsedByCombinedReportWhenForceSet(Boolean force) {
     // given
-    String firstSingleReportId = createProcessReport();
-    String secondSingleReportId = createProcessReport();
-    final CombinedReportDefinitionDto combinedReportDefinition =
-      createCombinedReportDefinition(firstSingleReportId, secondSingleReportId);
-    String firstCombinedReportId = creatCombinedReport(combinedReportDefinition);
-    String secondCombinedReportId = creatCombinedReport(combinedReportDefinition);
+    String firstSingleReportId = reportClient.createEmptySingleProcessReport();
+    String secondSingleReportId = reportClient.createEmptySingleProcessReport();
+    String firstCombinedReportId = reportClient.createCombinedReport(
+      null,
+      Arrays.asList(
+        firstSingleReportId,
+        secondSingleReportId
+      )
+    );
+    String secondCombinedReportId = reportClient.createCombinedReport(
+      null,
+      Arrays.asList(
+        firstSingleReportId,
+        secondSingleReportId
+      )
+    );
     String[] expectedReportIds = {
       firstSingleReportId, secondSingleReportId, firstCombinedReportId, secondCombinedReportId
     };
@@ -251,7 +270,7 @@ public class ReportConflictIT extends AbstractIT {
   @MethodSource("provideForceParameterAsBoolean")
   public void deleteSingleReportsFailsWithConflictIfUsedByDashboardWhenForceSet(Boolean force) {
     // given
-    String reportId = createProcessReport();
+    String reportId = reportClient.createEmptySingleProcessReport();
     String firstDashboardId = createNewDashboardAndAddReport(reportId);
     String secondDashboardId = createNewDashboardAndAddReport(reportId);
     String[] expectedReportIds = {reportId};
@@ -279,7 +298,7 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private void checkCombinedReportContainsSingleReports(String combinedReportId, String... singleReportIds) {
-    final ReportDefinitionDto combinedReport = getReport(combinedReportId);
+    final ReportDefinitionDto combinedReport = reportClient.getReportById(combinedReportId);
     if (combinedReport instanceof CombinedReportDefinitionDto) {
       final CombinedReportDataDto dataDto = ((CombinedReportDefinitionDto) combinedReport).getData();
       assertThat(dataDto.getReportIds())
@@ -309,43 +328,26 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private void checkReportStillExistsInCollection(String reportId, String collectionId) {
-    List<ReportDefinitionDto> reportDefinitionDtos =
-      embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportsForCollectionRequest(collectionId)
-      .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+    List<AuthorizedReportDefinitionDto> reportDefinitionDtos = collectionClient.getReportsForCollection(collectionId);
+
     assertThat(reportDefinitionDtos)
+      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .contains(reportId);
   }
 
   private void checkPrivateReportsStillExist(String[] expectedReportIds) {
-    List<ReportDefinitionDto> reports = getAllPrivateReports();
+    List<AuthorizedReportDefinitionDto> reports = reportClient.getAllReportsAsUser();
     assertThat(reports)
       .hasSize(expectedReportIds.length)
+      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .containsExactlyInAnyOrder(expectedReportIds);
   }
 
   private String createNewDashboardAndAddReport(String reportId) {
-    String id = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-
-    final DashboardDefinitionDto dashboardUpdateDto = new DashboardDefinitionDto();
-    final ReportLocationDto reportLocationDto = new ReportLocationDto();
-    reportLocationDto.setId(reportId);
-    dashboardUpdateDto.getReports().add(reportLocationDto);
-
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(id, dashboardUpdateDto)
-      .execute();
-
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-
+    String id = dashboardClient.createEmptyDashboard(null);
+    dashboardClient.updateDashboardWithReports(id, Collections.singletonList(reportId));
     return id;
   }
 
@@ -367,39 +369,6 @@ public class ReportConflictIT extends AbstractIT {
       .getId();
   }
 
-  private String creatCombinedReport(CombinedReportDefinitionDto definitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(definitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private static CombinedReportDefinitionDto createCombinedReportDefinition(String... reportIds) {
-    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
-    CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
-    combinedReportDataDto.setReports(
-      Arrays.stream(reportIds).map(CombinedReportItemDto::new).collect(Collectors.toList())
-    );
-    combinedReportDataDto.setConfiguration(new CombinedReportConfigurationDto());
-    combinedReportDefinitionDto.setData(combinedReportDataDto);
-    return combinedReportDefinitionDto;
-  }
-
-  private ReportDefinitionDto getReport(String id) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportRequest(id)
-      .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private ConflictResponseDto getReportDeleteConflicts(String id) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportDeleteConflictsRequest(id)
-      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
-  }
-
   private String createAndStoreProcessReportWithDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
     return createAndStoreProcessReportWithDefinition(null, reportDataViewRawAsTable);
   }
@@ -416,7 +385,7 @@ public class ReportConflictIT extends AbstractIT {
     singleProcessReportDefinitionDto.setLastModified(someDate);
     singleProcessReportDefinitionDto.setOwner(RANDOM_STRING);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return createSingleProcessReport(singleProcessReportDefinitionDto);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private String createAndStoreDefaultDecisionReportDefinition(String collectionId, DecisionReportDataDto reportData) {
@@ -430,7 +399,7 @@ public class ReportConflictIT extends AbstractIT {
     singleDecisionReportDefinitionDto.setLastModified(someDate);
     singleDecisionReportDefinitionDto.setOwner(RANDOM_STRING);
     singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-    return createDecisionReport(singleDecisionReportDefinitionDto);
+    return reportClient.createSingleDecisionReport(singleDecisionReportDefinitionDto);
   }
 
   private ConflictResponseDto deleteReportFailWithConflict(String reportId, Boolean force) {
@@ -439,14 +408,6 @@ public class ReportConflictIT extends AbstractIT {
       .buildDeleteReportRequest(reportId, force)
       .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
-  }
-
-  private String createSingleProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
   }
 
   private ConflictResponseDto updateReportFailWithConflict(String id,
@@ -465,37 +426,6 @@ public class ReportConflictIT extends AbstractIT {
       .getRequestExecutor()
       .buildUpdateSingleDecisionReportRequest(id, updatedReport, force)
       .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
-  }
-
-  private String createNewCollection() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createProcessReport() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createDecisionReport(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private List<ReportDefinitionDto> getAllPrivateReports() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllPrivateReportsRequest()
-      .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private static Stream<Boolean> provideForceParameterAsBoolean() {

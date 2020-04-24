@@ -981,7 +981,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
     reportData.setFilter(filterList);
-    return evaluateReportAndReturnResponse(reportData);
+    return reportClient.evaluateReportAndReturnResponse(reportData);
   }
 
   private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
@@ -1003,7 +1003,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .setFilter(filter)
       .build();
-    return evaluateReportAndReturnResult(reportData);
+    return reportClient.evaluateRawReport(reportData).getResult();
   }
 
 }

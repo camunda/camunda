@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -16,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -477,21 +475,11 @@ public class VariableImportIT extends AbstractImportIT {
       .setProcessDefinitionVersion(ALL_VERSIONS)
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
-    ReportMapResultDto result = evaluateReport(reportData).getResult();
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
     assertThat(result.getData()).isNotNull();
     List<MapResultEntryDto> flowNodeIdToExecutionFrequency = result.getData();
     for (MapResultEntryDto frequency : flowNodeIdToExecutionFrequency) {
       assertThat(frequency.getValue()).isEqualTo(4L);
     }
   }
-
-  private AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
 }

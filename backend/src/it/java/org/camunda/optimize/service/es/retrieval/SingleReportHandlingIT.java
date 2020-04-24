@@ -5,10 +5,8 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueEntryDto;
@@ -71,7 +69,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void reportIsWrittenToElasticsearch() throws IOException {
     // given
-    String id = createNewReport();
+    String id = reportClient.createEmptySingleProcessReport();
 
     // when
     GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME).id(id);
@@ -95,7 +93,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void writeAndThenReadGivesTheSameResult() {
     // given
-    String id = createNewReport();
+    String id = reportClient.createEmptySingleProcessReport();
 
     // when
     List<ReportDefinitionDto> reports = getAllPrivateReports();
@@ -109,8 +107,8 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void createAndGetSeveralReports() {
     // given
-    String id = createNewReport();
-    String id2 = createNewReport();
+    String id = reportClient.createEmptySingleProcessReport();
+    String id2 = reportClient.createEmptySingleProcessReport();
     Set<String> ids = new HashSet<>();
     ids.add(id);
     ids.add(id2);
@@ -143,7 +141,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   public void testUpdateProcessReport() {
     // given
     final String shouldNotBeUpdatedString = "shouldNotBeUpdated";
-    String id = createNewReport();
+    String id = reportClient.createEmptySingleProcessReport();
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
@@ -166,7 +164,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     report.setOwner(shouldNotBeUpdatedString);
 
     // when
-    updateSingleProcessReport(id, report);
+    reportClient.updateSingleProcessReport(id, report);
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
@@ -188,7 +186,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void testUpdateProcessReportRemoveHeatMapTargetValue() {
     // given
-    final String id = createNewReport();
+    final String id = reportClient.createEmptySingleProcessReport();
     final ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
@@ -204,11 +202,11 @@ public class SingleReportHandlingIT extends AbstractIT {
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
     report.setOwner("NewOwner");
-    updateSingleProcessReport(id, report);
+    reportClient.updateSingleProcessReport(id, report);
 
     // when
     configuration.getHeatmapTargetValue().setValues(new HashMap<>());
-    updateSingleProcessReport(id, report);
+    reportClient.updateSingleProcessReport(id, report);
     final List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
@@ -220,11 +218,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void testUpdateDecisionReportWithGroupByInputVariableName() {
     // given
-    String id = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    String id = reportClient.createEmptySingleDecisionReport();
 
     final String variableName = "variableName";
     DecisionReportDataDto expectedReportData = DecisionReportDataBuilder.create()
@@ -237,10 +231,9 @@ public class SingleReportHandlingIT extends AbstractIT {
 
     SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
     report.setData(expectedReportData);
-    updateSingleDecisionReport(id, report);
 
     // when
-    updateSingleDecisionReport(id, report);
+    reportClient.updateDecisionReport(id, report);
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
@@ -255,12 +248,12 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void updateReportWithoutPDInformation() {
     // given
-    String id = createNewReport();
+    String id = reportClient.createEmptySingleProcessReport();
     SingleProcessReportDefinitionDto updatedReport = new SingleProcessReportDefinitionDto();
     updatedReport.setData(new ProcessReportDataDto());
 
     //when
-    Response updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
+    Response updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
     //then
     assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
@@ -269,7 +262,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
-    updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
+    updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
     //then
     assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
@@ -278,7 +271,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     data = new ProcessReportDataDto();
     data.setProcessDefinitionKey("BLAH");
     updatedReport.setData(data);
-    updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
+    updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
     //then
     assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
@@ -288,7 +281,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     data.setProcessDefinitionKey("BLAH");
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
-    updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
+    updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
     //then
     assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
@@ -297,7 +290,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void updateReportWithFilters() {
     // given
-    String id = createNewReport();
+    String id = reportClient.createEmptySingleProcessReport();
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
@@ -317,7 +310,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     report.setOwner("NewOwner");
 
     // when
-    updateSingleProcessReport(id, report);
+    reportClient.updateSingleProcessReport(id, report);
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
@@ -348,11 +341,11 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void doNotUpdateNullFieldsInReport() {
     // given
-    String id = createNewReport();
+    String id = reportClient.createEmptySingleProcessReport();
     SingleProcessReportDefinitionDto report = constructSingleProcessReportWithFakePD();
 
     // when
-    updateSingleProcessReport(id, report);
+    reportClient.updateSingleProcessReport(id, report);
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
@@ -369,7 +362,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void reportEvaluationReturnsMetaData() {
     // given
-    String reportId = createNewReport();
+    String reportId = reportClient.createEmptySingleProcessReport();
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(FOO_PROCESS_DEFINITION_KEY)
@@ -380,10 +373,11 @@ public class SingleReportHandlingIT extends AbstractIT {
     report.setData(reportData);
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
-    updateSingleProcessReport(reportId, report);
+    reportClient.updateSingleProcessReport(reportId, report);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = evaluateRawDataReportById(reportId);
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = reportClient.evaluateRawReportById(
+      reportId);
 
     // then
     final SingleProcessReportDefinitionDto reportDefinition = result.getReportDefinition();
@@ -419,18 +413,18 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void resultListIsSortedByName() {
     // given
-    String id1 = createNewReport();
+    String id1 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id2 = createNewReport();
+    String id2 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id3 = createNewReport();
+    String id3 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
 
     SingleProcessReportDefinitionDto updatedReport = constructSingleProcessReportWithFakePD();
     updatedReport.setName("B");
-    updateSingleProcessReport(id1, updatedReport);
+    reportClient.updateSingleProcessReport(id1, updatedReport);
     updatedReport.setName("A");
-    updateSingleProcessReport(id2, updatedReport);
+    reportClient.updateSingleProcessReport(id2, updatedReport);
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -457,13 +451,13 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void resultListIsSortedByLastModified() {
     // given
-    String id1 = createNewReport();
+    String id1 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id2 = createNewReport();
+    String id2 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id3 = createNewReport();
+    String id3 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
+    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -489,13 +483,13 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void resultListIsReversed() {
     // given
-    String id1 = createNewReport();
+    String id1 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id2 = createNewReport();
+    String id2 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id3 = createNewReport();
+    String id3 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
+    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -513,13 +507,13 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void resultListIsCutByAnOffset() {
     // given
-    String id1 = createNewReport();
+    String id1 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id2 = createNewReport();
+    String id2 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id3 = createNewReport();
+    String id3 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
+    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -545,13 +539,13 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void resultListIsCutByMaxResults() {
     // given
-    String id1 = createNewReport();
+    String id1 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    createNewReport();
+    reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id3 = createNewReport();
+    String id3 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
+    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -568,13 +562,13 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void combineAllResultListQueryParameterRestrictions() {
     // given
-    String id1 = createNewReport();
+    String id1 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    createNewReport();
+    reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    String id3 = createNewReport();
+    String id3 = reportClient.createEmptySingleProcessReport();
     shiftTimeByOneSecond();
-    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
+    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -591,47 +585,6 @@ public class SingleReportHandlingIT extends AbstractIT {
 
   private void shiftTimeByOneSecond() {
     LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusSeconds(1L));
-  }
-
-  private String createNewReport() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = getUpdateSingleProcessReportResponse(id, updatedReport);
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-  }
-
-  private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
-    Response response = getUpdateSingleDecisionReportResponse(id, updatedReport);
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-  }
-
-  private Response getUpdateSingleProcessReportResponse(String id, SingleProcessReportDefinitionDto updatedReport) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-  }
-
-  private Response getUpdateSingleDecisionReportResponse(String id, SingleDecisionReportDefinitionDto updatedReport) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateSingleDecisionReportRequest(id, updatedReport)
-      .execute();
-  }
-
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawDataReportById(String reportId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
-    // @formatter:on
   }
 
   private List<ReportDefinitionDto> getAllPrivateReports() {

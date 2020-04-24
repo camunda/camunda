@@ -26,6 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
@@ -47,6 +48,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -120,12 +122,9 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void createNewCombinedReport() {
     // when
-    IdDto idDto = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, OK.getStatusCode());
+    String id = reportClient.createNewCombinedReport();
     // then
-    assertThat(idDto).isNotNull();
+    assertThat(id).isNotNull();
   }
 
   @Test
@@ -196,15 +195,19 @@ public class ReportRestServiceIT extends AbstractIT {
   public void getStoredPrivateReportsExcludesNonPrivateReports() {
     //given
     String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    String privateDecisionReportId = addEmptyDecisionReport();
-    String privateProcessReportId = addEmptyProcessReport();
-    addEmptyProcessReport(collectionId);
+    String privateDecisionReportId = reportClient.createEmptySingleDecisionReport();
+    String privateProcessReportId = reportClient.createEmptySingleProcessReport();
+    reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
     // when
-    List<ReportDefinitionDto> reports = getAllPrivateReports();
+    List<AuthorizedReportDefinitionDto> reports = reportClient.getAllReportsAsUser();
 
     // then the returned list excludes reports in collections
-    assertThat(reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()))
+    assertThat(
+      reports.stream()
+        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
+        .map(ReportDefinitionDto::getId)
+        .collect(Collectors.toList()))
       .containsExactlyInAnyOrder(privateDecisionReportId, privateProcessReportId);
   }
 
@@ -224,66 +227,74 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void getStoredReportsWithNameFromXml() {
     //given
-    String idProcessReport = addEmptyProcessReport();
+    String idProcessReport = reportClient.createEmptySingleProcessReport();
     updateReportWithValidXml(idProcessReport, ReportType.PROCESS);
-    String idDecisionReport = addEmptyDecisionReport();
+    String idDecisionReport = reportClient.createEmptySingleDecisionReport();
     updateReportWithValidXml(idDecisionReport, DECISION);
 
     // when
-    List<ReportDefinitionDto> reports = getAllPrivateReports();
+    List<AuthorizedReportDefinitionDto> reports = reportClient.getAllReportsAsUser();
 
     // then
     assertThat(reports).hasSize(2);
-    assertThat(reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()))
-      .containsExactlyInAnyOrder(idDecisionReport, idProcessReport);
     assertThat(
       reports.stream()
+        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
+        .map(ReportDefinitionDto::getId)
+        .collect(Collectors.toList()))
+      .containsExactlyInAnyOrder(idDecisionReport, idProcessReport);
+
+    assertThat(
+      reports.stream()
+        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
         .map(ReportDefinitionDto::getData)
         .map(data -> (SingleReportDataDto) data)
         .map(SingleReportDataDto::getDefinitionName)
-        .collect(Collectors.toList()))
-      .containsExactlyInAnyOrder("Simple Process", "Invoice Classification");
+        .collect(Collectors.toList())).containsExactlyInAnyOrder("Simple Process", "Invoice Classification");
+
     reports.forEach(
       reportDefinitionDto ->
-        assertThat(((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration().getXml()).isNull());
+        assertThat(
+          ((SingleReportDataDto) reportDefinitionDto.getDefinitionDto().getData()).getConfiguration().getXml())
+          .isNull()
+    );
   }
 
   @Test
   public void getStoredReportsWithNoNameFromXml() throws IOException {
     //given
-    final String idProcessReport = addEmptyProcessReport();
+    final String idProcessReport = reportClient.createEmptySingleProcessReport();
     final SingleProcessReportDefinitionDto processReportDefinitionDto = getProcessReportDefinitionDtoWithXml(
       createProcessDefinitionXmlWithName(null)
     );
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(idProcessReport, processReportDefinitionDto)
-      .execute();
+    reportClient.updateSingleProcessReport(idProcessReport, processReportDefinitionDto);
 
-    final String idDecisionReport = addEmptyDecisionReport();
+    final String idDecisionReport = reportClient.createEmptySingleDecisionReport();
     final SingleDecisionReportDefinitionDto decisionReportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
       createDecisionDefinitionWoName()
     );
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateSingleDecisionReportRequest(idDecisionReport, decisionReportDefinitionDto)
-      .execute();
+
+    reportClient.updateDecisionReport(idDecisionReport, decisionReportDefinitionDto);
 
     // when
-    List<ReportDefinitionDto> reports = getAllPrivateReports();
+    List<AuthorizedReportDefinitionDto> reports = reportClient.getAllReportsAsUser();
 
     // then
     assertThat(reports).hasSize(2);
     assertThat(
       reports.stream()
+        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
         .map(ReportDefinitionDto::getData)
         .map(data -> (SingleReportDataDto) data)
         .map(SingleReportDataDto::getDefinitionName)
         .collect(Collectors.toList()))
       .containsExactlyInAnyOrder(PROCESS_DEFINITION_KEY, DECISION_DEFINITION_KEY);
+
     reports.forEach(
       reportDefinitionDto ->
-        assertThat(((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration().getXml()).isNull());
+        assertThat(
+          ((SingleReportDataDto) reportDefinitionDto.getDefinitionDto().getData()).getConfiguration().getXml()).isNull()
+    );
   }
 
   @Test
@@ -306,7 +317,7 @@ public class ReportRestServiceIT extends AbstractIT {
     String id = addEmptyReportToOptimize(reportType);
 
     // when
-    ReportDefinitionDto report = getReport(id);
+    ReportDefinitionDto report = reportClient.getReportById(id);
 
     // then the status code is okay
     assertThat(report).isNotNull();
@@ -333,7 +344,7 @@ public class ReportRestServiceIT extends AbstractIT {
     final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
 
     // when
-    ReportDefinitionDto reportDefinition = getReport(reportId);
+    ReportDefinitionDto reportDefinition = reportClient.getReportById(reportId);
 
     // then
     String xmlString;
@@ -370,14 +381,10 @@ public class ReportRestServiceIT extends AbstractIT {
     String id = addEmptyReportToOptimize(reportType);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteReportRequest(id)
-      .execute();
+    reportClient.deleteReport(id);
 
-    // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(getAllPrivateReports()).isEmpty();
+    // then
+    assertThat(reportClient.getAllReportsAsUser()).isEmpty();
   }
 
   @Test
@@ -422,7 +429,8 @@ public class ReportRestServiceIT extends AbstractIT {
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-    assertThat(getAllPrivateReports())
+    assertThat(reportClient.getAllReportsAsUser())
+      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .containsExactly(reportId);
   }
@@ -451,7 +459,8 @@ public class ReportRestServiceIT extends AbstractIT {
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-    assertThat(getAllPrivateReports())
+    assertThat(reportClient.getAllReportsAsUser())
+      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .containsExactly(reportId);
   }
@@ -485,7 +494,8 @@ public class ReportRestServiceIT extends AbstractIT {
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-    assertThat(getAllPrivateReports())
+    assertThat(reportClient.getAllReportsAsUser())
+      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .containsExactly(reportId);
   }
@@ -510,13 +520,7 @@ public class ReportRestServiceIT extends AbstractIT {
     final String id = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
 
     // then
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(id)
-      .execute();
-
-    // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
+    reportClient.evaluateRawReportById(id);
   }
 
   @Test
@@ -581,11 +585,8 @@ public class ReportRestServiceIT extends AbstractIT {
         throw new IllegalStateException("Uncovered type: " + reportType);
     }
 
-    // then
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
-      .execute();
+    // when
+    Response response = reportClient.evaluateReportAndReturnResponse(reportDataDto);
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
@@ -598,10 +599,7 @@ public class ReportRestServiceIT extends AbstractIT {
     final SingleReportDataDto reportDataDto = createReportWithoutVersionsAndTenants(reportType);
 
     // then
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
-      .execute();
+    Response response = reportClient.evaluateReportAndReturnResponse(reportDataDto);
 
     // then status is OK
     assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
@@ -624,13 +622,8 @@ public class ReportRestServiceIT extends AbstractIT {
   public void evaluateCombinedUnsavedReport() {
     // then
     CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
-      .execute();
 
-    // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
+    reportClient.evaluateUnsavedCombined(combinedReport);
   }
 
   @Test
@@ -639,13 +632,7 @@ public class ReportRestServiceIT extends AbstractIT {
     CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
     combinedReport.setReports(null);
 
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
+    reportClient.evaluateUnsavedCombined(combinedReport);
   }
 
   @ParameterizedTest
@@ -653,27 +640,26 @@ public class ReportRestServiceIT extends AbstractIT {
   public void copySingleReport(ReportType reportType) {
     String id = createSingleReport(reportType);
 
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyReportRequest(id)
-      .execute(IdDto.class, OK.getStatusCode());
+    Response response = reportClient.copyReportToCollection(id, null);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    IdDto copyId = response.readEntity(IdDto.class);
 
-    ReportDefinitionDto oldReport = getReport(id);
-    ReportDefinitionDto report = getReport(copyId.getId());
+    ReportDefinitionDto oldReport = reportClient.getReportById(id);
+    ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
     assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
   }
 
   @Test
   public void copyCombinedReport() {
-    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReportData();
-    IdDto id = createAndUpdateCombinedReport(combined, null);
+    String id = reportClient.createCombinedReport(null, new ArrayList<>());
 
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyReportRequest(id.getId())
-      .execute(IdDto.class, OK.getStatusCode());
+    Response response = reportClient.copyReportToCollection(id, null);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    IdDto copyId = response.readEntity(IdDto.class);
 
-    ReportDefinitionDto oldReport = getReport(id.getId());
-    ReportDefinitionDto report = getReport(copyId.getId());
+    ReportDefinitionDto oldReport = reportClient.getReportById(id);
+    ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
     assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
   }
@@ -695,8 +681,8 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute(IdDto.class, OK.getStatusCode());
 
     // then
-    ReportDefinitionDto oldReport = getReport(id);
-    ReportDefinitionDto report = getReport(copyId.getId());
+    ReportDefinitionDto oldReport = reportClient.getReportById(id);
+    ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
     assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
     assertThat(report.getName()).isEqualTo(testReportCopyName);
   }
@@ -709,13 +695,11 @@ public class ReportRestServiceIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(reportType.toDefinitionType());
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyReportRequest(id, collectionId)
-      .execute(IdDto.class, OK.getStatusCode());
+    IdDto copyId = reportClient.copyReportToCollection(id, collectionId).readEntity(IdDto.class);
 
     // then
-    ReportDefinitionDto oldReport = getReport(id);
-    ReportDefinitionDto report = getReport(copyId.getId());
+    ReportDefinitionDto oldReport = reportClient.getReportById(id);
+    ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
     assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
     assertThat(oldReport.getCollectionId()).isNull();
@@ -725,21 +709,18 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void copyPrivateCombinedReportAndMoveToCollection() {
     // given
-    final String report1 = addEmptyProcessReport();
-    final String report2 = addEmptyProcessReport();
-    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReportData(report1, report2);
+    final String report1 = reportClient.createEmptySingleProcessReport();
+    final String report2 = reportClient.createEmptySingleProcessReport();
+    String id = reportClient.createCombinedReport(null, Arrays.asList(report1, report2));
 
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
-    IdDto id = createAndUpdateCombinedReport(combined, null);
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyReportRequest(id.getId(), collectionId)
-      .execute(IdDto.class, OK.getStatusCode());
+    IdDto copyId = reportClient.copyReportToCollection(id, collectionId).readEntity(IdDto.class);
 
     // then
-    ReportDefinitionDto oldReport = getReport(id.getId());
-    ReportDefinitionDto newReport = getReport(copyId.getId());
+    ReportDefinitionDto oldReport = reportClient.getReportById(id);
+    ReportDefinitionDto newReport = reportClient.getReportById(copyId.getId());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(newReport.getName());
     assertThat(oldReport.getCollectionId()).isNull();
     assertThat(newReport.getCollectionId()).isEqualTo(collectionId);
@@ -754,7 +735,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     newData.getReportIds()
       .forEach(newSingleReportId -> {
-        final ReportDefinitionDto newSingleReport = getReport(newSingleReportId);
+        final ReportDefinitionDto newSingleReport = reportClient.getReportById(newSingleReportId);
         assertThat(newSingleReport.getCollectionId()).isEqualTo(collectionId);
       });
   }
@@ -767,13 +748,11 @@ public class ReportRestServiceIT extends AbstractIT {
     String id = createSingleReport(reportType, collectionId);
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyReportRequest(id, "null")
-      .execute(IdDto.class, OK.getStatusCode());
+    IdDto copyId = reportClient.copyReportToCollection(id, "null").readEntity(IdDto.class);
 
     // then
-    ReportDefinitionDto oldReport = getReport(id);
-    ReportDefinitionDto report = getReport(copyId.getId());
+    ReportDefinitionDto oldReport = reportClient.getReportById(id);
+    ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
     assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
     assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
@@ -785,19 +764,16 @@ public class ReportRestServiceIT extends AbstractIT {
     // given
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
-    final String report1 = addEmptyProcessReport(collectionId);
-    final String report2 = addEmptyProcessReport(collectionId);
-    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReportData(report1, report2);
-    IdDto id = createAndUpdateCombinedReport(combined, collectionId);
+    final String report1 = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    final String report2 = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    String id = reportClient.createCombinedReport(collectionId, Arrays.asList(report1, report2));
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyReportRequest(id.getId(), "null")
-      .execute(IdDto.class, OK.getStatusCode());
+    IdDto copyId = reportClient.copyReportToCollection(id, "null").readEntity(IdDto.class);
 
     // then
-    ReportDefinitionDto oldReport = getReport(id.getId());
-    ReportDefinitionDto newReport = getReport(copyId.getId());
+    ReportDefinitionDto oldReport = reportClient.getReportById(id);
+    ReportDefinitionDto newReport = reportClient.getReportById(copyId.getId());
 
     assertThat(oldReport.getName() + " – Copy").isEqualTo(newReport.getName());
     assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
@@ -813,7 +789,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     newData.getReportIds()
       .forEach(newSingleReportId -> {
-        final ReportDefinitionDto newSingleReport = getReport(newSingleReportId);
+        final ReportDefinitionDto newSingleReport = reportClient.getReportById(newSingleReportId);
         assertThat(newSingleReport.getCollectionId()).isNull();
       });
   }
@@ -827,13 +803,11 @@ public class ReportRestServiceIT extends AbstractIT {
     final String newCollectionId = collectionClient.createNewCollectionWithDefaultScope(reportType.toDefinitionType());
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyReportRequest(id, newCollectionId)
-      .execute(IdDto.class, OK.getStatusCode());
+    IdDto copyId = reportClient.copyReportToCollection(id, newCollectionId).readEntity(IdDto.class);
 
     // then
-    ReportDefinitionDto oldReport = getReport(id);
-    ReportDefinitionDto newReport = getReport(copyId.getId());
+    ReportDefinitionDto oldReport = reportClient.getReportById(id);
+    ReportDefinitionDto newReport = reportClient.getReportById(copyId.getId());
     assertThat(newReport.getData().toString()).isEqualTo(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(newReport.getName());
     assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
@@ -845,22 +819,19 @@ public class ReportRestServiceIT extends AbstractIT {
     // given
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
-    final String report1 = addEmptyProcessReport(collectionId);
-    final String report2 = addEmptyProcessReport(collectionId);
-    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReportData(report1, report2);
+    final String report1 = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    final String report2 = reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
-    IdDto id = createAndUpdateCombinedReport(combined, collectionId);
+    String id = reportClient.createCombinedReport(collectionId, Arrays.asList(report1, report2));
 
     final String newCollectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyReportRequest(id.getId(), newCollectionId)
-      .execute(IdDto.class, OK.getStatusCode());
+    IdDto copyId = reportClient.copyReportToCollection(id, newCollectionId).readEntity(IdDto.class);
 
     // then
-    ReportDefinitionDto oldReport = getReport(id.getId());
-    ReportDefinitionDto newReport = getReport(copyId.getId());
+    ReportDefinitionDto oldReport = reportClient.getReportById(id);
+    ReportDefinitionDto newReport = reportClient.getReportById(copyId.getId());
 
     assertThat(oldReport.getName() + " – Copy").isEqualTo(newReport.getName());
     assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
@@ -875,7 +846,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     newData.getReportIds()
       .forEach(newSingleReportId -> {
-        final ReportDefinitionDto newSingleReport = getReport(newSingleReportId);
+        final ReportDefinitionDto newSingleReport = reportClient.getReportById(newSingleReportId);
         assertThat(newSingleReport.getCollectionId()).isEqualTo(newCollectionId);
       });
   }
@@ -922,29 +893,16 @@ public class ReportRestServiceIT extends AbstractIT {
 
   private Response updateReportRequest(final String id, final ReportType reportType) {
     if (ReportType.PROCESS.equals(reportType)) {
-      return embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildUpdateSingleProcessReportRequest(id, constructProcessReportWithFakePD())
-        .execute();
+      return reportClient.updateSingleProcessReport(id, constructProcessReportWithFakePD());
     } else {
-      return embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildUpdateSingleDecisionReportRequest(id, constructDecisionReportWithFakeDD())
-        .execute();
+      return reportClient.updateDecisionReport(id, constructDecisionReportWithFakeDD());
     }
   }
 
   private String addEmptyReportToOptimize(final ReportType reportType) {
     return ReportType.PROCESS.equals(reportType)
-      ? addEmptyProcessReport()
-      : addEmptyDecisionReport();
-  }
-
-  private ReportDefinitionDto getReport(String id) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportRequest(id)
-      .execute(ReportDefinitionDto.class, OK.getStatusCode());
+      ? reportClient.createEmptySingleProcessReport()
+      : reportClient.createEmptySingleDecisionReport();
   }
 
   private String createSingleReport(final ReportType reportType) {
@@ -962,15 +920,6 @@ public class ReportRestServiceIT extends AbstractIT {
       default:
         throw new IllegalStateException("Unexpected value: " + reportType);
     }
-  }
-
-  private IdDto createAndUpdateCombinedReport(final CombinedReportDataDto combined, final String collectionId) {
-    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto(combined);
-    combinedReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, OK.getStatusCode());
   }
 
   private String addReportToOptimizeWithDefinitionAndRandomXml(final ReportType reportType) {
@@ -1017,25 +966,7 @@ public class ReportRestServiceIT extends AbstractIT {
     singleDecisionReportDefinitionDto.setLastModified(someDate);
     singleDecisionReportDefinitionDto.setOwner(RANDOM_STRING);
     singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-      .execute(IdDto.class, OK.getStatusCode())
-      .getId();
-  }
-
-  private String addEmptyProcessReport() {
-    return addEmptyProcessReport(null);
-  }
-
-  private String addEmptyProcessReport(final String collectionId) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, OK.getStatusCode())
-      .getId();
+    return reportClient.createSingleDecisionReport(singleDecisionReportDefinitionDto);
   }
 
   private String addSingleProcessReportWithDefinition(final ProcessReportDataDto processReportDataDto) {
@@ -1054,26 +985,7 @@ public class ReportRestServiceIT extends AbstractIT {
     singleProcessReportDefinitionDto.setLastModified(someDate);
     singleProcessReportDefinitionDto.setOwner(RANDOM_STRING);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, OK.getStatusCode())
-      .getId();
-  }
-
-  private String addEmptyDecisionReport() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest()
-      .execute(IdDto.class, OK.getStatusCode())
-      .getId();
-  }
-
-  private List<ReportDefinitionDto> getAllPrivateReports() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllPrivateReportsRequest()
-      .executeAndReturnList(ReportDefinitionDto.class, OK.getStatusCode());
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   @SneakyThrows
@@ -1083,16 +995,11 @@ public class ReportRestServiceIT extends AbstractIT {
       SingleProcessReportDefinitionDto reportDefinitionDto = getProcessReportDefinitionDtoWithXml(
         createProcessDefinitionXmlWithName("Simple Process")
       );
-      response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildUpdateSingleProcessReportRequest(id, reportDefinitionDto)
-        .execute();
+      response = reportClient.updateSingleProcessReport(id, reportDefinitionDto);
     } else {
-      SingleDecisionReportDefinitionDto reportDefinitionDto = getDecisionReportDefinitionDtoWithXml(createDefaultDmnModel());
-      response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildUpdateSingleDecisionReportRequest(id, reportDefinitionDto)
-        .execute();
+      SingleDecisionReportDefinitionDto reportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
+        createDefaultDmnModel());
+      response = reportClient.updateDecisionReport(id, reportDefinitionDto);
     }
     return response;
   }

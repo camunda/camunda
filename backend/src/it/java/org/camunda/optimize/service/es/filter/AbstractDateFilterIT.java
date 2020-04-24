@@ -138,7 +138,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
     if (newToken) {
       return evaluateReportWithNewToken(reportData);
     } else {
-      return evaluateReportWithRawDataResult(reportData);
+      return reportClient.evaluateRawReport(reportData);
     }
   }
 

@@ -111,7 +111,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
                                                                  List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData = createReportWithDefinition(processDefinition);
     reportData.setFilter(filter);
-    return evaluateReportAndReturnResult(reportData);
+    return reportClient.evaluateRawReport(reportData).getResult();
   }
 
 }

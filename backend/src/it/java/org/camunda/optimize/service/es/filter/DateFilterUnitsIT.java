@@ -70,7 +70,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
     reportData.setFilter(relativeDateFilter);
 
     //then
-    Response response = evaluateReportAndReturnResponse(reportData);
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
   }
 

@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.filter.decision;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
@@ -225,11 +224,8 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, DateFilterUnit.QUARTERS)));
 
     // then
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
-    assertThat(response.getStatus(), is(HttpStatus.SC_BAD_REQUEST));
+    Response response = reportClient.evaluateReportAndReturnResponse(reportData);
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test

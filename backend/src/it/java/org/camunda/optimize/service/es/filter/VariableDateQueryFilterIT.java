@@ -331,7 +331,7 @@ public class VariableDateQueryFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .setFilter(filter)
       .build();
-    return evaluateReportAndReturnResult(reportData);
+    return reportClient.evaluateReportAndReturnResult(reportData);
   }
 
 }

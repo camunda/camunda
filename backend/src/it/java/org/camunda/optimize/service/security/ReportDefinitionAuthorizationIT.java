@@ -13,7 +13,6 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -70,11 +69,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     String reportId = createReportForDefinition(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute();
+    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -94,11 +89,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     String reportId = createReportForDefinition(definitionResourceType, Arrays.asList(tenantId));
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute();
+    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -121,11 +112,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     String reportId = createReportForDefinition(definitionResourceType, Arrays.asList(tenantId1, tenantId2));
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute();
+    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -151,11 +138,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute();
+    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -171,11 +154,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     String reportId = createReportForDefinition(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildDeleteReportRequest(reportId)
-      .execute();
+    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -190,11 +169,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
 
     // when
     ReportDefinitionDto<SingleReportDataDto> definition = constructReportWithDefinition(definitionResourceType);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildEvaluateSingleUnsavedReportRequest(definition.getData())
-      .execute();
+    Response response = reportClient.evaluateReportAsUserAndReturnResponse(definition.getData(), KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -402,11 +377,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildDeleteReportRequest(combinedReportId, true)
-      .execute();
+    Response response = reportClient.deleteReport(combinedReportId, true, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -424,13 +395,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       Lists.emptyList()
     );
 
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateSingleProcessReportRequest(reportDefinitionDto)
-      .execute();
-
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    reportClient.createSingleProcessReportAsUser(reportDefinitionDto, KERMIT_USER, KERMIT_USER);
   }
 
   @Test
@@ -495,13 +460,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    reportClient.evaluateNumberReportById(reportId);
   }
 
   @Test
@@ -532,10 +491,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
 
     // when
     ReportDefinitionDto updatedReport = createReportUpdate(RESOURCE_TYPE_PROCESS_DEFINITION);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateSingleReportRequest(reportId, updatedReport)
-      .execute();
+    Response response = reportClient.updateSingleProcessReport(reportId, updatedReport);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -568,10 +524,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteReportRequest(reportId)
-      .execute();
+    Response response = reportClient.deleteReport(reportId, false);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -676,19 +629,9 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .withUserAuthentication(user, password)
-          .buildCreateSingleProcessReportRequest()
-          .execute(IdDto.class, Response.Status.OK.getStatusCode())
-          .getId();
+        return reportClient.createSingleProcessReportAsUser(new SingleProcessReportDefinitionDto(), user, password);
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .withUserAuthentication(user, password)
-          .buildCreateSingleDecisionReportRequest()
-          .execute(IdDto.class, Response.Status.OK.getStatusCode())
-          .getId();
+        return reportClient.createNewDecisionReportAsUser(new SingleDecisionReportDefinitionDto(), user, password);
     }
   }
 
@@ -741,17 +684,9 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     switch (updatedReport.getReportType()) {
       default:
       case PROCESS:
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .withUserAuthentication(user, password)
-          .buildUpdateSingleProcessReportRequest(id, updatedReport)
-          .execute();
+        return reportClient.updateSingleProcessReport(id, updatedReport, false, user, password);
       case DECISION:
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .withUserAuthentication(user, password)
-          .buildUpdateSingleDecisionReportRequest(id, updatedReport)
-          .execute();
+        return reportClient.updateDecisionReport(id, updatedReport, false, user, password);
     }
   }
 

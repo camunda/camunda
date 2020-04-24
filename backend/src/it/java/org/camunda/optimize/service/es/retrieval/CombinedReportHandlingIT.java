@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,6 +35,7 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -177,7 +177,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     //then
     AuthorizedCombinedReportEvaluationResultDto<SingleReportResultDto> result =
-      evaluateCombinedReportById(response.getId());
+      reportClient.evaluateCombinedReportById(response.getId());
 
     assertThat(result.getReportDefinition().getData().getReports(), containsInAnyOrder(reportIds.toArray()));
   }
@@ -395,8 +395,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
   @MethodSource("reportUpdateScenarios")
   public void updateCombinedReportCollectionReportCanBeAddedToSameCollectionCombinedReport(Function<CombinedReportUpdateData, Response> scenario) {
     // given
-    String collectionId = addEmptyCollectionToOptimize();
-    final String singleReportId = addEmptySingleProcessReportToCollection(collectionId);
+    String collectionId = collectionClient.createNewCollection();
+    final String singleReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
     // when
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId));
@@ -412,9 +412,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
   @MethodSource("reportUpdateScenarios")
   public void updateCombinedReportCollectionReportCannotBeAddedToOtherCollectionCombinedReport(Function<CombinedReportUpdateData, Response> scenario) {
     // given
-    String collectionId1 = addEmptyCollectionToOptimize();
-    String collectionId2 = addEmptyCollectionToOptimize();
-    final String singleReportId = addEmptySingleProcessReportToCollection(collectionId2);
+    String collectionId1 = collectionClient.createNewCollection();
+    String collectionId2 = collectionClient.createNewCollection();
+    final String singleReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId2);
 
     // when
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId1));
@@ -427,8 +427,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
   @MethodSource("reportUpdateScenarios")
   public void updateCombinedReportCollectionReportCannotBeAddedToPrivateCombinedReport(Function<CombinedReportUpdateData, Response> scenario) {
     // given
-    String collectionId = addEmptyCollectionToOptimize();
-    final String singleReportId = addEmptySingleProcessReportToCollection(collectionId);
+    String collectionId = collectionClient.createNewCollection();
+    final String singleReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
     // when
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, null));
@@ -441,8 +441,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
   @MethodSource("reportUpdateScenarios")
   public void updatePrivateCombinedReportReportCannotBeAddedToCollectionCombinedReport(Function<CombinedReportUpdateData, Response> scenario) {
     // given
-    String collectionId = addEmptyCollectionToOptimize();
-    final String singleReportId = addEmptySingleProcessReportToCollection(null);
+    String collectionId = collectionClient.createNewCollection();
+    final String singleReportId = reportClient.createEmptySingleProcessReportInCollection(null);
 
     // when
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId));
@@ -508,7 +508,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     updateReport(reportId, report);
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = reportClient.evaluateCombinedReportById(
+      reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
@@ -556,7 +557,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     String reportId = createNewCombinedReport(singleReportId, singleReportId2);
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = reportClient.evaluateCombinedReportById(
+      reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
@@ -581,7 +583,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     String reportId = createNewCombinedReport(totalDurationReportId, idleDurationReportId);
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = reportClient.evaluateCombinedReportById(
+      reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
@@ -610,7 +613,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     String reportId = createNewCombinedReport(userTaskTotalDurationReportId, flowNodeDurationReportId);
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = reportClient.evaluateCombinedReportById(
+      reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
@@ -646,7 +650,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // when
     final String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
     final AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>
-      result = evaluateCombinedReportById(combinedReportId);
+      result = reportClient.evaluateCombinedReportById(combinedReportId);
 
 
     // then
@@ -679,7 +683,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     String reportId = createNewCombinedReport(singleReportId);
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = reportClient.evaluateCombinedReportById(
+      reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
@@ -846,12 +851,13 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
+    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
+
     assertThat(resultMap.size(), is(2));
     List<MapResultEntryDto> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(3));
@@ -868,12 +874,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReportData(singleReportId));
+    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(1));
     AuthorizedEvaluationResultDto<ReportMapResultDto, SingleProcessReportDefinitionDto> mapResult =
       resultMap.get(singleReportId);
@@ -890,13 +896,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReportData(singleReportId1, singleReportId2)
-    );
+    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
   }
@@ -911,13 +916,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateUnsavedCombined(
-      createCombinedReportData(singleReportId1, singleReportId2)
-    );
+    CombinedProcessReportResultDataDto<ReportMapResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
   }
@@ -932,13 +936,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReportData(singleReportId, singleReportId2)
-    );
+    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId, singleReportId2));
   }
@@ -953,13 +956,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReportData(singleReportId, singleReportId2)
-    );
+    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId, singleReportId2));
   }
@@ -975,13 +977,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReportData(totalDurationReportId, totalDurationReportId2)
-    );
+    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(totalDurationReportId, totalDurationReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(totalDurationReportId, totalDurationReportId2));
   }
@@ -997,13 +998,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReportData(totalDurationReportId, idleDurationReportId)
-    );
+    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(totalDurationReportId, idleDurationReportId));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(totalDurationReportId, idleDurationReportId));
   }
@@ -1019,13 +1019,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReportData(totalDurationReportId, idleDurationReportId)
-    );
+    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(totalDurationReportId, idleDurationReportId));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(totalDurationReportId, idleDurationReportId));
   }
@@ -1047,12 +1046,11 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateUnsavedCombined(
+    final CombinedProcessReportResultDataDto<ReportMapResultDto> result = reportClient.evaluateUnsavedCombined(
       createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
-    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
-      .getData();
+    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
     assertThat(resultMap, is(CoreMatchers.notNullValue()));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
 
@@ -1100,12 +1098,11 @@ public class CombinedReportHandlingIT extends AbstractIT {
     String groupedByStartDateReportId = createNewSingleMapReport(groupedByStartDateReportData);
 
     // when
-    final AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateUnsavedCombined(
+    final CombinedProcessReportResultDataDto<ReportMapResultDto> result = reportClient.evaluateUnsavedCombined(
       createCombinedReportData(groupedByEndDateReportId, groupedByStartDateReportId));
 
     // then
-    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
-      .getData();
+    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
     assertThat(resultMap, is(CoreMatchers.notNullValue()));
     assertThat(resultMap.keySet(), contains(groupedByEndDateReportId, groupedByStartDateReportId));
 
@@ -1132,13 +1129,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReportData(singleReportId, singleReportId2)
-    );
+    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.keySet(), contains(singleReportId));
   }
@@ -1153,12 +1149,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
+    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(singleReportId2), is(true));
   }
@@ -1196,12 +1192,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReportData(singleReportId));
+    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
-      result.getResult().getData();
+      result.getData();
     assertThat(resultMap.size(), is(0));
   }
 
@@ -1412,24 +1408,6 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .execute();
   }
 
-  private <T extends SingleReportResultDto> AuthorizedCombinedReportEvaluationResultDto<T> evaluateCombinedReportById(String reportId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {});
-      // @formatter:on
-  }
-
-  private <T extends SingleReportResultDto> AuthorizedCombinedReportEvaluationResultDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {});
-      // @formatter:on
-  }
-
   private Response evaluateUnsavedCombinedReportAndReturnResponse(CombinedReportDataDto reportDataDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -1447,24 +1425,6 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .addQueryParams(queryParams)
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private String addEmptySingleProcessReportToCollection(final String collectionId) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
   }
 
   private Response addSingleReportToCombinedReport(final String combinedReportId, final String reportId) {

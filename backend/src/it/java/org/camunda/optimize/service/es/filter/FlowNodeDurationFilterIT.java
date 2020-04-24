@@ -41,7 +41,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultGreaterZero =
-      evaluateReportWithRawDataResult(createRawDataReportWithFilters(
+      reportClient.evaluateReportWithRawDataResult(createRawDataReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder
           .filter()
@@ -51,7 +51,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .buildList()
       ));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultLowerOrEqualZero =
-      evaluateReportWithRawDataResult(createRawDataReportWithFilters(
+      reportClient.evaluateReportWithRawDataResult(createRawDataReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder
           .filter()
@@ -79,7 +79,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     // when
     LocalDateUtil.setCurrentTime(now.plusSeconds(10));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
-      evaluateReportWithRawDataResult(createRawDataReportWithFilters(
+      reportClient.evaluateReportWithRawDataResult(createRawDataReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder
           .filter()
@@ -110,7 +110,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultBothTasksDurationGreaterZero =
-      evaluateReportWithRawDataResult(createRawDataReportWithFilters(
+      reportClient.evaluateReportWithRawDataResult(createRawDataReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder
           .filter()
@@ -123,7 +123,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .buildList()
       ));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultOneTaskWithLowerZero =
-      evaluateReportWithRawDataResult(createRawDataReportWithFilters(
+      reportClient.evaluateReportWithRawDataResult(createRawDataReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder
           .filter()
@@ -163,7 +163,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultGreaterActualDuration =
-      evaluateReportWithRawDataResult(createRawDataReportWithFilters(
+      reportClient.evaluateReportWithRawDataResult(createRawDataReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder
           .filter()
@@ -173,7 +173,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .buildList()
       ));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultLowerActualDuration =
-      evaluateReportWithRawDataResult(createRawDataReportWithFilters(
+      reportClient.evaluateReportWithRawDataResult(createRawDataReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder
           .filter()

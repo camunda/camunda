@@ -43,7 +43,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(2));
@@ -79,7 +79,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertThat(result.getData().size(), is(2));
@@ -109,7 +109,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
+    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     //then
     assertThat(result.getData().size(), is(2));

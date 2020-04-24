@@ -157,7 +157,7 @@ public class RelativeDateFilterIT extends AbstractDateFilterIT {
     reportData.setFilter(
       ProcessFilterBuilder.filter().relativeStartDate().start(10L, DateFilterUnit.DAYS).add().buildList()
     );
-    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getData();
@@ -226,7 +226,7 @@ public class RelativeDateFilterIT extends AbstractDateFilterIT {
         .add()
         .buildList()
     );
-    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getData();
