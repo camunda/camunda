@@ -42,7 +42,14 @@ public class HealthMonitoringTest {
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
   private final Timeout testTimeout = Timeout.seconds(120);
   private final ClusteringRule clusteringRule =
-      new ClusteringRule(1, 3, 3, cfg -> cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD));
+      new ClusteringRule(
+          1,
+          3,
+          3,
+          cfg -> {
+            cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
+            cfg.getData().setLogIndexDensity(1);
+          });
   private final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule

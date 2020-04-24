@@ -48,11 +48,17 @@ public final class ReplicateSnapshotControllerTest {
     replicator = new Replicator();
     replicatorSnapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, replicator);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            storage,
+            replicator,
+            db -> Long.MAX_VALUE);
 
     receiverSnapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), receiverStorage, replicator);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            receiverStorage,
+            replicator,
+            db -> Long.MAX_VALUE);
 
     autoCloseableRule.manage(replicatorSnapshotController);
     autoCloseableRule.manage(receiverSnapshotController);

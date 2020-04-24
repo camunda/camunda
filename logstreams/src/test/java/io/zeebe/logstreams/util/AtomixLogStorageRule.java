@@ -45,6 +45,7 @@ public final class AtomixLogStorageRule extends ExternalResource
   private final int partitionId;
   private final UnaryOperator<RaftStorage.Builder> builder;
 
+  private ZeebeIndexAdapter indexMapping;
   private RaftStorage raftStorage;
   private RaftLog raftLog;
   private SnapshotStore snapshotStore;
@@ -147,21 +148,18 @@ public final class AtomixLogStorageRule extends ExternalResource
       throw new UncheckedIOException(e);
     }
 
-    final var zeebeIndexAdapter = ZeebeIndexAdapter.ofDensity(1);
+    indexMapping = ZeebeIndexAdapter.ofDensity(1);
     raftStorage =
         builder
             .apply(buildDefaultStorage())
             .withDirectory(directory)
-            .withJournalIndexFactory(
-                () -> {
-                  return zeebeIndexAdapter;
-                })
+            .withJournalIndexFactory(() -> indexMapping)
             .build();
     raftLog = raftStorage.openLog();
     snapshotStore = raftStorage.getSnapshotStore();
     metaStore = raftStorage.openMetaStore();
 
-    storage = spy(new AtomixLogStorage(zeebeIndexAdapter, this, this));
+    storage = spy(new AtomixLogStorage(indexMapping, this, this));
   }
 
   public void close() {
@@ -200,6 +198,10 @@ public final class AtomixLogStorageRule extends ExternalResource
 
   public MetaStore getMetaStore() {
     return metaStore;
+  }
+
+  public ZeebeIndexAdapter getIndexMapping() {
+    return indexMapping;
   }
 
   private RaftStorage.Builder buildDefaultStorage() {
