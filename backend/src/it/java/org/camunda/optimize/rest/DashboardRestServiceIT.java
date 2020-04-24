@@ -10,7 +10,6 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -75,17 +74,15 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void copyPrivateDashboard() {
     // given
-    String dashboardId = createEmptyPrivateDashboard();
+    String dashboardId = dashboardClient.createEmptyDashboard(null);
     createEmptyReportToDashboard(dashboardId);
 
     // when
-    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+    IdDto copyId = dashboardClient.copyDashboard(dashboardId);
 
     // then
-    DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
+    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.toString()).isEqualTo(oldDashboard.toString());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
 
@@ -105,7 +102,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void copyPrivateDashboardWithNameParameter() {
     // given
-    final String dashboardId = createEmptyPrivateDashboard();
+    final String dashboardId = dashboardClient.createEmptyDashboard(null);
     createEmptyReportToDashboard(dashboardId);
 
     final String testDashboardCopyName = "This is my new report copy! ;-)";
@@ -117,8 +114,8 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
+    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.toString()).isEqualTo(oldDashboard.toString());
     assertThat(dashboard.getName()).isEqualTo(testDashboardCopyName);
   }
@@ -140,10 +137,10 @@ public class DashboardRestServiceIT extends AbstractIT {
   public void getDashboard() {
     //given
     DashboardDefinitionDto definitionDto = generateDashboardDefinitionDto();
-    String id = createDashboard(generateDashboardDefinitionDto());
+    String id = dashboardClient.createDashboard(generateDashboardDefinitionDto());
 
     // when
-    DashboardDefinitionDto returnedDashboard = getDashboardWithId(id);
+    DashboardDefinitionDto returnedDashboard = dashboardClient.getDashboard(id);
 
     // then
     assertThat(returnedDashboard).isNotNull();
@@ -191,7 +188,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void updateDashboard() {
     //given
-    String id = createEmptyPrivateDashboard();
+    String id = dashboardClient.createEmptyDashboard(null);
 
     // when
     Response response = embeddedOptimizeExtension
@@ -206,19 +203,16 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void updateDashboardDoesNotChangeCollectionId() {
     //given
-    final String collectionId = createEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
-    String id = createDashboard(dashboardDefinitionDto);
+    String id = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // when
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(id, new DashboardDefinitionDto())
-      .execute();
+    dashboardClient.updateDashboard(id, new DashboardDefinitionDto());
 
     // then
-    final DashboardDefinitionDto dashboard = getDashboard(id);
+    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(id);
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
   }
 
@@ -238,7 +232,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void deleteNewDashboard() {
     //given
-    String id = createEmptyPrivateDashboard();
+    String id = dashboardClient.createEmptyDashboard(null);
 
     // when
     Response response = embeddedOptimizeExtension
@@ -265,17 +259,14 @@ public class DashboardRestServiceIT extends AbstractIT {
   @Test
   public void deleteDashboardWithShares_shareAlsoGetsDeleted() {
     // given
-    final String dashboardId = createDashboardWithDefinition();
-    final String shareId = createDashboardShareForDashboard(dashboardId);
+    final String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
+    final String shareId = dashboardClient.createDashboardShareForDashboard(dashboardId);
 
     // then
     assertThat(documentShareExists(shareId)).isTrue();
 
     // when
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteDashboardRequest(dashboardId)
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
+    dashboardClient.deleteDashboard(dashboardId);
 
     // then
     assertThat(documentShareExists(shareId)).isFalse();
@@ -286,7 +277,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     // given
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
-    final String dashboardId = createDashboardWithDefinition();
+    final String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_doc/" + dashboardId)
       .withMethod(DELETE);
@@ -294,7 +285,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
-    final String shareId = createDashboardShareForDashboard(dashboardId);
+    final String shareId = dashboardClient.createDashboardShareForDashboard(dashboardId);
 
     // then
     assertThat(documentShareExists(shareId)).isTrue();
@@ -307,7 +298,7 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertThat(getDashboardWithId(dashboardId)).isNotNull();
+    assertThat(dashboardClient.getDashboard(dashboardId)).isNotNull();
     assertThat(documentShareExists(shareId)).isFalse();
   }
 
@@ -316,8 +307,8 @@ public class DashboardRestServiceIT extends AbstractIT {
     // given
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
-    final String dashboardId = createDashboardWithDefinition();
-    final String shareId = createDashboardShareForDashboard(dashboardId);
+    final String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
+    final String shareId = dashboardClient.createDashboardShareForDashboard(dashboardId);
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_SHARE_INDEX_NAME + "/_doc/" + shareId)
       .withMethod(DELETE);
@@ -336,17 +327,8 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertThat(getDashboardWithId(dashboardId)).isNotNull();
+    assertThat(dashboardClient.getDashboard(dashboardId)).isNotNull();
     assertThat(documentShareExists(shareId)).isTrue();
-  }
-
-  private String createDashboardShareForDashboard(final String dashboardId) {
-    DashboardShareDto sharingDto = new DashboardShareDto();
-    sharingDto.setDashboardId(dashboardId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildShareDashboardRequest(sharingDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
   @SneakyThrows
@@ -361,70 +343,9 @@ public class DashboardRestServiceIT extends AbstractIT {
     return storedShareIds.contains(shareId);
   }
 
-  private String createEmptyPrivateDashboard() {
-    return createDashboard(new DashboardDefinitionDto());
-  }
-
-  private String createDashboard(final DashboardDefinitionDto dashboardDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private DashboardDefinitionDto getDashboard(String dashboardId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDashboardRequest(dashboardId)
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private String createEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private void updateDashboardRequest(final String dashboardId, final List<ReportLocationDto> reports) {
-    final DashboardDefinitionDto dashboard = getDashboardWithId(dashboardId);
-    if (reports != null) {
-      dashboard.setReports(reports);
-    }
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboard)
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
-  }
-
-  private DashboardDefinitionDto getDashboardWithId(final String id) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDashboardRequest(id)
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
-  }
-
   private void createEmptyReportToDashboard(final String dashboardId) {
-    final String reportId = createEmptySingleProcessReportToCollection();
-    final ReportLocationDto reportLocationDto = new ReportLocationDto();
-    reportLocationDto.setId(reportId);
-    updateDashboardRequest(dashboardId, Collections.singletonList(reportLocationDto));
-  }
-
-  private String createEmptySingleProcessReportToCollection() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionDto())
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createDashboardWithDefinition() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest(generateDashboardDefinitionDto())
-      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
+    final String reportId = reportClient.createEmptySingleProcessReportInCollection(null);
+    dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
   }
 
   private DashboardDefinitionDto generateDashboardDefinitionDto() {

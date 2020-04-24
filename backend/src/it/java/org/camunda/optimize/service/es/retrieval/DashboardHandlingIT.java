@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
@@ -140,7 +139,7 @@ public class DashboardHandlingIT extends AbstractIT {
   public void copyPrivateDashboardAndMoveToCollection_withExternalResource() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
-    final String reportId = addEmptySingleProcessReport();
+    final String reportId = createNewSingleProcessReport();
     final String externalResource = "http://www.camunda.com";
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, externalResource));
 
@@ -170,7 +169,7 @@ public class DashboardHandlingIT extends AbstractIT {
   public void copyPrivateDashboardAndMoveToCollection_duplicateReportIsOnlyCopiedOnce() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
-    String reportId = addEmptySingleProcessReport();
+    String reportId = createNewSingleProcessReport();
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
 
     final String collectionId = collectionClient.createNewCollection();
@@ -204,7 +203,7 @@ public class DashboardHandlingIT extends AbstractIT {
   public void copyPrivateDashboardAndMoveToCollection_reportsAreCopiedDespiteDashboardCreationFailureWithEsDown() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
-    String reportId = addEmptySingleProcessReport();
+    String reportId = createNewSingleProcessReport();
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
     final String collectionId = collectionClient.createNewCollection();
 
@@ -238,7 +237,7 @@ public class DashboardHandlingIT extends AbstractIT {
   public void copyPrivateDashboardAndMoveToCollection_dashboardNotCreatedIfReportCopyFailsWithEsDown() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
-    String reportId = addEmptySingleProcessReport();
+    String reportId = createNewSingleProcessReport();
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
     final String collectionId = collectionClient.createNewCollection();
 
@@ -269,7 +268,7 @@ public class DashboardHandlingIT extends AbstractIT {
   public void copyPrivateDashboardAndMoveToCollection_duplicateReportIsOnlyCopiedOnceIfReferencedFromCombinedReport() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
-    String reportId = addEmptySingleProcessReport();
+    String reportId = createNewSingleProcessReport();
     String combinedReportId = reportClient.createNewCombinedReport(reportId);
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, combinedReportId));
 
@@ -303,7 +302,7 @@ public class DashboardHandlingIT extends AbstractIT {
   public void copyDashboardFromCollectionToPrivateEntities() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
+    String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     addEmptyReportToDashboardInCollection(dashboardId, collectionId);
 
     // when
@@ -334,7 +333,7 @@ public class DashboardHandlingIT extends AbstractIT {
   public void copyDashboardFromCollectionToDifferentCollection() {
     // given
     final String oldCollectionId = collectionClient.createNewCollection();
-    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(oldCollectionId);
+    String dashboardId = dashboardClient.createEmptyDashboard(oldCollectionId);
     addEmptyReportToDashboardInCollection(dashboardId, oldCollectionId);
 
     final String newCollectionId = collectionClient.createNewCollection();
@@ -369,7 +368,7 @@ public class DashboardHandlingIT extends AbstractIT {
     final String shouldBeIgnoredString = "shouldNotBeUpdated";
     final OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     final String id = addEmptyPrivateDashboard();
-    final String reportId = addEmptySingleProcessReport();
+    final String reportId = createNewSingleProcessReport();
     final ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId(reportId);
     reportLocationDto.setConfiguration("testConfiguration");
@@ -384,7 +383,7 @@ public class DashboardHandlingIT extends AbstractIT {
     dashboard.setOwner(shouldBeIgnoredString);
 
     // when
-    updateDashboard(id, dashboard);
+    dashboardClient.updateDashboard(id, dashboard);
     DashboardDefinitionDto updatedDashboard = dashboardClient.getDashboard(id);
 
     // then
@@ -404,8 +403,8 @@ public class DashboardHandlingIT extends AbstractIT {
   public void updateDashboardCollectionReportCanBeAddedToSameCollectionDashboard() {
     // given
     String collectionId = collectionClient.createNewCollection();
-    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
-    final String privateReportId = addEmptySingleProcessReportToCollection(collectionId);
+    String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
+    final String privateReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
     // when
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
@@ -419,8 +418,8 @@ public class DashboardHandlingIT extends AbstractIT {
     // given
     String collectionId1 = collectionClient.createNewCollection();
     String collectionId2 = collectionClient.createNewCollection();
-    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId1);
-    final String privateReportId = addEmptySingleProcessReportToCollection(collectionId2);
+    String dashboardId = dashboardClient.createEmptyDashboard(collectionId1);
+    final String privateReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId2);
 
     // when
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
@@ -434,7 +433,7 @@ public class DashboardHandlingIT extends AbstractIT {
     // given
     String collectionId = collectionClient.createNewCollection();
     String dashboardId = addEmptyPrivateDashboard();
-    final String privateReportId = addEmptySingleProcessReportToCollection(collectionId);
+    final String privateReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
     // when
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
@@ -447,8 +446,8 @@ public class DashboardHandlingIT extends AbstractIT {
   public void updateDashboardPrivateReportCannotBeAddedToCollectionDashboard() {
     // given
     String collectionId = collectionClient.createNewCollection();
-    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
-    final String privateReportId = createNewSingleReport();
+    String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
+    final String privateReportId = createNewSingleProcessReport();
 
     // when
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
@@ -484,7 +483,7 @@ public class DashboardHandlingIT extends AbstractIT {
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
 
     // when
-    updateDashboard(id, dashboard);
+    dashboardClient.updateDashboard(id, dashboard);
     DashboardDefinitionDto updatedDashboard = dashboardClient.getDashboard(id);
 
     // then
@@ -500,14 +499,14 @@ public class DashboardHandlingIT extends AbstractIT {
   public void deletedSingleReportIsRemovedFromDashboardWhenForced() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
-    String reportIdToDelete = createNewSingleReport();
+    String reportIdToDelete = createNewSingleProcessReport();
 
     ReportLocationDto reportToBeDeletedReportLocationDto = new ReportLocationDto();
     reportToBeDeletedReportLocationDto.setId(reportIdToDelete);
     reportToBeDeletedReportLocationDto.setConfiguration("testConfiguration");
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
     dashboard.setReports(Collections.singletonList(reportToBeDeletedReportLocationDto));
-    updateDashboard(dashboardId, dashboard);
+    dashboardClient.updateDashboard(dashboardId, dashboard);
 
     // when
     deleteReport(reportIdToDelete);
@@ -519,43 +518,14 @@ public class DashboardHandlingIT extends AbstractIT {
   }
 
   private void deleteReport(String reportId) {
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteReportRequest(reportId, true)
-      .execute();
+    Response response = reportClient.deleteReport(reportId, true);
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private String addEmptyPrivateDashboard() {
-    return addEmptyDashboardToCollectionAsDefaultUser(null);
-  }
-
-  private String addEmptyDashboardToCollectionAsDefaultUser(final String collectionId) {
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
-    dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(id, updatedDashboard)
-      .execute();
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-  }
-
-  private String createNewSingleReport() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    return dashboardClient.createEmptyDashboard(null);
   }
 
   private void addEmptyReportToDashboard(final String dashboardId) {
@@ -563,22 +533,12 @@ public class DashboardHandlingIT extends AbstractIT {
   }
 
   private void addEmptyReportToDashboardInCollection(final String dashboardId, final String collectionId) {
-    final String reportId = addEmptySingleProcessReportToCollection(collectionId);
+    final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
   }
 
-  private String addEmptySingleProcessReport() {
-    return addEmptySingleProcessReportToCollection(null);
-  }
-
-  private String addEmptySingleProcessReportToCollection(final String collectionId) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+  private String createNewSingleProcessReport() {
+    return reportClient.createEmptySingleProcessReportInCollection(null);
   }
 
   private Response addSingleReportToDashboard(final String dashboardId, final String privateReportId) {
