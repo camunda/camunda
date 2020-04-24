@@ -41,7 +41,7 @@ public class UserGenerator {
         userCredentialsDto.setPassword(userProfileDto.getId());
 
         engineClient.createUser(engineUserDto);
-        engineClient.grantUserOptimizeAllDefinitionAndAllTenantsAuthorization(engineUserDto.getProfile().getId());
+        engineClient.grantUserOptimizeAllDefinitionAndTenantsAndIdentitiesAuthorization(engineUserDto.getProfile().getId());
       });
   }
 

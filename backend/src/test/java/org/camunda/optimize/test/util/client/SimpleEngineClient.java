@@ -70,8 +70,10 @@ import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_USER;
 
 @Slf4j
 public class SimpleEngineClient {
@@ -106,7 +108,7 @@ public class SimpleEngineClient {
 
   @SneakyThrows
   public void initializeStandardUserAndGroupAuthorizations() {
-    STANDARD_USERS.forEach(this::grantUserOptimizeAllDefinitionAndAllTenantsAuthorization);
+    STANDARD_USERS.forEach(this::grantUserOptimizeAllDefinitionAndTenantsAndIdentitiesAuthorization);
     STANDARD_GROUPS.forEach(this::grantGroupOptimizeAllDefinitionAndAllTenantsAuthorization);
   }
 
@@ -157,11 +159,13 @@ public class SimpleEngineClient {
     createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_TENANT, groupId);
   }
 
-  public void grantUserOptimizeAllDefinitionAndAllTenantsAuthorization(final String userId) {
+  public void grantUserOptimizeAllDefinitionAndTenantsAndIdentitiesAuthorization(final String userId) {
     createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_APPLICATION, userId);
     createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_PROCESS_DEFINITION, userId);
     createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_DECISION_DEFINITION, userId);
     createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_TENANT, userId);
+    createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_USER, userId);
+    createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_GROUP, userId);
   }
 
   public void cleanUpDeployments() {
