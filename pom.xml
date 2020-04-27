@@ -36,7 +36,7 @@
     <version.junit>4.13</version.junit>
     <version.swagger>2.9.2</version.swagger>
     <version.javax.json>1.1.4</version.javax.json>
-    <version.micrometer>1.4.1</version.micrometer>
+    <version.micrometer>1.4.2</version.micrometer>
     <version.mockito>3.3.3</version.mockito>
     <version.assertj-core>3.15.0</version.assertj-core>
 
