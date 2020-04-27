@@ -1,5 +1,5 @@
 # Prepare Operate Distribution
-FROM alpine:3.11.5 as prepare
+FROM alpine:3.11.6 as prepare
 
 WORKDIR /tmp/operate
 
