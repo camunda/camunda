@@ -74,7 +74,12 @@ exports[`matches the snapshot 1`] = `
   <Dropdown
     label="Hans Wurst"
   >
-    <withRouter(LogoutButton) />
+    <ForwardRef(DropdownOption)
+      onClick={[Function]}
+      title="Logout"
+    >
+      Logout
+    </ForwardRef(DropdownOption)>
   </Dropdown>
 </header>
 `;

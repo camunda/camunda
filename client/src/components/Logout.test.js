@@ -17,6 +17,8 @@ import {addNotification} from 'notifications';
 jest.mock('request', () => ({get: jest.fn()}));
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+
 const props = {
   mightFail: jest.fn(),
   history: {replace: jest.fn()},
@@ -28,17 +30,21 @@ it('should logout from server', () => {
   expect(get).toHaveBeenCalledWith('api/authentication/logout');
 });
 
-it('should redirect to the index page', () => {
+it('should redirect to the index page', async () => {
   props.history.replace.mockClear();
   mount(<Logout {...props} mightFail={(_, cb) => cb()} />);
+
+  await flushPromises();
 
   expect(props.history.replace).toHaveBeenCalledWith('/');
 });
 
-it('should show an error if the logout fails', () => {
+it('should show an error if the logout fails', async () => {
   props.history.replace.mockClear();
   addNotification.mockClear();
   mount(<Logout {...props} mightFail={(_, cb, fail) => fail()} />);
+
+  await flushPromises();
 
   expect(props.history.replace).toHaveBeenCalledWith('/');
   expect(addNotification).toHaveBeenCalled();

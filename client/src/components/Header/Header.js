@@ -9,7 +9,6 @@ import {Link, withRouter} from 'react-router-dom';
 
 import {Dropdown} from 'components';
 import HeaderNav from './HeaderNav';
-import LogoutButton from './LogoutButton';
 import {t} from 'translation';
 import {getHeader} from 'config';
 import classnames from 'classnames';
@@ -42,7 +41,7 @@ export class Header extends React.Component {
   }
 
   render() {
-    const {location, noActions, user} = this.props;
+    const {location, noActions, user, history} = this.props;
     const {config, showEventBased} = this.state;
 
     const name = t('appName');
@@ -82,7 +81,12 @@ export class Header extends React.Component {
             </HeaderNav>
             <ChangeLog />
             <Dropdown label={user?.name}>
-              <LogoutButton />
+              <Dropdown.Option
+                onClick={() => history.push('/logout')}
+                title={t('navigation.logout')}
+              >
+                {t('navigation.logout')}
+              </Dropdown.Option>
             </Dropdown>
           </>
         )}

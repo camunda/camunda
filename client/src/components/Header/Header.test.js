@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {isEventBasedProcessEnabled} from './service';
 
 import {Header} from './Header';
+import {Dropdown} from 'components';
 
 jest.mock('config', () => ({
   getHeader: jest.fn().mockReturnValue({
@@ -27,6 +28,7 @@ const props = {
   user: {name: 'Hans Wurst'},
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   location: {pathname: '/'},
+  history: {push: jest.fn()},
 };
 
 it('matches the snapshot', () => {
@@ -52,4 +54,11 @@ it('should show and hide the event based process nav item depending on authoriza
   const disabled = shallow(<Header {...props} />);
 
   expect(disabled.find('[linksTo="/eventBasedProcess/"]')).not.toExist();
+});
+
+it('should go to temporary logout route on logout', () => {
+  const node = shallow(<Header {...props} />);
+
+  node.find(Dropdown.Option).simulate('click');
+  expect(props.history.push).toHaveBeenCalledWith('/logout');
 });

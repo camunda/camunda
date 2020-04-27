@@ -13,17 +13,14 @@ import {t} from 'translation';
 
 export function Logout({mightFail, history}) {
   useEffect(() => {
-    mightFail(
-      get('api/authentication/logout'),
-      () => {
-        addNotification({text: t('navigation.logoutSuccess')});
-        history.replace('/');
-      },
-      () => {
-        addNotification({text: t('navigation.logoutFailed'), type: 'error'});
-        history.replace('/');
-      }
-    );
+    (async () => {
+      await mightFail(
+        get('api/authentication/logout'),
+        () => addNotification({text: t('navigation.logoutSuccess')}),
+        () => addNotification({text: t('navigation.logoutFailed'), type: 'error'})
+      );
+      history.replace('/');
+    })();
   }, [mightFail, history]);
 
   return null;

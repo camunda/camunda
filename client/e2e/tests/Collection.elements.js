@@ -45,5 +45,5 @@ export const userList = Selector('.UserList');
 export const sourcesList = Selector('.SourcesList');
 export const addUserModal = Selector('.AddUserModal');
 export const addSourceModal = Selector('.AddSourceModal');
-export const logoutButton = Selector('.LogoutButton');
+export const logoutButton = Selector('header .Dropdown .DropdownOption');
 export const usernameDropdown = Selector('header .Dropdown');
