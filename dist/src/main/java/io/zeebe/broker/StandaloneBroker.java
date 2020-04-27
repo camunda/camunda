@@ -38,6 +38,8 @@ public class StandaloneBroker implements CommandLineRunner {
   public static void main(final String[] args) throws Exception {
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
 
+    EnvironmentHelper.disableGatewayHealthIndicatorsAndProbes();
+
     final LegacyConfigurationSupport legacyConfigSupport =
         new LegacyConfigurationSupport(Scope.BROKER);
     legacyConfigSupport.checkForLegacyTomlConfigurationArgument(
