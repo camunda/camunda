@@ -5,13 +5,21 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 import classnames from 'classnames';
 import Fullscreen from 'react-full-screen';
 import {Link} from 'react-router-dom';
 import {evaluateReport} from 'services';
 
-import {Button, ShareEntity, DashboardRenderer, Icon, Dropdown, Popover, Deleter} from 'components';
+import {
+  Button,
+  ShareEntity,
+  DashboardRenderer,
+  Icon,
+  Dropdown,
+  Popover,
+  Deleter,
+  ModificationInfo,
+} from 'components';
 
 import {themed} from 'theme';
 import {t} from 'translation';
@@ -197,12 +205,7 @@ export default themed(
                   </Dropdown>
                 </div>
               </div>
-              <div className="subHead">
-                <div className="metadata">
-                  {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
-                  {t('common.entity.by')} {lastModifier}
-                </div>
-              </div>
+              <ModificationInfo user={lastModifier} date={lastModified} />
             </div>
             <Deleter
               type="dashboard"

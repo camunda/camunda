@@ -5,10 +5,17 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, ShareEntity, ReportRenderer, Popover, Icon, Deleter} from 'components';
+import {
+  Button,
+  ShareEntity,
+  ReportRenderer,
+  Popover,
+  Icon,
+  Deleter,
+  ModificationInfo,
+} from 'components';
 import {isSharingEnabled} from 'config';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
@@ -101,12 +108,7 @@ export default class ReportView extends React.Component {
               )}
             </div>
           </div>
-          <div className="subHead">
-            <div className="metadata">
-              {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
-              {t('common.entity.by')} {lastModifier}
-            </div>
-          </div>
+          <ModificationInfo user={lastModifier} date={lastModified} />
         </div>
         <div className="Report__view">
           <div className="Report__content">

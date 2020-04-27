@@ -13,20 +13,17 @@ import {Dropdown} from 'components';
 
 const {WrappedComponent: DashboardView} = ThemedDashboardView;
 
-jest.mock('moment', () => () => {
-  return {
-    format: () => 'some date',
-  };
-});
-
 it('should display the key properties of a dashboard', () => {
   const node = shallow(
-    <DashboardView name="name" lastModifier="lastModifier" lastModified="unformatted date" />
+    <DashboardView
+      name="name"
+      lastModifier="lastModifier"
+      lastModified="2020-11-11T11:11:11.1111+0200"
+    />
   );
 
   expect(node.find('h1.name')).toIncludeText('name');
-  expect(node.find('.metadata')).toIncludeText('lastModifier');
-  expect(node.find('.metadata')).toIncludeText('some date');
+  expect(node.find('ModificationInfo')).toMatchSnapshot();
 });
 
 it('should provide a link to edit mode in view mode', () => {

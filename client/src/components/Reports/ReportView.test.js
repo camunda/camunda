@@ -58,8 +58,7 @@ it('should display the key properties of a report', () => {
   });
 
   expect(node).toIncludeText(report.name);
-  expect(node).toIncludeText(report.lastModifier);
-  expect(node).toIncludeText('some date');
+  expect(node.find('ModificationInfo')).toMatchSnapshot();
 });
 
 it('should provide a link to edit mode in view mode', () => {

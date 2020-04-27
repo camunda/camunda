@@ -5,12 +5,11 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 
 import {evaluateReport} from 'services';
-import {DashboardRenderer, EntityNameForm} from 'components';
+import {DashboardRenderer, EntityNameForm, ModificationInfo} from 'components';
 import {t} from 'translation';
 import {nowDirty, nowPristine} from 'saveGuard';
 
@@ -183,12 +182,7 @@ export default class DashboardEdit extends React.Component {
           >
             <AddButton addReport={this.addReport} />
           </EntityNameForm>
-          <div className="subHead">
-            <div className="metadata">
-              {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
-              {t('common.entity.by')} {lastModifier}
-            </div>
-          </div>
+          <ModificationInfo user={lastModifier} date={lastModified} />
         </div>
         <div className="content" ref={this.contentContainer}>
           <DashboardRenderer

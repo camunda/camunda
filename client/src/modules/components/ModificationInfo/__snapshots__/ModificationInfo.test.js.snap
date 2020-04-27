@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should format the passed date and display the user name 1`] = `
+<span
+  className="ModificationInfo"
+>
+  Last modified
+   
+  formatted date
+   
+  by
+   
+  userId
+   
+</span>
+`;

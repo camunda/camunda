@@ -7,7 +7,7 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
-import {LoadingIndicator, Button, Icon, Deleter, BPMNDiagram} from 'components';
+import {LoadingIndicator, Button, Icon, Deleter, BPMNDiagram, ModificationInfo} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
@@ -80,7 +80,7 @@ export default withErrorHandling(
       const {
         deleting,
         publishing,
-        data: {id, name, xml, mappings, state, publishingProgress},
+        data: {id, name, xml, mappings, state, publishingProgress, lastModified, lastModifier},
       } = this.state;
 
       const isPublishing = state === 'publish_pending';
@@ -131,6 +131,7 @@ export default withErrorHandling(
                 </Button>
               </div>
             </div>
+            <ModificationInfo user={lastModifier} date={lastModified} />
           </div>
           <BPMNDiagram xml={xml}>
             <ProcessRenderer mappings={mappings} />

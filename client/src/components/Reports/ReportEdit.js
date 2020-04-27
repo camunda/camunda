@@ -8,11 +8,16 @@ import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 import {Redirect, withRouter} from 'react-router-dom';
-import moment from 'moment';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {ReportRenderer, LoadingIndicator, MessageBox, EntityNameForm} from 'components';
+import {
+  ReportRenderer,
+  LoadingIndicator,
+  MessageBox,
+  EntityNameForm,
+  ModificationInfo,
+} from 'components';
 import {getOptimizeVersion} from 'config';
 
 import {
@@ -208,12 +213,7 @@ export class ReportEdit extends React.Component {
             onSave={this.saveAndGoBack}
             onCancel={this.cancel}
           />
-          <div className="subHead">
-            <div className="metadata">
-              {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
-              {t('common.entity.by')} {lastModifier}
-            </div>
-          </div>
+          <ModificationInfo user={lastModifier} date={lastModified} />
         </div>
 
         {!combined && reportType === 'process' && (

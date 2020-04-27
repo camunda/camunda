@@ -10,15 +10,14 @@ import {shallow} from 'enzyme';
 import {EntityNameForm} from 'components';
 
 import {updateProcess, loadProcess, getCleanedMappings, isNonTimerEvent} from './service';
-import ProcessEditWithErrorHandling from './ProcessEdit';
+import {ProcessEdit} from './ProcessEdit';
 import ProcessRenderer from './ProcessRenderer';
 import EventTable from './EventTable';
-
-const ProcessEdit = ProcessEditWithErrorHandling.WrappedComponent;
 
 const props = {
   id: '1',
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  getUser: jest.fn().mockReturnValue({id: 'john'}),
 };
 
 jest.mock('saveGuard', () => ({
@@ -33,6 +32,8 @@ jest.mock('./service', () => ({
   loadProcess: jest.fn().mockReturnValue({
     name: 'Process Name',
     xml: 'Process XML',
+    lastModifier: 'john',
+    lastModified: '2020-11-11T11:11:11.1111+0200',
     mappings: {},
     eventSources: [],
   }),
@@ -51,11 +52,13 @@ it('should load process by id', () => {
   expect(loadProcess).toHaveBeenCalledWith('1');
 });
 
-it('should initalize a new process', () => {
+it('should initalize a new process for the current user', () => {
   loadProcess.mockClear();
+  props.getUser.mockClear();
   shallow(<ProcessEdit {...props} id="new" />);
 
   expect(loadProcess).not.toHaveBeenCalled();
+  expect(props.getUser).toHaveBeenCalled();
 });
 
 it('should update the process', async () => {

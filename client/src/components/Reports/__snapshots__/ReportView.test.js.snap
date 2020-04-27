@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should display the key properties of a report 1`] = `
+<ModificationInfo
+  date="2017-11-11T11:11:11.1111+0200"
+  user="lastModifier"
+/>
+`;

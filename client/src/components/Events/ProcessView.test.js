@@ -24,6 +24,8 @@ jest.mock('./service', () => ({
     xml: 'Process XML',
     mappings: {},
     state: 'mapped',
+    lastModified: '2020-11-11T11:11:11.111+0200',
+    lastModifier: 'john',
   }),
   cancelPublish: jest.fn(),
 }));
