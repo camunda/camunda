@@ -200,6 +200,9 @@ pipeline {
             // Retrigger the build if there were connection issues
             script {
                 if (connectionProblem()) {
+                    currentBuild.result = 'ABORTED'
+                    currentBuild.description = "Aborted due to connection error"
+
                     build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
                 }
             }
