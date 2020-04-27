@@ -10,6 +10,7 @@ The following attributes of BPMN elements **require** an expression:
 
 Additionally, the following attributes of BPMN elements can define an expression **optionally** instead of a static value:
 * Timer Catch Event: [timer definition](/bpmn-workflows/timer-events/timer-events.html#timers)
+* Message Catch Event / Receive Task: [message name](/bpmn-workflows/message-events/message-events.html#messages)
 * Service Task: [job type](/bpmn-workflows/service-tasks/service-tasks.html#task-definition), [job retries](/bpmn-workflows/service-tasks/service-tasks.html#task-definition)
 * Call Activity: [process id](/bpmn-workflows/call-activities/call-activities.html#defining-the-called-workflow)
 
