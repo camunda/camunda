@@ -286,7 +286,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml querPerformanceConfig(env, env.ES_VERSION, env.CAMBPM_VERSION)
+          yaml queryPerformanceConfig(env, env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
       stages {
