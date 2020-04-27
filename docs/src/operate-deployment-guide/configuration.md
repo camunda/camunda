@@ -12,6 +12,7 @@ with `camunda.operate`. The following parts are configurable:
  * [Scaling Operate](importer-and-archiver.md)
  * [Monitoring possibilities](#monitoring-operate)
  * [Logging configuration](#logging)
+ * [Probes](#probes)
   
 # Configurations
 
@@ -210,4 +211,38 @@ camunda.operate:
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
 # Enable or disable metrics
 #management.metrics.export.prometheus.enabled: false
-``` 
+```
+
+# Probes
+
+Operate provides liveness and readiness probes for using in cloud environment (Kubernetes).
+
+* Kubernetes uses liveness probes to know when to restart a container.
+* Kubernetes uses readiness probes to decide when the container is available for accepting traffic.
+
+See also: [Kubernetes configure startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+
+A HTTP Get call to REST endpoint ```/api/check``` can be used to make probes.
+Any HTTP status code greater than or equal to 200 and less than 400 indicates success. Any other code indicates failure.
+## Example snippets to use Operate probes in Kubernetes:
+For details to set Kubernetes probes parameters see: [Kubernetes configure probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes)
+### Readiness probe as yaml config:
+```
+readinessProbe:
+     httpGet:
+        path: /api/check
+        port: 8080
+     initialDelaySeconds: 30
+     periodSeconds: 30
+```
+### Liveness probe as yaml config:
+```
+livenessProbe:
+     httpGet:
+        path: /api/check
+        port: 8080
+     initialDelaySeconds: 30
+     periodSeconds: 30
+```
+
+
