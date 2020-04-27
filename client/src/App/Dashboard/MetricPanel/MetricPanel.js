@@ -6,9 +6,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {observer} from 'mobx-react';
 
 import {withCountStore} from 'modules/contexts/CountContext';
-
 import * as Styled from './styled.js';
 
 function getUrl({filter, hasFinishedInstances}) {
@@ -22,7 +22,7 @@ function getUrl({filter, hasFinishedInstances}) {
   return `/instances?filter=${JSON.stringify(filter)}`;
 }
 
-export function MetricPanel({countStore}) {
+export const MetricPanel = observer(({countStore}) => {
   const {running, active, withIncidents, isLoaded} = countStore;
 
   return (
@@ -68,7 +68,7 @@ export function MetricPanel({countStore}) {
       </Styled.LabelContainer>
     </Styled.Panel>
   );
-}
+});
 
 MetricPanel.propTypes = {
   countStore: PropTypes.shape({

@@ -6,6 +6,8 @@
     "bpmn-js": "^6.4.2",
     "date-fns": "^2.12.0",
     "lodash": "^4.17.15",
+    "mobx": "^5.15.4",
+    "mobx-react": "^6.2.2",
     "prop-types": "^15.6.2",
     "react": "^16.13.1",
     "react-contenteditable": "^3.3.4",
