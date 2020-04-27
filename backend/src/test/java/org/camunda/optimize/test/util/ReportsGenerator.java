@@ -29,6 +29,7 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import java.io.ByteArrayInputStream;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -54,12 +55,14 @@ public class ReportsGenerator {
 
     List<ProcessReportDataDto> processReportDataDtos = latestDefinitionVersions
       .stream()
-      .flatMap(v -> createProcessReportsFromDefinition(v).stream())
+      .map(ReportsGenerator::createProcessReportsFromDefinition)
+      .flatMap(Collection::stream)
       .collect(Collectors.toList());
 
     List<DecisionReportDataDto> decisionReportDataDtos = latestDecisionDefs
       .stream()
-      .flatMap(v -> createDecisionReportsFromDefinition(v).stream())
+      .map(ReportsGenerator::createDecisionReportsFromDefinition)
+      .flatMap(Collection::stream)
       .collect(Collectors.toList());
 
     List<SingleReportDataDto> reports = new ArrayList<>();
