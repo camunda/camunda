@@ -111,6 +111,7 @@ public final class AtomixFactory {
             .withDataDirectory(raftDirectory)
             .withStateMachineFactory(ZeebeRaftStateMachine::new)
             .withSnapshotStoreFactory(new DbSnapshotStoreFactory())
+            .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withFlushOnCommit();
 
     // by default, the Atomix max entry size is 1 MB

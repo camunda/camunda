@@ -7,9 +7,11 @@
  */
 package io.zeebe.broker.system;
 
+import io.atomix.storage.StorageLevel;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.ThreadsCfg;
 import io.zeebe.util.DurationUtil;
 import io.zeebe.util.TomlConfigurationReader;
@@ -29,6 +31,8 @@ public final class SystemContext {
       "Node id %s needs to be non negative and smaller then cluster size %s.";
   private static final String REPLICATION_FACTOR_ERROR_MSG =
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
+  private static final String MMAP_REPLICATION_ERROR_MSG =
+      "Using memory mapped storage level is currently unsafe with replication enabled; if you wish to use replication, set useMmap to false";
   protected final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
@@ -76,6 +80,7 @@ public final class SystemContext {
 
   private void validateConfiguration() {
     final ClusterCfg cluster = brokerCfg.getCluster();
+    final DataCfg data = brokerCfg.getData();
 
     final int partitionCount = cluster.getPartitionsCount();
     if (partitionCount < 1) {
@@ -88,7 +93,13 @@ public final class SystemContext {
       throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
     }
 
+    final StorageLevel storageLevel = data.getAtomixStorageLevel();
     final int replicationFactor = cluster.getReplicationFactor();
+
+    if (storageLevel == StorageLevel.MAPPED && replicationFactor > 1) {
+      throw new IllegalStateException(MMAP_REPLICATION_ERROR_MSG);
+    }
+
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
       throw new IllegalArgumentException(
           String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
