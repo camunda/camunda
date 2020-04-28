@@ -168,7 +168,6 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
   /** Reads the next entry in the segment. */
   @SuppressWarnings("unchecked")
   private void readNext() {
-    // Compute the index of the next entry in the segment.
     final long index = getNextIndex();
 
     try {
@@ -186,7 +185,9 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
         return;
       }
 
-      final var cantReadEntry = memory.remaining() < length;
+      // we using a CRC32 - which is 32 byte checksum
+      // remaining bytes need to be larger or equals to entry length + checksum length
+      final var cantReadEntry = memory.remaining() < (length + Integer.BYTES);
       if (cantReadEntry) {
         readBytesIntoBuffer();
         memory.mark();
