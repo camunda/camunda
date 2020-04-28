@@ -14,7 +14,7 @@ A message is not sent to a workflow instance directly. Instead, the message corr
 
 ![Message Correlation](/reference/message-correlation/message-correlation.png)
 
-A subscription is opened when a workflow instance awaits a message, for example, when entering a message catch event. The message name is defined statically in the workflow (e.g. `Money collected`). The correlation key is defined dynamically as an expression (e.g. `= orderId`) that is evaluated on activating the message catch event. The result of the evaluation is used as correlation key of the subscription (e.g. `"order-123"`).
+A subscription is opened when a workflow instance awaits a message, for example, when entering a message catch event. The message name is defined either statically in the workflow (e.g. `Money collected`) or dynamically as an expression. The correlation key is defined dynamically as an expression (e.g. `= orderId`). The expressions are evaluated on activating the message catch event. The results of the evaluations are used as message name and as correlation key of the subscription (e.g. `"order-123"`).
 
  When a message is published and the message name and the correlation key matches to a subscription then the message is correlated to the corresponding workflow instance. If no proper subscription is opened then the message is discarded.
 
