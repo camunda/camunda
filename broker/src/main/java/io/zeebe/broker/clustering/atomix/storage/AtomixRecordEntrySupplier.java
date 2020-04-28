@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.clustering.atomix.storage;
 
+import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.protocol.record.Record;
@@ -18,7 +19,7 @@ import java.util.Optional;
  */
 @FunctionalInterface
 public interface AtomixRecordEntrySupplier extends AutoCloseable {
-  Optional<Indexed<ZeebeEntry>> getIndexedEntry(long position);
+  Optional<Indexed<? extends RaftLogEntry>> getIndexedEntry(long position);
 
   @Override
   default void close() {}

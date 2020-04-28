@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
+import org.agrona.collections.MutableLong;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,6 +29,8 @@ import org.junit.rules.TemporaryFolder;
 public final class StateSnapshotControllerTest {
   @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
+
+  private final MutableLong exporterPosition = new MutableLong(Long.MAX_VALUE);
 
   private StateSnapshotController snapshotController;
   private SnapshotStorage storage;
@@ -39,7 +42,10 @@ public final class StateSnapshotControllerTest {
 
     snapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            storage,
+            new NoneSnapshotReplication(),
+            db -> exporterPosition.get());
 
     autoCloseableRule.manage(snapshotController);
     autoCloseableRule.manage(storage);
@@ -55,16 +61,67 @@ public final class StateSnapshotControllerTest {
   }
 
   @Test
-  public void shouldTakeSnapshot() throws Exception {
+  public void shouldTakeTempSnapshotWithExporterPosition() {
     // given
-    final String key = "test";
-    final int value = 3;
-    final RocksDBWrapper wrapper = new RocksDBWrapper();
+    final var snapshotPosition = 1;
+    exporterPosition.set(snapshotPosition - 1);
+    snapshotController.openDb();
+
+    // when
+    final var tmpSnapshot = snapshotController.takeTempSnapshot(snapshotPosition);
+
+    // then
+    assertThat(tmpSnapshot).map(Snapshot::getCompactionBound).hasValue(exporterPosition.get());
+  }
+
+  @Test
+  public void shouldTakeTempSnapshot() throws Exception {
+    // given
+    final var key = "test";
+    final var value = 3;
+    final var wrapper = new RocksDBWrapper();
+    final var snapshotPosition = 2L;
+    exporterPosition.set(snapshotPosition + 1);
 
     // when
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
-    snapshotController.takeSnapshot(1);
+    final var tmpSnapshot = snapshotController.takeTempSnapshot(snapshotPosition);
+    snapshotController.commitSnapshot(tmpSnapshot.orElseThrow());
+    snapshotController.close();
+    wrapper.wrap(snapshotController.openDb());
+
+    // then
+    assertThat(wrapper.getInt(key)).isEqualTo(value);
+  }
+
+  @Test
+  public void shouldTakeSnapshotWithExporterPosition() {
+    // given
+    final var snapshotPosition = 1;
+    exporterPosition.set(snapshotPosition - 1);
+    snapshotController.openDb();
+
+    // when
+    final var snapshot = snapshotController.takeSnapshot(snapshotPosition);
+
+    // then
+    assertThat(snapshot).map(Snapshot::getCompactionBound).hasValue(exporterPosition.get());
+  }
+
+  @Test
+  public void shouldTakeSnapshot() throws Exception {
+    // given
+    final var key = "test";
+    final var value = 3;
+    final var wrapper = new RocksDBWrapper();
+    final var snapshotPosition = 2;
+    exporterPosition.set(snapshotPosition + 1);
+
+    // when
+    wrapper.wrap(snapshotController.openDb());
+    wrapper.putInt(key, value);
+    snapshotController.takeSnapshot(snapshotPosition);
     snapshotController.close();
     wrapper.wrap(snapshotController.openDb());
 

@@ -11,16 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.atomix.raft.storage.snapshot.SnapshotStore;
-import io.atomix.raft.zeebe.ZeebeEntry;
-import io.atomix.storage.journal.Indexed;
+import io.atomix.storage.journal.JournalReader.Mode;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
 import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotStorage;
+import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -33,10 +32,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public final class AtomixSnapshotStorageTest {
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(temporaryFolder);
+  @Rule public final RuleChain chain = RuleChain.outerRule(temporaryFolder).around(logStorageRule);
 
   private Path pendingDirectory;
   private SnapshotStore store;
@@ -48,7 +51,10 @@ public final class AtomixSnapshotStorageTest {
     final var snapshotsDirectory = temporaryFolder.newFolder("snapshots").toPath();
     final var raftPendingDirectory = temporaryFolder.getRoot().toPath().resolve("pending");
     pendingDirectory = temporaryFolder.newFolder("pushed-pending").toPath();
-    entrySupplier = mock(AtomixRecordEntrySupplier.class);
+    entrySupplier =
+        new AtomixRecordEntrySupplierImpl(
+            logStorageRule.getIndexMapping(),
+            logStorageRule.getRaftLog().openReader(-1, Mode.COMMITS));
     store =
         new DbSnapshotStore(
             snapshotsDirectory, raftPendingDirectory, new ConcurrentSkipListMap<>());
@@ -61,21 +67,32 @@ public final class AtomixSnapshotStorageTest {
   }
 
   @Test
+  public void shouldNotGetPendingSnapshotForNegativePosition() {
+    // given
+    final var storage = newStorage();
+    logStorageRule.appendEntry(1, 1, ByteBuffer.allocate(1));
+
+    // when
+    final var snapshot = storage.getPendingSnapshotFor(-1);
+    // then
+    assertThat(snapshot).isEmpty();
+  }
+
+  @Test
   public void shouldGetPendingSnapshotForPositions() {
     // given
     final var storage = newStorage();
-    when(entrySupplier.getIndexedEntry(1)).thenReturn(Optional.of(newEntry(1)));
-    when(entrySupplier.getIndexedEntry(2)).thenReturn(Optional.of(newEntry(2)));
+    logStorageRule.appendEntry(1, 1, ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(2, 2, ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(3, 3, ByteBuffer.allocate(1));
 
     // when
-    final var first = storage.getPendingSnapshotFor(1).orElseThrow();
-    final var second = storage.getPendingSnapshotFor(2).orElseThrow();
+    final var first = storage.getPendingSnapshotFor(2).orElseThrow();
+    final var second = storage.getPendingSnapshotFor(3).orElseThrow();
 
     // then
-    assertThat(first.getPath()).doesNotExist();
-    assertThat(first.getPath().getParent()).isEqualTo(pendingDirectory);
-    assertThat(second.getPath()).doesNotExist();
-    assertThat(second.getPath().getParent()).isEqualTo(pendingDirectory);
+    assertThat(first.getPath()).doesNotExist().hasParentRaw(pendingDirectory);
+    assertThat(second.getPath()).doesNotExist().hasParentRaw(pendingDirectory);
     assertThat(first.getPath()).isNotEqualTo(second.getPath());
   }
 
@@ -83,7 +100,7 @@ public final class AtomixSnapshotStorageTest {
   public void shouldReturnNullIfNoEntryForPosition() {
     // given
     final var storage = newStorage();
-    when(entrySupplier.getIndexedEntry(1)).thenReturn(Optional.empty());
+    logStorageRule.appendEntry(3, 3, ByteBuffer.allocate(1));
 
     // when
     final var snapshot = storage.getPendingSnapshotFor(1);
@@ -102,9 +119,8 @@ public final class AtomixSnapshotStorageTest {
     final var directory = storage.getPendingDirectoryFor(id).orElseThrow();
 
     // then
-    assertThat(directory).doesNotExist();
-    assertThat(directory.getParent()).isEqualTo(pendingDirectory);
-    assertThat(directory.getFileName().toString()).isEqualTo(id);
+    assertThat(directory).doesNotExist().hasParentRaw(pendingDirectory);
+    assertThat(directory.getFileName()).hasToString(id);
   }
 
   @Test
@@ -166,7 +182,7 @@ public final class AtomixSnapshotStorageTest {
     final var storage = newStorage();
 
     // when
-    final var snapshot = newPendingSnapshot(1);
+    final var snapshot = newPendingSnapshot(2);
     Files.createDirectories(snapshot.getPath());
     storage.commitSnapshot(snapshot.getPath());
 
@@ -188,7 +204,6 @@ public final class AtomixSnapshotStorageTest {
 
     // then
     assertThat(storage.getLatestSnapshot())
-        .isPresent()
         .map(Snapshot::getCompactionBound)
         .hasValue(snapshot.getCompactionBound());
   }
@@ -210,8 +225,26 @@ public final class AtomixSnapshotStorageTest {
     assertThat(storage.getSnapshots()).hasSize(1).containsExactly(second);
   }
 
+  @Test
+  public void shouldNotCreatePendingSnapshotIfSnapshotExistsForIndex() throws IOException {
+    // given
+    final var storage = newStorage();
+    logStorageRule.appendEntry(2, 2, ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(3, 3, ByteBuffer.allocate(1));
+    final var snapshot = storage.getPendingSnapshotFor(3).orElseThrow();
+    Files.createDirectories(snapshot.getPath());
+    storage.commitSnapshot(snapshot.getPath()).orElseThrow();
+
+    // when
+    final var newSnapshot = storage.getPendingSnapshotFor(3);
+
+    // then
+    assertThat(newSnapshot).isEmpty();
+  }
+
   private Snapshot newPendingSnapshot(final long position) {
-    when(entrySupplier.getIndexedEntry(position)).thenReturn(Optional.of(newEntry(position)));
+    logStorageRule.appendEntry(position - 1, position - 1, ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(position, position, ByteBuffer.allocate(1));
     return snapshotStorage.getPendingSnapshotFor(position).orElseThrow();
   }
 
@@ -229,10 +262,5 @@ public final class AtomixSnapshotStorageTest {
         new AtomixSnapshotStorage(
             runtimeDirectory, pendingDirectory, store, entrySupplier, new SnapshotMetrics(0));
     return snapshotStorage;
-  }
-
-  private Indexed<ZeebeEntry> newEntry(final long index) {
-    return new Indexed<>(
-        index, new ZeebeEntry(1, System.currentTimeMillis(), 1, 1, ByteBuffer.allocate(1)), 0);
   }
 }

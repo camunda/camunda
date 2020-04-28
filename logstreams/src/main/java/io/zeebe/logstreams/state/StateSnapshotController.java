@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 import org.slf4j.Logger;
@@ -33,32 +34,47 @@ public class StateSnapshotController implements SnapshotController {
 
   private final SnapshotStorage storage;
   private final ZeebeDbFactory zeebeDbFactory;
+  private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
   private final ReplicationController replicationController;
   private ZeebeDb db;
 
   public StateSnapshotController(
       final ZeebeDbFactory rocksDbFactory, final SnapshotStorage storage) {
-    this(rocksDbFactory, storage, new NoneSnapshotReplication());
+    this(rocksDbFactory, storage, new NoneSnapshotReplication(), zeebeDb -> -1);
   }
 
   public StateSnapshotController(
       final ZeebeDbFactory zeebeDbFactory,
       final SnapshotStorage storage,
-      final SnapshotReplication replication) {
+      final SnapshotReplication replication,
+      final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
     this.storage = storage;
     this.zeebeDbFactory = zeebeDbFactory;
+    this.exporterPositionSupplier = exporterPositionSupplier;
     this.replicationController = new ReplicationController(replication, storage);
   }
 
   @Override
   public Optional<Snapshot> takeSnapshot(final long lowerBoundSnapshotPosition) {
-    final var optionalSnapshot = storage.getPendingSnapshotFor(lowerBoundSnapshotPosition);
+    if (!isDbOpened()) {
+      return Optional.empty();
+    }
+
+    final long exportedPosition = exporterPositionSupplier.applyAsLong(openDb());
+    final long snapshotPosition = Math.min(exportedPosition, lowerBoundSnapshotPosition);
+    final var optionalSnapshot = storage.getPendingSnapshotFor(snapshotPosition);
     return optionalSnapshot.flatMap(this::createCommittedSnapshot);
   }
 
   @Override
   public Optional<Snapshot> takeTempSnapshot(final long lowerBoundSnapshotPosition) {
-    final var optionalSnapshot = storage.getPendingSnapshotFor(lowerBoundSnapshotPosition);
+    if (!isDbOpened()) {
+      return Optional.empty();
+    }
+
+    final long exportedPosition = exporterPositionSupplier.applyAsLong(openDb());
+    final long snapshotPosition = Math.min(exportedPosition, lowerBoundSnapshotPosition);
+    final var optionalSnapshot = storage.getPendingSnapshotFor(snapshotPosition);
     optionalSnapshot.ifPresent(this::createSnapshot);
     return optionalSnapshot;
   }

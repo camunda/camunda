@@ -19,8 +19,6 @@ import io.zeebe.broker.clustering.atomix.storage.snapshot.AtomixRecordEntrySuppl
 import io.zeebe.broker.clustering.atomix.storage.snapshot.AtomixSnapshotStorage;
 import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotStore;
 import io.zeebe.logstreams.state.SnapshotMetrics;
-import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
-import io.zeebe.logstreams.storage.atomix.ZeebeIndexAdapter;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
@@ -56,7 +54,6 @@ public final class AtomixLogDeletionServiceTest {
       RuleChain.outerRule(temporaryFolder).around(actorScheduler).around(logStorageRule);
 
   private AtomixSnapshotStorage snapshotStorage;
-  private AtomixLogStorageReader storageReader;
   private LogDeletionService deletionService;
   private Compactor compactor;
 
@@ -64,16 +61,14 @@ public final class AtomixLogDeletionServiceTest {
   public void setUp() throws IOException {
     final var runtimeDirectory = temporaryFolder.newFolder().toPath();
     final var pendingDirectory = temporaryFolder.newFolder().toPath();
-    storageReader =
-        new AtomixLogStorageReader(
-            ZeebeIndexAdapter.ofDensity(5),
-            logStorageRule.getRaftLog().openReader(-1, Mode.COMMITS));
     snapshotStorage =
         new AtomixSnapshotStorage(
             runtimeDirectory,
             pendingDirectory,
             logStorageRule.getSnapshotStore(),
-            new AtomixRecordEntrySupplierImpl(storageReader),
+            new AtomixRecordEntrySupplierImpl(
+                logStorageRule.getIndexMapping(),
+                logStorageRule.getRaftLog().openReader(-1, Mode.COMMITS)),
             new SnapshotMetrics(PARTITION_ID));
     compactor = new Compactor();
 
@@ -83,7 +78,6 @@ public final class AtomixLogDeletionServiceTest {
 
   @After
   public void tearDown() {
-    storageReader.close();
     snapshotStorage.close();
     deletionService.close();
   }

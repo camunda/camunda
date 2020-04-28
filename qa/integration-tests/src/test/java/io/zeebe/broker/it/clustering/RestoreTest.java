@@ -39,6 +39,7 @@ public final class RestoreTest {
           cfg -> {
             cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
             cfg.getData().setLogSegmentSize(ATOMIX_SEGMENT_SIZE);
+            cfg.getData().setLogIndexDensity(1);
             cfg.getNetwork().setMaxMessageSize(ATOMIX_SEGMENT_SIZE);
           });
   private final GrpcClientRule clientRule =

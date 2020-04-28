@@ -251,5 +251,6 @@ public final class SnapshotReplicationTest {
 
   private static void configureBroker(final BrokerCfg brokerCfg) {
     brokerCfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
+    brokerCfg.getData().setLogIndexDensity(1);
   }
 }
