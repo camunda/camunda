@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.atomix.storage.StorageLevel;
 import io.zeebe.util.Environment;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +27,8 @@ public final class DataCfg implements ConfigurationEntry {
 
   private int maxSnapshots = 3;
 
+  private boolean useMmap = false;
+
   @Override
   public void init(
       final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
@@ -37,6 +40,7 @@ public final class DataCfg implements ConfigurationEntry {
 
   private void applyEnvironment(final Environment environment) {
     environment.getList(EnvironmentConstants.ENV_DIRECTORIES).ifPresent(v -> directories = v);
+    environment.getBool(EnvironmentConstants.ENV_USE_MMAP).ifPresent(this::setUseMmap);
   }
 
   public List<String> getDirectories() {
@@ -79,6 +83,18 @@ public final class DataCfg implements ConfigurationEntry {
     this.raftSegmentSize = raftSegmentSize;
   }
 
+  public boolean useMmap() {
+    return useMmap;
+  }
+
+  public void setUseMmap(final boolean useMmap) {
+    this.useMmap = useMmap;
+  }
+
+  public StorageLevel getAtomixStorageLevel() {
+    return useMmap() ? StorageLevel.MAPPED : StorageLevel.DISK;
+  }
+
   @Override
   public String toString() {
     return "DataCfg{"
@@ -95,6 +111,8 @@ public final class DataCfg implements ConfigurationEntry {
         + '\''
         + ", maxSnapshots="
         + maxSnapshots
+        + ", useMmap="
+        + useMmap
         + '}';
   }
 }

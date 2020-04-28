@@ -77,6 +77,7 @@ public final class ClusteredDataDeletionTest {
     data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
     data.setLogSegmentSize("8k");
     brokerCfg.getNetwork().setMaxMessageSize("8K");
+    data.setUseMmap(false);
 
     brokerCfg.setExporters(Collections.EMPTY_LIST);
   }
@@ -87,6 +88,7 @@ public final class ClusteredDataDeletionTest {
     data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
     data.setLogSegmentSize("8k");
     brokerCfg.getNetwork().setMaxMessageSize("8K");
+    data.setUseMmap(false);
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(TestExporter.class.getName());

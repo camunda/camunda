@@ -86,6 +86,20 @@ public final class SystemContextTest {
     initSystemContext(brokerCfg);
   }
 
+  @Test
+  public void shouldInvalidateConfigIfUseMmapTrueWithReplication() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getData().setUseMmap(true);
+    brokerCfg.getCluster().setClusterSize(2);
+    brokerCfg.getCluster().setReplicationFactor(2);
+
+    // then
+    expectedException.expect(IllegalStateException.class);
+    expectedException.expectMessage("memory mapped");
+    initSystemContext(brokerCfg);
+  }
+
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
     return new SystemContext(brokerCfg, "test", new ControlledActorClock());
   }

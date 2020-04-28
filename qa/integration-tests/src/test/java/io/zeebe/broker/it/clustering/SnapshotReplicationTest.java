@@ -140,6 +140,7 @@ public final class SnapshotReplicationTest {
     data.setMaxSnapshots(MAX_SNAPSHOTS);
     data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
     data.setLogSegmentSize("8k");
+    data.setUseMmap(false);
     brokerCfg.getNetwork().setMaxMessageSize("8K");
 
     final ExporterCfg exporterCfg = new ExporterCfg();
