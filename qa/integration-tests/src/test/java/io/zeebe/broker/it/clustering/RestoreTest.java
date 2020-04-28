@@ -41,6 +41,7 @@ public final class RestoreTest {
             cfg.getData().setLogSegmentSize(ATOMIX_SEGMENT_SIZE);
             cfg.getData().setLogIndexDensity(1);
             cfg.getNetwork().setMaxMessageSize(ATOMIX_SEGMENT_SIZE);
+            cfg.getData().setUseMmap(false);
           });
   private final GrpcClientRule clientRule =
       new GrpcClientRule(
