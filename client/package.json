@@ -13,7 +13,7 @@
     "chart.js": "2.9.3",
     "classnames": "^2.2.6",
     "debounce": "^1.2.0",
-    "deep-equal": "^2.0.2",
+    "deep-equal": "^2.0.3",
     "dmn-js": "^8.2.0",
     "element-closest": "^3.0.2",
     "es6-shim": "^0.35.5",
