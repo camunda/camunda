@@ -52,7 +52,7 @@
     "jest-junit": "^10.0.0",
     "jest-styled-components": "^6.3.4",
     "lint-staged": "^10.1.6",
-    "prettier": "^2.0.4",
+    "prettier": "^2.0.5",
     "react-scripts": "3.4.1",
     "react-test-renderer": "^16.13.1"
   },
