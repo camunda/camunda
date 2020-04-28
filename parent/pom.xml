@@ -529,6 +529,12 @@
         <artifactId>spring-context</artifactId>
         <version>${version.spring-framework}</version>
       </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-test</artifactId>
+        <version>${version.spring-framework}</version>
+      </dependency>
+
 
       <dependency>
         <groupId>org.springframework.boot</groupId>
