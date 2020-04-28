@@ -25,7 +25,7 @@ func (r WhenRule) Validate(value interface{}) error {
 	return Validate(value, r.elseRules...)
 }
 
-// When returns a validation rule that executes the given list of rules when the condition is false.
+// Else returns a validation rule that executes the given list of rules when the condition is false.
 func (r WhenRule) Else(rules ...Rule) WhenRule {
 	r.elseRules = rules
 	return r

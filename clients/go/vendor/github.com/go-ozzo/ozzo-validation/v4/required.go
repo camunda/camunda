@@ -18,11 +18,11 @@ var (
 // - string, array, slice, map: len() > 0
 // - interface, pointer: not nil and the referenced value is not empty
 // - any other types
-var Required = RequiredRule{err: ErrRequired, skipNil: false, condition: true}
+var Required = RequiredRule{skipNil: false, condition: true}
 
 // NilOrNotEmpty checks if a value is a nil pointer or a value that is not empty.
 // NilOrNotEmpty differs from Required in that it treats a nil pointer as valid.
-var NilOrNotEmpty = RequiredRule{err: ErrNilOrNotEmpty, skipNil: true, condition: true}
+var NilOrNotEmpty = RequiredRule{skipNil: true, condition: true}
 
 // RequiredRule is a rule that checks if a value is not empty.
 type RequiredRule struct {
@@ -36,7 +36,13 @@ func (r RequiredRule) Validate(value interface{}) error {
 	if r.condition {
 		value, isNil := Indirect(value)
 		if r.skipNil && !isNil && IsEmpty(value) || !r.skipNil && (isNil || IsEmpty(value)) {
-			return r.err
+			if r.err != nil {
+				return r.err
+			}
+			if r.skipNil {
+				return ErrNilOrNotEmpty
+			}
+			return ErrRequired
 		}
 	}
 	return nil
@@ -50,6 +56,13 @@ func (r RequiredRule) When(condition bool) RequiredRule {
 
 // Error sets the error message for the rule.
 func (r RequiredRule) Error(message string) RequiredRule {
+	if r.err == nil {
+		if r.skipNil {
+			r.err = ErrNilOrNotEmpty
+		} else {
+			r.err = ErrRequired
+		}
+	}
 	r.err = r.err.SetMessage(message)
 	return r
 }
