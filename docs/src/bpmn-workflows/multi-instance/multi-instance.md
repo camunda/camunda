@@ -65,6 +65,8 @@ Every instance has a local variable `loopCounter`. It holds the index in the `in
 
 Input and output variable mappings can be defined at the multi-instance activity. They are applied **on each instance** on activating and on completing.
 
+The input mappings can be used to create new local variables in the scope of an instance. These variables are only visible within the instance. It is a way to restrict the **visibility** of variables. By default, new variables (e.g. provided by a job worker) are created in the scope of the workflow instance and are visible to all instances of the multi-instance activity as well as outside of it. In case of a parallel multi-instance activity, this can lead to variables that are modified by multiple instances and result in race conditions. If a variable is defined as local variable, then it is not propagated to a parent or the workflow instance scope and can't be modified outside of the instance.
+
 The input mappings can access the local variables of the instance (e.g. `inputElement`, `loopCounter`). For example, to extract parts of the `inputElement` variable and apply them to separate variables.
 
 The output mappings can be used to update the `outputElement` variable. For example, to extract a part of the job variables.
