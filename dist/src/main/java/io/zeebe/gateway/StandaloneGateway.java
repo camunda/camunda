@@ -15,6 +15,7 @@ import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
+import io.zeebe.gateway.impl.SpringGatewayBridge;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
@@ -32,8 +33,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientAutoConfiguration;
-import org.springframework.context.ApplicationContext;
-import org.springframework.core.env.Environment;
 
 public class StandaloneGateway {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
@@ -42,12 +41,14 @@ public class StandaloneGateway {
   private final GatewayCfg gatewayCfg;
   private final ActorScheduler actorScheduler;
 
-  public StandaloneGateway(final GatewayCfg gatewayCfg) {
+  public StandaloneGateway(
+      final GatewayCfg gatewayCfg, final SpringGatewayBridge springGatewayBridge) {
     atomixCluster = createAtomixCluster(gatewayCfg.getCluster());
     actorScheduler = createActorScheduler(gatewayCfg);
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
         cfg -> new BrokerClientImpl(cfg, atomixCluster, actorScheduler, false);
     gateway = new Gateway(gatewayCfg, brokerClientFactory, actorScheduler);
+    springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     this.gatewayCfg = gatewayCfg;
   }
 
@@ -122,8 +123,7 @@ public class StandaloneGateway {
   public static class Launcher implements CommandLineRunner {
 
     @Autowired GatewayCfg configuration;
-    @Autowired Environment springEnvironment;
-    @Autowired ApplicationContext applicationContext;
+    @Autowired SpringGatewayBridge springGatewayBridge;
 
     @Override
     public void run(final String... args) throws Exception {
@@ -135,7 +135,7 @@ public class StandaloneGateway {
         LOG.info("Starting standalone gateway with configuration {}", gatewayCfg.toJson());
       }
 
-      new StandaloneGateway(gatewayCfg).run();
+      new StandaloneGateway(gatewayCfg, springGatewayBridge).run();
     }
   }
 }
