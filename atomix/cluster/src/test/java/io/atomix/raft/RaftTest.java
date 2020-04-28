@@ -19,9 +19,11 @@ package io.atomix.raft;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -50,6 +52,7 @@ import io.atomix.raft.cluster.RaftClusterEvent;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.metrics.RaftRoleMetrics;
+import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.primitive.FakeStateMachine;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.primitive.TestPrimitive;
@@ -58,6 +61,7 @@ import io.atomix.raft.primitive.TestPrimitiveService;
 import io.atomix.raft.primitive.TestPrimitiveType;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
+import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.CloseSessionEntry;
@@ -75,6 +79,8 @@ import io.atomix.raft.storage.snapshot.SnapshotChunkReader;
 import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.LoadMonitor;
+import io.atomix.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
@@ -297,7 +303,7 @@ public class RaftTest extends ConcurrentTestCase {
             .withDirectory(new File(directory.toFile(), memberId.toString()))
             .withMaxEntriesPerSegment(10)
             .withMaxSegmentSize(1024 * 10)
-            .withNamespace(NAMESPACE);
+            .withNamespace(RaftNamespaces.RAFT_STORAGE);
     return configurator.apply(defaults).build();
   }
 
@@ -1758,6 +1764,7 @@ public class RaftTest extends ConcurrentTestCase {
 
   @Test
   public void shouldReconnect() throws Throwable {
+    // given
     final List<RaftServer> servers = createServers(3);
     final RaftServer leader = getLeader(servers).get();
     final MemberId leaderId = leader.getContext().getCluster().getMember().memberId();
@@ -1771,30 +1778,18 @@ public class RaftTest extends ConcurrentTestCase {
                 commitIndex.set(entry.index());
               }
             });
-    final RaftClient client = createClient();
-    final TestPrimitive primitive = createPrimitive(client);
-    primitive.onEvent(
-        event -> {
-          threadAssertNotNull(event);
-          resume();
-        });
-
-    for (int i = 0; i < 1_000; i++) {
-      primitive.sendEvent(true);
-    }
-    await(30000, 500);
-
-    // when
+    appendEntry(leader);
     protocolFactory.partition(leaderId);
     waitUntil(() -> !leader.isLeader(), 100);
-    for (int i = 0; i < 2_000; i++) {
-      primitive.sendEvent(true);
-    }
-    final long lastCommitIndex = primitive.sendEvent(true).get();
+
+    // when
+    final var newLeader = servers.stream().filter(RaftServer::isLeader).findFirst().orElseThrow();
+    assertNotEquals(newLeader, leader);
+    final var secondCommit = appendEntry(newLeader);
     protocolFactory.heal(leaderId);
 
     // then
-    waitUntil(() -> commitIndex.get() >= lastCommitIndex, 200);
+    waitUntil(() -> commitIndex.get() >= secondCommit, 200);
   }
 
   @Test
@@ -1857,6 +1852,20 @@ public class RaftTest extends ConcurrentTestCase {
     verify(followerServer, timeout(5000).atLeast(2)).poll(any(), any());
   }
 
+  private long appendEntry(final RaftServer leader) throws Exception {
+    final var raftRole = leader.getContext().getRaftRole();
+    if (raftRole instanceof LeaderRole) {
+      final var leaderRole = (LeaderRole) raftRole;
+      final var appendListener = new TestAppendListener();
+      leaderRole.appendEntry(0, 10, ByteBuffer.wrap("event".getBytes()), appendListener);
+      return appendListener.awaitCommit();
+    }
+    throw new IllegalArgumentException(
+        "Expected to append entry on leader, "
+            + leader.getContext().getName()
+            + " was not the leader!");
+  }
+
   private static final class FakeStatistics extends StorageStatistics {
 
     FakeStatistics(final File file) {
@@ -1884,6 +1893,33 @@ public class RaftTest extends ConcurrentTestCase {
     @Override
     public boolean isUnderHighLoad() {
       return true;
+    }
+  }
+
+  private static final class TestAppendListener implements ZeebeLogAppender.AppendListener {
+
+    private final CompletableFuture<Long> commitFuture = new CompletableFuture<>();
+
+    @Override
+    public void onWrite(final Indexed<ZeebeEntry> indexed) {}
+
+    @Override
+    public void onWriteError(final Throwable error) {
+      fail("Unexpected write error: " + error.getMessage());
+    }
+
+    @Override
+    public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {
+      fail("Unexpected write error: " + error.getMessage());
+    }
+
+    @Override
+    public void onCommit(final Indexed<ZeebeEntry> indexed) {
+      commitFuture.complete(indexed.index());
+    }
+
+    public long awaitCommit() throws Exception {
+      return commitFuture.get(30, TimeUnit.SECONDS);
     }
   }
 }
