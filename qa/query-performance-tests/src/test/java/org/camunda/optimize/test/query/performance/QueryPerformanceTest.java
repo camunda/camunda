@@ -6,9 +6,7 @@
 package org.camunda.optimize.test.query.performance;
 
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
@@ -41,24 +39,10 @@ public class QueryPerformanceTest {
 
   @RegisterExtension
   @Order(1)
-  public static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
-    new ElasticSearchIntegrationTestExtension();
-  @RegisterExtension
-  @Order(2)
-  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
-  @RegisterExtension
-  @Order(3)
-  public static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension(
-    "default",
-    false
-  );
-
-  private static String authenticationToken;
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension(true);
 
   @BeforeAll
   public static void init() throws TimeoutException, InterruptedException {
-    embeddedOptimizeExtension.setupOptimize();
-    elasticSearchIntegrationTestExtension.disableCleanup();
     // given
     importEngineData();
 
@@ -66,7 +50,7 @@ public class QueryPerformanceTest {
     // will time out and the requests will fail with a 401.
     // Therefore, we need to make sure that renew the auth header
     // after the import and before we start the tests
-    authenticationToken = embeddedOptimizeExtension.getNewAuthenticationToken();
+    embeddedOptimizeExtension.refreshAuthenticationToken();
   }
 
   @ParameterizedTest
@@ -94,7 +78,6 @@ public class QueryPerformanceTest {
     if (!wasAbleToFinishImportInTime) {
       throw new TimeoutException("Import was not able to finish import in " + 2 + " hours!");
     }
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     logger.info("Finished importing engine data...");
   }
 
@@ -116,7 +99,6 @@ public class QueryPerformanceTest {
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(report)
-      .withGivenAuthToken(authenticationToken)
       .execute();
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     Instant finish = Instant.now();
@@ -127,6 +109,8 @@ public class QueryPerformanceTest {
   }
 
   private static Stream<SingleReportDataDto> getPossibleReports() {
-    return createAllPossibleReports().stream();
+    return createAllPossibleReports().stream()
+      // we exclude all process part queries as they easily overload es for bigger datasets, see OPT-3565
+      .filter(singleReportDataDto -> !singleReportDataDto.getConfiguration().getProcessPart().isPresent());
   }
 }

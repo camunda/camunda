@@ -182,13 +182,14 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return getApplicationContext().getBean(DateTimeFormatter.class);
   }
 
-  /**
-   * The actual storing is only performed once, when this class is the first time initialized.
-   */
+  public void refreshAuthenticationToken() {
+    authenticationToken = getNewAuthenticationToken()
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not obtain authentication token."));
+  }
+
   private void initAuthenticationToken() {
     if (authenticationToken == null) {
-      authenticationToken = getNewAuthenticationToken()
-        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not obtain authentication token."));
+      refreshAuthenticationToken();
     }
   }
 

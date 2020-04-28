@@ -45,7 +45,9 @@ import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.context.ApplicationContext;
@@ -65,7 +67,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.test.it.extension.MockServerFactory.MOCKSERVER_HOST;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 /**
@@ -73,7 +74,8 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
  */
 @Slf4j
 @NoArgsConstructor
-public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachCallback {
+public class EmbeddedOptimizeExtension
+  implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
   public static final String DEFAULT_ENGINE_ALIAS = "1";
 
@@ -81,29 +83,43 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
 
+  private boolean beforeAllMode = false;
   private boolean resetImportOnStart = true;
 
-  /**
-   * 1. Reset import start indexes
-   * <p>
-   * 2. Schedule import of all entities, execute all available jobs sequentially
-   * until nothing more exists in scheduler queue.
-   * <p>
-   * NOTE: this will not store indexes in the ES.
-   */
+  public EmbeddedOptimizeExtension(final boolean beforeAllMode) {
+    this.beforeAllMode = beforeAllMode;
+  }
 
-  public EmbeddedOptimizeExtension(String context) {
+  public EmbeddedOptimizeExtension(final String context) {
     this.context = context;
   }
 
   @Override
-  public void beforeEach(final ExtensionContext extensionContext) throws Exception {
-    setupOptimize();
+  public void beforeAll(final ExtensionContext extensionContext) throws Exception {
+    if (beforeAllMode) {
+      setupOptimize();
+    }
   }
 
   @Override
-  public void afterEach(final ExtensionContext extensionContext) throws Exception {
-    afterTest();
+  public void beforeEach(final ExtensionContext extensionContext) {
+    if (!beforeAllMode) {
+      setupOptimize();
+    }
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext extensionContext) throws Exception {
+    if (beforeAllMode) {
+      afterTest();
+    }
+  }
+
+  @Override
+  public void afterEach(final ExtensionContext extensionContext) {
+    if (!beforeAllMode) {
+      afterTest();
+    }
   }
 
   public void setupOptimize() {
@@ -164,7 +180,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     do {
       isDoneImporting = true;
       for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-        scheduler.runImportRound(false).get();
+        scheduler.runImportRound(false);
         isDoneImporting &= !scheduler.isImporting();
       }
     } while (!isDoneImporting);
@@ -303,6 +319,10 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   public OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutor;
+  }
+
+  public void refreshAuthenticationToken() {
+    getOptimize().refreshAuthenticationToken();
   }
 
   public String getAuthenticationToken() {
