@@ -524,6 +524,15 @@ public final class BrokerCfgTest {
     assertThat(actual.getExporters().get("elasticsearch")).isEqualTo(expected);
   }
 
+  @Test
+  public void shouldUseMmap() {
+    // given
+    environment.put("zeebe.broker.data.useMmap", "true");
+
+    // then
+    assertUseMmap(true);
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".yaml";
 
@@ -585,6 +594,17 @@ public final class BrokerCfgTest {
   private void assertDefaultHost(final String host) {
     assertHost("default", host);
     assertHost("empty", host);
+  }
+
+  private void assertUseMmap(final boolean useMmap) {
+    assertUseMmap("default", useMmap);
+    assertUseMmap("empty", useMmap);
+  }
+
+  private void assertUseMmap(final String configFileName, final boolean useMmap) {
+    final var config = readConfig(configFileName);
+    final var data = config.getData();
+    assertThat(data.useMmap()).isEqualTo(useMmap);
   }
 
   private void assertHost(final String configFileName, final String host) {

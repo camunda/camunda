@@ -29,7 +29,6 @@ import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
@@ -97,24 +96,22 @@ public final class AtomixFactory {
                 (raftContext, threadContext, threadContextFactory) ->
                     new ZeebeRaftStateMachine(raftContext))
             .withSnapshotStoreFactory(new DbSnapshotStoreFactory())
+            .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withFlushOnCommit();
 
     // by default, the Atomix max entry size is 1 MB
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
     partitionGroupBuilder.withMaxEntrySize(maxMessageSize);
 
-    Optional.ofNullable(dataCfg.getLogSegmentSizeInBytes())
-        .ifPresent(
-            segmentSize -> {
-              if (segmentSize < maxMessageSize) {
-                throw new IllegalArgumentException(
-                    String.format(
-                        "Expected the raft segment size greater than the max message size of %s, but was %s.",
-                        maxMessageSize, segmentSize));
-              }
+    final var segmentSize = dataCfg.getLogSegmentSizeInBytes();
+    if (segmentSize < maxMessageSize) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the raft segment size greater than the max message size of %s, but was %s.",
+              maxMessageSize, segmentSize));
+    }
 
-              partitionGroupBuilder.withSegmentSize(segmentSize);
-            });
+    partitionGroupBuilder.withSegmentSize(segmentSize);
 
     return partitionGroupBuilder.build();
   }
