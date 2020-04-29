@@ -1,3 +1,6 @@
 zeebe.broker.exporters.elasticsearch:
   className: io.zeebe.exporter.ElasticsearchExporter
-  args.url: http://elasticsearch:9200
+  args:
+    url: http://elasticsearch:9200
+    bulk:
+      size: 1
