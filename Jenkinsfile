@@ -31,6 +31,17 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
+                script {
+                    commit_summary = sh([returnStdout: true, script: 'git show -s --format=%s']).trim()
+                    displayNameFull = "#" + BUILD_NUMBER + ': ' + commit_summary
+
+                    if (displayNameFull.length() <= 45) {
+                      currentBuild.displayName = displayNameFull
+                    } else {
+                      displayStringHardTruncate = displayNameFull.take(45)
+                      currentBuild.displayName = displayStringHardTruncate.take(displayStringHardTruncate.lastIndexOf(" "))
+                    }
+                }
                 container('maven') {
                     sh '.ci/scripts/distribution/prepare.sh'
                 }
@@ -40,6 +51,7 @@ pipeline {
                 container('golang') {
                     sh '.ci/scripts/distribution/prepare-go.sh'
                 }
+
             }
         }
 
