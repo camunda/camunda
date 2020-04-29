@@ -74,32 +74,6 @@ public final class SnapshotReplicationTest {
   }
 
   @Test
-  public void shouldReceiveLatestSnapshotOnRejoin() {
-    // given
-    final var leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
-    final var followers =
-        clusteringRule.getOtherBrokerObjects(leaderNodeId).stream()
-            .map(b -> b.getConfig().getCluster().getNodeId())
-            .collect(Collectors.toList());
-
-    final var firstFollowerId = followers.get(0);
-    final var secondFollowerId = followers.get(1);
-
-    // when - snapshot
-    clusteringRule.stopBroker(firstFollowerId);
-    triggerSnapshotCreation();
-    clusteringRule.restartBroker(firstFollowerId);
-    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId));
-    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId));
-
-    // then - replicated
-    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
-    final var leaderChecksums = Objects.requireNonNull(brokerSnapshotChecksums.get(leaderNodeId));
-    assertThat(brokerSnapshotChecksums.get(firstFollowerId)).containsAllEntriesOf(leaderChecksums);
-    assertThat(brokerSnapshotChecksums.get(secondFollowerId)).containsAllEntriesOf(leaderChecksums);
-  }
-
-  @Test
   public void shouldReceiveNewSnapshotsOnRejoin() {
     // given
     final var leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
