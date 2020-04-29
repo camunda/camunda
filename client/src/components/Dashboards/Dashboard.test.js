@@ -87,12 +87,13 @@ it('should not load data when it is a new dashboard', async () => {
 it('should create a new dashboard when saving a new one', async () => {
   const node = await shallow(<Dashboard {...props} match={{params: {id: 'new'}}} />);
 
-  node.instance().saveChanges('testname', [{id: 'reportID'}]);
+  node.instance().saveChanges('testname', [{id: 'reportID'}], [{type: 'state'}]);
 
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: null,
     name: 'testname',
     reports: [{id: 'reportID'}],
+    availableFilters: [{type: 'state'}],
   });
 });
 
@@ -105,12 +106,13 @@ it('should create a new dashboard in a collection', async () => {
     />
   );
 
-  node.instance().saveChanges('testname', []);
+  node.instance().saveChanges('testname', [], []);
 
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: '123',
     name: 'testname',
     reports: [],
+    availableFilters: [],
   });
 });
 

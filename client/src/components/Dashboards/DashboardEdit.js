@@ -9,7 +9,7 @@ import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 
 import {evaluateReport} from 'services';
-import {DashboardRenderer, EntityNameForm, ModificationInfo} from 'components';
+import {DashboardRenderer, EntityNameForm, ModificationInfo, Button, Icon} from 'components';
 import {t} from 'translation';
 import {nowDirty, nowPristine} from 'saveGuard';
 
@@ -17,13 +17,17 @@ import {AddButton} from './AddButton';
 import {DeleteButton} from './DeleteButton';
 import DragOverlay from './DragOverlay';
 
+import {FiltersEdit} from './filters';
+
 export default class DashboardEdit extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
       reports: props.initialReports,
+      availableFilters: props.initialAvailableFilters,
       name: props.name,
+      filtersShown: false,
     };
   }
 
@@ -147,6 +151,7 @@ export default class DashboardEdit extends React.Component {
   componentDidUpdate() {
     if (
       deepEqual(this.state.reports, this.props.initialReports) &&
+      deepEqual(this.state.availableFilters, this.props.initialAvailableFilters) &&
       this.state.name === this.props.name
     ) {
       nowPristine();
@@ -156,16 +161,15 @@ export default class DashboardEdit extends React.Component {
   }
 
   save = async () => {
-    const {name, reports} = this.state;
+    const {name, reports, availableFilters} = this.state;
 
     nowPristine();
-    await this.props.saveChanges(name, reports);
+    await this.props.saveChanges(name, reports, availableFilters);
   };
 
   render() {
     const {lastModifier, lastModified, isNew} = this.props;
-
-    const {reports, name} = this.state;
+    const {reports, name, filtersShown, availableFilters} = this.state;
 
     return (
       <div className="DashboardEdit">
@@ -181,9 +185,24 @@ export default class DashboardEdit extends React.Component {
             onCancel={nowPristine}
           >
             <AddButton addReport={this.addReport} />
+            <Button
+              main
+              className="tool-button"
+              active={filtersShown}
+              onClick={() => this.setState(({filtersShown}) => ({filtersShown: !filtersShown}))}
+            >
+              <Icon type="filter" />
+              {t('dashboard.filter.label')}
+            </Button>
           </EntityNameForm>
           <ModificationInfo user={lastModifier} date={lastModified} />
         </div>
+        {filtersShown && (
+          <FiltersEdit
+            availableFilters={availableFilters}
+            setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
+          />
+        )}
         <div className="content" ref={this.contentContainer}>
           <DashboardRenderer
             disableReportInteractions

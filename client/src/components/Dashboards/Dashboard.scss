@@ -10,7 +10,7 @@
     flex-direction: column;
     height: 100%;
 
-    .content {
+    > .content {
       overflow-y: auto;
       width: 100vw;
       margin-left: -20px;

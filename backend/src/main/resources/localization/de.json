@@ -430,7 +430,16 @@
       "externalUrl": "Externe URL"
     },
     "noAuthorization": "Fehlende Berechtigung",
-    "noReportAccess": "Kein Zugriff auf Report"
+    "noReportAccess": "Kein Zugriff auf Report",
+    "filter": {
+      "label": "Filter",
+      "notice": "Angewandte Dashboard-Filter ersetzen einzelne Berichtsfilter",
+      "types": {
+        "state": "Instanzstatus",
+        "startDate": "Startdatum",
+        "endDate": "Enddatum"
+      }
+    }
   },
   "alert": {
     "label": "Alarm",

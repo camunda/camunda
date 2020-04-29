@@ -36,6 +36,7 @@ export class Dashboard extends React.Component {
       loaded: false,
       redirect: '',
       reports: [],
+      availableFilters: [],
       serverError: null,
       isAuthorizedToShare: false,
       sharingEnabled: false,
@@ -65,6 +66,7 @@ export class Dashboard extends React.Component {
       lastModifier: user.id,
       currentUserRole: 'editor',
       reports: [],
+      availableFilters: [],
       isAuthorizedToShare: true,
     });
   };
@@ -73,7 +75,14 @@ export class Dashboard extends React.Component {
     this.props.mightFail(
       loadEntity('dashboard', this.getId()),
       async (response) => {
-        const {name, lastModifier, currentUserRole, lastModified, reports} = response;
+        const {
+          name,
+          lastModifier,
+          currentUserRole,
+          lastModified,
+          reports,
+          availableFilters,
+        } = response;
 
         this.setState({
           lastModifier,
@@ -82,6 +91,7 @@ export class Dashboard extends React.Component {
           loaded: true,
           name,
           reports: reports || [],
+          availableFilters: availableFilters || [],
           isAuthorizedToShare: await isAuthorizedToShareDashboard(this.getId()),
         });
       },
@@ -101,25 +111,27 @@ export class Dashboard extends React.Component {
     });
   };
 
-  updateDashboard = (id, name, reports) => {
+  updateDashboard = (id, name, reports, availableFilters) => {
     return new Promise((resolve, reject) => {
       this.props.mightFail(
         updateEntity('dashboard', id, {
           name,
           reports,
+          availableFilters,
         }),
-        () => resolve(this.updateDashboardState(id, name, reports)),
+        () => resolve(this.updateDashboardState(id, name, reports, availableFilters)),
         () => reject(addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'}))
       );
     });
   };
 
-  updateDashboardState = async (id, name, reports) => {
+  updateDashboardState = async (id, name, reports, availableFilters) => {
     const user = await this.props.getUser();
 
     this.setState({
       name,
       reports,
+      availableFilters,
       redirect: this.isNew() ? `../${id}/` : './',
       isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
       lastModified: getFormattedNowDate(),
@@ -127,18 +139,18 @@ export class Dashboard extends React.Component {
     });
   };
 
-  saveChanges = (name, reports) => {
+  saveChanges = (name, reports, availableFilters) => {
     return new Promise(async (resolve, reject) => {
       if (this.isNew()) {
         const collectionId = getCollection(this.props.location.pathname);
 
         this.props.mightFail(
-          createEntity('dashboard', {collectionId, name, reports}),
+          createEntity('dashboard', {collectionId, name, reports, availableFilters}),
           (id) => resolve(this.updateDashboardState(id, name, reports)),
           () => reject(addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'}))
         );
       } else {
-        resolve(this.updateDashboard(this.getId(), name, reports));
+        resolve(this.updateDashboard(this.getId(), name, reports, availableFilters));
       }
     });
   };
@@ -163,6 +175,7 @@ export class Dashboard extends React.Component {
       sharingEnabled,
       isAuthorizedToShare,
       reports,
+      availableFilters,
     } = this.state;
 
     if (serverError) {
@@ -191,7 +204,8 @@ export class Dashboard extends React.Component {
             {...commonProps}
             isNew={this.isNew()}
             saveChanges={this.saveChanges}
-            initialReports={this.state.reports}
+            initialReports={reports}
+            initialAvailableFilters={availableFilters}
           />
         ) : (
           <DashboardView

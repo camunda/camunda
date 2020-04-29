@@ -65,3 +65,13 @@ it('should react to layout changes', () => {
 
   expect(node.state('reports')).toMatchSnapshot();
 });
+
+it('should have a toggleable Filters Edit section', () => {
+  const node = shallow(<DashboardEdit />);
+
+  expect(node.find('FiltersEdit')).not.toExist();
+
+  node.find(EntityNameForm).find('.tool-button').simulate('click');
+
+  expect(node.find('FiltersEdit')).toExist();
+});

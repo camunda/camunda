@@ -50,6 +50,7 @@ import {ReactComponent as dashboard} from './dashboard.svg';
 import {ReactComponent as dataSource} from './data-source.svg';
 import {ReactComponent as report} from './report.svg';
 import {ReactComponent as process} from './process.svg';
+import {ReactComponent as filter} from './filter.svg';
 
 const icons = {
   autorefresh,
@@ -98,6 +99,7 @@ const icons = {
   'data-source': dataSource,
   report,
   process,
+  filter,
 };
 
 export default icons;
