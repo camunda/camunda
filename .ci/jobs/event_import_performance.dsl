@@ -19,7 +19,13 @@ pipelineJob('event-import-performance') {
     stringParam('EXTERNAL_EVENT_COUNT', '40000000', 'Number of external events to ingest.')
   }
 
-  triggers {
-    cron('H 20 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 20 * * *')
+        }
+      }
+    }
   }
 }

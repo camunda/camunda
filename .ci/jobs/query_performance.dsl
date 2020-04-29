@@ -18,7 +18,13 @@ pipelineJob('query-performance-tests') {
     stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
   }
 
-  triggers {
-    cron('H 2 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 2 * * *')
+        }
+      }
+    }
   }
 }

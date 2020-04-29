@@ -19,7 +19,13 @@ pipelineJob('cleanup-data-performance') {
     stringParam('CLEANUP_TIMEOUT_MINUTES', '120', 'Time limit for a cleanup run to finish')
   }
 
-  triggers {
-    cron('H 5 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 5 * * *')
+        }
+      }
+    }
   }
 }

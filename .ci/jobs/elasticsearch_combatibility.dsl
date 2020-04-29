@@ -15,7 +15,13 @@ pipelineJob('elasticsearch_compatibility') {
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
   }
 
-  triggers {
-    cron('H 0 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 0 * * *')
+        }
+      }
+    }
   }
 }
