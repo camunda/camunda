@@ -86,7 +86,7 @@ export default function Table({
           props.onClick(evt);
           let sortColumn = column.id;
           if (resultType === 'map') {
-            if (sortColumn === columns[0].accessor) {
+            if (sortColumn === columns[0].id) {
               sortColumn = sortByLabel ? 'label' : 'key';
             } else {
               sortColumn = 'value';
@@ -197,9 +197,9 @@ function formatSorting(sorting, resultType, columns) {
   let id = by;
   if (resultType === 'map') {
     if (by === 'label' || by === 'key') {
-      id = columns[0].accessor;
+      id = columns[0].id;
     } else if (by === 'value') {
-      id = columns[1].accessor;
+      id = columns[1].id;
     }
   }
   return [{id, desc: order === 'desc'}];
@@ -208,9 +208,11 @@ function formatSorting(sorting, resultType, columns) {
 Table.formatColumns = (head, ctx = '') => {
   return head.map((elem) => {
     if (typeof elem === 'string' || elem.id) {
+      const id = convertHeaderNameToAccessor(ctx + (elem.id || elem));
       return {
         Header: elem.label || elem,
-        accessor: convertHeaderNameToAccessor(ctx + (elem.id || elem)),
+        accessor: (d) => d[id],
+        id,
         minWidth: 100,
       };
     }

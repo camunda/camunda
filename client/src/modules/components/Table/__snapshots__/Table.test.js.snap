@@ -1,0 +1,75 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`shoud correctly format header 1`] = `
+Array [
+  Object {
+    "Header": "x",
+    "accessor": [Function],
+    "id": "x",
+    "minWidth": 100,
+  },
+  Object {
+    "Header": "y",
+    "accessor": [Function],
+    "id": "y",
+    "minWidth": 100,
+  },
+  Object {
+    "Header": "z",
+    "accessor": [Function],
+    "id": "z",
+    "minWidth": 100,
+  },
+]
+`;
+
+exports[`should correctly format multi-level header 1`] = `
+Array [
+  Object {
+    "Header": "x",
+    "accessor": [Function],
+    "id": "x",
+    "minWidth": 100,
+  },
+  Object {
+    "Header": "a",
+    "columns": Array [
+      Object {
+        "Header": "i",
+        "accessor": [Function],
+        "id": "ai",
+        "minWidth": 100,
+      },
+      Object {
+        "Header": "j",
+        "accessor": [Function],
+        "id": "aj",
+        "minWidth": 100,
+      },
+    ],
+  },
+]
+`;
+
+exports[`should support explicit id for columns 1`] = `
+Array [
+  Object {
+    "Header": "X",
+    "accessor": [Function],
+    "id": "column1",
+    "minWidth": 100,
+  },
+  Object {
+    "Header": "Y",
+    "accessor": [Function],
+    "id": "y",
+    "minWidth": 100,
+  },
+  Object {
+    "Header": "Z",
+    "accessor": [Function],
+    "id": "column3",
+    "minWidth": 100,
+  },
+]
+`;

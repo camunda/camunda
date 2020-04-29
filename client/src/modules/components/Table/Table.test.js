@@ -20,26 +20,13 @@ function generateData(amount) {
 it('shoud correctly format header', () => {
   const result = Table.formatColumns(['x', 'y', 'z']);
 
-  expect(result).toEqual([
-    {Header: 'x', accessor: 'x', minWidth: 100},
-    {Header: 'y', accessor: 'y', minWidth: 100},
-    {Header: 'z', accessor: 'z', minWidth: 100},
-  ]);
+  expect(result).toMatchSnapshot();
 });
 
 it('should correctly format multi-level header', () => {
   const result = Table.formatColumns(['x', {label: 'a', columns: ['i', 'j']}]);
 
-  expect(result).toEqual([
-    {Header: 'x', accessor: 'x', minWidth: 100},
-    {
-      Header: 'a',
-      columns: [
-        {Header: 'i', accessor: 'ai', minWidth: 100},
-        {Header: 'j', accessor: 'aj', minWidth: 100},
-      ],
-    },
-  ]);
+  expect(result).toMatchSnapshot();
 });
 
 it('should support explicit id for columns', () => {
@@ -49,11 +36,7 @@ it('should support explicit id for columns', () => {
     {id: 'column3', label: 'Z'},
   ]);
 
-  expect(result).toEqual([
-    {Header: 'X', accessor: 'column1', minWidth: 100},
-    {Header: 'Y', accessor: 'y', minWidth: 100},
-    {Header: 'Z', accessor: 'column3', minWidth: 100},
-  ]);
+  expect(result).toMatchSnapshot();
 });
 
 it('shoud correctly format body', () => {
