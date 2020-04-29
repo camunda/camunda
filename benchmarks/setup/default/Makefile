@@ -7,6 +7,10 @@ zeebe:
 	-kubectl apply -f curator-cronjob.yaml
 	-kubectl apply -f curator-configmap.yaml
 
+.PHONY: update
+update:
+	-helm upgrade default zeebe/zeebe-cluster -f zeebe-values.yaml
+
 .PHONY: starter
 starter:
 	kubectl apply -f starter.yaml
