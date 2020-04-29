@@ -16,7 +16,13 @@ pipelineJob('e2e_tests') {
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
   }
 
-  triggers {
-    cron('H 23 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 23 * * *')
+        }
+      }
+    }
   }
 }

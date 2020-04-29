@@ -14,7 +14,13 @@ pipelineJob('cluster_test') {
     stringParam('BRANCH', 'master', 'Branch to use for cluster tests.')
   }
 
-  triggers {
-    cron('H 5 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 5 * * *')
+        }
+      }
+    }
   }
 }

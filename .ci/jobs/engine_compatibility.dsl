@@ -14,7 +14,13 @@ pipelineJob('engine_compatibility') {
     stringParam('BRANCH', 'master', 'Branch to use for Engine compatibility tests.')
   }
 
-  triggers {
-    cron('H 22 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 22 * * *')
+        }
+      }
+    }
   }
 }

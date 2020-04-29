@@ -14,7 +14,13 @@ pipelineJob('secured_es') {
     stringParam('BRANCH', 'master', 'Branch to use for the test.')
   }
 
-  triggers {
-    cron('H 5 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 5 * * *')
+        }
+      }
+    }
   }
 }

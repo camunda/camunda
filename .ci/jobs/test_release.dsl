@@ -27,8 +27,13 @@ pipelineJob('camunda-optimize-release-test') {
     booleanParam('RELEASE_EXAMPLE', false, 'Should an example repository be released.')
   }
   
-  triggers {
-    cron('H 23 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 23 * * *')
+        }
+      }
+    }
   }
-  
 }

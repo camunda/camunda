@@ -18,7 +18,13 @@ pipelineJob('import-performance-large-static-dataset') {
     stringParam('ES_NUM_NODES', '1', 'Number of Elasticsearch nodes in the cluster (not more than 5)')
   }
 
-  triggers {
-    cron('H 1 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 1 * * *')
+        }
+      }
+    }
   }
 }

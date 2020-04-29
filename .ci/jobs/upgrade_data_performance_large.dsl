@@ -18,7 +18,13 @@ pipelineJob('upgrade-performance-large-static-dataset') {
     stringParam('UPGRADE_TIMEOUT', '1800', 'Timeout for the upgrade to complete')
   }
 
-  triggers {
-    cron('H 4 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 4 * * *')
+        }
+      }
+    }
   }
 }
