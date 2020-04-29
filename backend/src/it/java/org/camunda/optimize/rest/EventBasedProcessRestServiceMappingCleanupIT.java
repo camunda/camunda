@@ -222,6 +222,51 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
   }
 
   @Test
+  public void cleanupMissingFlowNodeMappings_eventLabelDifferencesDoNotTriggerCleanup() {
+    // given
+    final String definitionKey = THREE_EVENT_PROCESS_DEFINITION_KEY_1;
+    deployAndStartThreeEventProcessReturnXml(definitionKey);
+
+    runEngineImportAndEventProcessing();
+
+    // when
+    final BpmnModelInstance singleEventModelInstance = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name("aProcessName")
+      .startEvent(BPMN_START_EVENT_ID)
+      .done();
+    final Map<String, EventMappingDto> eventMappings = new HashMap<>();
+    eventMappings.put(
+      BPMN_START_EVENT_ID,
+      EventMappingDto.builder()
+        .start(createCamundaEventTypeDto(BPMN_START_EVENT_ID, definitionKey)
+                 .toBuilder().eventLabel("someLabel").build())
+        .build()
+    );
+    eventMappings.put(
+      BPMN_INTERMEDIATE_EVENT_ID,
+      EventMappingDto.builder()
+        .start(createCamundaEventTypeDto(BPMN_INTERMEDIATE_EVENT_ID, definitionKey))
+        .build()
+    );
+    eventMappings.put(
+      BPMN_END_EVENT_ID,
+      EventMappingDto.builder().end(createCamundaEventTypeDto(BPMN_END_EVENT_ID, definitionKey)).build()
+    );
+
+    Map<String, EventMappingDto> cleanedMapping = eventProcessClient.cleanupEventProcessMappings(
+      EventMappingCleanupRequestDto.builder()
+        .mappings(eventMappings)
+        .xml(Bpmn.convertToString(singleEventModelInstance))
+        .eventSources(ImmutableList.of(createSimpleCamundaEventSourceEntry(definitionKey, ALL_VERSIONS)))
+        .build()
+    );
+
+    // then
+    assertThat(cleanedMapping).containsOnlyKeys(BPMN_START_EVENT_ID);
+  }
+
+  @Test
   public void cleanupMissingCamundaEventMappings_newProcessVersionDoesNotContainCertainEvent_allVersions() {
     // given
     final String definitionKey = THREE_EVENT_PROCESS_DEFINITION_KEY_1;
