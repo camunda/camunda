@@ -18,8 +18,9 @@ package io.atomix.cluster.messaging;
 
 import static io.atomix.utils.serializer.serializers.DefaultSerializers.BASIC;
 
-import java.time.Duration;
+import io.atomix.cluster.MemberId;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -84,95 +85,6 @@ public interface ClusterEventService {
    * @param <M> message type
    */
   <M> void broadcast(String topic, M message, Function<M, byte[]> encoder);
-
-  /**
-   * Unicasts a message to the next registered subscriber for {@code topic}.
-   *
-   * @param topic message topic
-   * @param message message to send
-   * @param <M> message type
-   * @return future that is completed when the message is sent
-   */
-  default <M> CompletableFuture<Void> unicast(final String topic, final M message) {
-    return unicast(topic, message, BASIC::encode);
-  }
-
-  /**
-   * Unicasts a message to the next registered subscriber for {@code topic}.
-   *
-   * @param message message to send
-   * @param topic message topic
-   * @param encoder function for encoding message to byte[]
-   * @param <M> message type
-   * @return future that is completed when the message is sent
-   */
-  <M> CompletableFuture<Void> unicast(String topic, M message, Function<M, byte[]> encoder);
-
-  /**
-   * Sends a direct message to the next registered subscriber for {@code topic} and awaits a reply.
-   *
-   * @param topic message topic
-   * @param message message to send
-   * @param <M> request type
-   * @param <R> reply type
-   * @return reply future
-   */
-  default <M, R> CompletableFuture<R> send(final String topic, final M message) {
-    return send(topic, message, BASIC::encode, BASIC::decode, null);
-  }
-
-  /**
-   * Sends a direct message to the next registered subscriber for {@code topic} and awaits a reply.
-   *
-   * @param topic message topic
-   * @param message message to send
-   * @param timeout reply timeout
-   * @param <M> request type
-   * @param <R> reply type
-   * @return reply future
-   */
-  default <M, R> CompletableFuture<R> send(
-      final String topic, final M message, final Duration timeout) {
-    return send(topic, message, BASIC::encode, BASIC::decode, timeout);
-  }
-
-  /**
-   * Sends a direct message to the next registered subscriber for {@code topic} and awaits a reply.
-   *
-   * @param topic message topic
-   * @param message message to send
-   * @param encoder function for encoding request to byte[]
-   * @param decoder function for decoding response from byte[]
-   * @param <M> request type
-   * @param <R> reply type
-   * @return reply future
-   */
-  default <M, R> CompletableFuture<R> send(
-      final String topic,
-      final M message,
-      final Function<M, byte[]> encoder,
-      final Function<byte[], R> decoder) {
-    return send(topic, message, encoder, decoder, null);
-  }
-
-  /**
-   * Sends a direct message to the next registered subscriber for {@code topic} and awaits a reply.
-   *
-   * @param topic message topic
-   * @param message message to send
-   * @param encoder function for encoding request to byte[]
-   * @param decoder function for decoding response from byte[]
-   * @param timeout reply timeout
-   * @param <M> request type
-   * @param <R> reply type
-   * @return reply future
-   */
-  <M, R> CompletableFuture<R> send(
-      String topic,
-      M message,
-      Function<M, byte[]> encoder,
-      Function<byte[], R> decoder,
-      Duration timeout);
 
   /**
    * Adds a new subscriber for the specified message topic.
@@ -273,4 +185,12 @@ public interface ClusterEventService {
    * @return the subscriptions for the given topic
    */
   List<Subscription> getSubscriptions(String topic);
+
+  /**
+   * Returns a list of remote members subscribed for the given topic.
+   *
+   * @param topic the topic for which to return subscriptions
+   * @return the subscribers for the given topic
+   */
+  Set<MemberId> getSubscribers(String topic);
 }
