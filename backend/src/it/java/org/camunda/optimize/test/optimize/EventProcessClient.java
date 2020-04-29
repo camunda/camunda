@@ -148,7 +148,7 @@ public class EventProcessClient {
       });
   }
 
-  private OptimizeRequestExecutor createGetEventProcessMappingRolesRequest(final String eventProcessMappingId) {
+  public OptimizeRequestExecutor createGetEventProcessMappingRolesRequest(final String eventProcessMappingId) {
     return getRequestExecutor().buildGetEventProcessMappingRolesRequest(eventProcessMappingId);
   }
 

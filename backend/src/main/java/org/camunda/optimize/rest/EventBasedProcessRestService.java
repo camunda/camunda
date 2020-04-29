@@ -180,9 +180,11 @@ public class EventBasedProcessRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public List<EventProcessRoleRestDto> getRoles(@PathParam("id") final String eventProcessId,
                                                 @Context final ContainerRequestContext requestContext) {
-    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateAccessToEventProcessManagement(userId);
     return eventProcessRoleService.getRoles(eventProcessId)
       .stream()
+      .filter(eventRole -> identityService.isUserAuthorizedToAccessIdentity(userId, eventRole.getIdentity()))
       .map(this::mapToEventProcessRoleRestDto)
       .collect(toList());
   }
@@ -197,7 +199,8 @@ public class EventBasedProcessRestService {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateAccessToEventProcessManagement(userId);
     final List<EventProcessRoleDto<IdentityDto>> eventRoleDtos = rolesDtoRequest.stream()
-      .map(this::resolveToEventProcessRoleDto)
+      .map(roleDto -> resolveToEventProcessRoleDto(userId, roleDto))
+      .peek(roleDto -> identityService.validateUserAuthorizedToAccessRoleOrFail(userId, roleDto.getIdentity()))
       .collect(toList());
     eventProcessRoleService.updateRoles(eventProcessId, eventRoleDtos, userId);
   }
@@ -212,11 +215,12 @@ public class EventBasedProcessRestService {
     return eventMappingCleanupService.doMappingCleanup(userId, requestDto);
   }
 
-  private EventProcessRoleDto<IdentityDto> resolveToEventProcessRoleDto(final EventProcessRoleDto<IdentityDto> eventProcessRoleRestDto) {
+  private EventProcessRoleDto<IdentityDto> resolveToEventProcessRoleDto(final String userId,
+                                                                        final EventProcessRoleDto<IdentityDto> eventProcessRoleRestDto) {
     IdentityDto simpleIdentityDto = eventProcessRoleRestDto.getIdentity();
     if (simpleIdentityDto.getType() == null) {
       final String identityId = simpleIdentityDto.getId();
-      simpleIdentityDto = identityService.getIdentityWithMetadataForId(identityId)
+      simpleIdentityDto = identityService.getIdentityWithMetadataForIdAsUser(userId, identityId)
         .orElseThrow(() -> new OptimizeUserOrGroupIdNotFoundException(
           String.format("No user or group with ID %s exists in Optimize.", identityId)
         ))

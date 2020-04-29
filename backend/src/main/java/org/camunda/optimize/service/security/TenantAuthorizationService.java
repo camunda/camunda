@@ -63,12 +63,16 @@ public class TenantAuthorizationService
     return isAuthorized;
   }
 
-  public boolean isAuthorizedToSeeTenant(final String identityId, final IdentityType identityType, final String tenantId) {
+  public boolean isAuthorizedToSeeTenant(final String identityId,
+                                         final IdentityType identityType,
+                                         final String tenantId) {
     return isAuthorizedToSeeTenant(identityId, identityType, tenantId, null);
   }
 
-  public boolean isAuthorizedToSeeTenant(final String identityId, final IdentityType identityType,
-                                         final String tenantId, final String engineAlias) {
+  public boolean isAuthorizedToSeeTenant(final String identityId,
+                                         final IdentityType identityType,
+                                         final String tenantId,
+                                         final String engineAlias) {
     if (tenantId == null || tenantId.isEmpty()) {
       return true;
     } else {
@@ -129,7 +133,7 @@ public class TenantAuthorizationService
   }
 
   private ResolvedResourceTypeAuthorizations resolveGroupAuthorizations(String groupId,
-                                                                       EngineContext engineContext) {
+                                                                        EngineContext engineContext) {
     final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
     final List<AuthorizationDto> allAuthorizations = engineContext.getAllTenantAuthorizations();
     addEnginesDefaultTenantAuthorizationForGroup(groupId, engineContext, allAuthorizations);
@@ -155,9 +159,10 @@ public class TenantAuthorizationService
       ));
     }
   }
+
   private void addEnginesDefaultTenantAuthorizationForGroup(final String groupId,
-                                                           final EngineContext engineContext,
-                                                           final List<AuthorizationDto> allAuthorizations) {
+                                                            final EngineContext engineContext,
+                                                            final List<AuthorizationDto> allAuthorizations) {
     final String enginesDefaultTenantId = defaultTenantIdByEngine.get(engineContext.getEngineAlias());
     if (enginesDefaultTenantId != null) {
       allAuthorizations.add(new AuthorizationDto(

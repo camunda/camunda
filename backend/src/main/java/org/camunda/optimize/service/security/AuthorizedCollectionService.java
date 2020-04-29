@@ -9,8 +9,8 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.CollectionReader;
@@ -71,6 +71,21 @@ public class AuthorizedCollectionService {
         throw new ForbiddenException(String.format(RESOURCE_EDIT_NOT_AUTHORIZED_MESSAGE, userId, collectionId));
       }
     }
+  }
+
+  public void verifyUserAuthorizedToEditCollectionRole(final String userId,
+                                                       final String collectionId,
+                                                       final String roleId)
+    throws NotFoundException, ForbiddenException {
+    AuthorizedCollectionDefinitionDto authCollectionDto =
+      getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
+
+    authCollectionDto.getDefinitionDto()
+      .getData()
+      .getRoles()
+      .stream()
+      .filter(role -> role.getId().equals(roleId))
+      .forEach(role -> identityService.validateUserAuthorizedToAccessRoleOrFail(userId, role.getIdentity()));
   }
 
   public List<AuthorizedCollectionDefinitionDto> getAuthorizedCollectionDefinitions(final String userId) {

@@ -16,18 +16,22 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
+import org.camunda.optimize.service.security.IdentityAuthorizationService;
 import org.camunda.optimize.service.security.SessionListener;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.stream.Collectors.toList;
 
 @Component
 public class IdentityService implements ConfigurationReloadable, SessionListener {
@@ -36,15 +40,18 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   private LoadingCache<String, List<GroupDto>> userGroupsCache;
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
+  private final IdentityAuthorizationService identityAuthorizationService;
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
   private final SyncedIdentityCacheService syncedIdentityCache;
 
   public IdentityService(final ApplicationAuthorizationService applicationAuthorizationService,
+                         final IdentityAuthorizationService identityAuthorizationService,
                          final ConfigurationService configurationService,
                          final EngineContextFactory engineContextFactory,
                          final SyncedIdentityCacheService syncedIdentityCache) {
     this.applicationAuthorizationService = applicationAuthorizationService;
+    this.identityAuthorizationService = identityAuthorizationService;
     this.configurationService = configurationService;
     this.engineContextFactory = engineContextFactory;
     this.syncedIdentityCache = syncedIdentityCache;
@@ -53,7 +60,6 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public void addIdentity(final IdentityWithMetadataDto identity) {
-
     syncedIdentityCache.addIdentity(identity);
   }
 
@@ -72,6 +78,21 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     } else {
       return getGroupById(userOrGroupId);
     }
+  }
+
+  public Optional<? extends IdentityWithMetadataDto> getIdentityWithMetadataForIdAsUser(final String userId,
+                                                                                        final String userOrGroupId) {
+    Optional<? extends IdentityWithMetadataDto> identityById = getUserById(userOrGroupId);
+    if (!identityById.isPresent()) {
+      identityById = getGroupById(userOrGroupId);
+    }
+    if (identityById.isPresent()
+      && !isUserAuthorizedToAccessIdentity(userId, identityById.get())) {
+      throw new ForbiddenException(
+        String.format("The user with ID %s is not authorized to access the identity with ID %s", userId, userOrGroupId)
+      );
+    }
+    return identityById;
   }
 
   public Optional<UserDto> getUserById(final String userId) {
@@ -112,8 +133,40 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       );
   }
 
-  public IdentitySearchResultDto searchForIdentities(final String searchString, final int maxResults) {
-    return syncedIdentityCache.searchIdentities(searchString, maxResults);
+  public IdentitySearchResultDto searchForIdentitiesAsUser(final String userId,
+                                                           final String searchString,
+                                                           final int maxResults) {
+    final IdentitySearchResultDto result = syncedIdentityCache.searchIdentities(searchString, maxResults);
+    return filterIdentitySearchResultByUserAuthorizations(userId, result);
+  }
+
+  private IdentitySearchResultDto filterIdentitySearchResultByUserAuthorizations(final String userId,
+                                                                                 final IdentitySearchResultDto result) {
+    final List<IdentityWithMetadataDto> filteredIdentities = result.getResult()
+      .stream()
+      .filter(identity -> isUserAuthorizedToAccessIdentity(userId, identity))
+      .collect(toList());
+    return new IdentitySearchResultDto(filteredIdentities.size(), filteredIdentities);
+  }
+
+  public boolean isUserAuthorizedToAccessIdentity(final String userId, final IdentityDto identity) {
+    return identityAuthorizationService.isUserAuthorizedToSeeIdentity(
+      userId,
+      identity.getType(),
+      identity.getId()
+    );
+  }
+
+  public void validateUserAuthorizedToAccessRoleOrFail(final String userId, final IdentityDto identityDto) {
+    if (!isUserAuthorizedToAccessIdentity(userId, identityDto)) {
+      throw new ForbiddenException(
+        String.format(
+          "User with ID %s is not authorized to access identity with ID %s",
+          userId,
+          identityDto.getId()
+        )
+      );
+    }
   }
 
   public boolean doesIdentityExist(final IdentityDto identity) {

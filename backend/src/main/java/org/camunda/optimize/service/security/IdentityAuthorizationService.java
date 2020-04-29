@@ -1,0 +1,144 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.service.security;
+
+import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_HISTORY_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_GROUP;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_USER;
+
+@Component
+public class IdentityAuthorizationService
+  extends AbstractCachingAuthorizationService<Map<IdentityType, ResolvedResourceTypeAuthorizations>> {
+  private static final List<String> RELEVANT_PERMISSIONS = ImmutableList.of(ALL_PERMISSION, READ_HISTORY_PERMISSION);
+
+  private final ApplicationAuthorizationService applicationAuthorizationService;
+
+  public IdentityAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
+                                      final EngineContextFactory engineContextFactory,
+                                      final ConfigurationService configurationService) {
+    super(engineContextFactory, configurationService);
+    this.applicationAuthorizationService = applicationAuthorizationService;
+  }
+
+  public boolean isUserAuthorizedToSeeIdentity(final String userId,
+                                               final IdentityType requestedIdentityType,
+                                               final String requestedIdentityId) {
+    return isAuthorizedToSeeIdentity(IdentityType.USER, userId, requestedIdentityType, requestedIdentityId);
+  }
+
+  public boolean isAuthorizedToSeeIdentity(final IdentityType identityType,
+                                           final String identityId,
+                                           final IdentityType requestedIdentityType,
+                                           final String requestedIdentityId) {
+    final Map<IdentityType, ResolvedResourceTypeAuthorizations> identityAuthorizations =
+      getCachedAuthorizationsForId(identityId, identityType);
+    return identityAuthorizations
+      .get(requestedIdentityType)
+      .isAuthorizedToAccessResource(requestedIdentityId);
+  }
+
+  @Override
+  protected Map<IdentityType, ResolvedResourceTypeAuthorizations> fetchAuthorizationsForUserId(final String userId) {
+    final Map<IdentityType, ResolvedResourceTypeAuthorizations> result = new HashMap<>();
+    result.put(IdentityType.USER, fetchIdentityAuthorizationsForUserId(IdentityType.USER, userId));
+    result.put(IdentityType.GROUP, fetchIdentityAuthorizationsForUserId(IdentityType.GROUP, userId));
+    return result;
+  }
+
+  @Override
+  protected Map<IdentityType, ResolvedResourceTypeAuthorizations> fetchAuthorizationsForGroupId(final String groupId) {
+    final Map<IdentityType, ResolvedResourceTypeAuthorizations> result = new HashMap<>();
+    result.put(IdentityType.USER, fetchIdentityAuthorizationsForGroupId(IdentityType.USER, groupId));
+    result.put(IdentityType.GROUP, fetchIdentityAuthorizationsForGroupId(IdentityType.GROUP, groupId));
+    return result;
+  }
+
+  private ResolvedResourceTypeAuthorizations fetchIdentityAuthorizationsForUserId(
+    final IdentityType identitytype,
+    final String userId) {
+    ResolvedResourceTypeAuthorizations authorizations = new ResolvedResourceTypeAuthorizations();
+    List<String> engineAliases = applicationAuthorizationService.getAuthorizedEnginesForUser(userId);
+    for (String engineAlias : engineAliases) {
+      final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);
+      authorizations.merge(resolveUserAuthorizations(identitytype, userId, engineContext));
+    }
+    return authorizations;
+  }
+
+  private ResolvedResourceTypeAuthorizations fetchIdentityAuthorizationsForGroupId(
+    final IdentityType identitytype,
+    final String groupId) {
+    ResolvedResourceTypeAuthorizations authorizations = new ResolvedResourceTypeAuthorizations();
+    List<String> engineAliases = applicationAuthorizationService.getAuthorizedEnginesForUser(groupId);
+    for (String engineAlias : engineAliases) {
+      final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);
+      authorizations.merge(resolveGroupAuthorizations(identitytype, groupId, engineContext));
+    }
+    return authorizations;
+  }
+
+  private ResolvedResourceTypeAuthorizations resolveUserAuthorizations(final IdentityType identitytype,
+                                                                       final String userId,
+                                                                       final EngineContext engineContext) {
+    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(userId);
+    final List<AuthorizationDto> allAuthorizations = getAllIdentityAuthorizations(engineContext, identitytype);
+
+    return resolveResourceAuthorizations(
+      engineContext.getEngineAlias(),
+      allAuthorizations,
+      RELEVANT_PERMISSIONS,
+      userId,
+      groups,
+      resolveResourceTypeFromIdentityType(identitytype)
+    );
+  }
+
+  private ResolvedResourceTypeAuthorizations resolveGroupAuthorizations(final IdentityType identitytype,
+                                                                        final String groupId,
+                                                                        final EngineContext engineContext) {
+    final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
+    final List<AuthorizationDto> allAuthorizations = getAllIdentityAuthorizations(engineContext, identitytype);
+
+    return resolveResourceAuthorizations(
+      engineContext.getEngineAlias(),
+      allAuthorizations,
+      RELEVANT_PERMISSIONS,
+      groups,
+      resolveResourceTypeFromIdentityType(identitytype)
+    );
+  }
+
+  public List<AuthorizationDto> getAllIdentityAuthorizations(final EngineContext engineContext,
+                                                             final IdentityType identityType) {
+    if (identityType.USER.equals(identityType)) {
+      return engineContext.getAllUserAuthorizations();
+    }
+    return engineContext.getAllGroupAuthorizations();
+  }
+
+  private int resolveResourceTypeFromIdentityType(final IdentityType identitytype) {
+    if (IdentityType.USER.equals(identitytype)) {
+      return RESOURCE_TYPE_USER;
+    }
+    return RESOURCE_TYPE_GROUP;
+  }
+
+}

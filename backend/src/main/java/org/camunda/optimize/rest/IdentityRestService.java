@@ -46,15 +46,19 @@ public class IdentityRestService {
   @Path(IDENTITY_SEARCH_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public IdentitySearchResultDto searchIdentity(@QueryParam("terms") final String searchTerms,
-                                                @QueryParam("limit") @DefaultValue("25") final int limit) {
-    return identityService.searchForIdentities(Optional.ofNullable(searchTerms).orElse(""), limit);
+                                                @QueryParam("limit") @DefaultValue("25") final int limit,
+                                                @Context ContainerRequestContext requestContext) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return identityService.searchForIdentitiesAsUser(userId, Optional.ofNullable(searchTerms).orElse(""), limit);
   }
 
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdentityWithMetadataDto getIdentityById(@PathParam("id") final String identityId) {
-    return identityService.getIdentityWithMetadataForId(identityId)
+  public IdentityWithMetadataDto getIdentityById(@PathParam("id") final String identityId,
+                                                 @Context ContainerRequestContext requestContext) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return identityService.getIdentityWithMetadataForIdAsUser(userId, identityId)
       .orElseThrow(() -> new NotFoundException(
         "Could find neither a user nor a group with the id [" + identityId + "]."
       ));

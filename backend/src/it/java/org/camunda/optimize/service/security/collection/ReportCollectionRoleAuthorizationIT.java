@@ -39,7 +39,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -966,6 +968,8 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
       USER_MISS_PIGGY,
       RESOURCE_TYPE_PROCESS_DEFINITION
     );
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_GROUP);
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
 
     final CollectionRoleDto testGroupRole = new CollectionRoleDto(
       new IdentityDto(TEST_GROUP, IdentityType.GROUP),

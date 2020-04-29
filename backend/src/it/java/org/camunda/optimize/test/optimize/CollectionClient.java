@@ -63,7 +63,7 @@ public class CollectionClient {
     return createNewCollectionWithDefaultScope(DECISION);
   }
 
-  public String createNewCollectionWithDefaultScope(DefinitionType definitionType) {
+  public String createNewCollectionWithDefaultScope(final DefinitionType definitionType) {
     final String collectionId = createNewCollection();
     createScopeWithTenants(collectionId, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS, definitionType);
     return collectionId;
@@ -106,12 +106,12 @@ public class CollectionClient {
       .getId();
   }
 
-  public void updateCollection(String collectionId, PartialCollectionDefinitionDto updatedCollection) {
+  public void updateCollection(final String collectionId, final PartialCollectionDefinitionDto updatedCollection) {
     updateCollectionAsUser(collectionId, updatedCollection, DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
-  public void updateCollectionAsUser(String collectionId, PartialCollectionDefinitionDto updatedCollection,
-                                     String username, String password) {
+  public void updateCollectionAsUser(final String collectionId, final PartialCollectionDefinitionDto updatedCollection,
+                                     final String username, final String password) {
     getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, updatedCollection)
       .withUserAuthentication(username, password)
@@ -129,8 +129,9 @@ public class CollectionClient {
   }
 
 
-  public AuthorizedCollectionDefinitionRestDto getAuthorizedCollectionById(final String collectionId, String username
-    , String password) {
+  public AuthorizedCollectionDefinitionRestDto getAuthorizedCollectionById(final String collectionId,
+                                                                           final String username
+    , final String password) {
     return getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .withUserAuthentication(username, password)
@@ -147,8 +148,9 @@ public class CollectionClient {
       );
   }
 
-  public List<AuthorizedReportDefinitionDto> getReportsForCollectionAsUser(final String collectionId, String username,
-                                                                           String password) {
+  public List<AuthorizedReportDefinitionDto> getReportsForCollectionAsUser(final String collectionId,
+                                                                           final String username,
+                                                                           final String password) {
     return getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
       .withUserAuthentication(username, password)
@@ -168,7 +170,8 @@ public class CollectionClient {
     return getEntitiesForCollection(collectionId, DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
-  public List<EntityDto> getEntitiesForCollection(final String collectionId, String username, String password) {
+  public List<EntityDto> getEntitiesForCollection(final String collectionId, final String username,
+                                                  final String password) {
     return getRequestExecutor()
       .buildGetCollectionEntitiesRequest(collectionId)
       .withUserAuthentication(username, password)
@@ -216,8 +219,8 @@ public class CollectionClient {
       });
   }
 
-  public void createScopeWithTenants(final String collectionId, String definitionKey,
-                                     List<String> tenants, final DefinitionType definitionType) {
+  public void createScopeWithTenants(final String collectionId, final String definitionKey,
+                                     final List<String> tenants, final DefinitionType definitionType) {
     final CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(definitionType, definitionKey, tenants);
     addScopeEntryToCollection(collectionId, scopeEntry);
   }
@@ -228,7 +231,8 @@ public class CollectionClient {
       .execute();
   }
 
-  public CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
+  public CollectionScopeEntryDto createSimpleScopeEntry(final String definitionKey,
+                                                        final DefinitionType definitionType) {
     return new CollectionScopeEntryDto(definitionType, definitionKey, DEFAULT_TENANTS);
   }
 
@@ -262,8 +266,9 @@ public class CollectionClient {
       .execute(IdDto.class, Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public void updateCollectionScopeEntry(String collectionId, CollectionScopeEntryUpdateDto scopeEntryUpdate,
-                                         String scopeEntryId) {
+  public void updateCollectionScopeEntry(final String collectionId,
+                                         final CollectionScopeEntryUpdateDto scopeEntryUpdate,
+                                         final String scopeEntryId) {
     Response response = getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(
         collectionId,
@@ -275,7 +280,8 @@ public class CollectionClient {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public void deleteScopeEntry(String collectionId, CollectionScopeEntryDto scopeEntry, Boolean force) {
+  public void deleteScopeEntry(final String collectionId, final CollectionScopeEntryDto scopeEntry,
+                               final Boolean force) {
     Response response = getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId(), force)
       .execute();
@@ -286,37 +292,46 @@ public class CollectionClient {
     return addRoleToCollectionAsUser(collectionId, roleDto, DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
-  public IdDto addRoleToCollectionAsUser(final String collectionId, final CollectionRoleDto roleDto, String username,
-                                         String password) {
+  public IdDto addRoleToCollectionAsUser(final String collectionId,
+                                         final CollectionRoleDto roleDto,
+                                         final String username,
+                                         final String password) {
     return getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .withUserAuthentication(username, password)
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public void updateCollectionRoleAsUser(String collectionId, String roleId, CollectionRoleUpdateDto updateDto,
-                                         String username, String password) {
+  public void updateCollectionRoleAsUser(final String collectionId,
+                                         final String roleId,
+                                         final CollectionRoleUpdateDto updateDto,
+                                         final String username,
+                                         final String password) {
     getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, roleId, updateDto)
       .withUserAuthentication(username, password)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public void deleteCollectionRoleAsUser(String collectionId, String roleId, String username, String password) {
+  public void deleteCollectionRoleAsUser(final String collectionId, final String roleId, final String username,
+                                         final String password) {
     getRequestExecutor()
       .buildDeleteRoleToCollectionRequest(collectionId, roleId)
       .withUserAuthentication(username, password)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public OptimizeRequestExecutor getAlertsRequest(final String userId, final String password,
+  public OptimizeRequestExecutor getAlertsRequest(final String userId,
+                                                  final String password,
                                                   final String collectionId) {
     return getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
       .withUserAuthentication(userId, password);
   }
 
-  public List<CollectionRoleRestDto> getCollectionRolesAsUser(final String collectionId, String username, String password) {
+  public List<CollectionRoleRestDto> getCollectionRolesAsUser(final String collectionId,
+                                                              final String username,
+                                                              final String password) {
     return getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
       .withUserAuthentication(username, password)
@@ -335,11 +350,11 @@ public class CollectionClient {
       .executeAndReturnList(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public CollectionDefinitionRestDto copyCollection(String collectionId) {
+  public CollectionDefinitionRestDto copyCollection(final String collectionId) {
     return copyCollection(collectionId, null);
   }
 
-  public CollectionDefinitionRestDto copyCollection(String collectionId, String newName) {
+  public CollectionDefinitionRestDto copyCollection(final String collectionId, final String newName) {
     OptimizeRequestExecutor executor = getRequestExecutor()
       .buildCopyCollectionRequest(collectionId);
     if (newName != null) {
@@ -348,9 +363,9 @@ public class CollectionClient {
     return executor.execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public ConflictResponseDto getDeleteCollectionConflicts(String id) {
+  public ConflictResponseDto getDeleteCollectionConflicts(final String collectionId) {
     return getRequestExecutor()
-      .buildGetCollectionDeleteConflictsRequest(id)
+      .buildGetCollectionDeleteConflictsRequest(collectionId)
       .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
   }
 

@@ -5,7 +5,9 @@
  */
 package org.camunda.optimize.rest;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -25,10 +27,12 @@ import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -86,6 +90,38 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
   }
 
   @Test
+  public void getRolesIsFilteredByAuthorizations() {
+    // given
+    final UserDto userIdentity1 = new UserDto("testUser1", "Test User 1");
+    final UserDto userIdentity2 = new UserDto("testUser2", "Test User 2");
+
+    embeddedOptimizeExtension.getIdentityService().addIdentity(userIdentity1);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(userIdentity2);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessConfiguration()
+      .setAuthorizedUserIds(Lists.newArrayList(USER_KERMIT, DEFAULT_USERNAME));
+    authorizationClient.grantSingleResourceAuthorizationForKermit(userIdentity1.getId(), RESOURCE_TYPE_USER);
+
+    final EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    final String expectedId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    eventProcessClient.updateEventProcessMappingRoles(
+      expectedId,
+      Arrays.asList(new EventProcessRoleDto<>(userIdentity1), new EventProcessRoleDto<>(userIdentity2))
+    );
+
+    // when
+    final List<EventProcessRoleRestDto> roles = eventProcessClient.createGetEventProcessMappingRolesRequest(expectedId)
+      .withUserAuthentication(USER_KERMIT, USER_KERMIT)
+      .execute(new TypeReference<List<EventProcessRoleRestDto>>() {
+      });
+
+    // then
+    assertThat(roles.size()).isEqualTo(1);
+    assertThat(roles.get(0).getIdentity().getId()).isEqualTo(userIdentity1.getId());
+  }
+
+  @Test
   public void updateEventBasedProcessRoles_singleEntry() {
     // given
     final EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
@@ -107,6 +143,31 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
       .extracting(EventProcessRoleRestDto::getIdentity)
       .extracting(IdentityDto::getId)
       .containsExactly(USER_KERMIT);
+  }
+
+  @Test
+  public void updateEventBasedProcessRoles_failsForUnauthorizedEntries() {
+    // given
+    final EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    final UserDto userIdentity1 = new UserDto("testUser1", "Test User 1");
+    final UserDto userIdentity2 = new UserDto("testUser2", "Test User 2");
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessConfiguration()
+      .setAuthorizedUserIds(Lists.newArrayList(USER_KERMIT, DEFAULT_USERNAME));
+    authorizationClient.grantSingleResourceAuthorizationForKermit(userIdentity1.getId(), RESOURCE_TYPE_USER);
+
+    // when
+    final Response response = eventProcessClient.createUpdateEventProcessMappingRolesRequest(
+      eventProcessMappingId,
+      Arrays.asList(new EventProcessRoleDto<>(userIdentity1), new EventProcessRoleDto<>(userIdentity2))
+    ).withUserAuthentication(USER_KERMIT, USER_KERMIT)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -233,7 +294,8 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
     executeImportCycle();
     executeImportCycle();
-    final EventProcessMappingRestDto eventProcessMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
+    final EventProcessMappingRestDto eventProcessMapping = eventProcessClient.getEventProcessMapping(
+      eventProcessMappingId);
 
     // then
     assertThat(eventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISHED);
@@ -255,7 +317,8 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
       .containsExactly(USER_KERMIT);
     final EventProcessMappingRestDto updatedMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
-    assertThat(updatedMapping).isEqualToComparingOnlyGivenFields(eventProcessMapping,
+    assertThat(updatedMapping).isEqualToComparingOnlyGivenFields(
+      eventProcessMapping,
       EventProcessMappingRestDto.Fields.lastModified,
       EventProcessMappingRestDto.Fields.lastModifier,
       EventProcessMappingRestDto.Fields.state

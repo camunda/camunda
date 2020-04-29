@@ -43,8 +43,10 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.USER_BY_ID_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.USER_COUNT_ENDPOINT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.USER_ENDPOINT;
@@ -372,6 +374,30 @@ public class EngineContext {
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  public List<AuthorizationDto> getAllGroupAuthorizations() {
+    try {
+      return getAuthorizationsForType(RESOURCE_TYPE_GROUP);
+    } catch (Exception e) {
+      log.error(
+        "Could not fetch group authorizations from the engine to check the access permissions.",
+        e
+      );
+    }
+    return new ArrayList<>();
+  }
+
+  public List<AuthorizationDto> getAllUserAuthorizations() {
+    try {
+      return getAuthorizationsForType(RESOURCE_TYPE_USER);
+    } catch (Exception e) {
+      log.error(
+        "Could not fetch user authorizations from the engine to check the access permissions.",
+        e
+      );
+    }
+    return new ArrayList<>();
   }
 
   private List<AuthorizationDto> getAuthorizationsForType(final int resourceType) {

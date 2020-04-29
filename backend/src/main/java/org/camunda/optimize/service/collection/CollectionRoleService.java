@@ -22,9 +22,10 @@ import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 @Component
 @AllArgsConstructor
@@ -55,13 +56,11 @@ public class CollectionRoleService {
                                      final String collectionId,
                                      final String roleEntryId,
                                      final CollectionRoleUpdateDto roleUpdateDto) throws OptimizeConflictException {
-    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     collectionWriter.updateRoleInCollection(collectionId, roleEntryId, roleUpdateDto, userId);
   }
 
   public void removeRoleFromCollectionUnlessIsLastManager(String userId, String collectionId, String roleEntryId)
     throws OptimizeConflictException {
-    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, userId);
   }
 
@@ -69,11 +68,13 @@ public class CollectionRoleService {
     AuthorizedCollectionDefinitionDto authCollectionDto =
       authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
 
-    List<CollectionRoleRestDto> roles = new ArrayList<>();
-    authCollectionDto.getDefinitionDto()
+    List<CollectionRoleRestDto> roles = authCollectionDto.getDefinitionDto()
       .getData()
       .getRoles()
-      .forEach(role -> roles.add(mapRoleDtoToRoleRestDto(role)));
+      .stream()
+      .filter(role -> identityService.isUserAuthorizedToAccessIdentity(userId, role.getIdentity()))
+      .map(this::mapRoleDtoToRoleRestDto)
+      .collect(toList());
 
     if (authCollectionDto.getCurrentUserRole().equals(RoleType.MANAGER)) {
       for (CollectionRoleRestDto role : roles) {

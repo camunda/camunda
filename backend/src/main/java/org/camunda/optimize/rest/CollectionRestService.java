@@ -28,6 +28,7 @@ import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -55,6 +56,7 @@ import java.util.Optional;
 public class CollectionRestService {
   private final SessionService sessionService;
   private final CollectionService collectionService;
+  private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionRoleService collectionRoleService;
   private final CollectionScopeService collectionScopeService;
   private final IdentityService identityService;
@@ -213,6 +215,7 @@ public class CollectionRestService {
         .toIdentityDto();
       roleDtoRequest = new CollectionRoleDto(resolvedIdentityDto, roleDtoRequest.getRole());
     }
+    identityService.validateUserAuthorizedToAccessRoleOrFail(userId, roleDtoRequest.getIdentity());
     CollectionRoleDto collectionRoleDto = collectionRoleService.addRoleToCollection(
       userId, collectionId, roleDtoRequest
     );
@@ -227,8 +230,8 @@ public class CollectionRestService {
                          @PathParam("id") String collectionId,
                          @PathParam("roleEntryId") String roleEntryId,
                          @NotNull CollectionRoleUpdateDto roleUpdateDto) throws OptimizeConflictException {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(userId, collectionId, roleEntryId);
     collectionRoleService.updateRoleOfCollection(userId, collectionId, roleEntryId, roleUpdateDto);
   }
 
@@ -248,7 +251,8 @@ public class CollectionRestService {
   public void removeRole(@Context ContainerRequestContext requestContext,
                          @PathParam("id") String collectionId,
                          @PathParam("roleEntryId") String roleEntryId) throws OptimizeConflictException {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(userId, collectionId, roleEntryId);
     collectionRoleService.removeRoleFromCollectionUnlessIsLastManager(userId, collectionId, roleEntryId);
   }
 

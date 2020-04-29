@@ -11,6 +11,7 @@ import lombok.Builder;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -54,6 +55,11 @@ public class AuthorizationClient {
   public void createGroupAndAddUser(final String groupId, final String userId) {
     engineExtension.createGroup(groupId);
     engineExtension.addUserToGroup(userId, groupId);
+  }
+
+  public void createGroupAndAddUsers(final String groupId, final String... userIds) {
+    engineExtension.createGroup(groupId);
+    Arrays.asList(userIds).forEach(userId -> engineExtension.addUserToGroup(userId, groupId));
   }
 
   public void grantKermitGroupOptimizeAccess() {

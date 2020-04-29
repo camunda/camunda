@@ -174,7 +174,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     assertThat(searchResult)
       // user is first as name and email contains baggins
       .isEqualTo(new IdentitySearchResultDto(
-        3L, Lists.newArrayList(userIdentity)
+        1L, Lists.newArrayList(userIdentity)
       ));
   }
 
@@ -366,6 +366,4 @@ public class IdentityRestServiceIT extends AbstractIT {
       new GroupDto(KERMIT_GROUP_NAME, KERMIT_GROUP_NAME, 0L)
     );
   }
-
-
 }
