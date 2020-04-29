@@ -10,12 +10,12 @@ import {setup} from './Dashboard.setup.js';
 
 import * as Header from './Header.elements.js';
 import * as Dashboard from './Dashboard.elements.js';
-import * as Instances from './Instances.Elements.js';
+import * as Instances from './Instances.elements.js';
 
 fixture('Dashboard')
   .page(config.endpoint)
-  .before(async (t) => {
-    setup();
+  .before(async () => {
+    await setup();
   });
 
 test.before(async (t) => {

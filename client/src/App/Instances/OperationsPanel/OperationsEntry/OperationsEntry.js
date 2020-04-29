@@ -41,7 +41,7 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
       <Styled.EntryStatus>
         <div>
           <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
-          <Styled.Id>{id}</Styled.Id>
+          <Styled.Id data-test="operation-id">{id}</Styled.Id>
         </div>
 
         <OperationIcon operationType={type} data-test="operation-icon" />

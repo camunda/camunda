@@ -8,6 +8,8 @@
     "test:ci": "PORT=8080 testcafe chrome:headless tests/*.js"
   },
   "devDependencies": {
+    "lodash.memoize": "^4.1.2",
+    "node-fetch": "^2.6.0",
     "testcafe": "^1.7.1",
     "zeebe-node": "^0.22.1"
   }

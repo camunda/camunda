@@ -10,31 +10,26 @@ const zbc = new ZB.ZBClient({
   onConnectionError: () => console.log(`Disconnected!`),
 }); // localhost:26500 || ZEEBE_GATEWAY_ADDRESS
 
-export async function deploy(processNames) {
-  const response = await zbc.deployWorkflow(processNames);
-  console.log(response);
-  return;
+function deploy(processNames) {
+  return zbc.deployWorkflow(processNames);
 }
 
-export async function createInstances(processId, version, noOfInstances) {
-  for (var i = 0; i < noOfInstances; i++) {
-    const result = await zbc.createWorkflowInstance({
-      bpmnProcessId: processId,
-      version: version,
-    });
-    console.log(result);
-  }
-  return;
+function createInstances(bpmnProcessId, version, numberOfInstances) {
+  return Promise.all(
+    [...new Array(numberOfInstances)].map(() =>
+      zbc.createWorkflowInstance({
+        bpmnProcessId,
+        version,
+      })
+    )
+  );
 }
 
-export async function completeTask(taskType) {
+function completeTask(taskType) {
   zbc.createWorker(null, taskType, handler);
-  return;
 }
 
 function handler(job, complete) {
-  console.log('Task variables', job.variables);
-
   // Task worker business logic goes here
   const updateToBrokerVariables = {
     updatedProperty: 'newValue',
@@ -42,3 +37,5 @@ function handler(job, complete) {
 
   complete(updateToBrokerVariables);
 }
+
+export {deploy, createInstances, completeTask};
