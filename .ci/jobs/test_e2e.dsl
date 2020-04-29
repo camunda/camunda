@@ -9,8 +9,14 @@ pipelineJob('test_e2e') {
       sandbox()
     }
   }
-  
-  triggers {
-    //cron('H 5 * * *')
+
+  properties {
+    pipelineTriggers {
+      triggers {
+        // cron {
+        //   spec('H 5 * * *')
+        // }
+      }
+    }
   }
 }

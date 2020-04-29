@@ -15,8 +15,14 @@ pipelineJob('migrate-elasticsearch-data') {
       sandbox()
     }
   }
-  
-  triggers {
-    cron('H 5 * * *')
+
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 5 * * *')
+        }
+      }
+    }
   }
 }

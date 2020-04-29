@@ -13,8 +13,14 @@ pipelineJob('batch-operation-performance') {
       sandbox()
     }
   }
-  
-  triggers {
-    cron('H 3 * * *')
+
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 3 * * *')
+        }
+      }
+    }
   }
 }

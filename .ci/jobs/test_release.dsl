@@ -16,8 +16,13 @@ pipelineJob('camunda-operate-release-test') {
     booleanParam('PUSH_CHANGES', false, 'DO NOT SET THIS TO TRUE! If you do, you will perform an actual release.')
   }
 
-  // triggers {
-  //   cron('H 4 * * *')
-  // }
-
+  properties {
+    pipelineTriggers {
+      triggers {
+        // cron {
+        //   spec('H 4 * * *')
+        // }
+      }
+    }
+  }
 }

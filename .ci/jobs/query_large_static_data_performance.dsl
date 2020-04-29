@@ -14,8 +14,14 @@ pipelineJob('query-performance-large-static-dataset') {
       sandbox()
     }
   }
-  
-  triggers {
-    cron('H 3 * * *')
+
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 3 * * *')
+        }
+      }
+    }
   }
 }

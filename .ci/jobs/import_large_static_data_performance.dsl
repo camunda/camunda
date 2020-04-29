@@ -16,7 +16,13 @@ pipelineJob('import-performance-large-static-dataset') {
     }
   }
   
-  triggers {
-    cron('H 1 * * *')
+  properties {
+    pipelineTriggers {
+      triggers {
+        cron {
+          spec('H 1 * * *')
+        }
+      }
+    }
   }
 }
