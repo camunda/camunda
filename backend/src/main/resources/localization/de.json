@@ -193,7 +193,6 @@
     "label": "Bericht",
     "label-plural": "Berichte",
     "new": "Neuer Bericht",
-    "cannotSave": "Bericht \"{name}\" konnte nicht gespeichert werden",
     "downloadCSV": "CSV herunterladen",
     "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
     "instanceCount": {
@@ -414,7 +413,6 @@
     "label": "Dashboard",
     "label-plural": "Dashboards",
     "new": "Neues Dashboard",
-    "cannotSave": "Dashboard \"{name}\" konnte nicht gespeichert werden",
     "cannotShare": "Teilen verboten. Fehlende Berechtigung für enthaltenen Report.",
     "toggleTheme": "Design wechseln",
     "enterFullscreen": "Vollbildmodus aktivieren",

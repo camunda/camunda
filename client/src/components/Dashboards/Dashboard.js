@@ -14,7 +14,7 @@ import {isSharingEnabled} from 'config';
 
 import {ErrorPage, LoadingIndicator} from 'components';
 
-import {addNotification, showError} from 'notifications';
+import {showError} from 'notifications';
 import {t} from 'translation';
 
 import {isAuthorizedToShareDashboard} from './service';
@@ -120,7 +120,7 @@ export class Dashboard extends React.Component {
           availableFilters,
         }),
         () => resolve(this.updateDashboardState(id, name, reports, availableFilters)),
-        () => reject(addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'}))
+        (error) => reject(showError(error))
       );
     });
   };
@@ -147,7 +147,7 @@ export class Dashboard extends React.Component {
         this.props.mightFail(
           createEntity('dashboard', {collectionId, name, reports, availableFilters}),
           (id) => resolve(this.updateDashboardState(id, name, reports)),
-          () => reject(addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'}))
+          (error) => reject(showError(error))
         );
       } else {
         resolve(this.updateDashboard(this.getId(), name, reports, availableFilters));

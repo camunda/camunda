@@ -28,7 +28,7 @@ import {
   evaluateReport,
   getCollection,
 } from 'services';
-import {addNotification, showError} from 'notifications';
+import {showError} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
@@ -54,11 +54,11 @@ export class ReportEdit extends React.Component {
     });
   }
 
-  showSaveError = (name) => {
+  showSaveError = (error) => {
     this.setState({
       conflict: null,
     });
-    addNotification({text: t('report.cannotSave', {name}), type: 'error'});
+    showError(error);
   };
 
   saveUpdatedReport = ({endpoint, id, name, data}) => {
@@ -81,7 +81,7 @@ export class ReportEdit extends React.Component {
             });
             resolve(null);
           } else {
-            reject(this.showSaveError(name));
+            reject(this.showSaveError(error));
           }
         }
       );
@@ -96,8 +96,8 @@ export class ReportEdit extends React.Component {
       if (this.props.isNew) {
         const collectionId = getCollection(this.props.location.pathname);
 
-        this.props.mightFail(createEntity(endpoint, {collectionId, name, data}), resolve, () =>
-          reject(this.showSaveError(name))
+        this.props.mightFail(createEntity(endpoint, {collectionId, name, data}), resolve, (error) =>
+          reject(this.showSaveError(error))
         );
       } else {
         resolve(await this.saveUpdatedReport({endpoint, id, name, data}));

@@ -193,7 +193,6 @@
     "label": "Report",
     "label-plural": "Reports",
     "new": "New Report",
-    "cannotSave": "Report \"{name}\" could not be saved",
     "downloadCSV": "Download CSV",
     "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your set-up above.",
     "instanceCount": {
@@ -414,7 +413,6 @@
     "label": "Dashboard",
     "label-plural": "Dashboards",
     "new": "New Dashboard",
-    "cannotSave": "Dashboard \"{name}\" could not be saved",
     "cannotShare": "Sharing forbidden. Missing authorization for contained report.",
     "toggleTheme": "Toggle Theme",
     "enterFullscreen": "Enter Fullscreen",
