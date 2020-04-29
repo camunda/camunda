@@ -11,12 +11,16 @@ organizationFolder('zeebe-io') {
             credentialsId('camunda-jenkins-github')
 
             traits {
-                 cleanBeforeCheckoutTrait()
-                 gitHubBranchDiscovery {
+                cleanBeforeCheckoutTrait {
+                    extension {
+                        deleteUntrackedNestedRepositories(false)
+                    }
+                }
+                gitHubBranchDiscovery {
                     strategyId(3)
-                 }
-                 pruneStaleBranchTrait()
-                 localBranchTrait()
+                }
+                pruneStaleBranchTrait()
+                localBranchTrait()
             }
         }
     }
