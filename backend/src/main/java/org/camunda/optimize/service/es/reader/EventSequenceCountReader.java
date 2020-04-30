@@ -6,14 +6,13 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -26,7 +25,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,7 +38,7 @@ import static org.camunda.optimize.service.es.schema.index.events.EventSequenceC
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.SOURCE;
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -52,10 +50,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
-@RequiredArgsConstructor
-@Component
+@AllArgsConstructor
 @Slf4j
-public class ExternalEventSequenceCountReader {
+public class EventSequenceCountReader {
 
   private static final String GROUP_AGG = EventCountDto.Fields.group;
   private static final String SOURCE__AGG = EventCountDto.Fields.source;
@@ -64,6 +61,7 @@ public class ExternalEventSequenceCountReader {
   private static final String KEYWORD_ANALYZER = "keyword";
   private static final String DEFAULT_MISSING_KEY = "_MISSING_KEY_";
 
+  private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
@@ -112,6 +110,41 @@ public class ExternalEventSequenceCountReader {
       throw new OptimizeRuntimeException("Was not able to get event counts!", e);
     }
     return eventCountDtos;
+  }
+
+  public List<EventSequenceCountDto> getEventSequencesContainingBothEventTypes(final EventTypeDto firstEventTypeDto,
+                                                                               final EventTypeDto secondEventTypeDto) {
+    log.debug(
+      "Fetching event sequences containing both event types: [{}] and [{}]",
+      firstEventTypeDto,
+      secondEventTypeDto
+    );
+
+    final BoolQueryBuilder query = boolQuery()
+      .should(
+        boolQuery()
+          .must(buildEventTypeBoolQueryForProperty(firstEventTypeDto, SOURCE_EVENT))
+          .must(buildEventTypeBoolQueryForProperty(secondEventTypeDto, TARGET_EVENT)))
+      .should(
+        boolQuery()
+          .must(buildEventTypeBoolQueryForProperty(firstEventTypeDto, TARGET_EVENT))
+          .must(buildEventTypeBoolQueryForProperty(secondEventTypeDto, SOURCE_EVENT)));
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(getIndexName())
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      final String errorMessage = "Was not able to retrieve event sequence counts for given event types!";
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+    return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
   }
 
   private QueryBuilder buildSequencedEventsQuery(
@@ -192,14 +225,14 @@ public class ExternalEventSequenceCountReader {
             .group(groupBucket.getKeyAsString().equals(DEFAULT_MISSING_KEY) ? null : groupBucket.getKeyAsString())
             .source(sourceBucket.getKeyAsString().equals(DEFAULT_MISSING_KEY) ? null : sourceBucket.getKeyAsString())
             .eventName(eventNameBucket.getKeyAsString())
-            .count((long)((Sum) eventNameBucket.getAggregations().get(COUNT_AGG)).getValue())
+            .count((long) ((Sum) eventNameBucket.getAggregations().get(COUNT_AGG)).getValue())
             .build()));
     }
     return eventCountsForGroup;
   }
 
   private String getIndexName() {
-    return new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName();
+    return EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey;
   }
 
   private String getNgramSearchField(final String searchFieldName) {

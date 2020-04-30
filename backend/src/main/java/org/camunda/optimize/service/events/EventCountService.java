@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.events;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
@@ -18,7 +18,8 @@ import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
-import org.camunda.optimize.service.es.reader.ExternalEventSequenceCountReader;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.springframework.stereotype.Component;
 
@@ -35,13 +36,23 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.BpmnModelUtility.extractFlowNodeNames;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-@AllArgsConstructor
 @Component
 public class EventCountService {
 
-  private final ExternalEventSequenceCountReader eventSequenceCountReader;
+  private final EventSequenceCountReader eventSequenceCountReader;
   private final CamundaEventService camundaEventService;
+
+  public EventCountService(final CamundaEventService camundaEventService, final OptimizeElasticsearchClient esClient,
+                           final ObjectMapper objectMapper) {
+    this.camundaEventService = camundaEventService;
+    this.eventSequenceCountReader = new EventSequenceCountReader(
+      EXTERNAL_EVENTS_INDEX_SUFFIX,
+      esClient,
+      objectMapper
+    );
+  }
 
   public List<EventCountDto> getEventCounts(final String userId,
                                             final String searchTerm,

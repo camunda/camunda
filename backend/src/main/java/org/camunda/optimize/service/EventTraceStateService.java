@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
+import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.es.reader.EventTraceStateReader;
 import org.camunda.optimize.service.es.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.es.writer.EventTraceStateWriter;
@@ -32,12 +33,13 @@ public class EventTraceStateService {
   private final EventTraceStateWriter eventTraceStateWriter;
   private final EventTraceStateReader eventTraceStateReader;
   private final EventSequenceCountWriter eventSequenceCountWriter;
+  private final EventSequenceCountReader eventSequenceCountReader;
 
-  public List<EventTraceStateDto> getEventTraceStatesForIds(List<String> traceIds) {
+  private List<EventTraceStateDto> getEventTraceStatesForIds(List<String> traceIds) {
     return eventTraceStateReader.getEventTraceStateForTraceIds(traceIds);
   }
 
-  public void upsertEventStateTraces(final List<EventTraceStateDto> eventTraceStateDtos) {
+  private void upsertEventStateTraces(final List<EventTraceStateDto> eventTraceStateDtos) {
     eventTraceStateWriter.upsertEventTraceStates(eventTraceStateDtos);
   }
 
@@ -60,11 +62,7 @@ public class EventTraceStateService {
         // We do nothing if the new event is a duplicate as the trace state will be unaffected
         if (!tracedEventToAdd.equals(tracedEventToRemove)) {
           if (tracedEventToRemove != null) {
-            removeExistingEventFromTraceAndRecordAdjustments(
-              eventTrace,
-              tracedEventToRemove,
-              sequenceAdjustmentsRequired
-            );
+            removeExistingEventFromTraceAndRecordAdjustments(eventTrace, tracedEventToRemove, sequenceAdjustmentsRequired);
           }
           addEventToTraceAndRecordAdjustments(eventTrace, tracedEventToAdd, sequenceAdjustmentsRequired);
         }
@@ -73,7 +71,10 @@ public class EventTraceStateService {
 
     // we merge the new and updated traces before doing a batch upsert
     eventTraceStatesToCreate.values().stream()
-      .peek(traceState -> traceState.getEventTrace().sort(Comparator.comparing(TracedEventDto::getTimestamp)))
+      .peek(traceState -> traceState.getEventTrace().sort(
+        Comparator.comparing(TracedEventDto::getTimestamp)
+          .thenComparing(existingSequenceCountComparator())
+      ))
       .forEach(eventTrace -> addAdjustmentsForNewTraces(eventTrace, sequenceAdjustmentsRequired));
 
     eventTraceStatesForUpdate.putAll(eventTraceStatesToCreate);
@@ -87,12 +88,40 @@ public class EventTraceStateService {
     updateEventSequenceWithAdjustments(adjustmentsToWrite);
   }
 
-  protected void updateEventSequenceWithAdjustments(final List<EventSequenceCountDto> adjustmentsToWrite) {
+  private Comparator<TracedEventDto> existingSequenceCountComparator() {
+    return (eventA, eventB) -> {
+      final EventTypeDto eventATypeDto = toEventType(eventA);
+      final EventTypeDto eventBTypeDto = toEventType(eventB);
+      final List<EventSequenceCountDto> eventSequencesContainingEventTypes =
+        eventSequenceCountReader.getEventSequencesContainingBothEventTypes(eventATypeDto, eventBTypeDto);
+      if (eventSequencesContainingEventTypes.isEmpty()) {
+        return 0;
+      }
+      final EventSequenceCountDto highestFrequencySequence = eventSequencesContainingEventTypes
+        .stream()
+        .max(Comparator.comparing(EventSequenceCountDto::getCount)).get();
+      if (highestFrequencySequence.getSourceEvent().equals(eventATypeDto)) {
+        return -1;
+      } else {
+        return 1;
+      }
+    };
+  }
+
+  private EventTypeDto toEventType(TracedEventDto tracedEventDto) {
+    return EventTypeDto.builder()
+      .eventName(tracedEventDto.getEventName())
+      .source(tracedEventDto.getSource())
+      .group(tracedEventDto.getGroup())
+      .build();
+  }
+
+  private void updateEventSequenceWithAdjustments(final List<EventSequenceCountDto> adjustmentsToWrite) {
     eventSequenceCountWriter.updateEventSequenceCountsWithAdjustments(adjustmentsToWrite);
   }
 
-  protected TracedEventDto getExistingTracedEventToBeReplaced(final List<TracedEventDto> eventTrace,
-                                                              final EventDto newEventDto) {
+  private TracedEventDto getExistingTracedEventToBeReplaced(final List<TracedEventDto> eventTrace,
+                                                            final EventDto newEventDto) {
     return eventTrace.stream()
       .filter(tracedEvent -> Objects.equals(tracedEvent.getEventId(), newEventDto.getId())
         && Objects.equals(tracedEvent.getGroup(), newEventDto.getGroup())
@@ -136,7 +165,8 @@ public class EventTraceStateService {
                                                    final TracedEventDto tracedEventToAdd,
                                                    final Map<String, EventSequenceCountDto> requiredCountAdjustments) {
     eventTrace.add(tracedEventToAdd);
-    eventTrace.sort(Comparator.comparing(TracedEventDto::getTimestamp));
+    eventTrace.sort(Comparator.comparing(TracedEventDto::getTimestamp)
+                      .thenComparing(existingSequenceCountComparator()));
     int indexOfNewEvent = eventTrace.indexOf(tracedEventToAdd);
     TracedEventDto newPreviousEvent = (indexOfNewEvent == 0) ? null : eventTrace.get(indexOfNewEvent - 1);
     TracedEventDto newNextEvent = (indexOfNewEvent == eventTrace.size() - 1) ? null :

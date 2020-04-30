@@ -473,6 +473,72 @@ public class ExternalEventTraceStateImportIT extends AbstractIT {
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
   }
 
+  @Test
+  public void processMultipleBatchOfEventsAcrossMultipleTraces_sameTimestampEventsGetOrderedCorrectly() throws IOException {
+    // given
+    String traceIdOne = "traceIdOne";
+    String traceIdTwo = "traceIdTwo";
+    CloudEventDto eventDtoTraceOneEventOne = createCloudEventDtoWithProperties(
+      traceIdOne, "eventIdOne", "backend", "ketchup", "first-event", 100L
+    );
+    CloudEventDto eventDtoTraceOneEventTwo = createCloudEventDtoWithProperties(
+      traceIdOne, "eventIdTwo", "backend", "ketchup", "second-event", 200L
+    );
+    CloudEventDto eventDtoTraceOneEventThree = createCloudEventDtoWithProperties(
+      traceIdOne, "eventIdThree", "backend", "ketchup", "third-event", 300L
+    );
+    eventClient.ingestEventBatch(Arrays.asList(
+      eventDtoTraceOneEventOne,
+      eventDtoTraceOneEventTwo,
+      eventDtoTraceOneEventThree
+    ));
+
+    // when
+    processEventCountAndTraces();
+
+    // then trace state and sequence counts are correct after first batch
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
+      new EventTraceStateDto(traceIdOne, Arrays.asList(
+        mapToTracedEventDto(eventDtoTraceOneEventOne),
+        mapToTracedEventDto(eventDtoTraceOneEventTwo),
+        mapToTracedEventDto(eventDtoTraceOneEventThree)
+      ))
+    );
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
+
+    // when events ingested with identical timestamp events for new trace
+    CloudEventDto eventDtoTraceTwoEventOne = createCloudEventDtoWithProperties(
+      traceIdTwo, "eventIdFour", "backend", "ketchup", "first-event", 100L
+    );
+    CloudEventDto eventDtoTraceTwoEventTwo = createCloudEventDtoWithProperties(
+      traceIdTwo, "eventIdFive", "backend", "ketchup", "second-event", 100L
+    );
+    CloudEventDto eventDtoTraceTwoEventThree = createCloudEventDtoWithProperties(
+      traceIdTwo, "eventIdSix", "backend", "ketchup", "third-event", 200L
+    );
+    eventClient.ingestEventBatch(Arrays.asList(
+      eventDtoTraceTwoEventThree,
+      eventDtoTraceTwoEventOne,
+      eventDtoTraceTwoEventTwo
+    ));
+    processEventCountAndTraces();
+
+    // then trace state and sequence counts are correct and identical timestamp order is resolved correctly
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
+      new EventTraceStateDto(traceIdOne, Arrays.asList(
+        mapToTracedEventDto(eventDtoTraceOneEventOne),
+        mapToTracedEventDto(eventDtoTraceOneEventTwo),
+        mapToTracedEventDto(eventDtoTraceOneEventThree)
+      )),
+      new EventTraceStateDto(traceIdTwo, Arrays.asList(
+        mapToTracedEventDto(eventDtoTraceTwoEventOne),
+        mapToTracedEventDto(eventDtoTraceTwoEventTwo),
+        mapToTracedEventDto(eventDtoTraceTwoEventThree)
+      ))
+    );
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
+  }
+
   private TracedEventDto mapToTracedEventDto(final CloudEventDto cloudEventDto) {
     return TracedEventDto.fromEventDto(mapToEventDto(cloudEventDto));
   }

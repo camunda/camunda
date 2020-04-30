@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventTraceStateReader;
+import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
@@ -27,8 +28,14 @@ public class EventTraceStateServiceFactory {
     return new EventTraceStateService(
       createEventTraceStateWriter(eventSuffix),
       createEventTraceStateReader(eventSuffix),
-      createEventSequenceCountWriter(eventSuffix)
+      createEventSequenceCountWriter(eventSuffix),
+      createEventSequenceCountReader(eventSuffix)
     );
+  }
+
+  private EventSequenceCountReader createEventSequenceCountReader(final String indexKey) {
+    elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventSequenceCountIndex(indexKey));
+    return new EventSequenceCountReader(indexKey, esClient, objectMapper);
   }
 
   private EventSequenceCountWriter createEventSequenceCountWriter(final String indexKey) {
