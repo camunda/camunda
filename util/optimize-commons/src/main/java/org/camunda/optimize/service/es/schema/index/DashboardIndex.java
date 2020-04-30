@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
   public static final String LAST_MODIFIER = "lastModifier";
   public static final String REPORTS = "reports";
   public static final String COLLECTION_ID = "collectionId";
+  public static final String AVAILABLE_FILTERS = "availableFilters";
 
   public static final String POSITION = "position";
   public static final String X_POSITION = "x";
@@ -38,6 +40,8 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
 
   public static final String REPORT_ID = "id";
   public static final String CONFIGURATION = "configuration";
+
+  public static final String FILTER_TYPE = DashboardFilterDto.Fields.type;
 
   @Override
   public String getIndexName() {
@@ -80,6 +84,14 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(COLLECTION_ID)
         .field("type","keyword")
+      .endObject()
+      .startObject(AVAILABLE_FILTERS)
+        .field("type", "object")
+        .startObject("properties")
+          .startObject(FILTER_TYPE)
+            .field("type", "keyword")
+          .endObject()
+        .endObject()
       .endObject();
      return newBuilder;
   }

@@ -7,13 +7,17 @@ package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.DashboardFilterType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
@@ -22,9 +26,11 @@ import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,6 +75,25 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     // then the status code is okay
     assertThat(idDto).isNotNull();
+  }
+
+  @ParameterizedTest
+  @MethodSource("dashboardFilterCombinations")
+  public void createNewDashboardWithFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
+    // when
+    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
+    IdDto idDto = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(idDto.getId()).isNotNull();
+    final DashboardDefinitionDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDashboardRequest(idDto.getId())
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+    assertThat(savedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
   }
 
   @Test
@@ -198,6 +223,38 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("dashboardFilterCombinations")
+  public void updateDashboardFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
+    // when
+    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    IdDto idDto = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(idDto.getId()).isNotNull();
+    final DashboardDefinitionDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDashboardRequest(idDto.getId())
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+    assertThat(savedDefinition.getAvailableFilters().isEmpty());
+
+    // when
+    dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(idDto.getId(), dashboardDefinitionDto)
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
+    final DashboardDefinitionDto updatedDefinition = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDashboardRequest(idDto.getId())
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(updatedDefinition.getId()).isEqualTo(savedDefinition.getId());
+    assertThat(updatedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
   }
 
   @Test
@@ -341,6 +398,22 @@ public class DashboardRestServiceIT extends AbstractIT {
                            .readValue(searchHitFields.getSourceAsString(), DashboardShareDto.class).getId());
     }
     return storedShareIds.contains(shareId);
+  }
+
+  private static Stream<List<DashboardFilterDto>> dashboardFilterCombinations() {
+    return Stream.of(
+      Collections.emptyList(),
+      Collections.singletonList(new DashboardFilterDto(DashboardFilterType.START_DATE)),
+      Arrays.asList(
+        new DashboardFilterDto(DashboardFilterType.START_DATE),
+        new DashboardFilterDto(DashboardFilterType.END_DATE)
+      ),
+      Arrays.asList(
+        new DashboardFilterDto(DashboardFilterType.START_DATE),
+        new DashboardFilterDto(DashboardFilterType.END_DATE),
+        new DashboardFilterDto(DashboardFilterType.STATE)
+      )
+    );
   }
 
   private void createEmptyReportToDashboard(final String dashboardId) {

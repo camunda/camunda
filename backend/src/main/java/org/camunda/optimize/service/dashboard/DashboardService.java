@@ -259,6 +259,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     updateDto.setReports(updatedDashboard.getReports());
     updateDto.setLastModifier(userId);
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    updateDto.setAvailableFilters(updatedDashboard.getAvailableFilters());
     return updateDto;
   }
 

@@ -6,8 +6,11 @@
 package org.camunda.optimize.dto.optimize.query.dashboard;
 
 import lombok.Data;
+import org.camunda.optimize.dto.optimize.DashboardFilterType;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class BaseDashboardDefinitionDto {
@@ -18,4 +21,5 @@ public class BaseDashboardDefinitionDto {
   protected String owner;
   protected String lastModifier;
   protected String collectionId;
+  protected List<DashboardFilterDto> availableFilters = new ArrayList<>();
 }

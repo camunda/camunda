@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -20,4 +21,5 @@ public class DashboardDefinitionUpdateDto {
   protected String lastModifier;
   protected List<ReportLocationDto> reports;
   protected String collectionId;
+  protected List<DashboardFilterDto> availableFilters = new ArrayList<>();
 }
