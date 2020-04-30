@@ -2,6 +2,18 @@
 
 Variables are part of a workflow instance and represent the data of the instance. A variable has a name and a JSON value. The visibility of a variable is defined by its variable scope.
 
+## Variable Names
+
+The name of a variable can be any alphanumeric string including the `_` symbol. For a combination of words, it is recommended to use the `camelCase` or the `snake_case` format. The `kebab-case` format is not allowed because it contains the operator `-`.
+
+When accessing a variable in an expression, keep in mind that the variable name is case-sensitive.
+
+Restrictions of a variable name:
+* it may not start with a number
+* it may not contain whitespaces
+* it may not contain an operator (e.g. `+`, `-`, `*`, `/`, `=`, `>`, `?`, `.`)
+* it may not be a literal (e.g. `null`, `true`, `false`) or a keyword (e.g. `function`, `if`, `then`, `else`, `for`, `between`, `instance`, `of`, `not`)
+
 ## Variable Values
 
 The value of a variable is stored as a **JSON** value. It must have one of the following types:
