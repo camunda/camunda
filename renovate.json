@@ -3,7 +3,7 @@
     "config:base"
   ],
 
-  "ignoreDeps": ["docker/engine"],
+  "ignoreDeps": ["docker/engine", "docker/docker", "docker/distribution", "docker/go-connections", "docker/go-units"],
 
   "postUpdateOptions": ["gomodTidy"]
 }
