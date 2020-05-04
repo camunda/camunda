@@ -215,7 +215,7 @@ pipeline {
                         build job: 'zeebe-docker', parameters: [
                             string(name: 'BRANCH', value: env.BRANCH_NAME),
                             string(name: 'VERSION', value: env.VERSION),
-                            booleanParam(name: 'IS_LATEST', value: env.BRANCH_NAME == 'master')
+                            booleanParam(name: 'IS_LATEST', value: env.BRANCH_NAME == 'master'),
                             booleanParam(name: 'PUSH', value: env.BRANCH_NAME == 'develop')
                         ]
                     }
