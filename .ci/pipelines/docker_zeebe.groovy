@@ -55,6 +55,7 @@ spec:
       DOCKER_HUB = credentials("camunda-dockerhub")
       VERSION = "${params.VERSION}"
       IS_LATEST = "${params.IS_LATEST}"
+      PUSH = "${params.PUSH}"
       IMAGE = "camunda/zeebe"
       TAG = docker_tag("${params.VERSION}")
   }
@@ -82,6 +83,7 @@ spec:
     }
 
     stage('Upload') {
+      when { environment name: 'PUSH', value: 'true' }
       steps {
         container('docker') {
             sh '.ci/scripts/docker/upload.sh'
