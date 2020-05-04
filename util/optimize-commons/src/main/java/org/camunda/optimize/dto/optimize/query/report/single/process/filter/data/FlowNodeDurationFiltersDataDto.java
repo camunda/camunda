@@ -5,22 +5,21 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.data;
 
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+import java.util.HashMap;
+import java.util.Map;
+
 @Data
-public class DurationFilterDataDto implements FilterDataDto {
+@EqualsAndHashCode(callSuper = true)
+public class FlowNodeDurationFiltersDataDto extends HashMap<String, DurationFilterDataDto> implements FilterDataDto {
+  public FlowNodeDurationFiltersDataDto() {
+    super();
+  }
 
-  protected Long value;
-  protected DurationFilterUnit unit;
-  protected String operator;
-
+  public FlowNodeDurationFiltersDataDto(final Map<String, DurationFilterDataDto> map) {
+    super(map);
+  }
 }
