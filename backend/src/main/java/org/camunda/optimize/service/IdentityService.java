@@ -136,17 +136,25 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   public IdentitySearchResultDto searchForIdentitiesAsUser(final String userId,
                                                            final String searchString,
                                                            final int maxResults) {
-    final IdentitySearchResultDto result = syncedIdentityCache.searchIdentities(searchString, maxResults);
-    return filterIdentitySearchResultByUserAuthorizations(userId, result);
+    IdentitySearchResultDto result = syncedIdentityCache.searchIdentities(searchString, maxResults);
+    List<IdentityWithMetadataDto> filteredIdentities = new ArrayList<>();
+    while (!result.getResult().isEmpty()
+      && filteredIdentities.size() < maxResults) {
+      // continue searching until either the maxResult number of hits has been found or
+      // the end of the cache has been reached
+      filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
+      result = syncedIdentityCache.searchIdentitiesAfter(searchString, maxResults, result);
+    }
+    return new IdentitySearchResultDto(filteredIdentities.size(), filteredIdentities);
   }
 
-  private IdentitySearchResultDto filterIdentitySearchResultByUserAuthorizations(final String userId,
-                                                                                 final IdentitySearchResultDto result) {
-    final List<IdentityWithMetadataDto> filteredIdentities = result.getResult()
+  private List<IdentityWithMetadataDto> filterIdentitySearchResultByUserAuthorizations(
+    final String userId,
+    final IdentitySearchResultDto result) {
+    return result.getResult()
       .stream()
       .filter(identity -> isUserAuthorizedToAccessIdentity(userId, identity))
       .collect(toList());
-    return new IdentitySearchResultDto(filteredIdentities.size(), filteredIdentities);
   }
 
   public boolean isUserAuthorizedToAccessIdentity(final String userId, final IdentityDto identity) {

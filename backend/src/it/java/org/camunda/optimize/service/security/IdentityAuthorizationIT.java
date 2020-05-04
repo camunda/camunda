@@ -92,4 +92,64 @@ public class IdentityAuthorizationIT extends AbstractIT {
     // then access is forbidden
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
+
+  @Test
+  public void limitResults_partialAuthorizations() {
+    // given
+    final UserDto user1 = new UserDto("testUser1", null, null, null);
+    final UserDto user2 = new UserDto("testUser2", null, null, null);
+    final UserDto user3 = new UserDto("testUser3", null, null, null);
+
+    embeddedOptimizeExtension.getIdentityService().addIdentity(user1);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(user2);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(user3);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantSingleResourceAuthorizationForKermit(user2.getId(), RESOURCE_TYPE_USER);
+
+    // when
+    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildSearchForIdentities("testUser", 1)
+      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(searchResult)
+      // user2 is still returned although being not the first internal search result based on sorting
+      .isEqualTo(new IdentitySearchResultDto(
+        1L, Lists.newArrayList(user2)
+      ));
+  }
+
+  @Test
+  public void limitResults_partialAuthorizationsForMultipleResults() {
+    // given
+    final UserDto user1 = new UserDto("testUser1", null, null, null);
+    final UserDto user2 = new UserDto("testUser2", null, null, null);
+    final UserDto user3 = new UserDto("testUser3", null, null, null);
+    final UserDto user4 = new UserDto("testUser4", null, null, null);
+
+    embeddedOptimizeExtension.getIdentityService().addIdentity(user1);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(user2);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(user3);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(user4);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantSingleResourceAuthorizationForKermit(user2.getId(), RESOURCE_TYPE_USER);
+    authorizationClient.grantSingleResourceAuthorizationForKermit(user4.getId(), RESOURCE_TYPE_USER);
+
+    // when
+    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildSearchForIdentities("testUser", 2)
+      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(searchResult)
+      // user2 and user4 are still returned even though they are not in the first internal search result based on
+      // sorting
+      .isEqualTo(new IdentitySearchResultDto(
+        2L, Lists.newArrayList(user2, user4)
+      ));
+  }
 }

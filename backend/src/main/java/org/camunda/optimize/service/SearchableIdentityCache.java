@@ -101,7 +101,8 @@ public class SearchableIdentityCache implements AutoCloseable {
     });
   }
 
-  public void addIdentities(@NonNull final List<? extends IdentityWithMetadataDto> identities) throws MaxEntryLimitHitException {
+  public void addIdentities(@NonNull final List<? extends IdentityWithMetadataDto> identities) throws
+                                                                                               MaxEntryLimitHitException {
     if (identities.isEmpty()) {
       return;
     }
@@ -133,6 +134,18 @@ public class SearchableIdentityCache implements AutoCloseable {
   }
 
   public IdentitySearchResultDto searchIdentities(final String terms, final int resultLimit) {
+    return searchIdentitiesAfter(terms, resultLimit, null);
+  }
+
+  public IdentitySearchResultDto searchIdentities(final String terms,
+                                                  final int resultLimit,
+                                                  final IdentitySearchResultDto searchAfter) {
+    return searchIdentitiesAfter(terms, resultLimit, searchAfter.getScoreDoc());
+  }
+
+  private IdentitySearchResultDto searchIdentitiesAfter(final String terms,
+                                                        final int resultLimit,
+                                                        final ScoreDoc searchAfter) {
     final IdentitySearchResultDto result = new IdentitySearchResultDto();
     doWithReadLock(() -> {
       try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
@@ -140,9 +153,12 @@ public class SearchableIdentityCache implements AutoCloseable {
 
         final SortField nameSort = new SortField(IdentityWithMetadataDto.Fields.name, SortField.Type.STRING, false);
         nameSort.setMissingValue(STRING_LAST);
-        final Sort scoreThanNameSort = new Sort(SortField.FIELD_SCORE, nameSort);
-        final TopDocs topDocs = searcher.search(
-          createSearchIdentityQuery(terms), resultLimit, scoreThanNameSort
+        final Sort scoreThenNameSort = new Sort(SortField.FIELD_SCORE, nameSort);
+        final TopDocs topDocs = searcher.searchAfter(
+          searchAfter,
+          createSearchIdentityQuery(terms),
+          resultLimit,
+          scoreThenNameSort
         );
 
         result.setTotal(topDocs.totalHits.value);
@@ -150,6 +166,7 @@ public class SearchableIdentityCache implements AutoCloseable {
           final Document document = searcher.doc(scoreDoc.doc);
           final IdentityWithMetadataDto identityRestDto = mapDocumentToIdentityDto(document);
           result.getResult().add(identityRestDto);
+          result.setScoreDoc(scoreDoc);
         }
       } catch (IOException e) {
         throw new OptimizeRuntimeException("Failed searching for identities with terms [id:" + terms + "].", e);
@@ -327,7 +344,11 @@ public class SearchableIdentityCache implements AutoCloseable {
       document.add(new SortedDocValuesField(IdentityWithMetadataDto.Fields.name, new BytesRef(name.toLowerCase())));
       document.add(new StringField(IdentityWithMetadataDto.Fields.name, name, Field.Store.YES));
       document.add(
-        new TextField(getNgramFieldForDtoField(IdentityWithMetadataDto.Fields.name), name.toLowerCase(), Field.Store.YES)
+        new TextField(
+          getNgramFieldForDtoField(IdentityWithMetadataDto.Fields.name),
+          name.toLowerCase(),
+          Field.Store.YES
+        )
       );
     });
 

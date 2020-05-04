@@ -108,7 +108,8 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
   }
 
   private synchronized void syncIdentitiesWithRetry() {
-    Instant stopRetryingTime = cronSequenceGenerator.next(new Date(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli()))
+    Instant stopRetryingTime = cronSequenceGenerator
+      .next(new Date(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli()))
       .toInstant()
       .minusSeconds(backoffCalculator.getMaximumBackoffSeconds());
     boolean shouldRetry = true;
@@ -119,7 +120,10 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
         shouldRetry = false;
       } catch (final Exception e) {
         if (LocalDateUtil.getCurrentDateTime().toInstant().isAfter(stopRetryingTime)) {
-          log.error("Could not sync identities with the engine. Will stop retrying as next scheduled sync is approaching", e);
+          log.error(
+            "Could not sync identities with the engine. Will stop retrying as next scheduled sync is approaching",
+            e
+          );
           shouldRetry = false;
         } else {
           long timeToSleep = backoffCalculator.calculateSleepTime();
@@ -161,7 +165,8 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
       ));
       throw e;
     } catch (OptimizeRuntimeException e) {
-      log.error("Could not synchronize identity cache as there was a problem receiving authorizations from the engine.");
+      log.error("Could not synchronize identity cache as there was a problem receiving authorizations from the engine" +
+                  ".");
       throw e;
     }
   }
@@ -191,6 +196,12 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
 
   public IdentitySearchResultDto searchIdentities(final String terms, final int resultLimit) {
     return activeIdentityCache.searchIdentities(terms, resultLimit);
+  }
+
+  public IdentitySearchResultDto searchIdentitiesAfter(final String terms,
+                                                       final int resultLimit,
+                                                       final IdentitySearchResultDto searchAfter) {
+    return activeIdentityCache.searchIdentities(terms, resultLimit, searchAfter);
   }
 
   private synchronized void replaceActiveCache(final SearchableIdentityCache newIdentityCache) {
