@@ -20,22 +20,23 @@ import org.junit.Test;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
 
-public class GatewayClusterAwarenessHealthIndicatorAutoConfigurationTest {
+public class GatewayPartitionLeaderAwarenessHealthIndicatorAutoConfigurationTest {
 
   private SpringGatewayBridge helperGatewayBridge;
 
-  private GatewayClusterAwarenessHealthIndicatorAutoConfiguration sutAutoConfig;
+  private GatewayPartitionLeaderAwarenessHealthIndicatorAutoConfiguration sutAutoConfig;
 
   @Before
   public void setUp() {
     helperGatewayBridge = new SpringGatewayBridge();
-    sutAutoConfig = new GatewayClusterAwarenessHealthIndicatorAutoConfiguration();
+    sutAutoConfig = new GatewayPartitionLeaderAwarenessHealthIndicatorAutoConfiguration();
   }
 
   @Test
   public void shouldCreateHealthIndicatorEvenBeforeClusterStateSupplierIsRegistered() {
     // when
-    final var actual = sutAutoConfig.gatewayClusterAwarenessHealthIndicator(helperGatewayBridge);
+    final var actual =
+        sutAutoConfig.gatewayPartitionLeaderAwarenessHealthIndicator(helperGatewayBridge);
 
     // then
     assertThat(actual).isNotNull();
@@ -46,11 +47,12 @@ public class GatewayClusterAwarenessHealthIndicatorAutoConfigurationTest {
       shouldCreateHealthIndicatorThatReportsHealthBasedOnResultOfRegisteredClusterStateSupplier() {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getPartitions()).thenReturn(List.of(1));
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(42);
 
     final Supplier<BrokerClusterState> stateSupplier = () -> mockClusterState;
     final var healthIndicator =
-        sutAutoConfig.gatewayClusterAwarenessHealthIndicator(helperGatewayBridge);
+        sutAutoConfig.gatewayPartitionLeaderAwarenessHealthIndicator(helperGatewayBridge);
 
     // when
     helperGatewayBridge.registerClusterStateSupplier(stateSupplier);

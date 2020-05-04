@@ -17,10 +17,12 @@ import io.zeebe.gateway.Gateway.Status;
 import io.zeebe.gateway.impl.SpringGatewayBridge;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.probes.health.GatewayClusterAwarenessHealthIndicator;
+import io.zeebe.gateway.impl.probes.health.GatewayPartitionLeaderAwarenessHealthIndicator;
 import io.zeebe.gateway.impl.probes.health.GatewayStartedHealthIndicator;
 import io.zeebe.gateway.impl.probes.health.MemoryHealthIndicator;
 import java.util.List;
 import java.util.function.Supplier;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +42,17 @@ public class GatewayHealthIndicatorsIntegrationTest {
 
   @Autowired GatewayClusterAwarenessHealthIndicator gatewayClusterAwarenessHealthIndicator;
 
+  @Autowired
+  GatewayPartitionLeaderAwarenessHealthIndicator gatewayPartitionLeaderAwarenessHealthIndicator;
+
   @Autowired SpringGatewayBridge springGatewayBridge;
+
+  @After
+  public void tearDown() {
+    // reset suppliers
+    springGatewayBridge.registerClusterStateSupplier(null);
+    springGatewayBridge.registerGatewayStatusSupplier(null);
+  }
 
   @Test
   public void shouldInitializeMemoryHealthIndicatorWithDefaults() {
@@ -74,7 +86,7 @@ public class GatewayHealthIndicatorsIntegrationTest {
   public void
       shouldCreateGatewayClusterAwarenessHealthIndicatorThatIsBackedBySpringGatewayBridge() {
     // precondition
-    assertThat(gatewayStartedHealthIndicator).isNotNull();
+    assertThat(gatewayClusterAwarenessHealthIndicator).isNotNull();
     assertThat(springGatewayBridge).isNotNull();
 
     // given
@@ -89,6 +101,34 @@ public class GatewayHealthIndicatorsIntegrationTest {
     springGatewayBridge.registerClusterStateSupplier(stateSupplier);
     final Health actualHealthAfterRegisteringStatusSupplier =
         gatewayClusterAwarenessHealthIndicator.health();
+
+    // then
+    assertThat(actualHealthBeforeRegisteringStatusSupplier.getStatus())
+        .isSameAs(org.springframework.boot.actuate.health.Status.UNKNOWN);
+    assertThat(actualHealthAfterRegisteringStatusSupplier.getStatus())
+        .isSameAs(org.springframework.boot.actuate.health.Status.UP);
+  }
+
+  @Test
+  public void
+      shouldCreateGatewayPartitionLeaderAwarenessHealthIndicatorThatIsBackedBySpringGatewayBridge() {
+    // precondition
+    assertThat(gatewayPartitionLeaderAwarenessHealthIndicator).isNotNull();
+    assertThat(springGatewayBridge).isNotNull();
+
+    // given
+    final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
+    when(mockClusterState.getPartitions()).thenReturn(List.of(1));
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(42);
+
+    final Supplier<BrokerClusterState> stateSupplier = () -> mockClusterState;
+
+    // when
+    final Health actualHealthBeforeRegisteringStatusSupplier =
+        gatewayPartitionLeaderAwarenessHealthIndicator.health();
+    springGatewayBridge.registerClusterStateSupplier(stateSupplier);
+    final Health actualHealthAfterRegisteringStatusSupplier =
+        gatewayPartitionLeaderAwarenessHealthIndicator.health();
 
     // then
     assertThat(actualHealthBeforeRegisteringStatusSupplier.getStatus())

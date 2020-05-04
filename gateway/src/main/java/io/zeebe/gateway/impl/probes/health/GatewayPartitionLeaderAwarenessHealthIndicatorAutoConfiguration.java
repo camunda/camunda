@@ -17,17 +17,17 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for {@link
- * GatewayClusterAwarenessHealthIndicator}.
+ * GatewayPartitionLeaderAwarenessHealthIndicator}.
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnEnabledHealthIndicator("gatewayClusterAwareness")
+@ConditionalOnEnabledHealthIndicator("gatewayPartitionLeaderAwareness")
 @AutoConfigureBefore(HealthContributorAutoConfiguration.class)
-public class GatewayClusterAwarenessHealthIndicatorAutoConfiguration {
+public class GatewayPartitionLeaderAwarenessHealthIndicatorAutoConfiguration {
 
   @Bean
-  @ConditionalOnMissingBean(name = "gatewayClusterAwarenessHealthIndicator")
-  public GatewayClusterAwarenessHealthIndicator gatewayClusterAwarenessHealthIndicator(
-      SpringGatewayBridge gatewayBridge) {
+  @ConditionalOnMissingBean(name = "gatewayPartitionLeaderHealthIndicator")
+  public GatewayPartitionLeaderAwarenessHealthIndicator
+      gatewayPartitionLeaderAwarenessHealthIndicator(SpringGatewayBridge gatewayBridge) {
     /**
      * Here we effectively chain two suppliers to decouple their creation in time.
      *
@@ -38,6 +38,7 @@ public class GatewayClusterAwarenessHealthIndicatorAutoConfiguration {
      * <p>Later, the actual cluster status supplier will be registered at gatewayBridge. The
      * chaining allows us to delegate over two hops.
      */
-    return new GatewayClusterAwarenessHealthIndicator(() -> gatewayBridge.getClusterState());
+    return new GatewayPartitionLeaderAwarenessHealthIndicator(
+        () -> gatewayBridge.getClusterState());
   }
 }
