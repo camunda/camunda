@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWith
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
@@ -252,47 +253,28 @@ public class DefinitionReader {
     SearchRequest searchRequest = new SearchRequest(ALL_DEFINITION_INDEXES)
       .source(searchSourceBuilder);
 
-    Map<String, List<ParsedComposite.ParsedBucket>> keyAndTypeAggBucketsByTenantId = new HashMap<>();
-
-    try {
-      SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      ParsedComposite keyAndTypeAndTenantResult = searchResponse.getAggregations()
-        .get(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION);
-      while (keyAndTypeAndTenantResult.getBuckets().size() > 0) {
-        keyAndTypeAndTenantResult.getBuckets().forEach(bucket -> {
+    final Map<String, List<ParsedComposite.ParsedBucket>> keyAndTypeAggBucketsByTenantId = new HashMap<>();
+    CompositeAggregationScroller.create()
+      .setEsClient(esClient)
+      .setSearchRequest(searchRequest)
+      .setPathToAggregation(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION)
+      .setCompositeBucketConsumer(
+        bucket -> {
           final String tenantId = (String) (bucket.getKey()).get(TENANT_AGGREGATION);
           if (!keyAndTypeAggBucketsByTenantId.containsKey(tenantId)) {
             keyAndTypeAggBucketsByTenantId.put(tenantId, new ArrayList<>());
           }
           keyAndTypeAggBucketsByTenantId.get(tenantId).add(bucket);
-        });
-
-        keyAndTypeAndTenantAggregation =
-          keyAndTypeAndTenantAggregation.aggregateAfter(keyAndTypeAndTenantResult.afterKey());
-        searchSourceBuilder = new SearchSourceBuilder()
-          .query(QueryBuilders.matchAllQuery())
-          .aggregation(keyAndTypeAndTenantAggregation)
-          .size(0);
-        searchRequest = new SearchRequest(ALL_DEFINITION_INDEXES)
-          .source(searchSourceBuilder);
-        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-        keyAndTypeAndTenantResult = searchResponse.getAggregations()
-          .get(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION);
-      }
-    } catch (IOException e) {
-      final String reason = "Was not able to fetch definitions.";
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+        })
+      .scroll();
 
     Map<String, TenantIdWithDefinitionsDto> resultMap = new HashMap<>();
-
-    keyAndTypeAggBucketsByTenantId.entrySet().forEach(entry -> {
+    keyAndTypeAggBucketsByTenantId.forEach((key, value) -> {
       // convert not defined bucket back to a `null` id
-      final String tenantId = TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(entry.getKey())
+      final String tenantId = TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(key)
         ? null
-        : entry.getKey();
-      List<SimpleDefinitionDto> simpleDefinitionDtos = entry.getValue().stream().map(parsedBucket -> {
+        : key;
+      List<SimpleDefinitionDto> simpleDefinitionDtos = value.stream().map(parsedBucket -> {
         final String indexAliasName = (String) (parsedBucket.getKey().get(DEFINITION_TYPE_AGGREGATION));
         final String definitionKey = (String) (parsedBucket.getKey().get(DEFINITION_KEY_AGGREGATION));
         final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(indexAliasName);

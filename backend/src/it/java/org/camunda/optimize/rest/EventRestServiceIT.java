@@ -157,6 +157,22 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getEventCounts_correctCountEventIfBucketLimitIsBeingHit() {
+    // given
+    final int bucketLimit = 3;
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+
+    // when
+    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then all events are sorted using default group case-insensitive ordering
+    assertThat(eventCountDtos)
+      .isNotNull()
+      .hasSize(6);
+  }
+
+  @Test
   public void getEventCounts_camundaOnly_startEndEvents() {
     // given
     final String definitionKey = "myProcess";

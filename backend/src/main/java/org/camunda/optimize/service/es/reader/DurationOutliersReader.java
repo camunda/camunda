@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -35,6 +36,9 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.HasAggregations;
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.ParsedComposite;
+import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
@@ -44,7 +48,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuil
 import org.elasticsearch.search.aggregations.bucket.nested.ParsedReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.ExtendedStats;
 import org.elasticsearch.search.aggregations.metrics.ExtendedStatsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.Stats;
@@ -55,6 +58,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -72,7 +76,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_NAME;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -94,6 +97,8 @@ public class DurationOutliersReader {
   private static final String AGG_VARIABLE_VALUE_TERMS = "variableValueTerms";
   private static final String LOWER_DURATION_AGG = "lowerDurationAgg";
   private static final String HIGHER_DURATION_AGG = "higherDurationAgg";
+  private static final String COMPOSITE_FLOW_NODE_IDS_AGG = "compositeFlowNodeIds";
+  private static final String FLOW_NODE_ID_AGG = "flowNodeId";
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
@@ -148,13 +153,17 @@ public class DurationOutliersReader {
     ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(AGG_STATS)
       .field(EVENTS + "." + ACTIVITY_DURATION);
 
-    TermsAggregationBuilder terms = AggregationBuilders.terms(EVENTS)
-      .size(LIST_FETCH_LIMIT)
-      .field(EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID)
+    CompositeAggregationBuilder compositeActivityIdsAgg = new CompositeAggregationBuilder(
+      COMPOSITE_FLOW_NODE_IDS_AGG,
+      Collections.singletonList(
+        new TermsValuesSourceBuilder(FLOW_NODE_ID_AGG).field(EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID)
+      )
+    )
+      .size(configurationService.getEsAggregationBucketLimit())
       .subAggregation(stats);
 
     NestedAggregationBuilder nested = AggregationBuilders.nested(AGG_NESTED, EVENTS)
-      .subAggregation(terms);
+      .subAggregation(compositeActivityIdsAgg);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(processInstanceQuery)
@@ -165,15 +174,15 @@ public class DurationOutliersReader {
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    Aggregations flowNodeDurationStatAggregations;
-    try {
-      flowNodeDurationStatAggregations = esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
-    } catch (IOException e) {
-      log.warn("Couldn't retrieve outliers from Elasticsearch");
-      throw new OptimizeRuntimeException(e.getMessage(), e);
-    }
+    final List<ParsedComposite.ParsedBucket> deviationForEachFlowNode = new ArrayList<>();
+    CompositeAggregationScroller.create()
+      .setEsClient(esClient)
+      .setSearchRequest(searchRequest)
+      .setPathToAggregation(AGG_NESTED, COMPOSITE_FLOW_NODE_IDS_AGG)
+      .setCompositeBucketConsumer(deviationForEachFlowNode::add)
+      .scroll();
 
-    return createFlowNodeOutlierMap(processInstanceQuery, flowNodeDurationStatAggregations);
+    return createFlowNodeOutlierMap(deviationForEachFlowNode, processInstanceQuery);
   }
 
   public List<VariableTermDto> getSignificantOutlierVariableTerms(final FlowNodeOutlierParametersDto outlierParams) {
@@ -488,13 +497,8 @@ public class DurationOutliersReader {
     return outlierVariableTermOccurrences;
   }
 
-  private Map<String, FindingsDto> createFlowNodeOutlierMap(final BoolQueryBuilder processInstanceQuery,
-                                                            final Aggregations flowNodeDurationStatAggregations) {
-    final List<? extends Terms.Bucket> buckets =
-      ((Terms) ((Nested) flowNodeDurationStatAggregations.get(AGG_NESTED)).getAggregations()
-        .get(EVENTS))
-        .getBuckets();
-
+  private Map<String, FindingsDto> createFlowNodeOutlierMap(final List<ParsedComposite.ParsedBucket> deviationForEachFlowNode,
+                                                            final BoolQueryBuilder processInstanceQuery) {
     final Map<String, ExtendedStats> statsByFlowNodeId = new HashMap<>();
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(processInstanceQuery)
@@ -502,9 +506,9 @@ public class DurationOutliersReader {
       .size(0);
     final NestedAggregationBuilder nestedFlowNodeAggregation = AggregationBuilders.nested(EVENTS, EVENTS);
     searchSourceBuilder.aggregation(nestedFlowNodeAggregation);
-    buckets
+    deviationForEachFlowNode
       .forEach((bucket) -> {
-        final String flowNodeId = bucket.getKeyAsString();
+        final String flowNodeId = String.valueOf(bucket.getKey().get(FLOW_NODE_ID_AGG));
         final ExtendedStats statsAgg = bucket.getAggregations().get(AGG_STATS);
         statsByFlowNodeId.put(flowNodeId, statsAgg);
 

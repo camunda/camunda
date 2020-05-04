@@ -179,7 +179,7 @@ public class DecisionVariableReader {
   private AggregationBuilder getVariableValueAggregation(final DecisionVariableValueRequestDto requestDto,
                                                          final String variablePath) {
     final TermsAggregationBuilder collectAllVariableValues =
-      terms(VALUE_AGGREGATION) // TODO:
+      terms(VALUE_AGGREGATION)
         .field(getVariableValueFieldForType(variablePath, requestDto.getVariableType()))
         .size(MAX_RESPONSE_SIZE_LIMIT)
         .order(BucketOrder.key(true));

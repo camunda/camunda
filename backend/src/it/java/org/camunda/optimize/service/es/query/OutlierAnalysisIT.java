@@ -186,6 +186,38 @@ public class OutlierAnalysisIT extends AbstractIT {
   }
 
   @Test
+  public void outlierAnalysisWorksEvenIfBucketLimitIsBeingHit() throws SQLException {
+    // given
+    final int bucketLimit = 2;
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+
+    ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(
+        "testActivity1",
+        "testActivity2"
+      ));
+
+    // a couple of normally distributed instances
+    startPIsDistributedByDuration(
+      processDefinition, new Gaussian(10 / 2, 15), 5, "testActivity1"
+    );
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null)
+    );
+
+    // then
+    assertThat(outlierTest.containsKey("testActivity1"), is(true));
+    assertThat(outlierTest.containsKey("testActivity2"), is(true));
+  }
+
+  @Test
   public void allDurationsSameValueNoOutliers() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =

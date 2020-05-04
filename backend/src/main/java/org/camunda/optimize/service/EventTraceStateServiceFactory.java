@@ -15,6 +15,7 @@ import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountInd
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.es.writer.EventTraceStateWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
@@ -23,6 +24,7 @@ public class EventTraceStateServiceFactory {
   private final OptimizeElasticsearchClient esClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final ObjectMapper objectMapper;
+  private final ConfigurationService configurationService;
 
   public EventTraceStateService createEventTraceStateService(final String eventSuffix) {
     return new EventTraceStateService(
@@ -35,7 +37,7 @@ public class EventTraceStateServiceFactory {
 
   private EventSequenceCountReader createEventSequenceCountReader(final String indexKey) {
     elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventSequenceCountIndex(indexKey));
-    return new EventSequenceCountReader(indexKey, esClient, objectMapper);
+    return new EventSequenceCountReader(indexKey, esClient, objectMapper, configurationService);
   }
 
   private EventSequenceCountWriter createEventSequenceCountWriter(final String indexKey) {

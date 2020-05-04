@@ -139,12 +139,12 @@ public class ProcessVariableReader {
     );
     TermsAggregationBuilder collectVariableNameBuckets = terms(VARIABLE_NAME_BUCKET_AGGREGATION)
       .field(getNestedVariableNameField())
-      .size(10_000)
+      .size(MAX_RESPONSE_SIZE_LIMIT)
       .order(BucketOrder.key(true));
     //  a variable is unique by its name and type. Therefore we have to collect all possible types as well
     TermsAggregationBuilder collectPossibleVariableTypes = terms(VARIABLE_TYPE_AGGREGATION)
       .field(getNestedVariableTypeField())
-      .size(10_000);
+      .size(MAX_RESPONSE_SIZE_LIMIT);
 
     NestedAggregationBuilder checkoutVariables = nested(VARIABLES, VARIABLES);
 

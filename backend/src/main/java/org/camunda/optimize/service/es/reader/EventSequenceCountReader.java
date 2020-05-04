@@ -12,16 +12,20 @@ import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeValuesSourceBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.ParsedComposite;
+import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
 import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -40,7 +44,6 @@ import static org.camunda.optimize.service.es.schema.index.events.EventSequenceC
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -48,7 +51,6 @@ import static org.elasticsearch.index.query.QueryBuilders.multiMatchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @AllArgsConstructor
 @Slf4j
@@ -57,13 +59,15 @@ public class EventSequenceCountReader {
   private static final String GROUP_AGG = EventCountDto.Fields.group;
   private static final String SOURCE__AGG = EventCountDto.Fields.source;
   private static final String EVENT_NAME_AGG = EventCountDto.Fields.eventName;
+  private static final String COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION =
+    "compositeEventNameSourceAndGroupAggregation";
   private static final String COUNT_AGG = EventCountDto.Fields.count;
   private static final String KEYWORD_ANALYZER = "keyword";
-  private static final String DEFAULT_MISSING_KEY = "_MISSING_KEY_";
 
   private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final ConfigurationService configurationService;
 
   public List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
     final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents) {
@@ -100,15 +104,12 @@ public class EventSequenceCountReader {
     final SearchRequest searchRequest = new SearchRequest(getIndexName())
       .source(searchSourceBuilder);
     List<EventCountDto> eventCountDtos = new ArrayList<>();
-    try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      Terms groups = searchResponse.getAggregations().get(GROUP_AGG);
-      groups.getBuckets()
-        .stream()
-        .forEach(bucket -> eventCountDtos.addAll(extractEventCountsForGroupBucket(bucket)));
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Was not able to get event counts!", e);
-    }
+    CompositeAggregationScroller.create()
+      .setEsClient(esClient)
+      .setSearchRequest(searchRequest)
+      .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
+      .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
+      .scroll();
     return eventCountDtos;
   }
 
@@ -166,14 +167,15 @@ public class EventSequenceCountReader {
     return boolQuery;
   }
 
-  private BoolQueryBuilder getNullableFieldQuery(BoolQueryBuilder builder, final String field, final String value) {
+  private void getNullableFieldQuery(BoolQueryBuilder builder, final String field, final String value) {
     if (value != null) {
-      return builder.must(termQuery(field, value));
+      builder.must(termQuery(field, value));
+      return;
     }
-    return builder.mustNot(existsQuery(field));
+    builder.mustNot(existsQuery(field));
   }
 
-  private AbstractQueryBuilder buildCountRequestQuery(final String searchTerm) {
+  private AbstractQueryBuilder<?> buildCountRequestQuery(final String searchTerm) {
     if (searchTerm == null) {
       return matchAllQuery();
     }
@@ -194,41 +196,41 @@ public class EventSequenceCountReader {
     ).analyzer(KEYWORD_ANALYZER));
   }
 
-  private TermsAggregationBuilder createAggregationBuilder() {
+  private CompositeAggregationBuilder createAggregationBuilder() {
     final SumAggregationBuilder eventCountAggregation = sum(COUNT_AGG)
       .field(COUNT);
-    final TermsAggregationBuilder eventNameAggregation = terms(EVENT_NAME_AGG)
-      .field(SOURCE_EVENT + "." + EVENT_NAME)
-      .size(MAX_RESPONSE_SIZE_LIMIT)
+
+    List<CompositeValuesSourceBuilder<?>> eventAndSourceAndGroupTerms = new ArrayList<>();
+    eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(EVENT_NAME_AGG)
+                                      .field(SOURCE_EVENT + "." + EVENT_NAME));
+    eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(SOURCE__AGG)
+                                      .field(SOURCE_EVENT + "." + SOURCE)
+                                      .missingBucket(true));
+    eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(GROUP_AGG)
+                                      .field(SOURCE_EVENT + "." + GROUP)
+                                      .missingBucket(true));
+
+    return new CompositeAggregationBuilder(
+      COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION,
+      eventAndSourceAndGroupTerms
+    )
+      .size(configurationService.getEsAggregationBucketLimit())
       .subAggregation(eventCountAggregation);
-    final TermsAggregationBuilder sourceAggregation = terms(SOURCE__AGG)
-      .field(SOURCE_EVENT + "." + SOURCE)
-      .missing(DEFAULT_MISSING_KEY)
-      .size(MAX_RESPONSE_SIZE_LIMIT)
-      .subAggregation(eventNameAggregation);
-    return terms(GROUP_AGG)
-      .field(SOURCE_EVENT + "." + GROUP)
-      .missing(DEFAULT_MISSING_KEY)
-      .size(MAX_RESPONSE_SIZE_LIMIT)
-      .subAggregation(sourceAggregation);
   }
 
-  private List<EventCountDto> extractEventCountsForGroupBucket(final Terms.Bucket groupBucket) {
-    Terms sources = groupBucket.getAggregations().get(SOURCE__AGG);
-    List<EventCountDto> eventCountsForGroup = new ArrayList<>();
+  private EventCountDto extractEventCounts(final ParsedComposite.ParsedBucket bucket) {
+    final String eventName = (String) (bucket.getKey()).get(EVENT_NAME_AGG);
+    final String source = (String) (bucket.getKey().get(SOURCE__AGG));
+    final String group = (String) (bucket.getKey().get(GROUP_AGG));
 
-    for (Terms.Bucket sourceBucket : sources.getBuckets()) {
-      Terms eventNamesBuckets = sourceBucket.getAggregations().get(EVENT_NAME_AGG);
-      eventNamesBuckets.getBuckets()
-        .forEach(eventNameBucket -> eventCountsForGroup.add(
-          EventCountDto.builder()
-            .group(groupBucket.getKeyAsString().equals(DEFAULT_MISSING_KEY) ? null : groupBucket.getKeyAsString())
-            .source(sourceBucket.getKeyAsString().equals(DEFAULT_MISSING_KEY) ? null : sourceBucket.getKeyAsString())
-            .eventName(eventNameBucket.getKeyAsString())
-            .count((long) ((Sum) eventNameBucket.getAggregations().get(COUNT_AGG)).getValue())
-            .build()));
-    }
-    return eventCountsForGroup;
+    final long count = (long) ((Sum) bucket.getAggregations().get(COUNT_AGG)).getValue();
+
+    return EventCountDto.builder()
+      .group(group)
+      .source(source)
+      .eventName(eventName)
+      .count(count)
+      .build();
   }
 
   private String getIndexName() {

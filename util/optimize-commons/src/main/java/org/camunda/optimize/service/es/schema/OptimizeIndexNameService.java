@@ -56,7 +56,10 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   public static String getOptimizeIndexAliasForIndexNameAndPrefix(final String indexName, final String indexPrefix) {
-    String original = String.join("-", indexPrefix, indexName);
+    String original = indexName;
+    if (!indexName.startsWith(indexPrefix)) {
+      original = String.join("-", indexPrefix, indexName);
+    }
     return original.toLowerCase();
   }
 

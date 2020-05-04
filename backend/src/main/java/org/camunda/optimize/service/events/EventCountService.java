@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
@@ -45,12 +46,13 @@ public class EventCountService {
   private final CamundaEventService camundaEventService;
 
   public EventCountService(final CamundaEventService camundaEventService, final OptimizeElasticsearchClient esClient,
-                           final ObjectMapper objectMapper) {
+                           final ObjectMapper objectMapper, final ConfigurationService configurationService) {
     this.camundaEventService = camundaEventService;
     this.eventSequenceCountReader = new EventSequenceCountReader(
       EXTERNAL_EVENTS_INDEX_SUFFIX,
       esClient,
-      objectMapper
+      objectMapper,
+      configurationService
     );
   }
 
