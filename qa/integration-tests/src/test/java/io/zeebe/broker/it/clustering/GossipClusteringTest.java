@@ -21,7 +21,8 @@ import org.junit.rules.Timeout;
 public final class GossipClusteringTest {
 
   public final Timeout testTimeout = Timeout.seconds(120);
-  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
+  public final ClusteringRule clusteringRule =
+      new ClusteringRule(1, 3, 3, cfg -> cfg.getData().setUseMmap(false));
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
