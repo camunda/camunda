@@ -35,7 +35,7 @@ EXPOSE 26500 26501 26502
 RUN groupadd -r ${ZEEBE_GROUP} && \
     useradd -r -g ${ZEEBE_GROUP} ${ZEEBE_USER}
 
-COPY --from=builder --chown=${ZEEBE_USER}:${ZEEBE_GROUP} /tmp/zeebe ${ZEEBE_HOME}
+COPY --from=builder --chown=zeebe:zeebe /tmp/zeebe ${ZEEBE_HOME}
 
 WORKDIR ${ZEEBE_HOME}
 VOLUME ${ZEEBE_HOME}/data
