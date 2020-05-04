@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventCountSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -407,9 +408,20 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildEvaluateSavedReportRequest(String id) {
+  public OptimizeRequestExecutor buildEvaluateSavedReportGETRequest(String id) {
     this.path = "/report/" + id + "/evaluate";
     this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSavedReportRequest(String reportId) {
+    return buildEvaluateSavedReportRequest(reportId, null);
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSavedReportRequest(String reportId, ReportEvaluationFilterDto filters) {
+    this.path = "/report/" + reportId + "/evaluate";
+    this.method = POST;
+    Optional.ofNullable(filters).ifPresent(filterDto -> this.body = getBody(filterDto));
     return this;
   }
 

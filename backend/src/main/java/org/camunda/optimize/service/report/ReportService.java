@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -244,19 +245,26 @@ public class ReportService implements CollectionReferencingService {
     return reportReader.findReportsForCollectionOmitXml(collectionId);
   }
 
-  public AuthorizedReportEvaluationResult evaluateSavedReport(String userId, String reportId) {
+  public AuthorizedReportEvaluationResult evaluateSavedReport(final String userId, final String reportId) {
     // auth is handled in evaluator as it also handles single reports of a combined report
     return reportEvaluator.evaluateSavedReport(userId, reportId);
   }
 
-  public AuthorizedReportEvaluationResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
+  public AuthorizedReportEvaluationResult evaluateSavedReportWithAdditionalFilters(final String userId,
+                                                                                   final String reportId,
+                                                                                   final ReportEvaluationFilterDto filters) {
+    // auth is handled in evaluator as it also handles single reports of a combined report
+    return reportEvaluator.evaluateSavedReportWithAdditionalFilters(userId, reportId, filters);
+  }
+
+  public AuthorizedReportEvaluationResult evaluateReport(final String userId, final ReportDefinitionDto reportDefinition) {
     // auth is handled in evaluator as it also handles single reports of a combined report
     return reportEvaluator.evaluateReport(userId, reportDefinition);
   }
 
-  public void updateCombinedProcessReport(String userId,
-                                          String combinedReportId,
-                                          CombinedReportDefinitionDto updatedReport) {
+  public void updateCombinedProcessReport(final String userId,
+                                          final String combinedReportId,
+                                          final CombinedReportDefinitionDto updatedReport) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
 
     final ReportDefinitionDto currentReportVersion = getReportDefinition(combinedReportId, userId).getDefinitionDto();

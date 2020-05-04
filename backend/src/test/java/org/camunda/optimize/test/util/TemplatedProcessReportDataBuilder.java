@@ -44,7 +44,7 @@ public class TemplatedProcessReportDataBuilder {
   }
 
   public ProcessReportDataDto build() {
-    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    ProcessReportDataDto reportData;
     switch (reportDataType) {
       case RAW_DATA:
         reportData = new ProcessReportDataBuilderHelper()

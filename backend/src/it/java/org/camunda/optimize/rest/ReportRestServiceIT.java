@@ -10,7 +10,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -22,18 +21,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
-import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
-import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -67,13 +58,7 @@ import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.mockserver.model.HttpRequest.request;
 
-public class ReportRestServiceIT extends AbstractIT {
-
-  private static final String PROCESS_DEFINITION_KEY = "simple";
-  private static final String DECISION_DEFINITION_KEY = "invoiceClassification";
-  private static final String RANDOM_KEY = "someRandomKey";
-  private static final String RANDOM_VERSION = "someRandomVersion";
-  private static final String RANDOM_STRING = "something";
+public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
   public void createNewReportWithoutAuthentication() {
@@ -500,141 +485,6 @@ public class ReportRestServiceIT extends AbstractIT {
       .containsExactly(reportId);
   }
 
-  @Test
-  public void evaluateReportByIdWithoutAuthorization() {
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildEvaluateSavedReportRequest("123")
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @ParameterizedTest
-  @EnumSource(ReportType.class)
-  public void evaluateReportById(ReportType reportType) {
-    //given
-    final String id = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
-
-    // then
-    reportClient.evaluateRawReportById(id);
-  }
-
-  @Test
-  public void evaluateInvalidReportById() {
-    //given
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(RANDOM_KEY)
-      .setProcessDefinitionVersion(RANDOM_VERSION)
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-      .build();
-    reportData.setGroupBy(new NoneGroupByDto());
-    reportData.setVisualization(ProcessVisualization.NUMBER);
-    String id = addSingleProcessReportWithDefinition(reportData);
-
-    // then
-    ReportEvaluationException response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(id)
-      .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
-
-    // then
-    AbstractSharingIT.assertErrorFields(response);
-  }
-
-  @Test
-  public void evaluateUnsavedReportWithoutAuthorization() {
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildEvaluateCombinedUnsavedReportRequest(null)
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @ParameterizedTest
-  @EnumSource(ReportType.class)
-  public void evaluateUnsavedReport(ReportType reportType) {
-    //given
-    final SingleReportDataDto reportDataDto;
-    switch (reportType) {
-      case PROCESS:
-        reportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
-        break;
-      case DECISION:
-        reportDataDto = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
-        break;
-      default:
-        throw new IllegalStateException("Uncovered type: " + reportType);
-    }
-
-    // when
-    Response response = reportClient.evaluateReportAndReturnResponse(reportDataDto);
-
-    // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
-  }
-
-  @ParameterizedTest
-  @EnumSource(ReportType.class)
-  public void evaluateUnsavedReportWithoutVersionsAndTenantsDoesNotFail(ReportType reportType) {
-    //given
-    final SingleReportDataDto reportDataDto = createReportWithoutVersionsAndTenants(reportType);
-
-    // then
-    Response response = reportClient.evaluateReportAndReturnResponse(reportDataDto);
-
-    // then status is OK
-    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
-  }
-
-  @Test
-  public void evaluateUnsavedCombinedReportWithoutAuthorization() {
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildEvaluateCombinedUnsavedReportRequest(null)
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void evaluateCombinedUnsavedReport() {
-    // then
-    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
-
-    reportClient.evaluateUnsavedCombined(combinedReport);
-  }
-
-  @Test
-  public void nullReportsAreHandledAsEmptyList() {
-    // then
-    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
-    combinedReport.setReports(null);
-
-    reportClient.evaluateUnsavedCombined(combinedReport);
-  }
-
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void copySingleReport(ReportType reportType) {
@@ -851,46 +701,6 @@ public class ReportRestServiceIT extends AbstractIT {
       });
   }
 
-  @ParameterizedTest
-  @EnumSource(ReportType.class)
-  public void evaluateReportWithoutViewById(ReportType reportType) {
-    //given
-    String id;
-    switch (reportType) {
-      case PROCESS:
-        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-          .build();
-        processReportDataDto.setView(null);
-        id = addSingleProcessReportWithDefinition(processReportDataDto);
-        break;
-      case DECISION:
-        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
-        decisionReportDataDto.setView(null);
-        id = addSingleDecisionReportWithDefinition(decisionReportDataDto);
-        break;
-      default:
-        throw new IllegalStateException("Uncovered reportType: " + reportType);
-    }
-
-    // then
-    ReportEvaluationException response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(id)
-      .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
-
-    // then
-    AbstractSharingIT.assertErrorFields(response);
-  }
-
   private Response updateReportRequest(final String id, final ReportType reportType) {
     if (ReportType.PROCESS.equals(reportType)) {
       return reportClient.updateSingleProcessReport(id, constructProcessReportWithFakePD());
@@ -920,72 +730,6 @@ public class ReportRestServiceIT extends AbstractIT {
       default:
         throw new IllegalStateException("Unexpected value: " + reportType);
     }
-  }
-
-  private String addReportToOptimizeWithDefinitionAndRandomXml(final ReportType reportType) {
-    return addReportToOptimizeWithDefinitionAndRandomXml(reportType, null);
-  }
-
-  private String addReportToOptimizeWithDefinitionAndRandomXml(final ReportType reportType, final String collectionId) {
-    switch (reportType) {
-      case PROCESS:
-        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
-        processReportDataDto.getConfiguration().setXml(RANDOM_STRING);
-        return addSingleProcessReportWithDefinition(processReportDataDto, collectionId);
-      case DECISION:
-        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
-        decisionReportDataDto.getConfiguration().setXml(RANDOM_STRING);
-        return addSingleDecisionReportWithDefinition(decisionReportDataDto, collectionId);
-    }
-    return null;
-  }
-
-  private String addSingleDecisionReportWithDefinition(final DecisionReportDataDto decisionReportDataDto) {
-    return addSingleDecisionReportWithDefinition(decisionReportDataDto, null);
-  }
-
-  private String addSingleDecisionReportWithDefinition(final DecisionReportDataDto decisionReportDataDto,
-                                                       final String collectionId) {
-    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-    singleDecisionReportDefinitionDto.setData(decisionReportDataDto);
-    singleDecisionReportDefinitionDto.setId(RANDOM_STRING);
-    singleDecisionReportDefinitionDto.setLastModifier(RANDOM_STRING);
-    singleDecisionReportDefinitionDto.setName(RANDOM_STRING);
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    singleDecisionReportDefinitionDto.setCreated(someDate);
-    singleDecisionReportDefinitionDto.setLastModified(someDate);
-    singleDecisionReportDefinitionDto.setOwner(RANDOM_STRING);
-    singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-    return reportClient.createSingleDecisionReport(singleDecisionReportDefinitionDto);
-  }
-
-  private String addSingleProcessReportWithDefinition(final ProcessReportDataDto processReportDataDto) {
-    return addSingleProcessReportWithDefinition(processReportDataDto, null);
-  }
-
-  private String addSingleProcessReportWithDefinition(final ProcessReportDataDto processReportDataDto,
-                                                      final String collectionId) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.setData(processReportDataDto);
-    singleProcessReportDefinitionDto.setId(RANDOM_STRING);
-    singleProcessReportDefinitionDto.setLastModifier(RANDOM_STRING);
-    singleProcessReportDefinitionDto.setName(RANDOM_STRING);
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    singleProcessReportDefinitionDto.setCreated(someDate);
-    singleProcessReportDefinitionDto.setLastModified(someDate);
-    singleProcessReportDefinitionDto.setOwner(RANDOM_STRING);
-    singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   @SneakyThrows
@@ -1044,25 +788,6 @@ public class ReportRestServiceIT extends AbstractIT {
     data.getConfiguration().setXml("FAKE");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
-  }
-
-  private SingleReportDataDto createReportWithoutVersionsAndTenants(final ReportType reportType) {
-    switch (reportType) {
-      case PROCESS:
-        return TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
-      case DECISION:
-        return DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
-      default:
-        throw new IllegalStateException("Uncovered type: " + reportType);
-    }
   }
 
   @SneakyThrows

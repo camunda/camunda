@@ -8,9 +8,11 @@ package org.camunda.optimize.service.es.report;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
@@ -56,6 +58,18 @@ public abstract class ReportEvaluationHandler {
     return evaluateReport(userId, reportDefinition, customRecordLimit);
   }
 
+  public AuthorizedReportEvaluationResult evaluateSavedReportWithAdditionalFilters(final String userId,
+                                                                                   final String reportId,
+                                                                                   final ReportEvaluationFilterDto filterDto) {
+    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+    if (filterDto != null && !filterDto.getFilter().isEmpty() && (reportDefinition.getData() instanceof ProcessReportDataDto)) {
+      ((ProcessReportDataDto) reportDefinition.getData()).getFilter().addAll(filterDto.getFilter());
+    } else {
+      logger.debug("Cannot add additional filters to report [{}] as it is not a single process report", reportId);
+    }
+    return evaluateReport(userId, reportDefinition, null);
+  }
+
   public AuthorizedReportEvaluationResult evaluateReport(final String userId,
                                                          final ReportDefinitionDto reportDefinition) {
     return evaluateReport(userId, reportDefinition, null);
@@ -80,9 +94,8 @@ public abstract class ReportEvaluationHandler {
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
   }
 
-  private CombinedProcessReportResult evaluateCombinedReport(
-    final String userId,
-    final AuthorizedReportDefinitionDto authorizedReportDefinitionDto) {
+  private CombinedProcessReportResult evaluateCombinedReport(final String userId,
+                                                             final AuthorizedReportDefinitionDto authorizedReportDefinitionDto) {
 
     final CombinedReportDefinitionDto combinedReportDefinitionDto =
       (CombinedReportDefinitionDto) authorizedReportDefinitionDto.getDefinitionDto();
