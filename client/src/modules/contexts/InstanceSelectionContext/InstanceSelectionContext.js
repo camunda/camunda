@@ -4,8 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {createContext, useState, useEffect} from 'react';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useRef,
+} from 'react';
 import PropTypes from 'prop-types';
+import {DataContext} from 'modules/DataManager';
+import {LOADING_STATE} from 'modules/constants';
 
 const InstanceSelectionContext = createContext({});
 const {Provider} = InstanceSelectionContext;
@@ -16,10 +24,35 @@ const MODES = {
   ALL: 'ALL',
 };
 
-export const useInstanceSelection = (totalCount) => {
+export const useInstanceSelection = () => {
   const [ids, setIds] = useState([]);
   const [isAllChecked, setAllChecked] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
   const [mode, setMode] = useState(MODES.INCLUDE);
+  const {dataManager} = useContext(DataContext);
+
+  const subscriptions = {
+    REFRESH_AFTER_OPERATION: ({state, response}) => {
+      if (state === LOADING_STATE.LOADED) {
+        const {
+          LOAD_LIST_INSTANCES: {totalCount},
+        } = response;
+
+        setTotalCount(totalCount);
+      }
+    },
+    LOAD_LIST_INSTANCES: ({response, state}) => {
+      if (state === LOADING_STATE.LOADED) {
+        setTotalCount(response.totalCount);
+      }
+    },
+  };
+  const {current: subscriptionList} = useRef(subscriptions);
+
+  useEffect(() => {
+    dataManager.subscribe(subscriptionList);
+    return () => dataManager.unsubscribe(subscriptionList);
+  }, [dataManager, subscriptionList]);
 
   useEffect(() => {
     if (
@@ -104,10 +137,8 @@ export const useInstanceSelection = (totalCount) => {
   };
 };
 
-const InstanceSelectionProvider = ({children, totalCount}) => {
-  return (
-    <Provider value={useInstanceSelection(totalCount)}>{children}</Provider>
-  );
+const InstanceSelectionProvider = ({children}) => {
+  return <Provider value={useInstanceSelection()}>{children}</Provider>;
 };
 
 InstanceSelectionProvider.propTypes = {
@@ -115,7 +146,6 @@ InstanceSelectionProvider.propTypes = {
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node,
   ]),
-  totalCount: PropTypes.number,
 };
 
 export default InstanceSelectionContext;

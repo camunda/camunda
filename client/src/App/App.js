@@ -19,6 +19,7 @@ import Instance from './Instance';
 import GlobalStyles from './GlobalStyles';
 import {DataManagerProvider} from 'modules/DataManager';
 import {CountStoreProvider} from 'modules/contexts/CountContext';
+import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
 
 export default function App(props) {
   return (
@@ -31,14 +32,16 @@ export default function App(props) {
               <Route path="/login" component={Login} />
               <Authentication>
                 <CountStoreProvider>
-                  <Header />
-                  <Route exact path="/" component={Dashboard} />
-                  <Route
-                    exact
-                    path="/instances"
-                    component={InstancesContainer}
-                  />
-                  <Route exact path="/instances/:id" component={Instance} />
+                  <InstanceSelectionProvider>
+                    <Header />
+                    <Route exact path="/" component={Dashboard} />
+                    <Route
+                      exact
+                      path="/instances"
+                      component={InstancesContainer}
+                    />
+                    <Route exact path="/instances/:id" component={Instance} />
+                  </InstanceSelectionProvider>
                 </CountStoreProvider>
               </Authentication>
             </Switch>

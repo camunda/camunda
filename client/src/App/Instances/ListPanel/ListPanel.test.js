@@ -16,6 +16,7 @@ import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext
 
 import {HashRouter as Router} from 'react-router-dom';
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
+import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
 
 import {
   emptyList,
@@ -143,12 +144,14 @@ describe('ListPanel', () => {
           <ThemeProvider>
             <DataManagerProvider>
               <CollapsablePanelProvider>
-                <InstancesPollProvider>
-                  <ListPanel.WrappedComponent
-                    {...mockPropsWithNoOperation}
-                    {...{dataManager}}
-                  />
-                </InstancesPollProvider>
+                <InstanceSelectionProvider>
+                  <InstancesPollProvider>
+                    <ListPanel.WrappedComponent
+                      {...mockPropsWithNoOperation}
+                      {...{dataManager}}
+                    />
+                  </InstancesPollProvider>
+                </InstanceSelectionProvider>
               </CollapsablePanelProvider>
             </DataManagerProvider>
           </ThemeProvider>
@@ -198,12 +201,14 @@ describe('ListPanel', () => {
           <ThemeProvider>
             <DataManagerProvider>
               <CollapsablePanelProvider>
-                <InstancesPollProvider>
-                  <ListPanel.WrappedComponent
-                    {...mockPropsWithNoOperation}
-                    {...{dataManager}}
-                  />
-                </InstancesPollProvider>
+                <InstanceSelectionProvider>
+                  <InstancesPollProvider>
+                    <ListPanel.WrappedComponent
+                      {...mockPropsWithNoOperation}
+                      {...{dataManager}}
+                    />
+                  </InstancesPollProvider>
+                </InstanceSelectionProvider>
               </CollapsablePanelProvider>
             </DataManagerProvider>
           </ThemeProvider>
@@ -246,12 +251,14 @@ describe('ListPanel', () => {
           <DataManagerProvider>
             <ThemeProvider>
               <CollapsablePanelProvider>
-                <InstancesPollProvider>
-                  <ListPanel.WrappedComponent
-                    {...mockPropsWithPoll}
-                    {...{dataManager}}
-                  />
-                </InstancesPollProvider>
+                <InstanceSelectionProvider>
+                  <InstancesPollProvider>
+                    <ListPanel.WrappedComponent
+                      {...mockPropsWithPoll}
+                      {...{dataManager}}
+                    />
+                  </InstancesPollProvider>
+                </InstanceSelectionProvider>
               </CollapsablePanelProvider>
             </ThemeProvider>
           </DataManagerProvider>

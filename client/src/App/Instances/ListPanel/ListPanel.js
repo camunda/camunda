@@ -12,7 +12,6 @@ import {getInstancesWithActiveOperations} from 'modules/utils/instance';
 
 import {withPoll} from 'modules/contexts/InstancesPollContext';
 import {withData} from 'modules/DataManager';
-import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
 
 import SplitPane from 'modules/components/SplitPane';
 
@@ -163,41 +162,38 @@ class ListPanel extends React.Component {
     const isExpanded = this.props.expandState !== EXPAND_STATE.COLLAPSED;
 
     return (
-      <InstanceSelectionProvider totalCount={filterCount}>
-        <SplitPane.Pane {...paneProps} hasShiftableControls>
-          <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
-
-          <Styled.PaneBody>
-            <List
-              data={this.props.instances}
-              filterCount={filterCount}
-              filter={filter}
-              sorting={this.props.sorting}
-              onSort={this.props.onSort}
-              expandState={this.props.expandState}
-              onEntriesPerPageChange={(entriesPerPage) =>
-                this.setState({entriesPerPage})
-              }
-              rowsToDisplay={this.state.entriesPerPage}
-              isDataLoaded={this.props.instancesLoaded}
-              onOperationButtonClick={this.handleOperationButtonClick}
-              Overlay={this.renderSpinner()}
-            >
-              <List.Header />
-              {this.renderContent(isListEmpty)}
-            </List>
-          </Styled.PaneBody>
-          <SplitPane.Pane.Footer>
-            <ListFooter
-              filterCount={filterCount}
-              perPage={this.state.entriesPerPage}
-              firstElement={this.props.firstElement}
-              onFirstElementChange={this.props.onFirstElementChange}
-              hasContent={isExpanded && !isListEmpty}
-            />
-          </SplitPane.Pane.Footer>
-        </SplitPane.Pane>
-      </InstanceSelectionProvider>
+      <SplitPane.Pane {...paneProps} hasShiftableControls>
+        <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
+        <Styled.PaneBody>
+          <List
+            data={this.props.instances}
+            filterCount={filterCount}
+            filter={filter}
+            sorting={this.props.sorting}
+            onSort={this.props.onSort}
+            expandState={this.props.expandState}
+            onEntriesPerPageChange={(entriesPerPage) =>
+              this.setState({entriesPerPage})
+            }
+            rowsToDisplay={this.state.entriesPerPage}
+            isDataLoaded={this.props.instancesLoaded}
+            onOperationButtonClick={this.handleOperationButtonClick}
+            Overlay={this.renderSpinner()}
+          >
+            <List.Header />
+            {this.renderContent(isListEmpty)}
+          </List>
+        </Styled.PaneBody>
+        <SplitPane.Pane.Footer>
+          <ListFooter
+            filterCount={filterCount}
+            perPage={this.state.entriesPerPage}
+            firstElement={this.props.firstElement}
+            onFirstElementChange={this.props.onFirstElementChange}
+            hasContent={isExpanded && !isListEmpty}
+          />
+        </SplitPane.Pane.Footer>
+      </SplitPane.Pane>
     );
   }
 }

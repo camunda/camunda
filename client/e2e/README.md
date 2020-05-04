@@ -25,7 +25,7 @@ To start dev server and connect it to E2E related backend:
 
 ```sh
 cd client
-yarn start-e2e
+yarn start:e2e
 ```
 
 ## Run Tests

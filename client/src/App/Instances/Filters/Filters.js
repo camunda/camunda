@@ -306,6 +306,7 @@ class Filters extends React.Component {
           <Styled.Field>
             <Styled.ValidationTextInput
               value={errorMessage}
+              data-test="error-message"
               name="errorMessage"
               placeholder="Error Message"
               onChange={this.handleControlledInputChange}

@@ -35,6 +35,7 @@ import {formatGroupedWorkflows} from 'modules/utils/instance';
 import Instances from './Instances';
 
 import FilterContext from 'modules/contexts/FilterContext';
+import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
 
 import {
   decodeFields,
@@ -184,6 +185,8 @@ class InstancesContainer extends Component {
     this.props.dataManager.unsubscribe(this.subscriptions);
   }
 
+  static contextType = InstanceSelectionContext;
+
   handleUrlUpdate() {
     const {groupedWorkflows, diagramModel} = this.state;
     const filterFromURL = this.sanitizeFilter(
@@ -195,6 +198,8 @@ class InstancesContainer extends Component {
   }
 
   handleFilterUpdate(prevState) {
+    this.context.reset();
+
     const {filter, groupedWorkflows, diagramModel} = this.state;
 
     const filterFromURL = this.sanitizeFilter(

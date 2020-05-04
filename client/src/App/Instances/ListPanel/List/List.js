@@ -136,7 +136,7 @@ const Body = function (props) {
   );
 
   return (
-    <TBody {...props}>
+    <TBody {...props} data-test="instances-list">
       {data.slice(0, rowsToDisplay).map((instance, idx) => {
         const isSelected = isInstanceChecked(instance.id);
         return (
@@ -145,6 +145,7 @@ const Body = function (props) {
               <Styled.Cell>
                 <Styled.SelectionStatusIndicator selected={isSelected} />
                 <Checkbox
+                  data-test="instance-checkbox"
                   type="selection"
                   isChecked={isSelected}
                   onChange={handleCheckInstance(instance.id)}

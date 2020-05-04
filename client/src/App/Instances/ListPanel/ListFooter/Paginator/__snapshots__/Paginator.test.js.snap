@@ -84,6 +84,7 @@ exports[`should not show ellipsis when first page is just barely out of range 1`
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Next page"
+    data-test="next-page"
     disabled={false}
     onClick={[Function]}
     title="Next page"
@@ -190,6 +191,7 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Next page"
+    data-test="next-page"
     disabled={false}
     onClick={[Function]}
     title="Next page"
@@ -286,6 +288,7 @@ exports[`should show the first five pages when on first page 1`] = `
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Next page"
+    data-test="next-page"
     disabled={false}
     onClick={[Function]}
     title="Next page"
@@ -382,6 +385,7 @@ exports[`should show the last five pages when on last page 1`] = `
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Next page"
+    data-test="next-page"
     disabled={false}
     onClick={[Function]}
     title="Next page"

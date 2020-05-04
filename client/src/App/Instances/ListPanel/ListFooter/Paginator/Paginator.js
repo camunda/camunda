@@ -93,6 +93,7 @@ export default class Paginator extends React.Component {
           </React.Fragment>
         )}
         <Styled.Page
+          data-test="next-page"
           title="Next page"
           aria-label="Next page"
           disabled={currentPage === maxPage}

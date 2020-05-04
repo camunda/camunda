@@ -53,7 +53,10 @@ const CreateOperationDropdown = ({label, selectedCount}) => {
     )}.`;
 
   return (
-    <Styled.DropdownContainer dropdownWidth={dropdownWidth}>
+    <Styled.DropdownContainer
+      dropdownWidth={dropdownWidth}
+      data-test="create-operation-dropdown"
+    >
       <Dropdown
         buttonStyles={Styled.dropdownButtonStyles}
         placement={DROPDOWN_PLACEMENT.TOP}
