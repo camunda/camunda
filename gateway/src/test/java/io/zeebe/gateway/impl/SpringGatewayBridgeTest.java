@@ -10,9 +10,11 @@ package io.zeebe.gateway.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.Gateway.Status;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class SpringGatewayBridgeTest {
 
@@ -43,5 +45,29 @@ public class SpringGatewayBridgeTest {
 
     // then
     assertThat(actual).isSameAs(Status.RUNNING);
+  }
+
+  @Test
+  public void shouldReturnNoClusterStateByDefault() {
+    // when
+    final var actual = sutBrigde.getClusterState();
+
+    // then
+    assertThat(actual).describedAs("Cluster status when no supplier is set").isNull();
+  }
+
+  @Test
+  public void shouldUseClusterStateSupplierWhenSet() {
+    // given
+    final BrokerClusterState mockClusterState = Mockito.mock(BrokerClusterState.class);
+
+    final Supplier<BrokerClusterState> testSupplier = () -> mockClusterState;
+    sutBrigde.registerClusterStateSupplier(testSupplier);
+
+    // when
+    final var actual = sutBrigde.getClusterState();
+
+    // then
+    assertThat(actual).isSameAs(mockClusterState);
   }
 }

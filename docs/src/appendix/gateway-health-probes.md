@@ -4,6 +4,7 @@ The health probes for a standalone gateway are available at `localhost:8080/actu
 
 The following health indicators are enabled by default
 * Gateway Started - checks whether the Gateway is running (i.e. not currently starting and not yet shut down)
+* Gateway Cluster Awareness - checks whether the Gateway is aware of other nodes in the cluster
 * Disk Space - checks that the free disk space is greater than 10 MB
 * Memory - checks that at least 10% of max memory are still available
 
@@ -20,6 +21,10 @@ Global settings for all health inidcators:
 Settings for gateway started health indicator:
 * `management.health.gatewayStarted.enabled=true` - enables (default) or disables this health indicator
 
+### Gateway Cluster Awareness ###
+
+Settings for gateway cluster awareness health indicator:
+* `management.health.gatewayClusterAwareness.enabled=true` - enables (default) or disables this health indicator
 
 ### Disk Space
 This is arguably the least critical health indicator given that the standalone gateway does not write to disk. The only exception may be the writing of log files, which depend on the log configuration.

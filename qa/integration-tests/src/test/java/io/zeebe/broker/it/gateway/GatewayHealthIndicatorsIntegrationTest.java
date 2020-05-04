@@ -9,12 +9,17 @@ package io.zeebe.broker.it.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Offset.offset;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.it.gateway.GatewayHealthIndicatorsIntegrationTest.Config;
 import io.zeebe.gateway.Gateway.Status;
 import io.zeebe.gateway.impl.SpringGatewayBridge;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.zeebe.gateway.impl.probes.health.GatewayClusterAwarenessHealthIndicator;
 import io.zeebe.gateway.impl.probes.health.GatewayStartedHealthIndicator;
 import io.zeebe.gateway.impl.probes.health.MemoryHealthIndicator;
+import java.util.List;
 import java.util.function.Supplier;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,6 +37,8 @@ public class GatewayHealthIndicatorsIntegrationTest {
   @Autowired MemoryHealthIndicator memoryHealthIndicator;
 
   @Autowired GatewayStartedHealthIndicator gatewayStartedHealthIndicator;
+
+  @Autowired GatewayClusterAwarenessHealthIndicator gatewayClusterAwarenessHealthIndicator;
 
   @Autowired SpringGatewayBridge springGatewayBridge;
 
@@ -61,6 +68,33 @@ public class GatewayHealthIndicatorsIntegrationTest {
         .isSameAs(org.springframework.boot.actuate.health.Status.UNKNOWN);
     assertThat(actualHealthAfterRegisteringStatusSupplier.getStatus())
         .isSameAs(org.springframework.boot.actuate.health.Status.OUT_OF_SERVICE);
+  }
+
+  @Test
+  public void
+      shouldCreateGatewayClusterAwarenessHealthIndicatorThatIsBackedBySpringGatewayBridge() {
+    // precondition
+    assertThat(gatewayStartedHealthIndicator).isNotNull();
+    assertThat(springGatewayBridge).isNotNull();
+
+    // given
+    final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
+    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+
+    final Supplier<BrokerClusterState> stateSupplier = () -> mockClusterState;
+
+    // when
+    final Health actualHealthBeforeRegisteringStatusSupplier =
+        gatewayClusterAwarenessHealthIndicator.health();
+    springGatewayBridge.registerClusterStateSupplier(stateSupplier);
+    final Health actualHealthAfterRegisteringStatusSupplier =
+        gatewayClusterAwarenessHealthIndicator.health();
+
+    // then
+    assertThat(actualHealthBeforeRegisteringStatusSupplier.getStatus())
+        .isSameAs(org.springframework.boot.actuate.health.Status.UNKNOWN);
+    assertThat(actualHealthAfterRegisteringStatusSupplier.getStatus())
+        .isSameAs(org.springframework.boot.actuate.health.Status.UP);
   }
 
   @Configuration

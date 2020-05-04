@@ -48,7 +48,11 @@ public class StandaloneGateway {
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
         cfg -> new BrokerClientImpl(cfg, atomixCluster, actorScheduler, false);
     gateway = new Gateway(gatewayCfg, brokerClientFactory, actorScheduler);
+
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
+    springGatewayBridge.registerClusterStateSupplier(
+        () -> gateway.getBrokerClient().getTopologyManager().getTopology());
+
     this.gatewayCfg = gatewayCfg;
   }
 

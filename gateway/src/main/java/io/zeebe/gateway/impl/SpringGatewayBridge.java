@@ -8,6 +8,7 @@
 package io.zeebe.gateway.impl;
 
 import io.zeebe.gateway.Gateway.Status;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import java.util.function.Supplier;
 import org.springframework.stereotype.Component;
 
@@ -19,14 +20,27 @@ import org.springframework.stereotype.Component;
 public class SpringGatewayBridge {
 
   private Supplier<Status> gatewayStatusSupplier;
+  private Supplier<BrokerClusterState> clusterStateSupplier;
 
   public void registerGatewayStatusSupplier(Supplier<Status> gatewayStatusSupplier) {
     this.gatewayStatusSupplier = gatewayStatusSupplier;
   }
 
+  public void registerClusterStateSupplier(Supplier<BrokerClusterState> clusterStateSupplier) {
+    this.clusterStateSupplier = clusterStateSupplier;
+  }
+
   public Status getGatewayStatus() {
     if (gatewayStatusSupplier != null) {
       return gatewayStatusSupplier.get();
+    } else {
+      return null;
+    }
+  }
+
+  public BrokerClusterState getClusterState() {
+    if (clusterStateSupplier != null) {
+      return clusterStateSupplier.get();
     } else {
       return null;
     }
