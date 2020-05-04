@@ -40,11 +40,15 @@ import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.snapshot.PendingSnapshot;
 import io.atomix.raft.storage.snapshot.Snapshot;
+import io.atomix.raft.storage.snapshot.SnapshotListener;
+import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.Indexed;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.time.WallClockTimestamp;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
 
 /** Passive state. */
 public class PassiveRole extends InactiveRole {
@@ -62,7 +66,10 @@ public class PassiveRole extends InactiveRole {
 
   @Override
   public CompletableFuture<RaftRole> start() {
-    return super.start().thenRun(this::truncateUncommittedEntries).thenApply(v -> this);
+    return super.start()
+        .thenRun(this::truncateUncommittedEntries)
+        .thenRun(this::addSnapshotListener)
+        .thenApply(v -> this);
   }
 
   @Override
@@ -76,6 +83,24 @@ public class PassiveRole extends InactiveRole {
     if (role() == RaftServer.Role.PASSIVE) {
       final RaftLogWriter writer = raft.getLogWriter();
       writer.truncate(raft.getCommitIndex());
+    }
+  }
+
+  /**
+   * Should be overwritten by sub classes to introduce different snapshot listener.
+   *
+   * <p>If null no snapshot listener will be installed
+   *
+   * @return the snapshot listener which will be installed
+   */
+  protected SnapshotListener createSnapshotListener() {
+    return new ResetWriterSnapshotListener(log, raft.getThreadContext(), raft.getLogWriter());
+  }
+
+  private void addSnapshotListener() {
+    final var snapshotListener = createSnapshotListener();
+    if (snapshotListener != null) {
+      raft.getSnapshotStore().addListener(snapshotListener);
     }
   }
 
@@ -202,7 +227,6 @@ public class PassiveRole extends InactiveRole {
     // If the snapshot is complete, store the snapshot and reset state, otherwise update the next
     // snapshot offset.
     if (request.complete()) {
-      final long index = pendingSnapshot.index();
       final long elapsed = System.currentTimeMillis() - pendingSnapshotStartTimestamp;
 
       log.debug("Committing snapshot {}", pendingSnapshot);
@@ -224,11 +248,6 @@ public class PassiveRole extends InactiveRole {
       pendingSnapshotStartTimestamp = 0L;
       snapshotReplicationMetrics.decrementCount();
       snapshotReplicationMetrics.observeDuration(elapsed);
-
-      // Throw away existing log if it is not up-to-date with the snapshot index.
-      if (raft.getLogWriter().getLastIndex() < index) {
-        raft.getLogWriter().reset(index + 1);
-      }
     } else {
       pendingSnapshot.setNextExpected(request.nextChunkId());
     }
@@ -709,5 +728,46 @@ public class PassiveRole extends InactiveRole {
                 .withLastSnapshotIndex(raft.getSnapshotStore().getCurrentSnapshotIndex())
                 .build()));
     return succeeded;
+  }
+
+  private static final class ResetWriterSnapshotListener implements SnapshotListener {
+    private final ThreadContext threadContext;
+    private final RaftLogWriter logWriter;
+    private final Logger log;
+
+    public ResetWriterSnapshotListener(
+        final Logger log, final ThreadContext threadContext, final RaftLogWriter logWriter) {
+      this.log = log;
+      this.threadContext = threadContext;
+      this.logWriter = logWriter;
+    }
+
+    @Override
+    public void onNewSnapshot(final Snapshot snapshot, final SnapshotStore store) {
+      threadContext.execute(
+          () -> {
+            // this is called after the snapshot is commited
+            // on install requests and on Zeebe snapshot replication
+
+            final var index = snapshot.index();
+            // It might happen that the last index is far behind our current snapshot index.
+            // E. g. on slower followers, we need to throw away the existing log,
+            // otherwise we might end with an inconsistent log (gaps between last index and
+            // snapshot index)
+            final var lastIndex = logWriter.getLastIndex();
+            if (lastIndex < index) {
+              log.info(
+                  "Delete existing log (lastIndex '{}') and replace with received snapshot (index '{}')",
+                  lastIndex,
+                  index);
+              logWriter.reset(index + 1);
+            }
+          });
+    }
+
+    @Override
+    public void onSnapshotDeletion(final Snapshot snapshot, final SnapshotStore store) {
+      // do nothing
+    }
   }
 }

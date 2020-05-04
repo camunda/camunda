@@ -45,6 +45,7 @@ import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.snapshot.SnapshotListener;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
@@ -86,6 +87,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     commitInitialEntriesFuture = commitInitialEntries();
 
     return super.start().thenRun(this::startTimers).thenApply(v -> this);
+  }
+
+  @Override
+  protected SnapshotListener createSnapshotListener() {
+    return null;
   }
 
   @Override
