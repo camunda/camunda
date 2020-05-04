@@ -26,6 +26,7 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PART
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_STEP_TIMEOUT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_USE_MMAP;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_API_PORT;
@@ -495,6 +496,15 @@ public final class ConfigurationTest {
     assertAdvertisedAddress("empty", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
   }
 
+  @Test
+  public void shouldUseMmap() {
+    // given
+    environment.put(ENV_USE_MMAP, "true");
+
+    // then
+    assertUseMmap(true);
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
@@ -555,6 +565,17 @@ public final class ConfigurationTest {
   private void assertDefaultHost(final String host) {
     assertHost("default", host);
     assertHost("empty", host);
+  }
+
+  private void assertUseMmap(final boolean useMmap) {
+    assertUseMmap("default", useMmap);
+    assertUseMmap("empty", useMmap);
+  }
+
+  private void assertUseMmap(final String configFileName, final boolean useMmap) {
+    final var config = readConfig(configFileName);
+    final var data = config.getData();
+    assertThat(data.useMmap()).isEqualTo(useMmap);
   }
 
   private void assertHost(final String configFileName, final String host) {
