@@ -11,7 +11,7 @@ import * as Styled from './styled.js';
 
 // export default React.memo(function Skeleton(props) {
 export const BrandNavElement = memo((props) => (
-  <Styled.ListItem data-test={props.dataTest}>
+  <Styled.ListItem>
     <Styled.Brand to={props.to} title={props.title} data-test={props.dataTest}>
       <Styled.LogoIcon />
       <Styled.BrandLabel>{props.label}</Styled.BrandLabel>
@@ -27,14 +27,19 @@ BrandNavElement.propTypes = {
 };
 
 export const LinkElement = memo((props) => (
-  <Styled.ListItem data-test={props.dataTest}>
+  <Styled.ListItem>
     <Styled.DashboardLink
       to={props.to}
       isActive={props.isActive}
       title={props.title}
       data-test={props.dataTest}
     >
-      <span data-test="dashboard-label">{props.label}</span>
+      <Styled.DashboardLabel
+        isActive={props.isActive}
+        data-test="dashboard-label"
+      >
+        {props.label}
+      </Styled.DashboardLabel>
     </Styled.DashboardLink>
   </Styled.ListItem>
 ));
@@ -48,14 +53,16 @@ LinkElement.propTypes = {
 };
 
 export const NavElement = memo((props) => (
-  <Styled.ListItem data-test={props.dataTest} className={props.className}>
+  <Styled.ListItem className={props.className}>
     <Styled.ListLink
       isActive={props.isActive}
       title={props.title}
       data-test={props.dataTest}
       {...props.linkProps}
     >
-      <Styled.Label>{props.label}</Styled.Label>
+      <Styled.NavigationLabel isActive={props.isActive}>
+        {props.label}
+      </Styled.NavigationLabel>
       <Badge isActive={props.isActive} type={props.type}>
         {props.count}
       </Badge>

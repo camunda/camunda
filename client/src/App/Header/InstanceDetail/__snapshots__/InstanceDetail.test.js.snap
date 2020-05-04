@@ -3,9 +3,11 @@
 exports[`InstanceDetail should render state icon and instance id 1`] = `
 <Fragment>
   <Styled(Themed(StateIcon))
+    data-test="instance-detail"
     state="ACTIVE"
   />
-   Instance 
+   
+  Instance 
   foo
 </Fragment>
 `;

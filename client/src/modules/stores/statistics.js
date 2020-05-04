@@ -25,6 +25,10 @@ class Statistics {
   setCount = ({running, active, withIncidents}) => {
     this.state = {running, active, withIncidents, isLoaded: true};
   };
+
+  reset = () => {
+    this.state = {...DEFAULT_STATE};
+  };
 }
 
 decorate(Statistics, {

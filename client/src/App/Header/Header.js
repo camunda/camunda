@@ -11,6 +11,7 @@ import {withData} from 'modules/DataManager';
 import {withCountStore} from 'modules/contexts/CountContext';
 import {withRouter} from 'react-router';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
+import {statistics} from 'modules/stores/statistics';
 
 import {observer} from 'mobx-react';
 
@@ -37,11 +38,7 @@ const Header = observer(
     static propTypes = {
       dataManager: PropTypes.object,
       countStore: PropTypes.shape({
-        isLoaded: PropTypes.bool,
-        running: PropTypes.number,
-        active: PropTypes.number,
         filterCount: PropTypes.number,
-        withIncidents: PropTypes.number,
       }),
       location: PropTypes.object,
       isFiltersCollapsed: PropTypes.bool.isRequired,
@@ -80,32 +77,18 @@ const Header = observer(
         user: {},
         instance: null,
         filter: null,
-        isLoaded: false,
       };
     }
 
     componentDidMount = () => {
-      const {
-        countStore: {isLoaded},
-        dataManager,
-      } = this.props;
+      const {dataManager} = this.props;
 
       dataManager.subscribe(this.subscriptions);
-
-      if (isLoaded) {
-        this.setState({isLoaded});
-      }
+      statistics.fetchStatistics();
     };
 
-    componentDidUpdate = (prevProps, prevState) => {
-      const {
-        location,
-        countStore: {isLoaded},
-      } = this.props;
-
-      if (prevState.isLoaded !== isLoaded) {
-        this.setState({isLoaded});
-      }
+    componentDidUpdate = (prevProps) => {
+      const {location} = this.props;
 
       // Instances View: Set filter count from URL
       if (
@@ -121,6 +104,7 @@ const Header = observer(
 
     componentWillUnmount() {
       this.props.dataManager.unsubscribe(this.subscriptions);
+      statistics.reset();
     }
 
     currentView() {
@@ -203,9 +187,9 @@ const Header = observer(
     }
 
     selectCount(type) {
-      const {running, withIncidents, filterCount} = this.props.countStore;
-
-      if (!this.state.isLoaded) {
+      const {filterCount} = this.props.countStore;
+      const {running, withIncidents, isLoaded} = statistics.state;
+      if (!isLoaded) {
         return '';
       }
 
@@ -236,8 +220,8 @@ const Header = observer(
       } else {
         return (
           <>
-            <Styled.SkeletonCircle />
-            <Styled.SkeletonBlock />
+            <Styled.SkeletonCircle data-test="instance-skeleton-circle" />
+            <Styled.SkeletonBlock data-test="instance-skeleton-block" />
           </>
         );
       }

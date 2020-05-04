@@ -18,7 +18,7 @@ const separator = themeStyle({
 });
 
 export const FilterNavElement = styled(NavElement)`
-  ${Styled.Label} {
+  ${Styled.NavigationLabel} {
     margin-right: 3px;
   }
 `;

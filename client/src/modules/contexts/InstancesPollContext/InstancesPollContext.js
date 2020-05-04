@@ -7,6 +7,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
+import {statistics} from 'modules/stores/statistics';
+import {observer} from 'mobx-react';
+
 import {
   LOADING_STATE,
   SUBSCRIPTION_TOPIC,
@@ -23,179 +26,179 @@ function getCommonItems(list_1 = [], list_2 = []) {
     : list_2.filter((item) => list_1.includes(item));
 }
 
-class InstancesPollProviderComp extends React.Component {
-  static propTypes = {
-    dataManager: PropTypes.object,
-    children: PropTypes.oneOfType([
-      PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node,
-    ]),
-    visibleIdsInListPanel: PropTypes.array,
-    filter: PropTypes.object,
-  };
-
-  static defaultProps = {
-    visibleIdsInListPanel: [],
-  };
-
-  constructor(props) {
-    super();
-    this.state = {
-      active: new Set([]),
-      complete: new Set([]),
+const InstancesPollProviderComp = observer(
+  class InstancesPollProviderComp extends React.Component {
+    static propTypes = {
+      dataManager: PropTypes.object,
+      children: PropTypes.oneOfType([
+        PropTypes.arrayOf(PropTypes.node),
+        PropTypes.node,
+      ]),
+      visibleIdsInListPanel: PropTypes.array,
+      filter: PropTypes.object,
     };
-    this.subscriptions = {
-      LOAD_SELECTION_INSTANCES: ({response, state}) => {
-        if (state === LOADING_STATE.LOADED) {
-          const idsByOperation = {
-            active: new Set([]),
-            complete: new Set([]),
-            completedInstances: [],
-          };
-          response.workflowInstances.forEach((item) => {
-            item.hasActiveOperation
-              ? idsByOperation.active.add(item.id)
-              : idsByOperation.complete.add(item.id);
 
-            if (!item.hasActiveOperation) {
-              idsByOperation.completedInstances.push(item);
-            }
-          });
-          this.setState(idsByOperation);
-        }
-      },
+    static defaultProps = {
+      visibleIdsInListPanel: [],
     };
-  }
 
-  componentDidMount() {
-    this.props.dataManager.subscribe(this.subscriptions);
-    this.getWorkFlowInstances();
-  }
+    constructor(props) {
+      super();
+      this.state = {
+        active: new Set([]),
+        complete: new Set([]),
+      };
+      this.subscriptions = {
+        LOAD_SELECTION_INSTANCES: ({response, state}) => {
+          if (state === LOADING_STATE.LOADED) {
+            const idsByOperation = {
+              active: new Set([]),
+              complete: new Set([]),
+              completedInstances: [],
+            };
+            response.workflowInstances.forEach((item) => {
+              item.hasActiveOperation
+                ? idsByOperation.active.add(item.id)
+                : idsByOperation.complete.add(item.id);
 
-  componentDidUpdate(prevProps, prevState) {
-    const {dataManager} = this.props;
-    const {active, complete, completedInstances} = this.state;
+              if (!item.hasActiveOperation) {
+                idsByOperation.completedInstances.push(item);
+              }
+            });
+            this.setState(idsByOperation);
+          }
+        },
+      };
+    }
 
-    const hasActiveOperation = Boolean(active.size);
-    const hasCompletedOperations = Boolean(complete.size);
+    componentDidMount() {
+      this.props.dataManager.subscribe(this.subscriptions);
+      this.getWorkFlowInstances();
+    }
 
-    if (hasActiveOperation) {
-      dataManager.poll.register(
-        POLL_TOPICS.INSTANCES_LIST,
-        this.getWorkFlowInstances
+    componentDidUpdate(prevProps, prevState) {
+      const {dataManager} = this.props;
+      const {active, complete, completedInstances} = this.state;
+
+      const hasActiveOperation = Boolean(active.size);
+      const hasCompletedOperations = Boolean(complete.size);
+
+      if (hasActiveOperation) {
+        dataManager.poll.register(
+          POLL_TOPICS.INSTANCES_LIST,
+          this.getWorkFlowInstances
+        );
+      } else {
+        dataManager.poll.unregister(POLL_TOPICS.INSTANCES_LIST);
+      }
+
+      if (hasCompletedOperations) {
+        this.triggerDataUpdates(completedInstances);
+        this.setState({complete: new Set([]), completedInstances: []});
+      }
+    }
+
+    componentWillUnmount() {
+      this.props.dataManager.unsubscribe(this.subscriptions);
+    }
+
+    getWorkFlowInstances = () => {
+      this.props.dataManager.getWorkflowInstancesByIds(
+        [...this.state.active],
+        SUBSCRIPTION_TOPIC.LOAD_SELECTION_INSTANCES
       );
-    } else {
-      dataManager.poll.unregister(POLL_TOPICS.INSTANCES_LIST);
-    }
-
-    if (hasCompletedOperations) {
-      this.triggerDataUpdates(completedInstances);
-      this.setState({complete: new Set([]), completedInstances: []});
-    }
-  }
-
-  componentWillUnmount() {
-    this.props.dataManager.unsubscribe(this.subscriptions);
-  }
-
-  getWorkFlowInstances = () => {
-    this.props.dataManager.getWorkflowInstancesByIds(
-      [...this.state.active],
-      SUBSCRIPTION_TOPIC.LOAD_SELECTION_INSTANCES
-    );
-  };
-
-  triggerDataUpdates(completedInstances) {
-    const {
-      dataManager,
-      filter: {workflow, version},
-    } = this.props;
-
-    const completedIdsInSelections = getCommonItems([...this.state.complete]);
-
-    let updateParams = {
-      endpoints: [
-        {name: SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES},
-        {name: SUBSCRIPTION_TOPIC.LOAD_CORE_STATS},
-      ],
-      topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION,
     };
 
-    if (workflow && version && version !== 'all') {
-      updateParams.endpoints = [
-        ...updateParams.endpoints,
-        SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS,
-      ];
-    }
+    triggerDataUpdates(completedInstances) {
+      const {
+        dataManager,
+        filter: {workflow, version},
+      } = this.props;
 
-    if (Boolean(completedIdsInSelections.length)) {
-      updateParams.staticData = {
-        completedInstances,
+      const completedIdsInSelections = getCommonItems([...this.state.complete]);
+
+      let updateParams = {
+        endpoints: [{name: SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES}],
+        topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION,
       };
+      statistics.fetchStatistics();
+
+      if (workflow && version && version !== 'all') {
+        updateParams.endpoints = [
+          ...updateParams.endpoints,
+          SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS,
+        ];
+      }
+
+      if (Boolean(completedIdsInSelections.length)) {
+        updateParams.staticData = {
+          completedInstances,
+        };
+      }
+
+      dataManager.update(updateParams);
     }
 
-    dataManager.update(updateParams);
-  }
+    addIds = (ids) => {
+      const {visibleIdsInListPanel} = this.props;
 
-  addIds = (ids) => {
-    const {visibleIdsInListPanel} = this.props;
+      this.setState((prevState) => {
+        return {
+          active: new Set(
+            Array.from(prevState.active)
+              .concat(ids)
+              .filter((id) => visibleIdsInListPanel.includes(id))
+          ),
+        };
+      });
+    };
 
-    this.setState((prevState) => {
-      return {
+    addAllVisibleIds = (deselectedIds) => {
+      const {visibleIdsInListPanel} = this.props;
+
+      this.setState({
         active: new Set(
-          Array.from(prevState.active)
-            .concat(ids)
-            .filter((id) => visibleIdsInListPanel.includes(id))
+          Array.from(visibleIdsInListPanel).filter(
+            (id) => !deselectedIds.includes(id)
+          )
         ),
-      };
-    });
-  };
-
-  addAllVisibleIds = (deselectedIds) => {
-    const {visibleIdsInListPanel} = this.props;
-
-    this.setState({
-      active: new Set(
-        Array.from(visibleIdsInListPanel).filter(
-          (id) => !deselectedIds.includes(id)
-        )
-      ),
-    });
-  };
-
-  /**
-   * called only from listView when removing instance with active op. from view
-   * - by collapsing
-   * - by changing the view
-   */
-  removeIds = (removeIds) => {
-    // update the state removing only the ids that are in the List and not in a selection
-    // we want to poll for remaining ids in selections, even if they are hidden in ListView
-    const remaningIds = [...this.state.active].filter(
-      (item) =>
-        removeIds.includes(item) &&
-        this.props.visibleIdsInListPanel.includes(item)
-    );
-
-    Boolean(remaningIds.length) &&
-      this.setState({active: new Set(remaningIds)});
-  };
-
-  render() {
-    const contextValue = {
-      ...this.state,
-      addIds: this.addIds,
-      removeIds: this.removeIds,
-      addAllVisibleIds: this.addAllVisibleIds,
+      });
     };
 
-    return (
-      <InstancesPollContext.Provider value={contextValue}>
-        {this.props.children}
-      </InstancesPollContext.Provider>
-    );
+    /**
+     * called only from listView when removing instance with active op. from view
+     * - by collapsing
+     * - by changing the view
+     */
+    removeIds = (removeIds) => {
+      // update the state removing only the ids that are in the List and not in a selection
+      // we want to poll for remaining ids in selections, even if they are hidden in ListView
+      const remainingIds = [...this.state.active].filter(
+        (item) =>
+          removeIds.includes(item) &&
+          this.props.visibleIdsInListPanel.includes(item)
+      );
+
+      Boolean(remainingIds.length) &&
+        this.setState({active: new Set(remainingIds)});
+    };
+
+    render() {
+      const contextValue = {
+        ...this.state,
+        addIds: this.addIds,
+        removeIds: this.removeIds,
+        addAllVisibleIds: this.addAllVisibleIds,
+      };
+
+      return (
+        <InstancesPollContext.Provider value={contextValue}>
+          {this.props.children}
+        </InstancesPollContext.Provider>
+      );
+    }
   }
-}
+);
 
 const withPoll = (Component) => {
   class WithPoll extends React.Component {

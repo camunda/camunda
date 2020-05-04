@@ -18,8 +18,12 @@ export const ListItem = styled.li`
   display: flex;
   align-items: center;
 `;
-export const Label = styled.span`
+export const NavigationLabel = styled.span`
   margin-right: 4px;
+  ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};
+`;
+export const DashboardLabel = styled.span`
+  ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};
 `;
 export const BrandLabel = themed(styled.span`
   color: ${themeStyle({
@@ -53,10 +57,6 @@ export const DashboardLink = themed(styled(
   padding: 2px 21px 2px 20px
   border-right: 1px solid ${separator};
   border-left: 1px solid ${separator};
-
-  span {
-    ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};
-  }
 `);
 
 export const ListLink = themed(styled(
@@ -66,7 +66,4 @@ export const ListLink = themed(styled(
   display: flex;
   height: 20px;
   align-items: center;
-  & span {
-    ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};
-  }
 `);

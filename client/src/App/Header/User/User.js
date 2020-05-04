@@ -48,7 +48,7 @@ export default function User({handleRedirect}) {
   };
 
   return (
-    <Styled.ProfileDropdown>
+    <Styled.ProfileDropdown data-test="profile-dropdown">
       <ThemeConsumer>
         {({toggleTheme}) =>
           user.firstname || user.lastname ? (

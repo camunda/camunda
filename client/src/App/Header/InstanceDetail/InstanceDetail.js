@@ -12,7 +12,8 @@ import * as Styled from './styled';
 export default function InstanceDetail({instance}) {
   return (
     <Fragment>
-      <Styled.StateIcon state={instance.state} /> Instance {instance.id}
+      <Styled.StateIcon data-test="instance-detail" state={instance.state} />{' '}
+      Instance {instance.id}
     </Fragment>
   );
 }
