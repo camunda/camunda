@@ -82,6 +82,14 @@ spec:
       }
     }
 
+    stage('Test') {
+      steps {
+        container('docker') {
+            sh '.ci/scripts/docker/test.sh'
+        }
+      }
+    }
+
     stage('Upload') {
       when { environment name: 'PUSH', value: 'true' }
       steps {
