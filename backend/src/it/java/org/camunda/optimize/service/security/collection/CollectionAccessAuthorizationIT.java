@@ -10,15 +10,19 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
+import org.camunda.optimize.service.security.CaseInsensitiveAuthenticationMockUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -35,6 +39,32 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
     assertThat(collection.getCurrentUserRole(), is(RoleType.MANAGER));
+  }
+
+  @Test
+  public void collectionAccessDoesNotDependOnUsernameCaseAtLoginWithCaseInsensitiveAuthenticationBackend() {
+    // given
+    final String allUpperCaseUserId = DEFAULT_USERNAME.toUpperCase();
+    final String actualUserId = DEFAULT_USERNAME;
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+
+    final List<HttpRequest> mockedRequests = CaseInsensitiveAuthenticationMockUtil.setupCaseInsensitiveAuthentication(
+      embeddedOptimizeExtension, engineIntegrationExtension, engineMockServer,
+      allUpperCaseUserId, actualUserId
+    );
+
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
+
+    // when
+    AuthorizedCollectionDefinitionRestDto collection = collectionClient.getAuthorizedCollectionById(
+      collectionId, allUpperCaseUserId, actualUserId
+    );
+
+    // then
+    assertThat(collection.getDefinitionDto().getId(), is(collectionId));
+    assertThat(collection.getCurrentUserRole(), is(RoleType.MANAGER));
+
+    mockedRequests.forEach(engineMockServer::verify);
   }
 
   @ParameterizedTest

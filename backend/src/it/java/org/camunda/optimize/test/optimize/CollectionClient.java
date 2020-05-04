@@ -130,8 +130,8 @@ public class CollectionClient {
 
 
   public AuthorizedCollectionDefinitionRestDto getAuthorizedCollectionById(final String collectionId,
-                                                                           final String username
-    , final String password) {
+                                                                           final String username,
+                                                                           final String password) {
     return getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .withUserAuthentication(username, password)

@@ -10,15 +10,20 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.security.CaseInsensitiveAuthenticationMockUtil;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,6 +63,40 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
       authorizedEntities.stream().map(EntityDto::getCurrentUserRole).collect(Collectors.toList()),
       contains(accessIdentityRolePairs.roleType)
     );
+  }
+
+  @Test
+  public void collectionAccessByRoleDoesNotDependOnUsernameCaseAtLoginWithCaseInsensitiveAuthenticationBackend() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
+
+    final String allUpperCaseUserId = KERMIT_USER.toUpperCase();
+    final String actualUserId = KERMIT_USER;
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+
+    final List<HttpRequest> mockedRequests = CaseInsensitiveAuthenticationMockUtil.setupCaseInsensitiveAuthentication(
+      embeddedOptimizeExtension, engineIntegrationExtension, engineMockServer,
+      allUpperCaseUserId, actualUserId
+    );
+
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
+    addRoleToCollectionAsDefaultUser(
+      RoleType.VIEWER, new UserDto(actualUserId), collectionId
+    );
+
+    // when
+    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(allUpperCaseUserId, actualUserId);
+
+    // then
+    assertThat(authorizedEntities.size(), is(1));
+    assertThat(
+      authorizedEntities.stream().map(EntityDto::getId).collect(Collectors.toList()),
+      containsInAnyOrder(collectionId)
+    );
+
+    mockedRequests.forEach(engineMockServer::verify);
   }
 
   @Test
@@ -122,6 +161,41 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
     // then
     assertThat(authorizedEntities.size(), is(0));
+  }
+
+  @Test
+  public void privateEntitiesVisibilityDoesNotDependOnUsernameCaseAtLoginWithCaseInsensitiveAuthenticationBackend() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
+
+    final String allUpperCaseUserId = KERMIT_USER.toUpperCase();
+    final String actualUserId = KERMIT_USER;
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+
+    final List<HttpRequest> mockedRequests = CaseInsensitiveAuthenticationMockUtil.setupCaseInsensitiveAuthentication(
+      embeddedOptimizeExtension, engineIntegrationExtension, engineMockServer,
+      allUpperCaseUserId, actualUserId
+    );
+
+    collectionClient.createNewCollection(actualUserId, actualUserId);
+    reportClient.createSingleProcessReportAsUser(null, null, actualUserId, actualUserId);
+    reportClient.createSingleDecisionReportAsUser(null, null, actualUserId, actualUserId);
+    reportClient.createNewCombinedReportAsUserRawResponse(null, Collections.emptyList(), actualUserId, actualUserId);
+    dashboardClient.createDashboardAsUser(null, actualUserId, actualUserId);
+
+    // when
+    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(allUpperCaseUserId, actualUserId);
+
+    // then
+    assertThat(authorizedEntities.size(), is(5));
+    assertThat(
+      authorizedEntities.stream().map(EntityDto::getCurrentUserRole).collect(Collectors.toList()),
+      everyItem(greaterThanOrEqualTo(RoleType.EDITOR))
+    );
+
+    mockedRequests.forEach(engineMockServer::verify);
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(final String definitionKey) {

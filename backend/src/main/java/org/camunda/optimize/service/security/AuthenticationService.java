@@ -8,8 +8,8 @@ package org.camunda.optimize.service.security;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
-import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +17,7 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotAuthorizedException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -35,21 +36,27 @@ public class AuthenticationService {
    * @throws ForbiddenException     if no engine that authenticates the user also authorizes the user
    * @throws NotAuthorizedException if no engine authenticates the user
    */
-  public String authenticateUser(CredentialsDto credentials) throws ForbiddenException, NotAuthorizedException {
-
+  public String authenticateUser(final CredentialsDto credentials) throws ForbiddenException, NotAuthorizedException {
     final List<AuthenticationResultDto> authenticationResults = new ArrayList<>();
-    for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-      final AuthenticationResultDto authResult = engineAuthenticationProvider.performAuthenticationCheck(
-        credentials, engineContext
-      );
-      authenticationResults.add(authResult);
-    }
+    final Optional<String> authenticatedUserId = engineContextFactory.getConfiguredEngines().stream()
+      .map(engineContext -> engineAuthenticationProvider.performAuthenticationCheck(credentials, engineContext))
+      .peek(authenticationResults::add)
+      .filter(AuthenticationResultDto::isAuthenticated)
+      .map(authenticationResultDto -> engineContextFactory
+        .getConfiguredEngineByAlias(authenticationResultDto.getEngineAlias())
+        .getUserById(authenticationResultDto.getAuthenticatedUser())
+      )
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .map(IdentityDto::getId)
+      .findFirst();
 
-    boolean userIsAuthenticated = authenticationResults.stream().anyMatch(AuthenticationResultDto::isAuthenticated);
-    if (userIsAuthenticated) {
-      final boolean isAuthorized = engineAuthorizationService.isUserAuthorizedToAccessOptimize(credentials.getUsername());
-      if (isAuthorized) {
-        return createUserSession(credentials);
+    if (authenticatedUserId.isPresent()) {
+      final boolean isAuthorizedToOptimizeByAnyEngine = engineAuthorizationService.isUserAuthorizedToAccessOptimize(
+        authenticatedUserId.get()
+      );
+      if (isAuthorizedToOptimizeByAnyEngine) {
+        return sessionService.createAuthToken(authenticatedUserId.get());
       } else {
         // could not find an engine that grants optimize permission
         String errorMessage = "The user [" + credentials.getUsername() + "] is not authorized to "
@@ -81,7 +88,4 @@ public class AuthenticationService {
     return authenticationErrorMessage;
   }
 
-  private String createUserSession(CredentialsDto credentials) {
-    return sessionService.createAuthToken(credentials.getUsername());
-  }
 }

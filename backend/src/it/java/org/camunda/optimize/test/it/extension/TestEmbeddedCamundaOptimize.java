@@ -210,10 +210,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   private Response authenticateDemo() {
-    CredentialsDto entity = new CredentialsDto();
-    entity.setUsername(DEFAULT_USERNAME);
-    entity.setPassword(DEFAULT_PASSWORD);
-
+    final CredentialsDto entity = new CredentialsDto(DEFAULT_USERNAME, DEFAULT_PASSWORD);
     return target()
       .path("authentication")
       .request()

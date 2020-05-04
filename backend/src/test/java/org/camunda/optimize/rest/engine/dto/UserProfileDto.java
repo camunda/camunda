@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.rest.engine.dto;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class UserProfileDto {
 
   protected String id;

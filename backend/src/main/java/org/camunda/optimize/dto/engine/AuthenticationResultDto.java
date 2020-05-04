@@ -5,13 +5,21 @@
  */
 package org.camunda.optimize.dto.engine;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Builder
 @Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class AuthenticationResultDto {
 
   private String authenticatedUser;
   private boolean isAuthenticated;
   private String engineAlias;
   private String errorMessage;
+
 }

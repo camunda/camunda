@@ -7,77 +7,125 @@ package org.camunda.optimize.service.security;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.security.AuthCookieService.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class AuthenticationIT extends AbstractIT {
 
   @Test
   public void authenticateUser() {
     //given
-    engineIntegrationExtension.addUser("kermit", "kermit");
-    engineIntegrationExtension.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
     //when
-    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
+    Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+  }
+
+  @Test
+  public void authenticateUserIsByDefaultCaseSensitive() {
+    //given
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
+
+    //when
+    Response response = embeddedOptimizeExtension.authenticateUserRequest(
+      StringUtils.swapCase(KERMIT_USER),
+      KERMIT_USER
+    );
+
+    //then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  @SneakyThrows
+  public void authenticateUserWithCaseInsensitiveAuthenticationBackend() {
+    //given
+    final String actualUserId = KERMIT_USER;
+    final String allUpperCaseUserId = actualUserId.toUpperCase();
+    engineIntegrationExtension.addUser(actualUserId, actualUserId);
+    engineIntegrationExtension.grantUserOptimizeAccess(actualUserId);
+
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+
+    final List<HttpRequest> mockedRequests = CaseInsensitiveAuthenticationMockUtil.setupCaseInsensitiveAuthentication(
+      embeddedOptimizeExtension, engineIntegrationExtension, engineMockServer,
+      allUpperCaseUserId, actualUserId
+    );
+
+    //when
+    Response response = embeddedOptimizeExtension.authenticateUserRequest(allUpperCaseUserId, actualUserId);
+
+    //then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String authenticationToken = response.readEntity(String.class);
+    // here the actualUserId should be present, regardless of how the user logged in
+    assertThat(AuthCookieService.getTokenSubject(authenticationToken)).get().isEqualTo(actualUserId);
+
+    mockedRequests.forEach(engineMockServer::verify);
   }
 
   @Test
   public void rejectLockedUser() {
     //given
-    engineIntegrationExtension.addUser("kermit", "kermit");
-    engineIntegrationExtension.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
     //when
-    embeddedOptimizeExtension.authenticateUserRequest("kermit", "wrongPassword");
-    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
+    embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, "wrongPassword");
+    Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     //then
-    assertThat(response.getStatus(),is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void rejectWrongPassword() {
     //given
-    engineIntegrationExtension.addUser("kermit", "kermit");
-    engineIntegrationExtension.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
     //when
-    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "wrong");
+    Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, "wrong");
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void rejectUnknownUser() {
     //when
-    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
+    Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void rejectOnMissingApplicationAuthorization() {
     // when
-    engineIntegrationExtension.addUser("kermit", "kermit");
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
 
     // then
-    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -97,9 +145,9 @@ public class AuthenticationIT extends AbstractIT {
         .execute();
 
     //then
-    assertThat(testResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(testResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     String responseEntity = testResponse.readEntity(String.class);
-    assertThat(responseEntity, is("OK"));
+    assertThat(responseEntity).isEqualTo(Response.Status.OK.name());
   }
 
   @Test
@@ -121,7 +169,7 @@ public class AuthenticationIT extends AbstractIT {
         .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -141,7 +189,7 @@ public class AuthenticationIT extends AbstractIT {
         .withGivenAuthToken(selfGeneratedEvilToken)
         .execute();
 
-    assertThat(logoutResponse.getHeaders().get("Set-Cookie").get(0).toString().contains("delete cookie"), is(true));
+    assertThat(logoutResponse.getHeaders().get("Set-Cookie").get(0).toString().contains("delete cookie")).isTrue();
   }
 
   @Test
@@ -153,7 +201,7 @@ public class AuthenticationIT extends AbstractIT {
         .withoutAuthentication()
         .execute();
 
-    assertThat(logoutResponse.getHeaders().get("Set-Cookie"), is(nullValue()));
+    assertThat(logoutResponse.getHeaders().get("Set-Cookie")).isNull();
   }
 
   private String authenticateAdminUser() {

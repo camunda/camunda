@@ -99,15 +99,16 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
   }
 
   public EngineUserDto createKermitUserDtoWithEmail(final String email) {
-    UserProfileDto duplicateProfile2 = new UserProfileDto();
-    duplicateProfile2.setId(KERMIT_USER);
-    duplicateProfile2.setEmail(email);
-    UserCredentialsDto credentials2 = new UserCredentialsDto();
+    final UserProfileDto duplicateProfile2 = UserProfileDto.builder()
+      .id(KERMIT_USER)
+      .email(email)
+      .build();
+    final UserCredentialsDto credentials2 = new UserCredentialsDto();
     credentials2.setPassword(KERMIT_USER);
-    EngineUserDto loosingUserProfile = new EngineUserDto();
-    loosingUserProfile.setProfile(duplicateProfile2);
-    loosingUserProfile.setCredentials(credentials2);
-    return loosingUserProfile;
+    final EngineUserDto losingUserProfile = new EngineUserDto();
+    losingUserProfile.setProfile(duplicateProfile2);
+    losingUserProfile.setCredentials(credentials2);
+    return losingUserProfile;
   }
 
   private SyncedIdentityCacheService getSyncedIdentityCacheService() {

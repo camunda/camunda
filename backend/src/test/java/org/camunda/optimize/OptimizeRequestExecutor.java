@@ -1193,10 +1193,7 @@ public class OptimizeRequestExecutor {
   }
 
   private String authenticateUserRequest(String username, String password) {
-    CredentialsDto entity = new CredentialsDto();
-    entity.setUsername(username);
-    entity.setPassword(password);
-
+    final CredentialsDto entity = new CredentialsDto(username, password);
     Response response = client.path("authentication")
       .request()
       .post(Entity.json(entity));

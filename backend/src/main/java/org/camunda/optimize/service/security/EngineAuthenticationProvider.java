@@ -34,7 +34,7 @@ public class EngineAuthenticationProvider {
   public AuthenticationResultDto performAuthenticationCheck(CredentialsDto credentialsDto,
                                                             EngineContext engineContext) {
     try {
-      Response response = engineContext.getEngineClient()
+      final Response response = engineContext.getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()))
         .path(configurationService.getUserValidationEndpoint())
         .request(MediaType.APPLICATION_JSON)
@@ -42,8 +42,8 @@ public class EngineAuthenticationProvider {
 
       if (responseIsSuccessful(response)) {
         AuthenticationResultDto authResult = response.readEntity(AuthenticationResultDto.class);
+        authResult.setEngineAlias(engineContext.getEngineAlias());
         if (!authResult.isAuthenticated()) {
-          authResult.setEngineAlias(engineContext.getEngineAlias());
           authResult.setErrorMessage(INVALID_CREDENTIALS_ERROR_MESSAGE);
         }
         return authResult;
@@ -71,15 +71,16 @@ public class EngineAuthenticationProvider {
     }
   }
 
-  private AuthenticationResultDto getAuthenticationResultFromError(CredentialsDto credentialsDto,
-                                                                   EngineContext engineContext, Exception exception) {
+  private AuthenticationResultDto getAuthenticationResultFromError(final CredentialsDto credentialsDto,
+                                                                   final EngineContext engineContext,
+                                                                   final Exception exception) {
 
-    AuthenticationResultDto authResult = new AuthenticationResultDto();
-    authResult.setAuthenticated(false);
-    authResult.setAuthenticatedUser(credentialsDto.getUsername());
-    authResult.setEngineAlias(engineContext.getEngineAlias());
-    authResult.setErrorMessage(exception.getMessage());
-    return authResult;
+    return AuthenticationResultDto.builder()
+      .isAuthenticated(false)
+      .authenticatedUser(credentialsDto.getUsername())
+      .engineAlias(engineContext.getEngineAlias())
+      .errorMessage(exception.getMessage())
+      .build();
   }
 
   private boolean responseIsSuccessful(Response response) {

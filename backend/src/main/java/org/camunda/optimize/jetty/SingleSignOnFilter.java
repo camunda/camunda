@@ -106,8 +106,8 @@ public class SingleSignOnFilter implements Filter {
       final AuthenticationResult authenticationResult = plugin.extractAuthenticatedUser(servletRequest);
       if (authenticationResult.isAuthenticated()) {
         logger.debug("User [{}] could be authenticated.", authenticationResult.getAuthenticatedUser());
-        final String userName = authenticationResult.getAuthenticatedUser();
-        createSessionIfIsAuthorizedToAccessOptimize(servletRequest, servletResponse, userName);
+        final String userId = authenticationResult.getAuthenticatedUser();
+        createSessionIfIsAuthorizedToAccessOptimize(servletRequest, servletResponse, userId);
         break;
       }
     }
@@ -115,11 +115,11 @@ public class SingleSignOnFilter implements Filter {
 
   private void createSessionIfIsAuthorizedToAccessOptimize(HttpServletRequest servletRequest,
                                                            HttpServletResponse servletResponse,
-                                                           String userName) {
-    boolean isAuthorized = applicationAuthorizationService.isUserAuthorizedToAccessOptimize(userName);
+                                                           String userId) {
+    boolean isAuthorized = applicationAuthorizationService.isUserAuthorizedToAccessOptimize(userId);
     if (isAuthorized) {
-      logger.debug("User [{}] was authorized to access Optimize, creating new session token.", userName);
-      String securityToken = sessionService.createAuthToken(userName);
+      logger.debug("User [{}] was authorized to access Optimize, creating new session token.", userId);
+      String securityToken = sessionService.createAuthToken(userId);
       authorizeCurrentRequest(servletRequest, securityToken);
       writeOptimizeAuthorizationCookieToResponse(servletResponse, securityToken);
     }

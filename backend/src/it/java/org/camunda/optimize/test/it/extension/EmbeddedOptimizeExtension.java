@@ -343,10 +343,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public Response authenticateUserRequest(String username, String password) {
-    CredentialsDto entity = new CredentialsDto();
-    entity.setUsername(username);
-    entity.setPassword(password);
-
+    final CredentialsDto entity = new CredentialsDto(username, password);
     return target("authentication")
       .request()
       .post(Entity.json(entity));
@@ -513,6 +510,14 @@ public class EmbeddedOptimizeExtension
     return getApplicationContext().getBean(OptimizeElasticsearchClient.class);
   }
 
+  public boolean isResetImportOnStart() {
+    return resetImportOnStart;
+  }
+
+  public void setResetImportOnStart(final boolean resetImportOnStart) {
+    this.resetImportOnStart = resetImportOnStart;
+  }
+
   public String format(OffsetDateTime offsetDateTime) {
     return this.getDateTimeFormatter().format(offsetDateTime);
   }
@@ -521,12 +526,9 @@ public class EmbeddedOptimizeExtension
     return getDateTimeFormatter().format(truncateToStartOfUnit(offsetDateTime, unit));
   }
 
-  public boolean isResetImportOnStart() {
-    return resetImportOnStart;
-  }
-
-  public void setResetImportOnStart(final boolean resetImportOnStart) {
-    this.resetImportOnStart = resetImportOnStart;
+  @SneakyThrows
+  public String toJsonString(final Object object) {
+    return getObjectMapper().writeValueAsString(object);
   }
 
 }

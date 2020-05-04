@@ -5,11 +5,16 @@
  */
 package org.camunda.optimize.dto.optimize.query.security;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
 @Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class CredentialsDto implements Serializable {
 
   protected String username;

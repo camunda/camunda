@@ -1220,14 +1220,15 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   private EngineUserDto constructUserDto(String username, String password) {
-    UserProfileDto profile = new UserProfileDto();
-    profile.setId(username);
-    profile.setEmail(username + DEFAULT_EMAIL_DOMAIN);
-    profile.setFirstName(DEFAULT_FIRSTNAME);
-    profile.setLastName(DEFAULT_LASTNAME);
-    UserCredentialsDto credentials = new UserCredentialsDto();
+    final UserProfileDto profile = UserProfileDto.builder()
+      .id(username)
+      .email(username + DEFAULT_EMAIL_DOMAIN)
+      .firstName(DEFAULT_FIRSTNAME)
+      .lastName(DEFAULT_LASTNAME)
+      .build();
+    final UserCredentialsDto credentials = new UserCredentialsDto();
     credentials.setPassword(password);
-    EngineUserDto userDto = new EngineUserDto();
+    final EngineUserDto userDto = new EngineUserDto();
     userDto.setProfile(profile);
     userDto.setCredentials(credentials);
     return userDto;
