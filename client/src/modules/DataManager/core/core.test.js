@@ -96,20 +96,6 @@ describe('DataManager', () => {
   });
 
   describe('API calls', () => {
-    describe('fetch core statistics', () => {
-      it('should publish loading stats to topic', () => {
-        // when
-        dataManager.getWorkflowCoreStatistics(mockParams);
-
-        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_CORE_STATS
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
-          instancesApi.fetchWorkflowCoreStatistics
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(mockParams);
-      });
-    });
     describe('fetch workflow instances', () => {
       it('should publish loading stats to topic', () => {
         // when

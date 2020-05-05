@@ -6,7 +6,6 @@
 
 import {
   fetchWorkflowInstancesStatistics,
-  fetchWorkflowCoreStatistics,
   fetchWorkflowInstancesByIds,
   fetchWorkflowInstance,
   fetchWorkflowInstances,
@@ -37,7 +36,6 @@ import Publisher from '../publisher';
 import Poll from '../poll';
 
 const {
-  LOAD_CORE_STATS,
   LOAD_LIST_INSTANCES,
   LOAD_STATE_STATISTICS,
   LOAD_STATE_DEFINITIONS,
@@ -145,10 +143,6 @@ export class DataManager {
       SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
       fetchIncidentsByError
     );
-  };
-
-  getWorkflowCoreStatistics = () => {
-    this.fetchAndPublish(LOAD_CORE_STATS, fetchWorkflowCoreStatistics, {});
   };
 
   getWorkflowInstances = (params) => {

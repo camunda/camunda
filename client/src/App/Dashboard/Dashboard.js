@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {withData} from 'modules/DataManager';
 
-import MetricPanel from './MetricPanel';
+import {MetricPanel} from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
 import Skeleton from './Skeleton';

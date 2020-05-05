@@ -20,7 +20,7 @@ import {
 } from './Dashboard.setup';
 
 import {Dashboard} from './Dashboard';
-import MetricPanel from './MetricPanel';
+import {MetricPanel} from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
 import EmptyPanel from 'modules/components/EmptyPanel';

@@ -18,7 +18,6 @@ import InstancesContainer from './Instances/InstancesContainer';
 import Instance from './Instance';
 import GlobalStyles from './GlobalStyles';
 import {DataManagerProvider} from 'modules/DataManager';
-import {CountStoreProvider} from 'modules/contexts/CountContext';
 import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
 
 export default function App(props) {
@@ -31,18 +30,16 @@ export default function App(props) {
             <Switch>
               <Route path="/login" component={Login} />
               <Authentication>
-                <CountStoreProvider>
-                  <InstanceSelectionProvider>
-                    <Header />
-                    <Route exact path="/" component={Dashboard} />
-                    <Route
-                      exact
-                      path="/instances"
-                      component={InstancesContainer}
-                    />
-                    <Route exact path="/instances/:id" component={Instance} />
-                  </InstanceSelectionProvider>
-                </CountStoreProvider>
+                <InstanceSelectionProvider>
+                  <Header />
+                  <Route exact path="/" component={Dashboard} />
+                  <Route
+                    exact
+                    path="/instances"
+                    component={InstancesContainer}
+                  />
+                  <Route exact path="/instances/:id" component={Instance} />
+                </InstanceSelectionProvider>
               </Authentication>
             </Switch>
           </Router>

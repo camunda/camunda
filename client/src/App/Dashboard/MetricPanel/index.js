@@ -4,4 +4,68 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './MetricPanel';
+import React from 'react';
+import {observer} from 'mobx-react';
+
+import * as Styled from './styled.js';
+import {statistics} from 'modules/stores/statistics';
+
+function getUrl({filter, hasFinishedInstances}) {
+  if (hasFinishedInstances) {
+    Object.assign(filter, {
+      completed: true,
+      canceled: true,
+    });
+  }
+
+  return `/instances?filter=${JSON.stringify(filter)}`;
+}
+
+const MetricPanel = observer(() => {
+  const {running, active, withIncidents, isLoaded} = statistics.state;
+  return (
+    <Styled.Panel>
+      <Styled.Title
+        data-test="total-instances-link"
+        to={getUrl({
+          filter: {active: true, incidents: true},
+          hasFinishedInstances: running === 0,
+        })}
+      >
+        {isLoaded && `${running} `}Running Instances in total
+      </Styled.Title>
+
+      {isLoaded ? (
+        <Styled.InstancesBar
+          incidentsCount={withIncidents}
+          activeCount={active}
+          size="large"
+          barHeight={15}
+        />
+      ) : (
+        <Styled.SkeletonBar data-test="instances-bar-skeleton" />
+      )}
+
+      <Styled.LabelContainer>
+        <Styled.Label
+          data-test="incident-instances-link"
+          to={getUrl({
+            filter: {incidents: true},
+          })}
+        >
+          Instances with Incident
+        </Styled.Label>
+        <Styled.Label
+          data-test="active-instances-link"
+          to={getUrl({
+            filter: {active: true},
+          })}
+        >
+          Active Instances
+        </Styled.Label>
+      </Styled.LabelContainer>
+    </Styled.Panel>
+  );
+});
+
+export {MetricPanel};

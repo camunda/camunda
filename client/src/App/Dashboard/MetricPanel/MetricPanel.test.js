@@ -5,127 +5,107 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
-
-import {MetricPanel} from './MetricPanel';
-import * as Styled from './styled.js';
-
+import {Router} from 'react-router-dom';
 import {
-  countStoreEmpty,
-  countStoreComplete,
-  countStoreWithoutIncidents,
-  countStoreLoading,
-} from './MetricPanel.setup';
+  render,
+  waitForElementToBeRemoved,
+  fireEvent,
+} from '@testing-library/react';
+import {createMemoryHistory} from 'history';
 
-jest.mock('modules/utils/bpmn');
+import {MetricPanel} from './index';
+import PropTypes from 'prop-types';
+import {statistics} from 'modules/stores/statistics';
 
-describe('MetricPanel', () => {
-  describe('Title', () => {
-    it('should render title containing instances count', () => {
-      // when
-      const node = shallow(<MetricPanel countStore={countStoreComplete} />);
-      const titleNode = node.find(Styled.Title);
+jest.mock('modules/api/instances', () => ({
+  fetchWorkflowCoreStatistics: jest.fn().mockImplementation(() => ({
+    coreStatistics: {
+      running: 821,
+      active: 90,
+      withIncidents: 731,
+    },
+  })),
+}));
 
-      // then
-      expect(titleNode).toExist();
-      expect(titleNode.text()).toEqual(
-        `${countStoreComplete.running} Running Instances in total`
-      );
-    });
-
-    it('should render title during loading without instances count', () => {
-      // when
-      const node = shallow(<MetricPanel countStore={countStoreLoading} />);
-      const titleNode = node.find(Styled.Title);
-
-      // then
-      expect(titleNode).toExist();
-      expect(titleNode.text()).toEqual(`Running Instances in total`);
-    });
-
-    it('should render correct link (if instances)', () => {
-      // when
-      const node = shallow(<MetricPanel countStore={countStoreComplete} />);
-      const titleNode = node.find(Styled.Title);
-
-      // then
-      expect(titleNode.props().to).toEqual(
-        '/instances?filter={"active":true,"incidents":true}'
-      );
-    });
-
-    it('should render correct link (if no instances)', () => {
-      // when
-      const node = shallow(<MetricPanel countStore={countStoreEmpty} />);
-      const titleNode = node.find(Styled.Title);
-
-      // then
-      expect(titleNode.props().to).toEqual(
-        '/instances?filter={"active":true,"incidents":true,"completed":true,"canceled":true}'
-      );
-    });
+describe('<MetricPanel />', () => {
+  beforeEach(() => {
+    statistics.reset();
   });
 
-  describe('Label', () => {
-    it('should pass correct link to incident label (if incidents)', () => {
-      // when
-      const node = shallow(<MetricPanel countStore={countStoreComplete} />);
-      const IncidentsLabelNode = node.find(Styled.Label).at(0);
+  const MockApp = ({history = createMemoryHistory()}) => (
+    <Router history={history}>
+      <MetricPanel />
+    </Router>
+  );
 
-      // then
-      expect(IncidentsLabelNode.props().to).toEqual(
-        '/instances?filter={"incidents":true}'
-      );
-    });
+  MockApp.propTypes = {
+    history: PropTypes.object,
+  };
 
-    it('should pass correct link to incident label (if no incidents)', () => {
-      // when
-      const node = shallow(
-        <MetricPanel countStore={countStoreWithoutIncidents} />
-      );
-      const IncidentsLabelNode = node.find(Styled.Label).at(0);
+  it('should first display skeleton, then the statistics', async () => {
+    const {getByText, getByTestId} = render(<MockApp />);
 
-      // then
-      expect(IncidentsLabelNode.props().to).toEqual(
-        '/instances?filter={"incidents":true}'
-      );
-    });
-
-    it('should pass correct link to active instances label (if instances)', () => {
-      // when
-      const node = shallow(<MetricPanel countStore={countStoreComplete} />);
-      const ActiveInstancesLabelNode = node.find(Styled.Label).at(1);
-
-      // then
-      expect(ActiveInstancesLabelNode.props().to).toEqual(
-        '/instances?filter={"active":true}'
-      );
-    });
-
-    it('should pass correct link to active instances label (if no instances)', () => {
-      // when
-      const node = shallow(<MetricPanel countStore={countStoreEmpty} />);
-      const ActiveInstancesLabelNode = node.find(Styled.Label).at(1);
-
-      // then
-      expect(ActiveInstancesLabelNode.props().to).toEqual(
-        '/instances?filter={"active":true}'
-      );
-    });
-  });
-
-  it('should pass panel data to InstancesBar', () => {
-    const node = shallow(<MetricPanel countStore={countStoreComplete} />);
-
-    const InstancesBarNode = node.find(Styled.InstancesBar);
-
-    expect(InstancesBarNode).toExist();
-
-    const InstancesBarProps = InstancesBarNode.props();
-
-    expect(InstancesBarProps.activeCount).toEqual(countStoreComplete.active);
-    expect(InstancesBarProps.incidentsCount).toEqual(
-      countStoreComplete.withIncidents
+    expect(getByTestId('instances-bar-skeleton')).toBeInTheDocument();
+    expect(getByTestId('total-instances-link')).toHaveTextContent(
+      'Running Instances in total'
     );
+
+    statistics.fetchStatistics();
+
+    await waitForElementToBeRemoved(() => [
+      getByTestId('instances-bar-skeleton'),
+    ]);
+    expect(getByText('821 Running Instances in total')).toBeInTheDocument();
+  });
+
+  it('should show active instances and instances with incidents', async () => {
+    const {getByText, findByTestId} = render(<MockApp />);
+
+    statistics.fetchStatistics();
+    expect(getByText('Instances with Incident')).toBeInTheDocument();
+    expect(getByText('Active Instances')).toBeInTheDocument();
+    expect(await findByTestId('incident-instances-badge')).toHaveTextContent(
+      '731'
+    );
+    expect(await findByTestId('active-instances-badge')).toHaveTextContent(
+      '90'
+    );
+  });
+
+  it('should go to the correct page when clicking on instances with incidents', async () => {
+    const MOCK_HISTORY = createMemoryHistory();
+    const {getByText} = render(<MockApp history={MOCK_HISTORY} />);
+
+    fireEvent.click(getByText('Instances with Incident'));
+
+    const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
+    expect(searchParams.get('filter')).toBe('{"incidents":true}');
+  });
+
+  it('should go to the correct page when clicking on active instances', async () => {
+    const MOCK_HISTORY = createMemoryHistory();
+    const {getByText} = render(<MockApp history={MOCK_HISTORY} />);
+
+    fireEvent.click(getByText('Active Instances'));
+
+    const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
+    expect(searchParams.get('filter')).toBe('{"active":true}');
+  });
+
+  it('should go to the correct page when clicking on total instances', async () => {
+    const MOCK_HISTORY = createMemoryHistory();
+    const {findByText} = render(<MockApp history={MOCK_HISTORY} />);
+
+    statistics.fetchStatistics();
+    fireEvent.click(await findByText('821 Running Instances in total'));
+
+    const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
+    expect(searchParams.get('filter')).toBe('{"active":true,"incidents":true}');
   });
 });
