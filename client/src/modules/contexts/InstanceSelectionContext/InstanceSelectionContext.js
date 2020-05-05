@@ -4,16 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {
-  createContext,
-  useState,
-  useContext,
-  useEffect,
-  useRef,
-} from 'react';
+import React, {createContext, useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
-import {DataContext} from 'modules/DataManager';
-import {LOADING_STATE} from 'modules/constants';
+import {instances} from 'modules/stores/instances';
 
 const InstanceSelectionContext = createContext({});
 const {Provider} = InstanceSelectionContext;
@@ -27,43 +20,21 @@ const MODES = {
 export const useInstanceSelection = () => {
   const [ids, setIds] = useState([]);
   const [isAllChecked, setAllChecked] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
   const [mode, setMode] = useState(MODES.INCLUDE);
-  const {dataManager} = useContext(DataContext);
-
-  const subscriptions = {
-    REFRESH_AFTER_OPERATION: ({state, response}) => {
-      if (state === LOADING_STATE.LOADED) {
-        const {
-          LOAD_LIST_INSTANCES: {totalCount},
-        } = response;
-
-        setTotalCount(totalCount);
-      }
-    },
-    LOAD_LIST_INSTANCES: ({response, state}) => {
-      if (state === LOADING_STATE.LOADED) {
-        setTotalCount(response.totalCount);
-      }
-    },
-  };
-  const {current: subscriptionList} = useRef(subscriptions);
-
-  useEffect(() => {
-    dataManager.subscribe(subscriptionList);
-    return () => dataManager.unsubscribe(subscriptionList);
-  }, [dataManager, subscriptionList]);
+  const {filteredInstancesCount} = instances.state;
 
   useEffect(() => {
     if (
       (mode === MODES.EXCLUDE && ids.length === 0) ||
-      (mode === MODES.INCLUDE && ids.length === totalCount && totalCount !== 0)
+      (mode === MODES.INCLUDE &&
+        ids.length === filteredInstancesCount &&
+        filteredInstancesCount !== 0)
     ) {
       setMode(MODES.ALL);
       setAllChecked(true);
       setIds([]);
     }
-  }, [ids, mode, totalCount]);
+  }, [ids, mode, filteredInstancesCount]);
 
   const addToIds = (id) => {
     setIds([...ids, id]);
@@ -108,14 +79,14 @@ export const useInstanceSelection = () => {
     }
   };
 
-  const getSelectedCount = (totalCount) => {
+  const getSelectedCount = () => {
     switch (mode) {
       case MODES.INCLUDE:
         return ids.length;
       case MODES.EXCLUDE:
-        return totalCount - ids.length;
+        return filteredInstancesCount - ids.length;
       default:
-        return totalCount;
+        return filteredInstancesCount;
     }
   };
 

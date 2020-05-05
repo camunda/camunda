@@ -23,7 +23,6 @@ class ListPanel extends React.Component {
   static propTypes = {
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     filter: PropTypes.object.isRequired,
-    filterCount: PropTypes.number.isRequired,
     instances: PropTypes.array.isRequired,
     sorting: PropTypes.object.isRequired,
     onSort: PropTypes.func.isRequired,
@@ -151,23 +150,17 @@ class ListPanel extends React.Component {
   }
 
   render() {
-    const {
-      filter,
-      filterCount,
-      onSort,
-      onFirstElementChange,
-      ...paneProps
-    } = this.props;
+    const {filter, onSort, onFirstElementChange, ...paneProps} = this.props;
     const isListEmpty = this.props.instances.length === 0;
     const isExpanded = this.props.expandState !== EXPAND_STATE.COLLAPSED;
 
     return (
       <SplitPane.Pane {...paneProps} hasShiftableControls>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
+
         <Styled.PaneBody>
           <List
             data={this.props.instances}
-            filterCount={filterCount}
             filter={filter}
             sorting={this.props.sorting}
             onSort={this.props.onSort}
@@ -186,7 +179,6 @@ class ListPanel extends React.Component {
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>
           <ListFooter
-            filterCount={filterCount}
             perPage={this.state.entriesPerPage}
             firstElement={this.props.firstElement}
             onFirstElementChange={this.props.onFirstElementChange}

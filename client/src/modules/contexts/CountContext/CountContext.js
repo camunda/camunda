@@ -16,14 +16,11 @@ const initialState = {
   running: 0,
   active: 0,
   withIncidents: 0,
-  filterCount: null,
   isLoaded: false,
 };
 
 export function countReducer(state, {type, payload}) {
   switch (type) {
-    case 'filterCount':
-      return {...state, filterCount: payload};
     case 'coreStats':
       return {...state, ...payload, isLoaded: true};
     default:
@@ -45,16 +42,11 @@ export function Provider(props) {
       if (state === LOADING_STATE.LOADED) {
         const {
           LOAD_CORE_STATS: {coreStatistics},
-          LOAD_LIST_INSTANCES: {totalCount},
         } = response;
 
         dispatch({
           type: 'coreStats',
           payload: coreStatistics,
-        });
-        dispatch({
-          type: 'filterCount',
-          payload: totalCount,
         });
       }
     },
@@ -63,14 +55,6 @@ export function Provider(props) {
         dispatch({
           type: 'coreStats',
           payload: response[SUBSCRIPTION_TOPIC.LOAD_CORE_STATS].coreStatistics,
-        });
-      }
-    },
-    LOAD_LIST_INSTANCES: ({response, state}) => {
-      if (state === LOADING_STATE.LOADED) {
-        dispatch({
-          type: 'filterCount',
-          payload: response.totalCount,
         });
       }
     },
@@ -86,18 +70,6 @@ export function Provider(props) {
 
   useEffect(() => {
     dataManager.getWorkflowCoreStatistics();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const {filterCount} = props.getStateLocally();
-
-    filterCount !== 'null' &&
-      typeof filterCount !== 'undefined' &&
-      dispatch({
-        type: 'filterCount',
-        payload: filterCount,
-      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

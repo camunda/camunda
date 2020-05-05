@@ -18,6 +18,8 @@ import {HashRouter as Router} from 'react-router-dom';
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
 import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
 
+import {instances} from 'modules/stores/instances';
+
 import {
   emptyList,
   mockProps,
@@ -138,6 +140,7 @@ describe('ListPanel', () => {
 
     it('should pass a method to the footer to change the firstElement', async () => {
       // given
+      instances.setInstances({filteredInstancesCount: 2});
 
       const node = mount(
         <Router>

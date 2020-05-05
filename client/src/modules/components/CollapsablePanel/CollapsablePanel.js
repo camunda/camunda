@@ -18,7 +18,7 @@ const TRANSITION_TIMEOUT = 200;
 function CollapsablePanel({
   label,
   panelPosition,
-  renderHeader,
+  header,
   renderFooter,
   isOverlay,
   children,
@@ -68,7 +68,7 @@ function CollapsablePanel({
         >
           <Styled.Vertical offset={verticalLabelOffset}>
             <span>{label}</span>
-            {renderHeader()}
+            {header}
           </Styled.Vertical>
         </Styled.ExpandButton>
       </Styled.CollapsedPanel>
@@ -91,7 +91,7 @@ function CollapsablePanel({
             data-test="collapse-button"
           />
           {label}
-          {renderHeader()}
+          {header}
         </Styled.Header>
         <Panel.Body scrollable={scrollable}>{children}</Panel.Body>
         {renderFooter ? <Panel.Footer>{renderFooter()}</Panel.Footer> : ''}
@@ -110,7 +110,7 @@ CollapsablePanel.propTypes = {
   label: PropTypes.string.isRequired,
   panelPosition: PropTypes.oneOf([PANEL_POSITION.RIGHT, PANEL_POSITION.LEFT])
     .isRequired,
-  renderHeader: PropTypes.func,
+  header: PropTypes.node,
   renderFooter: PropTypes.func,
   isOverlay: PropTypes.bool,
   toggle: PropTypes.func.isRequired,

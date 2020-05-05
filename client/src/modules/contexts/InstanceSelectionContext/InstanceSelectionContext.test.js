@@ -7,15 +7,12 @@
 import React, {useContext, useEffect} from 'react';
 import {mount} from 'enzyme';
 import {renderHook, act} from '@testing-library/react-hooks';
-import {DataManagerProvider} from 'modules/DataManager';
-import {DataContext} from 'modules/DataManager';
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
 
 import InstanceSelectionContext, {
   InstanceSelectionProvider,
   useInstanceSelection,
 } from './InstanceSelectionContext';
-import PropTypes from 'prop-types';
+import {instances} from 'modules/stores/instances';
 
 const INSTANCE_IDS = {
   A: '4503599627371065',
@@ -23,38 +20,15 @@ const INSTANCE_IDS = {
 };
 
 const TOTAL_COUNT = Object.values(INSTANCE_IDS).length;
-let dataManager;
-
-const ProviderWrapper = ({children}) => (
-  <DataContext.Provider value={{dataManager}}>{children}</DataContext.Provider>
-);
-
-ProviderWrapper.propTypes = {
-  children: PropTypes.oneOfType([
-    PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node,
-  ]),
-};
 
 describe('InstanceSelectionContext', () => {
   beforeEach(() => {
-    dataManager = createMockDataManager();
+    instances.setInstances({filteredInstancesCount: 2});
   });
 
   it('should return false when there is no selection', () => {
     // when
-    const {result} = renderHook(() => useInstanceSelection(), {
-      wrapper: ProviderWrapper,
-    });
-
-    const subscriptions = dataManager.subscriptions();
-
-    act(() => {
-      subscriptions['LOAD_LIST_INSTANCES']({
-        state: 'LOADED',
-        response: {totalCount: 2},
-      });
-    });
+    const {result} = renderHook(() => useInstanceSelection());
 
     // then
     expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(false);
@@ -67,19 +41,9 @@ describe('InstanceSelectionContext', () => {
 
   it('should add id to selection and return true', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection(), {
-      wrapper: ProviderWrapper,
-    });
+    const {result} = renderHook(() => useInstanceSelection());
 
     // when
-    const subscriptions = dataManager.subscriptions();
-
-    act(() => {
-      subscriptions['LOAD_LIST_INSTANCES']({
-        state: 'LOADED',
-        response: {totalCount: 2},
-      });
-    });
     act(() => {
       result.current.handleCheckInstance(INSTANCE_IDS.A)();
     });
@@ -95,18 +59,7 @@ describe('InstanceSelectionContext', () => {
 
   it('should add two ids and check all', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection(), {
-      wrapper: ProviderWrapper,
-    });
-
-    const subscriptions = dataManager.subscriptions();
-
-    act(() => {
-      subscriptions['LOAD_LIST_INSTANCES']({
-        state: 'LOADED',
-        response: {totalCount: 2},
-      });
-    });
+    const {result} = renderHook(() => useInstanceSelection());
 
     // when
     act(() => {
@@ -128,19 +81,9 @@ describe('InstanceSelectionContext', () => {
 
   it('should add and remove selection and return false', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection(), {
-      wrapper: ProviderWrapper,
-    });
+    const {result} = renderHook(() => useInstanceSelection());
 
     // when
-    const subscriptions = dataManager.subscriptions();
-
-    act(() => {
-      subscriptions['LOAD_LIST_INSTANCES']({
-        state: 'LOADED',
-        response: {totalCount: 2},
-      });
-    });
     act(() => {
       result.current.handleCheckInstance(INSTANCE_IDS.A)();
     });
@@ -159,19 +102,9 @@ describe('InstanceSelectionContext', () => {
 
   it('should select all', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection(), {
-      wrapper: ProviderWrapper,
-    });
+    const {result} = renderHook(() => useInstanceSelection());
 
     // when
-    const subscriptions = dataManager.subscriptions();
-
-    act(() => {
-      subscriptions['LOAD_LIST_INSTANCES']({
-        state: 'LOADED',
-        response: {totalCount: 2},
-      });
-    });
     act(() => {
       result.current.handleCheckAll();
     });
@@ -186,19 +119,9 @@ describe('InstanceSelectionContext', () => {
 
   it('should select all, unselect one', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection(), {
-      wrapper: ProviderWrapper,
-    });
+    const {result} = renderHook(() => useInstanceSelection());
 
     // when
-    const subscriptions = dataManager.subscriptions();
-
-    act(() => {
-      subscriptions['LOAD_LIST_INSTANCES']({
-        state: 'LOADED',
-        response: {totalCount: 2},
-      });
-    });
     act(() => {
       result.current.handleCheckAll();
     });
@@ -217,22 +140,12 @@ describe('InstanceSelectionContext', () => {
 
   it('should check all when checking single instances', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection(), {
-      wrapper: ProviderWrapper,
-    });
+    const {result} = renderHook(() => useInstanceSelection());
     act(() => {
       result.current.handleCheckAll();
     });
 
     // when
-    const subscriptions = dataManager.subscriptions();
-
-    act(() => {
-      subscriptions['LOAD_LIST_INSTANCES']({
-        state: 'LOADED',
-        response: {totalCount: 2},
-      });
-    });
     // uncheck one
     act(() => {
       result.current.handleCheckInstance(INSTANCE_IDS.A)();
@@ -259,6 +172,7 @@ describe('InstanceSelectionContext', () => {
 
       useEffect(() => {
         handleCheckInstance(INSTANCE_IDS.A)();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
       }, []);
 
       return (
@@ -268,11 +182,9 @@ describe('InstanceSelectionContext', () => {
     // when
 
     const node = mount(
-      <DataManagerProvider>
-        <InstanceSelectionProvider>
-          <Component />
-        </InstanceSelectionProvider>
-      </DataManagerProvider>
+      <InstanceSelectionProvider>
+        <Component />
+      </InstanceSelectionProvider>
     );
 
     // then

@@ -11,14 +11,12 @@ export const countStore = {
   running: 0,
   active: 0,
   withIncidents: 0,
-  filterCount: null,
 };
 
 export const countStoreWithCount = {
   running: 100,
   active: 80,
   withIncidents: 20,
-  filterCount: null,
   isLoaded: true,
 };
 

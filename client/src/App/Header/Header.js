@@ -8,13 +8,13 @@ import React from 'react';
 import {Redirect} from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
-import {withCountStore} from 'modules/contexts/CountContext';
 import {withRouter} from 'react-router';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {statistics} from 'modules/stores/statistics';
 
 import {observer} from 'mobx-react';
 
+import {instances} from 'modules/stores/instances';
 import {wrapWithContexts} from 'modules/contexts/contextHelpers';
 import withSharedState from 'modules/components/withSharedState';
 import {getFilterQueryString, parseQueryString} from 'modules/utils/filter';
@@ -37,9 +37,6 @@ const Header = observer(
   class Header extends React.Component {
     static propTypes = {
       dataManager: PropTypes.object,
-      countStore: PropTypes.shape({
-        filterCount: PropTypes.number,
-      }),
       location: PropTypes.object,
       isFiltersCollapsed: PropTypes.bool.isRequired,
       expandFilters: PropTypes.func.isRequired,
@@ -187,15 +184,17 @@ const Header = observer(
     }
 
     selectCount(type) {
-      const {filterCount} = this.props.countStore;
       const {running, withIncidents, isLoaded} = statistics.state;
+      const {filteredInstancesCount} = instances.state;
+
       if (!isLoaded) {
         return '';
       }
 
       const conditions = {
         instances: running,
-        filters: filterCount === null ? running : filterCount,
+        filters:
+          filteredInstancesCount === null ? running : filteredInstancesCount,
         incidents: withIncidents,
       };
 
@@ -292,14 +291,7 @@ const Header = observer(
   }
 );
 
-const contexts = [
-  withCountStore,
-  withData,
-  withCollapsablePanel,
-  withSharedState,
-  withRouter,
-  withData,
-];
+const contexts = [withData, withCollapsablePanel, withSharedState, withRouter];
 
 const WrappedHeader = wrapWithContexts(contexts, Header);
 

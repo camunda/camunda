@@ -45,7 +45,6 @@ export default class Instances extends Component {
       }),
       batchOperationId: PropTypes.string,
     }).isRequired,
-    filterCount: PropTypes.number.isRequired,
     resetFilters: PropTypes.bool,
     afterFilterReset: PropTypes.func,
     groupedWorkflows: PropTypes.object.isRequired,
@@ -77,7 +76,6 @@ export default class Instances extends Component {
       onFilterChange,
       onFlowNodeSelection,
       statistics,
-      filterCount,
       onSort,
       sorting,
       firstElement,
@@ -138,7 +136,6 @@ export default class Instances extends Component {
                 initialLoad={initialLoad}
                 instancesLoaded={instancesLoaded}
                 filter={filter}
-                filterCount={filterCount}
                 onSort={onSort}
                 sorting={sorting}
                 firstElement={firstElement}

@@ -6,63 +6,67 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {observer} from 'mobx-react';
 
 import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionContext';
 import pluralSuffix from 'modules/utils/pluralSuffix';
+import {instances} from 'modules/stores/instances';
 
 import Paginator from './Paginator';
-import {getMaxPage, isPaginationRequired} from './service';
 import * as Styled from './styled';
 import CreateOperationDropdown from './CreateOperationDropdown';
 
-function ListFooter({
-  filterCount,
-  perPage,
-  firstElement,
-  onFirstElementChange,
-  hasContent,
-}) {
-  const {getSelectedCount} = useInstanceSelectionContext();
-  const maxPage = getMaxPage(filterCount, perPage);
-  const selectedCount = getSelectedCount(filterCount);
+const ListFooter = observer(
+  ({perPage, firstElement, onFirstElementChange, hasContent}) => {
+    const {filteredInstancesCount} = instances.state;
+    const {getSelectedCount} = useInstanceSelectionContext();
+    const selectedCount = getSelectedCount();
 
-  return (
-    <Styled.Footer>
-      {hasContent && (
-        <>
-          <Styled.OperationButtonContainer>
-            {selectedCount > 0 && (
-              <CreateOperationDropdown
-                label={`Apply Operation on ${pluralSuffix(
-                  selectedCount,
-                  'Instance'
-                )}...`}
-                selectedCount={selectedCount}
-              />
-            )}
-          </Styled.OperationButtonContainer>
-          <div>
-            {isPaginationRequired(maxPage, filterCount) ? (
-              <Paginator
-                firstElement={firstElement}
-                perPage={perPage}
-                maxPage={maxPage}
-                onFirstElementChange={onFirstElementChange}
-              />
-            ) : null}
-          </div>
-        </>
-      )}
-      <Styled.Copyright />
-    </Styled.Footer>
-  );
-}
+    const getMaxPage = () => {
+      return Math.ceil(filteredInstancesCount / perPage);
+    };
+
+    const isPaginationRequired = () => {
+      return !(getMaxPage() === 1 || filteredInstancesCount === 0);
+    };
+
+    return (
+      <Styled.Footer>
+        {hasContent && (
+          <>
+            <Styled.OperationButtonContainer>
+              {selectedCount > 0 && (
+                <CreateOperationDropdown
+                  label={`Apply Operation on ${pluralSuffix(
+                    selectedCount,
+                    'Instance'
+                  )}...`}
+                  selectedCount={selectedCount}
+                />
+              )}
+            </Styled.OperationButtonContainer>
+            <div>
+              {isPaginationRequired() ? (
+                <Paginator
+                  firstElement={firstElement}
+                  perPage={perPage}
+                  maxPage={getMaxPage()}
+                  onFirstElementChange={onFirstElementChange}
+                />
+              ) : null}
+            </div>
+          </>
+        )}
+        <Styled.Copyright />
+      </Styled.Footer>
+    );
+  }
+);
 
 ListFooter.propTypes = {
   onFirstElementChange: PropTypes.func.isRequired,
   perPage: PropTypes.number.isRequired,
   firstElement: PropTypes.number.isRequired,
-  filterCount: PropTypes.number.isRequired,
   hasContent: PropTypes.bool.isRequired,
 };
 

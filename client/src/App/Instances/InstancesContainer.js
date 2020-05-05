@@ -68,7 +68,6 @@ class InstancesContainer extends Component {
       diagramModel: {},
       statistics: [],
       filter: {},
-      filterCount: 0,
       resetFilters: false,
       operationId: '',
       groupedWorkflows: {},
@@ -98,12 +97,9 @@ class InstancesContainer extends Component {
         if (state === LOADING_STATE.LOADED) {
           this.setState({
             workflowInstances: response.workflowInstances,
-            filterCount: response.totalCount,
+
             initialLoad: false,
             instancesLoaded: true,
-          });
-          this.props.storeStateLocally({
-            filterCount: response.totalCount,
           });
         }
       },
@@ -115,7 +111,6 @@ class InstancesContainer extends Component {
           } = SUBSCRIPTION_TOPIC;
           this.setState({
             workflowInstances: response[LOAD_LIST_INSTANCES].workflowInstances,
-            filterCount: response[LOAD_LIST_INSTANCES].totalCount,
             ...(response[LOAD_STATE_STATISTICS] && {
               statistics: response[LOAD_STATE_STATISTICS].statistics,
             }),

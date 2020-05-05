@@ -11,7 +11,7 @@ import {DataContext} from 'modules/DataManager';
 import {CountContext, Provider} from './CountContext';
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
 
-import {localStorage, dataRequests} from './CountContext.setup';
+import {dataRequests} from './CountContext.setup';
 
 jest.mock('modules/utils/bpmn');
 
@@ -23,10 +23,10 @@ function FooComp(props) {
   );
 }
 
-const mountComponent = (dataManager, locaStorage) =>
+const mountComponent = (dataManager) =>
   mount(
     <DataContext.Provider value={{dataManager}}>
-      <Provider getStateLocally={() => locaStorage}>
+      <Provider>
         <FooComp />
       </Provider>
     </DataContext.Provider>
@@ -42,9 +42,7 @@ describe('CountContext', () => {
     jest.clearAllMocks();
     dataManager = createMockDataManager();
 
-    node = mountComponent(dataManager, {
-      filterCount: 0,
-    });
+    node = mountComponent(dataManager);
   });
 
   beforeAll(() => {
@@ -65,38 +63,6 @@ describe('CountContext', () => {
 
     it('should request core statistics', () => {
       expect(dataManager.getWorkflowCoreStatistics).toHaveBeenCalled();
-    });
-
-    describe('local storage', () => {
-      let compProps;
-
-      it('should use stored filterCounts', () => {
-        // When: pass undefined
-        const {undefiendValues} = localStorage.filters;
-        node = mountComponent(dataManager, undefiendValues);
-
-        // Then:
-        compProps = node.find('div').props();
-        expect(compProps.countStore.filterCount).toBe(null);
-
-        // When: pass null
-        const {nullValues} = localStorage.filters;
-        node = mountComponent(dataManager, nullValues);
-
-        // Then:
-        compProps = node.find('div').props();
-        expect(compProps.countStore.filterCount).toBe(null);
-
-        // When: pass number
-        const {integerValues} = localStorage.filters;
-        node = mountComponent(dataManager, integerValues);
-
-        // Then:
-        compProps = node.find('div').props();
-        expect(compProps.countStore.filterCount).toBe(
-          integerValues.filterCount
-        );
-      });
     });
 
     describe('subscriptions', () => {
@@ -139,23 +105,6 @@ describe('CountContext', () => {
             coreStatistics.withIncidents
           );
           expect(compProps.countStore.filterCount).toBe(totalCount);
-        });
-      });
-
-      it('should update when new instances are loaded', () => {
-        const subscriptions = dataManager.subscriptions();
-        const response = {
-          totalCount: dataRequests.totalCount,
-        };
-
-        subscriptions['LOAD_LIST_INSTANCES']({
-          state: 'LOADED',
-          response,
-        });
-
-        jest.setTimeout(1, () => {
-          const compProps = node.find('div').props();
-          expect(compProps.countStore.filterCount).toBe(response.totalCount);
         });
       });
     });

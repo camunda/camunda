@@ -20,7 +20,8 @@ import {
   findByText,
   getByTestId,
 } from '@testing-library/react';
-import {countStore, location, countStoreWithCount} from './Header.setup';
+import {location} from './Header.setup';
+import {instances} from 'modules/stores/instances';
 
 // props mocks
 const mockCollapsablePanelProps = {
@@ -77,7 +78,6 @@ describe('Header', () => {
   it('should render all header links', async () => {
     const mockProps = {
       location: location.dashboard,
-      countStore,
       dataManager,
       ...mockCollapsablePanelProps,
     };
@@ -98,10 +98,11 @@ describe('Header', () => {
   it('should render incident, filter and instances counts correctly', async () => {
     const mockProps = {
       location: location.dashboard,
-      countStore,
       dataManager,
       ...mockCollapsablePanelProps,
     };
+    instances.setInstances({filteredInstancesCount: 200});
+
     const {container, getByTestId} = render(<MockApp {...mockProps} />);
 
     expect(
@@ -121,7 +122,7 @@ describe('Header', () => {
     ).toHaveTextContent(731);
     expect(
       within(getByTestId('header-link-filters')).getByTestId('badge')
-    ).toHaveTextContent(821);
+    ).toHaveTextContent(200);
     expect(
       within(getByTestId('header-link-instances')).getByTestId('badge')
     ).toHaveTextContent(821);
@@ -130,7 +131,6 @@ describe('Header', () => {
   it('should render user element', async () => {
     const mockProps = {
       location: location.dashboard,
-      countStore,
       dataManager,
       ...mockCollapsablePanelProps,
     };
@@ -143,7 +143,6 @@ describe('Header', () => {
   it('should highlight links correctly on dashboard page', async () => {
     const mockProps = {
       location: location.dashboard,
-      countStore,
       dataManager,
       ...mockCollapsablePanelProps,
     };
@@ -159,7 +158,6 @@ describe('Header', () => {
   it('should highlight links correctly on instances page', async () => {
     const mockProps = {
       location: location.instances,
-      countStore,
       dataManager,
       ...mockCollapsablePanelProps,
     };
@@ -178,7 +176,6 @@ describe('Header', () => {
   it('should render instance details skeleton on instance view', async () => {
     const mockProps = {
       location: location.instance,
-      countStore: countStoreWithCount,
       dataManager,
       ...mockCollapsablePanelProps,
     };
@@ -197,7 +194,6 @@ describe('Header', () => {
 
     const mockProps = {
       location: location.instance,
-      countStore: countStoreWithCount,
       dataManager,
       ...mockCollapsablePanelProps,
     };
@@ -224,7 +220,6 @@ describe('Header', () => {
     const MOCK_SECOND_INSTANCE_ID = 'second_instance_id';
     const mockProps = {
       location: location.instance,
-      countStore: countStoreWithCount,
       dataManager,
       ...mockCollapsablePanelProps,
     };
@@ -261,7 +256,6 @@ describe('Header', () => {
     const mockProps = {
       history: MOCK_HISTORY,
       location: location.instance,
-      countStore: countStoreWithCount,
       dataManager,
       ...mockCollapsablePanelProps,
     };

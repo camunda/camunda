@@ -5,14 +5,15 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render} from '@testing-library/react';
 
 import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
+import {instances} from 'modules/stores/instances';
 
-import CreateOperationDropdown from './CreateOperationDropdown';
 import ListFooter from './ListFooter';
-import Paginator from './Paginator';
-import {Copyright} from './styled';
+
+const DROPDOWN_REGEX = /^Apply Operation on \d+ Instance[s]?...$/;
+const COPYRIGHT_REGEX = /^© Camunda Services GmbH \d{4}. All rights reserved./;
 
 jest.mock('./CreateOperationDropdown', () => ({label}) => (
   <button>{label}</button>
@@ -24,67 +25,85 @@ const defaultProps = {
   onFirstElementChange: jest.fn(),
   perPage: 10,
   firstElement: 0,
-  filterCount: 9,
   dataManager: {},
   hasContent: true,
 };
 
 describe('ListFooter', () => {
-  beforeEach(() => {});
-
-  const renderFooter = ({
-    props: additionalProps,
-    context: additionalContext,
-  } = {}) => {
-    const context = {...defaultContext, ...additionalContext};
-    const props = {...defaultProps, ...additionalProps};
-
-    return mount(
-      <InstanceSelectionContext.Provider value={context}>
-        <ListFooter {...props} />
+  it('should show pagination, copyright, no dropdown', () => {
+    instances.setInstances({filteredInstancesCount: 11});
+    const {getByText, queryByText} = render(
+      <InstanceSelectionContext.Provider value={defaultContext}>
+        <ListFooter {...defaultProps} />
       </InstanceSelectionContext.Provider>
     );
-  };
 
-  it('should show pagination', () => {
-    const node = renderFooter({props: {filterCount: 11}});
+    const pageOneButton = getByText(/^1$/i);
+    const pageTwoButton = getByText(/^2$/i);
+    expect(pageOneButton).toBeInTheDocument();
+    expect(pageTwoButton).toBeInTheDocument();
 
-    expect(node.find(CreateOperationDropdown).exists()).toBe(false);
-    expect(node.find(Paginator).exists()).toBe(true);
-    expect(node.find(Copyright).exists()).toBe(true);
+    const copyrightText = getByText(COPYRIGHT_REGEX);
+    expect(copyrightText).toBeInTheDocument();
+
+    const dropdownButton = queryByText(DROPDOWN_REGEX);
+    expect(dropdownButton).toBeNull();
   });
 
-  it('should not show pagination', () => {
-    const node = renderFooter({props: {filterCount: 9}});
+  it('should show copyright, no dropdown, no pagination', () => {
+    instances.setInstances({filteredInstancesCount: 9});
+    const {getByText, queryByText} = render(
+      <InstanceSelectionContext.Provider value={defaultContext}>
+        <ListFooter {...defaultProps} />
+      </InstanceSelectionContext.Provider>
+    );
 
-    expect(node.find(CreateOperationDropdown).exists()).toBe(false);
-    expect(node.find(Paginator).exists()).toBe(false);
-    expect(node.find(Copyright).exists()).toBe(true);
-  });
+    expect(queryByText(/^1$/i)).toBeNull();
+    expect(queryByText(/^2$/i)).toBeNull();
 
-  it('should render copyright note', () => {
-    const node = renderFooter();
-    expect(node.find(Copyright).exists()).toBe(true);
+    const copyrightText = getByText(COPYRIGHT_REGEX);
+    expect(copyrightText).toBeInTheDocument();
+
+    const dropdownButton = queryByText(DROPDOWN_REGEX);
+    expect(dropdownButton).toBeNull();
   });
 
   it('should show Dropdown when there is selection', () => {
-    const node = renderFooter({
-      context: {getSelectedCount: () => 2},
-    });
+    instances.setInstances({filteredInstancesCount: 9});
+    const {getByText} = render(
+      <InstanceSelectionContext.Provider
+        value={{...defaultContext, getSelectedCount: () => 2}}
+      >
+        <ListFooter {...defaultProps} />
+      </InstanceSelectionContext.Provider>
+    );
 
-    const button = node.find(CreateOperationDropdown);
-    expect(button.exists()).toBe(true);
-    expect(button.text()).toContain('Apply Operation on 2 Instances...');
+    const dropdownButton = getByText('Apply Operation on 2 Instances...');
+    expect(dropdownButton).toBeInTheDocument();
+
+    const copyrightText = getByText(COPYRIGHT_REGEX);
+    expect(copyrightText).toBeInTheDocument();
   });
 
-  it('should not show Paginator when hasContent is false', () => {
-    const node = renderFooter({
-      props: {hasContent: false, filterCount: 11},
-      context: {getSelectedCount: () => 2},
-    });
+  it('should not show the pagination buttons when there is no content', () => {
+    instances.setInstances({filteredInstancesCount: 11});
+    const {queryByText, getByText} = render(
+      <InstanceSelectionContext.Provider
+        value={{...defaultContext, getSelectedCount: () => 2}}
+      >
+        <ListFooter {...defaultProps} hasContent={false} />
+      </InstanceSelectionContext.Provider>
+    );
 
-    expect(node.find(CreateOperationDropdown).exists()).toBe(false);
-    expect(node.find(Paginator).exists()).toBe(false);
-    expect(node.find(Copyright).exists()).toBe(true);
+    const pageOneButton = queryByText(/^1$/i);
+    const pageTwoButton = queryByText(/^2$/i);
+    expect(pageOneButton).toBeNull();
+    expect(pageTwoButton).toBeNull();
+
+    const dropdownButton = queryByText(DROPDOWN_REGEX);
+    expect(dropdownButton).toBeNull();
+
+    const copyrightText = getByText(COPYRIGHT_REGEX);
+    expect(copyrightText).toBeInTheDocument();
   });
 });

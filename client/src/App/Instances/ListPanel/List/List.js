@@ -33,7 +33,6 @@ class List extends React.Component {
     Overlay: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
     onEntriesPerPageChange: PropTypes.func.isRequired,
     isDataLoaded: PropTypes.bool.isRequired,
-    filterCount: PropTypes.number,
     filter: PropTypes.object,
     sorting: PropTypes.object,
     onSort: PropTypes.func,

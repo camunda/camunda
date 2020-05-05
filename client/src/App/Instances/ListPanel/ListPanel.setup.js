@@ -13,7 +13,6 @@ import {
 } from 'modules/constants';
 
 // mock props
-const filterCount = 27;
 const onFirstElementChange = jest.fn();
 const INSTANCE = createInstance({
   id: '1',
@@ -44,7 +43,6 @@ export const emptyList = {
 export const mockProps = {
   expandState: EXPAND_STATE.DEFAULT,
   filter: DEFAULT_FILTER,
-  filterCount: filterCount,
   instancesLoaded: false,
   instances: [],
   sorting: DEFAULT_SORTING,

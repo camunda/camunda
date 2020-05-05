@@ -19,7 +19,7 @@ import * as api from 'modules/api/instances/instances';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import Filters from './Filters';
-import FiltersPanel from './FiltersPanel';
+import {FiltersPanel} from './FiltersPanel';
 import * as Styled from './styled';
 import {
   groupedWorkflowsMock,

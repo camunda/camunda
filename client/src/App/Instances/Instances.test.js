@@ -215,7 +215,6 @@ describe('Instances', () => {
       );
 
       expect(ListPanelNode.prop('filter')).toBe(mockProps.filter);
-      expect(ListPanelNode.prop('filterCount')).toBe(mockProps.filterCount);
       expect(ListPanelNode.prop('sorting')).toBe(mockProps.sorting);
       expect(ListPanelNode.prop('firstElement')).toBe(mockProps.firstElement);
     });

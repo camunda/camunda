@@ -223,7 +223,6 @@ describe.skip('List', () => {
         const onSelectedInstancesUpdate = jest.fn();
 
         node.setProps({
-          filterCount: 2,
           selectedInstances: {
             all: false,
             ids: [10],
@@ -249,7 +248,6 @@ describe.skip('List', () => {
         const onSelectedInstancesUpdate = jest.fn();
 
         node.setProps({
-          filterCount: 2,
           selectedInstances: {
             all: true,
             ids: [],

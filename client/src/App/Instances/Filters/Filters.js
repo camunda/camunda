@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 
 import {withRouter} from 'react-router';
 
-import FiltersPanel from './FiltersPanel';
+import {FiltersPanel} from './FiltersPanel';
 import Button from 'modules/components/Button';
 import Input from 'modules/components/Input';
 import {

@@ -38,7 +38,6 @@ export const mockProps = {
   filter: filterMock,
   groupedWorkflows: formatGroupedWorkflows(groupedWorkflowsMock),
   workflowInstances: mockInstances.workflowInstances,
-  filterCount: mockInstances.totalCount,
   workflowInstancesLoaded: true,
   firstElement: 1,
   onFirstElementChange: jest.fn(),
