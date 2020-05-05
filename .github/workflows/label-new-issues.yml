@@ -15,4 +15,4 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           labels: "Status: Needs Triage"
-          ignore-labeled: "/^Status:.*$/"
+          ignore-labeled: "^Status:.*$"
