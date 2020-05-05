@@ -98,7 +98,7 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     Environment.system().put(PLAINTEXT_CONNECTION_VAR, "false");
     final Properties properties = new Properties();
-    properties.putIfAbsent(USE_PLAINTEXT_CONNECTION, "");
+    properties.putIfAbsent(USE_PLAINTEXT_CONNECTION, "true");
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
