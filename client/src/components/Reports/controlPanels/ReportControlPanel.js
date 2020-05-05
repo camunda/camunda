@@ -117,7 +117,14 @@ export default withErrorHandling(
         },
         filter: {
           $set: filter.filter(
-            ({type}) => !['executedFlowNodes', 'executingFlowNodes', 'variable'].includes(type)
+            ({type}) =>
+              ![
+                'executedFlowNodes',
+                'executingFlowNodes',
+                'variable',
+                'assignee',
+                'candidateGroup',
+              ].includes(type)
           ),
         },
       };

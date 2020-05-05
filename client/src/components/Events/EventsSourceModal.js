@@ -177,7 +177,7 @@ export default withErrorHandling(
                           processDefinitionKey: key,
                           versions,
                           tenants: tenantIds,
-                          traceVariable: null,
+                          traceVariable: undefined,
                         },
                       }),
                     });

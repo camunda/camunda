@@ -240,6 +240,36 @@ export default class FilterList extends React.Component {
               </ActionItem>
             </li>
           );
+        } else if (['assignee', 'candidateGroup'].includes(filter.type)) {
+          const {values, operator} = filter.data;
+          list.push(
+            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+              <ActionItem
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  this.props.deleteFilter(filter);
+                }}
+              >
+                <span className="parameterName">{t(`common.filter.types.${filter.type}`)}</span>
+                {operator === 'in' && this.createOperator(t('common.filter.list.operators.is'))}
+                {operator === 'not in' &&
+                  (values.length === 1
+                    ? this.createOperator(t('common.filter.list.operators.not'))
+                    : this.createOperator(t('common.filter.list.operators.neither')))}
+                {values.map((val, idx) => (
+                  <span key={val}>
+                    <span className="previewItemValue">
+                      {val === null ? t('common.filter.assigneeModal.unassigned') : val}
+                    </span>
+                    {idx < values.length - 1 &&
+                      (operator === 'not in'
+                        ? this.createOperator(t('common.filter.list.operators.nor'))
+                        : this.createOperator(t('common.filter.list.operators.or')))}
+                  </span>
+                ))}
+              </ActionItem>
+            </li>
+          );
         }
       }
 

@@ -654,12 +654,16 @@
     },
     "filter": {
       "types": {
+        "instanceState": "Instance state",
         "runningInstancesOnly": "Running Instances Only",
         "completedInstancesOnly": "Completed Instances Only",
         "canceledInstancesOnly": "Canceled Instances Only",
         "nonCanceledInstancesOnly": "Non Canceled Instances Only",
         "suspendedInstancesOnly": "Suspended Instances Only",
         "nonSuspendedInstancesOnly": "Non Suspended Instances Only",
+        "date": "Date",
+        "assignee": "Assignee",
+        "candidateGroup": "Candidate Group",
         "startDate": "Start Date",
         "endDate": "End Date",
         "duration": "Duration",
@@ -763,6 +767,17 @@
         "notExecuted": "was not executed",
         "executing": "pending or executing",
         "previewLabel": "This is the filter you are about to create: "
+      },
+      "assigneeModal": {
+        "includeOnly": "Include only",
+        "excludeOnly": "Exclude only",
+        "type": {
+          "assignee": "Assignees",
+          "candidateGroup": "Candidate groups"
+        },
+        "unassigned": "unassigned",
+        "selectValue": "Filter for ID",
+        "info": "The following selections will be included:"
       },
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other",
       "suspensionFilterWarning": "Please note the limitations of the Suspension Filter described in the <a href='{docsLink}'>Optimize documentation</a>."

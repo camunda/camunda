@@ -431,7 +431,8 @@ test('aggregators and reset to default', async (t) => {
   await u.selectGroupby(t, 'None');
 
   await t.click(e.filterButton);
-  await t.click(e.filterOption('Completed Instances Only'));
+  await t.click(e.filterOption('Instance state'));
+  await t.click(e.subFilterOption('Completed Instances Only'));
 
   const avg = await e.reportNumber.textContent;
 

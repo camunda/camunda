@@ -29,7 +29,8 @@ async function createReport(
 
   if (completed) {
     await t.click(Report.filterButton);
-    await t.click(Report.filterOption('Completed Instances Only'));
+    await t.click(Report.filterOption('Instance state'));
+    await t.click(Report.subFilterOption('Completed Instances Only'));
   }
 
   await t.typeText(Report.nameEditField, name, {replace: true});

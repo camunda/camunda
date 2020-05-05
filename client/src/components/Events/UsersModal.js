@@ -21,7 +21,7 @@ export default withErrorHandling(
       users: null,
       deleting: null,
       alreadyExists: false,
-      selectedIdentity: null,
+      selectedIdentity: undefined,
     };
 
     componentDidMount() {
@@ -38,7 +38,7 @@ export default withErrorHandling(
         if (!this.isUserAlreadyAdded(newId)) {
           this.setState(({users}) => ({
             users: update(users, {$push: [newIdentity]}),
-            selectedIdentity: null,
+            selectedIdentity: undefined,
           }));
         } else {
           this.setState({alreadyExists: true});

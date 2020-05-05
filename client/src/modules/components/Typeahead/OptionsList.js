@@ -44,7 +44,7 @@ export default function OptionsList({
     React.cloneElement(option, {
       className: i === selectedOption ? 'isActive' : '',
       onClick: (evt) => onSelect(option),
-      onMouseDown,
+      onMouseDown: (evt) => !option.props.disabled && onMouseDown(evt),
       children: highlightText(option.props.children, filter),
     })
   );
@@ -60,7 +60,7 @@ export default function OptionsList({
       if (evt.key === 'Enter') {
         evt.stopPropagation();
         const optionToSelect = filteredOptions[selectedOption];
-        if (optionToSelect) {
+        if (optionToSelect && !optionToSelect.props.disabled) {
           onSelect(optionToSelect);
         }
         return;

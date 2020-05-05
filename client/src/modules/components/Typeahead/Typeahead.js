@@ -42,18 +42,19 @@ export default class Typeahead extends React.Component {
 
   componentDidUpdate(prevProps) {
     if (prevProps.value !== this.props.value) {
-      this.findAndSelect(this.props.value);
+      if (typeof this.props.value === 'undefined') {
+        this.setState(defaultState);
+        this.props.onSearch('');
+      } else {
+        this.findAndSelect(this.props.value);
+      }
     }
-
     if (!prevProps.initialValue && this.props.initialValue) {
       this.findAndSelect(this.props.initialValue);
     }
   }
 
   findAndSelect = (value) => {
-    if (typeof value === 'undefined') {
-      return;
-    }
     const {children} = this.props;
     const foundOption = React.Children.toArray(children).find(
       (option) => option.props.value === value
@@ -66,9 +67,6 @@ export default class Typeahead extends React.Component {
         selected,
         query: selected,
       });
-    } else if (value === null) {
-      this.setState(defaultState);
-      this.props.onSearch('');
     }
   };
 

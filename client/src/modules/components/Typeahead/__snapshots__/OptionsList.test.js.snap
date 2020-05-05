@@ -21,6 +21,7 @@ exports[`should render an option with the search as input if optionList has type
     key="test"
     label="test"
     onClick={[Function]}
+    onMouseDown={[Function]}
     value="test"
   >
     <span

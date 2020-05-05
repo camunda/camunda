@@ -9,3 +9,4 @@ export {VariableFilter} from './variable';
 export {NodeFilter, NodeListPreview} from './node';
 export {DurationFilter} from './duration';
 export {NodeDuration} from './NodeDuration';
+export {AssigneeFilter} from './assignee';

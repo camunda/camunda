@@ -654,12 +654,16 @@
     },
     "filter": {
       "types": {
+        "instanceState": "Instanzstatus",
         "runningInstancesOnly": "Nur laufende Instanzen",
         "completedInstancesOnly": "Nur abgeschlossene Instanzen",
         "canceledInstancesOnly": "Nur abgebrochene Instanzen",
         "nonCanceledInstancesOnly": "Nur nicht abgebrochene Instanzen",
         "suspendedInstancesOnly": "Nur suspendierte Instanzen",
         "nonSuspendedInstancesOnly": "Nur nicht suspendierte Instanzen",
+        "date": "Datum",
+        "assignee": "Bearbeiter",
+        "candidateGroup": "Potenzielle Gruppe",
         "startDate": "Startdatum",
         "endDate": "Enddatum",
         "duration": "Dauer",
@@ -763,6 +767,17 @@
         "notExecuted": "wurde nicht ausgeführt",
         "executing": "wartend oder in Ausführung",
         "previewLabel": "Das ist der Filter, der gerade erstellt wird: "
+      },
+      "assigneeModal": {
+        "includeOnly": "Nur einschließen",
+        "excludeOnly": "Nur ausschließen",
+        "type": {
+          "assignee": "Bearbeiter",
+          "candidateGroup": "Potenzielle Gruppe"
+        },
+        "unassigned": "Nicht zugewiesen",
+        "selectValue": "Filter für ID",
+        "info": "Die folgenden Auswahlen werden eingeschlossen sein:"
       },
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
       "suspensionFilterWarning": "Bitte beachten Sie die Einschränkungen der Suspensions-Filter, die in der <a href='{docsLink}'>Optimize Dokumentation</a> beschrieben sind."

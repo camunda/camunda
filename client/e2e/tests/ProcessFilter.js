@@ -113,26 +113,32 @@ test('instance state filters', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Running Instances Only'));
+  await t.click(Report.filterOption('Instance state'));
+  await t.click(Report.subFilterOption('Running Instances Only'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Completed Instances Only'));
+  await t.click(Report.filterOption('Instance state'));
+  await t.click(Report.subFilterOption('Completed Instances Only'));
   await t.expect(Report.warningMessage.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Canceled Instances Only'));
+  await t.click(Report.filterOption('Instance state'));
+  await t.click(Report.subFilterOption('Canceled Instances Only'));
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Non Canceled Instances Only'));
+  await t.click(Report.filterOption('Instance state'));
+  await t.click(Report.subFilterOption('Non Canceled Instances Only'));
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Suspended Instances Only'));
+  await t.click(Report.filterOption('Instance state'));
+  await t.click(Report.subFilterOption('Suspended Instances Only'));
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Non Suspended Instances Only'));
+  await t.click(Report.filterOption('Instance state'));
+  await t.click(Report.subFilterOption('Non Suspended Instances Only'));
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -143,7 +149,8 @@ test('pick a start date from the date picker', async (t) => {
   await u.selectGroupby(t, 'None');
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Start Date'));
+  await t.click(Report.filterOption('Date'));
+  await t.click(Report.subFilterOption('Start Date'));
   await t.click(Filter.dateTypeSelect);
   await t.click(Report.option('Fixed Date'));
   await t.click(Filter.dateFilterStartInput);
@@ -167,7 +174,8 @@ test('add relative current month start date filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Start Date'));
+  await t.click(Report.filterOption('Date'));
+  await t.click(Report.subFilterOption('Start Date'));
   await t.click(Filter.dateTypeSelect);
   await t.click(Report.option('This...'));
   await t.click(Filter.unitSelect);
@@ -188,7 +196,8 @@ test('add rolling last 5 days end date filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('End Date'));
+  await t.click(Report.filterOption('Date'));
+  await t.click(Report.subFilterOption('End Date'));
   await t.click(Filter.dateTypeSelect);
   await t.click(Report.option('Rolling'));
   await t.click(Filter.unitSelect);
@@ -283,7 +292,8 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.expect(controlPanelFilterText).contains('Approve Invoice');
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Start Date'));
+  await t.click(Report.filterOption('Date'));
+  await t.click(Report.subFilterOption('Start Date'));
 
   await t.click(Filter.dateTypeSelect);
   await t.click(Report.option('This...'));
@@ -292,7 +302,8 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Report.primaryModalButton);
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Running Instances Only'));
+  await t.click(Report.filterOption('Instance state'));
+  await t.click(Report.subFilterOption('Running Instances Only'));
 
   await t.resizeWindow(1300, 900);
 

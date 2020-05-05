@@ -1,0 +1,24 @@
+@import 'shared-styles/shared-styles.scss';
+
+.AssigneeFilter {
+  .InputGroup {
+    margin-top: 15px;
+
+    .Button {
+      flex: none;
+    }
+  }
+
+  .info {
+    font-size: 0.875em;
+    padding-bottom: 10px;
+    border-bottom: 1px solid $silver-darken-87;
+  }
+
+  .addedValues {
+    min-height: 50px;
+    max-height: calc(100vh - 415px);
+
+    @include scrollable;
+  }
+}
