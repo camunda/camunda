@@ -194,9 +194,11 @@ pipeline {
         stage('Upload') {
             when { branch 'develop' }
             steps {
-                container('maven') {
-                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh '.ci/scripts/distribution/upload.sh'
+                retry(3) {
+                    container('maven') {
+                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                            sh '.ci/scripts/distribution/upload.sh'
+                        }
                     }
                 }
             }
@@ -212,22 +214,26 @@ pipeline {
                     }
 
                     steps {
-                        build job: 'zeebe-docker', parameters: [
-                            string(name: 'BRANCH', value: env.BRANCH_NAME),
-                            string(name: 'VERSION', value: env.VERSION),
-                            booleanParam(name: 'IS_LATEST', value: env.BRANCH_NAME == 'master'),
-                            booleanParam(name: 'PUSH', value: env.BRANCH_NAME == 'develop')
-                        ]
+                        retry(3) {
+                            build job: 'zeebe-docker', parameters: [
+                                string(name: 'BRANCH', value: env.BRANCH_NAME),
+                                string(name: 'VERSION', value: env.VERSION),
+                                booleanParam(name: 'IS_LATEST', value: env.BRANCH_NAME == 'master'),
+                                booleanParam(name: 'PUSH', value: env.BRANCH_NAME == 'develop')
+                            ]
+                        }
                     }
                 }
 
                 stage('Docs') {
                     when { anyOf { branch 'master'; branch 'develop' } }
                     steps {
-                        build job: 'zeebe-docs', parameters: [
-                            string(name: 'BRANCH', value: env.BRANCH_NAME),
-                            booleanParam(name: 'LIVE', value: env.BRANCH_NAME == 'master')
-                        ]
+                        retry(3) {
+                            build job: 'zeebe-docs', parameters: [
+                                string(name: 'BRANCH', value: env.BRANCH_NAME),
+                                booleanParam(name: 'LIVE', value: env.BRANCH_NAME == 'master')
+                            ]
+                        }
                     }
                 }
             }
