@@ -38,9 +38,6 @@ import io.atomix.primitive.PrimitiveInfo;
 import io.atomix.primitive.PrimitiveRegistry;
 import io.atomix.primitive.PrimitiveState;
 import io.atomix.primitive.PrimitiveType;
-import io.atomix.primitive.operation.OperationType;
-import io.atomix.primitive.operation.PrimitiveOperation;
-import io.atomix.primitive.operation.impl.DefaultOperationId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.proxy.ProxyClient;
 import io.atomix.primitive.proxy.impl.DefaultProxyClient;
@@ -50,7 +47,6 @@ import io.atomix.primitive.session.SessionMetadata;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftClusterEvent;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.primitive.FakeStateMachine;
@@ -64,20 +60,12 @@ import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.entry.CloseSessionEntry;
-import io.atomix.raft.storage.log.entry.CommandEntry;
-import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
-import io.atomix.raft.storage.log.entry.KeepAliveEntry;
-import io.atomix.raft.storage.log.entry.MetadataEntry;
-import io.atomix.raft.storage.log.entry.OpenSessionEntry;
-import io.atomix.raft.storage.log.entry.QueryEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.snapshot.Snapshot;
 import io.atomix.raft.storage.snapshot.SnapshotChunk;
 import io.atomix.raft.storage.snapshot.SnapshotChunkReader;
 import io.atomix.raft.storage.snapshot.SnapshotStore;
-import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.LoadMonitor;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
@@ -88,16 +76,13 @@ import io.atomix.storage.statistics.StorageStatistics;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.serializer.Namespace;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -129,30 +114,6 @@ import org.slf4j.LoggerFactory;
 public class RaftTest extends ConcurrentTestCase {
 
   public static AtomicLong snapshots = new AtomicLong(0);
-  private static final Namespace NAMESPACE =
-      Namespace.builder()
-          .register(CloseSessionEntry.class)
-          .register(CommandEntry.class)
-          .register(ConfigurationEntry.class)
-          .register(InitializeEntry.class)
-          .register(KeepAliveEntry.class)
-          .register(MetadataEntry.class)
-          .register(OpenSessionEntry.class)
-          .register(QueryEntry.class)
-          .register(PrimitiveOperation.class)
-          .register(DefaultOperationId.class)
-          .register(OperationType.class)
-          .register(ReadConsistency.class)
-          .register(ArrayList.class)
-          .register(HashSet.class)
-          .register(DefaultRaftMember.class)
-          .register(MemberId.class)
-          .register(RaftMember.Type.class)
-          .register(Instant.class)
-          .register(Configuration.class)
-          .register(byte[].class)
-          .register(long[].class)
-          .build();
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -162,6 +123,7 @@ public class RaftTest extends ConcurrentTestCase {
   protected volatile List<RaftServer> servers = new ArrayList<>();
   protected volatile TestRaftProtocolFactory protocolFactory;
   protected volatile ThreadContext context;
+  private volatile long position = 0;
   private Path directory;
   private final Map<MemberId, TestRaftServerProtocol> serverProtocols = Maps.newConcurrentMap();
 
@@ -1673,12 +1635,11 @@ public class RaftTest extends ConcurrentTestCase {
     final List<RaftServer> servers = createServers(3);
     final RaftServer leader = getLeader(servers).get();
     final CountDownLatch transitionCompleted = new CountDownLatch(1);
-    servers.stream()
-        .forEach(
-            server ->
-                server.addRoleChangeListener(
-                    (role, term) ->
-                        assertLastReadInitialEntry(role, term, server, transitionCompleted)));
+    servers.forEach(
+        server ->
+            server.addRoleChangeListener(
+                (role, term) ->
+                    assertLastReadInitialEntry(role, term, server, transitionCompleted)));
     // when
     leader.stepDown();
 
@@ -1718,8 +1679,8 @@ public class RaftTest extends ConcurrentTestCase {
     final CountDownLatch firstListener = new CountDownLatch(1);
     final CountDownLatch secondListener = new CountDownLatch(1);
 
-    server.addFailureListener(() -> firstListener.countDown());
-    server.addFailureListener(() -> secondListener.countDown());
+    server.addFailureListener(firstListener::countDown);
+    server.addFailureListener(secondListener::countDown);
 
     // when
     // inject failures
@@ -1737,7 +1698,7 @@ public class RaftTest extends ConcurrentTestCase {
     assertEquals(0, firstListener.getCount());
     assertEquals(0, secondListener.getCount());
 
-    assertEquals(server.getRole(), Role.INACTIVE);
+    assertEquals(Role.INACTIVE, server.getRole());
   }
 
   @Test
@@ -1857,7 +1818,9 @@ public class RaftTest extends ConcurrentTestCase {
     if (raftRole instanceof LeaderRole) {
       final var leaderRole = (LeaderRole) raftRole;
       final var appendListener = new TestAppendListener();
-      leaderRole.appendEntry(0, 10, ByteBuffer.wrap("event".getBytes()), appendListener);
+      ++position;
+      leaderRole.appendEntry(
+          position, position, ByteBuffer.wrap("event".getBytes()), appendListener);
       return appendListener.awaitCommit();
     }
     throw new IllegalArgumentException(

@@ -28,6 +28,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.session.RaftSessionRegistry;
+import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.snapshot.SnapshotStore;
@@ -51,9 +52,10 @@ import org.mockito.Mockito;
 
 public class LeaderRoleTest {
 
-  private LeaderRole leadeRole;
+  private LeaderRole leaderRole;
   private RaftLogWriter writer;
   private RaftContext context;
+  private RaftLogReader reader;
 
   @Before
   public void setup() {
@@ -79,13 +81,16 @@ public class LeaderRoleTest {
     final SnapshotStore snapshotStore = mock(SnapshotStore.class);
     when(context.getSnapshotStore()).thenReturn(snapshotStore);
 
-    leadeRole = new LeaderRole(context);
+    leaderRole = new LeaderRole(context);
     // since we mock RaftContext we should simulate leader close on transition
-    doAnswer(i -> leadeRole.stop().join()).when(context).transition(Role.FOLLOWER);
+    doAnswer(i -> leaderRole.stop().join()).when(context).transition(Role.FOLLOWER);
     final RaftSessionRegistry mockSessionRegistry = mock(RaftSessionRegistry.class);
     when(mockSessionRegistry.getSessions()).thenReturn(Collections.emptyList());
     when(context.getSessions()).thenReturn(mockSessionRegistry);
     when(context.getMembershipService()).thenReturn(mock(ClusterMembershipService.class));
+
+    reader = mock(RaftLogReader.class);
+    when(context.getLogReader()).thenReturn(reader);
   }
 
   @Test
@@ -112,7 +117,7 @@ public class LeaderRoleTest {
         };
 
     // when
-    leadeRole.appendEntry(0, 1, data, listener);
+    leaderRole.appendEntry(0, 1, data, listener);
 
     // then
     latch.await(10, TimeUnit.SECONDS);
@@ -153,7 +158,7 @@ public class LeaderRoleTest {
         };
 
     // when
-    leadeRole.appendEntry(0, 1, data, listener);
+    leaderRole.appendEntry(0, 1, data, listener);
 
     // then
     latch.await(10, TimeUnit.SECONDS);
@@ -188,7 +193,7 @@ public class LeaderRoleTest {
         };
 
     // when
-    leadeRole.appendEntry(0, 1, data, listener);
+    leaderRole.appendEntry(0, 1, data, listener);
 
     // then
     latch.await(10, TimeUnit.SECONDS);
@@ -226,7 +231,7 @@ public class LeaderRoleTest {
         };
 
     // when
-    leadeRole.appendEntry(0, 1, data, listener);
+    leaderRole.appendEntry(0, 1, data, listener);
 
     // then
     latch.await(10, TimeUnit.SECONDS);
@@ -265,7 +270,7 @@ public class LeaderRoleTest {
         };
 
     // when
-    leadeRole.appendEntry(0, 1, data, listener);
+    leaderRole.appendEntry(0, 1, data, listener);
 
     // then
     latch.await(10, TimeUnit.SECONDS);
@@ -302,7 +307,7 @@ public class LeaderRoleTest {
         };
 
     // when
-    leadeRole.appendEntry(2, 3, data, listener);
+    leaderRole.appendEntry(2, 3, data, listener);
 
     // then
     latch.await(10, TimeUnit.SECONDS);
@@ -340,8 +345,8 @@ public class LeaderRoleTest {
         };
 
     // when
-    leadeRole.appendEntry(0, 1, data, mock(AppendListener.class));
-    leadeRole.appendEntry(2, 3, data, listener);
+    leaderRole.appendEntry(0, 1, data, mock(AppendListener.class));
+    leaderRole.appendEntry(2, 3, data, listener);
 
     // then
     latch.await(10, TimeUnit.SECONDS);
@@ -389,8 +394,8 @@ public class LeaderRoleTest {
         };
 
     // when
-    leadeRole.appendEntry(0, 1, data, listener);
-    leadeRole.appendEntry(1, 2, data, listener);
+    leaderRole.appendEntry(0, 1, data, listener);
+    leaderRole.appendEntry(1, 2, data, listener);
 
     // then
     latch.await(10, TimeUnit.SECONDS);
@@ -399,5 +404,47 @@ public class LeaderRoleTest {
     assertEquals(2, entries.size());
     assertEquals(1, entries.get(0).highestPosition());
     assertEquals(2, entries.get(1).highestPosition());
+  }
+
+  @Test
+  public void shouldNotAppendInconsistentEntry() throws InterruptedException {
+    // given
+    when(writer.append(any(ZeebeEntry.class)))
+        .then(
+            i -> {
+              final ZeebeEntry zeebeEntry = i.getArgument(0);
+              final Indexed<RaftLogEntry> indexedEntry = new Indexed<>(1, zeebeEntry, 45);
+              when(writer.getLastEntry()).thenReturn(indexedEntry);
+
+              return indexedEntry;
+            });
+
+    final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AppendListener listener =
+        new AppendListener() {
+          @Override
+          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
+
+          @Override
+          public void onWriteError(final Throwable error) {
+            latch.countDown();
+          }
+
+          @Override
+          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
+
+          @Override
+          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
+        };
+
+    leaderRole.appendEntry(6, 7, data, listener);
+
+    // when
+    leaderRole.appendEntry(7, 7, data, listener);
+
+    // then
+    assertTrue(latch.await(2, TimeUnit.SECONDS));
+    verify(leaderRole.raft, timeout(2000).atLeast(1)).transition(Role.FOLLOWER);
   }
 }
