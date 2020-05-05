@@ -4,6 +4,7 @@ The health probes for a standalone gateway are available at `localhost:8080/actu
 
 The following health indicators are enabled by default
 * Gateway Started - checks whether the Gateway is running (i.e. not currently starting and not yet shut down)
+* Gateway Responsive - checks whether the Gateway can handle a request within a given timeout
 * Gateway Cluster Awareness - checks whether the Gateway is aware of other nodes in the cluster
 * Gateway Partition Leader Awareness - checks whether the Gateway is aware of partition leaders in the cluster
 * Disk Space - checks that the free disk space is greater than 10 MB
@@ -21,6 +22,13 @@ Global settings for all health inidcators:
 
 Settings for gateway started health indicator:
 * `management.health.gatewayStarted.enabled=true` - enables (default) or disables this health indicator
+
+### Gateway Responsive
+
+Settings for gateway repsonsiveness health indicator:
+* `management.health.gateway-responsive.enabled=true` - enables (default) or disables this health indicator
+* `management.health.gateway-responsive.requestTimeout=500ms` - defines the timeout for the request; if the test completes before the timeout, the health status is _UP_, otherwise it is _DOWN_
+
 
 ### Gateway Cluster Awareness ###
 
