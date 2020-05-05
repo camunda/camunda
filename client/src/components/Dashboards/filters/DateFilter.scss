@@ -1,0 +1,59 @@
+@import 'shared-styles/shared-styles.scss';
+
+.DateFilter__Dashboard {
+  &.fixed {
+    width: max-content;
+  }
+
+  .Dropdown {
+    width: 100%;
+  }
+
+  .to {
+    color: $silver-darken-80;
+  }
+
+  .Popover__dialog {
+    padding: 0;
+  }
+
+  .indicator {
+    vertical-align: middle;
+    color: $silver-darken-80;
+    &.active {
+      color: $blue-darken-55;
+    }
+  }
+
+  .DateFields {
+    padding: 10px 20px 0;
+    margin: 0;
+
+    .DateInput {
+      &::after {
+        display: none;
+      }
+
+      .DateInputWarning {
+        top: 35px;
+        font-size: 10px;
+      }
+    }
+    .dateRangeContainer {
+      position: relative;
+      box-shadow: none;
+      border: none;
+      top: 0;
+      background-color: initial;
+
+      .rdrCalendarWrapper {
+        background-color: initial;
+      }
+
+      &::before,
+      &::after {
+        display: none;
+      }
+    }
+  }
+}

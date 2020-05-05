@@ -442,6 +442,16 @@
         "nonCanceledInstancesOnly": "Non Canceled",
         "suspendedInstancesOnly": "Suspended",
         "nonSuspendedInstancesOnly": "Non Suspended"
+      },
+      "date": {
+        "last": "Last",
+        "this": "This",
+        "units": {
+          "weeks": "Week",
+          "months": "Month",
+          "years": "Year",
+          "quarters": "Quarter"
+        }
       }
     }
   },

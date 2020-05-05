@@ -18,8 +18,8 @@ export default class DatePicker extends React.Component {
     const {startDate, endDate} = props.initialDates || {};
     if (startDate && endDate) {
       this.state = {
-        startDate: startDate.format(DATE_FORMAT),
-        endDate: endDate.format(DATE_FORMAT),
+        startDate: moment(startDate).format(DATE_FORMAT),
+        endDate: moment(endDate).format(DATE_FORMAT),
         valid: true,
       };
     } else {
@@ -75,6 +75,7 @@ export default class DatePicker extends React.Component {
         endDate={this.state.endDate}
         setValidState={this.setValidState}
         disabled={this.props.disabled}
+        forceOpen={this.props.forceOpen}
       />
     );
   }

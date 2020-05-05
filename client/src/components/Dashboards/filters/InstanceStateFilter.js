@@ -23,6 +23,8 @@ const types = [
 ];
 
 export default function InstanceStateFilter({filter, setFilter}) {
+  const stateFilter = filter.filter(({type}) => types.includes(type));
+
   function hasFilter(type) {
     return filter.some((filter) => filter.type === type);
   }
@@ -36,7 +38,7 @@ export default function InstanceStateFilter({filter, setFilter}) {
   }
 
   function isAllowed(type) {
-    return !incompatibleFilters([...filter, {type}]);
+    return !incompatibleFilters([...stateFilter, {type}]);
   }
 
   const active = types.some(hasFilter);
@@ -48,7 +50,7 @@ export default function InstanceStateFilter({filter, setFilter}) {
         title={
           <>
             <span className={classnames('indicator', {active})} />
-            {filter.map(({type}) => t('dashboard.filter.types.' + type)).join(', ') ||
+            {stateFilter.map(({type}) => t('dashboard.filter.types.' + type)).join(', ') ||
               t('common.off')}
           </>
         }
@@ -73,6 +75,7 @@ export default function InstanceStateFilter({filter, setFilter}) {
           </fieldset>
           <hr />
           <Button
+            className="reset-button"
             disabled={!active}
             onClick={() => setFilter(filter.filter(({type}) => !types.includes(type)))}
           >

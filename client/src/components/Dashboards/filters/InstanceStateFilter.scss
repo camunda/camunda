@@ -1,13 +1,19 @@
 @import 'shared-styles/shared-styles.scss';
 
 .InstanceStateFilter {
-  .title {
-    font-size: 14px;
-    color: $grey-base-40;
-    margin-bottom: 7px;
-  }
-
   .Popover {
+    .Popover__dialog {
+      box-shadow: none;
+      border-radius: 0;
+      margin-top: 4px;
+      padding: 0;
+    }
+
+    .Popover__dialog-arrow-border,
+    .Popover__dialog-arrow {
+      display: none;
+    }
+
     .Popover__button {
       .indicator {
         display: inline-block;
@@ -28,17 +34,6 @@
       > fieldset {
         padding: 10px 20px;
       }
-      > .Button {
-        margin: 0 10px 0.5em;
-        font-size: 1em;
-        border: none;
-        background: none;
-      }
-    }
-
-    hr {
-      border: none;
-      border-bottom: 1px solid $silver-darken-87;
     }
   }
 }

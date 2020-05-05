@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show the filter state 1`] = `
+<React.Fragment>
+  <Icon
+    className="indicator active"
+    type="calender"
+  />
+  Today
+</React.Fragment>
+`;

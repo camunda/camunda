@@ -21,7 +21,7 @@ export default class Popover extends React.Component {
     this.insideClick = false;
 
     this.state = {
-      open: false,
+      open: !!props.autoOpen,
       dialogStyles: {},
     };
   }

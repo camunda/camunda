@@ -14,3 +14,19 @@ it('should render a filter input based on the availableFilters', () => {
 
   expect(node.find('InstanceStateFilter')).toExist();
 });
+
+it('should pass a single filter to the date filter component', () => {
+  const dateFilter = {
+    type: 'rolling',
+    start: {value: 0, unit: 'days'},
+    end: null,
+  };
+  const node = shallow(
+    <FiltersView
+      availableFilters={[{type: 'state'}, {type: 'startDate'}]}
+      filter={[{type: 'runningInstancesOnly'}, {type: 'startDate', data: dateFilter}]}
+    />
+  );
+
+  expect(node.find('DateFilter')).toHaveProp('filter', dateFilter);
+});

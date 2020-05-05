@@ -442,6 +442,16 @@
         "nonCanceledInstancesOnly": "Nicht Abgebrochen",
         "suspendedInstancesOnly": "Suspendiert",
         "nonSuspendedInstancesOnly": "Nicht Suspendiert"
+      },
+      "date": {
+        "last": "Letzte(n/s)",
+        "this": "Diese(n/s)",
+        "units": {
+          "weeks": "Woche",
+          "months": "Monat",
+          "years": "Jahr",
+          "quarters": "Quartal"
+        }
       }
     }
   },
