@@ -7,8 +7,12 @@ package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -23,14 +27,20 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
+@NoArgsConstructor
+@SuperBuilder
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String processDefinitionKey;
+  @Builder.Default
   protected List<String> processDefinitionVersions = new ArrayList<>();
   protected String processDefinitionName;
+  @Builder.Default
   protected List<String> tenantIds = Collections.singletonList(null);
+  @Builder.Default
   protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;

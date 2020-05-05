@@ -7,7 +7,10 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
@@ -24,33 +27,57 @@ import java.util.Optional;
 
 import static java.util.Objects.nonNull;
 
+@AllArgsConstructor
+@Builder
 @Data
 @FieldNameConstants(asEnum = true)
+@NoArgsConstructor
 public class SingleReportConfigurationDto implements Combinable {
+  @Builder.Default
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
+  @Builder.Default
   private AggregationType aggregationType = AggregationType.AVERAGE;
+  @Builder.Default
   private FlowNodeExecutionState flowNodeExecutionState = FlowNodeExecutionState.ALL;
+  @Builder.Default
   private UserTaskDurationTime userTaskDurationTime = UserTaskDurationTime.TOTAL;
+  @Builder.Default
   private HiddenNodesDto hiddenNodes = new HiddenNodesDto();
+  @Builder.Default
   private Boolean showInstanceCount = false;
+  @Builder.Default
   private Boolean pointMarkers = true;
   private Integer precision = null;
+  @Builder.Default
   private Boolean hideRelativeValue = false;
+  @Builder.Default
   private Boolean hideAbsoluteValue = false;
+  @Builder.Default
   // needed to ensure the name is serialized properly, see https://stackoverflow.com/a/30207335
   @JsonProperty("yLabel")
   private String yLabel = "";
+  @Builder.Default
   // needed to ensure the name is serialized properly, see https://stackoverflow.com/a/30207335
   @JsonProperty("xLabel")
   private String xLabel = "";
+  @Builder.Default
   private Boolean alwaysShowRelative = false;
+  @Builder.Default
   private Boolean alwaysShowAbsolute = false;
+  @Builder.Default
   private Boolean showGradientBars = true;
   private String xml = null;
+  @Builder.Default
   private List<String> excludedColumns = new ArrayList<>();
+  @Builder.Default
+  private List<String> includedColumns = new ArrayList<>();
+  @Builder.Default
   private ColumnOrderDto columnOrder = new ColumnOrderDto();
+  @Builder.Default
   private SingleReportTargetValueDto targetValue = new SingleReportTargetValueDto();
+  @Builder.Default
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
+  @Builder.Default
   private DistributedBy distributedBy = DistributedBy.NONE;
   private SortingDto sorting = null;
   private ProcessPartDto processPart = null;

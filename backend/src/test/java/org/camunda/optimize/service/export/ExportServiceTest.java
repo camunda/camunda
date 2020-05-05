@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
@@ -22,8 +23,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -60,10 +59,9 @@ public class ExportServiceTest {
     ));
 
     // when
-    Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "");
-    assertThat(csvContent.isPresent(), is(true));
-
-    String actualContent = new String(csvContent.get());
+    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "")
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
+    String actualContent = new String(csvContent);
     String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(
       "/csv/process/single/raw_process_data.csv"
     );
@@ -84,11 +82,9 @@ public class ExportServiceTest {
     ));
 
     // when
-    Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "");
-
-    assertThat(csvContent.isPresent(), is(true));
-
-    String actualContent = new String(csvContent.get());
+    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "")
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
+    String actualContent = new String(csvContent);
     String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(
       "/csv/decision/raw_decision_data.csv"
     );

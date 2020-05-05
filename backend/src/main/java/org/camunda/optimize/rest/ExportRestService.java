@@ -6,12 +6,23 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.export.ExportService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
+import javax.validation.Valid;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -38,17 +49,58 @@ public class ExportRestService {
                                @PathParam("reportId") String reportId,
                                @PathParam("fileName") String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
 
-    final Optional<byte[]> csvForReport =
-      exportService.getCsvBytesForEvaluatedReportResult(userId, reportId);
+    final Optional<byte[]> csvForReport = exportService.getCsvBytesForEvaluatedReportResult(userId, reportId);
 
     return csvForReport
-      .map(csvBytes -> Response
-        .ok(csvBytes, MediaType.APPLICATION_OCTET_STREAM)
-        .header("Content-Disposition", "attachment; filename=" + resultFileName)
-        .build()
-      )
+      .map(csvBytes -> createOctetStreamResponse(fileName, csvBytes))
       .orElse(Response.status(Response.Status.NOT_FOUND).build());
+  }
+
+  @POST
+  // octet stream on success, json on potential error
+  @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
+  @Path("csv/process/rawData/{fileName}")
+  public Response getRawDataCsv(@Context final ContainerRequestContext requestContext,
+                                @PathParam("fileName") final String fileName,
+                                @Valid final ProcessRawDataCsvExportRequestDto request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    final SingleProcessReportDefinitionDto reportDefinitionDto = SingleProcessReportDefinitionDto.builder()
+      .reportType(ReportType.PROCESS)
+      .combined(false)
+      .data(
+        ProcessReportDataDto.builder()
+          .processDefinitionKey(request.getProcessDefinitionKey())
+          .processDefinitionVersions(request.getProcessDefinitionVersions())
+          .tenantIds(request.getTenantIds())
+          .filter(request.getFilter())
+          .configuration(SingleReportConfigurationDto.builder().includedColumns(request.getIncludedColumns()).build())
+          .view(new ProcessViewDto(ProcessViewProperty.RAW_DATA))
+          .groupBy(new NoneGroupByDto())
+          .visualization(ProcessVisualization.TABLE)
+          .build()
+      )
+      .build();
+
+    return createOctetStreamResponse(
+      fileName,
+      exportService.getCsvBytesForEvaluatedReportResult(userId, reportDefinitionDto)
+    );
+  }
+
+  private Response createOctetStreamResponse(final String fileName,
+                                             final byte[] csvBytesForEvaluatedReportResult) {
+    return Response
+      .ok(
+        csvBytesForEvaluatedReportResult,
+        MediaType.APPLICATION_OCTET_STREAM
+      )
+      .header("Content-Disposition", "attachment; filename=" + createFileName(fileName))
+      .build();
+  }
+
+  private String createFileName(final String fileName) {
+    return fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
   }
 }

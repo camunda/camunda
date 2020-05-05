@@ -21,8 +21,8 @@ public class RawDataHelper {
   public static final String FIXED_TIME = "2018-02-23T14:31:08.048+01:00";
   public static final String FIXED_TIME_VARIABLE = "2018-02-23T12:31:08.048+01:00";
   // Process Columns: processDefinitionKey, processDefinitionId, processInstanceId, startDate, endDate, durationInMs,
-  // engineName, tenantId, 2 variable fields
-  public static final int NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS = 11;
+  // engineName, tenantId, 3 variable fields
+  public static final int NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS = 12;
   // Decision Columns: decisionDefinitionKey, decisionDefinitionId, decisionInstanceId, evaluationDateTime,
   // engineName, tenantId, 7 input fields, 14 output fields
   public static final int NUMBER_OF_RAW_DECISION_REPORT_COLUMNS = 27;
@@ -43,6 +43,7 @@ public class RawDataHelper {
 
     final Map<String, Object> variables1 = new HashMap<>();
     variables1.put("1", "test");
+    variables1.put("3", "test");
     instance1.setVariables(variables1);
     toMap.add(instance1);
 

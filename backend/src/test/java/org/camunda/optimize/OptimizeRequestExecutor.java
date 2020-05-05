@@ -45,6 +45,7 @@ import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
+import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.security.AuthCookieService;
 
@@ -770,6 +771,14 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildCsvExportRequest(String reportId, String fileName) {
     this.path = "export/csv/" + reportId + "/" + fileName;
     this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDynamicRawProcessCsvExportRequest(final ProcessRawDataCsvExportRequestDto request,
+                                                                        final String fileName) {
+    this.path = "export/csv/process/rawData/" + fileName;
+    this.method = POST;
+    this.body = getBody(request);
     return this;
   }
 

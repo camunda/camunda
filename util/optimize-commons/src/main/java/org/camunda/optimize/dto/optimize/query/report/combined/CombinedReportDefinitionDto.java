@@ -6,11 +6,13 @@
 package org.camunda.optimize.dto.optimize.query.report.combined;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 
+@SuperBuilder
 public class CombinedReportDefinitionDto extends ReportDefinitionDto<CombinedReportDataDto> {
 
   public CombinedReportDefinitionDto() {

@@ -5,9 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
+import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 
+@SuperBuilder
 public class SingleProcessReportDefinitionDto extends SingleReportDefinitionDto<ProcessReportDataDto> {
 
   public SingleProcessReportDefinitionDto() {

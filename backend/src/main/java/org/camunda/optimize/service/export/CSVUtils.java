@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.export;
 
+import com.google.common.collect.Sets;
 import com.opencsv.CSVWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -71,22 +72,25 @@ public class CSVUtils {
 
 
 
-  public static List<String[]> mapRawProcessReportInstances(List<RawDataProcessInstanceDto> rawData,
-                                                            Integer limit,
-                                                            Integer offset,
-                                                            List<String> excludedColumns) {
+  public static List<String[]> mapRawProcessReportInstances(final List<RawDataProcessInstanceDto> rawData,
+                                                            final Integer limit,
+                                                            final Integer offset,
+                                                            final List<String> excludedColumns,
+                                                            final List<String> includedColumns) {
     final List<String[]> result = new ArrayList<>();
 
     // column names contain prefixes that must be stripped off to get the plain keys needed for exclusion
     final Set<String> excludedKeys = stripOffPrefixes(excludedColumns, VARIABLE_PREFIX);
+    final Set<String> includedKeys = stripOffPrefixes(includedColumns, VARIABLE_PREFIX);
 
-    final List<String> includedDtoFields = extractAllDtoFieldKeys(RawDataProcessInstanceDto.class);
-    includedDtoFields.removeAll(excludedKeys);
-    final List<String> includedVariableKeys = extractAllVariableKeys(rawData);
-    includedVariableKeys.removeAll(excludedKeys);
+    final List<String> allDtoFields = extractAllDtoFieldKeys(RawDataProcessInstanceDto.class);
+    applyInclusionAndExclusions(allDtoFields, excludedKeys, includedKeys);
 
-    final List<String> allIncludedKeys = union(includedDtoFields, includedVariableKeys);
-    final String[] headerLine = constructRawProcessHeaderLine(includedDtoFields, includedVariableKeys);
+    final List<String> allVariableKeys = extractAllVariableKeys(rawData);
+    applyInclusionAndExclusions(allVariableKeys, excludedKeys, includedKeys);
+
+    final List<String> allIncludedKeys = union(allDtoFields, allVariableKeys);
+    final String[] headerLine = constructRawProcessHeaderLine(allDtoFields, allVariableKeys);
     result.add(headerLine);
 
     int currentPosition = 0;
@@ -96,7 +100,7 @@ public class CSVUtils {
         final String[] dataLine = new String[allIncludedKeys.size()];
         for (int i = 0; i < dataLine.length; i++) {
           final String currentKey = allIncludedKeys.get(i);
-          final Optional<String> optionalValue = includedVariableKeys.contains(currentKey)
+          final Optional<String> optionalValue = allVariableKeys.contains(currentKey)
             ? getVariableValue(instanceDto, currentKey)
             : getDtoFieldValue(instanceDto, RawDataProcessInstanceDto.class, currentKey);
           dataLine[i] = optionalValue.orElse(null);
@@ -109,23 +113,29 @@ public class CSVUtils {
     return result;
   }
 
-  public static List<String[]> mapRawDecisionReportInstances(List<RawDataDecisionInstanceDto> rawData,
-                                                             Integer limit,
-                                                             Integer offset,
-                                                             List<String> excludedColumns) {
+  public static List<String[]> mapRawDecisionReportInstances(final List<RawDataDecisionInstanceDto> rawData,
+                                                             final Integer limit,
+                                                             final Integer offset,
+                                                             final List<String> excludedColumns,
+                                                             final List<String> includedColumns) {
     final List<String[]> result = new ArrayList<>();
 
-    final List<String> includedDtoFields = extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class);
-    includedDtoFields.removeAll(excludedColumns);
+    final Set<String> excludedKeys = Sets.newHashSet(excludedColumns);
+    final Set<String> includedKeys = Sets.newHashSet(includedColumns);
+
+    final List<String> allDtoFields = extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class);
+    applyInclusionAndExclusions(allDtoFields, excludedKeys, includedKeys);
+
     final List<String> includedInputVariableKeys = extractAllDecisionInputKeys(rawData)
       .stream().map(key -> INPUT_PREFIX + key).collect(Collectors.toList());
-    includedInputVariableKeys.removeAll(excludedColumns);
+    applyInclusionAndExclusions(includedInputVariableKeys, excludedKeys, includedKeys);
+
     final List<String> includedOutputVariableKeys = extractAllDecisionOutputKeys(rawData)
       .stream().map(key -> OUTPUT_PREFIX + key).collect(Collectors.toList());
-    includedOutputVariableKeys.removeAll(excludedColumns);
+    applyInclusionAndExclusions(includedOutputVariableKeys, excludedKeys, includedKeys);
 
     final List<String> allIncludedKeys = union(
-      includedDtoFields,
+      allDtoFields,
       includedInputVariableKeys,
       includedOutputVariableKeys
     );
@@ -177,6 +187,16 @@ public class CSVUtils {
   }
 
 
+  private static void applyInclusionAndExclusions(final List<String> allDtoFields,
+                                                  final Set<String> excludedKeys,
+                                                  final Set<String> includedKeys) {
+    if (!includedKeys.isEmpty()) {
+      allDtoFields.removeIf(fieldName -> !includedKeys.contains(fieldName));
+    }
+    // on conflict, exclude wins over include
+    allDtoFields.removeAll(excludedKeys);
+  }
+
   public static String mapAggregationType(AggregationType aggregationType) {
     switch (aggregationType) {
       case MEDIAN:
@@ -196,9 +216,9 @@ public class CSVUtils {
     return currentKey.replace(prefix, "");
   }
 
-  private static Set<String> stripOffPrefixes(List<String> excludedColumns, String... prefixes) {
+  private static Set<String> stripOffPrefixes(List<String> columnNames, String... prefixes) {
     final String prefixRegex = Arrays.stream(prefixes).map(Pattern::quote).collect(joining("|"));
-    return excludedColumns.stream()
+    return columnNames.stream()
       .map(columnName -> columnName.replaceAll(prefixRegex, ""))
       .collect(Collectors.toSet());
   }

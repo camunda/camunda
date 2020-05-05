@@ -5,40 +5,60 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.Lists;
+import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.core.IsNot.not;
 
 public class ExportRestServiceIT extends AbstractIT {
+
+  public static final String COLUMN_PROCESS_INSTANCE_ID = ProcessInstanceDto.Fields.processInstanceId;
+  public static final String SAMPLE_PROCESS_DEFINITION_KEY = "some";
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
+    engineIntegrationExtension.getEngineName()
+  );
 
   @Test
   public void exportWithoutAuthorization() {
@@ -49,9 +69,9 @@ public class ExportRestServiceIT extends AbstractIT {
       .buildCsvExportRequest("fake_id", "my_file.csv")
       .execute();
 
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.TEMPORARY_REDIRECT.getStatusCode()));
-    assertThat(response.getLocation().getPath(), is("/login"));
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.TEMPORARY_REDIRECT.getStatusCode());
+    assertThat(response.getLocation().getPath()).isEqualTo("/login");
   }
 
   @Test
@@ -70,7 +90,7 @@ public class ExportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -89,14 +109,15 @@ public class ExportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    assertThat(getResponseContentAsString(response).length(), is(greaterThan(0)));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(getResponseContentAsString(response)).hasSizeGreaterThan(0);
   }
 
   @Test
   public void exportExistingRawDecisionReport() throws IOException {
     //given
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
     String reportId = createAndStoreDefaultValidRawDecisionReportDefinition(
       decisionDefinitionEngineDto.getKey(),
       String.valueOf(decisionDefinitionEngineDto.getVersion())
@@ -109,11 +130,11 @@ public class ExportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     IOUtils.copy(response.readEntity(InputStream.class), bos);
     byte[] result = bos.toByteArray();
-    assertThat(result.length, is(not(0)));
+    assertThat(result).hasSizeGreaterThan(0);
   }
 
   @Test
@@ -132,9 +153,8 @@ public class ExportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
-
 
   @Test
   public void exportNotExistingReport() {
@@ -145,7 +165,241 @@ public class ExportRestServiceIT extends AbstractIT {
         .buildCsvExportRequest("UFUK", "IGDE.csv")
         .execute();
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("getInvalidDynamicRawProcessExportRequests")
+  public void exportDynamicRawProcessReport_rejectInvalidRequests(final ProcessRawDataCsvExportRequestDto invalidRequest) {
+    //given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDynamicRawProcessCsvExportRequest(invalidRequest, "my_file.csv")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  public static Stream<ProcessRawDataCsvExportRequestDto> getInvalidDynamicRawProcessExportRequests() {
+    return Stream.of(
+      ProcessRawDataCsvExportRequestDto.builder()
+        .processDefinitionKey(null)
+        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .build(),
+      ProcessRawDataCsvExportRequestDto.builder()
+        .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
+        .processDefinitionVersions(null)
+        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .build(),
+      ProcessRawDataCsvExportRequestDto.builder()
+        .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
+        .processDefinitionVersions(Collections.emptyList())
+        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .build(),
+      ProcessRawDataCsvExportRequestDto.builder()
+        .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
+        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(null)
+        .build(),
+      ProcessRawDataCsvExportRequestDto.builder()
+        .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
+        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(Collections.emptyList())
+        .build(),
+      ProcessRawDataCsvExportRequestDto.builder()
+        .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
+        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .tenantIds(null)
+        .build(),
+      ProcessRawDataCsvExportRequestDto.builder()
+        .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
+        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+        .filter(null)
+        .build(),
+      ProcessRawDataCsvExportRequestDto.builder()
+        .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
+        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(null)
+        .build(),
+      ProcessRawDataCsvExportRequestDto.builder()
+        .processDefinitionKey(SAMPLE_PROCESS_DEFINITION_KEY)
+        .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+        .includedColumns(Collections.emptyList())
+        .build()
+    );
+  }
+
+  @Test
+  public void exportDynamicRawProcessReport_withJustProcessInstanceId() throws IOException {
+    //given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
+      .processDefinitionKey(processInstance.getProcessDefinitionKey())
+      .processDefinitionVersions(Lists.newArrayList(processInstance.getProcessDefinitionVersion()))
+      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .build();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDynamicRawProcessCsvExportRequest(exportRequestDto, "my_file.csv")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String[] csvString = getResponseContentAsString(response).split("\\r\\n");
+    assertThat(csvString)
+      .containsExactly(escapeString(COLUMN_PROCESS_INSTANCE_ID), escapeString(processInstance.getId()));
+  }
+
+  @Test
+  public void exportDynamicRawProcessReport_withJustProcessInstanceIdSpecificVersion() throws IOException {
+    //given
+    ProcessInstanceEngineDto processInstanceVersion1 = deployAndStartSimpleProcess();
+    ProcessInstanceEngineDto processInstanceVersion2 = deployAndStartSimpleProcess();
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
+      .processDefinitionKey(processInstanceVersion2.getProcessDefinitionKey())
+      .processDefinitionVersions(Lists.newArrayList(processInstanceVersion2.getProcessDefinitionVersion()))
+      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .build();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDynamicRawProcessCsvExportRequest(exportRequestDto, "my_file.csv")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String[] csvString = getResponseContentAsString(response).split("\\r\\n");
+    assertThat(csvString)
+      .containsExactly(escapeString(COLUMN_PROCESS_INSTANCE_ID), escapeString(processInstanceVersion2.getId()));
+  }
+
+  @Test
+  public void exportDynamicRawProcessReport_withJustProcessInstanceIdAllVersions() throws IOException {
+    //given
+    ProcessInstanceEngineDto processInstanceVersion1 = deployAndStartSimpleProcess();
+    ProcessInstanceEngineDto processInstanceVersion2 = deployAndStartSimpleProcess();
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
+      .processDefinitionKey(processInstanceVersion2.getProcessDefinitionKey())
+      .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .build();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDynamicRawProcessCsvExportRequest(exportRequestDto, "my_file.csv")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String[] csvString = getResponseContentAsString(response).split("\\r\\n");
+    assertThat(csvString)
+      .containsExactly(
+        escapeString(COLUMN_PROCESS_INSTANCE_ID),
+        escapeString(processInstanceVersion2.getId()),
+        escapeString(processInstanceVersion1.getId())
+      );
+  }
+
+  @Test
+  public void exportDynamicRawProcessReport_withJustProcessInstanceIdSpecificTenant() throws IOException {
+    //given
+    final String tenantId1 = "tenant1";
+    engineIntegrationExtension.createTenant(tenantId1);
+    ProcessInstanceEngineDto processInstanceTenant1 = deployAndStartSimpleProcess(tenantId1);
+    final String tenantId2 = "tenant2";
+    engineIntegrationExtension.createTenant(tenantId2);
+    ProcessInstanceEngineDto processInstanceTenant2 = deployAndStartSimpleProcess(tenantId2);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
+      .processDefinitionKey(processInstanceTenant2.getProcessDefinitionKey())
+      .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+      .tenantIds(Lists.newArrayList(tenantId1))
+      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .build();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDynamicRawProcessCsvExportRequest(exportRequestDto, "my_file.csv")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String[] csvString = getResponseContentAsString(response).split("\\r\\n");
+    assertThat(csvString)
+      .containsExactly(escapeString(COLUMN_PROCESS_INSTANCE_ID), escapeString(processInstanceTenant1.getId()));
+  }
+
+  @Test
+  @SneakyThrows
+  public void exportDynamicRawProcessReport_withJustProcessInstanceIdWithFilter() {
+    //given
+    ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcess();
+    final ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension
+      .startProcessInstance(processInstance1.getDefinitionId());
+
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now());
+    final OffsetDateTime modifiedStartDate = LocalDateUtil.getCurrentDateTime().minusSeconds(20);
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance1.getId(), modifiedStartDate);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
+      .processDefinitionKey(processInstance1.getProcessDefinitionKey())
+      .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+      .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
+      .filter(
+        ProcessFilterBuilder.filter()
+          .relativeStartDate().start(10L, DateFilterUnit.SECONDS).add()
+          .buildList()
+      )
+      .build();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDynamicRawProcessCsvExportRequest(exportRequestDto, "my_file.csv")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    final String[] csvString = getResponseContentAsString(response).split("\\r\\n");
+    assertThat(csvString)
+      .containsExactly(escapeString(COLUMN_PROCESS_INSTANCE_ID), escapeString(processInstance2.getId()));
+  }
+
+  private static String escapeString(final String string) {
+    return "\"" + string + "\"";
   }
 
   private String createAndStoreDefaultValidRawProcessReportDefinition(String processDefinitionKey,
@@ -219,15 +473,20 @@ public class ExportRestServiceIT extends AbstractIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
-    return deployAndStartSimpleProcessWithVariables(new HashMap<>());
+    return deployAndStartSimpleProcess(null);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
+  private ProcessInstanceEngineDto deployAndStartSimpleProcess(String tenantId) {
+    return deployAndStartSimpleProcessWithVariables(new HashMap<>(), tenantId);
+  }
+
+  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables,
+                                                                            String tenantId) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
       .endEvent()
       .done();
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables, tenantId);
   }
 }

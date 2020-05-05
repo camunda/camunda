@@ -7,11 +7,13 @@ package org.camunda.optimize.service.export;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,14 +34,33 @@ public class ExportService {
       final AuthorizedReportEvaluationResult reportResult = reportService.evaluateSavedReport(
         userId, reportId, exportCsvLimit
       );
+      final List<String[]> resultAsCsv = reportResult.getEvaluationResult().getResultAsCsv(exportCsvLimit, 0);
+      return Optional.ofNullable(CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv));
+    } catch (NotFoundException e) {
+      log.debug("Could not find report with id {} to export the result to csv!", reportId, e);
+      return Optional.empty();
+    } catch (Exception e) {
+      log.error("Could not evaluate report with id {} to export the result to csv!", reportId, e);
+      throw e;
+    }
+  }
+
+  public byte[] getCsvBytesForEvaluatedReportResult(final String userId,
+                                                    final ReportDefinitionDto<?> reportDefinition) {
+    log.debug("Exporting provided report definition as csv.");
+    final Integer exportCsvLimit = configurationService.getExportCsvLimit();
+
+    try {
+      final AuthorizedReportEvaluationResult reportResult = reportService.evaluateReport(
+        userId, reportDefinition, exportCsvLimit
+      );
       final List<String[]> resultAsCsv = reportResult.getEvaluationResult()
         .getResultAsCsv(exportCsvLimit, 0);
-      return Optional.of(CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv));
+      return CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv);
     } catch (Exception e) {
-      log.debug("Could not evaluate report to export the result to csv!", e);
-      return Optional.empty();
+      log.error("Could not evaluate report to export the result to csv!", e);
+      throw e;
     }
-
   }
 
 
