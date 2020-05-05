@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.event.mediator;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.EventTraceStateServiceFactory;
-import org.camunda.optimize.service.events.CamundaEventFetcherService;
+import org.camunda.optimize.service.events.CamundaTraceableEventFetcherService;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.importing.event.handler.EventImportIndexHandlerRegistry;
@@ -28,7 +28,7 @@ public class EventTraceImportMediatorFactory {
   public EventTraceImportMediator createCamundaEventTraceImportMediator(final String processDefinitionKey) {
     return beanFactory.getBean(
       EventTraceImportMediator.class,
-      beanFactory.getBean(CamundaEventFetcherService.class, camundaEventService, processDefinitionKey),
+      beanFactory.getBean(CamundaTraceableEventFetcherService.class, camundaEventService, processDefinitionKey),
       eventImportIndexHandlerRegistry.getCamundaEventTraceImportIndexHandler(processDefinitionKey),
       eventTraceStateServiceFactory.createEventTraceStateService(processDefinitionKey)
     );

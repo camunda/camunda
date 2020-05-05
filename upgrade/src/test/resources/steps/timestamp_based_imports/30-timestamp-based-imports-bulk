@@ -1,0 +1,8 @@
+{"index":{"_index":"optimize-timestamp-based-import-index","_type":"_doc","_id":"eventStateProcessing-external-optimize"}}
+{"lastImportExecutionTimestamp":"2020-04-24T12:15:13.750+0200","timestampOfLastEntity":"1970-01-01T01:00:00.000+0100","esTypeIndexRefersTo":"eventStateProcessing-external","engine":"optimize"}
+{"index":{"_index":"optimize-timestamp-based-import-index","_type":"_doc","_id":"eventStateProcessing-invoice-optimize"}}
+{"lastImportExecutionTimestamp":"2020-04-24T12:15:13.750+0200","timestampOfLastEntity":"1970-01-01T01:00:00.000+0100","esTypeIndexRefersTo":"eventStateProcessing-invoice","engine":"optimize"}
+{"index":{"_index":"optimize-timestamp-based-import-index","_type":"_doc","_id":"eventStateProcessing-reviewinvoice-optimize"}}
+{"lastImportExecutionTimestamp":"2020-04-24T12:15:13.750+0200","timestampOfLastEntity":"1970-01-01T01:00:00.000+0100","esTypeIndexRefersTo":"eventStateProcessing-reviewinvoice","engine":"optimize"}
+{"index":{"_index":"optimize-timestamp-based-import-index","_type":"_doc","_id":"activityImportIndex-camunda-bpm"}}
+{"lastImportExecutionTimestamp":"2020-04-24T12:15:13.750+0200","timestampOfLastEntity":"1970-01-01T01:00:00.000+0100","esTypeIndexRefersTo":"activityImportIndex","engine":"camunda-bpm"}

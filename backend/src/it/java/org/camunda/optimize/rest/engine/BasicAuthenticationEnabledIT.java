@@ -25,6 +25,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -119,6 +120,14 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
 
     authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_AUTHORIZATION);
+    authorizationDto.setPermissions(Collections.singletonList(READ_PERMISSION));
+    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    authorizationDto.setUserId(TEST_USERNAME);
+    engineIntegrationExtension.createAuthorization(authorizationDto);
+
+    authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
     authorizationDto.setPermissions(Collections.singletonList(READ_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);

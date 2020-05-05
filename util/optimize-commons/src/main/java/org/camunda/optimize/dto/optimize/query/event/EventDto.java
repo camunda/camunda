@@ -6,25 +6,22 @@
 package org.camunda.optimize.dto.optimize.query.event;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
+import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder(toBuilder = true)
+@SuperBuilder(toBuilder = true)
 @Getter
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

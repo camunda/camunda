@@ -142,6 +142,8 @@ public class CamundaEventImportService {
           .activityId(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getActivityId()))
           .activityName(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getActivityName()))
           .activityInstanceId(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getId()))
+          // the end event of a split task should have a higher counter than the start, so we convert it and increment by one.
+          .orderCounter(Optional.ofNullable(flowNodeEventDto.getOrderCounter()).map(counter -> convertToOptimizeCounter(counter) + 1).orElse(null))
           .timestamp(flowNodeEventDto.getEndDate())
           .build()
       );
@@ -177,7 +179,13 @@ public class CamundaEventImportService {
       .engine(flowNodeEventDto.getEngineAlias())
       .tenantId(flowNodeEventDto.getTenantId())
       .timestamp(flowNodeEventDto.getStartDate())
+      .orderCounter(Optional.ofNullable(flowNodeEventDto.getOrderCounter()).map(this::convertToOptimizeCounter).orElse(null))
       .build();
+  }
+
+  private Long convertToOptimizeCounter(final Long counter) {
+    // We have to double the counters from the engine because we split activities, creating more than originally imported
+    return counter * 2;
   }
 
   private Stream<CamundaActivityEventDto> convertRunningProcessInstanceToCamundaActivityEvents(
@@ -240,6 +248,8 @@ public class CamundaEventImportService {
       .engine(processInstanceDto.getEngine())
       .tenantId(processInstanceDto.getTenantId())
       .timestamp(startDate)
+      // process instance start/end events should not have an order counter
+      .orderCounter(null)
       .build();
   }
 

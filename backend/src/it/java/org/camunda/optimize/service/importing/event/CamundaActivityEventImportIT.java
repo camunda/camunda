@@ -67,7 +67,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         CamundaActivityEventDto.Fields.activityInstanceId,
         CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
-        CamundaActivityEventDto.Fields.timestamp
+        CamundaActivityEventDto.Fields.timestamp,
+        CamundaActivityEventDto.Fields.orderCounter
       )
       .containsExactlyInAnyOrder(
         createAssertionEvent(START_EVENT, START_EVENT, START_EVENT, processInstanceEngineDto),
@@ -102,6 +103,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         applyCamundaProcessInstanceEndEventSuffix(processInstanceEngineDto.getId()),
         applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getId())
       );
+    assertOrderCounters(storedEvents);
   }
 
   @Test
@@ -123,7 +125,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         CamundaActivityEventDto.Fields.activityInstanceId,
         CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
-        CamundaActivityEventDto.Fields.timestamp
+        CamundaActivityEventDto.Fields.timestamp,
+        CamundaActivityEventDto.Fields.orderCounter
       )
       .containsExactlyInAnyOrder(
         createAssertionEvent(
@@ -142,6 +145,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       )
       .extracting(CamundaActivityEventDto.Fields.activityInstanceId)
       .contains(applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getId()));
+    assertOrderCounters(storedEvents);
   }
 
   @Test
@@ -167,7 +171,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         CamundaActivityEventDto.Fields.activityInstanceId,
         CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
-        CamundaActivityEventDto.Fields.timestamp
+        CamundaActivityEventDto.Fields.timestamp,
+        CamundaActivityEventDto.Fields.orderCounter
       )
       .containsExactlyInAnyOrder(
         createAssertionEvent(
@@ -202,6 +207,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         applyCamundaProcessInstanceStartEventSuffix(firstInstance.getId()),
         applyCamundaProcessInstanceStartEventSuffix(secondInstance.getId())
       );
+    assertOrderCounters(storedEvents);
   }
 
   @Test
@@ -225,7 +231,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         CamundaActivityEventDto.Fields.activityInstanceId,
         CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
-        CamundaActivityEventDto.Fields.timestamp
+        CamundaActivityEventDto.Fields.timestamp,
+        CamundaActivityEventDto.Fields.orderCounter
       )
       .containsExactlyInAnyOrder(
         createAssertionEvent(
@@ -268,10 +275,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         )
       )
       .extracting(CamundaActivityEventDto.Fields.activityInstanceId)
-      .contains(
-        applyCamundaProcessInstanceStartEventSuffix(processInstance.getId())
-        //applyCamundaProcessInstanceStartEventSuffix(secondInstance.getId())
-      );
+      .contains(applyCamundaProcessInstanceStartEventSuffix(processInstance.getId()));
+    assertOrderCounters(storedEvents);
   }
 
   @Test
@@ -303,7 +308,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     // then no additional events are stored
     List<CamundaActivityEventDto> storedEvents =
       getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
-    assertThat(storedEvents).isEqualTo(storedEvents);
+    assertThat(storedEvents).usingFieldByFieldElementComparator().isEqualTo(initialStoredEvents);
   }
 
   @Test
@@ -441,6 +446,17 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       .endEvent(END_EVENT)
       .done();
     return engineIntegrationExtension.deployAndStartProcess(processModel);
+  }
+
+  private void assertOrderCounters(final List<CamundaActivityEventDto> storedEvents) {
+    final List<CamundaActivityEventDto> orderedEvents = storedEvents.stream()
+      .filter(event -> !event.getActivityType()
+        .equalsIgnoreCase(PROCESS_START_TYPE) && !event.getActivityType()
+        .equalsIgnoreCase(PROCESS_END_TYPE))
+      .collect(Collectors.toList());
+    assertThat(orderedEvents)
+      .extracting(CamundaActivityEventDto::getOrderCounter)
+      .doesNotContainNull();
   }
 
 }

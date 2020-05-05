@@ -6,28 +6,31 @@
 package org.camunda.optimize.upgrade.main.impl;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.events.CamundaEventService;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.index.query.QueryBuilders;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
 public class UpgradeFrom30To31 extends UpgradeProcedure {
   public static final String FROM_VERSION = "3.0.0";
@@ -53,7 +56,10 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateAxisLabels(COMBINED_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateProcessReportDateVariableFilter())
       .addUpgradeStep(migrateDecisionReportDateVariableFilter());
-    upgradeAllCamundaActivityIndexProcessStartEndActivityIds(upgradeBuilder);
+    fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
+    deleteCamundaTraceStateIndices(upgradeBuilder);
+    deleteCamundaSequenceCountIndices(upgradeBuilder);
+    upgradeBuilder.addUpgradeStep(deleteCamundaTraceStateImportIndexData());
     return upgradeBuilder.build();
   }
 
@@ -121,19 +127,39 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
   }
 
   @SneakyThrows
-  private void upgradeAllCamundaActivityIndexProcessStartEndActivityIds(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
+  private void deleteCamundaTraceStateIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
     final GetAliasesResponse aliases = upgradeDependencies.getEsClient().getAlias(
-      new GetAliasesRequest(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
+      new GetAliasesRequest(EVENT_TRACE_STATE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
     );
     aliases.getAliases()
       .values()
       .stream()
       .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
-      .map(fullAliasName -> fullAliasName.substring(fullAliasName.lastIndexOf(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX)))
-      .forEach(indexName -> upgradeBuilder.addUpgradeStep(migrateProcessStartEndActivityIds(indexName)));
+      .map(fullAliasName -> fullAliasName.substring(fullAliasName.lastIndexOf(EVENT_TRACE_STATE_INDEX_PREFIX) + EVENT_TRACE_STATE_INDEX_PREFIX
+        .length()))
+      .filter(indexSuffix -> !indexSuffix.equalsIgnoreCase(EXTERNAL_EVENTS_INDEX_SUFFIX))
+      .forEach(indexSuffix -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(new EventTraceStateIndex(
+        indexSuffix))));
   }
 
-  private UpgradeStep migrateProcessStartEndActivityIds(String indexName) {
+  @SneakyThrows
+  private void deleteCamundaSequenceCountIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
+    final GetAliasesResponse aliases = upgradeDependencies.getEsClient().getAlias(
+      new GetAliasesRequest(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
+    );
+    aliases.getAliases()
+      .values()
+      .stream()
+      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
+      .map(fullAliasName -> fullAliasName.substring(fullAliasName.lastIndexOf(EVENT_SEQUENCE_COUNT_INDEX_PREFIX) + EVENT_SEQUENCE_COUNT_INDEX_PREFIX
+        .length()))
+      .filter(indexSuffix -> !indexSuffix.equalsIgnoreCase(EXTERNAL_EVENTS_INDEX_SUFFIX))
+      .forEach(indexSuffix -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(new EventSequenceCountIndex(
+        indexSuffix))));
+  }
+
+  @SneakyThrows
+  private void fixCamundaActivityEventActivityInstanceIdFields(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
     //@formatter:off
     final String script =
         "if (ctx._source.activityInstanceId == ctx._source.processDefinitionKey + \"_processInstanceEnd\") {\n" +
@@ -147,13 +173,35 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
         "}\n"
       ;
     //@formatter:on
-    final List<String> typesToMigrate = new ArrayList(CamundaEventService.SPLIT_START_END_MAPPED_TYPES);
-    typesToMigrate.add(CamundaEventService.PROCESS_START_TYPE);
-    typesToMigrate.add(CamundaEventService.PROCESS_END_TYPE);
-    return new UpdateDataStep(
-      indexName,
-      boolQuery().must(termsQuery(CamundaActivityEventIndex.ACTIVITY_TYPE, typesToMigrate)),
-      script
+
+    final GetAliasesResponse aliases = upgradeDependencies.getEsClient().getAlias(
+      new GetAliasesRequest(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
+    );
+    aliases.getAliases()
+      .values()
+      .stream()
+      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
+      .map(fullAliasName -> fullAliasName.substring(fullAliasName.lastIndexOf(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX)))
+      .forEach(indexName -> upgradeBuilder.addUpgradeStep(new UpdateDataStep(
+        indexName,
+        QueryBuilders.matchAllQuery(),
+        script
+      )));
+  }
+
+  @SneakyThrows
+  private UpgradeStep deleteCamundaTraceStateImportIndexData() {
+    return new DeleteDataStep(
+      TIMESTAMP_BASED_IMPORT_INDEX_NAME,
+      QueryBuilders.boolQuery()
+        .must(QueryBuilders.prefixQuery(
+          TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo,
+          EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX
+        ))
+        .mustNot(QueryBuilders.termQuery(
+          TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo,
+          EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX
+        ))
     );
   }
 

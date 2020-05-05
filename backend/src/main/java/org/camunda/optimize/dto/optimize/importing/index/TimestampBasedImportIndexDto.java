@@ -6,12 +6,14 @@
 package org.camunda.optimize.dto.optimize.importing.index;
 
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
 @Data
+@FieldNameConstants
 public class TimestampBasedImportIndexDto implements ImportIndexDto {
 
   protected OffsetDateTime lastImportExecutionTimestamp = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());

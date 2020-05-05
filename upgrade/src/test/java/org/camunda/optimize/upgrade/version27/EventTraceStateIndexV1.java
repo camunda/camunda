@@ -8,6 +8,7 @@ package org.camunda.optimize.upgrade.version27;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -25,9 +26,15 @@ public class EventTraceStateIndexV1 extends DefaultIndexMappingCreator {
   public static final String EVENT_NAME = TracedEventDto.Fields.eventName;
   public static final String TIMESTAMP = TracedEventDto.Fields.timestamp;
 
+  private final String indexName;
+
+  public EventTraceStateIndexV1(final String indexKey) {
+    this.indexName = ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX + indexKey.toLowerCase();
+  }
+
   @Override
   public String getIndexName() {
-    return "event-trace-state";
+    return indexName;
   }
 
   @Override

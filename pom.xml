@@ -25,7 +25,7 @@
 
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
-    <camunda.engine.version>7.13.0-alpha2</camunda.engine.version>
+    <camunda.engine.version>7.13.0-alpha4</camunda.engine.version>
     <camunda.model.version>7.13.0-alpha2</camunda.model.version>
 
     <surefire-plugin.version>3.0.0-M4</surefire-plugin.version>
@@ -90,7 +90,6 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <camunda.engine.version>7.13.0-alpha2</camunda.engine.version>
         <engine.profile.id>engine-latest</engine.profile.id>
       </properties>
     </profile>

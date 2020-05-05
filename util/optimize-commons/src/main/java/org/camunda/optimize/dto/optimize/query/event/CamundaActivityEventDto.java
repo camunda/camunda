@@ -34,5 +34,6 @@ public class CamundaActivityEventDto implements OptimizeDto, EventProcessEventDt
   private String engine;
   private String tenantId;
   private OffsetDateTime timestamp;
+  private Long orderCounter;
 
 }

@@ -27,7 +27,7 @@ import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CamundaActivityEventActivityInstanceIdMigrationIT extends AbstractUpgradeIT {
+public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpgradeIT {
 
   private static final String FROM_VERSION = "3.0.0";
 
@@ -52,12 +52,13 @@ public class CamundaActivityEventActivityInstanceIdMigrationIT extends AbstractU
       METADATA_INDEX,
       SINGLE_PROCESS_REPORT_INDEX,
       SINGLE_DECISION_REPORT_INDEX,
-      COMBINED_REPORT_INDEX
+      COMBINED_REPORT_INDEX,
+      TIMESTAMP_BASED_IMPORT_INDEX
     ));
     setMetadataIndexVersion(FROM_VERSION);
 
-    createCamundaActivityEventIndexForDefinitionKey(FIRST_DEFINITION_KEY);
-    createCamundaActivityEventIndexForDefinitionKey(SECOND_DEFINITION_KEY);
+    createCamundaActivityEventV1IndexForDefinitionKey(FIRST_DEFINITION_KEY);
+    createCamundaActivityEventV1IndexForDefinitionKey(SECOND_DEFINITION_KEY);
     upgradeDependencies.getEsClient()
       .getHighLevelClient()
       .indices()
@@ -125,9 +126,9 @@ public class CamundaActivityEventActivityInstanceIdMigrationIT extends AbstractU
   }
 
   @SneakyThrows
-  private void createCamundaActivityEventIndexForDefinitionKey(final String definitionKey) {
+  private void createCamundaActivityEventV1IndexForDefinitionKey(final String definitionKey) {
     // We create the original camunda event indices in the same way as the schema manager
-    IndexMappingCreator mapping = new CamundaActivityEventIndex(definitionKey);
+    IndexMappingCreator mapping = new CamundaActivityEventIndexV1(definitionKey);
     final String templateName = indexNameService.getOptimizeIndexNameForAliasAndVersion(mapping);
     final String pattern = String.format("%s-%s", templateName, "*");
     final Settings indexSettings = IndexSettingsBuilder.buildAllSettings(

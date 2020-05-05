@@ -24,6 +24,7 @@ public class TracedEventDto implements OptimizeDto {
   private String source;
   private String eventName;
   private Long timestamp;
+  private Long orderCounter;
 
   public static TracedEventDto fromEventDto(EventDto eventDto) {
     return TracedEventDto.builder()
@@ -32,6 +33,7 @@ public class TracedEventDto implements OptimizeDto {
       .group(eventDto.getGroup())
       .source(eventDto.getSource())
       .eventName(eventDto.getEventName())
+      .orderCounter(eventDto instanceof OrderedEventDto ? ((OrderedEventDto) eventDto).getOrderCounter() : null)
       .build();
   }
 

@@ -21,6 +21,7 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -32,8 +33,8 @@ import org.camunda.optimize.upgrade.version27.EventIndexV1;
 import org.camunda.optimize.upgrade.version27.EventProcessMappingIndexV1;
 import org.camunda.optimize.upgrade.version27.EventProcessPublishStateIndexV1;
 import org.camunda.optimize.upgrade.version27.EventSequenceCountIndexV1;
-import org.camunda.optimize.upgrade.version27.EventTraceStateIndexV1;
 import org.camunda.optimize.upgrade.version27.TimestampBasedImportIndexV2;
+import org.camunda.optimize.upgrade.version27.UnprefixedEventTraceStateIndexV1;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -42,6 +43,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
@@ -64,12 +66,13 @@ public abstract class AbstractUpgradeIT {
   protected static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
   protected static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
   protected static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
+  protected static final TimestampBasedImportIndex TIMESTAMP_BASED_IMPORT_INDEX = new TimestampBasedImportIndex();
 
   protected static final EventIndexV1 EVENT_INDEX_V1 = new EventIndexV1();
   protected static final EventSequenceCountIndexV1 EVENT_SEQUENCE_COUNT_INDEX_V1 = new EventSequenceCountIndexV1();
   protected static final EventProcessMappingIndexV1 EVENT_PROCESS_MAPPING_INDEX_V1 = new EventProcessMappingIndexV1();
   protected static final EventProcessPublishStateIndexV1 EVENT_PROCESS_PUBLISH_STATE_INDEX_V1 = new EventProcessPublishStateIndexV1();
-  protected static final EventTraceStateIndexV1 EVENT_TRACE_STATE_INDEX_V1 = new EventTraceStateIndexV1();
+  protected static final UnprefixedEventTraceStateIndexV1 EVENT_TRACE_STATE_INDEX_V1 = new UnprefixedEventTraceStateIndexV1();
   protected static final TimestampBasedImportIndexV2 TIMESTAMP_BASED_IMPORT_INDEX_V2 = new TimestampBasedImportIndexV2();
 
   protected static final List<IndexMappingCreator> ALL_INDEXES =
@@ -168,6 +171,14 @@ public abstract class AbstractUpgradeIT {
     } catch (IOException e) {
       throw new RuntimeException("Failed cleaning elasticsearch");
     }
+  }
+
+  @SneakyThrows
+  protected boolean indexExists(String indexName) {
+    return upgradeDependencies.getEsClient()
+      .getHighLevelClient()
+      .indices()
+      .exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
   }
 
   @SneakyThrows

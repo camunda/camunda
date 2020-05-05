@@ -45,7 +45,8 @@ public class VariableDateFilterMigrationIT extends AbstractUpgradeIT {
       METADATA_INDEX,
       SINGLE_PROCESS_REPORT_INDEX,
       SINGLE_DECISION_REPORT_INDEX,
-      COMBINED_REPORT_INDEX
+      COMBINED_REPORT_INDEX,
+      TIMESTAMP_BASED_IMPORT_INDEX
     ));
     setMetadataIndexVersion(FROM_VERSION);
 

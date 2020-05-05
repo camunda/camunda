@@ -13,9 +13,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.OrderedEventDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -136,17 +136,20 @@ public class CamundaEventService {
   private final CamundaActivityEventReader camundaActivityEventReader;
   private final DefinitionService definitionService;
 
-  public List<EventDto> getCamundaEventsForDefinitionAfter(final String definitionKey,
-                                                           final Long eventTimestamp, final int limit) {
+  public List<OrderedEventDto> getTraceableCamundaEventsForDefinitionAfter(final String definitionKey,
+                                                                           final Long eventTimestamp, final int limit) {
     return camundaActivityEventReader.getCamundaActivityEventsForDefinitionAfter(definitionKey, eventTimestamp, limit)
       .stream()
+      .filter(this::isStateTraceable)
       .map(this::mapToEventDto)
       .collect(Collectors.toList());
   }
 
-  public List<EventDto> getCamundaEventsForDefinitionAt(final String definitionKey, final Long eventTimestamp) {
+  public List<OrderedEventDto> getTraceableCamundaEventsForDefinitionAt(final String definitionKey,
+                                                                        final Long eventTimestamp) {
     return camundaActivityEventReader.getCamundaActivityEventsForDefinitionAt(definitionKey, eventTimestamp)
       .stream()
+      .filter(this::isStateTraceable)
       .map(this::mapToEventDto)
       .collect(Collectors.toList());
   }
@@ -180,6 +183,11 @@ public class CamundaEventService {
 
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
     return camundaActivityEventReader.getMinAndMaxIngestedTimestampsForDefinition(processDefinitionKey);
+  }
+
+  private boolean isStateTraceable(CamundaActivityEventDto camundaActivityEventDto) {
+    return !camundaActivityEventDto.getActivityType().equalsIgnoreCase(PROCESS_START_TYPE) &&
+      !camundaActivityEventDto.getActivityType().equalsIgnoreCase(PROCESS_END_TYPE);
   }
 
   private List<EventTypeDto> createLabeledProcessInstanceStartEndEventTypeDtos(final String definitionKey) {
@@ -258,8 +266,8 @@ public class CamundaEventService {
     return parseBpmnModel(processDefinitionXml);
   }
 
-  private EventDto mapToEventDto(final CamundaActivityEventDto camundaActivityEventDto) {
-    return EventDto.builder()
+  private OrderedEventDto mapToEventDto(final CamundaActivityEventDto camundaActivityEventDto) {
+    return OrderedEventDto.builder()
       .id(camundaActivityEventDto.getActivityInstanceId())
       .eventName(camundaActivityEventDto.getActivityId())
       .traceId(camundaActivityEventDto.getProcessInstanceId())
@@ -267,6 +275,7 @@ public class CamundaEventService {
       .ingestionTimestamp(camundaActivityEventDto.getTimestamp().toInstant().toEpochMilli())
       .group(camundaActivityEventDto.getProcessDefinitionKey())
       .source(EVENT_SOURCE_CAMUNDA)
+      .orderCounter(camundaActivityEventDto.getOrderCounter())
       .build();
   }
 

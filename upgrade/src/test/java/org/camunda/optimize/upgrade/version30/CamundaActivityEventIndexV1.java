@@ -3,13 +3,14 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index.events;
+package org.camunda.optimize.upgrade.version30;
 
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -19,7 +20,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
 
-public class CamundaActivityEventIndex extends DefaultIndexMappingCreator {
+@Component
+public class CamundaActivityEventIndexV1 extends DefaultIndexMappingCreator {
 
   public static final String ACTIVITY_ID = CamundaActivityEventDto.Fields.activityId;
   public static final String ACTIVITY_NAME = CamundaActivityEventDto.Fields.activityName;
@@ -32,13 +34,12 @@ public class CamundaActivityEventIndex extends DefaultIndexMappingCreator {
   public static final String ENGINE = CamundaActivityEventDto.Fields.engine;
   public static final String TENANT_ID = CamundaActivityEventDto.Fields.tenantId;
   public static final String TIMESTAMP = CamundaActivityEventDto.Fields.timestamp;
-  public static final String ORDER_COUNTER = CamundaActivityEventDto.Fields.orderCounter;
 
   public static final int VERSION = 1;
 
   private String indexName;
 
-  public CamundaActivityEventIndex(final String processDefinitionKey) {
+  public CamundaActivityEventIndexV1(final String processDefinitionKey) {
     indexName = CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processDefinitionKey.toLowerCase();
   }
 
@@ -99,9 +100,6 @@ public class CamundaActivityEventIndex extends DefaultIndexMappingCreator {
       .startObject(TIMESTAMP)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(ORDER_COUNTER)
-        .field("type", "keyword")
       .endObject()
       ;
     // @formatter:on
