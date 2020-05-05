@@ -191,8 +191,7 @@ public class RaftContext implements AutoCloseable {
 
     // Create a new internal server state machine.
     checkNotNull(stateMachineFactory, "stateMachineFactory must be not null");
-    this.stateMachine =
-        stateMachineFactory.createStateMachine(this, stateContext, threadContextFactory);
+    this.stateMachine = stateMachineFactory.createStateMachine(this);
 
     this.cluster = new RaftClusterContext(localMemberId, this);
 

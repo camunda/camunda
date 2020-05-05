@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.clustering.atomix;
+package io.atomix.raft.impl.zeebe;
 
 import io.atomix.raft.RaftStateMachine;
 import io.atomix.raft.impl.RaftContext;

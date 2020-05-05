@@ -29,12 +29,11 @@ import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.DefaultRaftServer;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.impl.RaftServiceManager;
+import io.atomix.raft.impl.zeebe.ZeebeRaftStateMachine;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.snapshot.impl.DefaultSnapshotStore;
-import io.atomix.raft.utils.LoadMonitor;
 import io.atomix.raft.utils.LoadMonitorFactory;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.index.JournalIndex;
@@ -589,8 +588,7 @@ public interface RaftServer {
     protected ThreadModel threadModel = DEFAULT_THREAD_MODEL;
     protected int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
     protected ThreadContextFactory threadContextFactory;
-    protected RaftStateMachineFactory stateMachineFactory = RaftServiceManager::new;
-    protected LoadMonitorFactory loadMonitorFactory = LoadMonitor::new;
+    protected RaftStateMachineFactory stateMachineFactory = ZeebeRaftStateMachine::new;
     protected Supplier<JournalIndex> journalIndexFactory;
 
     protected Builder(final MemberId localMemberId) {

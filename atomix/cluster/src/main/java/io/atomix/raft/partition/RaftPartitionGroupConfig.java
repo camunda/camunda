@@ -20,7 +20,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.raft.RaftStateMachineFactory;
-import io.atomix.raft.impl.RaftServiceManager;
+import io.atomix.raft.impl.zeebe.ZeebeRaftStateMachine;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -47,7 +47,7 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   // was not aware of. The annotation tells Kryo to ignore this field unless a specific serializer
   // is configured for the given key
   @Optional("RaftStateMachineFactory")
-  private RaftStateMachineFactory stateMachineFactory = RaftServiceManager::new;
+  private RaftStateMachineFactory stateMachineFactory = ZeebeRaftStateMachine::new;
 
   /**
    * Returns the compaction configuration.

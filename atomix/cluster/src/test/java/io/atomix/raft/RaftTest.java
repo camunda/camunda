@@ -49,7 +49,6 @@ import io.atomix.raft.cluster.RaftClusterEvent;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.partition.impl.RaftNamespaces;
-import io.atomix.raft.primitive.FakeStateMachine;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.primitive.TestPrimitive;
 import io.atomix.raft.primitive.TestPrimitiveImpl;
@@ -1502,51 +1501,6 @@ public class RaftTest extends ConcurrentTestCase {
 
     assertEquals(receivedSnapshot.index(), currentSnapshot.index());
     assertEquals(receivedSnapshot.term(), leaderTerm);
-  }
-
-  @Test
-  public void shouldCompactStorageUnderHighLoad() throws Throwable {
-    // given
-    final List<RaftMember> members =
-        Lists.newArrayList(createMember(), createMember(), createMember());
-    final Map<MemberId, RaftStorage> storages =
-        members.stream()
-            .map(RaftMember::memberId)
-            .collect(
-                Collectors.toMap(
-                    Function.identity(),
-                    memberId ->
-                        createStorage(
-                            memberId,
-                            storageBuilder ->
-                                storageBuilder.withStorageStatistics(
-                                    new FakeStatistics(
-                                        new File(directory.toFile(), memberId.toString()))))));
-    final Map<MemberId, RaftServer> servers =
-        storages.entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry ->
-                        createServer(
-                            entry.getKey(),
-                            builder ->
-                                builder
-                                    .withStorage(entry.getValue())
-                                    .withLoadMonitorFactory(FakeLoadMonitor::new)
-                                    .withStateMachineFactory(FakeStateMachine::new))));
-    // wait for cluster to start
-    startCluster(servers);
-
-    // when high load
-    final RaftClient client = createClient(members);
-    final TestPrimitive primitive = createPrimitive(client);
-
-    // then we should still be able to snapshots and compactions
-    final MemberId chosenOne = members.get(0).memberId();
-    fillSegment(primitive);
-    fillSegment(primitive);
-    waitUntil(() -> storages.get(chosenOne).getSnapshotStore().getCurrentSnapshot() != null, 100);
   }
 
   private ByteBuffer readSnapshot(final Snapshot snapshot) {

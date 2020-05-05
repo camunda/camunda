@@ -92,9 +92,6 @@ public final class AtomixFactory {
             .withPartitionSize(clusterCfg.getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
-            .withStateMachineFactory(
-                (raftContext, threadContext, threadContextFactory) ->
-                    new ZeebeRaftStateMachine(raftContext))
             .withSnapshotStoreFactory(new DbSnapshotStoreFactory())
             .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withFlushOnCommit();
