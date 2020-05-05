@@ -1,0 +1,22 @@
+name: Add default labels to new issues
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: np-label-action
+      - name: Label
+        uses: ./
+        id: label
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          labels: "Status: Needs Triage"
+          ignore-labeled: "/^Status:.*$/"
