@@ -9,12 +9,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: np-label-action
       - name: Label
-        uses: ./.github/actions/label
+        uses: zeebe-io/zeebe-label-actionv1.0.0
         id: label
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
