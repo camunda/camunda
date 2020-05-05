@@ -16,6 +16,6 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ReportEvaluationFilterDto {
+public class AdditionalProcessReportEvaluationFilterDto {
   protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
 }

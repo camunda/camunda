@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -60,14 +60,14 @@ public abstract class ReportEvaluationHandler {
 
   public AuthorizedReportEvaluationResult evaluateSavedReportWithAdditionalFilters(final String userId,
                                                                                    final String reportId,
-                                                                                   final ReportEvaluationFilterDto filterDto) {
+                                                                                   final AdditionalProcessReportEvaluationFilterDto filterDto) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
     if (filterDto != null && !filterDto.getFilter().isEmpty() && (reportDefinition.getData() instanceof ProcessReportDataDto)) {
       ((ProcessReportDataDto) reportDefinition.getData()).getFilter().addAll(filterDto.getFilter());
     } else {
       logger.debug("Cannot add additional filters to report [{}] as it is not a single process report", reportId);
     }
-    return evaluateReport(userId, reportDefinition, null);
+    return evaluateReport(userId, reportDefinition);
   }
 
   public AuthorizedReportEvaluationResult evaluateReport(final String userId,
