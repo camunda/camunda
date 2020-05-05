@@ -63,6 +63,8 @@ export const tableCell = (row, column) =>
 export const instanceCountSwitch = Selector('.Configuration .Switch');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = (text) => Selector('.Filter .DropdownOption').withText(text);
+export const subFilterOption = (text) =>
+  Selector('.Filter .Submenu .DropdownOption').withText(text);
 export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = (text) =>

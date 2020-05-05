@@ -37,7 +37,33 @@
       }
 
       .previewItemValue {
+        position: relative;
         @include highlighted;
+
+        .Tooltip {
+          display: none;
+          position: absolute;
+          top: 27px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 9;
+
+          .Tooltip__text-bottom {
+            width: max-content;
+            border-radius: 0;
+            font-weight: normal;
+            text-align: left;
+            font-size: 1em;
+
+            .flowNode {
+              padding: 5px 0;
+            }
+          }
+        }
+
+        &:hover .Tooltip {
+          display: block;
+        }
       }
 
       .previewList {

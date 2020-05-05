@@ -179,6 +179,48 @@ export default class FilterList extends React.Component {
               </ActionItem>
             </li>
           );
+        } else if (filter.type === 'flowNodeDuration') {
+          const filters = filter.data;
+          const filtersCount = Object.keys(filters).length;
+          const flowNodeNames = this.props.flowNodeNames || {};
+
+          list.push(
+            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+              <ActionItem
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  this.props.deleteFilter(filter);
+                }}
+              >
+                <span className="parameterName">{t('common.filter.types.duration')}</span>
+                {this.createOperator(t('common.filter.durationModal.appliedTo'))}
+                <span className="previewItemValue">
+                  {filtersCount} {t(`common.flowNode.label${filtersCount !== 1 ? '-plural' : ''}`)}
+                  <div className="Tooltip light">
+                    <div className="Tooltip__text-bottom">
+                      {Object.keys(filters).map((key) => {
+                        const {value, unit, operator} = filters[key];
+                        return (
+                          <div key={key} className="flowNode">
+                            <span className="previewItemValue">{flowNodeNames[key] || key}</span>
+                            {this.createOperator(operator)}
+                            <span className="previewItemValue">
+                              {value.toString()}{' '}
+                              {t(
+                                `common.unit.${unit.slice(0, -1)}.label${
+                                  value !== 1 ? '-plural' : ''
+                                }`
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </span>
+              </ActionItem>
+            </li>
+          );
         } else if (instanceFilters.includes(filter.type)) {
           list.push(
             <li key={i} className="listItem notEditable">

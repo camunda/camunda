@@ -569,6 +569,10 @@
       "label": "Tenant",
       "label-plural": "Tenants"
     },
+    "flowNode": {
+      "label": "Flow Node",
+      "label-plural": "Flow Nodes"
+    },
     "multiSelect": {
       "available": "Available items",
       "selected": "Selected items",
@@ -643,6 +647,9 @@
         "startDate": "Start Date",
         "endDate": "End Date",
         "duration": "Duration",
+        "instance": "Process instance",
+        "instanceDuration": "Process instance duration",
+        "flowNodeDuration": "Flow Node duration",
         "variable": "Variable",
         "flowNode": "Flow Node",
         "evaluationDateTime": "Evaluation Date Time",
@@ -731,7 +738,8 @@
         "includeInstance": "Only include process instances that ran for...",
         "moreThan": "more than",
         "lessThan": "less than",
-        "invalidInput": "Please enter a positive numeric value"
+        "invalidInput": "Please enter a positive numeric value",
+        "appliedTo": "filter is applied to"
       },
       "nodeModal": {
         "executed": "was executed",

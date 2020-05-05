@@ -569,6 +569,10 @@
       "label": "Mandant",
       "label-plural": "Mandanten"
     },
+    "flowNode": {
+      "label": "Prozessknoten",
+      "label-plural": "Prozessknoten"
+    },
     "multiSelect": {
       "available": "Verfügbare Elemente",
       "selected": "Ausgewählte Elemente",
@@ -643,6 +647,9 @@
         "startDate": "Startdatum",
         "endDate": "Enddatum",
         "duration": "Dauer",
+        "instance": "Prozessinstanz",
+        "instanceDuration": "Dauer der Prozessinstanz",
+        "flowNodeDuration": "Prozessknoten Dauer",
         "variable": "Variable",
         "flowNode": "Prozessknoten",
         "evaluationDateTime": "Evaluierungszeitpunkt",
@@ -731,7 +738,8 @@
         "includeInstance": "Berücksichtigen Sie nur Prozessinstanzen, die gelaufen sind für ...",
         "moreThan": "mehr als",
         "lessThan": "weniger als",
-        "invalidInput": "Bitte einen positiven Zahlenwert eingeben"
+        "invalidInput": "Bitte einen positiven Zahlenwert eingeben",
+        "appliedTo": "Filter wird angewendet auf"
       },
       "nodeModal": {
         "executed": "wurde ausgeführt",

@@ -206,6 +206,7 @@ test('add duration filter', async (t) => {
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Duration'));
+  await t.click(Report.subFilterOption('Process instance'));
   await t.click(Filter.durationFilterOperator);
   await t.click(Report.option('less than'));
 

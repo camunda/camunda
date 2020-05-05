@@ -8,7 +8,7 @@ import React from 'react';
 
 import {Dropdown} from 'components';
 
-import {DateFilter, VariableFilter, NodeFilter, DurationFilter} from './modals';
+import {DateFilter, VariableFilter, NodeFilter, DurationFilter, NodeDuration} from './modals';
 
 import FilterList from './FilterList';
 import './Filter.scss';
@@ -44,6 +44,8 @@ export default class Filter extends React.Component {
         return VariableFilter;
       case 'processInstanceDuration':
         return DurationFilter;
+      case 'flowNodeDuration':
+        return NodeDuration;
       case 'executedFlowNodes':
       case 'executingFlowNodes':
         return NodeFilter;
@@ -172,9 +174,17 @@ export default class Filter extends React.Component {
           <Dropdown.Option onClick={this.openNewFilterModal('endDate')}>
             {t('common.filter.types.endDate')}
           </Dropdown.Option>
-          <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>
-            {t('common.filter.types.duration')}
-          </Dropdown.Option>
+          <Dropdown.Submenu label={t('common.filter.types.duration')}>
+            <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>
+              {t('common.filter.types.instance')}
+            </Dropdown.Option>
+            <Dropdown.Option
+              disabled={this.processDefinitionIsNotSelected()}
+              onClick={this.openNewFilterModal('flowNodeDuration')}
+            >
+              {t('common.filter.types.flowNode')}
+            </Dropdown.Option>
+          </Dropdown.Submenu>
           <Dropdown.Option
             disabled={this.processDefinitionIsNotSelected()}
             onClick={this.openNewFilterModal('variable')}

@@ -243,6 +243,25 @@ it('should display a duration filter', () => {
   expect(node.find('ActionItem').dive()).toIncludeText('Duration is less than 18 hours');
 });
 
+it('should display a flow node duration filter', () => {
+  const data = [
+    {
+      type: 'flowNodeDuration',
+      data: {
+        a: {operator: '<', value: 18, unit: 'hours'},
+      },
+    },
+  ];
+
+  const node = shallow(
+    <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{a: 'flow node name'}} />
+  );
+
+  const actionItem = node.find('ActionItem').dive();
+  expect(actionItem).toIncludeText('Duration filter is applied to 1 Flow Node');
+  expect(actionItem).toIncludeText('flow node name < 18 hours');
+});
+
 it('should display a running instances only filter', () => {
   const data = [
     {
