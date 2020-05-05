@@ -9,10 +9,10 @@ package io.zeebe.broker.engine.impl;
 
 import static io.zeebe.util.sched.Actor.buildActorName;
 
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotChunk;
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotReplication;
 import io.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.zeebe.engine.Loggers;
-import io.zeebe.logstreams.state.SnapshotChunk;
-import io.zeebe.logstreams.state.SnapshotReplication;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

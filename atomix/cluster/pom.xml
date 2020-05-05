@@ -27,6 +27,18 @@
       <groupId>io.zeebe</groupId>
     </dependency>
     <dependency>
+      <artifactId>zeebe-util</artifactId>
+      <groupId>io.zeebe</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>zeebe-protocol</artifactId>
+      <groupId>io.zeebe</groupId>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+    <dependency>
       <artifactId>netty-transport</artifactId>
       <groupId>io.netty</groupId>
     </dependency>

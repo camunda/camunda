@@ -15,8 +15,6 @@
  */
 package io.atomix.raft.storage.snapshot;
 
-import io.atomix.raft.storage.snapshot.impl.SnapshotReader;
-import io.atomix.raft.storage.snapshot.impl.SnapshotWriter;
 import io.atomix.utils.time.WallClockTimestamp;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -105,50 +103,4 @@ public interface Snapshot extends AutoCloseable, Comparable<Snapshot> {
         .thenComparing(Snapshot::timestamp)
         .compare(this, other);
   }
-
-  /**
-   * Completes writing the snapshot to persist it and make it available for reads.
-   *
-   * @return The completed snapshot.
-   * @deprecated used by the old implementation, superseded {@link PendingSnapshot#commit()}
-   */
-  @Deprecated
-  Snapshot complete();
-
-  /**
-   * Opens a new snapshot writer.
-   *
-   * <p>Only a single {@link SnapshotWriter} per {@link Snapshot} can be created. The single writer
-   * must write the snapshot in full and {@link #complete()} the snapshot to persist it to disk and
-   * make it available for {@link #openReader() reads}.
-   *
-   * @return A new snapshot writer.
-   * @throws IllegalStateException if a writer was already created or the snapshot is {@link
-   *     #complete() complete}
-   * @deprecated used by the old implementation, use the new chunk writers
-   */
-  @Deprecated
-  SnapshotWriter openWriter();
-
-  /**
-   * Opens a new snapshot reader.
-   *
-   * <p>A {@link SnapshotReader} can only be created for a snapshot that has been fully written and
-   * {@link #complete() completed}. Multiple concurrent readers can be created for the same snapshot
-   * since completed snapshots are immutable.
-   *
-   * @return A new snapshot reader.
-   * @throws IllegalStateException if the snapshot is not {@link #complete() complete}
-   * @deprecated used by the old implementation, use the new chunk readers
-   */
-  @Deprecated
-  SnapshotReader openReader();
-
-  /** Closes the current snapshot reader. */
-  @Deprecated
-  void closeReader(SnapshotReader reader);
-
-  /** Closes the current snapshot writer. */
-  @Deprecated
-  void closeWriter(SnapshotWriter writer);
 }

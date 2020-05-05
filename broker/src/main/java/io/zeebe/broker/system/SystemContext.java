@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.system;
 
-import static io.zeebe.engine.processor.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
+import static io.zeebe.broker.system.partitions.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
 import io.atomix.storage.StorageLevel;
 import io.zeebe.broker.Loggers;

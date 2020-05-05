@@ -18,13 +18,11 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import io.zeebe.util.allocation.DirectBufferAllocator;
@@ -141,23 +139,6 @@ public final class StreamProcessorRule implements TestRule {
 
   public void closeStreamProcessor() {
     closeStreamProcessor(startPartitionId);
-  }
-
-  public StateSnapshotController getStateSnapshotController(final int partitionId) {
-    return streams.getStateSnapshotController(getLogName(partitionId));
-  }
-
-  public StateSnapshotController getStateSnapshotController() {
-    return getStateSnapshotController(startPartitionId);
-  }
-
-  public void waitForNextSnapshot() {
-    final var stateSnapshotController = getStateSnapshotController();
-    final var validSnapshotsCount = getStateSnapshotController().getValidSnapshotsCount();
-    clock.addTime(TestStreams.SNAPSHOT_INTERVAL);
-
-    TestUtil.waitUntil(
-        () -> validSnapshotsCount < stateSnapshotController.getValidSnapshotsCount());
   }
 
   public CommandResponseWriter getCommandResponseWriter() {

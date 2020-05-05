@@ -78,9 +78,7 @@ public class ZeebeTestNode {
   public CompletableFuture<Void> start(final Collection<ZeebeTestNode> nodes) {
     cluster = buildCluster(nodes);
     dataPartitionGroup =
-        buildPartitionGroup(RaftPartitionGroup.builder(DATA_PARTITION_GROUP_NAME), nodes)
-            .withStateMachineFactory(ZeebeRaftStateMachine::new)
-            .build();
+        buildPartitionGroup(RaftPartitionGroup.builder(DATA_PARTITION_GROUP_NAME), nodes).build();
     partitionService =
         buildPartitionService(cluster.getMembershipService(), cluster.getCommunicationService());
 

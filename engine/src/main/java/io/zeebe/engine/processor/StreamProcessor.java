@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
 public class StreamProcessor extends Actor implements HealthMonitorable {
+  public static final long UNSET_POSITION = -1L;
   static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
-  static final long UNSET_POSITION = -1L;
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;

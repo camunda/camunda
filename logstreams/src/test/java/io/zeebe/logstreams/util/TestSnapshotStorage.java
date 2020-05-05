@@ -7,10 +7,10 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.zeebe.logstreams.state.Snapshot;
-import io.zeebe.logstreams.state.SnapshotDeletionListener;
-import io.zeebe.logstreams.state.SnapshotMetrics;
-import io.zeebe.logstreams.state.SnapshotStorage;
+import io.atomix.raft.impl.zeebe.snapshot.Snapshot;
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotDeletionListener;
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotMetrics;
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotStorage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
