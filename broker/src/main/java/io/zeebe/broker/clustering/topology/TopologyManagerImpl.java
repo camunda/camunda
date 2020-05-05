@@ -56,8 +56,7 @@ public final class TopologyManagerImpl extends Actor
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(
-      final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
     return setFollower(partitionId);
   }
 

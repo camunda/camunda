@@ -56,11 +56,10 @@ public final class CommandApiService extends Actor implements PartitionListener 
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(
-      final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
     return actor.call(
         () -> {
-          requestHandler.removePartition(logStream);
+          requestHandler.removePartition(partitionId);
           cleanLeadingPartition(partitionId);
         });
   }

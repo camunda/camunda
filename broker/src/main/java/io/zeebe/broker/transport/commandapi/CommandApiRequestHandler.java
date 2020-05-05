@@ -10,7 +10,6 @@ package io.zeebe.broker.transport.commandapi;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
@@ -194,11 +193,11 @@ final class CommandApiRequestHandler implements RequestHandler {
         });
   }
 
-  void removePartition(final LogStream logStream) {
+  void removePartition(final int partitionId) {
     cmdQueue.add(
         () -> {
-          leadingStreams.remove(logStream.getPartitionId());
-          partitionLimiters.remove(logStream.getPartitionId());
+          leadingStreams.remove(partitionId);
+          partitionLimiters.remove(partitionId);
         });
   }
 

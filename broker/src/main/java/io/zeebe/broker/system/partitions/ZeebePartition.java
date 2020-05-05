@@ -217,7 +217,7 @@ public final class ZeebePartition extends Actor
               if (error == null) {
                 final List<ActorFuture<Void>> listenerFutures =
                     partitionListeners.stream()
-                        .map(l -> l.onBecomingFollower(partitionId, newTerm, logStream))
+                        .map(l -> l.onBecomingFollower(partitionId, newTerm))
                         .collect(Collectors.toList());
                 actor.runOnCompletion(
                     listenerFutures,

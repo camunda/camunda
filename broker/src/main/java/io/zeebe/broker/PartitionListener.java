@@ -24,10 +24,9 @@ public interface PartitionListener {
    *
    * @param partitionId the corresponding partition id
    * @param term the current term
-   * @param logStream the corresponding log stream
    * @return future that should be completed by the listener
    */
-  ActorFuture<Void> onBecomingFollower(int partitionId, long term, LogStream logStream);
+  ActorFuture<Void> onBecomingFollower(int partitionId, long term);
 
   /**
    * Is called by the {@link io.zeebe.broker.system.partitions.ZeebePartition} on becoming partition
