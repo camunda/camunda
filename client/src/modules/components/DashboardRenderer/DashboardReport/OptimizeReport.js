@@ -33,9 +33,16 @@ export default themed(
           await this.loadReport();
         }
 
+        componentDidUpdate(prevProps) {
+          if (prevProps.report !== this.props.report || prevProps.filter !== this.props.filter) {
+            this.loadReport();
+          }
+        }
+
         loadReport = async () => {
+          this.setState({loading: true});
           await this.props.mightFail(
-            this.props.loadReport(this.props.report.id),
+            this.props.loadReport(this.props.report.id, this.props.filter),
             (response) => {
               this.setState({
                 loading: false,

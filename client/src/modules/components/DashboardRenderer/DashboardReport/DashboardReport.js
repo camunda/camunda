@@ -13,6 +13,7 @@ import './DashboardReport.scss';
 
 export default function DashboardReport({
   report,
+  filter = [],
   disableNameLink,
   addons,
   tileDimensions,
@@ -21,12 +22,18 @@ export default function DashboardReport({
   const ReportComponent = isExternalReport(report) ? ExternalReport : OptimizeReport;
 
   return (
-    <ReportComponent report={report} disableNameLink={disableNameLink} loadReport={loadReport}>
+    <ReportComponent
+      report={report}
+      filter={filter}
+      disableNameLink={disableNameLink}
+      loadReport={loadReport}
+    >
       {(props = {}) =>
         addons &&
         addons.map((addon) =>
           React.cloneElement(addon, {
             report,
+            filter,
             tileDimensions,
             ...props,
           })

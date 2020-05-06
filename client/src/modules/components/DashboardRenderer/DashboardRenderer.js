@@ -22,6 +22,7 @@ export default function DashboardRenderer({
   disableReportInteractions,
   disableNameLink,
   reports,
+  filter = [],
   loadReport,
   addons,
   onChange,
@@ -78,6 +79,7 @@ export default function DashboardRenderer({
               disableNameLink={disableReportInteractions || disableNameLink}
               loadReport={loadReport}
               report={report}
+              filter={filter}
               addons={addons}
             />
           </div>

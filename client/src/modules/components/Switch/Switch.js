@@ -14,7 +14,11 @@ export default function Switch({label, ...props}) {
   return (
     <label
       title={props.title}
-      className={classnames('Switch', {withLabel: label}, props.className)}
+      className={classnames(
+        'Switch',
+        {withLabel: label, disabled: props.disabled},
+        props.className
+      )}
     >
       <Input type="checkbox" {...props} className="Switch__Input" />
       <span className={classnames('Switch__Slider--round', {disabled: props.disabled})} />

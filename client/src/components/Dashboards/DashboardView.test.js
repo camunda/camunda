@@ -146,3 +146,31 @@ it('should hide edit/delete if the dashboard current user role is not "editor"',
   expect(node.find('.delete-button')).not.toExist();
   expect(node.find('.edit-button')).not.toExist();
 });
+
+it('should show a filters toggle button if filters are available', () => {
+  const node = shallow(<DashboardView availableFilters={[{type: 'state'}]} />);
+
+  expect(node.find('.filter-button')).toExist();
+});
+
+it('should show a filters section', () => {
+  const node = shallow(<DashboardView availableFilters={[{type: 'state'}]} />);
+
+  node.find('.filter-button').simulate('click');
+
+  expect(node.find('.filter-button')).toHaveProp('active');
+  expect(node.find('FiltersView')).toExist();
+});
+
+it('should reset filters when closing the filters section', () => {
+  const filter = [{type: 'runningInstancesOnly', data: null}];
+  const node = shallow(<DashboardView availableFilters={[{type: 'state'}]} />);
+
+  node.find('.filter-button').simulate('click');
+  node.find('FiltersView').prop('setFilter')(filter);
+
+  expect(node.find('FiltersView').prop('filter')).toEqual(filter);
+  node.find('.filter-button').simulate('click');
+  node.find('.filter-button').simulate('click');
+  expect(node.find('FiltersView').prop('filter')).toEqual([]);
+});

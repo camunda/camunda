@@ -34,6 +34,7 @@ exports[`should render a Dashboard Report for every Report in the props 1`] = `
     key="0_1"
   >
     <DashboardReport
+      filter={Array []}
       report={
         Object {
           "dimensions": Object {
@@ -62,6 +63,7 @@ exports[`should render a Dashboard Report for every Report in the props 1`] = `
     key="1_2"
   >
     <DashboardReport
+      filter={Array []}
       report={
         Object {
           "dimensions": Object {
@@ -90,6 +92,7 @@ exports[`should render a Dashboard Report for every Report in the props 1`] = `
     key="2_3"
   >
     <DashboardReport
+      filter={Array []}
       report={
         Object {
           "dimensions": Object {

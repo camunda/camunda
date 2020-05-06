@@ -431,11 +431,17 @@
     "noReportAccess": "Kein Zugriff auf Report",
     "filter": {
       "label": "Filter",
-      "notice": "Angewandte Dashboard-Filter ersetzen einzelne Berichtsfilter",
+      "notice": "Filter gelten für alle kompatiblen Berichte in diesem Dashboard.",
       "types": {
         "state": "Instanzstatus",
         "startDate": "Startdatum",
-        "endDate": "Enddatum"
+        "endDate": "Enddatum",
+        "runningInstancesOnly": "Laufend",
+        "completedInstancesOnly": "Abgeschlossen",
+        "canceledInstancesOnly": "Abgebrochen",
+        "nonCanceledInstancesOnly": "Nicht Abgebrochen",
+        "suspendedInstancesOnly": "Suspendiert",
+        "nonSuspendedInstancesOnly": "Nicht Suspendiert"
       }
     }
   },

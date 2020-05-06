@@ -19,6 +19,7 @@ const props = {
   report: {
     id: 'a',
   },
+  filter: [{type: 'runningInstancesOnly', data: null}],
   loadReport,
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   location: {
@@ -38,7 +39,7 @@ jest.mock('react-router-dom', () => {
 it('should load the report provided by id', () => {
   shallow(<OptimizeReport {...props} />);
 
-  expect(loadReport).toHaveBeenCalledWith(props.report.id);
+  expect(loadReport).toHaveBeenCalledWith(props.report.id, props.filter);
 });
 
 it('should render the ReportRenderer if data is loaded', async () => {
@@ -111,4 +112,17 @@ it('should display an error message if there is an error and no report is return
 
   await node.instance().loadReport();
   expect(node.find('NoDataNotice').prop('children')).toBe('Is failing');
+});
+
+it('should reload the report if the filter changes', async () => {
+  const node = shallow(<OptimizeReport {...props} filter={[{type: 'runningInstancesOnly'}]} />);
+
+  await node.instance().loadReport();
+
+  loadReport.mockClear();
+  node.setProps({filter: [{type: 'suspendedInstancesOnly', data: null}]});
+
+  expect(loadReport).toHaveBeenCalledWith(props.report.id, [
+    {type: 'suspendedInstancesOnly', data: null},
+  ]);
 });

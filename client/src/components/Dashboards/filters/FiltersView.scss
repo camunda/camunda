@@ -1,0 +1,28 @@
+@import 'shared-styles/shared-styles.scss';
+
+.FiltersView {
+  border: 1px solid $silver-darken-80;
+  border-radius: 3px;
+  padding: 15px 13px 20px;
+  margin-bottom: 20px;
+
+  > * {
+    width: 167px;
+    margin-right: 14px;
+    display: inline-block;
+
+    .Popover {
+      .Popover__dialog {
+        box-shadow: none;
+        border-radius: 0;
+        margin-top: 4px;
+        padding: 0;
+      }
+
+      .Popover__dialog-arrow-border,
+      .Popover__dialog-arrow {
+        display: none;
+      }
+    }
+  }
+}

@@ -1,0 +1,44 @@
+@import 'shared-styles/shared-styles.scss';
+
+.InstanceStateFilter {
+  .title {
+    font-size: 14px;
+    color: $grey-base-40;
+    margin-bottom: 7px;
+  }
+
+  .Popover {
+    .Popover__button {
+      .indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        background-color: $silver-darken-80;
+        border-radius: 50%;
+        vertical-align: middle;
+        margin-right: 0.7em;
+
+        &.active {
+          background-color: $blue-darken-55;
+        }
+      }
+    }
+
+    .Form {
+      > fieldset {
+        padding: 10px 20px;
+      }
+      > .Button {
+        margin: 0 10px 0.5em;
+        font-size: 1em;
+        border: none;
+        background: none;
+      }
+    }
+
+    hr {
+      border: none;
+      border-bottom: 1px solid $silver-darken-87;
+    }
+  }
+}

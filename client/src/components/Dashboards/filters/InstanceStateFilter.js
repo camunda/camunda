@@ -1,0 +1,85 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+import React from 'react';
+import classnames from 'classnames';
+
+import {Popover, Form, Switch, Button} from 'components';
+import {incompatibleFilters} from 'services';
+import {t} from 'translation';
+
+import './InstanceStateFilter.scss';
+
+const types = [
+  'runningInstancesOnly',
+  'completedInstancesOnly',
+  'canceledInstancesOnly',
+  'nonCanceledInstancesOnly',
+  'suspendedInstancesOnly',
+  'nonSuspendedInstancesOnly',
+];
+
+export default function InstanceStateFilter({filter, setFilter}) {
+  function hasFilter(type) {
+    return filter.some((filter) => filter.type === type);
+  }
+
+  function addFilter(type) {
+    setFilter([...filter, {type, data: null}]);
+  }
+
+  function removeFilter(type) {
+    setFilter(filter.filter((filter) => filter.type !== type));
+  }
+
+  function isAllowed(type) {
+    return !incompatibleFilters([...filter, {type}]);
+  }
+
+  const active = types.some(hasFilter);
+
+  return (
+    <div className="InstanceStateFilter">
+      <div className="title">{t('dashboard.filter.types.state')}</div>
+      <Popover
+        title={
+          <>
+            <span className={classnames('indicator', {active})} />
+            {filter.map(({type}) => t('dashboard.filter.types.' + type)).join(', ') ||
+              t('common.off')}
+          </>
+        }
+      >
+        <Form compact>
+          <fieldset>
+            {types.map((type) => (
+              <Switch
+                key={type}
+                label={t('dashboard.filter.types.' + type)}
+                checked={hasFilter(type)}
+                disabled={!isAllowed(type)}
+                onChange={({target}) => {
+                  if (target.checked) {
+                    addFilter(type);
+                  } else {
+                    removeFilter(type);
+                  }
+                }}
+              />
+            ))}
+          </fieldset>
+          <hr />
+          <Button
+            disabled={!active}
+            onClick={() => setFilter(filter.filter(({type}) => !types.includes(type)))}
+          >
+            {t('common.reset')}
+          </Button>
+        </Form>
+      </Popover>
+    </div>
+  );
+}

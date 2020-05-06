@@ -25,6 +25,7 @@ import {themed} from 'theme';
 import {t} from 'translation';
 
 import {getSharedDashboard, shareDashboard, revokeDashboardSharing} from './service';
+import {FiltersView} from './filters';
 
 import {AutoRefreshBehavior, AutoRefreshIcon} from './AutoRefresh';
 
@@ -36,6 +37,8 @@ export default themed(
       fullScreenActive: false,
       autoRefreshInterval: null,
       deleting: null,
+      filtersShown: false,
+      filter: [],
     };
 
     componentWillUnmount = () => {
@@ -92,11 +95,12 @@ export default themed(
         isAuthorizedToShare,
         sharingEnabled,
         reports,
+        availableFilters,
         toggleTheme,
         onDelete,
       } = this.props;
 
-      const {fullScreenActive, autoRefreshInterval, deleting} = this.state;
+      const {fullScreenActive, autoRefreshInterval, deleting, filter, filtersShown} = this.state;
 
       return (
         <Fullscreen enabled={fullScreenActive} onChange={this.changeFullScreen}>
@@ -160,6 +164,27 @@ export default themed(
                       {t('dashboard.toggleTheme')}
                     </Button>
                   )}
+                  {availableFilters?.length > 0 && (
+                    <Button
+                      main
+                      className="tool-button filter-button"
+                      active={filtersShown}
+                      onClick={() =>
+                        this.setState(({filtersShown}) => {
+                          if (filtersShown) {
+                            // filters are currently shown. Hide and reset filters
+                            return {filtersShown: false, filter: []};
+                          } else {
+                            // show filter panel
+                            return {filtersShown: true};
+                          }
+                        })
+                      }
+                    >
+                      <Icon type="filter" /> {t('dashboard.filter.label')}
+                    </Button>
+                  )}
+
                   <Button
                     main
                     onClick={() => this.changeFullScreen(!fullScreenActive)}
@@ -207,6 +232,13 @@ export default themed(
               </div>
               <ModificationInfo user={lastModifier} date={lastModified} />
             </div>
+            {filtersShown && (
+              <FiltersView
+                availableFilters={availableFilters}
+                filter={filter}
+                setFilter={(filter) => this.setState({filter})}
+              />
+            )}
             <Deleter
               type="dashboard"
               entity={deleting}
@@ -216,6 +248,7 @@ export default themed(
             <DashboardRenderer
               loadReport={evaluateReport}
               reports={reports}
+              filter={filter}
               addons={
                 autoRefreshInterval && [
                   <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,

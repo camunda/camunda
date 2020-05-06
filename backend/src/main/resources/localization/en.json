@@ -431,11 +431,17 @@
     "noReportAccess": "No access to report",
     "filter": {
       "label": "Filters",
-      "notice": "Applied dashboard filters superceed individual report filters",
+      "notice": "Filters apply to all compatible Reports on this Dashboard.",
       "types": {
         "state": "Instance State",
         "startDate": "Start Date",
-        "endDate": "End Date"
+        "endDate": "End Date",
+        "runningInstancesOnly": "Running",
+        "completedInstancesOnly": "Completed",
+        "canceledInstancesOnly": "Canceled",
+        "nonCanceledInstancesOnly": "Non Canceled",
+        "suspendedInstancesOnly": "Suspended",
+        "nonSuspendedInstancesOnly": "Non Suspended"
       }
     }
   },

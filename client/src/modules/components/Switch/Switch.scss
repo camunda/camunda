@@ -16,6 +16,11 @@
     height: 0;
     margin-right: 20px;
   }
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
 }
 
 /* The slider */
@@ -35,7 +40,6 @@
 
   &.disabled {
     cursor: not-allowed;
-    opacity: 0.4;
   }
 }
 

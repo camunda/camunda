@@ -146,7 +146,7 @@ export class Dashboard extends React.Component {
 
         this.props.mightFail(
           createEntity('dashboard', {collectionId, name, reports, availableFilters}),
-          (id) => resolve(this.updateDashboardState(id, name, reports)),
+          (id) => resolve(this.updateDashboardState(id, name, reports, availableFilters)),
           (error) => reject(showError(error))
         );
       } else {
@@ -216,6 +216,7 @@ export class Dashboard extends React.Component {
             onDelete={this.goHome}
             currentUserRole={currentUserRole}
             reports={reports}
+            availableFilters={availableFilters}
           />
         )}
       </div>

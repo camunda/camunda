@@ -1,0 +1,10 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show the filter state 1`] = `
+<React.Fragment>
+  <span
+    className="indicator active"
+  />
+  Running
+</React.Fragment>
+`;
