@@ -19,6 +19,7 @@ package io.atomix.raft.storage.log.entry;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 import io.atomix.utils.misc.TimestampPrinter;
+import java.util.Objects;
 
 /** Base class for timestamped entries. */
 public abstract class TimestampedEntry extends RaftLogEntry {
@@ -45,5 +46,22 @@ public abstract class TimestampedEntry extends RaftLogEntry {
         .add("term", term)
         .add("timestamp", new TimestampPrinter(timestamp))
         .toString();
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TimestampedEntry that = (TimestampedEntry) o;
+    return timestamp == that.timestamp;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(timestamp);
   }
 }
