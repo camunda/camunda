@@ -71,9 +71,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     );
 
     // when
-    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSearchForIdentities("frodo")
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("frodo");
 
     // then
     assertThat(searchResult).isEqualTo(new IdentitySearchResultDto(1L, Lists.newArrayList(userIdentity)));
@@ -87,9 +85,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs", 1000L));
 
     // when
-    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSearchForIdentities("hobbit")
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("hobbit");
 
     // then
     assertThat(searchResult).isEqualTo(new IdentitySearchResultDto(1L, Lists.newArrayList(groupIdentity)));
@@ -108,9 +104,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     );
 
     // when
-    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSearchForIdentities("baggins")
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("baggins");
 
     // then
     assertThat(searchResult)
@@ -133,9 +127,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getSyncedIdentityCacheService().synchronizeIdentities();
 
     // when
-    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSearchForIdentities("baggins")
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("baggins");
 
     // then
     assertThat(searchResult.getResult())
@@ -155,9 +147,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
     // when
-    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSearchForIdentities("")
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("");
 
     // then
     assertThat(searchResult)
@@ -180,9 +170,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
     // when
-    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSearchForIdentities("", 1)
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("", 1);
 
     // then
     assertThat(searchResult)
@@ -199,9 +187,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(expectedIdentity);
 
     // when
-    final IdentityWithMetadataDto identity = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetIdentityById(expectedIdentity.getId())
-      .execute(IdentityWithMetadataDto.class, Response.Status.OK.getStatusCode());
+    final IdentityWithMetadataDto identity = identityClient.getIdentityById(expectedIdentity.getId());
 
     // then
     assertThat(identity).isEqualTo(expectedIdentity);
@@ -229,9 +215,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     }
 
     // when
-    final IdentityWithMetadataDto identity = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetIdentityById(expectedIdentity.getId())
-      .execute(IdentityWithMetadataDto.class, Response.Status.OK.getStatusCode());
+    final IdentityWithMetadataDto identity = identityClient.getIdentityById(expectedIdentity.getId());
 
     // then
     assertThat(identity).isEqualTo(expectedIdentity);
@@ -396,9 +380,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     // when
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
-    final IdentityWithMetadataDto identity = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetIdentityById(expectedIdentity.getId())
-      .execute(IdentityWithMetadataDto.class, Response.Status.OK.getStatusCode());
+    final IdentityWithMetadataDto identity = identityClient.getIdentityById(expectedIdentity.getId());
 
     // then
     assertThat(identity).hasNoNullFieldsOrPropertiesExcept(
@@ -469,10 +451,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    final UserDto currentUserDto = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCurrentUserIdentity()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(UserDto.class, Response.Status.OK.getStatusCode());
+    final UserDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(currentUserDto).isEqualTo(new UserDto(
@@ -492,10 +471,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    final UserDto currentUserDto = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCurrentUserIdentity()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(UserDto.class, Response.Status.OK.getStatusCode());
+    final UserDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
 
     // then only user ID property is set and `getName` returns user ID
     assertThat(currentUserDto).isEqualTo(new UserDto(KERMIT_USER));

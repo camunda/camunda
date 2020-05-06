@@ -19,6 +19,7 @@ import org.camunda.optimize.test.optimize.EntitiesClient;
 import org.camunda.optimize.test.optimize.EventClient;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.test.optimize.ExportClient;
+import org.camunda.optimize.test.optimize.IdentityClient;
 import org.camunda.optimize.test.optimize.ReportClient;
 import org.camunda.optimize.test.optimize.SharingClient;
 import org.camunda.optimize.test.optimize.UiConfigurationClient;
@@ -81,4 +82,5 @@ public abstract class AbstractIT {
   protected ExportClient exportClient = new ExportClient(optimizeRequestExecutorSupplier);
   protected DefinitionClient definitionClient = new DefinitionClient(optimizeRequestExecutorSupplier);
   protected VariablesClient variablesClient = new VariablesClient(optimizeRequestExecutorSupplier);
+  protected IdentityClient identityClient = new IdentityClient(optimizeRequestExecutorSupplier);
 }

@@ -41,10 +41,7 @@ public class IdentityAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationForKermit(userIdentity1.getId(), RESOURCE_TYPE_USER);
 
     // when
-    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildSearchForIdentities("")
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("", KERMIT_USER, KERMIT_USER);
 
     // then only return identities the current user has access to
     assertThat(searchResult)
@@ -108,10 +105,12 @@ public class IdentityAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationForKermit(user2.getId(), RESOURCE_TYPE_USER);
 
     // when
-    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildSearchForIdentities("testUser", 1)
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity(
+      "testUser",
+      1,
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(searchResult)
@@ -139,10 +138,12 @@ public class IdentityAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationForKermit(user4.getId(), RESOURCE_TYPE_USER);
 
     // when
-    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildSearchForIdentities("testUser", 2)
-      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+    final IdentitySearchResultDto searchResult = identityClient.searchForIdentity(
+      "testUser",
+      2,
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(searchResult)
