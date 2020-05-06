@@ -23,9 +23,9 @@ public class RunOnlyForDmn13EnginesCondition implements ExecutionCondition {
   private static List<String> supportedEngines = new ArrayList<>();
 
   static {
-    supportedEngines.add("7.10.17");
     supportedEngines.add("7.11.11");
     supportedEngines.add("7.12.4");
+    supportedEngines.add("7.13.0");
   }
 
   @Override

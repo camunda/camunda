@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.util;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.EngineVersionDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -25,12 +26,15 @@ import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
 @Slf4j
 public class EngineVersionChecker {
+
+  @Getter
   private static List<String> supportedEngines = new ArrayList<>();
 
+  // Any minor or major versions newer than specified here will also be accepted
   static {
-    supportedEngines.add("7.10.6");
-    supportedEngines.add("7.11.0");
-    supportedEngines.add("7.12.0");
+    supportedEngines.add("7.11.12");
+    supportedEngines.add("7.12.5");
+    supportedEngines.add("7.13.0");
   }
 
   public static void checkEngineVersionSupport(String engineRestPath, EngineContext engineContext) {
@@ -46,7 +50,6 @@ public class EngineVersionChecker {
       log.error(errorMessage, e);
       return;
     }
-
 
     int status = response.getStatus();
     if (status != Response.Status.OK.getStatusCode()) {

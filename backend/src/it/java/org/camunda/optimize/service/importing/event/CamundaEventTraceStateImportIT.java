@@ -18,11 +18,13 @@ import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.script.Script;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 public class CamundaEventTraceStateImportIT extends AbstractIT {
 
@@ -46,7 +50,8 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  protected EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  protected EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @BeforeEach
   public void init() {
@@ -95,8 +100,8 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then
-    assertTracesAndCountsArePresentForDefinitionKey(definitionKey1, processInstanceEngineDto1);
-    assertTracesAndCountsArePresentForDefinitionKey(definitionKey2, processInstanceEngineDto2);
+    assertTracesAndCountsArePresentForDefinitionKey(definitionKey1, processInstanceEngineDto1, true);
+    assertTracesAndCountsArePresentForDefinitionKey(definitionKey2, processInstanceEngineDto2, true);
   }
 
   @Test
@@ -105,11 +110,23 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
     final String definitionKey = "myCamundaProcess1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName(definitionKey);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    OffsetDateTime eventTimestamp = OffsetDateTime.now();
-    engineDatabaseExtension.updateProcessInstanceStartDates(ImmutableMap.of(processInstanceEngineDto.getId(), eventTimestamp));
-    engineDatabaseExtension.updateProcessInstanceEndDates(ImmutableMap.of(processInstanceEngineDto.getId(), eventTimestamp));
-    engineDatabaseExtension.updateActivityInstanceStartDates(ImmutableMap.of(processInstanceEngineDto.getId(), eventTimestamp));
-    engineDatabaseExtension.updateActivityInstanceEndDates(ImmutableMap.of(processInstanceEngineDto.getId(), eventTimestamp));
+    OffsetDateTime eventTimestamp = OffsetDateTime.now().withNano(0);
+    engineDatabaseExtension.updateProcessInstanceStartDates(ImmutableMap.of(
+      processInstanceEngineDto.getId(),
+      eventTimestamp
+    ));
+    engineDatabaseExtension.updateProcessInstanceEndDates(ImmutableMap.of(
+      processInstanceEngineDto.getId(),
+      eventTimestamp
+    ));
+    engineDatabaseExtension.updateActivityInstanceStartDates(ImmutableMap.of(
+      processInstanceEngineDto.getId(),
+      eventTimestamp
+    ));
+    engineDatabaseExtension.updateActivityInstanceEndDates(ImmutableMap.of(
+      processInstanceEngineDto.getId(),
+      eventTimestamp
+    ));
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -121,11 +138,62 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
     assertThat(elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEvents(definitionKey))
       .extracting(CamundaActivityEventDto::getTimestamp)
       .allMatch(offsetDateTime -> offsetDateTime.equals(eventTimestamp));
-    assertTracesAndCountsArePresentForDefinitionKey(definitionKey, processInstanceEngineDto);
+    assertTracesAndCountsArePresentForDefinitionKey(definitionKey, processInstanceEngineDto, true);
+  }
+
+  @Test
+  public void eventTracesAndCountsAreCreatedCorrectlyForProcessWithEventsWithIdenticalTimestamps_noOrderCountersFromEngine() throws
+                                                                                                                             SQLException {
+    // given
+    final String definitionKey = "myCamundaProcess1";
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName(definitionKey);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    OffsetDateTime eventTimestamp = OffsetDateTime.now().withNano(0);
+    engineDatabaseExtension.updateProcessInstanceStartDates(ImmutableMap.of(
+      processInstanceEngineDto.getId(),
+      eventTimestamp
+    ));
+    engineDatabaseExtension.updateProcessInstanceEndDates(ImmutableMap.of(
+      processInstanceEngineDto.getId(),
+      eventTimestamp
+    ));
+    engineDatabaseExtension.updateActivityInstanceStartDates(ImmutableMap.of(
+      processInstanceEngineDto.getId(),
+      eventTimestamp
+    ));
+    engineDatabaseExtension.updateActivityInstanceEndDates(ImmutableMap.of(
+      processInstanceEngineDto.getId(),
+      eventTimestamp
+    ));
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    removeStoredOrderCountersForDefinitionKey(definitionKey);
+
+    // when
+    processEventCountAndTraces();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEvents(definitionKey))
+      .extracting(CamundaActivityEventDto::getTimestamp)
+      .allMatch(offsetDateTime -> offsetDateTime.equals(eventTimestamp));
+    assertTracesAndCountsArePresentForDefinitionKey(definitionKey, processInstanceEngineDto, false);
+  }
+
+  private void removeStoredOrderCountersForDefinitionKey(final String definitionKey) {
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+      elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+      "camunda activity events",
+      "activityEventOrderCounter",
+      new Script("ctx._source.orderCounter = null"),
+      matchAllQuery(),
+      CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + definitionKey
+    );
   }
 
   private void assertTracesAndCountsArePresentForDefinitionKey(final String definitionKey,
-                                                               final ProcessInstanceEngineDto processInstanceEngineDto) {
+                                                               final ProcessInstanceEngineDto processInstanceEngineDto,
+                                                               final boolean useOrderCounters) {
     assertThat(getAllStoredCamundaEventTraceStatesForDefinitionKey(definitionKey))
       .hasSize(1)
       .allSatisfy(eventTraceStateDto -> {
@@ -136,18 +204,23 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
             assertThat(tracedEventDto.getGroup()).isEqualTo(definitionKey);
             assertThat(tracedEventDto.getSource()).isEqualTo("camunda");
             assertThat(tracedEventDto.getTimestamp()).isNotNull();
-            assertThat(tracedEventDto.getOrderCounter()).isNotNull();
+            assertThat(useOrderCounters == (tracedEventDto.getOrderCounter() != null));
           })
-          .isSortedAccordingTo(Comparator.comparing(TracedEventDto::getTimestamp)
-                                 .thenComparing(TracedEventDto::getOrderCounter))
           .extracting(TracedEventDto::getEventName)
           .containsExactlyInAnyOrder(
             START_EVENT,
             applyCamundaTaskStartEventSuffix(USER_TASK),
             applyCamundaTaskEndEventSuffix(USER_TASK),
             END_EVENT
-          )
-        ;
+          );
+        if (useOrderCounters) {
+          assertThat(eventTraceStateDto.getEventTrace())
+            .isSortedAccordingTo(Comparator.comparing(TracedEventDto::getTimestamp)
+                                   .thenComparing(TracedEventDto::getOrderCounter));
+        } else {
+          assertThat(eventTraceStateDto.getEventTrace())
+            .isSortedAccordingTo(Comparator.comparing(TracedEventDto::getTimestamp));
+        }
       });
     assertThat(
       getAllStoredExternalEventSequenceCountsForDefinitionKey(definitionKey)
