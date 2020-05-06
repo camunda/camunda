@@ -108,25 +108,6 @@ public interface RaftResponse extends RaftMessage {
     }
 
     /**
-     * Returns the status for the given identifier.
-     *
-     * @param id The status identifier.
-     * @return The status for the given identifier.
-     * @throws IllegalArgumentException if {@code id} is not 0 or 1
-     */
-    public static Status forId(final int id) {
-      switch (id) {
-        case 1:
-          return OK;
-        case 0:
-          return ERROR;
-        default:
-          break;
-      }
-      throw new IllegalArgumentException("invalid status identifier: " + id);
-    }
-
-    /**
      * Returns the status identifier.
      *
      * @return The status identifier.

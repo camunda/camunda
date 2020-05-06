@@ -18,6 +18,8 @@ package io.atomix.storage.journal;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
+import java.util.Objects;
+
 /** Indexed journal entry. */
 public class Indexed<E> {
   private final long index;
@@ -79,5 +81,22 @@ public class Indexed<E> {
   @Override
   public String toString() {
     return toStringHelper(this).add("index", index).add("entry", entry).toString();
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final Indexed<?> indexed = (Indexed<?>) o;
+    return index == indexed.index && size == indexed.size && Objects.equals(entry, indexed.entry);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(index, entry, size);
   }
 }

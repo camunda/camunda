@@ -29,15 +29,11 @@ import java.util.concurrent.TimeoutException;
 public abstract class TestRaftProtocol {
 
   private final Map<MemberId, TestRaftServerProtocol> servers;
-  private final Map<MemberId, TestRaftClientProtocol> clients;
   private final ThreadContext context;
 
   public TestRaftProtocol(
-      final Map<MemberId, TestRaftServerProtocol> servers,
-      final Map<MemberId, TestRaftClientProtocol> clients,
-      final ThreadContext context) {
+      final Map<MemberId, TestRaftServerProtocol> servers, final ThreadContext context) {
     this.servers = servers;
-    this.clients = clients;
     this.context = context;
   }
 
@@ -59,9 +55,5 @@ public abstract class TestRaftProtocol {
 
   Collection<TestRaftServerProtocol> servers() {
     return servers.values();
-  }
-
-  TestRaftClientProtocol client(final MemberId memberId) {
-    return clients.get(memberId);
   }
 }

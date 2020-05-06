@@ -25,7 +25,6 @@ import com.google.common.collect.Sets;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.Recovery;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
@@ -33,12 +32,7 @@ import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.atomix.primitive.protocol.PrimitiveProtocol;
-import io.atomix.primitive.protocol.ProxyProtocol;
-import io.atomix.raft.MultiRaftProtocol;
-import io.atomix.raft.RaftClient;
 import io.atomix.raft.RaftStateMachineFactory;
-import io.atomix.raft.impl.DefaultRaftClient;
 import io.atomix.raft.storage.snapshot.SnapshotStoreFactory;
 import io.atomix.storage.StorageLevel;
 import io.atomix.utils.concurrent.BlockingAwareThreadPoolContextFactory;
@@ -52,7 +46,6 @@ import io.atomix.utils.serializer.Namespaces;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -83,8 +76,8 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   public RaftPartitionGroup(final RaftPartitionGroupConfig config) {
     final Logger log =
         ContextualLoggerFactory.getLogger(
-            DefaultRaftClient.class,
-            LoggerContext.builder(RaftClient.class).addValue(config.getName()).build());
+            RaftPartitionGroup.class,
+            LoggerContext.builder(RaftPartitionGroup.class).addValue(config.getName()).build());
     this.name = config.getName();
     this.config = config;
     this.partitionSize = config.getPartitionSize();
@@ -134,24 +127,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   @Override
   public String name() {
     return name;
-  }
-
-  @Override
-  public PartitionGroup.Type type() {
-    return TYPE;
-  }
-
-  @Override
-  public PrimitiveProtocol.Type protocol() {
-    return MultiRaftProtocol.TYPE;
-  }
-
-  @Override
-  public ProxyProtocol newProtocol() {
-    return MultiRaftProtocol.builder(name)
-        .withRecoveryStrategy(Recovery.RECOVER)
-        .withMaxRetries(5)
-        .build();
   }
 
   @Override
@@ -336,32 +311,9 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @return the Raft partition group builder
      * @throws NullPointerException if the members are null
      */
-    public Builder withMembers(final String... members) {
-      return withMembers(Arrays.asList(members));
-    }
-
-    /**
-     * Sets the Raft partition group members.
-     *
-     * @param members the Raft partition group members
-     * @return the Raft partition group builder
-     * @throws NullPointerException if the members are null
-     */
     public Builder withMembers(final Collection<String> members) {
       config.setMembers(Sets.newHashSet(checkNotNull(members, "members cannot be null")));
       return this;
-    }
-
-    /**
-     * Sets the Raft partition group members.
-     *
-     * @param members the Raft partition group members
-     * @return the Raft partition group builder
-     * @throws NullPointerException if the members are null
-     */
-    public Builder withMembers(final MemberId... members) {
-      return withMembers(
-          Stream.of(members).map(nodeId -> nodeId.id()).collect(Collectors.toList()));
     }
 
     /**
@@ -419,17 +371,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withHeartbeatInterval(final Duration heartbeatInterval) {
       config.setHeartbeatInterval(heartbeatInterval);
-      return this;
-    }
-
-    /**
-     * Sets the default session timeout.
-     *
-     * @param defaultSessionTimeout the default session timeout
-     * @return the Raft partition group configuration
-     */
-    public Builder withDefaultSessionTimeout(final Duration defaultSessionTimeout) {
-      config.setDefaultSessionTimeout(defaultSessionTimeout);
       return this;
     }
 

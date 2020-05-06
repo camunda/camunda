@@ -46,10 +46,6 @@ public final class ClasspathScanningRegistry implements AtomixRegistry {
   private final Map<Class<? extends NamedType>, Map<String, NamedType>> registrations =
       new ConcurrentHashMap<>();
 
-  private ClasspathScanningRegistry(final ClassLoader classLoader) {
-    this(classLoader, Sets.newHashSet());
-  }
-
   @SuppressWarnings("unchecked")
   private ClasspathScanningRegistry(
       final ClassLoader classLoader, final Set<String> whitelistPackages) {

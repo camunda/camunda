@@ -21,7 +21,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.PrimitiveTypeRegistry;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftRoleChangeListener;
@@ -67,7 +66,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   private final RaftPartitionGroupConfig config;
   private final ClusterMembershipService membershipService;
   private final ClusterCommunicationService clusterCommunicator;
-  private final PrimitiveTypeRegistry primitiveTypes;
   private final ThreadContextFactory threadContextFactory;
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
       new CopyOnWriteArraySet<>();
@@ -83,7 +81,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService clusterCommunicator,
-      final PrimitiveTypeRegistry primitiveTypes,
       final ThreadContextFactory threadContextFactory,
       final Supplier<JournalIndex> journalIndexFactory) {
     this.partition = partition;
@@ -91,7 +88,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     this.localMemberId = localMemberId;
     this.membershipService = membershipService;
     this.clusterCommunicator = clusterCommunicator;
-    this.primitiveTypes = primitiveTypes;
     this.threadContextFactory = threadContextFactory;
     this.journalIndexFactory = journalIndexFactory;
   }
@@ -161,10 +157,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withName(partition.name())
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
-        .withPrimitiveTypes(primitiveTypes)
         .withHeartbeatInterval(config.getHeartbeatInterval())
         .withElectionTimeout(config.getElectionTimeout())
-        .withSessionTimeout(config.getDefaultSessionTimeout())
         .withStorage(createRaftStorage())
         .withThreadContextFactory(threadContextFactory)
         .withStateMachineFactory(config.getStateMachineFactory())

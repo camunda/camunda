@@ -26,13 +26,9 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftFailureListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.partition.impl.RaftClientCommunicator;
-import io.atomix.raft.partition.impl.RaftNamespaces;
-import io.atomix.raft.partition.impl.RaftPartitionClient;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.concurrent.ThreadContextFactory;
-import io.atomix.utils.serializer.Serializer;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,7 +37,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /** Abstract partition. */
 public class RaftPartition implements Partition {
@@ -54,7 +49,6 @@ public class RaftPartition implements Partition {
       new CopyOnWriteArraySet<>();
   private final Set<RaftFailureListener> raftFailureListeners = new CopyOnWriteArraySet<>();
   private PartitionMetadata partitionMetadata;
-  private RaftPartitionClient client;
   private RaftPartitionServer server;
   private Supplier<JournalIndex> journalIndexFactory;
 
@@ -130,14 +124,13 @@ public class RaftPartition implements Partition {
   CompletableFuture<Partition> open(
       final PartitionMetadata metadata, final PartitionManagementService managementService) {
     this.partitionMetadata = metadata;
-    this.client = createClient(managementService);
     if (partitionMetadata
         .members()
         .contains(managementService.getMembershipService().getLocalMember().id())) {
       initServer(managementService);
-      return server.start().thenCompose(v -> client.start()).thenApply(v -> null);
+      return server.start().thenApply(v -> null);
     }
-    return client.start().thenApply(v -> this);
+    return CompletableFuture.completedFuture(this);
   }
 
   private void initServer(final PartitionManagementService managementService) {
@@ -158,21 +151,8 @@ public class RaftPartition implements Partition {
         managementService.getMembershipService().getLocalMember().id(),
         managementService.getMembershipService(),
         managementService.getMessagingService(),
-        managementService.getPrimitiveTypes(),
         threadContextFactory,
         journalIndexFactory);
-  }
-
-  /** Creates a Raft client. */
-  private RaftPartitionClient createClient(final PartitionManagementService managementService) {
-    return new RaftPartitionClient(
-        this,
-        managementService.getMembershipService().getLocalMember().id(),
-        new RaftClientCommunicator(
-            name(),
-            Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
-            managementService.getMessagingService()),
-        threadContextFactory);
   }
 
   /**
@@ -185,37 +165,9 @@ public class RaftPartition implements Partition {
     return String.format("%s-partition-%d", partitionId.group(), partitionId.id());
   }
 
-  /** Updates the partition with the given metadata. */
-  CompletableFuture<Void> update(
-      final PartitionMetadata metadata, final PartitionManagementService managementService) {
-    if (server == null
-        && metadata
-            .members()
-            .contains(managementService.getMembershipService().getLocalMember().id())) {
-      initServer(managementService);
-      return server.join(metadata.members());
-    } else if (server != null
-        && !metadata
-            .members()
-            .contains(managementService.getMembershipService().getLocalMember().id())) {
-      return server.leave().thenRun(() -> server = null);
-    }
-    return CompletableFuture.completedFuture(null);
-  }
-
   /** Closes the partition. */
   CompletableFuture<Void> close() {
-    return closeClient()
-        .exceptionally(v -> null)
-        .thenCompose(v -> closeServer())
-        .exceptionally(v -> null);
-  }
-
-  private CompletableFuture<Void> closeClient() {
-    if (client != null) {
-      return client.stop();
-    }
-    return CompletableFuture.completedFuture(null);
+    return closeServer().exceptionally(v -> null);
   }
 
   private CompletableFuture<Void> closeServer() {
@@ -233,7 +185,6 @@ public class RaftPartition implements Partition {
   public CompletableFuture<Void> delete() {
     return server
         .stop()
-        .thenCompose(v -> client.stop())
         .thenRun(
             () -> {
               if (server != null) {
@@ -260,25 +211,6 @@ public class RaftPartition implements Partition {
   @Override
   public Collection<MemberId> members() {
     return partitionMetadata != null ? partitionMetadata.members() : Collections.emptyList();
-  }
-
-  @Override
-  public MemberId primary() {
-    return client != null ? client.leader() : null;
-  }
-
-  @Override
-  public Collection<MemberId> backups() {
-    final MemberId leader = primary();
-    if (leader == null) {
-      return members();
-    }
-    return members().stream().filter(m -> !m.equals(leader)).collect(Collectors.toSet());
-  }
-
-  @Override
-  public RaftPartitionClient getClient() {
-    return client;
   }
 
   public Role getRole() {

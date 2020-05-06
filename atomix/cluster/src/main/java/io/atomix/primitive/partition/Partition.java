@@ -42,25 +42,4 @@ public interface Partition {
    * @return the collection of all members in the partition
    */
   Collection<MemberId> members();
-
-  /**
-   * Returns the partition's current primary.
-   *
-   * @return the partition's current primary
-   */
-  MemberId primary();
-
-  /**
-   * Returns the partition's backups.
-   *
-   * @return the partition's backups
-   */
-  Collection<MemberId> backups();
-
-  /**
-   * Returns the partition client.
-   *
-   * @return the partition client
-   */
-  PartitionClient getClient();
 }

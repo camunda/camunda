@@ -162,7 +162,7 @@ public class RaftError {
 
       @Override
       PrimitiveException createException(final String message) {
-        return message != null ? new PrimitiveException.UnknownSession(message) : createException();
+        throw new UnsupportedOperationException("Sessions are no longer supported");
       }
     },
 
@@ -188,7 +188,7 @@ public class RaftError {
 
       @Override
       PrimitiveException createException(final String message) {
-        return message != null ? new PrimitiveException.ClosedSession(message) : createException();
+        throw new UnsupportedOperationException("Sessions are no longer supported.");
       }
     },
 

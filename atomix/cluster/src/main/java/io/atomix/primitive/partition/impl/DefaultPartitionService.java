@@ -19,7 +19,6 @@ package io.atomix.primitive.partition.impl;
 import com.google.common.collect.Maps;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.PrimitiveTypeRegistry;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionGroupMembershipService;
 import io.atomix.primitive.partition.ManagedPartitionService;
@@ -45,7 +44,6 @@ public class DefaultPartitionService implements ManagedPartitionService {
 
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService communicationService;
-  private final PrimitiveTypeRegistry primitiveTypeRegistry;
   private final ManagedPartitionGroupMembershipService groupMembershipService;
   private volatile PartitionManagementService partitionManagementService;
   private final Map<String, ManagedPartitionGroup> groups = Maps.newConcurrentMap();
@@ -57,12 +55,10 @@ public class DefaultPartitionService implements ManagedPartitionService {
   public DefaultPartitionService(
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService messagingService,
-      final PrimitiveTypeRegistry primitiveTypeRegistry,
       final Collection<ManagedPartitionGroup> groups,
       final PartitionGroupTypeRegistry groupTypeRegistry) {
     this.clusterMembershipService = membershipService;
     this.communicationService = messagingService;
-    this.primitiveTypeRegistry = primitiveTypeRegistry;
     this.groupMembershipService =
         new DefaultPartitionGroupMembershipService(
             membershipService, messagingService, groups, groupTypeRegistry);
@@ -117,7 +113,7 @@ public class DefaultPartitionService implements ManagedPartitionService {
         .thenApply(
             v2 ->
                 new DefaultPartitionManagementService(
-                    clusterMembershipService, communicationService, primitiveTypeRegistry))
+                    clusterMembershipService, communicationService))
         .thenCompose(
             managementService -> {
               this.partitionManagementService = managementService;
