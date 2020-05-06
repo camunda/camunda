@@ -199,7 +199,7 @@ test('add rolling last 5 days end date filter', async (t) => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('add duration filter', async (t) => {
+test('add process instance duration filter', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -213,6 +213,35 @@ test('add duration filter', async (t) => {
   await t.typeText(Filter.durationFilterInput, '30', {replace: true});
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/duration-filter.png');
+
+  await t.click(Report.primaryModalButton);
+  await t.expect(Report.reportRenderer.visible).ok();
+});
+
+test('add flow node duration filter', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'None');
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Duration'));
+  await t.click(Report.subFilterOption('Flow Node'));
+
+  await t.typeText(Report.targetValueInput('Approve Invoice'), '1');
+  await t.click(Report.targetValueUnitSelect('Approve Invoice'));
+  await t.click(Report.dropdownOption('minutes'));
+  await t.typeText(Report.targetValueInput('Prepare Bank Transfer'), '5');
+  await t.click(Report.targetValueUnitSelect('Prepare Bank Transfer'));
+  await t.click(Report.dropdownOption('minutes'));
+  await t.click(Report.nodeFilterOperator('Prepare Bank Transfer'));
+  await t.click(Report.dropdownOption('less than'));
+  await t.typeText(Report.targetValueInput('Review Invoice'), '15');
+
+  await t.resizeWindow(1650, 850);
+  await t.takeElementScreenshot(
+    Report.modalContainer,
+    'process/filter/flowNode-duration-filter.png'
+  );
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();

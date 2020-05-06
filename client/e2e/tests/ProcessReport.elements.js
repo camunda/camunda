@@ -48,7 +48,9 @@ export const badge = (id) =>
 export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('.Input');
 export const targetValueUnitSelect = (name) =>
-  Selector('.Modal tbody tr').withText(name).find('.Dropdown');
+  Selector('.Modal tbody tr').withText(name).find('.Dropdown:last-child');
+export const nodeFilterOperator = (name) =>
+  Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const warning = Selector('.Message--warning');
 export const controlPanel = Selector('.ReportControlPanel');
