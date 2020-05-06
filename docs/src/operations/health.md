@@ -5,7 +5,7 @@ Zeebe broker exposes two http endpoints to query its health status.
 * Health check
  
 ## Ready Check
-Ready check endpoint is exposed via `http://{zeebe-broker}:{zeebe.broker.network.monitoringApi.port}/ready`.
+Ready check endpoint is exposed via `http://{zeebe-broker}:{zeebe.broker.network.monitoringApi.port}/ready` (by default port 9600).
 This endpoint return an empty 204 response. If it is not ready, it will return a 503 error.
 
 A broker is ready when it has installed all necessary services to start processing in all partitions.
@@ -18,7 +18,7 @@ Depending on the cluster configuration, restarting one pod before the previous o
 By configuring a `readinessProbe` that uses the ready check endpoint we can inform Kubernetes when it is safe to proceed with rolling update.
 
 ## Health Check
-Health check endpoint is exposed via `http://{zeebe-broker}:{zeebe.broker.network.monitoringApi.port}/health`.
+Health check endpoint is exposed via `http://{zeebe-broker}:{zeebe.broker.network.monitoringApi.port}/health` (by default port 9600).
 This endpoint return an empty 204 response if the broker is healthy. If it is not healthy, it will return a 503 error.
 A broker is never healthy before it is ready. 
 Unlike ready check, a broker can become unhealthy after it is healthy.
