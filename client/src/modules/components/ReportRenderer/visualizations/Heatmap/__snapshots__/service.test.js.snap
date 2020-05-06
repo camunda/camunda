@@ -2,42 +2,30 @@
 
 exports[`should construct rawdata report with the target value as a filter 1`] = `
 Object {
-  "combined": false,
-  "data": Object {
-    "configuration": Object {
-      "heatmapTargetValue": Object {
-        "values": Object {
-          "flowNodeA": Object {
-            "unit": "days",
-            "value": 1234,
-          },
-        },
-      },
+  "filter": Array [
+    Object {
+      "type": "test",
     },
-    "filter": Array [
-      Object {
-        "type": "test",
-      },
-      Object {
-        "data": Object {
-          "flowNodeId": "flowNodeA",
+    Object {
+      "data": Object {
+        "flowNodeA": Object {
           "operator": ">",
           "unit": "days",
           "value": 1234,
         },
-        "type": "flowNodeDuration",
       },
-    ],
-    "groupBy": Object {
-      "type": "none",
-      "value": null,
+      "type": "flowNodeDuration",
     },
-    "view": Object {
-      "entity": null,
-      "property": "rawData",
-    },
-    "visualization": "table",
-  },
-  "reportType": "process",
+  ],
+  "includedColumns": Array [
+    "processInstanceId",
+  ],
+  "processDefinitionKey": "1",
+  "processDefinitionVersions": Array [
+    "1",
+  ],
+  "tenantIds": Array [
+    "tenantA",
+  ],
 }
 `;

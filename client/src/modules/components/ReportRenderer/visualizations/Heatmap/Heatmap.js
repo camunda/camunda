@@ -15,8 +15,8 @@ import {
   HeatmapOverlay,
 } from 'components';
 
-import {calculateTargetValueHeat, createFlowNodeReport} from './service';
-import {evaluateReport, formatters, getTooltipText} from 'services';
+import {getConfig, calculateTargetValueHeat} from './service';
+import {loadRawData, formatters, getTooltipText} from 'services';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -91,20 +91,11 @@ export function Heatmap({report, formatter, mightFail, context}) {
               {context !== 'shared' && (
                 <Button
                   onClick={async () => {
-                    const reportData = createFlowNodeReport(report.data, id);
                     mightFail(
-                      evaluateReport(reportData),
+                      loadRawData(getConfig(report.data, id)),
                       (data) => {
-                        const instanceIds = data.result.data
-                          .map(({processInstanceId}) => processInstanceId)
-                          .join('\n');
-
                         const hiddenElement = document.createElement('a');
-                        hiddenElement.href = `data:text/csv;charset=utf-8,${t(
-                          'report.heatTarget.instanceIds'
-                        )}
-                          ${instanceIds}`;
-                        hiddenElement.target = '_blank';
+                        hiddenElement.href = window.URL.createObjectURL(data);
                         hiddenElement.download =
                           t('report.heatTarget.exceededInstances', {name: name.replace(' ', '-')}) +
                           '.csv';

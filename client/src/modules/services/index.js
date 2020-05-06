@@ -32,7 +32,7 @@ export {
   copyReport,
 } from './entityService';
 
-export {evaluateReport, isDurationReport} from './reportService';
+export {evaluateReport, isDurationReport, loadRawData} from './reportService';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
 export const formatters = formattersImport;

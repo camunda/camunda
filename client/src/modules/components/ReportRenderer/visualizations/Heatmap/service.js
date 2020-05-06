@@ -26,38 +26,32 @@ export function calculateTargetValueHeat(durationData, targetValues) {
   return data;
 }
 
-export function createFlowNodeReport(data, flowNodeId) {
+export function getConfig(data, flowNodeId) {
   const {
+    processDefinitionKey,
+    processDefinitionVersions,
+    tenantIds,
     configuration: {heatmapTargetValue},
   } = data;
   const {value, unit} = heatmapTargetValue.values[flowNodeId];
 
   return {
-    combined: false,
-    reportType: 'process',
-    data: {
-      ...data,
-      filter: [
-        ...data.filter,
-        {
-          type: 'flowNodeDuration',
-          data: {
-            flowNodeId,
+    processDefinitionKey,
+    processDefinitionVersions,
+    tenantIds,
+    includedColumns: ['processInstanceId'],
+    filter: [
+      ...data.filter,
+      {
+        type: 'flowNodeDuration',
+        data: {
+          [flowNodeId]: {
             operator: '>',
             value,
             unit,
           },
         },
-      ],
-      view: {
-        entity: null,
-        property: 'rawData',
       },
-      groupBy: {
-        type: 'none',
-        value: null,
-      },
-      visualization: 'table',
-    },
+    ],
   };
 }

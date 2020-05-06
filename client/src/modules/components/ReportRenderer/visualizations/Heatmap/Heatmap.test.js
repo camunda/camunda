@@ -10,14 +10,14 @@ import {shallow} from 'enzyme';
 import {Heatmap} from './Heatmap';
 import {Button, HeatmapOverlay} from 'components';
 import {calculateTargetValueHeat} from './service';
-import {formatters, evaluateReport} from 'services';
+import {formatters, loadRawData} from 'services';
 
 const {convertToMilliseconds} = formatters;
 
 jest.mock('./service', () => {
   return {
     calculateTargetValueHeat: jest.fn(),
-    createFlowNodeReport: () => 'rawDataReport',
+    getConfig: () => 'config',
   };
 });
 
@@ -31,7 +31,7 @@ jest.mock('services', () => {
       convertToMilliseconds: jest.fn(),
       objectifyResult: jest.fn().mockReturnValue({a: 1, b: 2}),
     },
-    evaluateReport: jest.fn().mockReturnValue({result: {data: [{processInstanceId: 'test'}]}}),
+    loadRawData: jest.fn().mockReturnValue({result: {data: [{processInstanceId: 'test'}]}}),
     isDurationReport: jest.fn().mockReturnValue(false),
     getTooltipText: jest.fn(),
   };
@@ -214,6 +214,8 @@ it('should invoke report evaluation when clicking the download instances button'
     },
   };
 
+  window.URL.createObjectURL = jest.fn();
+
   formatters.duration.mockReturnValueOnce('1ms').mockReturnValueOnce('2ms');
   const node = shallow(
     <Heatmap
@@ -232,5 +234,5 @@ it('should invoke report evaluation when clicking the download instances button'
 
   await tooltip.find(Button).props().onClick();
 
-  expect(evaluateReport).toHaveBeenCalledWith('rawDataReport');
+  expect(loadRawData).toHaveBeenCalledWith('config');
 });

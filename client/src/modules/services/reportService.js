@@ -24,3 +24,9 @@ export async function evaluateReport(query, filter = []) {
 
   return await response.json();
 }
+
+export async function loadRawData(config) {
+  const response = await post('api/export/csv/process/rawData/data', config);
+
+  return await response.blob();
+}

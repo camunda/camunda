@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {calculateTargetValueHeat, createFlowNodeReport} from './service';
+import {calculateTargetValueHeat, getConfig} from './service';
 
 jest.mock('heatmap.js', () => {});
 jest.mock('services', () => ({
@@ -34,6 +34,15 @@ it('should construct rawdata report with the target value as a filter', () => {
   };
 
   expect(
-    createFlowNodeReport({configuration, filter: [{type: 'test'}]}, 'flowNodeA')
+    getConfig(
+      {
+        configuration,
+        processDefinitionKey: '1',
+        processDefinitionVersions: ['1'],
+        tenantIds: ['tenantA'],
+        filter: [{type: 'test'}],
+      },
+      'flowNodeA'
+    )
   ).toMatchSnapshot();
 });
