@@ -189,6 +189,11 @@ pipeline {
             post {
                 failure {
                     archive "**/*/surefire-reports/*-output.txt"
+                    script {
+                      if (fileExists('./target/FlakyTests.txt')) {
+                          currentBuild.description = "Flaky Tests: <br>" + readFile('./target/FlakyTests.txt').split('\n').join('<br>')
+                      }
+                    }
                 }
             }
         }
