@@ -1,5 +1,43 @@
 @import 'shared-styles/shared-styles.scss';
 
+.dark .Table {
+  table {
+    border-color: $grey-darken-33;
+  }
+
+  thead tr {
+    &:not(.groupRow) {
+      border-color: $grey-darken-33;
+    }
+
+    .tableHeader:not(:first-child):not(.placeholder):before {
+      background: $grey-darken-33;
+    }
+  }
+
+  tbody tr {
+    color: white;
+    background-color: rgba($grey-darken-13, 0.6);
+
+    &:not(:last-child) {
+      border-color: $grey-darken-33;
+    }
+
+    &:nth-child(odd) {
+      background-color: rgba($grey-darken-13, 0.2);
+    }
+  }
+
+  &.highlight tbody tr:hover {
+    background-color: $grey-darken-13;
+  }
+
+  .tableFooter {
+    background-color: $grey-darken-23;
+    border-color: $grey-darken-23;
+  }
+}
+
 .Table {
   font-size: 14px;
   display: flex;

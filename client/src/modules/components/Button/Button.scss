@@ -3,21 +3,21 @@
 .dark {
   .Button {
     color: $silver-darken-87;
-    background-color: $grey-darken-13;
-    border: 1px solid $grey-darken-23;
+    background-color: $grey-darken-33;
+    border: 1px solid $grey-darken-36;
 
     &:hover,
     &:active,
     &.active {
       color: $silver-darken-87;
       background-color: $grey-darken-23;
-      border: 1px solid $grey-darken-23;
+      border: 1px solid $grey-darken-33;
     }
 
     &.main {
       box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
-      border: 1px solid $grey-base-40;
-      background-color: $grey-darken-13;
+      border: 1px solid $grey-darken-36;
+      background-color: $grey-darken-33;
       color: $silver-darken-87;
 
       &.focus-visible {
@@ -30,14 +30,14 @@
 
       &:active,
       &.active {
-        border: 1px solid $grey-lighten-50;
-        background-color: $grey-darken-33;
+        border: 1px solid $grey-darken-33;
+        background-color: $grey-darken-23;
       }
 
       &:disabled {
         box-shadow: none;
         border: 1px solid $grey-darken-33;
-        background-color: $grey-darken-13;
+        background-color: $grey-darken-33;
         color: $grey-lighten-56;
       }
 
@@ -80,6 +80,27 @@
           border: 1px solid $red-darken-26;
           background-color: $red-darken-18;
         }
+      }
+    }
+
+    &.icon {
+      background-color: transparent;
+      color: $silver-darken-87;
+      border: none;
+      box-shadow: none;
+
+      &:hover {
+        background-color: $grey-darken-23;
+      }
+
+      &:active,
+      &.active {
+        background-color: $grey-darken-33;
+      }
+
+      &:disabled {
+        background-color: transparent;
+        color: $grey-lighten-56;
       }
     }
   }
