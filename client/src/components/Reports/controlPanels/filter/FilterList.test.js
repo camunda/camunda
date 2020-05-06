@@ -259,7 +259,7 @@ it('should display a flow node duration filter', () => {
 
   const actionItem = node.find('ActionItem').dive();
   expect(actionItem).toIncludeText('Duration filter is applied to 1 Flow Node');
-  expect(actionItem).toIncludeText('flow node name < 18 hours');
+  expect(actionItem).toIncludeText('flow node name is less than 18 hours');
 });
 
 it('should display a running instances only filter', () => {
