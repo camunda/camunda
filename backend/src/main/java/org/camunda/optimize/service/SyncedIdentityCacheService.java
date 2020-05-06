@@ -72,7 +72,12 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
+    initCronSequenceGenerator();
     resetCache();
+  }
+
+  public void initCronSequenceGenerator() {
+    this.cronSequenceGenerator = new CronSequenceGenerator(getIdentitySyncConfiguration().getCronTrigger());
   }
 
   @PostConstruct
@@ -80,7 +85,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     log.info("Initializing user sync.");
     final IdentitySyncConfiguration identitySyncConfiguration = getIdentitySyncConfiguration();
     identitySyncConfiguration.validate();
-    this.cronSequenceGenerator = new CronSequenceGenerator(identitySyncConfiguration.getCronTrigger());
+    initCronSequenceGenerator();
     startSchedulingUserSync();
   }
 
@@ -107,7 +112,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     }
   }
 
-  private synchronized void syncIdentitiesWithRetry() {
+  public synchronized void syncIdentitiesWithRetry() {
     Instant stopRetryingTime = cronSequenceGenerator
       .next(new Date(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli()))
       .toInstant()
