@@ -18,3 +18,5 @@ jobs:
         days-before-stale: 15
         days-before-close: 15
         only-labels: 'Status: Needs Information'
+        exempt-issue-labels: 'Status: Needs Priority,Status: Ready,Status: In Progress,Status: Needs Review'
+        debug-only: true
