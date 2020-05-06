@@ -10,7 +10,6 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -19,7 +18,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -47,12 +45,12 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var2", 1);
     variables.put("var3", 1);
     variables.put("var4", 1);
-    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos).hasSize(2);
@@ -70,12 +68,12 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var2", "bar");
     variables.put("var3", "bar");
     variables.put("var4", "bar");
-    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos).hasSize(2);
@@ -88,12 +86,12 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
-    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
     //then all the variables are added to Optimize
     assertThat(variablesResponseDtos).hasSize(2);
@@ -106,12 +104,12 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
-    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
     //then extra variable is added to Optimize
     assertThat(variablesResponseDtos).hasSize(3);
@@ -123,12 +121,12 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util4");
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
-    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos)
@@ -179,25 +177,20 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
-    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
 
     // then all variables are stored in Optimize
     assertThat(variablesResponseDtos).hasSize(2);
   }
 
-  private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto processDefinition) {
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(processDefinition.getProcessDefinitionKey());
-    variableRequestDto.setProcessDefinitionVersion(processDefinition.getProcessDefinitionVersion());
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+  private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto instanceDto) {
+    return variablesClient
+      .getProcessVariableNames(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion());
   }
 
   private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables)

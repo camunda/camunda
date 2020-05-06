@@ -56,7 +56,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> variableResponse = getVariableValues(processDefinition, "var");
+    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(3);
@@ -86,7 +86,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     valueRequestDto.setTenantIds(selectedTenants);
     valueRequestDto.setName(variableName);
     valueRequestDto.setType(STRING);
-    List<String> variableResponse = getVariableValues(valueRequestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(valueRequestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(selectedTenants.size());
@@ -119,7 +119,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     ));
     valueRequestDto.setName("var");
     valueRequestDto.setType(STRING);
-    List<String> variableResponse = getVariableValues(valueRequestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(valueRequestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(2);
@@ -146,7 +146,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     valueRequestDto.setProcessDefinitionVersion(ALL_VERSIONS);
     valueRequestDto.setName("var");
     valueRequestDto.setType(STRING);
-    List<String> variableResponse = getVariableValues(valueRequestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(valueRequestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(2);
@@ -174,7 +174,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     valueRequestDto.setProcessDefinitionVersion(LATEST_VERSION);
     valueRequestDto.setName("var");
     valueRequestDto.setType(STRING);
-    List<String> variableResponse = getVariableValues(valueRequestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(valueRequestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -196,7 +196,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> variableResponse = getVariableValues(processDefinition, "var");
+    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(15);
@@ -215,7 +215,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> variableResponse = getVariableValues(processDefinition, "var1");
+    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var1");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -236,7 +236,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> variableResponse = getVariableValues(processDefinition, "var");
+    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -256,7 +256,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> variableResponse = getVariableValues(processDefinition, "var");
+    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -276,7 +276,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> variableResponse = getVariableValues(processDefinition, "var");
+    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -308,7 +308,7 @@ public class ProcessVariableValueIT extends AbstractIT {
       requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
       requestDto.setName(name);
       requestDto.setType(type);
-      List<String> variableResponse = getVariableValues(requestDto);
+      List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
       // then
       String expectedValue;
@@ -357,7 +357,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setNumResults(2);
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(2);
@@ -386,7 +386,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setResultOffset(1);
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(2);
@@ -416,7 +416,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setType(STRING);
     requestDto.setNumResults(1);
     requestDto.setResultOffset(1);
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -444,7 +444,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setValueFilter("ba");
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(2);
@@ -472,7 +472,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setValueFilter("o");
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -499,7 +499,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setValueFilter("ooo");
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(2);
@@ -530,7 +530,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setValueFilter("bAr");
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(3);
@@ -560,7 +560,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setValueFilter("barbarbarbar");
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(2);
@@ -585,7 +585,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setValueFilter("bar");
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(0);
@@ -608,7 +608,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(INTEGER);
     requestDto.setValueFilter("bar");
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -631,7 +631,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setValueFilter(null);
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -654,7 +654,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     requestDto.setName("var");
     requestDto.setType(STRING);
     requestDto.setValueFilter("");
-    List<String> variableResponse = getVariableValues(requestDto);
+    List<String> variableResponse = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -730,23 +730,6 @@ public class ProcessVariableValueIT extends AbstractIT {
       .endEvent()
       .done();
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenant);
-  }
-
-  private List<String> getVariableValues(ProcessDefinitionEngineDto processDefinition, String name) {
-    ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
-    requestDto.setProcessDefinitionKey(processDefinition.getKey());
-    requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
-    requestDto.setName(name);
-    requestDto.setType(STRING);
-    List<String> variableResponse = getVariableValues(requestDto);
-    return getVariableValues(requestDto);
-  }
-
-  private List<String> getVariableValues(ProcessVariableValueRequestDto valueRequestDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableValuesRequest(valueRequestDto)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
   }
 
   private Response getVariableValueResponse(ProcessVariableValueRequestDto valueRequestDto) {

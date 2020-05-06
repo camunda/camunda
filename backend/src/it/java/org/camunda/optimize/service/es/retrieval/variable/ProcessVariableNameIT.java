@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +51,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(4));
@@ -79,7 +78,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     variableNameRequestDto.setProcessDefinitionKey(processDefinition);
     variableNameRequestDto.setProcessDefinitionVersion(ALL_VERSIONS);
     variableNameRequestDto.setTenantIds(selectedTenants);
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(variableNameRequestDto);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(variableNameRequestDto);
 
     // then
     assertThat(variableResponse.size(), is(selectedTenants.size()));
@@ -106,7 +105,7 @@ public class ProcessVariableNameIT extends AbstractIT {
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
-      getVariableNames(
+      variablesClient.getProcessVariableNames(
         processDefinition.getKey(),
         ImmutableList.of(processDefinition.getVersionAsString(), processDefinition3.getVersionAsString())
       );
@@ -132,7 +131,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(15));
@@ -155,7 +154,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition.getKey(), ALL_VERSIONS);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition.getKey(), ALL_VERSIONS);
 
     // then
     assertThat(variableResponse.size(), is(4));
@@ -182,7 +181,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition.getKey(), LATEST_VERSION);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition.getKey(), LATEST_VERSION);
 
     // then
     assertThat(variableResponse.size(), is(1));
@@ -204,7 +203,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(1));
@@ -228,7 +227,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(3));
@@ -249,7 +248,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(1));
@@ -269,7 +268,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(2));
@@ -296,7 +295,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(variables.size()));
@@ -319,7 +318,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, "a");
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition, "a");
 
     // then
     assertThat(variableResponse.size(), is(2));
@@ -340,7 +339,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, "foo");
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition, "foo");
 
     // then
     assertThat(variableResponse.size(), is(0));
@@ -359,7 +358,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, null);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition, null);
 
     // then
     assertThat(variableResponse.size(), is(3));
@@ -381,7 +380,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, "");
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition, "");
 
     // then
     assertThat(variableResponse.size(), is(3));
@@ -408,7 +407,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, "d");
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition, "d");
 
     // then
     assertThat(variableResponse.size(), is(2));
@@ -424,40 +423,6 @@ public class ProcessVariableNameIT extends AbstractIT {
       .endEvent()
       .done();
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
-  }
-
-  private List<ProcessVariableNameResponseDto> getVariableNames(ProcessDefinitionEngineDto processDefinition,
-                                                                String namePrefix) {
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());
-    variableRequestDto.setProcessDefinitionVersions(ImmutableList.of(processDefinition.getVersionAsString()));
-    variableRequestDto.setNamePrefix(namePrefix);
-    return this.getVariableNames(variableRequestDto);
-  }
-
-  private List<ProcessVariableNameResponseDto> getVariableNames(ProcessDefinitionEngineDto processDefinition) {
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());
-    variableRequestDto.setProcessDefinitionVersions(ImmutableList.of(processDefinition.getVersionAsString()));
-    return getVariableNames(processDefinition, null);
-  }
-
-  private List<ProcessVariableNameResponseDto> getVariableNames(String key, List<String> versions) {
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(key);
-    variableRequestDto.setProcessDefinitionVersions(versions);
-    return getVariableNames(variableRequestDto);
-  }
-
-  private List<ProcessVariableNameResponseDto> getVariableNames(String key, String version) {
-    return getVariableNames(key, ImmutableList.of(version));
-  }
-
-  private List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto variableRequestDto) {
-    return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildProcessVariableNamesRequest(variableRequestDto)
-            .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {

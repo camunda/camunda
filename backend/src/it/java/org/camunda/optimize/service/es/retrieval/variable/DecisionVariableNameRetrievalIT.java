@@ -292,19 +292,9 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     deployDecisionsWithVarNames(of(varName), of(DecisionTypeRef.STRING));
   }
 
-  private List<DecisionVariableNameDto> getVariableNames(DecisionDefinitionEngineDto decisionDefinition) {
-    DecisionVariableNameRequestDto variableRequestDto = new DecisionVariableNameRequestDto();
-    variableRequestDto.setDecisionDefinitionKey(decisionDefinition.getKey());
-    variableRequestDto.setDecisionDefinitionVersions(of(decisionDefinition.getVersionAsString()));
-    return getVariableNames(variableRequestDto);
-  }
+  protected abstract List<DecisionVariableNameDto> getVariableNames(DecisionDefinitionEngineDto decisionDefinition);
 
-  private List<DecisionVariableNameDto> getVariableNames(String key, List<String> versions) {
-    DecisionVariableNameRequestDto variableRequestDto = new DecisionVariableNameRequestDto();
-    variableRequestDto.setDecisionDefinitionKey(key);
-    variableRequestDto.setDecisionDefinitionVersions(versions);
-    return getVariableNames(variableRequestDto);
-  }
+  protected abstract List<DecisionVariableNameDto> getVariableNames(String key, List<String> versions);
 
   private List<DecisionVariableNameDto> getVariableNames(String key, String version) {
     return getVariableNames(key, of(version));

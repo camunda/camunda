@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequ
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static java.util.Collections.nCopies;
@@ -34,10 +33,15 @@ public class DecisionInputVariableNameRetrievalIT extends DecisionVariableNameRe
   }
 
   protected List<DecisionVariableNameDto> getVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDecisionInputVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+    return variablesClient.getDecisionInputVariableNames(variableRequestDto);
+  }
+
+  protected List<DecisionVariableNameDto> getVariableNames(DecisionDefinitionEngineDto decisionDefinition) {
+    return variablesClient.getDecisionInputVariableNames(decisionDefinition);
+  }
+
+  protected List<DecisionVariableNameDto> getVariableNames(String key, List<String> versions) {
+    return variablesClient.getDecisionInputVariableNames(key, versions);
   }
 
 }

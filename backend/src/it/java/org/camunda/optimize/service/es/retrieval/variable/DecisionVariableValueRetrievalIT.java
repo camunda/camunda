@@ -7,12 +7,10 @@ package org.camunda.optimize.service.es.retrieval.variable;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,11 +39,15 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE
     );
-    List<String> categoryInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING
+    List<String> categoryInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_CATEGORY_ID,
+      VariableType.STRING
     );
 
     // then
@@ -77,9 +79,8 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
 
-    List<String> auditOutputVariableValues = getOutputVariableValues(
-      decisionDefinitionDto, OUTPUT_AUDIT_ID, VariableType.BOOLEAN, null
-    );
+    List<String> auditOutputVariableValues = variablesClient
+      .getDecisionOutputVariableValues(decisionDefinitionDto, OUTPUT_AUDIT_ID, VariableType.BOOLEAN, null);
 
     // then
     assertThat(auditOutputVariableValues.size(), is(2));
@@ -103,8 +104,10 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE
     );
 
     // then
@@ -124,11 +127,15 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE
     );
-    List<String> categoryInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING
+    List<String> categoryInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_CATEGORY_ID,
+      VariableType.STRING
     );
 
     // then
@@ -154,8 +161,10 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto1, INPUT_AMOUNT_ID, VariableType.DOUBLE
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto1,
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE
     );
 
     // then
@@ -178,8 +187,10 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto1, INPUT_AMOUNT_ID, VariableType.DOUBLE
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto1,
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE
     );
 
     // then
@@ -202,8 +213,12 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto1.getKey(), "ALL", INPUT_AMOUNT_ID, VariableType.DOUBLE
+
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto1.getKey(),
+      "ALL",
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE
     );
 
     // then
@@ -224,8 +239,13 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE, null, 2, 0
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE,
+      null,
+      2,
+      0
     );
 
     // then
@@ -246,8 +266,13 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE, null, 10, 1
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE,
+      null,
+      10,
+      1
     );
 
     // then
@@ -268,8 +293,13 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE, null, 1, 1
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE,
+      null,
+      1,
+      1
     );
 
     // then
@@ -290,8 +320,11 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "Tra"
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_CATEGORY_ID,
+      VariableType.STRING,
+      "Tra"
     );
 
     // then
@@ -313,8 +346,11 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "ave"
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_CATEGORY_ID,
+      VariableType.STRING,
+      "ave"
     );
 
     // then
@@ -340,9 +376,8 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> classificationOutputVariableValues = getOutputVariableValues(
-      decisionDefinitionDto, OUTPUT_CLASSIFICATION_ID, VariableType.STRING, "ex"
-    );
+    List<String> classificationOutputVariableValues = variablesClient
+      .getDecisionOutputVariableValues(decisionDefinitionDto, OUTPUT_CLASSIFICATION_ID, VariableType.STRING, "ex");
 
     // then
     assertThat(classificationOutputVariableValues.size(), is(2));
@@ -363,8 +398,11 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "ave"
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_CATEGORY_ID,
+      VariableType.STRING,
+      "ave"
     );
 
     // then
@@ -386,8 +424,11 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "barbarbarbar"
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_CATEGORY_ID,
+      VariableType.STRING,
+      "barbarbarbar"
     );
 
     // then
@@ -406,8 +447,11 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING, "20"
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.STRING,
+      "20"
     );
 
     // then
@@ -424,8 +468,11 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "ave"
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_CATEGORY_ID,
+      VariableType.STRING,
+      "ave"
     );
 
     // then
@@ -442,8 +489,11 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING, "ave"
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.STRING,
+      "ave"
     );
 
     // then
@@ -460,8 +510,11 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING, null
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.STRING,
+      null
     );
 
     // then
@@ -478,8 +531,11 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING, ""
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.STRING,
+      ""
     );
 
     // then
@@ -491,121 +547,6 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
                                                final String category) {
     final HashMap<String, InputVariableEntry> inputs = createInputs(amountValue, category);
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), inputs);
-  }
-
-  private List<String> getInputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
-                                              final String variableId,
-                                              final VariableType variableType) {
-    return getInputVariableValues(
-      decisionDefinitionEngineDto,
-      variableId,
-      variableType,
-      null
-    );
-  }
-
-  private List<String> getInputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
-                                              final String variableId,
-                                              final VariableType variableType,
-                                              final String valueFilter) {
-    return getInputVariableValues(
-      decisionDefinitionEngineDto,
-      variableId,
-      variableType,
-      valueFilter,
-      Integer.MAX_VALUE,
-      0
-    );
-  }
-
-  private List<String> getInputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
-                                              final String variableId,
-                                              final VariableType variableType,
-                                              final String valueFilter,
-                                              final Integer numResults,
-                                              final Integer offset) {
-    return getInputVariableValues(
-      decisionDefinitionEngineDto.getKey(),
-      String.valueOf(decisionDefinitionEngineDto.getVersion()),
-      variableId,
-      variableType,
-      valueFilter,
-      numResults,
-      offset
-    );
-  }
-
-  private List<String> getInputVariableValues(final String decisionDefinitionKey,
-                                              final String decisionDefinitionVersion,
-                                              final String variableId,
-                                              final VariableType variableType) {
-
-    return getInputVariableValues(
-      decisionDefinitionKey, decisionDefinitionVersion, variableId, variableType, null, Integer.MAX_VALUE, 0
-    );
-  }
-
-  private List<String> getInputVariableValues(final String decisionDefinitionKey,
-                                              final String decisionDefinitionVersion,
-                                              final String variableId,
-                                              final VariableType variableType,
-                                              final String valueFilter,
-                                              final Integer numResults,
-                                              final Integer offset) {
-    final DecisionVariableValueRequestDto queryParams = createVariableRequest(
-      decisionDefinitionKey,
-      decisionDefinitionVersion,
-      variableId,
-      variableType,
-      valueFilter,
-      numResults,
-      offset
-    );
-    return getInputVariableValues(queryParams);
-  }
-
-  private DecisionVariableValueRequestDto createVariableRequest(final String decisionDefinitionKey,
-                                                                final String decisionDefinitionVersion,
-                                                                final String variableId,
-                                                                final VariableType variableType,
-                                                                final String valueFilter,
-                                                                final Integer numResults,
-                                                                final Integer offset) {
-    DecisionVariableValueRequestDto requestDto = new DecisionVariableValueRequestDto();
-    requestDto.setDecisionDefinitionKey(decisionDefinitionKey);
-    requestDto.setDecisionDefinitionVersion(decisionDefinitionVersion);
-    requestDto.setVariableId(variableId);
-    requestDto.setVariableType(variableType);
-    requestDto.setValueFilter(valueFilter);
-    requestDto.setResultOffset(offset);
-    requestDto.setNumResults(numResults);
-    return requestDto;
-  }
-
-  private List<String> getInputVariableValues(DecisionVariableValueRequestDto variableValueRequestDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDecisionInputVariableValuesRequest(variableValueRequestDto)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
-  }
-
-  private List<String> getOutputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
-                                               final String variableId,
-                                               final VariableType variableType,
-                                               final String valueFilter) {
-    DecisionVariableValueRequestDto variableRequest = createVariableRequest(
-      decisionDefinitionEngineDto.getKey(),
-      decisionDefinitionEngineDto.getVersionAsString(),
-      variableId,
-      variableType,
-      valueFilter,
-      Integer.MAX_VALUE,
-      0
-    );
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDecisionOutputVariableValuesRequest(variableRequest)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
   }
 
 }

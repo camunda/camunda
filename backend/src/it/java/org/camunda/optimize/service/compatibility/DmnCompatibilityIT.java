@@ -14,8 +14,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -30,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.google.common.collect.ImmutableList.of;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunOnlyForDmn13Engines
@@ -54,7 +51,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<DecisionVariableNameDto> variableResponse = getInputVariableNames(decisionDefinitionDto);
+    List<DecisionVariableNameDto> variableResponse = variablesClient.getDecisionInputVariableNames(decisionDefinitionDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(2);
@@ -77,7 +74,8 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<DecisionVariableNameDto> variableResponse = getOutputVariableNames(decisionDefinitionDto);
+    List<DecisionVariableNameDto> variableResponse = variablesClient.getDecisionOutputVariableNames(
+      decisionDefinitionDto);
 
     // then
     assertThat(variableResponse.size()).isEqualTo(2);
@@ -103,11 +101,15 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> customerStatusVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CUSTOMER_STATUS_ID, VariableType.STRING
+    List<String> customerStatusVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_CUSTOMER_STATUS_ID,
+      VariableType.STRING
     );
-    List<String> orderSumInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_ORDER_SUM_ID, VariableType.DOUBLE
+    List<String> orderSumInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_ORDER_SUM_ID,
+      VariableType.DOUBLE
     );
 
     // then
@@ -132,11 +134,15 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<String> output1 = getOutputVariableValues(
-      decisionDefinitionDto, OUTPUT_CHECK_RESULT_ID, VariableType.STRING
+    List<String> output1 = variablesClient.getDecisionOutputVariableValues(
+      decisionDefinitionDto,
+      OUTPUT_CHECK_RESULT_ID,
+      VariableType.STRING
     );
-    List<String> output2 = getOutputVariableValues(
-      decisionDefinitionDto, OUTPUT_REASON_ID, VariableType.STRING
+    List<String> output2 = variablesClient.getDecisionOutputVariableValues(
+      decisionDefinitionDto,
+      OUTPUT_REASON_ID,
+      VariableType.STRING
     );
 
     // then
@@ -254,45 +260,6 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     return reportClient.evaluateMapReport(reportData);
   }
 
-  private DecisionVariableValueRequestDto createVariableRequest(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
-                                                                final String variableId,
-                                                                final VariableType variableType) {
-    DecisionVariableValueRequestDto requestDto = new DecisionVariableValueRequestDto();
-    requestDto.setDecisionDefinitionKey(decisionDefinitionEngineDto.getKey());
-    requestDto.setDecisionDefinitionVersion(String.valueOf(decisionDefinitionEngineDto.getVersion()));
-    requestDto.setVariableId(variableId);
-    requestDto.setVariableType(variableType);
-    return requestDto;
-  }
-
-  private List<String> getInputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
-                                              final String variableId,
-                                              final VariableType variableType) {
-    final DecisionVariableValueRequestDto variableRequest = createVariableRequest(
-      decisionDefinitionEngineDto,
-      variableId,
-      variableType
-    );
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDecisionInputVariableValuesRequest(variableRequest)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
-  }
-
-  private List<String> getOutputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
-                                               final String variableId,
-                                               final VariableType variableType) {
-    final DecisionVariableValueRequestDto variableRequest = createVariableRequest(
-      decisionDefinitionEngineDto,
-      variableId,
-      variableType
-    );
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDecisionOutputVariableValuesRequest(variableRequest)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
-  }
-
   private void startDecisionInstanceWithInputs(final DecisionDefinitionEngineDto decisionDefinitionDto,
                                                final String customerStatus,
                                                final double orderSum) {
@@ -308,33 +275,4 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
       "dmn/compatibility/Example-DMN-1.3.dmn"
     );
   }
-
-  private List<DecisionVariableNameDto> getInputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDecisionInputVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private List<DecisionVariableNameDto> getInputVariableNames(DecisionDefinitionEngineDto decisionDefinition) {
-    DecisionVariableNameRequestDto variableRequestDto = new DecisionVariableNameRequestDto();
-    variableRequestDto.setDecisionDefinitionKey(decisionDefinition.getKey());
-    variableRequestDto.setDecisionDefinitionVersions(of(decisionDefinition.getVersionAsString()));
-    return getInputVariableNames(variableRequestDto);
-  }
-
-  private List<DecisionVariableNameDto> getOutputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDecisionOutputVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private List<DecisionVariableNameDto> getOutputVariableNames(DecisionDefinitionEngineDto decisionDefinition) {
-    DecisionVariableNameRequestDto variableRequestDto = new DecisionVariableNameRequestDto();
-    variableRequestDto.setDecisionDefinitionKey(decisionDefinition.getKey());
-    variableRequestDto.setDecisionDefinitionVersions(of(decisionDefinition.getVersionAsString()));
-    return getOutputVariableNames(variableRequestDto);
-  }
-
 }

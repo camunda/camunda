@@ -39,17 +39,11 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
 
   @Test
   public void getVariableNames() {
-    // given
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey("akey");
-    variableRequestDto.setProcessDefinitionVersion("aVersion");
-
     // when
-    List<ProcessVariableNameResponseDto> responseList =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessVariableNamesRequest(variableRequestDto)
-        .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessVariableNameResponseDto> responseList = variablesClient.getProcessVariableNames(
+      "akey",
+      "aVersion"
+    );
 
     // then
     assertThat(responseList.isEmpty()).isTrue();
@@ -62,11 +56,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
     variableRequestDto.setProcessDefinitionKey("akey");
 
     // when
-    List<ProcessVariableNameResponseDto> responseList =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessVariableNamesRequest(variableRequestDto)
-        .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessVariableNameResponseDto> responseList = variablesClient.getProcessVariableNames(variableRequestDto);
 
     // then
     assertThat(responseList.isEmpty()).isTrue();
@@ -95,10 +85,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
     requestDto.setType(BOOLEAN);
 
     // when
-    List responseList = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableValuesRequest(requestDto)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+    List responseList = variablesClient.getProcessVariableValues(requestDto);
 
     // then
     assertThat(responseList.isEmpty()).isTrue();

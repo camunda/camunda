@@ -11,7 +11,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
@@ -29,7 +28,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 
-import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -283,11 +281,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("stringVar");
     requestDto.setType(STRING);
-    List<String> variableValues =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+    List<String> variableValues = variablesClient.getProcessVariableValues(requestDto);
 
     //then
     assertThat(variableValues)
@@ -323,11 +317,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("stringVar");
     requestDto.setType(STRING);
-    List<String> variableValues =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+    List<String> variableValues = variablesClient.getProcessVariableValues(requestDto);
 
     //then
     assertThat(variableValues)
@@ -340,11 +330,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("anotherVar");
     requestDto.setType(STRING);
-    variableValues =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+    variableValues = variablesClient.getProcessVariableValues(requestDto);
 
     //then
     assertThat(variableValues)
@@ -384,12 +370,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("stringVar");
     requestDto.setType(STRING);
-    List<String> variableValues =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
-
+    List<String> variableValues = variablesClient.getProcessVariableValues(requestDto);
     //then
     assertThat(variableValues)
       .hasSize(1)
@@ -419,24 +400,15 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("stringVar");
     requestDto.setType(STRING);
-    List<String> variableValues =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+    List<String> variableValues = variablesClient.getProcessVariableValues(requestDto);
 
     //then
     assertThat(variableValues).isEmpty();
   }
 
   private List<ProcessVariableNameResponseDto> getVariablesForProcessInstance(ProcessInstanceEngineDto instanceDto) {
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
-    variableRequestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+    return variablesClient
+      .getProcessVariableNames(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion());
   }
 
   private List<VariableUpdateInstanceDto> getStoredVariableUpdateInstances() throws JsonProcessingException {

@@ -26,7 +26,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -405,11 +404,7 @@ public class ProcessImportIT extends AbstractImportIT {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
-    List<ProcessVariableNameResponseDto> variablesResponseDtos =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessVariableNamesRequest(variableRequestDto)
-        .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = variablesClient.getProcessVariableNames(variableRequestDto);
 
     assertThat(variablesResponseDtos).hasSize(3);
   }

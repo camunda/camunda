@@ -22,6 +22,7 @@ import org.camunda.optimize.test.optimize.ExportClient;
 import org.camunda.optimize.test.optimize.ReportClient;
 import org.camunda.optimize.test.optimize.SharingClient;
 import org.camunda.optimize.test.optimize.UiConfigurationClient;
+import org.camunda.optimize.test.optimize.VariablesClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
@@ -79,4 +80,5 @@ public abstract class AbstractIT {
   protected EntitiesClient entitiesClient = new EntitiesClient(optimizeRequestExecutorSupplier);
   protected ExportClient exportClient = new ExportClient(optimizeRequestExecutorSupplier);
   protected DefinitionClient definitionClient = new DefinitionClient(optimizeRequestExecutorSupplier);
+  protected VariablesClient variablesClient = new VariablesClient(optimizeRequestExecutorSupplier);
 }
