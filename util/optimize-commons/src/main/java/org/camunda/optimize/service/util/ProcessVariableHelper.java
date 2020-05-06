@@ -62,8 +62,8 @@ public class ProcessVariableHelper {
     }
   }
 
-  public static BoolQueryBuilder getVariableUndefinedOrNullQuery(final String variableName,
-                                                                 final VariableType variableType) {
+  public static BoolQueryBuilder createFilterForUndefinedOrNullQueryBuilder(final String variableName,
+                                                                            final VariableType variableType) {
     final String variableTypeId = variableType.getId();
     return boolQuery()
       .should(
@@ -85,6 +85,21 @@ public class ProcessVariableHelper {
             .mustNot(existsQuery(getNestedVariableValueField())),
           ScoreMode.None
         )))
+      .minimumShouldMatch(1);
+  }
+
+  public static BoolQueryBuilder createExcludeUndefinedOrNullQueryFilterBuilder(final String variableName,
+                                                                                final VariableType variableType) {
+    final String variableTypeId = variableType.getId();
+    return boolQuery()
+      .must(nestedQuery(
+        VARIABLES,
+        boolQuery()
+          .must(termQuery(getNestedVariableNameField(), variableName))
+          .must(termQuery(getNestedVariableTypeField(), variableTypeId))
+          .must(existsQuery(getNestedVariableValueField())),
+        ScoreMode.None
+      ))
       .minimumShouldMatch(1);
   }
 

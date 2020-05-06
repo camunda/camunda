@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
@@ -26,15 +25,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class VariableQueryFilterIT extends AbstractFilterIT {
 
@@ -755,6 +752,131 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
   }
 
   @Test
+  public void excludeUndefinedDoesNotOverwriteOtherFilterData() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("testVar", "withValue");
+    final String expectedInstanceId1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId(),
+      variables
+    ).getId();
+    final String expectedInstanceId2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId(),
+      variables
+    ).getId();
+
+    variables.put("testVar", new EngineVariableValue(null, "String"));
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+
+    variables = new HashMap<>();
+    variables.put("differentStringValue", "test");
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    List<ProcessFilterDto<?>> filters =
+      ProcessFilterBuilder
+        .filter()
+        .variable()
+        .stringType()
+        .excludeUndefined()
+        .name("testVar")
+        .values(Collections.singletonList("withValue"))
+        .operator(FilterOperatorConstants.IN)
+        .add()
+        .buildList();
+
+    RawDataProcessReportResultDto result =
+      evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
+
+    // then
+    assertResults(result, 2);
+    assertThat(result.getData())
+      .extracting(processInstanceDto -> processInstanceDto.getProcessInstanceId())
+      .containsExactly(expectedInstanceId2, expectedInstanceId1);
+  }
+
+  @Test
+  public void excludeUndefinedAndNullWorksWithAllVariableTypes() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+
+    final Map<String, VariableType> varNameToTypeMap = createVarNameToTypeMap();
+    Map<String, Object> variables = new HashMap<>();
+
+    variables.put("dateVar", null);
+    variables.put("boolVar", null);
+    variables.put("shortVar", null);
+    variables.put("intVar", null);
+    variables.put("longVar", null);
+    variables.put("doubleVar", null);
+    variables.put("stringVar", null);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+
+    variables = new HashMap<>();
+    variables.put("dateVar", new EngineVariableValue(null, "Date"));
+    variables.put("boolVar", new EngineVariableValue(null, "Boolean"));
+    variables.put("shortVar", new EngineVariableValue(null, "Short"));
+    variables.put("intVar", new EngineVariableValue(null, "Integer"));
+    variables.put("longVar", new EngineVariableValue(null, "Long"));
+    variables.put("doubleVar", new EngineVariableValue(null, "Double"));
+    variables.put("stringVar", new EngineVariableValue(null, "String"));
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+
+    variables = new HashMap<>();
+    final OffsetDateTime now = OffsetDateTime.now();
+    variables.put("dateVar", now);
+    variables.put("boolVar", true);
+    variables.put("shortVar", (short) 2);
+    variables.put("intVar", 5);
+    variables.put("longVar", 5L);
+    variables.put("doubleVar", 5.5);
+    variables.put("stringVar", "aString");
+
+    final String expectedInstanceId = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId(),
+      variables
+    ).getId();
+
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+
+    for (Map.Entry<String, Object> entry : variables.entrySet()) {
+      // when
+      VariableType variableType = varNameToTypeMap.get(entry.getKey());
+
+      List<ProcessFilterDto<?>> filters = ProcessFilterBuilder.filter()
+        .variable()
+        .type(variableType)
+        .excludeUndefined()
+        .name(entry.getKey())
+        .values(Collections.singletonList(entry.getValue().toString()))
+        .fixedDate(now, now)
+        .operator(FilterOperatorConstants.IN)
+        .add()
+        .buildList();
+
+      RawDataProcessReportResultDto result =
+        evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
+
+      // then
+      assertResults(result, 1);
+      assertThat(result.getData())
+        .extracting(instance -> instance.getProcessInstanceId())
+        .containsExactly(expectedInstanceId);
+    }
+  }
+
+  @Test
   public void filterForUndefinedOverwritesOtherFilterData() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -859,9 +981,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
         evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
       // then
-      assertThat(result.getData(), is(notNullValue()));
-      final List<RawDataProcessInstanceDto> resultData = result.getData();
-      assertThat(resultData.size(), is(3));
+      assertResults(result, 3);
     }
   }
 
@@ -880,7 +1000,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -898,7 +1018,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -918,7 +1038,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -935,7 +1055,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   private void resetIndexesAndClean() {
@@ -969,7 +1089,8 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
   }
 
   private void assertResults(RawDataProcessReportResultDto report, int piCount) {
-    assertThat("PI count", report.getData().size(), is(piCount));
+    assertThat(report.getData()).isNotNull();
+    assertThat(report.getData().size()).isEqualTo(piCount);
   }
 
   private Response evaluateReportWithFilterAndGetResponse(List<ProcessFilterDto<?>> filterList) {

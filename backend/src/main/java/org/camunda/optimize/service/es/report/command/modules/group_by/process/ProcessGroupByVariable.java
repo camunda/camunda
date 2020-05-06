@@ -78,7 +78,7 @@ public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessRepor
   @Override
   protected BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<ProcessReportDataDto> context) {
     final VariableGroupByValueDto variable = getVariableGroupByDto(context);
-    return ProcessVariableHelper.getVariableUndefinedOrNullQuery(variable.getName(), variable.getType());
+    return ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder(variable.getName(), variable.getType());
   }
 
   @Override

@@ -59,10 +59,13 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
   private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto<?> dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
     if (dto.isFilterForUndefined()) {
-      return createFilterUndefinedQueryBuilder(dto);
+      return createFilterForUndefinedOrNullQueryBuilder(dto);
     }
 
-    QueryBuilder queryBuilder = matchAllQuery();
+    QueryBuilder queryBuilder = dto.isExcludeUndefined()
+      ? createExcludeUndefinedOrNullQueryFilterBuilder(dto)
+      : matchAllQuery();
+
     switch (dto.getType()) {
       case BOOLEAN:
         BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
@@ -226,7 +229,7 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
     );
   }
 
-  private QueryBuilder createFilterUndefinedQueryBuilder(VariableFilterDataDto<?> dto) {
+  private QueryBuilder createFilterForUndefinedOrNullQueryBuilder(VariableFilterDataDto<?> dto) {
     return boolQuery()
       .should(
         // undefined
@@ -246,6 +249,18 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
           ScoreMode.None
         ))
       )
+      .minimumShouldMatch(1);
+  }
+
+  private QueryBuilder createExcludeUndefinedOrNullQueryFilterBuilder(VariableFilterDataDto<?> dto)  {
+    return boolQuery()
+      .must(nestedQuery(
+        getVariablePath(),
+        boolQuery()
+          .must(termQuery(getVariableIdField(), dto.getName()))
+          .must(existsQuery(getVariableStringValueField(getVariablePath()))),
+        ScoreMode.None
+      ))
       .minimumShouldMatch(1);
   }
 

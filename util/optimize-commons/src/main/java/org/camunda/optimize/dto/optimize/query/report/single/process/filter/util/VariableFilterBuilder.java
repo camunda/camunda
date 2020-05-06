@@ -34,6 +34,7 @@ public class VariableFilterBuilder {
   private DateFilterDataDto<?> dateFilterDataDto;
   private String name;
   private boolean filterForUndefined = false;
+  private boolean excludeUndefined = false;
 
 
   private VariableFilterBuilder(ProcessFilterBuilder filterBuilder) {
@@ -101,6 +102,11 @@ public class VariableFilterBuilder {
 
   public VariableFilterBuilder filterForUndefined() {
     this.filterForUndefined = true;
+    return this;
+  }
+
+  public VariableFilterBuilder excludeUndefined() {
+    this.excludeUndefined = true;
     return this;
   }
 

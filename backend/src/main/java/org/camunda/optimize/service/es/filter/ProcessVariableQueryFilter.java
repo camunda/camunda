@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -35,7 +36,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getVariableUndefinedOrNullQuery;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.createExcludeUndefinedOrNullQueryFilterBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -62,10 +63,13 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
   private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto<?> dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
     if (dto.isFilterForUndefined()) {
-      return createFilterUndefinedOrNullQueryBuilder(dto);
+      return createFilterForUndefinedOrNullQueryBuilder(dto);
     }
 
-    QueryBuilder queryBuilder = matchAllQuery();
+    QueryBuilder queryBuilder = dto.isExcludeUndefined()
+      ? createExcludeUndefinedOrNullQueryBuilder(dto)
+      : matchAllQuery();
+
     switch (dto.getType()) {
       case STRING:
         StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
@@ -256,9 +260,11 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     );
   }
 
-  private QueryBuilder createFilterUndefinedOrNullQueryBuilder(final VariableFilterDataDto<?> dto) {
-    return getVariableUndefinedOrNullQuery(dto.getName(), dto.getType());
+  private QueryBuilder createFilterForUndefinedOrNullQueryBuilder(final VariableFilterDataDto<?> dto) {
+    return ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder(dto.getName(), dto.getType());
   }
 
-
+  private QueryBuilder createExcludeUndefinedOrNullQueryBuilder(final VariableFilterDataDto<?> dto) {
+    return createExcludeUndefinedOrNullQueryFilterBuilder(dto.getName(), dto.getType());
+  }
 }
