@@ -28,7 +28,7 @@ public class EmailNotificationService implements NotificationService {
     if (configurationService.getEmailEnabled()
       && StringUtils.isNotEmpty(destination)) {
       try {
-        log.debug("sending email [{}] to [{}]", text, destination);
+        log.debug("Sending email [{}] to [{}]", text, destination);
         sendEmail(destination, text);
       } catch (EmailException e) {
         log.error(
@@ -41,11 +41,11 @@ public class EmailNotificationService implements NotificationService {
     } else {
       if (StringUtils.isEmpty(destination)) {
         log.debug(
-          "There is not email destination specified in the alert, therefore not sending any email notifications.");
-      }
-      if (!configurationService.getEmailEnabled()) {
-        log.warn("The email service is not enabled and thus no email could be sent. " +
-                   "Please check the Optimize documentation on how to enable email notifications!");
+          "There is no email destination specified in the alert, therefore not sending any email notifications.");
+      } else if (!configurationService.getEmailEnabled()) {
+        log.warn(
+          "There is an email destination specified in the alert but the email service is not enabled and thus no " +
+            "email could be sent. Please check the Optimize documentation on how to enable email notifications!");
       }
     }
   }
