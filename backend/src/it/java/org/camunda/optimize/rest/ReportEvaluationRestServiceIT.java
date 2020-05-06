@@ -78,21 +78,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
-  @ParameterizedTest
-  @EnumSource(ReportType.class)
-  public void evaluateReportById_usingGetEndpoint(ReportType reportType) {
-    //given
-    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
-
-    // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSavedReportGETRequest(reportId)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-  }
-
   @Test
   public void evaluateReportById_additionalFiltersAreApplied() {
     // given

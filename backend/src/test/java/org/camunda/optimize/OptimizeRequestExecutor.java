@@ -315,11 +315,6 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildUpdateSingleDecisionReportRequest(String id,
-                                                                        ReportDefinitionDto entity) {
-    return buildUpdateSingleDecisionReportRequest(id, entity, null);
-  }
-
-  public OptimizeRequestExecutor buildUpdateSingleDecisionReportRequest(String id,
                                                                         ReportDefinitionDto entity,
                                                                         Boolean force) {
     this.path = "report/decision/single/" + id;
@@ -354,10 +349,6 @@ public class OptimizeRequestExecutor {
       .ifPresent(definitionDto -> this.body = getBody(definitionDto));
     this.method = POST;
     return this;
-  }
-
-  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest() {
-    return buildCreateSingleDecisionReportRequest(null);
   }
 
   public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest(final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
@@ -405,12 +396,6 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetAllPrivateReportsRequest() {
     this.method = GET;
     this.path = "/report";
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildEvaluateSavedReportGETRequest(String id) {
-    this.path = "/report/" + id + "/evaluate";
-    this.method = GET;
     return this;
   }
 

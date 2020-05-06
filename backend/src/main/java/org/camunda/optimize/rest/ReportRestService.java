@@ -151,24 +151,6 @@ public class ReportRestService {
 
   /**
    * Retrieves the report definition to the given report id and then
-   * evaluate this report and return the result.
-   *
-   * @param reportId the id of the report
-   * @return A report definition that is also containing the actual result of the report evaluation.
-   */
-  @GET
-  @Path("/{id}/evaluate")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedEvaluationResultDto evaluateReportById(@Context ContainerRequestContext requestContext,
-                                                          @PathParam("id") String reportId) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final AuthorizedReportEvaluationResult reportEvaluationResult = reportService.evaluateSavedReport(userId, reportId);
-    return ReportEvaluationResultMapper.mapToEvaluationResultDto(reportEvaluationResult);
-  }
-
-  /**
-   * Retrieves the report definition to the given report id and then
    * evaluate this report using the supplied filters and return the result.
    */
   @POST

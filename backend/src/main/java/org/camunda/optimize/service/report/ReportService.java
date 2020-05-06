@@ -15,10 +15,10 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType;
+import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -243,11 +243,6 @@ public class ReportService implements CollectionReferencingService {
 
   public List<ReportDefinitionDto> getReportsForCollection(final String collectionId) {
     return reportReader.findReportsForCollectionOmitXml(collectionId);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateSavedReport(final String userId, final String reportId) {
-    // auth is handled in evaluator as it also handles single reports of a combined report
-    return reportEvaluator.evaluateSavedReport(userId, reportId);
   }
 
   public AuthorizedReportEvaluationResult evaluateSavedReportWithAdditionalFilters(final String userId,

@@ -146,7 +146,7 @@ public class PostMigrationTest {
       .target(getReportEndpoint() + reportId + "/evaluate")
       .request()
       .cookie(OPTIMIZE_AUTHORIZATION, authHeader);
-    try (Response reportEvaluationResponse = evaluateReportRequest.get()) {
+    try (Response reportEvaluationResponse = evaluateReportRequest.post(null)) {
       assertThat(reportEvaluationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
       final JsonNode response = reportEvaluationResponse.readEntity(JsonNode.class);
       assertThat(response.hasNonNull(AuthorizedEvaluationResultDto.Fields.result.name()), is(true));
