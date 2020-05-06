@@ -7,13 +7,14 @@ package org.camunda.optimize.service.es.report;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
@@ -62,12 +63,7 @@ public abstract class ReportEvaluationHandler {
                                                                                    final String reportId,
                                                                                    final AdditionalProcessReportEvaluationFilterDto filterDto) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    if (filterDto != null && !filterDto.getFilter().isEmpty() && (reportDefinition.getData() instanceof ProcessReportDataDto)) {
-      ((ProcessReportDataDto) reportDefinition.getData()).getFilter().addAll(filterDto.getFilter());
-    } else {
-      logger.debug("Cannot add additional filters to report [{}] as it is not a single process report", reportId);
-    }
-    return evaluateReport(userId, reportDefinition);
+    return evaluateReport(userId, reportDefinition, null, filterDto);
   }
 
   public AuthorizedReportEvaluationResult evaluateReport(final String userId,
@@ -78,6 +74,13 @@ public abstract class ReportEvaluationHandler {
   public AuthorizedReportEvaluationResult evaluateReport(final String userId,
                                                          final ReportDefinitionDto report,
                                                          final Integer customRecordLimit) {
+    return evaluateReport(userId, report, customRecordLimit, null);
+  }
+
+  public AuthorizedReportEvaluationResult evaluateReport(final String userId,
+                                                         final ReportDefinitionDto report,
+                                                         final Integer customRecordLimit,
+                                                         final AdditionalProcessReportEvaluationFilterDto filterDto) {
     final RoleType currentUserRole = getAuthorizedRole(userId, report)
       .orElseThrow(() -> new ForbiddenException(String.format(
         "User [%s] is not authorized to evaluate report [%s].", userId, report.getName()
@@ -87,21 +90,21 @@ public abstract class ReportEvaluationHandler {
     );
     final ReportEvaluationResult result;
     if (!report.getCombined()) {
-      result = evaluateSingleReportWithErrorCheck(authorizedReportDefinitionDto, customRecordLimit);
+      result = evaluateSingleReportWithErrorCheck(authorizedReportDefinitionDto, customRecordLimit, filterDto);
     } else {
-      result = evaluateCombinedReport(userId, authorizedReportDefinitionDto);
+      result = evaluateCombinedReport(userId, authorizedReportDefinitionDto, filterDto);
     }
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
   }
 
   private CombinedProcessReportResult evaluateCombinedReport(final String userId,
-                                                             final AuthorizedReportDefinitionDto authorizedReportDefinitionDto) {
-
+                                                             final AuthorizedReportDefinitionDto authorizedReportDefinitionDto,
+                                                             final AdditionalProcessReportEvaluationFilterDto filterDto) {
     final CombinedReportDefinitionDto combinedReportDefinitionDto =
       (CombinedReportDefinitionDto) authorizedReportDefinitionDto.getDefinitionDto();
     ValidationHelper.validateCombinedReportDefinition(authorizedReportDefinitionDto);
     List<ReportEvaluationResult> resultList = evaluateListOfReportIds(
-      userId, combinedReportDefinitionDto.getData().getReportIds()
+      userId, combinedReportDefinitionDto.getData().getReportIds(), filterDto
     );
     return transformToCombinedReportResult(combinedReportDefinitionDto, resultList);
   }
@@ -125,9 +128,7 @@ public abstract class ReportEvaluationHandler {
         LinkedHashMap::new
       ));
     final CombinedProcessReportResultDto combinedSingleReportResultDto =
-      new CombinedProcessReportResultDto(
-        reportIdToMapResult
-      );
+      new CombinedProcessReportResultDto(reportIdToMapResult);
     return new CombinedProcessReportResult(combinedSingleReportResultDto, combinedReportDefinition);
   }
 
@@ -138,13 +139,27 @@ public abstract class ReportEvaluationHandler {
   }
 
   private List<ReportEvaluationResult> evaluateListOfReportIds(final String userId,
-                                                               final List<String> singleReportIds) {
+                                                               final List<String> singleReportIds,
+                                                               final AdditionalProcessReportEvaluationFilterDto filterDto) {
     List<SingleProcessReportDefinitionDto> singleReportDefinitions =
       reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
         .stream()
-        .filter(r -> getAuthorizedRole(userId, r).isPresent())
+        .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
+        .peek(reportDefinition -> addAdditionalFilters(filterDto, reportDefinition))
         .collect(Collectors.toList());
     return combinedReportEvaluator.evaluate(singleReportDefinitions);
+  }
+
+  private void addAdditionalFilters(final AdditionalProcessReportEvaluationFilterDto filterDto,
+                                    final SingleProcessReportDefinitionDto reportDefinition) {
+    if (additionalFiltersSupplied(filterDto)) {
+      final List<ProcessFilterDto<?>> existingFilter = reportDefinition.getData().getFilter();
+      if (existingFilter != null) {
+        existingFilter.addAll(filterDto.getFilter());
+      } else {
+        reportDefinition.getData().setFilter(filterDto.getFilter());
+      }
+    }
   }
 
   /**
@@ -153,7 +168,16 @@ public abstract class ReportEvaluationHandler {
   protected abstract Optional<RoleType> getAuthorizedRole(String userId, ReportDefinitionDto report);
 
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final AuthorizedReportDefinitionDto reportDefinition,
-                                                                    final Integer customRecordLimit) {
+                                                                    final Integer customRecordLimit,
+                                                                    final AdditionalProcessReportEvaluationFilterDto filterDto) {
+    if (additionalFiltersSupplied(filterDto)) {
+      final ReportDefinitionDto definitionDto = reportDefinition.getDefinitionDto();
+      if (definitionDto.getData() instanceof ProcessReportDataDto) {
+        ((ProcessReportDataDto) definitionDto.getData()).getFilter().addAll(filterDto.getFilter());
+      } else {
+        logger.debug("Cannot add additional filters to report [{}] as it is not a process report", definitionDto.getId());
+      }
+    }
     try {
       CommandContext<ReportDefinitionDto> context = new CommandContext<>();
       context.setReportDefinition(reportDefinition.getDefinitionDto());
@@ -162,6 +186,10 @@ public abstract class ReportEvaluationHandler {
     } catch (OptimizeException | OptimizeValidationException e) {
       throw new ReportEvaluationException(reportDefinition, e);
     }
+  }
+
+  private boolean additionalFiltersSupplied(final AdditionalProcessReportEvaluationFilterDto filterDto) {
+    return filterDto != null && !filterDto.getFilter().isEmpty();
   }
 
 }

@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -597,8 +598,14 @@ public class ReportClient {
   }
 
   public <T extends SingleReportResultDto> AuthorizedCombinedReportEvaluationResultDto<T> evaluateCombinedReportById(String reportId) {
+    return evaluateCombinedReportByIdWithFilters(reportId, null);
+  }
+
+  public <T extends SingleReportResultDto> AuthorizedCombinedReportEvaluationResultDto<T> evaluateCombinedReportByIdWithFilters(
+    final String reportId,
+    final AdditionalProcessReportEvaluationFilterDto filters) {
     return getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
+      .buildEvaluateSavedReportRequest(reportId, filters)
       // @formatter:off
       .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {});
       // @formatter:on

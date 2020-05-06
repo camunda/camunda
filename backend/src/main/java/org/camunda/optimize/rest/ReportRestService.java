@@ -7,8 +7,8 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -177,10 +177,10 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedEvaluationResultDto evaluateReportByIdWithFilters(@Context ContainerRequestContext requestContext,
                                                                      @PathParam("id") String reportId,
-                                                                     AdditionalProcessReportEvaluationFilterDto reportEvaluationFilterDto) {
+                                                                     AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
-      reportService.evaluateSavedReportWithAdditionalFilters(userId, reportId, reportEvaluationFilterDto);
+      reportService.evaluateSavedReportWithAdditionalFilters(userId, reportId, reportEvaluationFilter);
     return ReportEvaluationResultMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
 

@@ -8,11 +8,11 @@ package org.camunda.optimize.service.es.retrieval;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.assertj.core.util.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -46,7 +47,6 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -60,6 +60,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -70,6 +71,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
@@ -81,14 +83,6 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CombinedReportHandlingIT extends AbstractIT {
@@ -97,7 +91,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   private static final String END_EVENT = "endEvent";
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String TEST_REPORT_NAME = "My foo report";
-  public static final String USER_TASK_ID = "userTask";
+  private static final String USER_TASK_ID = "userTask";
 
   @RegisterExtension
   @Order(4)
@@ -121,14 +115,15 @@ public class CombinedReportHandlingIT extends AbstractIT {
     GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .get(getRequest, RequestOptions.DEFAULT);
 
-    assertThat(getResponse.isExists(), is(true));
+    assertThat(getResponse.isExists()).isTrue();
     CombinedReportDefinitionDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
       .readValue(getResponse.getSourceAsString(), CombinedReportDefinitionDto.class);
-    assertThat(definitionDto.getData(), notNullValue());
+    assertThat(definitionDto.getData()).isNotNull();
     CombinedReportDataDto data = definitionDto.getData();
-    assertThat(data.getConfiguration(), notNullValue());
-    assertThat(data.getConfiguration(), equalTo(new CombinedReportConfigurationDto()));
-    assertThat(definitionDto.getData().getReportIds(), notNullValue());
+
+    assertThat(data.getConfiguration()).isNotNull();
+    assertThat(data.getConfiguration()).isEqualTo(new CombinedReportConfigurationDto());
+    assertThat(definitionDto.getData().getReportIds()).isNotNull();
   }
 
   @ParameterizedTest
@@ -138,7 +133,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
     List<CombinedReportItemDto> reportIds = singleReports.stream()
-      .map(r -> new CombinedReportItemDto(createNewSingleReport(r)))
+      .map(report -> new CombinedReportItemDto(createNewSingleReport(report)))
       .collect(Collectors.toList());
 
     combinedReportData.setReports(reportIds);
@@ -152,7 +147,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
@@ -162,7 +157,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
     List<CombinedReportItemDto> reportIds = singleReports.stream()
-      .map(r -> new CombinedReportItemDto(createNewSingleReport(r)))
+      .map(report -> new CombinedReportItemDto(createNewSingleReport(report)))
       .collect(Collectors.toList());
 
     combinedReportData.setReports(reportIds);
@@ -179,7 +174,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     AuthorizedCombinedReportEvaluationResultDto<SingleReportResultDto> result =
       reportClient.evaluateCombinedReportById(response.getId());
 
-    assertThat(result.getReportDefinition().getData().getReports(), containsInAnyOrder(reportIds.toArray()));
+    assertThat(result.getReportDefinition().getData().getReports()).containsExactlyInAnyOrderElementsOf(reportIds);
   }
 
   private static Stream<List<SingleProcessReportDefinitionDto>> getCombinableSingleReports() {
@@ -247,9 +242,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
 
     return Stream.of(
-      Lists.newArrayList(procDefKeyReport, procDefAnotherKeyReport),
-      Lists.newArrayList(byEndDate, procDefKeyReport),
-      Lists.newArrayList(userTaskDuration, flowNodeDuration)
+      Arrays.asList(procDefKeyReport, procDefAnotherKeyReport),
+      Arrays.asList(byEndDate, procDefKeyReport),
+      Arrays.asList(userTaskDuration, flowNodeDuration)
     );
   }
 
@@ -307,9 +302,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     PIDuration_startDateYear_bar.setData(PIDuration_startDateYear_barData);
 
     return Stream.of(
-      Lists.newArrayList(PICount_startDateYear_bar, PICount_startDateYear_line),
-      Lists.newArrayList(PICount_byVariable_bar, PICount_startDateYear_bar),
-      Lists.newArrayList(PICount_startDateYear_bar, PIDuration_startDateYear_bar)
+      Arrays.asList(PICount_startDateYear_bar, PICount_startDateYear_line),
+      Arrays.asList(PICount_byVariable_bar, PICount_startDateYear_bar),
+      Arrays.asList(PICount_startDateYear_bar, PIDuration_startDateYear_bar)
     );
   }
 
@@ -326,9 +321,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Set<String> resultSet = reports.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toSet());
-    assertThat(resultSet.size(), is(2));
-    assertThat(resultSet.contains(singleReportId), is(true));
-    assertThat(resultSet.contains(combinedReportId), is(true));
+    assertThat(resultSet).hasSize(2);
+    assertThat(resultSet.contains(singleReportId)).isTrue();
+    assertThat(resultSet.contains(combinedReportId)).isTrue();
   }
 
   @Test
@@ -357,18 +352,18 @@ public class CombinedReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports.size(), is(2));
+    assertThat(reports).hasSize(2);
     CombinedReportDefinitionDto newReport = (CombinedReportDefinitionDto) reports.stream()
-      .filter(r -> r instanceof CombinedReportDefinitionDto).findFirst().get();
-    assertThat(newReport.getData().getReportIds().isEmpty(), is(false));
-    assertThat(newReport.getData().getReportIds().get(0), is(singleReportId));
-    assertThat(newReport.getData().getConfiguration().getXLabel(), is("FooXLabel"));
-    assertThat(newReport.getData().getVisualization(), is(ProcessVisualization.NUMBER));
-    assertThat(newReport.getId(), is(id));
-    assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
-    assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
-    assertThat(newReport.getName(), is("MyReport"));
-    assertThat(newReport.getOwner(), is(DEFAULT_USERNAME));
+      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto).findFirst().get();
+    assertThat(newReport.getData().getReportIds()).isNotEmpty();
+    assertThat(newReport.getData().getReportIds().get(0)).isEqualTo(singleReportId);
+    assertThat(newReport.getData().getConfiguration().getXLabel()).isEqualTo("FooXLabel");
+    assertThat(newReport.getData().getVisualization()).isEqualTo(ProcessVisualization.NUMBER);
+    assertThat(newReport.getId()).isEqualTo(id);
+    assertThat(newReport.getCreated()).isNotEqualTo(shouldBeIgnoredDate);
+    assertThat(newReport.getLastModified()).isNotEqualTo(shouldBeIgnoredDate);
+    assertThat(newReport.getName()).isEqualTo("MyReport");
+    assertThat(newReport.getOwner()).isEqualTo(DEFAULT_USERNAME);
   }
 
   private Stream<Function<CombinedReportUpdateData, Response>> reportUpdateScenarios() {
@@ -402,10 +397,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId));
 
     // then
-    assertThat(
-      updateResponse.getStatus(),
-      anyOf(equalTo(Response.Status.OK.getStatusCode()), equalTo(Response.Status.NO_CONTENT.getStatusCode()))
-    );
+    assertThat(updateResponse.getStatus()).isIn(
+      Arrays.asList(Response.Status.OK.getStatusCode(), Response.Status.NO_CONTENT.getStatusCode()
+      ));
   }
 
   @ParameterizedTest
@@ -420,7 +414,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId1));
 
     // then
-    assertThat(updateResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(updateResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
@@ -434,7 +428,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, null));
 
     // then
-    assertThat(updateResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(updateResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
@@ -448,7 +442,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId));
 
     // then
-    assertThat(updateResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(updateResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
@@ -470,7 +464,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
 
     // then
-    assertThat(updateResponse.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(updateResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -492,7 +486,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
-    assertThat(response.getErrorCode(), is("reportsNotCombinable"));
+    assertThat(response.getErrorCode()).isEqualTo("reportsNotCombinable");
   }
 
   @Test
@@ -512,25 +506,19 @@ public class CombinedReportHandlingIT extends AbstractIT {
       reportId);
 
     // then
-    assertThat(result.getReportDefinition().getId(), is(reportId));
-    assertThat(result.getReportDefinition().getName(), is("name"));
-    assertThat(result.getReportDefinition().getOwner(), is(DEFAULT_USERNAME));
-    assertThat(
-      result.getReportDefinition().getCreated().truncatedTo(ChronoUnit.DAYS),
-      is(now.truncatedTo(ChronoUnit.DAYS))
-    );
-    assertThat(result.getReportDefinition().getLastModifier(), is(DEFAULT_USERNAME));
-    assertThat(
-      result.getReportDefinition().getLastModified().truncatedTo(ChronoUnit.DAYS),
-      is(now.truncatedTo(ChronoUnit.DAYS))
-    );
-    assertThat(result.getResult().getData(), is(notNullValue()));
-    assertThat(result.getReportDefinition().getData().getReportIds().size(), is(1));
-    assertThat(result.getReportDefinition().getData().getReportIds().get(0), is(singleReportId));
-    assertThat(
-      result.getReportDefinition().getData().getConfiguration(),
-      equalTo(new CombinedReportConfigurationDto())
-    );
+    assertThat(result.getReportDefinition().getId()).isEqualTo(reportId);
+    assertThat(result.getReportDefinition().getName()).isEqualTo("name");
+    assertThat(result.getReportDefinition().getOwner()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(result.getReportDefinition().getCreated().truncatedTo(ChronoUnit.DAYS))
+      .isEqualTo(now.truncatedTo(ChronoUnit.DAYS));
+    assertThat(result.getReportDefinition().getLastModifier()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(result.getReportDefinition().getLastModified().truncatedTo(ChronoUnit.DAYS))
+      .isEqualTo(now.truncatedTo(ChronoUnit.DAYS));
+    assertThat(result.getResult().getData()).isNotNull();
+    assertThat(result.getReportDefinition().getData().getReportIds()).hasSize(1);
+    assertThat(result.getReportDefinition().getData().getReportIds().get(0)).isEqualTo(singleReportId);
+    assertThat(result.getReportDefinition().getData().getConfiguration())
+      .isEqualTo(new CombinedReportConfigurationDto());
   }
 
   @Test
@@ -543,7 +531,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports.size(), is(0));
+    assertThat(reports).isEmpty();
   }
 
   @Test
@@ -561,14 +549,152 @@ public class CombinedReportHandlingIT extends AbstractIT {
       reportId);
 
     // then
-    assertThat(result.getReportDefinition().getId(), is(reportId));
+    assertThat(result.getReportDefinition().getId()).isEqualTo(reportId);
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
       .getData();
-    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap).hasSize(2);
     List<MapResultEntryDto> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
-    assertThat(flowNodeToCount.size(), is(3));
+    assertThat(flowNodeToCount).hasSize(3);
     List<MapResultEntryDto> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
-    assertThat(flowNodeToCount2.size(), is(3));
+    assertThat(flowNodeToCount2).hasSize(3);
+  }
+
+  @Test
+  public void combinedReportsCanBeEvaluatedWithAdditionalFiltersAppliedToContainedReports() {
+    // given
+    ProcessInstanceEngineDto runningInstanceEngineDto = deployAndStartSimpleUserTaskProcess();
+    ProcessInstanceEngineDto completedInstanceEngineDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks(completedInstanceEngineDto.getId());
+    String runningInstanceReportId = createNewSingleMapReport(runningInstanceEngineDto);
+    String completedInstanceReportId = createNewSingleMapReport(completedInstanceEngineDto);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when no filters are applied
+    String combinedReportId = createNewCombinedReport(runningInstanceReportId, completedInstanceReportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
+      reportClient.evaluateCombinedReportById(combinedReportId);
+
+    // then both reports contain the expected data for their single instance
+    assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(result.getResult().getData().entrySet()).hasSize(2);
+    assertThat(result.getResult().getData().get(runningInstanceReportId).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+    assertThat(result.getResult().getData().get(completedInstanceReportId).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .doesNotContainNull();
+
+    // when completed instance filter applied
+    AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
+    filterDto.setFilter(ProcessFilterBuilder.filter()
+                          .completedInstancesOnly().add()
+                          .buildList());
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> filteredResult =
+      reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, filterDto);
+
+    // then only the running instance report returns data for its instance
+    assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
+    assertThat(filteredResult.getResult().getData().get(runningInstanceReportId).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .containsOnlyNulls();
+    assertThat(filteredResult.getResult().getData().get(completedInstanceReportId).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .doesNotContainNull();
+  }
+
+  @Test
+  public void combinedReportsCanBeEvaluatedWithAdditionalFiltersAppliedToContainedReportsWithExistingReportFilters() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    AdditionalProcessReportEvaluationFilterDto singleReportFilterDto = new AdditionalProcessReportEvaluationFilterDto();
+    singleReportFilterDto.setFilter(ProcessFilterBuilder.filter()
+                                      .fixedEndDate()
+                                      .end(OffsetDateTime.now().plusDays(1))
+                                      .add()
+                                      .buildList());
+    String singleReportIdA = createNewSingleMapReportWithFilter(engineDto, singleReportFilterDto);
+    String singleReportIdB = createNewSingleMapReportWithFilter(engineDto, singleReportFilterDto);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when no additional filters are applied
+    String combinedReportId = createNewCombinedReport(singleReportIdA, singleReportIdB);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
+      reportClient.evaluateCombinedReportById(combinedReportId);
+
+    // then both reports contain the expected data with no null values
+    assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(result.getResult().getData().entrySet())
+      .hasSize(2)
+      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getData())
+        .hasSize(3)
+        .extracting(MapResultEntryDto::getValue)
+        .doesNotContainNull()
+      );
+
+    // when future start date filter applied
+    AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
+    filterDto.setFilter(ProcessFilterBuilder.filter()
+                          .fixedStartDate().start(OffsetDateTime.now().plusDays(1)).add()
+                          .buildList());
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> filteredResult =
+      reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, filterDto);
+
+    // then the data values are now null
+    assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(filteredResult.getResult().getData().entrySet())
+      .hasSize(2)
+      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getData())
+        .hasSize(3)
+        .extracting(MapResultEntryDto::getValue)
+        .containsOnlyNulls()
+      );
+  }
+
+  @Test
+  public void combinedReportsCanBeEvaluatedWithAdditionalFilters_allDataFilteredOutWithMultipleFilters() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportIdA = createNewSingleMapReport(engineDto);
+    String singleReportIdB = createNewSingleMapReport(engineDto);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when no filters are applied
+    String combinedReportId = createNewCombinedReport(singleReportIdA, singleReportIdB);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
+      reportClient.evaluateCombinedReportById(combinedReportId);
+
+    // then both reports contain the expected data with no null values
+    assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(result.getResult().getData().entrySet())
+      .hasSize(2)
+      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getData())
+        .hasSize(3)
+        .extracting(MapResultEntryDto::getValue)
+        .doesNotContainNull()
+      );
+
+    // when running and completed instance filters applied
+    AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
+    filterDto.setFilter(ProcessFilterBuilder.filter()
+                          .runningInstancesOnly().add()
+                          .completedInstancesOnly().add()
+                          .buildList());
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> filteredResult =
+      reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, filterDto);
+
+    // then the data values are now null
+    assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(filteredResult.getResult().getData().entrySet())
+      .hasSize(2)
+      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getData())
+        .hasSize(3)
+        .extracting(MapResultEntryDto::getValue)
+        .containsOnlyNulls()
+      );
   }
 
   @Test
@@ -587,18 +713,18 @@ public class CombinedReportHandlingIT extends AbstractIT {
       reportId);
 
     // then
-    assertThat(result.getReportDefinition().getId(), is(reportId));
+    assertThat(result.getReportDefinition().getId()).isEqualTo(reportId);
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
-    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap).hasSize(2);
     List<MapResultEntryDto> userTaskCount1 = resultMap.get(totalDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount1.size(), is(1));
+    assertThat(userTaskCount1).hasSize(1);
     List<MapResultEntryDto> userTaskCount2 = resultMap.get(idleDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount2.size(), is(1));
+    assertThat(userTaskCount2).hasSize(1);
   }
 
   @Test
@@ -617,18 +743,18 @@ public class CombinedReportHandlingIT extends AbstractIT {
       reportId);
 
     // then
-    assertThat(result.getReportDefinition().getId(), is(reportId));
+    assertThat(result.getReportDefinition().getId()).isEqualTo(reportId);
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
-    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap).hasSize(2);
     List<MapResultEntryDto> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount1.size(), is(1));
+    assertThat(userTaskCount1).hasSize(1);
     List<MapResultEntryDto> userTaskCount2 = resultMap.get(flowNodeDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount2.size(), is(3));
+    assertThat(userTaskCount2).hasSize(3);
   }
 
   @Test
@@ -652,25 +778,24 @@ public class CombinedReportHandlingIT extends AbstractIT {
     final AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>
       result = reportClient.evaluateCombinedReportById(combinedReportId);
 
-
     // then
     final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
       .getData();
-    assertThat(resultMap, is(CoreMatchers.notNullValue()));
-    assertThat(resultMap.size(), is(2));
-    assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
+    assertThat(resultMap).isNotNull();
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.keySet()).containsExactlyInAnyOrder(singleReportId1, singleReportId2);
 
     final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
     final List<MapResultEntryDto> resultData1 = result1.getData();
-    assertThat(resultData1, is(CoreMatchers.notNullValue()));
-    assertThat(resultData1.size(), is(1));
+    assertThat(resultData1).isNotNull();
+    assertThat(resultData1).hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
     final List<MapResultEntryDto> resultData2 = result2.getData();
-    assertThat(resultData2, is(CoreMatchers.notNullValue()));
-    assertThat(resultData2.size(), is(3));
+    assertThat(resultData2).isNotNull();
+    assertThat(resultData2).hasSize(3);
   }
 
   @Test
@@ -687,10 +812,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
       reportId);
 
     // then
-    assertThat(result.getReportDefinition().getId(), is(reportId));
+    assertThat(result.getReportDefinition().getId()).isEqualTo(reportId);
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
-    assertThat(resultMap.size(), is(0));
+    assertThat(resultMap).isEmpty();
   }
 
   @Test
@@ -711,17 +836,17 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Set<String> resultSet = reports.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toSet());
-    assertThat(resultSet.size(), is(2));
-    assertThat(resultSet.contains(remainingSingleReportId), is(true));
-    assertThat(resultSet.contains(combinedReportId), is(true));
+    assertThat(resultSet).hasSize(2);
+    assertThat(resultSet.contains(remainingSingleReportId)).isTrue();
+    assertThat(resultSet.contains(combinedReportId)).isTrue();
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto) r)
+      .filter(report -> report instanceof CombinedReportDefinitionDto)
+      .map(report -> (CombinedReportDefinitionDto) report)
       .findFirst();
-    assertThat(combinedReport.isPresent(), is(true));
+    assertThat(combinedReport).isPresent();
     CombinedReportDataDto dataDto = combinedReport.get().getData();
-    assertThat(dataDto.getReportIds().size(), is(1));
-    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
+    assertThat(dataDto.getReportIds()).hasSize(1);
+    assertThat(dataDto.getReportIds().get(0)).isEqualTo(remainingSingleReportId);
   }
 
   @Test
@@ -751,16 +876,16 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Set<String> resultSet = reports.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toSet());
-    assertThat(resultSet.size(), is(3));
-    assertThat(resultSet.contains(combinedReportId), is(true));
+    assertThat(resultSet).hasSize(3);
+    assertThat(resultSet).contains(combinedReportId);
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto) r)
+      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto)
+      .map(reportDto -> (CombinedReportDefinitionDto) reportDto)
       .findFirst();
-    assertThat(combinedReport.isPresent(), is(true));
+    assertThat(combinedReport).isPresent();
     CombinedReportDataDto dataDto = combinedReport.get().getData();
-    assertThat(dataDto.getReportIds().size(), is(1));
-    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
+    assertThat(dataDto.getReportIds()).hasSize(1);
+    assertThat(dataDto.getReportIds().get(0)).isEqualTo(remainingSingleReportId);
   }
 
   @Test
@@ -790,16 +915,16 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Set<String> resultSet = reports.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toSet());
-    assertThat(resultSet.size(), is(3));
-    assertThat(resultSet.contains(combinedReportId), is(true));
+    assertThat(resultSet).hasSize(3);
+    assertThat(resultSet).contains(combinedReportId);
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto) r)
+      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto)
+      .map(reportDto -> (CombinedReportDefinitionDto) reportDto)
       .findFirst();
-    assertThat(combinedReport.isPresent(), is(true));
+    assertThat(combinedReport).isPresent();
     CombinedReportDataDto dataDto = combinedReport.get().getData();
-    assertThat(dataDto.getReportIds().size(), is(1));
-    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
+    assertThat(dataDto.getReportIds()).hasSize(1);
+    assertThat(dataDto.getReportIds().get(0)).isEqualTo(remainingSingleReportId);
   }
 
   @Test
@@ -829,16 +954,16 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Set<String> resultSet = reports.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toSet());
-    assertThat(resultSet.size(), is(3));
-    assertThat(resultSet.contains(combinedReportId), is(true));
+    assertThat(resultSet).hasSize(3);
+    assertThat(resultSet).contains(combinedReportId);
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto) r)
+      .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto)
+      .map(reportDto -> (CombinedReportDefinitionDto) reportDto)
       .findFirst();
-    assertThat(combinedReport.isPresent(), is(true));
+    assertThat(combinedReport).isPresent();
     CombinedReportDataDto dataDto = combinedReport.get().getData();
-    assertThat(dataDto.getReportIds().size(), is(1));
-    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
+    assertThat(dataDto.getReportIds()).hasSize(1);
+    assertThat(dataDto.getReportIds().get(0)).isEqualTo(remainingSingleReportId);
   }
 
   @Test
@@ -858,11 +983,11 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getData();
 
-    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap).hasSize(2);
     List<MapResultEntryDto> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
-    assertThat(flowNodeToCount.size(), is(3));
+    assertThat(flowNodeToCount).hasSize(3);
     List<MapResultEntryDto> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
-    assertThat(flowNodeToCount2.size(), is(3));
+    assertThat(flowNodeToCount2).hasSize(3);
   }
 
   @Test
@@ -880,10 +1005,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(1));
+    assertThat(resultMap).hasSize(1);
     AuthorizedEvaluationResultDto<ReportMapResultDto, SingleProcessReportDefinitionDto> mapResult =
       resultMap.get(singleReportId);
-    assertThat(mapResult.getReportDefinition().getName(), is(TEST_REPORT_NAME));
+    assertThat(mapResult.getReportDefinition().getName()).isEqualTo(TEST_REPORT_NAME);
   }
 
   @Test
@@ -902,8 +1027,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(2));
-    assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.keySet()).contains(singleReportId1, singleReportId2);
   }
 
   @Test
@@ -922,8 +1047,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(2));
-    assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.keySet()).contains(singleReportId1, singleReportId2);
   }
 
   @Test
@@ -942,8 +1067,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(2));
-    assertThat(resultMap.keySet(), contains(singleReportId, singleReportId2));
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.keySet()).contains(singleReportId, singleReportId2);
   }
 
   @Test
@@ -962,8 +1087,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(2));
-    assertThat(resultMap.keySet(), contains(singleReportId, singleReportId2));
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.keySet()).contains(singleReportId, singleReportId2);
   }
 
   @Test
@@ -983,8 +1108,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(2));
-    assertThat(resultMap.keySet(), contains(totalDurationReportId, totalDurationReportId2));
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.keySet()).contains(totalDurationReportId, totalDurationReportId2);
   }
 
   @Test
@@ -1004,8 +1129,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(2));
-    assertThat(resultMap.keySet(), contains(totalDurationReportId, idleDurationReportId));
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.keySet()).contains(totalDurationReportId, idleDurationReportId);
   }
 
   @Test
@@ -1025,8 +1150,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(2));
-    assertThat(resultMap.keySet(), contains(totalDurationReportId, idleDurationReportId));
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.keySet()).contains(totalDurationReportId, idleDurationReportId);
   }
 
   @Test
@@ -1051,20 +1176,20 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // then
     final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
-    assertThat(resultMap, is(CoreMatchers.notNullValue()));
-    assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
+    assertThat(resultMap).isNotNull();
+    assertThat(resultMap.keySet()).contains(singleReportId1, singleReportId2);
 
     final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
     final List<MapResultEntryDto> resultData1 = result1.getData();
-    assertThat(resultData1, is(CoreMatchers.notNullValue()));
-    assertThat(resultData1.size(), is(1));
+    assertThat(resultData1).isNotNull();
+    assertThat(resultData1).hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
     final List<MapResultEntryDto> resultData2 = result2.getData();
-    assertThat(resultData2, is(CoreMatchers.notNullValue()));
-    assertThat(resultData2.size(), is(3));
+    assertThat(resultData2).isNotNull();
+    assertThat(resultData2).hasSize(3);
   }
 
   @Test
@@ -1103,20 +1228,20 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // then
     final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
-    assertThat(resultMap, is(CoreMatchers.notNullValue()));
-    assertThat(resultMap.keySet(), contains(groupedByEndDateReportId, groupedByStartDateReportId));
+    assertThat(resultMap).isNotNull();
+    assertThat(resultMap.keySet()).contains(groupedByEndDateReportId, groupedByStartDateReportId);
 
     final ReportMapResultDto result1 = resultMap.get(groupedByEndDateReportId)
       .getResult();
     final List<MapResultEntryDto> resultData1 = result1.getData();
-    assertThat(resultData1, is(CoreMatchers.notNullValue()));
-    assertThat(resultData1.size(), is(1));
+    assertThat(resultData1).isNotNull();
+    assertThat(resultData1).hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(groupedByStartDateReportId)
       .getResult();
     final List<MapResultEntryDto> resultData2 = result2.getData();
-    assertThat(resultData2, is(CoreMatchers.notNullValue()));
-    assertThat(resultData2.size(), is(3));
+    assertThat(resultData2).isNotNull();
+    assertThat(resultData2).hasSize(3);
   }
 
   @Test
@@ -1135,8 +1260,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.keySet(), contains(singleReportId));
+    assertThat(resultMap).hasSize(1);
+    assertThat(resultMap.keySet()).contains(singleReportId);
   }
 
   @Test
@@ -1155,8 +1280,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.containsKey(singleReportId2), is(true));
+    assertThat(resultMap).hasSize(1);
+    assertThat(resultMap).containsKey(singleReportId2);
   }
 
   @Test
@@ -1173,14 +1298,14 @@ public class CombinedReportHandlingIT extends AbstractIT {
       evaluateUnsavedCombinedReportAndReturnResponse(createCombinedReportData(combinedReportId, singleReportId2));
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
   public void combinedReportWithHyperMapReportCanBeEvaluated() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    String combinedReportId = createNewCombinedReport();
+    createNewCombinedReport();
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
@@ -1198,17 +1323,22 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap.size(), is(0));
+    assertThat(resultMap).isEmpty();
   }
 
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
+    return createNewSingleMapReportWithFilter(engineDto, null);
+  }
+
+  private String createNewSingleMapReportWithFilter(final ProcessInstanceEngineDto engineDto,
+                                                    final AdditionalProcessReportEvaluationFilterDto filterDto) {
+    final TemplatedProcessReportDataBuilder templatedProcessReportDataBuilder = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-      .build();
-    return createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
+      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
+    Optional.ofNullable(filterDto).ifPresent(filters -> templatedProcessReportDataBuilder.setFilter(filters.getFilter()));
+    return createNewSingleMapReport(templatedProcessReportDataBuilder.build());
   }
 
   private String createNewSingleDurationNumberReport(ProcessInstanceEngineDto engineDto) {
@@ -1367,7 +1497,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
@@ -1380,7 +1510,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
   private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport, Boolean force) {
     Response response = getUpdateSingleProcessReportResponse(id, updatedReport, force);
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private void updateReport(String id, CombinedReportDefinitionDto updatedReport) {
@@ -1389,7 +1519,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
   private void updateReport(String id, CombinedReportDefinitionDto updatedReport, Boolean force) {
     Response response = getUpdateCombinedProcessReportResponse(id, updatedReport, force);
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private Response getUpdateSingleProcessReportResponse(String id, SingleProcessReportDefinitionDto updatedReport,
