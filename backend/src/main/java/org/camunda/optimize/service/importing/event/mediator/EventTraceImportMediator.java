@@ -7,11 +7,13 @@ package org.camunda.optimize.service.importing.event.mediator;
 
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.service.EventTraceStateService;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.event.service.EventTraceImportService;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -27,19 +29,20 @@ public class EventTraceImportMediator
   extends TimestampBasedImportMediator<TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto>, EventDto> {
 
   private final EventFetcherService eventService;
-  private final EventTraceStateService eventTraceStateService;
+  private final ConfigurationService configurationService;
 
   public EventTraceImportMediator(final EventFetcherService eventService,
                                   final TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> importIndexHandler,
-                                  final EventTraceStateService eventTraceStateService) {
+                                  final EventTraceImportService importService,
+                                  final ConfigurationService configurationService,
+                                  final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                  final BackoffCalculator idleBackoffCalculator) {
     this.eventService = eventService;
     this.importIndexHandler = importIndexHandler;
-    this.eventTraceStateService = eventTraceStateService;
-  }
-
-  @Override
-  protected void init() {
-    this.importService = new EventTraceImportService(elasticsearchImportJobExecutor, eventTraceStateService);
+    this.importService = importService;
+    this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

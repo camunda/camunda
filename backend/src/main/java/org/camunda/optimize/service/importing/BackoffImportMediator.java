@@ -11,32 +11,18 @@ import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import java.util.concurrent.CompletableFuture;
 
 public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>> implements EngineImportMediator {
   protected Logger logger = LoggerFactory.getLogger(getClass());
-
-  @Autowired
-  protected BeanFactory beanFactory;
-  @Autowired
   protected ConfigurationService configurationService;
-  @Autowired
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  @Autowired
-  private BackoffCalculator idleBackoffCalculator;
+  protected BackoffCalculator idleBackoffCalculator;
 
   private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
 
   protected T importIndexHandler;
-
-  @PostConstruct
-  private void initialize() {
-    init();
-  }
 
   @Override
   public CompletableFuture<Void> runImport() {
@@ -85,8 +71,6 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>> 
   public void shutdown() {
     elasticsearchImportJobExecutor.stopExecutingImportJobs();
   }
-
-  protected abstract void init();
 
   protected abstract boolean importNextPage(Runnable importCompleteCallback);
 

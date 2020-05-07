@@ -6,19 +6,17 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionImportService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -29,25 +27,19 @@ public class ProcessDefinitionEngineImportMediator
 
   private ProcessDefinitionFetcher engineEntityFetcher;
 
-  @Autowired
-  private ProcessDefinitionWriter processDefinitionWriter;
-  @Autowired
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
-  private final EngineContext engineContext;
-
-  public ProcessDefinitionEngineImportMediator(final EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
-
-  @PostConstruct
-  public void init() {
-    importIndexHandler =
-      importIndexHandlerRegistry.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanFactory.getBean(ProcessDefinitionFetcher.class, engineContext);
-    importService = new ProcessDefinitionImportService(
-      elasticsearchImportJobExecutor, engineContext, processDefinitionWriter
-    );
+  public ProcessDefinitionEngineImportMediator(final ProcessDefinitionImportIndexHandler importIndexHandler,
+                                               final ProcessDefinitionFetcher engineEntityFetcher,
+                                               final ProcessDefinitionImportService importService,
+                                               final ConfigurationService configurationService,
+                                               final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                               final BackoffCalculator idleBackoffCalculator) {
+    this.importIndexHandler = importIndexHandler;
+    this.engineEntityFetcher = engineEntityFetcher;
+    this.importService = importService;
+    this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

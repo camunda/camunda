@@ -6,13 +6,13 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.CompletedActivityInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.importing.engine.service.CompletedActivityInstanceImportService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +23,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.BeanFactory;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -48,38 +47,33 @@ public class TimestampBasedImportMediatorTest {
   protected CompletedActivityInstanceImportIndexHandler importIndexHandler;
 
   @Mock
-  protected ImportService<HistoricActivityInstanceEngineDto> importService;
+  protected CompletedActivityInstanceImportService importService;
 
   @Captor
   private ArgumentCaptor<List<HistoricActivityInstanceEngineDto>> importEntitiesCaptor;
 
   @Mock
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
-
-  @Mock
-  private BeanFactory beanFactory;
-
-  @Mock
-  private EngineContext engineContext;
-
-  @Mock
   private CompletedActivityInstanceFetcher engineEntityFetcher;
+
+  @Mock
+  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+
+  @Mock
+  private BackoffCalculator idleBackoffCalculator;
 
   private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @BeforeEach
   public void init() {
-    when(beanFactory.getBean(CompletedActivityInstanceFetcher.class, engineContext))
-      .thenReturn(engineEntityFetcher);
+    this.underTest = new CompletedActivityInstanceEngineImportMediator(
+      importIndexHandler,
+      engineEntityFetcher,
+      importService,
+      configurationService,
+      elasticsearchImportJobExecutor,
+      idleBackoffCalculator
+    );
 
-    this.underTest = new CompletedActivityInstanceEngineImportMediator(engineContext);
-    ((CompletedActivityInstanceEngineImportMediator) this.underTest).setImportIndexHandlerRegistry(importIndexHandlerRegistry);
-    this.underTest.beanFactory = beanFactory;
-    this.underTest.configurationService = configurationService;
-    this.underTest.init();
-
-    this.underTest.importIndexHandler = importIndexHandler;
-    this.underTest.importService = importService;
     Mockito.lenient().doAnswer(invocation -> {
       final Runnable runnable = invocation.getArgument(1);
       runnable.run();
@@ -91,7 +85,8 @@ public class TimestampBasedImportMediatorTest {
   @Test
   public void testImportNextEnginePage_returnsFalse() {
     // when
-    final boolean result = underTest.importNextPage(() -> {});
+    final boolean result = underTest.importNextPage(() -> {
+    });
 
     // then
     assertThat(result).isFalse();
@@ -106,7 +101,8 @@ public class TimestampBasedImportMediatorTest {
     configurationService.setEngineImportActivityInstanceMaxPageSize(1);
 
     // when
-    final boolean result = underTest.importNextPage(() -> {});
+    final boolean result = underTest.importNextPage(() -> {
+    });
 
     // then
     assertThat(result).isTrue();

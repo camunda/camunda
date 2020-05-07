@@ -6,27 +6,27 @@
 package org.camunda.optimize.service.importing.engine;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.http.impl.nio.codecs.LengthDelimitedEncoder;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerProvider;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
-import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionXmlEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.DecisionInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.ProcessDefinitionEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.ProcessDefinitionXmlEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.RunningActivityInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.RunningProcessInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.RunningUserTaskInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.TenantImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.UserOperationLogEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.VariableUpdateEngineImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.factory.ActivityInstanceEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.DecisionDefinitionEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.DecisionDefinitionInstanceEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.DecisionDefinitionXmlEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.IdentityLinkLogEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.ProcessDefinitionEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.ProcessDefinitionXmlEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.ProcessInstanceEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.StoreIndexesEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.TenantImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.UserOperationLogEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.UserTaskInstanceEngineImportMediatorFactory;
+import org.camunda.optimize.service.importing.engine.mediator.factory.VariableUpdateEngineImportMediatorFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -48,6 +48,20 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
   private final BeanFactory beanFactory;
   private final EngineContextFactory engineContextFactory;
   private final ConfigurationService configurationService;
+
+  private final TenantImportMediatorFactory tenantImportMediatorFactory;
+  private final ProcessInstanceEngineImportMediatorFactory processInstanceEngineImportMediatorFactory;
+  private final ProcessDefinitionEngineImportMediatorFactory processDefinitionEngineImportMediatorFactory;
+  private final ProcessDefinitionXmlEngineImportMediatorFactory processDefinitionXmlImportMediatorFactory;
+  private final DecisionDefinitionEngineImportMediatorFactory decisionDefinitionEngineImportMediatorFactory;
+  private final DecisionDefinitionXmlEngineImportMediatorFactory decisionDefinitionXmlEngineImportMediatorFactory;
+  private final DecisionDefinitionInstanceEngineImportMediatorFactory decisionDefinitionInstanceEngineImportMediatorFactory;
+  private final ActivityInstanceEngineImportMediatorFactory activityInstanceEngineImportMediatorFactory;
+  private final UserTaskInstanceEngineImportMediatorFactory userTaskInstanceEngineImportMediatorFactory;
+  private final StoreIndexesEngineImportMediatorFactory storeIndexesEngineImportMediatorFactory;
+  private final VariableUpdateEngineImportMediatorFactory variableUpdateEngineImportMediatorFactory;
+  private final IdentityLinkLogEngineImportMediatorFactory identityLinkLogEngineImportMediatorFactory;
+  private final UserOperationLogEngineImportMediatorFactory userOperationLogEngineImportMediatorFactory;
 
   private List<EngineImportScheduler> schedulers;
 
@@ -86,62 +100,62 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
 
     // tenant import first
     mediators.add(
-      beanFactory.getBean(TenantImportMediator.class, engineContext)
+      tenantImportMediatorFactory.createTenantImportMediator(engineContext)
     );
 
     // definition imports come first in line,
     mediators.add(
-      beanFactory.getBean(ProcessDefinitionEngineImportMediator.class, engineContext)
+      processDefinitionEngineImportMediatorFactory.createProcessDefinitionEngineImportMediator(engineContext)
     );
     mediators.add(
-      beanFactory.getBean(ProcessDefinitionXmlEngineImportMediator.class, engineContext)
+      processDefinitionXmlImportMediatorFactory.createProcessDefinitionXmlEngineImportMediator(engineContext)
     );
     if (configurationService.getImportDmnDataEnabled()) {
       mediators.add(
-        beanFactory.getBean(DecisionDefinitionEngineImportMediator.class, engineContext)
+        decisionDefinitionEngineImportMediatorFactory.createDecisionDefinitionEngineImportMediator(engineContext)
       );
       mediators.add(
-        beanFactory.getBean(DecisionDefinitionXmlEngineImportMediator.class, engineContext)
+        decisionDefinitionXmlEngineImportMediatorFactory.createDecisionDefinitionXmlEngineImportMediator(engineContext)
       );
     }
 
     // so potential dependencies by the instance and activity import on existing definition data are likely satisfied
     mediators.add(
-      beanFactory.getBean(CompletedActivityInstanceEngineImportMediator.class, engineContext)
+      activityInstanceEngineImportMediatorFactory.createCompletedActivityInstanceEngineImportMediator(engineContext)
     );
     mediators.add(
-      beanFactory.getBean(RunningActivityInstanceEngineImportMediator.class, engineContext)
+      activityInstanceEngineImportMediatorFactory.createRunningActivityInstanceEngineImportMediator(engineContext)
     );
     mediators.add(
-      beanFactory.getBean(CompletedProcessInstanceEngineImportMediator.class, engineContext)
+      processInstanceEngineImportMediatorFactory.createCompletedProcessInstanceEngineImportMediator(engineContext)
     );
     mediators.add(
-      beanFactory.getBean(StoreIndexesEngineImportMediator.class, engineContext)
+      processInstanceEngineImportMediatorFactory.createRunningProcessInstanceEngineImportMediator(engineContext)
     );
     mediators.add(
-      beanFactory.getBean(RunningProcessInstanceEngineImportMediator.class, engineContext)
+      storeIndexesEngineImportMediatorFactory.createStoreIndexImportMediator(engineContext)
     );
     mediators.add(
-      beanFactory.getBean(VariableUpdateEngineImportMediator.class, engineContext)
+      variableUpdateEngineImportMediatorFactory.createVariableUpdateEngineImportMediator(engineContext)
     );
     mediators.add(
-      beanFactory.getBean(CompletedUserTaskEngineImportMediator.class, engineContext)
+      userTaskInstanceEngineImportMediatorFactory.createCompletedUserTaskInstanceEngineImportMediator(engineContext)
     );
     if (configurationService.getImportUserTaskWorkerDataEnabled()) {
       mediators.add(
-        beanFactory.getBean(IdentityLinkLogEngineImportMediator.class, engineContext)
+        identityLinkLogEngineImportMediatorFactory.createIdentityLinkLogEngineImportMediator(engineContext)
       );
     }
     mediators.add(
-      beanFactory.getBean(RunningUserTaskInstanceEngineImportMediator.class, engineContext)
+      userTaskInstanceEngineImportMediatorFactory.createRunningUserTaskInstanceEngineImportMediator(engineContext)
     );
     mediators.add(
-      beanFactory.getBean(UserOperationLogEngineImportMediator.class, engineContext)
+      userOperationLogEngineImportMediatorFactory.createUserOperationLogEngineImportMediator(engineContext)
     );
 
     if (configurationService.getImportDmnDataEnabled()) {
       mediators.add(
-        beanFactory.getBean(DecisionInstanceEngineImportMediator.class, engineContext)
+        decisionDefinitionInstanceEngineImportMediatorFactory.createDecisionInstanceEngineImportMediator(engineContext)
       );
     }
 

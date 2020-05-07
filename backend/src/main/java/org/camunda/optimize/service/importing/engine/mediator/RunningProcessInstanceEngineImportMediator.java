@@ -6,21 +6,17 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
-import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventImportService;
-import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningProcessInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.RunningProcessInstanceImportService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -30,33 +26,19 @@ public class RunningProcessInstanceEngineImportMediator
   extends TimestampBasedImportMediator<RunningProcessInstanceImportIndexHandler, HistoricProcessInstanceDto> {
 
   private RunningProcessInstanceFetcher engineEntityFetcher;
-  @Autowired
-  private RunningProcessInstanceWriter runningProcessInstanceWriter;
-  @Autowired
-  private CamundaEventImportService camundaEventService;
-  @Autowired
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
-  @Autowired
-  private BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
 
-  private final EngineContext engineContext;
-
-  public RunningProcessInstanceEngineImportMediator(final EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
-
-  @PostConstruct
-  public void init() {
-    importIndexHandler =
-      importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanFactory.getBean(RunningProcessInstanceFetcher.class, engineContext);
-    importService = new RunningProcessInstanceImportService(
-      elasticsearchImportJobExecutor,
-      engineContext,
-      businessKeyImportAdapterProvider,
-      runningProcessInstanceWriter,
-      camundaEventService
-    );
+  public RunningProcessInstanceEngineImportMediator(final RunningProcessInstanceImportIndexHandler importIndexHandler,
+                                                    final RunningProcessInstanceFetcher engineEntityFetcher,
+                                                    final RunningProcessInstanceImportService importService,
+                                                    final ConfigurationService configurationService,
+                                                    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                                    final BackoffCalculator idleBackoffCalculator) {
+    this.importIndexHandler = importIndexHandler;
+    this.engineEntityFetcher = engineEntityFetcher;
+    this.importService = importService;
+    this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

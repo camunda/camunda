@@ -6,19 +6,17 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.RunningUserTaskInstanceWriter;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningUserTaskInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.RunningUserTaskInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.RunningUserTaskInstanceImportService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -29,26 +27,18 @@ public class RunningUserTaskInstanceEngineImportMediator
 
   private RunningUserTaskInstanceFetcher engineEntityFetcher;
 
-  @Autowired
-  private RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
-  @Autowired
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
-
-  private final EngineContext engineContext;
-
-  public RunningUserTaskInstanceEngineImportMediator(final EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
-
-  @PostConstruct
-  public void init() {
-    importIndexHandler = importIndexHandlerRegistry.getRunningUserTaskInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanFactory.getBean(RunningUserTaskInstanceFetcher.class, engineContext);
-    importService = new RunningUserTaskInstanceImportService(
-      runningUserTaskInstanceWriter,
-      elasticsearchImportJobExecutor,
-      engineContext
-    );
+  public RunningUserTaskInstanceEngineImportMediator(final RunningUserTaskInstanceImportIndexHandler importIndexHandler,
+                                                     final RunningUserTaskInstanceFetcher engineEntityFetcher,
+                                                     final RunningUserTaskInstanceImportService importService,
+                                                     final ConfigurationService configurationService,
+                                                     final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                                     final BackoffCalculator idleBackoffCalculator) {
+    this.importIndexHandler = importIndexHandler;
+    this.engineEntityFetcher = engineEntityFetcher;
+    this.importService = importService;
+    this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

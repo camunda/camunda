@@ -6,13 +6,13 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
-import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionXmlEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
+import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +21,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.BeanFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -37,17 +36,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class ScrollBasedImportMediatorTest {
 
-  @Mock
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
-
-  @Mock
-  private BeanFactory beanFactory;
-
   @InjectMocks
   private DecisionDefinitionXmlEngineImportMediator underTest;
-
-  @Mock
-  private EngineContext engineContext;
 
   @Mock
   private DecisionDefinitionXmlFetcher engineEntityFetcher;
@@ -55,23 +45,27 @@ public class ScrollBasedImportMediatorTest {
   @Mock
   private DecisionDefinitionXmlImportIndexHandler importIndexHandler;
 
-  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+  @Mock
+  private DecisionDefinitionXmlImportService importService;
 
   @Mock
-  private ImportService<DecisionDefinitionXmlEngineDto> importService;
+  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+
+  @Mock
+  private BackoffCalculator idleBackoffCalculator;
+
+  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @BeforeEach
   public void init() {
-    when(beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext))
-      .thenReturn(engineEntityFetcher);
-
-    this.underTest = new DecisionDefinitionXmlEngineImportMediator(engineContext);
-    this.underTest.setImportIndexHandlerRegistry(importIndexHandlerRegistry);
-    this.underTest.beanFactory = beanFactory;
-    this.underTest.configurationService = configurationService;
-    this.underTest.init();
-    this.underTest.importIndexHandler = importIndexHandler;
-    this.underTest.importService = importService;
+    this.underTest = new DecisionDefinitionXmlEngineImportMediator(
+      importIndexHandler,
+      engineEntityFetcher,
+      importService,
+      configurationService,
+      elasticsearchImportJobExecutor,
+      idleBackoffCalculator
+    );
   }
 
   @Test
@@ -82,7 +76,8 @@ public class ScrollBasedImportMediatorTest {
     when(importIndexHandler.getNextPage()).thenReturn(page);
 
     // when
-    final boolean result = underTest.importNextPage(() -> {});
+    final boolean result = underTest.importNextPage(() -> {
+    });
 
     // then
     assertThat(result, is(false));
@@ -104,7 +99,8 @@ public class ScrollBasedImportMediatorTest {
       .thenReturn(resultList);
 
     // when
-    final Runnable importCompleteCallback = () -> { };
+    final Runnable importCompleteCallback = () -> {
+    };
     final boolean result = underTest.importNextPage(importCompleteCallback);
 
     // then

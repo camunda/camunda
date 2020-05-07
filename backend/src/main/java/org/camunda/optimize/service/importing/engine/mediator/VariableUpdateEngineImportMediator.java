@@ -6,21 +6,17 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
-import org.camunda.optimize.plugin.VariableImportAdapterProvider;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventImportService;
-import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.VariableUpdateInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.VariableUpdateInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -31,28 +27,18 @@ public class VariableUpdateEngineImportMediator
 
   private VariableUpdateInstanceFetcher engineEntityFetcher;
 
-  @Autowired
-  private CamundaEventImportService camundaEventService;
-  @Autowired
-  private ProcessVariableUpdateWriter variableWriter;
-  @Autowired
-  private VariableImportAdapterProvider variableImportAdapterProvider;
-  @Autowired
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
-
-  private final EngineContext engineContext;
-
-  public VariableUpdateEngineImportMediator(final EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
-
-  @PostConstruct
-  public void init() {
-    importIndexHandler = importIndexHandlerRegistry.getRunningVariableInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext);
-    importService = new VariableUpdateInstanceImportService(
-      variableWriter, camundaEventService, variableImportAdapterProvider, elasticsearchImportJobExecutor, engineContext
-    );
+  public VariableUpdateEngineImportMediator(final VariableUpdateInstanceImportIndexHandler importIndexHandler,
+                                            final VariableUpdateInstanceFetcher engineEntityFetcher,
+                                            final VariableUpdateInstanceImportService importService,
+                                            final ConfigurationService configurationService,
+                                            final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                            final BackoffCalculator idleBackoffCalculator) {
+    this.importIndexHandler = importIndexHandler;
+    this.engineEntityFetcher = engineEntityFetcher;
+    this.importService = importService;
+    this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

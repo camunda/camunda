@@ -6,21 +6,18 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
-import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventImportService;
-import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedProcessInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.CompletedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.CompletedProcessInstanceImportService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -31,34 +28,18 @@ public class CompletedProcessInstanceEngineImportMediator
 
   private CompletedProcessInstanceFetcher engineEntityFetcher;
 
-  @Autowired
-  private CompletedProcessInstanceWriter completedProcessInstanceWriter;
-  @Autowired
-  private CamundaEventImportService camundaEventService;
-  @Autowired
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
-  @Autowired
-  private BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
-
-
-  private final EngineContext engineContext;
-
-  public CompletedProcessInstanceEngineImportMediator(EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
-
-  @PostConstruct
-  public void init() {
-    importIndexHandler =
-      importIndexHandlerRegistry.getCompletedProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanFactory.getBean(CompletedProcessInstanceFetcher.class, engineContext);
-    importService = new CompletedProcessInstanceImportService(
-      elasticsearchImportJobExecutor,
-      engineContext,
-      businessKeyImportAdapterProvider,
-      completedProcessInstanceWriter,
-      camundaEventService
-    );
+  public CompletedProcessInstanceEngineImportMediator(final CompletedProcessInstanceImportIndexHandler importIndexHandler,
+                                                      final CompletedProcessInstanceFetcher engineEntityFetcher,
+                                                      final CompletedProcessInstanceImportService importService,
+                                                      final ConfigurationService configurationService,
+                                                      final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                                      final BackoffCalculator idleBackoffCalculator) {
+    this.importIndexHandler = importIndexHandler;
+    this.engineEntityFetcher = engineEntityFetcher;
+    this.importService = importService;
+    this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

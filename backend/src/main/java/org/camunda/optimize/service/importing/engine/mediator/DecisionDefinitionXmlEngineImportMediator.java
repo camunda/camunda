@@ -5,23 +5,19 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
-import lombok.Setter;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
-import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionResolverService;
 import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
@@ -29,30 +25,21 @@ import java.util.List;
 public class DecisionDefinitionXmlEngineImportMediator
   extends ScrollBasedImportMediator<DecisionDefinitionXmlImportIndexHandler, DecisionDefinitionXmlEngineDto> {
 
-  @Autowired
-  private DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
-  @Autowired
-  private DecisionDefinitionResolverService decisionDefinitionResolverService;
-  @Autowired
-  @Setter
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
-
   private DecisionDefinitionXmlFetcher engineEntityFetcher;
 
-  private final EngineContext engineContext;
 
-  public DecisionDefinitionXmlEngineImportMediator(final EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
-
-  @PostConstruct
-  public void init() {
-    importIndexHandler = importIndexHandlerRegistry.getDecisionDefinitionXmlImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext);
-
-    importService = new DecisionDefinitionXmlImportService(
-      elasticsearchImportJobExecutor, engineContext, decisionDefinitionXmlWriter, decisionDefinitionResolverService
-    );
+  public DecisionDefinitionXmlEngineImportMediator(final DecisionDefinitionXmlImportIndexHandler importIndexHandler,
+                                                   final DecisionDefinitionXmlFetcher engineEntityFetcher,
+                                                   final DecisionDefinitionXmlImportService importService,
+                                                   final ConfigurationService configurationService,
+                                                   final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                                   final BackoffCalculator idleBackoffCalculator) {
+    this.importIndexHandler = importIndexHandler;
+    this.engineEntityFetcher = engineEntityFetcher;
+    this.importService = importService;
+    this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

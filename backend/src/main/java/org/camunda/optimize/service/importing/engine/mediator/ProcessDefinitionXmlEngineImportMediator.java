@@ -6,20 +6,18 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.ProcessDefinitionXmlFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
@@ -29,25 +27,18 @@ public class ProcessDefinitionXmlEngineImportMediator
 
   private ProcessDefinitionXmlFetcher engineEntityFetcher;
 
-  @Autowired
-  private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
-  @Autowired
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
-
-  private final EngineContext engineContext;
-
-  public ProcessDefinitionXmlEngineImportMediator(final EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
-
-  @PostConstruct
-  public void init() {
-    importIndexHandler = importIndexHandlerRegistry.getProcessDefinitionXmlImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanFactory.getBean(ProcessDefinitionXmlFetcher.class, engineContext);
-
-    importService = new ProcessDefinitionXmlImportService(
-      elasticsearchImportJobExecutor, engineContext, processDefinitionXmlWriter
-    );
+  public ProcessDefinitionXmlEngineImportMediator(final ProcessDefinitionXmlImportIndexHandler importIndexHandler,
+                                                  final ProcessDefinitionXmlFetcher engineEntityFetcher,
+                                                  final ProcessDefinitionXmlImportService importService,
+                                                  final ConfigurationService configurationService,
+                                                  final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                                  final BackoffCalculator idleBackoffCalculator) {
+    this.importIndexHandler = importIndexHandler;
+    this.engineEntityFetcher = engineEntityFetcher;
+    this.importService = importService;
+    this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

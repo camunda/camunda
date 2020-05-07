@@ -22,6 +22,7 @@ import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.eventprocess.handler.EventProcessInstanceImportSourceIndexHandler;
 import org.camunda.optimize.service.importing.eventprocess.service.CustomTracedEventProcessInstanceImportService;
 import org.camunda.optimize.service.importing.eventprocess.service.EventProcessInstanceImportService;
+import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
@@ -37,6 +38,7 @@ public class EventProcessInstanceImportMediatorFactory {
 
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
+  private final BackoffCalculator idleBackoffCalculator;
 
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final EventFetcherFactory eventFetcherFactory;
@@ -46,13 +48,19 @@ public class EventProcessInstanceImportMediatorFactory {
 
   public List<EventProcessInstanceImportMediator> createEventProcessInstanceMediators(
     final EventProcessPublishStateDto publishedStateDto) {
+    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
+      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
+
     return publishedStateDto.getEventImportSources().stream()
       .map(importSource -> beanFactory.getBean(
         EventProcessInstanceImportMediator.class,
         publishedStateDto.getId(),
         new EventProcessInstanceImportSourceIndexHandler(configurationService, importSource),
         eventFetcherFactory.createEventFetcherForEventSource(importSource.getEventSource()),
-        createImportService(publishedStateDto, importSource.getEventSource())
+        createImportService(publishedStateDto, importSource.getEventSource()),
+        configurationService,
+        elasticsearchImportJobExecutor,
+        idleBackoffCalculator
       ))
       .collect(Collectors.toList());
   }
@@ -73,7 +81,10 @@ public class EventProcessInstanceImportMediatorFactory {
         businessKeyReader
       );
     } else {
-      throw new RuntimeException(String.format("Cannot create mediator for Event Source Type: %s", eventSourceEntryDto.getType()));
+      throw new RuntimeException(String.format(
+        "Cannot create mediator for Event Source Type: %s",
+        eventSourceEntryDto.getType()
+      ));
     }
   }
 

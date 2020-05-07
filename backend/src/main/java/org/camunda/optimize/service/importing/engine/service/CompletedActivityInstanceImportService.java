@@ -39,7 +39,8 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   }
 
   @Override
-  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities, Runnable importCompleteCallback) {
+  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities,
+                            Runnable importCompleteCallback) {
     logger.trace("Importing completed activity instances from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
@@ -65,9 +66,11 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events,
                                                                                 Runnable callback) {
     CompletedActivityInstanceElasticsearchImportJob activityImportJob =
-      new CompletedActivityInstanceElasticsearchImportJob(completedActivityInstanceWriter,
-                                                          camundaEventService,
-                                                          callback);
+      new CompletedActivityInstanceElasticsearchImportJob(
+        completedActivityInstanceWriter,
+        camundaEventService,
+        callback
+      );
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }

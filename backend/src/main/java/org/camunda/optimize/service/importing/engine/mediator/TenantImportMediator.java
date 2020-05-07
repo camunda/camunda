@@ -6,44 +6,38 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.TenantEngineDto;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.TenantWriter;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.TenantFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.TenantImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.TenantImportService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TenantImportMediator extends BackoffImportMediator<TenantImportIndexHandler> {
 
-  @Autowired
-  private TenantWriter tenantWriter;
-  @Autowired
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
-
   private TenantFetcher engineEntityFetcher;
   private TenantImportService tenantImportService;
 
-  private final EngineContext engineContext;
-
-  public TenantImportMediator(final EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
-
-  @PostConstruct
-  public void init() {
-    importIndexHandler = importIndexHandlerRegistry.getTenantImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanFactory.getBean(TenantFetcher.class, engineContext);
-    tenantImportService = new TenantImportService(elasticsearchImportJobExecutor, engineContext, tenantWriter);
+  public TenantImportMediator(final TenantImportIndexHandler importIndexHandler,
+                              final TenantFetcher engineEntityFetcher,
+                              final TenantImportService tenantImportService,
+                              final ConfigurationService configurationService,
+                              final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                              final BackoffCalculator idleBackoffCalculator) {
+    this.importIndexHandler = importIndexHandler;
+    this.engineEntityFetcher = engineEntityFetcher;
+    this.tenantImportService = tenantImportService;
+    this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override
