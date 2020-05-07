@@ -132,7 +132,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
 
   @Override
   protected void configure() {
-    final var waitStrategy =
+    final HttpWaitStrategy waitStrategy =
         new HttpWaitStrategy()
             .forPort(DEFAULT_HTTP_PORT)
             .forStatusCodeMatching(status -> status == HTTP_OK || status == HTTP_UNAUTHORIZED);
