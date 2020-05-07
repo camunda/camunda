@@ -18,7 +18,15 @@ public class ElasticsearchExporterConfiguration {
 
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
-  public final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+  private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+
+  public boolean hasAuthenticationPresent() {
+    return getAuthentication().isPresent();
+  }
+
+  public AuthenticationConfiguration getAuthentication() {
+    return authentication;
+  }
 
   @Override
   public String toString() {
@@ -30,8 +38,6 @@ public class ElasticsearchExporterConfiguration {
         + index
         + ", bulk="
         + bulk
-        + ", authentication="
-        + authentication
         + '}';
   }
 
@@ -168,16 +174,27 @@ public class ElasticsearchExporterConfiguration {
   }
 
   public static class AuthenticationConfiguration {
-    public String username;
-    public String password;
+    private String username;
+    private String password;
 
     public boolean isPresent() {
       return (username != null && !username.isEmpty()) && (password != null && !password.isEmpty());
     }
 
-    @Override
-    public String toString() {
-      return "AuthenticationConfiguration{" + "username='" + username + '\'' + '}';
+    public String getUsername() {
+      return username;
+    }
+
+    public void setUsername(final String username) {
+      this.username = username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+    public void setPassword(final String password) {
+      this.password = password;
     }
 
     @Override
