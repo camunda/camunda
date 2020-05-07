@@ -8,7 +8,7 @@ package org.camunda.optimize.service.security;
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;

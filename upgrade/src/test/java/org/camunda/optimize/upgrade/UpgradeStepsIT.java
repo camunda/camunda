@@ -199,7 +199,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     final List<String> indicesWithWriteAlias = aliasMap.entrySet()
       .stream()
       .filter(e -> e.getValue().removeIf(AliasMetaData::writeIndex))
-      .map(e -> e.getKey())
+      .map(Map.Entry::getKey)
       .collect(toList());
     Map<?, ?> mappingFields = getMappingFields();
 
@@ -262,7 +262,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void executeDeleteDataStep() throws Exception {
+  public void executeDeleteByQueryDataStep() throws Exception {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
@@ -415,6 +415,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     return new UpdateIndexStep(index, null);
   }
 
+  @SuppressWarnings("SameParameterValue")
   private String getTestIndexName(final IndexMappingCreator index) {
     return OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion(
       indexNameService.getOptimizeIndexAliasForIndex(index.getIndexName()),
@@ -437,6 +438,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     );
   }
 
+  @SuppressWarnings("SameParameterValue")
   private DeleteIndexIfExistsStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
     return new DeleteIndexIfExistsStep(indexMapping);
   }
@@ -450,7 +452,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .getAlias(aliasesRequest, RequestOptions.DEFAULT)
         .getAliases();
     } catch (IOException e) {
-      String message = String.format("Could not retrieve alias map for alias {}.", aliasName);
+      String message = String.format("Could not retrieve alias map for alias {%s}.", aliasName);
       throw new OptimizeRuntimeException(message, e);
     }
   }

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.decision.frequency;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;

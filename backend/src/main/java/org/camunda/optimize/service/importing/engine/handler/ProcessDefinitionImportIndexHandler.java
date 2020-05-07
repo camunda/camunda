@@ -5,25 +5,17 @@
  */
 package org.camunda.optimize.service.importing.engine.handler;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessDefinitionImportIndexHandler extends AllEntitiesBasedImportIndexHandler {
+public class ProcessDefinitionImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
 
-  private Set<String> alreadyImportedIds = new HashSet<>();
+  private static final String PROCESS_DEFINITION_IMPORT_INDEX_DOC_ID = "processDefinitionImportIndex";
 
   private final EngineContext engineContext;
 
@@ -37,25 +29,7 @@ public class ProcessDefinitionImportIndexHandler extends AllEntitiesBasedImportI
   }
 
   @Override
-  protected String getElasticsearchImportIndexType() {
-    return ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-  }
-
-  public void addImportedDefinitions(Collection<ProcessDefinitionEngineDto> definitions) {
-    definitions.forEach(d -> alreadyImportedIds.add(d.getId()));
-    moveImportIndex(definitions.size());
-  }
-
-  public List<ProcessDefinitionEngineDto> filterNewDefinitions(List<ProcessDefinitionEngineDto> engineEntities) {
-    return engineEntities
-      .stream()
-      .filter(def -> !alreadyImportedIds.contains(def.getId()))
-      .collect(Collectors.toList());
-  }
-
-  @Override
-  public void resetImportIndex() {
-    super.resetImportIndex();
-    alreadyImportedIds.clear();
+  protected String getElasticsearchDocID() {
+    return PROCESS_DEFINITION_IMPORT_INDEX_DOC_ID;
   }
 }

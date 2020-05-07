@@ -21,6 +21,7 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
@@ -67,6 +68,7 @@ public abstract class AbstractUpgradeIT {
   protected static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
   protected static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
   protected static final TimestampBasedImportIndex TIMESTAMP_BASED_IMPORT_INDEX = new TimestampBasedImportIndex();
+  protected static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
 
   protected static final EventIndexV1 EVENT_INDEX_V1 = new EventIndexV1();
   protected static final EventSequenceCountIndexV1 EVENT_SEQUENCE_COUNT_INDEX_V1 = new EventSequenceCountIndexV1();

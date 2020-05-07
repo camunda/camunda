@@ -6,7 +6,7 @@
 package org.camunda.optimize.plugin.adapter.variable;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;

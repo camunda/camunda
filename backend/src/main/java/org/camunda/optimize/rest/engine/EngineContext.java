@@ -47,6 +47,9 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_BY;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_ASC;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.USER_BY_ID_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.USER_COUNT_ENDPOINT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.USER_ENDPOINT;
@@ -267,8 +270,8 @@ public class EngineContext {
     Response response = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .queryParam(MAX_RESULTS_TO_RETURN, pageLimit)
-      .queryParam("sortBy", "id")
-      .queryParam("sortOrder", "asc")
+      .queryParam(SORT_BY, "id")
+      .queryParam(SORT_ORDER, SORT_ORDER_ASC)
       .queryParam(INDEX_OF_FIRST_RESULT, pageStartIndex)
       .path(GROUP_ENDPOINT)
       .request(MediaType.APPLICATION_JSON)

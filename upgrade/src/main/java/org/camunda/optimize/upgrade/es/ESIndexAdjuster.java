@@ -13,7 +13,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -324,7 +323,7 @@ public class ESIndexAdjuster {
         .getAlias(aliasesRequest, RequestOptions.DEFAULT)
         .getAliases();
     } catch (IOException e) {
-      String message = String.format("Could not retrieve alias map for alias {}.", aliasName);
+      String message = String.format("Could not retrieve alias map for alias {%s}.", aliasName);
       throw new OptimizeRuntimeException(message, e);
     }
   }
@@ -340,7 +339,7 @@ public class ESIndexAdjuster {
         .map(AliasMetaData::alias)
         .collect(Collectors.toSet());
     } catch (IOException e) {
-      String message = String.format("Could not retrieve existing aliases for {}.", indexName);
+      String message = String.format("Could not retrieve existing aliases for {%s}.", indexName);
       throw new OptimizeRuntimeException(message, e);
     }
   }
@@ -359,7 +358,6 @@ public class ESIndexAdjuster {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public void updateDataByIndexName(final String indexName,
                                     final QueryBuilder query,
                                     final String updateScript,
@@ -381,7 +379,7 @@ public class ESIndexAdjuster {
           // this conversion seems redundant but it's not
           // in case the values are specific dto objects this ensures they get converted to generic objects
           // that the elasticsearch client is happy to serialize while it complains on specific DTO's
-          .map(value -> (Map<String, Object>) objectMapper.convertValue(
+          .map(value -> objectMapper.convertValue(
             value,
             new TypeReference<Map<String, Object>>() {
             }

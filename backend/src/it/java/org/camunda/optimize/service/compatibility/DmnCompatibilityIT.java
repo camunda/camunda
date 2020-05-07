@@ -7,7 +7,7 @@ package org.camunda.optimize.service.compatibility;
 
 import com.google.common.collect.ImmutableMap;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;

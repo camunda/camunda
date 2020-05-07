@@ -7,7 +7,7 @@ package org.camunda.optimize.service.alert;
 
 import com.icegreen.greenmail.util.GreenMail;
 import org.camunda.optimize.AbstractAlertIT;
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;

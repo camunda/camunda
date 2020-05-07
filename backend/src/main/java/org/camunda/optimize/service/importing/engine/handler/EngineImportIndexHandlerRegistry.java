@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogInstanceFetcher;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -40,8 +39,8 @@ public class EngineImportIndexHandlerRegistry {
 
   public List<TimestampBasedEngineImportIndexHandler> getTimestampEngineBasedHandlers(String engineAlias) {
     List<TimestampBasedEngineImportIndexHandler> result = new ArrayList<>();
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider =
+      engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
       result = engineImportIndexHandlerProvider.getTimestampBasedEngineHandlers();
     }

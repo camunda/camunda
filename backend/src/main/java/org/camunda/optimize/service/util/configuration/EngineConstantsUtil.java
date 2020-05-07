@@ -10,10 +10,17 @@ public class EngineConstantsUtil {
   public static final String MAX_RESULTS_TO_RETURN = "maxResults";
   public static final String INDEX_OF_FIRST_RESULT = "firstResult";
 
+  public static final String SORT_BY = "sortBy";
+  public static final String SORT_ORDER = "sortOrder";
+  public static final String SORT_ORDER_ASC = "asc";
+
   public static final String ID = "id";
 
   public static final String FINISHED_AFTER = "finishedAfter";
   public static final String FINISHED_AT = "finishedAt";
+
+  public static final String DEPLOYED_AFTER = "deployedAfter";
+  public static final String DEPLOYED_AT = "deployedAt";
 
   public static final String STARTED_AFTER = "startedAfter";
   public static final String STARTED_AT = "startedAt";
@@ -35,6 +42,9 @@ public class EngineConstantsUtil {
   public static final String USER_OPERATION_LOG_ENDPOINT = "/optimize/user-operation";
   public static final String TENANT_ENDPOINT = "/tenant";
   public static final String VERSION_ENDPOINT = "/version";
+  public static final String PROCESS_DEFINITION_ENDPOINT = "/process-definition";
+  public static final String DECISION_DEFINITION_ENDPOINT = "/decision-definition";
+  public static final String DEPLOYMENT_ENDPOINT_TEMPLATE = "/deployment/{id}";
 
   public static final String DECISION_INSTANCE_ENDPOINT = "/optimize/decision-instance";
 

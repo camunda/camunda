@@ -40,7 +40,8 @@ public class DeleteCamundaTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
       SINGLE_PROCESS_REPORT_INDEX,
       SINGLE_DECISION_REPORT_INDEX,
       COMBINED_REPORT_INDEX,
-      TIMESTAMP_BASED_IMPORT_INDEX
+      TIMESTAMP_BASED_IMPORT_INDEX,
+      IMPORT_INDEX_INDEX
     ));
     setMetadataIndexVersion(FROM_VERSION);
 

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.AbstractAlertIT;
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;

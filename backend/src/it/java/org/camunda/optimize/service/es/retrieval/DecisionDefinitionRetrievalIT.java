@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.junit.jupiter.api.Test;
@@ -147,8 +147,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DmnModelInstance modelInstance2 = createSimpleDmnModel(decisionDefinitionKey);
     modelInstance2.getDefinitions().getDrgElements().stream().findFirst()
       .ifPresent(drgElement -> drgElement.setName("Add name to ensure that this is the latest version!"));
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto2 =
-      engineIntegrationExtension.deployDecisionDefinition(modelInstance2);
+    engineIntegrationExtension.deployDecisionDefinition(modelInstance2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

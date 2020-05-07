@@ -3,28 +3,27 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.engine;
+package org.camunda.optimize.dto.engine.definition;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-import java.io.Serializable;
 import java.util.Optional;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class DecisionDefinitionEngineDto implements Serializable, EngineDto {
+public class ProcessDefinitionEngineDto extends DefinitionEngineDto {
 
-  protected String id;
   protected String key;
   protected String category;
+  protected String description;
   protected String name;
   protected int version;
   protected String resource;
-  protected String deploymentId;
+  protected String diagram;
+  protected boolean suspended;
   protected String tenantId;
-  protected String decisionRequirementsDefinitionId;
-  protected String decisionRequirementsDefinitionKey;
-  protected Integer historyTimeToLive;
   protected String versionTag;
 
   @JsonIgnore

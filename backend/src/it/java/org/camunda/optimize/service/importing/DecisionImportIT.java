@@ -7,9 +7,9 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
@@ -23,26 +23,25 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
+import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
+import static org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler.DECISION_DEFINITION_IMPORT_INDEX_DOC_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
@@ -159,14 +158,20 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinition();
     engineIntegrationExtension.deployDecisionDefinition();
 
-    //when
+    // when
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
-    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(3L));
+    // then
+    assertThat(getDecisionDefinitionCount()).isEqualTo(2L);
+
+    // when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(getDecisionDefinitionCount()).isEqualTo(3L);
   }
 
   @Test
@@ -182,9 +187,9 @@ public class DecisionImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID)).isEqualTo(tenantId);
   }
 
   @Test
@@ -201,9 +206,9 @@ public class DecisionImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID)).isEqualTo(tenantId);
   }
 
   @Test
@@ -221,9 +226,9 @@ public class DecisionImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(expectedTenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID)).isEqualTo(expectedTenantId);
   }
 
   @Test
@@ -238,10 +243,10 @@ public class DecisionImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
 
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertDecisionInstanceFieldSetAsExpected(hit, false);
+    assertDecisionInstanceFieldSetAsExpected(hit);
   }
 
   @Test
@@ -260,9 +265,9 @@ public class DecisionImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID)).isEqualTo(tenantId);
   }
 
   @Test
@@ -279,9 +284,9 @@ public class DecisionImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID)).isEqualTo(tenantId);
   }
 
   @Test
@@ -302,9 +307,9 @@ public class DecisionImportIT extends AbstractImportIT {
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(expectedTenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID)).isEqualTo(expectedTenantId);
   }
 
   @Test
@@ -336,20 +341,19 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // then
     SearchResponse searchDecisionInstanceTimestampBasedIndexResponse = getDecisionInstanceIndexResponse();
-    assertThat(searchDecisionInstanceTimestampBasedIndexResponse.getHits().getTotalHits().value, is(1L));
+    assertThat(searchDecisionInstanceTimestampBasedIndexResponse.getHits().getTotalHits().value).isEqualTo(1L);
     final TimestampBasedImportIndexDto decisionInstanceDto = parseToDto(
       searchDecisionInstanceTimestampBasedIndexResponse.getHits().getHits()[0], TimestampBasedImportIndexDto.class
     );
-    assertThat(decisionInstanceDto.getTimestampOfLastEntity(), is(lessThan(OffsetDateTime.now())));
+    assertThat(decisionInstanceDto.getTimestampOfLastEntity()).isBefore(OffsetDateTime.now());
 
-    final String decisionDefinitionIndexId = DECISION_DEFINITION_INDEX_NAME + "-1";
-    SearchResponse searchDecisionDefinitionIndexResponse = getDecisionDefinitionIndexById(decisionDefinitionIndexId);
-    assertThat(searchDecisionDefinitionIndexResponse.getHits().getTotalHits().value, is(1L));
-    final AllEntitiesBasedImportIndexDto definitionImportIndex = parseToDto(
+    SearchResponse searchDecisionDefinitionIndexResponse = getDecisionDefinitionIndexById();
+    assertThat(searchDecisionDefinitionIndexResponse.getHits().getTotalHits().value).isEqualTo(1L);
+    final TimestampBasedImportIndexDto definitionImportIndex = parseToDto(
       searchDecisionDefinitionIndexResponse.getHits().getHits()[0],
-      AllEntitiesBasedImportIndexDto.class
+      TimestampBasedImportIndexDto.class
     );
-    assertThat(definitionImportIndex.getImportIndex(), is(3L));
+    assertThat(definitionImportIndex.getEsTypeIndexRefersTo()).isEqualTo(DECISION_DEFINITION_IMPORT_INDEX_DOC_ID);
   }
 
   @Test
@@ -371,13 +375,36 @@ public class DecisionImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(originalMaxPageSize);
   }
 
-  private SearchResponse getDecisionDefinitionIndexById(final String decisionDefinitionIndexId) throws IOException {
+  @Test
+  public void definitionImportWorksEvenIfDeploymentRequestFails() {
+    // given
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+      .withMethod(GET);
+    engineMockServer
+      .when(requestMatcher, Times.exactly(1))
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    List<DecisionDefinitionOptimizeDto> decisionDefinitions = definitionClient.getAllDecisionDefinitions();
+    assertThat(decisionDefinitions).hasSize(1);
+  }
+
+  private SearchResponse getDecisionDefinitionIndexById() throws IOException {
+    final String decisionDefinitionIndexId = DECISION_DEFINITION_IMPORT_INDEX_DOC_ID + "-1";
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termsQuery("_id", decisionDefinitionIndexId))
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(IMPORT_INDEX_INDEX_NAME)
+      .indices(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
@@ -406,62 +433,61 @@ public class DecisionImportIT extends AbstractImportIT {
     }
   }
 
-  @Override
-  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                               final long count) {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, count, false);
-  }
-
-  private void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                             final long count,
-                                                             final boolean expectTenant) {
+  public void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
+                                                            final long count) {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
-    assertThat(idsResp.getHits().getTotalHits().value, is(count));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(count);
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       // in this test suite we only care about decision types, no asserts besides count on others
       if (DECISION_INSTANCE_INDEX_NAME.equals(elasticsearchIndex)) {
-        assertDecisionInstanceFieldSetAsExpected(searchHit, expectTenant);
+        assertDecisionInstanceFieldSetAsExpected(searchHit);
       } else if (DECISION_DEFINITION_INDEX_NAME.equals(elasticsearchIndex)) {
         assertAllFieldsSet(DECISION_DEFINITION_NULLABLE_FIELDS, searchHit);
       }
     }
   }
 
-  private void assertDecisionInstanceFieldSetAsExpected(final SearchHit hit, final boolean expectTenant) {
+  private long getDecisionDefinitionCount() {
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
+    return idsResp.getHits().getTotalHits().value;
+  }
+
+  private void assertDecisionInstanceFieldSetAsExpected(final SearchHit hit) {
     final DecisionInstanceDto dto = parseToDto(hit, DecisionInstanceDto.class);
-    assertThat(dto.getProcessDefinitionId(), is(nullValue()));
-    assertThat(dto.getProcessDefinitionKey(), is(nullValue()));
-    assertThat(dto.getDecisionDefinitionId(), is(notNullValue()));
-    assertThat(dto.getDecisionDefinitionKey(), is(notNullValue()));
-    assertThat(dto.getDecisionDefinitionVersion(), is(notNullValue()));
-    assertThat(dto.getEvaluationDateTime(), is(notNullValue()));
-    assertThat(dto.getProcessInstanceId(), is(nullValue()));
-    assertThat(dto.getRootProcessInstanceId(), is(nullValue()));
-    assertThat(dto.getActivityId(), is(nullValue()));
-    assertThat(dto.getCollectResultValue(), is(nullValue()));
-    assertThat(dto.getRootDecisionInstanceId(), is(nullValue()));
-    assertThat(dto.getInputs().size(), is(2));
+    assertThat(dto.getProcessDefinitionId()).isNull();
+    assertThat(dto.getProcessDefinitionKey()).isNull();
+    assertThat(dto.getDecisionDefinitionId()).isNotNull();
+    assertThat(dto.getDecisionDefinitionKey()).isNotNull();
+    assertThat(dto.getDecisionDefinitionVersion()).isNotNull();
+    assertThat(dto.getEvaluationDateTime()).isNotNull();
+    assertThat(dto.getProcessInstanceId()).isNull();
+    assertThat(dto.getRootProcessInstanceId()).isNull();
+    assertThat(dto.getActivityId()).isNull();
+    assertThat(dto.getCollectResultValue()).isNull();
+    assertThat(dto.getRootDecisionInstanceId()).isNull();
+    assertThat(dto.getInputs().size()).isEqualTo(2);
     dto.getInputs().forEach(inputInstanceDto -> {
-      assertThat(inputInstanceDto.getId(), is(notNullValue()));
-      assertThat(inputInstanceDto.getClauseId(), is(notNullValue()));
-      assertThat(inputInstanceDto.getClauseName(), is(notNullValue()));
-      assertThat(inputInstanceDto.getType(), is(notNullValue()));
-      assertThat(inputInstanceDto.getValue(), is(notNullValue()));
+      assertThat(inputInstanceDto.getId()).isNotNull();
+      assertThat(inputInstanceDto.getClauseId()).isNotNull();
+      assertThat(inputInstanceDto.getClauseName()).isNotNull();
+      assertThat(inputInstanceDto.getType()).isNotNull();
+      assertThat(inputInstanceDto.getValue()).isNotNull();
     });
-    assertThat(dto.getOutputs().size(), is(2));
+    assertThat(dto.getOutputs().size()).isEqualTo(2);
     dto.getOutputs().forEach(outputInstanceDto -> {
-      assertThat(outputInstanceDto.getId(), is(notNullValue()));
-      assertThat(outputInstanceDto.getClauseId(), is(notNullValue()));
-      assertThat(outputInstanceDto.getClauseName(), is(notNullValue()));
-      assertThat(outputInstanceDto.getType(), is(notNullValue()));
-      assertThat(outputInstanceDto.getValue(), is(notNullValue()));
-      assertThat(outputInstanceDto.getRuleId(), is(notNullValue()));
-      assertThat(outputInstanceDto.getRuleOrder(), is(notNullValue()));
+      assertThat(outputInstanceDto.getId()).isNotNull();
+      assertThat(outputInstanceDto.getClauseId()).isNotNull();
+      assertThat(outputInstanceDto.getClauseName()).isNotNull();
+      assertThat(outputInstanceDto.getType()).isNotNull();
+      assertThat(outputInstanceDto.getValue()).isNotNull();
+      assertThat(outputInstanceDto.getRuleId()).isNotNull();
+      assertThat(outputInstanceDto.getRuleOrder()).isNotNull();
     });
-    assertThat(dto.getEngine(), is(notNullValue()));
-    assertThat(dto.getTenantId(), is(expectTenant ? notNullValue() : nullValue()));
+    assertThat(dto.getEngine()).isNotNull();
+    assertThat(dto.getTenantId()).isNull();
   }
 
 }

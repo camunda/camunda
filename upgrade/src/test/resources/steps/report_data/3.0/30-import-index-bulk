@@ -1,0 +1,6 @@
+{"index":{"_index":"optimize-import-index_v2","_type":"_doc","_id":"decision-definition-camunda-bpm"}}
+{ "engine": "camunda-bpm", "importIndex": 4}
+{"index":{"_index":"optimize-import-index_v2","_type":"_doc","_id":"process-definition-camunda-bpm"}}
+{ "engine": "camunda-bpm", "importIndex": 3}
+{"index":{"_index":"optimize-import-index_v2","_type":"_doc","_id":"tenant-camunda-bpm"}}
+{ "engine": "camunda-bpm", "importIndex": 0}

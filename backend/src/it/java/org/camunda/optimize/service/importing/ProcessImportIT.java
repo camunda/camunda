@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -25,6 +25,11 @@ import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -35,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
@@ -45,6 +51,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEF
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+import static org.mockserver.model.HttpRequest.request;
 
 public class ProcessImportIT extends AbstractImportIT {
 
@@ -168,14 +175,20 @@ public class ProcessImportIT extends AbstractImportIT {
     deploySimpleProcess();
     deploySimpleProcess();
 
-    //when
+    // when
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
-    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(3L);
+    // then
+    assertThat(getProcessDefinitionCount()).isEqualTo(2L);
+
+    // when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(getProcessDefinitionCount()).isEqualTo(3L);
   }
 
   @Test
@@ -513,6 +526,28 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void definitionImportWorksEvenIfDeploymentRequestFails() {
+    // given
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+      .withMethod(GET);
+    engineMockServer
+      .when(requestMatcher, Times.exactly(1))
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    List<ProcessDefinitionOptimizeDto> processDefinitions = definitionClient.getAllProcessDefinitions();
+    assertThat(processDefinitions).hasSize(1);
+  }
+
+  @Test
   public void doNotSkipProcessInstancesWithSameEndTime() throws Exception {
     // given
     int originalMaxPageSize = embeddedOptimizeExtension.getConfigurationService()
@@ -600,6 +635,12 @@ public class ProcessImportIT extends AbstractImportIT {
     engineIntegrationExtension.deleteHistoricProcessInstance(firstProcInst.getId());
     engineIntegrationExtension.deleteHistoricProcessInstance(secondProcInst.getId());
     return firstProcInst;
+  }
+
+  private long getProcessDefinitionCount() {
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
+    return idsResp.getHits().getTotalHits().value;
   }
 
   private void deploySimpleProcess() {

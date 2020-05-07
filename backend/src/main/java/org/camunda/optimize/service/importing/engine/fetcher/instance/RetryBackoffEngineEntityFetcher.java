@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Scope;
 import javax.ws.rs.ClientErrorException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> extends EngineEntityFetcher {
@@ -27,11 +28,11 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
     super(engineContext);
   }
 
-  protected List<ENG> fetchWithRetry(FetcherFunction<ENG> fetchFunction) {
-    List<ENG> result = null;
+  protected <DTOS> DTOS fetchWithRetry(Supplier<DTOS> fetchFunction) {
+    DTOS result = null;
     while (result == null) {
       try {
-        result = fetchFunction.fetch();
+        result = fetchFunction.get();
       } catch (Exception exception) {
         logError(exception);
         long timeToSleep = backoffCalculator.calculateSleepTime();
@@ -43,11 +44,11 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
     return result;
   }
 
-  protected List<ENG> fetchWithRetryIgnoreClientError(FetcherFunction<ENG> fetchFunction) {
+  protected List<ENG> fetchWithRetryIgnoreClientError(Supplier<List<ENG>> fetchFunction) {
     List<ENG> result = null;
     while (result == null) {
       try {
-        result = fetchFunction.fetch();
+        result = fetchFunction.get();
       } catch (Exception exception) {
         if (exception instanceof ClientErrorException) {
           logger.warn("ClientError on fetching entity: {}", exception.getMessage(), exception);
@@ -62,11 +63,6 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
     }
     backoffCalculator.resetBackoff();
     return result;
-  }
-
-  @FunctionalInterface
-  public interface FetcherFunction<ENG> {
-    List<ENG> fetch();
   }
 
   public void setBackoffCalculator(final BackoffCalculator backoffCalculator) {

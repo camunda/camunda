@@ -185,7 +185,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     SearchResponse searchResponse = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
 
-    assertThat(searchResponse.getHits().getTotalHits().value, is(20L));
+    assertThat(searchResponse.getHits().getTotalHits().value, is(24L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String typeName = searchHit.getSourceAsMap().get(ES_TYPE_INDEX_REFERS_TO).toString();
       String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();

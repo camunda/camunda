@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
-import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
-import org.camunda.optimize.service.importing.BackoffImportMediator;
-import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionFetcher;
+import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
+import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionImportService;
@@ -19,20 +19,21 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.time.OffsetDateTime;
 import java.util.List;
+
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionEngineImportMediator
-  extends BackoffImportMediator<DecisionDefinitionImportIndexHandler> {
-
-  @Autowired
-  private DecisionDefinitionWriter processDefinitionWriter;
-  @Autowired
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
+  extends TimestampBasedImportMediator<DecisionDefinitionImportIndexHandler, DecisionDefinitionEngineDto> {
 
   private DecisionDefinitionFetcher engineEntityFetcher;
-  private DecisionDefinitionImportService definitionImportService;
+
+  @Autowired
+  private DecisionDefinitionWriter decisionDefinitionWriter;
+  @Autowired
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private final EngineContext engineContext;
 
@@ -42,26 +43,31 @@ public class DecisionDefinitionEngineImportMediator
 
   @PostConstruct
   public void init() {
-    importIndexHandler = importIndexHandlerRegistry.getDecisionDefinitionImportIndexHandler(engineContext.getEngineAlias());
+    importIndexHandler =
+      importIndexHandlerRegistry.getDecisionDefinitionImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(DecisionDefinitionFetcher.class, engineContext);
-    definitionImportService = new DecisionDefinitionImportService(
-      elasticsearchImportJobExecutor, engineContext, processDefinitionWriter
+    importService = new DecisionDefinitionImportService(
+      elasticsearchImportJobExecutor, engineContext, decisionDefinitionWriter
     );
   }
 
   @Override
-  protected boolean importNextPage(final Runnable importCompleteCallback) {
-    List<DecisionDefinitionEngineDto> entities = engineEntityFetcher.fetchDecisionDefinitions();
-    List<DecisionDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
-
-    if (!newEntities.isEmpty()) {
-      definitionImportService.executeImport(newEntities, importCompleteCallback);
-      importIndexHandler.addImportedDefinitions(newEntities);
-    } else {
-      importCompleteCallback.run();
-    }
-
-    return !newEntities.isEmpty();
+  protected OffsetDateTime getTimestamp(final DecisionDefinitionEngineDto definitionEngineDto) {
+    return definitionEngineDto.getDeploymentTime();
   }
 
+  @Override
+  protected List<DecisionDefinitionEngineDto> getEntitiesNextPage() {
+    return engineEntityFetcher.fetchDefinitions(importIndexHandler.getNextPage());
+  }
+
+  @Override
+  protected List<DecisionDefinitionEngineDto> getEntitiesLastTimestamp() {
+    return engineEntityFetcher.fetchDefinitionsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+  }
+
+  @Override
+  protected int getMaxPageSize() {
+    return configurationService.getEngineImportDecisionDefinitionMaxPageSize();
+  }
 }

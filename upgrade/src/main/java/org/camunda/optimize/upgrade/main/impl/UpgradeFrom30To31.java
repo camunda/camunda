@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -17,17 +18,27 @@ import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -55,12 +66,37 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateAxisLabels(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateAxisLabels(COMBINED_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateProcessReportDateVariableFilter())
-      .addUpgradeStep(migrateDecisionReportDateVariableFilter());
+      .addUpgradeStep(migrateDecisionReportDateVariableFilter())
+      .addUpgradeStep(deleteDeprecatedDefinitionImportIndexDocument());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteCamundaTraceStateIndices(upgradeBuilder);
     deleteCamundaSequenceCountIndices(upgradeBuilder);
     upgradeBuilder.addUpgradeStep(deleteCamundaTraceStateImportIndexData());
     return upgradeBuilder.build();
+  }
+
+  private UpgradeStep deleteDeprecatedDefinitionImportIndexDocument() {
+    return new DeleteDataStep(
+      IMPORT_INDEX_INDEX_NAME,
+      QueryBuilders.idsQuery()
+        .addIds(retrieveImportIndexDefinitionDocumentIds())
+    );
+  }
+
+  private String[] retrieveImportIndexDefinitionDocumentIds() {
+    try {
+      SearchRequest searchRequest = new SearchRequest(IMPORT_INDEX_INDEX_NAME).source(
+        new SearchSourceBuilder().query(QueryBuilders.matchAllQuery())
+      );
+      final SearchResponse search = upgradeDependencies.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+      return Arrays.stream(search.getHits().getHits())
+        .map(SearchHit::getId)
+        .filter(id -> id.startsWith(PROCESS_DEFINITION_INDEX_NAME) || id.startsWith(DECISION_DEFINITION_INDEX_NAME))
+        .toArray(String[]::new);
+    } catch (IOException e) {
+      String errorMessage = "Optimize was not able to retrieve import index data from Elasticsearch!";
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
   }
 
   private UpgradeStep migrateProcessReportDateVariableFilter() {

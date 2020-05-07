@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.importing.BackoffImportMediator;
-import org.camunda.optimize.service.importing.engine.fetcher.instance.ProcessDefinitionFetcher;
+import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
+import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionImportService;
@@ -19,15 +19,15 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionEngineImportMediator
-  extends BackoffImportMediator<ProcessDefinitionImportIndexHandler> {
+  extends TimestampBasedImportMediator<ProcessDefinitionImportIndexHandler, ProcessDefinitionEngineDto> {
 
   private ProcessDefinitionFetcher engineEntityFetcher;
-  private ProcessDefinitionImportService definitionImportService;
 
   @Autowired
   private ProcessDefinitionWriter processDefinitionWriter;
@@ -45,24 +45,28 @@ public class ProcessDefinitionEngineImportMediator
     importIndexHandler =
       importIndexHandlerRegistry.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(ProcessDefinitionFetcher.class, engineContext);
-    definitionImportService = new ProcessDefinitionImportService(
+    importService = new ProcessDefinitionImportService(
       elasticsearchImportJobExecutor, engineContext, processDefinitionWriter
     );
   }
 
   @Override
-  protected boolean importNextPage(final Runnable importCompleteCallback) {
-    List<ProcessDefinitionEngineDto> entities = engineEntityFetcher.fetchProcessDefinitions();
-    List<ProcessDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
-
-    if (!newEntities.isEmpty()) {
-      definitionImportService.executeImport(newEntities, importCompleteCallback);
-      importIndexHandler.addImportedDefinitions(newEntities);
-    } else {
-      importCompleteCallback.run();
-    }
-
-    return !newEntities.isEmpty();
+  protected OffsetDateTime getTimestamp(final ProcessDefinitionEngineDto processDefinitionEngineDto) {
+    return processDefinitionEngineDto.getDeploymentTime();
   }
 
+  @Override
+  protected List<ProcessDefinitionEngineDto> getEntitiesNextPage() {
+    return engineEntityFetcher.fetchDefinitions(importIndexHandler.getNextPage());
+  }
+
+  @Override
+  protected List<ProcessDefinitionEngineDto> getEntitiesLastTimestamp() {
+    return engineEntityFetcher.fetchDefinitionsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+  }
+
+  @Override
+  protected int getMaxPageSize() {
+    return configurationService.getEngineImportProcessDefinitionMaxPageSize();
+  }
 }
