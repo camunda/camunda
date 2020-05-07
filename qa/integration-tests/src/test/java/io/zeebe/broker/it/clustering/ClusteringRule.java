@@ -94,7 +94,7 @@ public class ClusteringRule extends ExternalResource {
     this(3);
   }
 
-  public ClusteringRule(int clusterSize) {
+  public ClusteringRule(final int clusterSize) {
     this(clusterSize, clusterSize, clusterSize);
   }
 
@@ -164,11 +164,19 @@ public class ClusteringRule extends ExternalResource {
       waitUntilBrokersInTopology();
       LOG.info("All brokers in topology {}", getTopologyFromClient());
 
-    } catch (Error e) {
+    } catch (final Error e) {
       // If the previous waits timeouts, the brokers are not closed automatically.
       closeables.after();
       throw e;
     }
+  }
+
+  @Override
+  protected void after() {
+    closeables.after();
+    brokerBases.clear();
+    brokerCfgs.clear();
+    brokers.clear();
   }
 
   public Broker getBroker(final int nodeId) {
@@ -191,7 +199,7 @@ public class ClusteringRule extends ExternalResource {
         });
   }
 
-  private Broker createBroker(int nodeId) {
+  private Broker createBroker(final int nodeId) {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
@@ -199,11 +207,11 @@ public class ClusteringRule extends ExternalResource {
     return broker;
   }
 
-  private BrokerCfg getBrokerCfg(int nodeId) {
+  private BrokerCfg getBrokerCfg(final int nodeId) {
     return brokerCfgs.computeIfAbsent(nodeId, this::createBrokerCfg);
   }
 
-  private BrokerCfg createBrokerCfg(int nodeId) {
+  private BrokerCfg createBrokerCfg(final int nodeId) {
     final BrokerCfg brokerCfg = new BrokerCfg();
 
     // build-in exporters
@@ -236,11 +244,11 @@ public class ClusteringRule extends ExternalResource {
     return brokerCfg;
   }
 
-  private File getBrokerBase(int nodeId) {
+  private File getBrokerBase(final int nodeId) {
     return brokerBases.computeIfAbsent(nodeId, this::createBrokerBase);
   }
 
-  private File createBrokerBase(int nodeId) {
+  private File createBrokerBase(final int nodeId) {
     final File base = Files.newTemporaryFolder();
     closeables.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
     return base;
@@ -284,14 +292,6 @@ public class ClusteringRule extends ExternalResource {
         ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).build();
     closeables.manage(client);
     return client;
-  }
-
-  @Override
-  protected void after() {
-    closeables.after();
-    brokerBases.clear();
-    brokerCfgs.clear();
-    brokers.clear();
   }
 
   private void waitUntilBrokersInTopology() {
@@ -461,6 +461,10 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public void stopBroker(final int nodeId) {
+    stopBroker(nodeId, true);
+  }
+
+  public void stopBroker(final int nodeId, final boolean shouldWaitForNewLeader) {
     final Broker broker = brokers.remove(nodeId);
     if (broker != null) {
       final SocketAddress socketAddress =
@@ -469,7 +473,9 @@ public class ClusteringRule extends ExternalResource {
       broker.close();
 
       waitUntilBrokerIsRemovedFromTopology(socketAddress);
-      waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
+      if (shouldWaitForNewLeader) {
+        waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
+      }
     }
   }
 
@@ -505,7 +511,7 @@ public class ClusteringRule extends ExternalResource {
         getTopologyFromClient());
   }
 
-  public long createWorkflowInstanceOnPartition(int partitionId, String bpmnProcessId) {
+  public long createWorkflowInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
     final BrokerCreateWorkflowInstanceRequest request =
         new BrokerCreateWorkflowInstanceRequest().setBpmnProcessId(bpmnProcessId);
 
@@ -547,14 +553,14 @@ public class ClusteringRule extends ExternalResource {
     return partitionIds;
   }
 
-  public List<Broker> getOtherBrokerObjects(int leaderNodeId) {
+  public List<Broker> getOtherBrokerObjects(final int leaderNodeId) {
     return brokers.keySet().stream()
         .filter(id -> id != leaderNodeId)
         .map(brokers::get)
         .collect(Collectors.toList());
   }
 
-  public <S> S getService(final ServiceName<S> serviceName, int nodeId) {
+  public <S> S getService(final ServiceName<S> serviceName, final int nodeId) {
     final Broker broker = getBroker(nodeId);
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 

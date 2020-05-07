@@ -89,16 +89,16 @@ public class GrpcClientRule extends ExternalResource {
         .collect(Collectors.toList());
   }
 
-  public long createSingleJob(String type) {
+  public long createSingleJob(final String type) {
     return createSingleJob(type, b -> {}, "{}");
   }
 
-  public long createSingleJob(String type, Consumer<ServiceTaskBuilder> consumer) {
+  public long createSingleJob(final String type, final Consumer<ServiceTaskBuilder> consumer) {
     return createSingleJob(type, consumer, "{}");
   }
 
   public long createSingleJob(
-      String type, Consumer<ServiceTaskBuilder> consumer, String variables) {
+      final String type, final Consumer<ServiceTaskBuilder> consumer, final String variables) {
     final BpmnModelInstance modelInstance = createSingleJobModelInstance(type, consumer);
     final long workflowKey = deployWorkflow(modelInstance);
     final long workflowInstanceKey = createWorkflowInstance(workflowKey, variables);
@@ -111,7 +111,7 @@ public class GrpcClientRule extends ExternalResource {
   }
 
   public BpmnModelInstance createSingleJobModelInstance(
-      String jobType, Consumer<ServiceTaskBuilder> taskBuilderConsumer) {
+      final String jobType, final Consumer<ServiceTaskBuilder> taskBuilderConsumer) {
     return Bpmn.createExecutableProcess("process")
         .startEvent("start")
         .serviceTask(
@@ -124,7 +124,7 @@ public class GrpcClientRule extends ExternalResource {
         .done();
   }
 
-  public long deployWorkflow(BpmnModelInstance modelInstance) {
+  public long deployWorkflow(final BpmnModelInstance modelInstance) {
     final DeploymentEvent deploymentEvent =
         getClient()
             .newDeployCommand()
@@ -135,7 +135,7 @@ public class GrpcClientRule extends ExternalResource {
     return deploymentEvent.getWorkflows().get(0).getWorkflowKey();
   }
 
-  public long createWorkflowInstance(long workflowKey, String variables) {
+  public long createWorkflowInstance(final long workflowKey, final String variables) {
     return getClient()
         .newCreateInstanceCommand()
         .workflowKey(workflowKey)
@@ -145,7 +145,7 @@ public class GrpcClientRule extends ExternalResource {
         .getWorkflowInstanceKey();
   }
 
-  public long createWorkflowInstance(long workflowKey) {
+  public long createWorkflowInstance(final long workflowKey) {
     return getClient()
         .newCreateInstanceCommand()
         .workflowKey(workflowKey)

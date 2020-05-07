@@ -10,8 +10,10 @@ package io.zeebe.gateway.impl.broker;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.zeebe.transport.impl.IncomingResponse;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public interface BrokerClient extends AutoCloseable {
 
@@ -23,6 +25,12 @@ public interface BrokerClient extends AutoCloseable {
       BrokerRequest<T> request,
       BrokerResponseConsumer<T> responseConsumer,
       Consumer<Throwable> throwableConsumer);
+
+  <T> void sendRequest(
+      BrokerRequest<T> request,
+      BrokerResponseConsumer<T> responseConsumer,
+      Consumer<Throwable> throwableConsumer,
+      Predicate<IncomingResponse> shouldRetryPredicate);
 
   BrokerTopologyManager getTopologyManager();
 }

@@ -19,10 +19,12 @@ import io.zeebe.gateway.cmd.GrpcStatusExceptionImpl;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.zeebe.gateway.impl.job.CreateWorkflowHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -51,6 +53,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.MsgpackPropertyException;
+import io.zeebe.transport.impl.sender.NoRemoteAddressFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -61,11 +64,161 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
   private final ActivateJobsHandler activateJobsHandler;
+  private final CreateWorkflowHandler createWorkflowHandler;
 
   public EndpointManager(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
     this.topologyManager = brokerClient.getTopologyManager();
-    this.activateJobsHandler = new ActivateJobsHandler(brokerClient);
+    this.activateJobsHandler = new ActivateJobsHandler(brokerClient, topologyManager);
+    this.createWorkflowHandler = new CreateWorkflowHandler(brokerClient, topologyManager);
+  }
+
+  private void addBrokerInfo(
+      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
+    final String[] addressParts = topology.getBrokerAddress(brokerId).split(":");
+
+    brokerInfo
+        .setNodeId(brokerId)
+        .setHost(addressParts[0])
+        .setPort(Integer.parseInt(addressParts[1]));
+  }
+
+  private void addPartitionInfoToBrokerInfo(
+      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
+    topology
+        .getPartitions()
+        .forEach(
+            partitionId -> {
+              final Partition.Builder partitionBuilder = Partition.newBuilder();
+              partitionBuilder.setPartitionId(partitionId);
+
+              if (topology.getLeaderForPartition(partitionId) == brokerId) {
+                partitionBuilder.setRole(PartitionBrokerRole.LEADER);
+              } else {
+                final List<Integer> followersForPartition =
+                    topology.getFollowersForPartition(partitionId);
+
+                if (followersForPartition != null && followersForPartition.contains(brokerId)) {
+                  partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);
+                } else {
+                  return;
+                }
+              }
+              brokerInfo.addPartitions(partitionBuilder);
+            });
+  }
+
+  @Override
+  public void activateJobs(
+      final ActivateJobsRequest request,
+      final StreamObserver<ActivateJobsResponse> responseObserver) {
+    final BrokerClusterState topology = topologyManager.getTopology();
+    activateJobsHandler.activateJobs(topology.getPartitionsCount(), request, responseObserver);
+  }
+
+  @Override
+  public void cancelWorkflowInstance(
+      final CancelWorkflowInstanceRequest request,
+      final StreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toCancelWorkflowInstanceRequest,
+        ResponseMapper::toCancelWorkflowInstanceResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void completeJob(
+      final CompleteJobRequest request,
+      final StreamObserver<CompleteJobResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toCompleteJobRequest,
+        ResponseMapper::toCompleteJobResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void createWorkflowInstance(
+      final CreateWorkflowInstanceRequest request,
+      final StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
+    final BrokerCreateWorkflowInstanceRequest brokerRequest;
+    try {
+      brokerRequest = RequestMapper.toCreateWorkflowInstanceRequest(request);
+    } catch (final MsgpackPropertyException e) {
+      responseObserver.onError(
+          convertThrowable(
+              new GrpcStatusExceptionImpl(e.getMessage(), Status.INVALID_ARGUMENT, e)));
+      return;
+    } catch (final Exception e) {
+      responseObserver.onError(convertThrowable(e));
+      return;
+    }
+
+    createWorkflowHandler.createWorkflow(
+        topologyManager.getTopology().getPartitionsCount(),
+        brokerRequest,
+        (key, response) -> {
+          responseObserver.onNext(ResponseMapper.toCreateWorkflowInstanceResponse(key, response));
+          responseObserver.onCompleted();
+        },
+        error -> responseObserver.onError(convertThrowable(error)));
+  }
+
+  @Override
+  public void deployWorkflow(
+      final DeployWorkflowRequest request,
+      final StreamObserver<DeployWorkflowResponse> responseObserver) {
+
+    sendRequest(
+        request,
+        RequestMapper::toDeployWorkflowRequest,
+        ResponseMapper::toDeployWorkflowResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void failJob(
+      final FailJobRequest request, final StreamObserver<FailJobResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toFailJobRequest,
+        ResponseMapper::toFailJobResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void publishMessage(
+      final PublishMessageRequest request,
+      final StreamObserver<PublishMessageResponse> responseObserver) {
+
+    sendRequest(
+        request,
+        RequestMapper::toPublishMessageRequest,
+        ResponseMapper::toPublishMessageResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void resolveIncident(
+      final ResolveIncidentRequest request,
+      final StreamObserver<ResolveIncidentResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toResolveIncidentRequest,
+        ResponseMapper::toResolveIncidentResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void setVariables(
+      final SetVariablesRequest request,
+      final StreamObserver<SetVariablesResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toSetVariablesRequest,
+        ResponseMapper::toSetVariablesResponse,
+        responseObserver);
   }
 
   @Override
@@ -105,138 +258,14 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
   }
 
-  private void addBrokerInfo(Builder brokerInfo, Integer brokerId, BrokerClusterState topology) {
-    final String[] addressParts = topology.getBrokerAddress(brokerId).split(":");
-
-    brokerInfo
-        .setNodeId(brokerId)
-        .setHost(addressParts[0])
-        .setPort(Integer.parseInt(addressParts[1]));
-  }
-
-  private void addPartitionInfoToBrokerInfo(
-      Builder brokerInfo, Integer brokerId, BrokerClusterState topology) {
-    topology
-        .getPartitions()
-        .forEach(
-            partitionId -> {
-              final Partition.Builder partitionBuilder = Partition.newBuilder();
-              partitionBuilder.setPartitionId(partitionId);
-
-              if (topology.getLeaderForPartition(partitionId) == brokerId) {
-                partitionBuilder.setRole(PartitionBrokerRole.LEADER);
-              } else {
-                final List<Integer> followersForPartition =
-                    topology.getFollowersForPartition(partitionId);
-
-                if (followersForPartition != null && followersForPartition.contains(brokerId)) {
-                  partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);
-                } else {
-                  return;
-                }
-              }
-              brokerInfo.addPartitions(partitionBuilder);
-            });
-  }
-
-  @Override
-  public void deployWorkflow(
-      final DeployWorkflowRequest request,
-      final StreamObserver<DeployWorkflowResponse> responseObserver) {
-
-    sendRequest(
-        request,
-        RequestMapper::toDeployWorkflowRequest,
-        ResponseMapper::toDeployWorkflowResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void publishMessage(
-      PublishMessageRequest request, StreamObserver<PublishMessageResponse> responseObserver) {
-
-    sendRequest(
-        request,
-        RequestMapper::toPublishMessageRequest,
-        ResponseMapper::toPublishMessageResponse,
-        responseObserver);
-  }
-
   @Override
   public void updateJobRetries(
-      UpdateJobRetriesRequest request, StreamObserver<UpdateJobRetriesResponse> responseObserver) {
+      final UpdateJobRetriesRequest request,
+      final StreamObserver<UpdateJobRetriesResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toUpdateJobRetriesRequest,
         ResponseMapper::toUpdateJobRetriesResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void createWorkflowInstance(
-      CreateWorkflowInstanceRequest request,
-      StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toCreateWorkflowInstanceRequest,
-        ResponseMapper::toCreateWorkflowInstanceResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void cancelWorkflowInstance(
-      CancelWorkflowInstanceRequest request,
-      StreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toCancelWorkflowInstanceRequest,
-        ResponseMapper::toCancelWorkflowInstanceResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void setVariables(
-      SetVariablesRequest request, StreamObserver<SetVariablesResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toSetVariablesRequest,
-        ResponseMapper::toSetVariablesResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void failJob(FailJobRequest request, StreamObserver<FailJobResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toFailJobRequest,
-        ResponseMapper::toFailJobResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void completeJob(
-      CompleteJobRequest request, StreamObserver<CompleteJobResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toCompleteJobRequest,
-        ResponseMapper::toCompleteJobResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void activateJobs(
-      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
-    final BrokerClusterState topology = topologyManager.getTopology();
-    activateJobsHandler.activateJobs(topology.getPartitionsCount(), request, responseObserver);
-  }
-
-  @Override
-  public void resolveIncident(
-      ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toResolveIncidentRequest,
-        ResponseMapper::toResolveIncidentResponse,
         responseObserver);
   }
 
@@ -249,12 +278,12 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     final BrokerRequest<BrokerResponseT> brokerRequest;
     try {
       brokerRequest = requestMapper.apply(grpcRequest);
-    } catch (MsgpackPropertyException e) {
+    } catch (final MsgpackPropertyException e) {
       streamObserver.onError(
           convertThrowable(
               new GrpcStatusExceptionImpl(e.getMessage(), Status.INVALID_ARGUMENT, e)));
       return;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       streamObserver.onError(convertThrowable(e));
       return;
     }
@@ -269,7 +298,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         error -> streamObserver.onError(convertThrowable(error)));
   }
 
-  private StatusRuntimeException convertThrowable(Throwable cause) {
+  private StatusRuntimeException convertThrowable(final Throwable cause) {
     Status status = Status.INTERNAL;
 
     if (cause instanceof ExecutionException) {
@@ -284,6 +313,10 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       status = Status.UNAVAILABLE.augmentDescription(cause.getMessage());
     } else if (cause instanceof GrpcStatusException) {
       status = ((GrpcStatusException) cause).getGrpcStatus();
+    } else if (cause instanceof NoRemoteAddressFoundException) {
+      status =
+          Status.NOT_FOUND.augmentDescription(
+              "Expected to find a leader for at least one partition to process the request, but none found. Please try again later.");
     } else {
       status = status.augmentDescription("Unexpected error occurred during the request processing");
     }
@@ -294,7 +327,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     return convertedThrowable;
   }
 
-  private Status mapBrokerErrorToStatus(BrokerError error) {
+  private Status mapBrokerErrorToStatus(final BrokerError error) {
     switch (error.getCode()) {
       case WORKFLOW_NOT_FOUND:
         return Status.NOT_FOUND.augmentDescription(error.getMessage());
@@ -306,7 +339,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
   }
 
-  private Status mapRejectionToStatus(BrokerRejection rejection) {
+  private Status mapRejectionToStatus(final BrokerRejection rejection) {
     final String description =
         String.format(
             "Command rejected with code '%s': %s", rejection.getIntent(), rejection.getReason());

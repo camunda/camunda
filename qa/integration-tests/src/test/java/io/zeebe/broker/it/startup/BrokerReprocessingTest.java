@@ -27,6 +27,8 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.response.DeploymentEvent;
+import io.zeebe.client.api.response.PartitionInfo;
+import io.zeebe.client.api.response.Topology;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.engine.processor.workflow.job.JobTimeoutTrigger;
@@ -50,6 +52,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -495,6 +498,7 @@ public class BrokerReprocessingTest {
 
     // when
     reprocessingTrigger.accept(this);
+    awaitGateway();
 
     final long workflowInstance2Key = startWorkflowInstance(PROCESS_ID).getWorkflowInstanceKey();
 
@@ -705,6 +709,7 @@ public class BrokerReprocessingTest {
     restartAction.run();
 
     brokerRule.startBroker();
+    awaitGateway();
   }
 
   protected void restartBroker() {
@@ -713,6 +718,7 @@ public class BrokerReprocessingTest {
     restartAction.run();
 
     brokerRule.startBroker();
+    awaitGateway();
   }
 
   private void deploy(final BpmnModelInstance workflowTwoTasks, final String s) {
@@ -731,9 +737,14 @@ public class BrokerReprocessingTest {
     TestUtil.waitUntil(
         () -> {
           try {
-            clientRule.getClient().newTopologyRequest().send().join();
-            return true;
-          } catch (Exception e) {
+            final Topology topology = clientRule.getClient().newTopologyRequest().send().join();
+            return topology.getBrokers().stream()
+                .flatMap(broker -> broker.getPartitions().stream())
+                .filter(PartitionInfo::isLeader)
+                .map(PartitionInfo::getPartitionId)
+                .collect(Collectors.toSet())
+                .containsAll(brokerRule.getBrokerCfg().getCluster().getPartitionIds());
+          } catch (final Exception e) {
             return false;
           }
         });

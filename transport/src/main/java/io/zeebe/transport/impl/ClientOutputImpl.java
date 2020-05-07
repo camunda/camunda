@@ -11,6 +11,7 @@ import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.EndpointRegistry;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.impl.sender.NoRemoteAddressFoundException;
 import io.zeebe.transport.impl.sender.OutgoingMessage;
 import io.zeebe.transport.impl.sender.OutgoingRequest;
 import io.zeebe.transport.impl.sender.Sender;
@@ -22,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class ClientOutputImpl implements ClientOutput {
@@ -32,10 +32,10 @@ public class ClientOutputImpl implements ClientOutput {
   protected final long defaultMessageRetryTimeoutInMillis;
 
   public ClientOutputImpl(
-      EndpointRegistry endpointRegistry,
-      Sender requestManager,
-      Duration defaultRequestRetryTimeout,
-      Duration defaultMessageRetryTimeout) {
+      final EndpointRegistry endpointRegistry,
+      final Sender requestManager,
+      final Duration defaultRequestRetryTimeout,
+      final Duration defaultMessageRetryTimeout) {
     this.endpointRegistry = endpointRegistry;
     this.requestManager = requestManager;
     this.defaultRequestRetryTimeout = defaultRequestRetryTimeout;
@@ -43,7 +43,7 @@ public class ClientOutputImpl implements ClientOutput {
   }
 
   @Override
-  public boolean sendMessage(Integer nodeId, BufferWriter writer) {
+  public boolean sendMessage(final Integer nodeId, final BufferWriter writer) {
     final RemoteAddress remoteAddress = endpointRegistry.getEndpoint(nodeId);
     if (remoteAddress != null) {
       return sendTransportMessage(remoteAddress.getStreamId(), writer);
@@ -52,7 +52,7 @@ public class ClientOutputImpl implements ClientOutput {
     }
   }
 
-  private boolean sendTransportMessage(int remoteStreamId, BufferWriter writer) {
+  private boolean sendTransportMessage(final int remoteStreamId, final BufferWriter writer) {
     final int framedMessageLength =
         TransportHeaderWriter.getFramedMessageLength(writer.getLength());
     final ByteBuffer allocatedBuffer = requestManager.allocateMessageBuffer(framedMessageLength);
@@ -70,7 +70,7 @@ public class ClientOutputImpl implements ClientOutput {
         requestManager.submitMessage(outgoingMessage);
 
         return true;
-      } catch (RuntimeException e) {
+      } catch (final RuntimeException e) {
         requestManager.reclaimMessageBuffer(allocatedBuffer);
         throw e;
       }
@@ -80,22 +80,28 @@ public class ClientOutputImpl implements ClientOutput {
   }
 
   @Override
-  public ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer) {
+  public ActorFuture<ClientResponse> sendRequest(final Integer nodeId, final BufferWriter writer) {
     return sendRequest(nodeId, writer, defaultRequestRetryTimeout);
   }
 
   @Override
   public ActorFuture<ClientResponse> sendRequest(
-      Integer nodeId, BufferWriter writer, Duration timeout) {
-    return sendRequestWithRetry(() -> nodeId, (b) -> false, writer, timeout);
+      final Integer nodeId, final BufferWriter writer, final Duration timeout) {
+    return sendRequestWithRetry(() -> nodeId, this::shouldRetry, writer, timeout);
   }
 
   @Override
   public ActorFuture<ClientResponse> sendRequestWithRetry(
-      Supplier<Integer> nodeIdSupplier,
-      Predicate<DirectBuffer> responseInspector,
-      BufferWriter writer,
-      Duration timeout) {
+      final Supplier<Integer> nodeIdSupplier, final BufferWriter writer, final Duration timeout) {
+    return sendRequestWithRetry(nodeIdSupplier, this::shouldRetry, writer, timeout);
+  }
+
+  @Override
+  public ActorFuture<ClientResponse> sendRequestWithRetry(
+      final Supplier<Integer> nodeIdSupplier,
+      final Predicate<IncomingResponse> responseInspector,
+      final BufferWriter writer,
+      final Duration timeout) {
     final int messageLength = writer.getLength();
     final int framedLength = TransportHeaderWriter.getFramedRequestLength(messageLength);
 
@@ -114,12 +120,16 @@ public class ClientOutputImpl implements ClientOutput {
         request.getHeaderWriter().wrapRequest(bufferView, writer);
 
         return requestManager.submitRequest(request);
-      } catch (RuntimeException e) {
+      } catch (final RuntimeException e) {
         requestManager.reclaimRequestBuffer(allocatedBuffer);
         throw e;
       }
     } else {
       return null;
     }
+  }
+
+  private boolean shouldRetry(final IncomingResponse response) {
+    return response.getException() instanceof NoRemoteAddressFoundException;
   }
 }

@@ -25,6 +25,7 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
+import io.zeebe.transport.impl.IncomingResponse;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.transport.impl.util.SocketUtil;
@@ -61,7 +62,7 @@ import org.junit.rules.RuleChain;
 import org.mockito.ArgumentMatchers;
 
 public class ClientTransportTest {
-  private ControlledActorClock clock = new ControlledActorClock();
+  private final ControlledActorClock clock = new ControlledActorClock();
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
   public AutoCloseableRule closeables = new AutoCloseableRule();
 
@@ -107,7 +108,7 @@ public class ClientTransportTest {
   }
 
   protected ServerTransport buildServerTransport(
-      Function<ServerTransportBuilder, ServerTransport> builderConsumer) {
+      final Function<ServerTransportBuilder, ServerTransport> builderConsumer) {
     final Dispatcher serverSendBuffer =
         Dispatchers.create("serverSendBuffer")
             .bufferSize(BUFFER_SIZE)
@@ -255,6 +256,19 @@ public class ClientTransportTest {
 
     // then
     assertThatThrownBy(responseFuture::join).hasMessageContaining("Request timed out after PT0.5S");
+  }
+
+  @Test
+  public void shouldNotRetryWhenNodeNullAndRetryDisabled() {
+    // given
+    final ClientOutput output = clientTransport.getOutput();
+
+    // when
+    final ActorFuture<ClientResponse> responseFuture =
+        output.sendRequestWithRetry(() -> null, b -> false, WRITER1, Duration.ofMillis(500));
+
+    // then
+    assertThatThrownBy(responseFuture::join).hasMessageContaining("No remote address found");
   }
 
   @Test
@@ -568,12 +582,12 @@ public class ClientTransportTest {
         new EchoRequestResponseHandler() {
           @Override
           public boolean onRequest(
-              ServerOutput output,
-              RemoteAddress remoteAddress,
-              DirectBuffer buffer,
-              int offset,
-              int length,
-              long requestId) {
+              final ServerOutput output,
+              final RemoteAddress remoteAddress,
+              final DirectBuffer buffer,
+              final int offset,
+              final int length,
+              final long requestId) {
             capturedRequestId.set(requestId);
 
             return super.onRequest(output, remoteAddress, buffer, offset, length, requestId);
@@ -736,13 +750,13 @@ public class ClientTransportTest {
     final Object monitor = new Object();
     final AtomicBoolean isWaiting = new AtomicBoolean(false);
 
-    final Predicate<DirectBuffer> blockingInspector =
+    final Predicate<IncomingResponse> blockingInspector =
         buf -> {
           synchronized (monitor) {
             isWaiting.compareAndSet(false, true);
             try {
               monitor.wait();
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
               throw new RuntimeException(e);
             }
             return false;
@@ -788,7 +802,7 @@ public class ClientTransportTest {
     // when
     try {
       clientTransport.closeAsync().get(10, TimeUnit.SECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       fail("Could not close transport in time", e);
     }
   }
@@ -908,7 +922,7 @@ public class ClientTransportTest {
     final ActorFuture<ClientResponse> responseFuture =
         clientTransport
             .getOutput()
-            .sendRequestWithRetry(nodeIdSupplier, b -> false, WRITER1, Duration.ofSeconds(2));
+            .sendRequestWithRetry(nodeIdSupplier, WRITER1, Duration.ofSeconds(2));
 
     final ClientResponse response = responseFuture.join();
     assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
@@ -987,7 +1001,7 @@ public class ClientTransportTest {
     int messagesSent;
     BufferWriter writer;
 
-    public SendMessagesHandler(int numMessagesToSend, DirectBuffer messageToSend) {
+    public SendMessagesHandler(final int numMessagesToSend, final DirectBuffer messageToSend) {
       this.numMessagesToSend = numMessagesToSend;
       this.messagesSent = 0;
       this.writer = writerFor(messageToSend);
@@ -995,11 +1009,11 @@ public class ClientTransportTest {
 
     @Override
     public boolean onMessage(
-        ServerOutput output,
-        RemoteAddress remoteAddress,
-        DirectBuffer buffer,
-        int offset,
-        int length) {
+        final ServerOutput output,
+        final RemoteAddress remoteAddress,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length) {
 
       final int remoteStreamId = remoteAddress.getStreamId();
       for (int i = messagesSent; i < numMessagesToSend; i++) {
