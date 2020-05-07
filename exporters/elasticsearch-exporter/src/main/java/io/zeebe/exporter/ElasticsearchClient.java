@@ -81,13 +81,13 @@ public class ElasticsearchClient {
   }
 
   @SuppressWarnings("unchecked")
-  private void checkRecord(Record<?> record) {
+  private void checkRecord(final Record<?> record) {
     if (record.getValueType() == ValueType.VARIABLE) {
       checkVariableRecordValue((Record<VariableRecordValue>) record);
     }
   }
 
-  private void checkVariableRecordValue(Record<VariableRecordValue> record) {
+  private void checkVariableRecordValue(final Record<VariableRecordValue> record) {
     final VariableRecordValue value = record.getValue();
     final int size = value.getValue().getBytes().length;
 
@@ -212,7 +212,7 @@ public class ElasticsearchClient {
   private HttpAsyncClientBuilder setHttpClientConfigCallback(final HttpAsyncClientBuilder builder) {
     builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
 
-    if (configuration.authentication.isPresent()) {
+    if (configuration.hasAuthenticationPresent()) {
       setupBasicAuthentication(builder);
     }
 
@@ -224,7 +224,8 @@ public class ElasticsearchClient {
     credentialsProvider.setCredentials(
         AuthScope.ANY,
         new UsernamePasswordCredentials(
-            configuration.authentication.username, configuration.authentication.password));
+            configuration.getAuthentication().getUsername(),
+            configuration.getAuthentication().getPassword()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
