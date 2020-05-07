@@ -3,7 +3,7 @@
 .PHONY: env-up
 env-up:
 	docker-compose up -d elasticsearch zeebe \
-	&& mvn compile -DskipTests=true -Dskip.fe.build=true \
+	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& mvn -f webapp/pom.xml exec:java -Dexec.mainClass="org.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
 
 .PHONY: env-down
@@ -24,7 +24,7 @@ start-e2e:
 	curl --request DELETE --url http://localhost:9200/e2e* \
 	&& docker rm -f zeebe-e2e || true \
 	&& docker-compose up --force-recreate -d zeebe-e2e \
-	&& mvn compile -DskipTests=true -Dskip.fe.build=true \
+	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& CAMUNDA_OPERATE_ZEEBE_BROKERCONTACTPOINT=localhost:26503 \
 	CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX=e2e \
 	CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX=e2eoperate \
