@@ -22,6 +22,16 @@ public class ClusterCfg implements ConfigurationEntry {
   public static final int DEFAULT_CLUSTER_SIZE = 1;
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
+  // the following values are from atomix per default
+  private static final boolean DEFAULT_GOSSIP_BROADCAST_UPDATES = false;
+  private static final boolean DEFAULT_GOSSIP_BROADCAST_DISPUTES = true;
+  private static final boolean DEFAULT_GOSSIP_NOTIFY_SUSPECT = false;
+  private static final int DEFAULT_GOSSIP_INTERVAL = 250;
+  private static final int DEFAULT_GOSSIP_FANOUT = 2;
+  private static final int DEFAULT_GOSSIP_PROBE_INTERVAL = 1_000;
+  private static final int DEFAULT_GOSSIP_SUSPECT_PROBES = 3;
+  private static final int DEFAULT_GOSSIP_FAILURE_TIMEOUT = 10_000;
+
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
   private List<Integer> partitionIds;
@@ -30,6 +40,15 @@ public class ClusterCfg implements ConfigurationEntry {
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
   private int clusterSize = DEFAULT_CLUSTER_SIZE;
   private String clusterName = DEFAULT_CLUSTER_NAME;
+
+  private long gossipFailureTimeout = DEFAULT_GOSSIP_FAILURE_TIMEOUT;
+  private long gossipInterval = DEFAULT_GOSSIP_INTERVAL;
+  private long gossipProbeInterval = DEFAULT_GOSSIP_PROBE_INTERVAL;
+  private boolean gossipBroadcastDisputes = DEFAULT_GOSSIP_BROADCAST_DISPUTES;
+  private int gossipFanout = DEFAULT_GOSSIP_FANOUT;
+  private boolean notifySuspect = DEFAULT_GOSSIP_NOTIFY_SUSPECT;
+  private int suspectedProbes = DEFAULT_GOSSIP_SUSPECT_PROBES;
+  private boolean gossipBroadcastUpdates = DEFAULT_GOSSIP_BROADCAST_UPDATES;
 
   @Override
   public void init(
@@ -62,6 +81,29 @@ public class ClusterCfg implements ConfigurationEntry {
     environment
         .getList(EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS)
         .ifPresent(v -> initialContactPoints = v);
+
+    environment
+        .getLong(EnvironmentConstants.ENV_GOSSIP_FAILURE_TIMEOUT)
+        .ifPresent(v -> gossipFailureTimeout = v);
+    environment
+        .getLong(EnvironmentConstants.ENV_GOSSIP_INTERVAL)
+        .ifPresent(v -> gossipInterval = v);
+    environment
+        .getLong(EnvironmentConstants.ENV_GOSSIP_PROBE_INTERVAL)
+        .ifPresent(v -> gossipProbeInterval = v);
+    environment
+        .getBool(EnvironmentConstants.ENV_GOSSIP_BROADCAST_DISPUTES)
+        .ifPresent(v -> gossipBroadcastDisputes = v);
+    environment.getInt(EnvironmentConstants.ENV_GOSSIP_FANOUT).ifPresent(v -> gossipFanout = v);
+    environment
+        .getBool(EnvironmentConstants.ENV_GOSSIP_NOTIFY_SUSPECT)
+        .ifPresent(v -> notifySuspect = v);
+    environment
+        .getInt(EnvironmentConstants.ENV_GOSSIP_SUSPECT_PROBES)
+        .ifPresent(v -> suspectedProbes = v);
+    environment
+        .getBool(EnvironmentConstants.ENV_GOSSIP_BROADCAST_UPDATES)
+        .ifPresent(v -> gossipBroadcastUpdates = v);
   }
 
   public List<String> getInitialContactPoints() {
@@ -116,11 +158,78 @@ public class ClusterCfg implements ConfigurationEntry {
     this.clusterName = clusterName;
   }
 
+  public long getGossipFailureTimeout() {
+    return gossipFailureTimeout;
+  }
+
+  public void setGossipFailureTimeout(final long gossipFailureTimeout) {
+    this.gossipFailureTimeout = gossipFailureTimeout;
+  }
+
+  public long getGossipInterval() {
+    return gossipInterval;
+  }
+
+  public void setGossipInterval(final long gossipInterval) {
+    this.gossipInterval = gossipInterval;
+  }
+
+  public long getGossipProbeInterval() {
+    return gossipProbeInterval;
+  }
+
+  public void setGossipProbeInterval(final long gossipProbeInterval) {
+    this.gossipProbeInterval = gossipProbeInterval;
+  }
+
+  public boolean isGossipBroadcastDisputes() {
+    return gossipBroadcastDisputes;
+  }
+
+  public void setGossipBroadcastDisputes(final boolean gossipBroadcastDisputes) {
+    this.gossipBroadcastDisputes = gossipBroadcastDisputes;
+  }
+
+  public int getGossipFanout() {
+    return gossipFanout;
+  }
+
+  public void setGossipFanout(final int gossipFanout) {
+    this.gossipFanout = gossipFanout;
+  }
+
+  public boolean isNotifySuspect() {
+    return notifySuspect;
+  }
+
+  public void setNotifySuspect(final boolean notifySuspect) {
+    this.notifySuspect = notifySuspect;
+  }
+
+  public int getSuspectedProbes() {
+    return suspectedProbes;
+  }
+
+  public void setSuspectedProbes(final int suspectedProbes) {
+    this.suspectedProbes = suspectedProbes;
+  }
+
+  public boolean isGossipBroadcastUpdates() {
+    return gossipBroadcastUpdates;
+  }
+
+  public void setGossipBroadcastUpdates(final boolean gossipBroadcastUpdates) {
+    this.gossipBroadcastUpdates = gossipBroadcastUpdates;
+  }
+
   @Override
   public String toString() {
-
     return "ClusterCfg{"
-        + "nodeId="
+        + "initialContactPoints="
+        + initialContactPoints
+        + ", partitionIds="
+        + partitionIds
+        + ", nodeId="
         + nodeId
         + ", partitionsCount="
         + partitionsCount
@@ -128,8 +237,25 @@ public class ClusterCfg implements ConfigurationEntry {
         + replicationFactor
         + ", clusterSize="
         + clusterSize
-        + ", initialContactPoints="
-        + initialContactPoints
+        + ", clusterName='"
+        + clusterName
+        + '\''
+        + ", gossipFailureTimeout="
+        + gossipFailureTimeout
+        + ", gossipInterval="
+        + gossipInterval
+        + ", gossipProbeInterval="
+        + gossipProbeInterval
+        + ", gossipBroadcastDisputes="
+        + gossipBroadcastDisputes
+        + ", gossipFanout="
+        + gossipFanout
+        + ", notifySuspect="
+        + notifySuspect
+        + ", suspectedProbes="
+        + suspectedProbes
+        + ", gossipBroadcastUpdates="
+        + gossipBroadcastUpdates
         + '}';
   }
 }
