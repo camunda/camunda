@@ -38,7 +38,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     const backendVersion = data.project.version;
     const elasticSearchVersion = data.project.properties['elasticsearch.version'];
-    const cambpmVersion = data.project.profiles.profile[0].properties['camunda.engine.version'];
+    const cambpmVersion = data.project.properties['camunda.engine.version'];
 
     startManagementServer();
 
