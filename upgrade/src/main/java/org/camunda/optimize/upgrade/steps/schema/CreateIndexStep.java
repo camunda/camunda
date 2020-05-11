@@ -19,14 +19,6 @@ public class CreateIndexStep implements UpgradeStep {
 
   @Override
   public void execute(final ESIndexAdjuster esIndexAdjuster) {
-    if (index.getCreateFromTemplate()) {
-      final String templateName = esIndexAdjuster.getIndexNameService()
-        .getOptimizeIndexAliasForIndex(index.getIndexName());
-      esIndexAdjuster.createOrUpdateTemplateWithoutAliases(index, templateName);
-      esIndexAdjuster.createIndexFromTemplate(index);
-    } else {
-      esIndexAdjuster.createIndex(index);
-    }
-    esIndexAdjuster.addAlias(index);
+    esIndexAdjuster.createIndex(index);
   }
 }

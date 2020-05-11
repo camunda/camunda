@@ -68,9 +68,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
       getMappings(),
       objectMapper
     );
-    esIndexAdjuster = new ESIndexAdjuster(
-      prefixAwareClient.getHighLevelClient(), indexNameService, configurationService
-    );
+    esIndexAdjuster = new ESIndexAdjuster(schemaManager, prefixAwareClient, configurationService);
   }
 
   @Override

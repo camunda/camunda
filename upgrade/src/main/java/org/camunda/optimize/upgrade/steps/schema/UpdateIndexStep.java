@@ -12,6 +12,7 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,20 +65,24 @@ public class UpdateIndexStep implements UpgradeStep {
         }
         final String targetIndexNameWithSuffix = targetIndexName + suffix;
 
+        esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexNameWithSuffix);
         esIndexAdjuster.createIndexFromTemplate(targetIndexNameWithSuffix);
         esIndexAdjuster.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript);
-        esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexNameWithSuffix);
         for (AliasMetaData alias : indexAliasMap.get(sourceIndex)) {
-          esIndexAdjuster.addAlias(alias.getAlias(), targetIndexNameWithSuffix, alias.writeIndex());
+          esIndexAdjuster.addAlias(
+            alias.getAlias(),
+            targetIndexNameWithSuffix,
+            // defaulting to true if this flag is not set when only one index exists
+            Optional.ofNullable(alias.writeIndex()).orElse(true)
+          );
         }
         esIndexAdjuster.deleteIndex(sourceIndexNameWithSuffix);
       }
     } else {
       // create new index and reindex data to it
+      esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexName);
       esIndexAdjuster.createIndex(index);
       esIndexAdjuster.reindex(sourceIndexName, targetIndexName, mappingScript);
-      esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexName);
-      esIndexAdjuster.addAlias(index);
       esIndexAdjuster.deleteIndex(sourceIndexName);
     }
   }

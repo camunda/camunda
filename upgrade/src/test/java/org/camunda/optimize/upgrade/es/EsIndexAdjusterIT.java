@@ -10,6 +10,8 @@ import org.apache.http.HttpEntity;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicStatusLine;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -49,8 +51,12 @@ public class EsIndexAdjusterIT {
     ConfigurationServiceBuilder.createDefaultConfiguration()
   ).createOptimizeMapper();
 
+  @Mock
+  private ElasticSearchSchemaManager schemaManager;
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, lenient = true)
-  private RestHighLevelClient restClient;
+  private OptimizeElasticsearchClient elasticsearchClient;
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS, lenient = true)
+  private RestHighLevelClient highLevelRestClient;
   @Mock
   private RestClient lowLevelRestClient;
   @Mock
@@ -58,21 +64,25 @@ public class EsIndexAdjusterIT {
   @Mock
   private OptimizeIndexNameService indexNameService;
 
+  private ESIndexAdjuster underTest;
+
   @BeforeEach
   public void init() {
-    when(restClient.getLowLevelClient()).thenReturn(lowLevelRestClient);
+    when(elasticsearchClient.getHighLevelClient()).thenReturn(highLevelRestClient);
+    when(elasticsearchClient.getIndexNameService()).thenReturn(indexNameService);
+    when(highLevelRestClient.getLowLevelClient()).thenReturn(lowLevelRestClient);
+    this.underTest = new ESIndexAdjuster(schemaManager, elasticsearchClient, configurationService);
   }
 
   @Test
   public void testSuccessfulReindexWithProgressCheck() throws IOException {
     // given
-    final ESIndexAdjuster underTest = new ESIndexAdjuster(restClient, indexNameService, configurationService);
     final String index1 = "index1";
     final String index2 = "index2";
     final String taskId = "12345";
 
     // the task is successfully submitted
-    when(restClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT)).getTask()).thenReturn(
+    when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT)).getTask()).thenReturn(
       taskId);
 
     // the first task response is in progress, the second is successfully complete
@@ -103,12 +113,11 @@ public class EsIndexAdjusterIT {
   @Test
   public void testFailOnReindexTaskSubmissionError() throws IOException {
     // given
-    final ESIndexAdjuster underTest = new ESIndexAdjuster(restClient, indexNameService, configurationService);
     final String index1 = "index1";
     final String index2 = "index2";
 
     // the task cannot be submitted
-    given(restClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT))
+    given(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT))
             .getTask()).willAnswer(invocation -> { throw new IOException(); });
 
     // then an exception is thrown
@@ -118,13 +127,12 @@ public class EsIndexAdjusterIT {
   @Test
   public void testFailOnReindexTaskStatusCheckError() throws IOException {
     // given
-    final ESIndexAdjuster underTest = new ESIndexAdjuster(restClient, indexNameService, configurationService);
     final String index1 = "index1";
     final String index2 = "index2";
     final String taskId = "12345";
 
     // the task is successfully submitted
-    when(restClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT)).getTask()).thenReturn(
+    when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT)).getTask()).thenReturn(
       taskId);
 
     // the task response contains an error when checking for status
