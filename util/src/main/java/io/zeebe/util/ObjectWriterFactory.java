@@ -17,6 +17,8 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.PackageVersion;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.springframework.util.unit.DataSize;
 
 public class ObjectWriterFactory {
@@ -40,6 +42,7 @@ public class ObjectWriterFactory {
     private CustomModule() {
       super(PackageVersion.VERSION);
       addSerializer(DataSize.class, new DataSizeSerializer());
+      addSerializer(Map.class, new MapSerializer());
     }
   }
 
@@ -57,6 +60,35 @@ public class ObjectWriterFactory {
         throws IOException {
 
       jsonGenerator.writeString(dataSize.toMegabytes() + "MB");
+    }
+  }
+
+  private static final class MapSerializer extends StdSerializer<Map> {
+
+    private MapSerializer() {
+      super(Map.class);
+    }
+
+    @Override
+    public void serialize(
+        final Map map,
+        final JsonGenerator jsonGenerator,
+        final SerializerProvider serializerProvider)
+        throws IOException {
+
+      jsonGenerator.writeStartObject();
+      for (final Object object : map.entrySet()) {
+        final var entry = (Entry) object;
+        final var key = entry.getKey().toString();
+
+        jsonGenerator.writeFieldName(key);
+        if (key.equals("username") || key.equals("password")) {
+          jsonGenerator.writeString("***");
+        } else {
+          jsonGenerator.writeObject(entry.getValue());
+        }
+      }
+      jsonGenerator.writeEndObject();
     }
   }
 }
