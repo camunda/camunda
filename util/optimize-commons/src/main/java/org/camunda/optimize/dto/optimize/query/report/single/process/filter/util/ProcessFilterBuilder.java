@@ -82,6 +82,14 @@ public class ProcessFilterBuilder {
     return FlowNodeDurationFilterBuilder.construct(this);
   }
 
+  public AssigneeOrCandidateGroupFilterBuilder assignee() {
+    return AssigneeOrCandidateGroupFilterBuilder.constructAssigneeFilterBuilder(this);
+  }
+
+  public AssigneeOrCandidateGroupFilterBuilder candidateGroups() {
+    return AssigneeOrCandidateGroupFilterBuilder.constructCandidateGroupFilterBuilder(this);
+  }
+
   void addFilter(ProcessFilterDto<?> result) {
     filters.add(result);
   }

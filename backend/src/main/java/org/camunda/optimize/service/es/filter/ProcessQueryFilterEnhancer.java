@@ -8,7 +8,9 @@ package org.camunda.optimize.service.es.filter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
@@ -45,6 +47,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final SuspendedInstancesOnlyQueryFilter suspendedInstancesOnlyQueryFilter;
   private final NonSuspendedInstancesOnlyQueryFilter nonSuspendedInstancesOnlyQueryFilter;
   private final FlowNodeDurationQueryFilter flowNodeDurationQueryFilter;
+  private final AssigneeQueryFilter assigneeQueryFilter;
+  private final CandidateGroupQueryFilter candidateGroupQueryFilter;
 
   @Override
   public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters) {
@@ -70,6 +74,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
         query, extractFilters(filters, NonSuspendedInstancesOnlyFilterDto.class)
       );
       flowNodeDurationQueryFilter.addFilters(query, extractFilters(filters, FlowNodeDurationFilterDto.class));
+      assigneeQueryFilter.addFilters(query, extractFilters(filters, AssigneeFilterDto.class));
+      candidateGroupQueryFilter.addFilters(query, extractFilters(filters, CandidateGroupFilterDto.class));
     }
   }
 
