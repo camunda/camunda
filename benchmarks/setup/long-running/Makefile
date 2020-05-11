@@ -1,5 +1,5 @@
 .PHONY: all
-all: zeebe starter worker
+all: zeebe starter timer simpleStarter worker
 
 .PHONY: zeebe
 zeebe:
@@ -7,9 +7,21 @@ zeebe:
 	-kubectl apply -f curator-cronjob.yaml
 	-kubectl apply -f curator-configmap.yaml
 
+.PHONY: update
+update:
+	-helm upgrade long-running zeebe/zeebe-cluster -f zeebe-values.yaml
+
 .PHONY: starter
 starter:
 	kubectl apply -f starter.yaml
+
+.PHONY: timer
+timer:
+	kubectl apply -f timer.yaml
+
+.PHONY: simpleStarter
+simpleStarter:
+	kubectl apply -f simpleStarter.yaml
 
 .PHONY: worker
 worker:
@@ -17,7 +29,7 @@ worker:
 
 
 .PHONY: clean
-clean: clean-starter clean-worker clean-zeebe
+clean: clean-starter clean-timer clean-simpleStarter clean-worker clean-zeebe
 
 .PHONY: clean-zeebe
 clean-zeebe:
@@ -30,6 +42,14 @@ clean-zeebe:
 .PHONY: clean-starter
 clean-starter:
 	-kubectl delete -f starter.yaml
+
+.PHONY: clean-timer
+clean-timer:
+	-kubectl delete -f timer.yaml
+
+.PHONY: clean-simpleStarter
+clean-simpleStarter:
+	-kubectl delete -f simpleStarter.yaml
 
 .PHONY: clean-worker
 clean-worker:

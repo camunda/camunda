@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: starter
+  name: simple
   labels:
-    app: starter
+    app: simple
 spec:
   selector:
     matchLabels:
-      app: starter
+      app: simple
   replicas: 1
   template:
     metadata:
       labels:
-        app: starter
+        app: simple
     spec:
       containers:
-      - name: starter
+      - name: simple
         image: gcr.io/zeebe-io/starter:zeebe
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
-            value: "-Dapp.brokerUrl=long-running-zeebe-gateway:26500 -Dapp.starter.rate=300 -Dzeebe.client.requestTimeout=62000 -XX:+HeapDumpOnOutOfMemoryError"
+            value: "-Dapp.brokerUrl=long-running-zeebe-gateway:26500 -Dapp.starter.rate=300 -Dzeebe.client.requestTimeout=62000 -XX:+HeapDumpOnOutOfMemoryError -Dapp.starter.bpmnXmlPath=bpmn/simpleProcess.bpmn -Dapp.starter.processId=simpleProcess"
           - name: LOG_LEVEL
             value: "warn"
         resources:
@@ -38,7 +38,7 @@ metadata:
     app: zeebe
     app.kubernetes.io/instance: long-running
     app.kubernetes.io/name: zeebe-cluster
-  name: starter
+  name: simple
 spec:
   clusterIP: None
   ports:
@@ -48,7 +48,7 @@ spec:
     targetPort: 9600
   publishNotReadyAddresses: true
   selector:
-    app: starter
+    app: simple
   sessionAffinity: None
   type: ClusterIP
 status:
