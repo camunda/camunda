@@ -110,4 +110,9 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   protected boolean isRejection() {
     return response.getRecordType() == RecordType.COMMAND_REJECTION;
   }
+
+  @Override
+  public String toString() {
+    return "BrokerExecuteCommand{" + "request=" + request + '}';
+  }
 }

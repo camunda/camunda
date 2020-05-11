@@ -14,9 +14,11 @@ import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
+import io.zeebe.gateway.cmd.ClientResponseException;
 import io.zeebe.gateway.cmd.GrpcStatusException;
 import io.zeebe.gateway.cmd.GrpcStatusExceptionImpl;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.backpressure.ResourceExhaustedException;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
@@ -317,6 +319,12 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       status =
           Status.NOT_FOUND.augmentDescription(
               "Expected to find a leader for at least one partition to process the request, but none found. Please try again later.");
+    } else if (cause instanceof ResourceExhaustedException) {
+      status =
+          Status.RESOURCE_EXHAUSTED.augmentDescription(
+              "Brokers receiving too many requests. Please try again later.");
+    } else if (cause instanceof ClientResponseException && cause.getCause() != null) {
+      return convertThrowable(cause.getCause());
     } else {
       status = status.augmentDescription("Unexpected error occurred during the request processing");
     }

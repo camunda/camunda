@@ -42,6 +42,7 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.12</version.commons-codec>
+    <version.concurrency-limits>0.3.6</version.concurrency-limits>
     <version.elasticsearch>6.8.1</version.elasticsearch>
     <version.error-prone>2.3.3</version.error-prone>
     <version.grpc>1.22.1</version.grpc>
@@ -473,6 +474,12 @@
         <groupId>io.prometheus</groupId>
         <artifactId>simpleclient_httpserver</artifactId>
         <version>${version.prometheus}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.netflix.concurrency-limits</groupId>
+        <artifactId>concurrency-limits-core</artifactId>
+        <version>${version.concurrency-limits}</version>
       </dependency>
 
       <dependency>

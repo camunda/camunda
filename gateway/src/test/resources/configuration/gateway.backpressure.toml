@@ -1,0 +1,9 @@
+[backpressure]
+enabled = true
+[backpressure.aimd]
+initialLimit = 50
+minLimit = 5
+maxLimit = 500
+requestTimeout = "5s"
+backoffRatio = 0.5
+

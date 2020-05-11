@@ -7,6 +7,10 @@
  */
 package io.zeebe.gateway.configuration;
 
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_BACKPRESSURE_AIMD_BACKOFF_RATIO;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_BACKPRESSURE_AIMD_INITIAL_LIMIT;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_BACKPRESSURE_AIMD_MAX_LIMIT;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_BACKPRESSURE_AIMD_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_MEMBER_ID;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_NAME;
@@ -22,11 +26,13 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_TRANSPORT_BUFFER;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.gateway.impl.configuration.BackpressureCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.util.Environment;
 import io.zeebe.util.TomlConfigurationReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -38,6 +44,8 @@ public class GatewayCfgTest {
   private static final String EMPTY_CFG_FILENAME = "/configuration/gateway.empty.toml";
   private static final String CUSTOM_CFG_FILENAME = "/configuration/gateway.custom.toml";
   private static final GatewayCfg CUSTOM_CFG = new GatewayCfg();
+  private static final String CUSTOM_CFG_BACKPRESSURE_FILENAME =
+      "/configuration/gateway.backpressure.toml";
 
   static {
     DEFAULT_CFG.init();
@@ -53,6 +61,7 @@ public class GatewayCfgTest {
         .setHost("1.2.3.4")
         .setPort(12321);
     CUSTOM_CFG.getThreads().setManagementThreads(100);
+    CUSTOM_CFG.getBackpressure().getAimdCfg().setRequestTimeout("100s");
   }
 
   private final Map<String, String> environment = new HashMap<>();
@@ -85,6 +94,32 @@ public class GatewayCfgTest {
   }
 
   @Test
+  public void shouldConfigureBackPressure() {
+
+    // when
+    final GatewayCfg gatewayCfg = readConfig(CUSTOM_CFG_BACKPRESSURE_FILENAME);
+
+    // then
+    final BackpressureCfg backpressure = gatewayCfg.getBackpressure();
+    assertThat(backpressure.isEnabled()).isTrue();
+    assertThat(backpressure.getAimdCfg().getBackoffRatio()).isEqualTo(0.5);
+    assertThat(backpressure.getAimdCfg().getInitialLimit()).isEqualTo(50);
+    assertThat(backpressure.getAimdCfg().getRequestTimeout()).isEqualTo(Duration.ofSeconds(5));
+  }
+
+  @Test
+  public void shouldConfigureBackPressureRequestTimeoutFromGateway() {
+
+    // when
+    final GatewayCfg gatewayCfg = readConfig(DEFAULT_CFG_FILENAME);
+
+    // then
+    final BackpressureCfg backpressure = gatewayCfg.getBackpressure();
+    assertThat(backpressure.getAimdCfg().getRequestTimeout())
+        .isEqualTo(gatewayCfg.getCluster().getRequestTimeout().dividedBy(2));
+  }
+
+  @Test
   public void shouldUseEnvironmentVariables() {
     // given
     setEnv(ENV_GATEWAY_HOST, "zeebe");
@@ -100,6 +135,10 @@ public class GatewayCfgTest {
     setEnv(ENV_GATEWAY_MONITORING_ENABLED, "true");
     setEnv(ENV_GATEWAY_MONITORING_HOST, "monitorHost");
     setEnv(ENV_GATEWAY_MONITORING_PORT, "231");
+    setEnv(ENV_GATEWAY_BACKPRESSURE_AIMD_BACKOFF_RATIO, "0.75");
+    setEnv(ENV_GATEWAY_BACKPRESSURE_AIMD_INITIAL_LIMIT, "123");
+    setEnv(ENV_GATEWAY_BACKPRESSURE_AIMD_MAX_LIMIT, "1234");
+    setEnv(ENV_GATEWAY_BACKPRESSURE_AIMD_REQUEST_TIMEOUT, "13s");
 
     final GatewayCfg expected = new GatewayCfg();
     expected.getNetwork().setHost("zeebe").setPort(5432);
@@ -114,6 +153,13 @@ public class GatewayCfgTest {
         .setPort(12345);
     expected.getThreads().setManagementThreads(32);
     expected.getMonitoring().setEnabled(true).setHost("monitorHost").setPort(231);
+    expected
+        .getBackpressure()
+        .getAimdCfg()
+        .setRequestTimeout("13s")
+        .setBackoffRatio(0.75)
+        .setInitialLimit(123)
+        .setMaxLimit(1234);
 
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();
@@ -122,7 +168,7 @@ public class GatewayCfgTest {
     assertThat(gatewayCfg).isEqualTo(expected);
   }
 
-  private void setEnv(String key, String value) {
+  private void setEnv(final String key, final String value) {
     environment.put(key, value);
   }
 
@@ -138,7 +184,7 @@ public class GatewayCfgTest {
     return readConfig(CUSTOM_CFG_FILENAME);
   }
 
-  private GatewayCfg readConfig(String filename) {
+  private GatewayCfg readConfig(final String filename) {
     try (InputStream inputStream = GatewayCfgTest.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         final GatewayCfg gatewayCfg = TomlConfigurationReader.read(inputStream, GatewayCfg.class);
@@ -147,7 +193,7 @@ public class GatewayCfgTest {
       } else {
         throw new AssertionError("Unable to find configuration file: " + filename);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new AssertionError("Failed to read configuration from file: " + filename, e);
     }
   }
