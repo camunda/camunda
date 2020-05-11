@@ -29,6 +29,7 @@ import org.camunda.optimize.service.util.IdGenerator;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -204,7 +205,7 @@ public class EventProcessClient {
   public static EventSourceEntryDto createExternalEventSourceEntry() {
     return EventSourceEntryDto.builder()
       .type(EventSourceType.EXTERNAL)
-      .eventScope(EventScopeType.ALL)
+      .eventScope(Collections.singletonList(EventScopeType.ALL))
       .build();
   }
 
@@ -231,7 +232,7 @@ public class EventProcessClient {
       .tenants(Lists.newArrayList(tenantId))
       .tracedByBusinessKey(true)
       .type(EventSourceType.CAMUNDA)
-      .eventScope(EventScopeType.ALL)
+      .eventScope(Collections.singletonList(EventScopeType.ALL))
       .build();
   }
 

@@ -82,7 +82,7 @@ public class UpgradeEventProcessPublishStateEventImportSourceIT extends Abstract
             .satisfies(source -> {
               assertThat(source.getId()).isNotNull();
               assertThat(source.getType()).isEqualTo(EventSourceType.EXTERNAL);
-              assertThat(source.getEventScope()).isEqualTo(EventScopeType.ALL);
+              assertThat(source.getEventScope()).containsExactly(EventScopeType.ALL);
             });
         }));
   }

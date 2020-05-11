@@ -29,7 +29,7 @@ import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -494,9 +494,9 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(storedDto.getEventSources())
       .hasSize(1)
       .extracting(
-        EventSourceEntryRestDto::getId,
-        EventSourceEntryRestDto::getType,
-        EventSourceEntryRestDto::getEventScope
+        EventSourceEntryResponseDto::getId,
+        EventSourceEntryResponseDto::getType,
+        EventSourceEntryResponseDto::getEventScope
       )
       .containsExactly(Tuple.tuple(
         eventSourceEntry.getId(),
@@ -1161,8 +1161,8 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
-  protected EventSourceEntryRestDto convertToEventSourceRestEntryDto(EventSourceEntryDto eventSourceEntry) {
-    return EventSourceEntryRestDto.builder()
+  protected EventSourceEntryResponseDto convertToEventSourceRestEntryDto(EventSourceEntryDto eventSourceEntry) {
+    return EventSourceEntryResponseDto.builder()
       .id(eventSourceEntry.getId())
       .type(eventSourceEntry.getType())
       .eventScope(eventSourceEntry.getEventScope())

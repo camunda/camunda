@@ -11,6 +11,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +30,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 
@@ -219,6 +222,56 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         assertThat(eventMappingDto.getStart()).isNull();
         assertThat(eventMappingDto.getEnd()).isNotNull();
       });
+  }
+
+  @Test
+  public void cleanupMissingDataSourceMappings_eventOutOfScope() {
+    // given
+    final String definitionKey = THREE_EVENT_PROCESS_DEFINITION_KEY_1;
+    final String xml = deployAndStartThreeEventProcessReturnXml(definitionKey);
+
+    final String eventName1 = "someExternalEvent1";
+    embeddedOptimizeExtension.getEventService().saveEventBatch(ImmutableList.of(createEventDto(eventName1)));
+
+    runEngineImportAndEventProcessing();
+
+    // when events mapped to start/end and intermediate BPMN events
+    final Map<String, EventMappingDto> eventMappings = new HashMap<>();
+    eventMappings.put(
+      BPMN_START_EVENT_ID,
+      EventMappingDto.builder()
+        .start(createCamundaEventTypeDto(BPMN_START_EVENT_ID, definitionKey))
+        .build()
+    );
+    eventMappings.put(
+      BPMN_INTERMEDIATE_EVENT_ID,
+      EventMappingDto.builder()
+        .start(createCamundaEventTypeDto(BPMN_INTERMEDIATE_EVENT_ID, definitionKey))
+        .build()
+    );
+    eventMappings.put(
+      BPMN_END_EVENT_ID,
+      EventMappingDto.builder()
+        .end(createCamundaEventTypeDto(applyCamundaProcessInstanceStartEventSuffix(definitionKey), definitionKey))
+        .build()
+    );
+
+    // and the scope does not include non-start/end BPMN events
+    Map<String, EventMappingDto> cleanedMapping = eventProcessClient.cleanupEventProcessMappings(
+      EventMappingCleanupRequestDto.builder()
+        .mappings(eventMappings)
+        .xml(xml)
+        .eventSources(ImmutableList.of(
+          createSimpleCamundaEventSourceEntry(definitionKey, ALL_VERSIONS)
+            .toBuilder()
+            .eventScope(Arrays.asList(EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END))
+            .build()
+        ))
+        .build()
+    );
+
+    // then the BPMN intermediate event has been cleaned up
+    assertThat(cleanedMapping).containsOnlyKeys(BPMN_START_EVENT_ID, BPMN_END_EVENT_ID);
   }
 
   @Test

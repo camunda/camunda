@@ -586,7 +586,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .name(name)
       .eventSources(Collections.singletonList(
         EventSourceEntryDto.builder()
-          .eventScope(EventScopeType.ALL)
+          .eventScope(Collections.singletonList(EventScopeType.ALL))
           .type(EventSourceType.EXTERNAL)
           .build()))
       .build();

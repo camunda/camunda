@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.EventProcessRoleService;
@@ -262,10 +262,10 @@ public class EventBasedProcessRestService {
       .build();
   }
 
-  private List<EventSourceEntryRestDto> mapSourceEntriesToRestDtos(final String userId,
-                                                                   final List<EventSourceEntryDto> eventSourceDtos) {
+  private List<EventSourceEntryResponseDto> mapSourceEntriesToRestDtos(final String userId,
+                                                                       final List<EventSourceEntryDto> eventSourceDtos) {
     return eventSourceDtos.stream()
-      .map(eventSource -> EventSourceEntryRestDto.builder()
+      .map(eventSource -> EventSourceEntryResponseDto.builder()
         .id(eventSource.getId())
         .type(eventSource.getType())
         .eventScope(eventSource.getEventScope())

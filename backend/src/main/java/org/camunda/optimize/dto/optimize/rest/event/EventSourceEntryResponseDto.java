@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Data
@@ -22,13 +23,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class EventSourceEntryRestDto {
+public class EventSourceEntryResponseDto {
   @EqualsAndHashCode.Include
   private String id;
   @Builder.Default
   private EventSourceType type = EventSourceType.CAMUNDA;
   @Builder.Default
-  private EventScopeType eventScope = EventScopeType.ALL;
+  private List<EventScopeType> eventScope = Arrays.asList(EventScopeType.ALL);
   private String processDefinitionKey;
   private String processDefinitionName;
   @Builder.Default

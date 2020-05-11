@@ -778,7 +778,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
   private static EventSourceEntryDto camundaEventSource() {
     return EventSourceEntryDto.builder()
       .type(CAMUNDA)
-      .eventScope(EventScopeType.ALL)
+      .eventScope(Collections.singletonList(EventScopeType.ALL))
       .tracedByBusinessKey(true)
       .processDefinitionKey(RandomStringUtils.randomAlphabetic(10))
       .versions(Collections.singletonList("ALL"))

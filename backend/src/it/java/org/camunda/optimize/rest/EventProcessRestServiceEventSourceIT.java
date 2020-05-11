@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeAll;
@@ -71,7 +71,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
     // then
-    List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+    List<EventSourceEntryResponseDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
 
     assertThat(eventSources)
@@ -96,7 +96,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
     // then
-    List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+    List<EventSourceEntryResponseDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
 
     assertThat(eventSources)
@@ -116,7 +116,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
     // then
-    List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+    List<EventSourceEntryResponseDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
 
     assertThat(eventSources)
@@ -201,10 +201,10 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
     // when
-    camundaEventSourceEntry.setEventScope(EventScopeType.PROCESS_INSTANCE);
+    camundaEventSourceEntry.setEventScope(Collections.singletonList(EventScopeType.PROCESS_INSTANCE));
     performUpdateMappingRequest(eventProcessMappingId, eventProcessMapping);
 
-    List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+    List<EventSourceEntryResponseDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
 
     // then
@@ -212,6 +212,38 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .hasSize(2)
       .usingElementComparatorIgnoringFields("id")
       .containsExactlyInAnyOrder(mapToRestDto(camundaEventSourceEntry), mapToRestDto(externalEventSourceEntry));
+  }
+
+  @Test
+  public void updateEventSource_multipleEventScopes() {
+    // given
+    EventSourceEntryDto eventSourceEntryDto = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
+      PROCESS_DEF_KEY_1
+    );
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Collections.singletonList(
+      eventSourceEntryDto));
+    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
+    final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
+
+    // then
+    List<EventSourceEntryResponseDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+      .getEventSources();
+    assertThat(eventSources)
+      .usingElementComparatorIgnoringFields("id")
+      .containsExactlyInAnyOrder(mapToRestDto(eventSourceEntryDto))
+      .allSatisfy(eventSourceEntryRestDto -> assertThat(eventSourceEntryRestDto.getId()).isNotBlank());
+
+    // when
+    eventSourceEntryDto.setEventScope(Arrays.asList(EventScopeType.START_END, EventScopeType.PROCESS_INSTANCE));
+    performUpdateMappingRequest(eventProcessMappingId, eventProcessMapping);
+
+    // then
+    List<EventSourceEntryResponseDto> updatedEventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+      .getEventSources();
+    assertThat(updatedEventSources)
+      .usingElementComparatorIgnoringFields("id")
+      .containsExactlyInAnyOrder(mapToRestDto(eventSourceEntryDto))
+      .allSatisfy(eventSourceEntryRestDto -> assertThat(eventSourceEntryRestDto.getId()).isNotBlank());
   }
 
   @Test
@@ -252,7 +284,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     // then
-    List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+    List<EventSourceEntryResponseDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
 
     assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeConflictException.ERROR_CODE);
@@ -328,7 +360,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     performUpdateMappingRequest(eventProcessMappingId, eventProcessMapping);
 
     // then
-    List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+    List<EventSourceEntryResponseDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
     assertThat(eventSources)
       .usingElementComparatorIgnoringFields("id")
@@ -354,8 +386,8 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     );
   }
 
-  private EventSourceEntryRestDto mapToRestDto(final EventSourceEntryDto sourceEntryDto) {
-    return EventSourceEntryRestDto.builder()
+  private EventSourceEntryResponseDto mapToRestDto(final EventSourceEntryDto sourceEntryDto) {
+    return EventSourceEntryResponseDto.builder()
       .type(sourceEntryDto.getType())
       .versions(sourceEntryDto.getVersions())
       .tenants(sourceEntryDto.getTenants())

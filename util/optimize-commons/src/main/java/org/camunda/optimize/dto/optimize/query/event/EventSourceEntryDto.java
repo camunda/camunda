@@ -17,6 +17,7 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.service.util.IdGenerator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Data
@@ -35,7 +36,7 @@ public class EventSourceEntryDto {
   @Builder.Default
   private EventSourceType type = EventSourceType.CAMUNDA;
   @Builder.Default
-  private EventScopeType eventScope = EventScopeType.ALL;
+  private List<EventScopeType> eventScope = Arrays.asList(EventScopeType.ALL);
 
   // camunda source specific properties
   private String processDefinitionKey;

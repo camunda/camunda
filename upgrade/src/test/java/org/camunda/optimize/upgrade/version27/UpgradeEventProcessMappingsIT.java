@@ -83,7 +83,7 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
           .allSatisfy(eventSourceEntryDto -> {
             assertThat(eventSourceEntryDto.getId()).isNotBlank();
             assertThat(eventSourceEntryDto.getType()).isEqualTo(EventSourceType.EXTERNAL);
-            assertThat(eventSourceEntryDto.getEventScope()).isEqualTo(EventScopeType.ALL);
+            assertThat(eventSourceEntryDto.getEventScope()).containsExactly(EventScopeType.ALL);
           });
       });
   }

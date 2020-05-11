@@ -158,25 +158,19 @@ public class CamundaEventService {
                                                                   final String definitionKey,
                                                                   final List<String> versions,
                                                                   final List<String> tenants,
-                                                                  final EventScopeType eventScope) {
-    List<EventTypeDto> result;
-    switch (eventScope) {
-      case ALL:
-        result = extractLabeledEventTypeDtos(
-          definitionKey, ALL_MAPPED_TYPES, getBpmnModelInstance(userId, definitionKey, versions, tenants)
-        );
-        result.addAll(createLabeledProcessInstanceStartEndEventTypeDtos(definitionKey));
-        break;
-      case START_END:
-        result = extractLabeledEventTypeDtos(
-          definitionKey, START_AND_END_EVENT_TYPES, getBpmnModelInstance(userId, definitionKey, versions, tenants)
-        );
-        break;
-      case PROCESS_INSTANCE:
-        result = createLabeledProcessInstanceStartEndEventTypeDtos(definitionKey);
-        break;
-      default:
-        throw new OptimizeValidationException("Unsupported event scope for camunda events : [" + eventScope + "].");
+                                                                  final List<EventScopeType> eventScope) {
+    List<EventTypeDto> result = new ArrayList<>();
+    if (eventScope.contains(EventScopeType.ALL)) {
+      result.addAll(extractLabeledEventTypeDtos(
+        definitionKey, ALL_MAPPED_TYPES, getBpmnModelInstance(userId, definitionKey, versions, tenants)
+      ));
+    } else if (eventScope.contains(EventScopeType.START_END)) {
+      result.addAll(extractLabeledEventTypeDtos(
+        definitionKey, START_AND_END_EVENT_TYPES, getBpmnModelInstance(userId, definitionKey, versions, tenants)
+      ));
+    }
+    if (eventScope.contains(EventScopeType.PROCESS_INSTANCE)) {
+      result.addAll(createLabeledProcessInstanceStartEndEventTypeDtos(definitionKey));
     }
     return result;
   }

@@ -233,6 +233,116 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
+        createStartEventCountDto(definitionKey),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
+        createEndEventCountDto(definitionKey)
+      );
+  }
+
+  @Test
+  public void getEventCounts_camundaOnly_processInstanceAndStartEndScopes() {
+    // given
+    final String definitionKey = "myProcess";
+    deployAndStartUserTaskProcess(definitionKey);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    List<EventCountDto> eventCountDtos =
+      createPostEventCountsRequestCamundaSourceOnly(
+        definitionKey,
+        Arrays.asList(EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END),
+        ImmutableList.of("1")
+      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(eventCountDtos)
+      .containsExactlyInAnyOrder(
+        createProcessInstanceStartEventCountDto(definitionKey),
+        createStartEventCountDto(definitionKey),
+        createEndEventCountDto(definitionKey),
+        createProcessInstanceEndEventCount(definitionKey)
+      );
+  }
+
+  @Test
+  public void getEventCounts_camundaOnly_processInstanceAndAllScopes() {
+    // given
+    final String definitionKey = "myProcess";
+    deployAndStartUserTaskProcess(definitionKey);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    List<EventCountDto> eventCountDtos =
+      createPostEventCountsRequestCamundaSourceOnly(
+        definitionKey,
+        Arrays.asList(EventScopeType.ALL, EventScopeType.PROCESS_INSTANCE),
+        ImmutableList.of("1")
+      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(eventCountDtos)
+      .containsExactlyInAnyOrder(
+        createProcessInstanceStartEventCountDto(definitionKey),
+        createStartEventCountDto(definitionKey),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
+        createEndEventCountDto(definitionKey),
+        createProcessInstanceEndEventCount(definitionKey)
+      );
+  }
+
+  @Test
+  public void getEventCounts_camundaOnly_startEndAndAllScopes() {
+    // given
+    final String definitionKey = "myProcess";
+    deployAndStartUserTaskProcess(definitionKey);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    List<EventCountDto> eventCountDtos =
+      createPostEventCountsRequestCamundaSourceOnly(
+        definitionKey,
+        Arrays.asList(EventScopeType.ALL, EventScopeType.START_END),
+        ImmutableList.of("1")
+      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(eventCountDtos)
+      .containsExactlyInAnyOrder(
+        createStartEventCountDto(definitionKey),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
+        createEndEventCountDto(definitionKey)
+      );
+  }
+
+  @Test
+  public void getEventCounts_camundaOnly_allEventScopes() {
+    // given
+    final String definitionKey = "myProcess";
+    deployAndStartUserTaskProcess(definitionKey);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    List<EventCountDto> eventCountDtos =
+      createPostEventCountsRequestCamundaSourceOnly(
+        definitionKey,
+        Arrays.asList(EventScopeType.ALL, EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END),
+        ImmutableList.of("1")
+      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(eventCountDtos)
+      .containsExactlyInAnyOrder(
         createProcessInstanceStartEventCountDto(definitionKey),
         createStartEventCountDto(definitionKey),
         createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
@@ -262,13 +372,11 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createProcessInstanceStartEventCountDto(definitionKey),
         createStartEventCountDto(definitionKey),
         // only V1 tasks are expected
         createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
         createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createEndEventCountDto(definitionKey),
-        createProcessInstanceEndEventCount(definitionKey)
+        createEndEventCountDto(definitionKey)
       );
   }
 
@@ -293,13 +401,11 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createProcessInstanceStartEventCountDto(definitionKey),
         createStartEventCountDto(definitionKey),
         // we only expect the events from the latest version in these cases
         createTaskStartEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK),
         createTaskEndEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK),
-        createEndEventCountDto(definitionKey),
-        createProcessInstanceEndEventCount(definitionKey)
+        createEndEventCountDto(definitionKey)
       );
   }
 
@@ -324,7 +430,7 @@ public class EventRestServiceIT extends AbstractIT {
           .type(EventSourceType.CAMUNDA)
           .processDefinitionKey(definitionKey)
           .versions(ImmutableList.of("1"))
-          .eventScope(EventScopeType.ALL)
+          .eventScope(Collections.singletonList(EventScopeType.ALL))
           .tenants(ImmutableList.of(tenantId2))
           .build()
       )).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
@@ -332,13 +438,11 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createProcessInstanceStartEventCountDto(definitionKey),
         createStartEventCountDto(definitionKey),
         // only tenant2 tasks are expected
         createTaskStartEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK),
         createTaskEndEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK),
-        createEndEventCountDto(definitionKey),
-        createProcessInstanceEndEventCount(definitionKey)
+        createEndEventCountDto(definitionKey)
       );
   }
 
@@ -357,26 +461,30 @@ public class EventRestServiceIT extends AbstractIT {
     List<EventCountDto> eventCountDtos =
       createPostEventCountsRequest(
         ImmutableList.of(
-          createCamundaEventSourceEntryDto(definitionKey1, EventScopeType.ALL, ImmutableList.of("1")),
-          createCamundaEventSourceEntryDto(definitionKey2, EventScopeType.ALL, ImmutableList.of("1"))
+          createCamundaEventSourceEntryDto(
+            definitionKey1,
+            Collections.singletonList(EventScopeType.ALL),
+            ImmutableList.of("1")
+          ),
+          createCamundaEventSourceEntryDto(
+            definitionKey2,
+            Collections.singletonList(EventScopeType.ALL),
+            ImmutableList.of("1")
+          )
         )
       ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createProcessInstanceStartEventCountDto(definitionKey1),
         createStartEventCountDto(definitionKey1),
         createTaskStartEventCountDto(definitionKey1, CAMUNDA_USER_TASK),
         createTaskEndEventCountDto(definitionKey1, CAMUNDA_USER_TASK),
         createEndEventCountDto(definitionKey1),
-        createProcessInstanceEndEventCount(definitionKey1),
-        createProcessInstanceStartEventCountDto(definitionKey2),
         createStartEventCountDto(definitionKey2),
         createTaskStartEventCountDto(definitionKey2, CAMUNDA_SERVICE_TASK),
         createTaskEndEventCountDto(definitionKey2, CAMUNDA_SERVICE_TASK),
-        createEndEventCountDto(definitionKey2),
-        createProcessInstanceEndEventCount(definitionKey2)
+        createEndEventCountDto(definitionKey2)
       );
   }
 
@@ -394,7 +502,11 @@ public class EventRestServiceIT extends AbstractIT {
       createPostEventCountsRequest(
         ImmutableList.of(
           createExternalEventSourceEntry(),
-          createCamundaEventSourceEntryDto(definitionKey, EventScopeType.ALL, ImmutableList.of("1"))
+          createCamundaEventSourceEntryDto(
+            definitionKey,
+            Collections.singletonList(EventScopeType.ALL),
+            ImmutableList.of("1")
+          )
         )
       ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
@@ -407,8 +519,6 @@ public class EventRestServiceIT extends AbstractIT {
         createFrontendMayoCountDto(false),
         createKetchupMayoCountDto(false),
         createManagementBbqCountDto(false),
-        createProcessInstanceEndEventCount(definitionKey),
-        createProcessInstanceStartEventCountDto(definitionKey),
         createEndEventCountDto(definitionKey),
         createStartEventCountDto(definitionKey),
         createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
@@ -434,7 +544,11 @@ public class EventRestServiceIT extends AbstractIT {
       .eventSources(
         ImmutableList.of(
           createExternalEventSourceEntry(),
-          createCamundaEventSourceEntryDto(definitionKey, EventScopeType.ALL, ImmutableList.of("1"))
+          createCamundaEventSourceEntryDto(
+            definitionKey,
+            Collections.singletonList(EventScopeType.ALL),
+            ImmutableList.of("1")
+          )
         )
       )
       .build();
@@ -449,8 +563,6 @@ public class EventRestServiceIT extends AbstractIT {
         createBackendKetchupCountDto(false),
         createBackendMayoCountDto(false),
         createKetchupMayoCountDto(false),
-        createProcessInstanceEndEventCount(definitionKey),
-        createProcessInstanceStartEventCountDto(definitionKey),
         createEndEventCountDto(definitionKey),
         createStartEventCountDto(definitionKey),
         createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
@@ -1109,6 +1221,16 @@ public class EventRestServiceIT extends AbstractIT {
   private OptimizeRequestExecutor createPostEventCountsRequestCamundaSourceOnly(final String definitionKey,
                                                                                 final EventScopeType eventScope,
                                                                                 final List<String> versions) {
+    return createPostEventCountsRequestCamundaSourceOnly(
+      definitionKey,
+      Collections.singletonList(eventScope),
+      versions
+    );
+  }
+
+  private OptimizeRequestExecutor createPostEventCountsRequestCamundaSourceOnly(final String definitionKey,
+                                                                                final List<EventScopeType> eventScope,
+                                                                                final List<String> versions) {
     final ArrayList<EventSourceEntryDto> eventSources = Lists.newArrayList(
       createCamundaEventSourceEntryDto(definitionKey, eventScope, versions)
     );
@@ -1127,7 +1249,7 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   private EventSourceEntryDto createCamundaEventSourceEntryDto(final String definitionKey,
-                                                               final EventScopeType eventScope,
+                                                               final List<EventScopeType> eventScope,
                                                                final List<String> versions) {
     return EventSourceEntryDto.builder()
       .type(EventSourceType.CAMUNDA)

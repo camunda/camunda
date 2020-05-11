@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
@@ -208,7 +208,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     );
   }
 
-  protected EventSourceEntryDto convertToEventSourceEntryDto(EventSourceEntryRestDto eventSourceRestEntry) {
+  protected EventSourceEntryDto convertToEventSourceEntryDto(EventSourceEntryResponseDto eventSourceRestEntry) {
     return EventSourceEntryDto.builder()
       .id(eventSourceRestEntry.getId())
       .type(eventSourceRestEntry.getType())
@@ -508,7 +508,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
                  ));
     return EventSourceEntryDto.builder()
       .type(EventSourceType.CAMUNDA)
-      .eventScope(EventScopeType.ALL)
+      .eventScope(Collections.singletonList(EventScopeType.ALL))
       .tracedByBusinessKey(traceVariable == null)
       .traceVariable(traceVariable)
       .versions(Optional.ofNullable(versions).orElse(Collections.singletonList("ALL")))

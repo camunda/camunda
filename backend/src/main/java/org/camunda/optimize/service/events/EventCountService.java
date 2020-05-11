@@ -96,7 +96,7 @@ public class EventCountService {
                                                               final String definitionKey,
                                                               final List<String> versions,
                                                               final List<String> tenants,
-                                                              final EventScopeType eventScope) {
+                                                              final List<EventScopeType> eventScope) {
     return camundaEventService
       .getLabeledCamundaEventTypesForProcess(userId, definitionKey, versions, tenants, eventScope)
       .stream()

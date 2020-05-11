@@ -50,5 +50,5 @@ public class EventProcessMappingRestDto {
 
   private Double publishingProgress;
 
-  private List<EventSourceEntryRestDto> eventSources = new ArrayList<>();
+  private List<EventSourceEntryResponseDto> eventSources = new ArrayList<>();
 }
