@@ -19,7 +19,7 @@ export default function WithLicense({children}) {
       if (response.status === 403) {
         try {
           const {errorCode} = await response.clone().json();
-          if (errorCode === 'noLicenseStoredError') {
+          if (errorCode === 'noLicenseStoredError' || errorCode === 'invalidLicenseError') {
             setShowLicensePage(true);
           }
         } catch (e) {
