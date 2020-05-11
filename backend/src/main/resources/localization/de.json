@@ -727,6 +727,7 @@
         "noVariables": "Keine Variablen gefunden",
         "loadMore": "Mehr anzeigen",
         "filterForUndefined": "Filter nach Instanzen, in denen die angegebene Variable entweder <b>null</b> oder <b>nicht definiert</b> ist.",
+        "excludeUndefined": "Schließen Sie Instanzen aus, in denen die angegebene Variable entweder <b>null</b> oder <b>nicht definiert</b> ist.",
         "bool": {
           "isTrue": "ist wahr",
           "isFalse": "ist falsch"

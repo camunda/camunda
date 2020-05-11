@@ -87,7 +87,8 @@ it('should take filter given by properties', async () => {
         operator: 'not in',
         values: ['value1', 'value2'],
       },
-      filterForUndefined: true,
+      filterForUndefined: false,
+      excludeUndefined: true,
     },
   };
   const spy = jest.fn();
@@ -95,18 +96,7 @@ it('should take filter given by properties', async () => {
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
-  expect(spy).toHaveBeenCalledWith({
-    type: 'variable',
-    data: {
-      name: 'foo',
-      type: 'String',
-      data: {
-        operator: 'not in',
-        values: ['value1', 'value2'],
-      },
-      filterForUndefined: true,
-    },
-  });
+  expect(spy).toHaveBeenCalledWith(filterData);
 });
 
 it('should enable add filter button if variable selection is valid', async () => {
@@ -146,6 +136,7 @@ it('should create a new filter', () => {
         values: ['value1', 'value2'],
       },
       filterForUndefined: false,
+      excludeUndefined: false,
     },
   });
 });
@@ -169,6 +160,7 @@ it('should create a new filter even if only filter for undefined is checked', ()
       type: 'String',
       data: {},
       filterForUndefined: true,
+      excludeUndefined: false,
     },
   });
 });
@@ -208,7 +200,7 @@ it('should use custom filter adding logic from input components', () => {
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
-  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter, false);
+  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter, false, false);
 });
 
 it('should load available variables', () => {

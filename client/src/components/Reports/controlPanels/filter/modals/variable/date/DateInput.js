@@ -65,13 +65,14 @@ export default class DateInput extends React.Component {
 
   static parseFilter = ({data}) => convertFilterToState(data.data);
 
-  static addFilter = (addFilter, variable, filter, filterForUndefined) => {
+  static addFilter = (addFilter, variable, filter, filterForUndefined, excludeUndefined) => {
     addFilter({
       type: 'variable',
       data: {
         name: variable.name,
         type: variable.type,
         filterForUndefined,
+        excludeUndefined,
         data: convertStateToFilter(filter),
       },
     });

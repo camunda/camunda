@@ -11,7 +11,7 @@ import {BooleanInput} from './boolean';
 import {NumberInput} from './number';
 import {StringInput} from './string';
 import {DateInput} from './date';
-import FilterForUndefined from './FilterForUndefined';
+import UndefinedOptions from './UndefinedOptions';
 
 import './VariableFilter.scss';
 import {t} from 'translation';
@@ -23,6 +23,7 @@ export default class VariableFilter extends React.Component {
     variables: [],
     selectedVariable: null,
     filterForUndefined: false,
+    excludeUndefined: false,
   };
 
   componentDidMount = async () => {
@@ -34,11 +35,13 @@ export default class VariableFilter extends React.Component {
         ? InputComponent.parseFilter(this.props.filterData)
         : filterData.data;
 
+      const {id, name, type, filterForUndefined, excludeUndefined} = filterData;
       this.setState({
-        selectedVariable: {id: filterData.id, name: filterData.name, type: filterData.type},
+        selectedVariable: {id, name, type},
         filter,
         valid: true,
-        filterForUndefined: filterData.filterForUndefined,
+        filterForUndefined,
+        excludeUndefined,
       });
     }
 
@@ -78,6 +81,7 @@ export default class VariableFilter extends React.Component {
   changeFilter = (filter) => this.setState({filter});
 
   changeFilterForUndefined = (filterForUndefined) => this.setState({filterForUndefined});
+  changeExcludeUndefined = (excludeUndefined) => this.setState({excludeUndefined});
 
   getId = (variable) => {
     if (variable) {
@@ -86,7 +90,7 @@ export default class VariableFilter extends React.Component {
   };
 
   render() {
-    const {selectedVariable, variables, filterForUndefined} = this.state;
+    const {selectedVariable, variables, filterForUndefined, excludeUndefined} = this.state;
 
     const ValueInput = this.getInputComponentForVariable(selectedVariable);
 
@@ -121,9 +125,11 @@ export default class VariableFilter extends React.Component {
             disabled={filterForUndefined}
           />
           {selectedVariable && (
-            <FilterForUndefined
+            <UndefinedOptions
               filterForUndefined={filterForUndefined}
               changeFilterForUndefined={this.changeFilterForUndefined}
+              excludeUndefined={excludeUndefined}
+              changeExcludeUndefined={this.changeExcludeUndefined}
             />
           )}
         </Modal.Content>
@@ -151,21 +157,24 @@ export default class VariableFilter extends React.Component {
 
     const variable = this.state.selectedVariable;
     const InputComponent = this.getInputComponentForVariable(variable);
+    const {filter, filterForUndefined, excludeUndefined} = this.state;
 
     InputComponent.addFilter
       ? InputComponent.addFilter(
           this.props.addFilter,
           variable,
-          this.state.filter,
-          this.state.filterForUndefined
+          filter,
+          filterForUndefined,
+          excludeUndefined
         )
       : this.props.addFilter({
           type: this.props.filterType,
           data: {
             name: variable.id || variable.name,
             type: variable.type,
-            data: this.state.filter,
-            filterForUndefined: this.state.filterForUndefined,
+            data: filter,
+            filterForUndefined,
+            excludeUndefined,
           },
         });
   };

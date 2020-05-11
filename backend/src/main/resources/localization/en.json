@@ -727,6 +727,7 @@
         "noVariables": "No variables found",
         "loadMore": "Load More",
         "filterForUndefined": "Only display instances where variables are <b>null</b> or <b>undefined</b>.",
+        "excludeUndefined": "Exclude instances where variables are <b>null</b> or <b>undefined</b>.",
         "bool": {
           "isTrue": "is true",
           "isFalse": "is false"
