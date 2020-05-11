@@ -29,7 +29,7 @@ import java.util.Map;
 @Builder
 @FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class EventProcessMappingRestDto {
+public class EventProcessMappingResponseDto {
   @EqualsAndHashCode.Include
   private String id;
   @NotBlank

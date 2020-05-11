@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest;
+package org.camunda.optimize.rest.eventprocess;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.hamcrest.MatcherAssert;
@@ -294,7 +294,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
     executeImportCycle();
     executeImportCycle();
-    final EventProcessMappingRestDto eventProcessMapping = eventProcessClient.getEventProcessMapping(
+    final EventProcessMappingResponseDto eventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
 
     // then
@@ -315,13 +315,13 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
       .extracting(EventProcessRoleRestDto::getIdentity)
       .extracting(IdentityDto::getId)
       .containsExactly(USER_KERMIT);
-    final EventProcessMappingRestDto updatedMapping = eventProcessClient.getEventProcessMapping(
+    final EventProcessMappingResponseDto updatedMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
     assertThat(updatedMapping).isEqualToComparingOnlyGivenFields(
       eventProcessMapping,
-      EventProcessMappingRestDto.Fields.lastModified,
-      EventProcessMappingRestDto.Fields.lastModifier,
-      EventProcessMappingRestDto.Fields.state
+      EventProcessMappingResponseDto.Fields.lastModified,
+      EventProcessMappingResponseDto.Fields.lastModifier,
+      EventProcessMappingResponseDto.Fields.state
     );
   }
 

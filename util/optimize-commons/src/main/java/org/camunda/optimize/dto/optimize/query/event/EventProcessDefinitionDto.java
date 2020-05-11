@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
-import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,7 +18,6 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
-
 
   @Builder(builderMethodName = "eventProcessBuilder")
   public EventProcessDefinitionDto(@NonNull final String id, @NonNull final String key,

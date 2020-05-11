@@ -67,7 +67,7 @@ public class EventCountService {
       .getEventSources()
       .stream()
       .map(eventSourceEntryDto -> {
-        if (eventSourceEntryDto.getType().equals(EventSourceType.EXTERNAL)) {
+        if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getType())) {
           return eventSequenceCountReader.getEventCounts(searchTerm);
         } else {
           return getEventCountsForCamundaProcess(
@@ -84,7 +84,7 @@ public class EventCountService {
       .collect(Collectors.toList());
 
     if (eventCountRequestDto.getEventSources().size() == 1
-      && eventCountRequestDto.getEventSources().get(0).getType().equals(EventSourceType.EXTERNAL)) {
+      && EventSourceType.EXTERNAL.equals(eventCountRequestDto.getEventSources().get(0).getType())) {
       addSuggestionsForExternalEventCounts(eventCountRequestDto, matchingEventCountDtos);
     }
 

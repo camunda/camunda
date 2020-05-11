@@ -43,6 +43,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
@@ -404,7 +405,8 @@ public class OptimizeRequestExecutor {
     return buildEvaluateSavedReportRequest(reportId, null);
   }
 
-  public OptimizeRequestExecutor buildEvaluateSavedReportRequest(String reportId, AdditionalProcessReportEvaluationFilterDto filters) {
+  public OptimizeRequestExecutor buildEvaluateSavedReportRequest(String reportId,
+                                                                 AdditionalProcessReportEvaluationFilterDto filters) {
     this.path = "/report/" + reportId + "/evaluate";
     this.method = POST;
     Optional.ofNullable(filters).ifPresent(filterDto -> this.body = getBody(filterDto));
@@ -970,9 +972,9 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCreateEventProcessMappingRequest(EventProcessMappingDto eventProcessMappingDto) {
+  public OptimizeRequestExecutor buildCreateEventProcessMappingRequest(EventProcessMappingCreateRequestDto eventProcessMappingCreateRequestDto) {
     this.path = "eventBasedProcess/";
-    this.body = getBody(eventProcessMappingDto);
+    this.body = getBody(eventProcessMappingCreateRequestDto);
     this.method = POST;
     return this;
   }

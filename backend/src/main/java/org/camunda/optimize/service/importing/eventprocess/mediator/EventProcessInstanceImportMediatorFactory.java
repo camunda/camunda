@@ -69,9 +69,9 @@ public class EventProcessInstanceImportMediatorFactory {
                                                                             EventSourceEntryDto eventSourceEntryDto) {
     final EventProcessInstanceImportService eventProcessInstanceImportService = createEventProcessInstanceImportService(
       eventProcessPublishStateDto);
-    if (eventSourceEntryDto.getType().equals(EventSourceType.EXTERNAL)) {
+    if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getType())) {
       return eventProcessInstanceImportService;
-    } else if (eventSourceEntryDto.getType().equals(EventSourceType.CAMUNDA)) {
+    } else if (EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getType())) {
       return new CustomTracedEventProcessInstanceImportService(
         eventSourceEntryDto,
         new SimpleDateFormat(configurationService.getEngineDateFormat()),

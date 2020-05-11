@@ -5,38 +5,33 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 
-import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@FieldNameConstants
-@Builder
-public class EventProcessMappingRequestDto {
-  private String name;
+@EqualsAndHashCode(callSuper = true)
+public class EventProcessMappingCreateRequestDto extends EventProcessMappingRequestDto {
 
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String xml;
+  private boolean autogenerate = false;
 
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  @Valid
-  private Map<String, EventMappingDto> mappings;
+  @Builder(builderMethodName = "eventProcessMappingCreateBuilder")
+  public EventProcessMappingCreateRequestDto(String name,
+                                             String xml,
+                                             Map<String, EventMappingDto> mappings,
+                                             List<EventSourceEntryDto> eventSources,
+                                             boolean autogenerate) {
+    super(name, xml, mappings, eventSources);
+    this.autogenerate = autogenerate;
+  }
 
-  @Builder.Default
-  @Valid
-  private List<EventSourceEntryDto> eventSources = new ArrayList<>();
 }

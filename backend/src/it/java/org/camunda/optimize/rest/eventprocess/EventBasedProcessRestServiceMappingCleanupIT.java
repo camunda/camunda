@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest;
+package org.camunda.optimize.rest.eventprocess;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

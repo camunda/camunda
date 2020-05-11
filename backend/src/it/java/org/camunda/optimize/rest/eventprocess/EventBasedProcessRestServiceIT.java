@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest;
+package org.camunda.optimize.rest.eventprocess;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
@@ -28,7 +28,7 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
@@ -195,7 +195,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto)
       .execute(Response.Status.OK.getStatusCode());
-    EventProcessMappingRestDto storedMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
+    EventProcessMappingResponseDto storedMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
 
     // then
     assertThat(storedMapping.getMappings().values())
@@ -363,7 +363,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     String expectedId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     // when
-    EventProcessMappingRestDto actual = eventProcessClient.getEventProcessMapping(expectedId);
+    EventProcessMappingResponseDto actual = eventProcessClient.getEventProcessMapping(expectedId);
 
     // then
     assertThat(actual.getId()).isEqualTo(expectedId);
@@ -392,7 +392,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     String expectedId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     // when
-    EventProcessMappingRestDto actual = eventProcessClient.getEventProcessMapping(expectedId);
+    EventProcessMappingResponseDto actual = eventProcessClient.getEventProcessMapping(expectedId);
 
     // then the report is returned in state unmapped
     assertThat(actual.getState()).isEqualTo(EventProcessState.UNMAPPED);
@@ -477,7 +477,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then the fields have been updated
     EventSourceEntryDto eventSourceEntry = updateDto.getEventSources().get(0);
-    EventProcessMappingRestDto storedDto = eventProcessClient.getEventProcessMapping(storedEventProcessMappingId);
+    EventProcessMappingResponseDto storedDto = eventProcessClient.getEventProcessMapping(storedEventProcessMappingId);
     assertThat(storedDto)
       .isEqualToIgnoringGivenFields(
         updateDto,
@@ -521,7 +521,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto)
       .execute(Response.Status.OK.getStatusCode());
-    EventProcessMappingRestDto storedMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
+    EventProcessMappingResponseDto storedMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
 
     // then
     assertThat(storedMapping.getMappings().values())
@@ -546,7 +546,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
-    EventProcessMappingRestDto updatedMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
+    EventProcessMappingResponseDto updatedMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
 
     // then
     assertThat(updatedMapping.getMappings().values())
@@ -669,7 +669,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     eventProcessClient.publishEventProcessMapping(eventProcessId);
 
-    final EventProcessMappingRestDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+    final EventProcessMappingResponseDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessId
     );
 
@@ -728,7 +728,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusSeconds(1));
     eventProcessClient.publishEventProcessMapping(eventProcessId);
 
-    final EventProcessMappingRestDto republishedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+    final EventProcessMappingResponseDto republishedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessId
     );
 
@@ -763,7 +763,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .createPublishEventProcessMappingRequest(eventProcessId)
       .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
-    final EventProcessMappingRestDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
+    final EventProcessMappingResponseDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
 
     // then
     assertThat(errorResponse.getErrorCode()).isEqualTo("invalidEventProcessState");
@@ -789,7 +789,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .createPublishEventProcessMappingRequest(eventProcessId)
       .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
-    final EventProcessMappingRestDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
+    final EventProcessMappingResponseDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
 
     // then
     assertThat(errorResponse.getErrorCode()).isEqualTo("invalidEventProcessState");
@@ -826,7 +826,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     eventProcessClient.cancelPublishEventProcessMapping(eventProcessId);
 
-    final EventProcessMappingRestDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
+    final EventProcessMappingResponseDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
 
     // then
     assertThat(actual.getState()).isEqualTo(EventProcessState.MAPPED);

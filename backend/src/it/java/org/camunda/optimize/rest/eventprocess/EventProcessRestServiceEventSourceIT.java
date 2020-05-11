@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest;
+package org.camunda.optimize.rest.eventprocess;
 
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -146,6 +146,23 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   }
 
   @Test
+  public void createWithEventSourceWithoutType_fails() {
+    // given
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(
+      Collections.singletonList(createExternalEventSourceEntry().toBuilder().type(null).build()));
+    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
+
+    // when
+    Response response = eventProcessClient
+      .createCreateEventProcessMappingRequest(eventProcessMapping)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .execute(Response.Status.BAD_REQUEST.getStatusCode());
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void createWithMultipleExternalEventSources_fails() {
     // given
     final EventSourceEntryDto eventSourceEntry = createExternalEventSourceEntry();
@@ -238,7 +255,8 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     performUpdateMappingRequest(eventProcessMappingId, eventProcessMapping);
 
     // then
-    List<EventSourceEntryResponseDto> updatedEventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+    List<EventSourceEntryResponseDto> updatedEventSources = eventProcessClient.getEventProcessMapping(
+      eventProcessMappingId)
       .getEventSources();
     assertThat(updatedEventSources)
       .usingElementComparatorIgnoringFields("id")

@@ -459,10 +459,10 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
 
     List<EventSourceEntryDto> firstEventSource =
       createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
-      firstProcessInstanceEngineDto);
+        firstProcessInstanceEngineDto);
     List<EventSourceEntryDto> secondEventSource =
       createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
-      secondProcessInstanceEngineDto);
+        secondProcessInstanceEngineDto);
 
     createAndPublishEventMapping(mappingsForEventProcess, Stream.of(firstEventSource, secondEventSource).flatMap(
       Collection::stream).collect(Collectors.toList()));
@@ -510,7 +510,7 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
 
     List<EventSourceEntryDto> firstEventSource =
       createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
-      processInstanceEngineDto);
+        processInstanceEngineDto);
     List<EventSourceEntryDto> secondEventSource = createExternalEventSourceAsList();
 
     createAndPublishEventMapping(mappingsForEventProcess, Stream.of(firstEventSource, secondEventSource).flatMap(

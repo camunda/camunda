@@ -16,9 +16,10 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
@@ -78,8 +79,8 @@ public class EventBasedProcessRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public EventProcessMappingRestDto getEventProcessMapping(@PathParam("id") final String eventProcessId,
-                                                           @Context ContainerRequestContext requestContext) {
+  public EventProcessMappingResponseDto getEventProcessMapping(@PathParam("id") final String eventProcessId,
+                                                               @Context ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
       sessionService.getRequestUserOrFailNotAuthorized(requestContext)
     );
@@ -89,7 +90,7 @@ public class EventBasedProcessRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EventProcessMappingRestDto> getAllEventProcessMappingsOmitXml(
+  public List<EventProcessMappingResponseDto> getAllEventProcessMappingsOmitXml(
     @Context final ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
       sessionService.getRequestUserOrFailNotAuthorized(requestContext)
@@ -104,7 +105,7 @@ public class EventBasedProcessRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createEventProcessMapping(@Valid final EventProcessMappingRequestDto createRequestDto,
+  public IdDto createEventProcessMapping(@Valid final EventProcessMappingCreateRequestDto createRequestDto,
                                          @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateAccessToEventProcessManagement(userId);
@@ -248,8 +249,8 @@ public class EventBasedProcessRestService {
     return authenticationService.hasEventProcessManagementAccess(userId);
   }
 
-  private EventProcessMappingRestDto mapMappingDtoToRestDto(final String userId, final EventProcessMappingDto dto) {
-    return EventProcessMappingRestDto.builder()
+  private EventProcessMappingResponseDto mapMappingDtoToRestDto(final String userId, final EventProcessMappingDto dto) {
+    return EventProcessMappingResponseDto.builder()
       .id(dto.getId())
       .lastModified(dto.getLastModified())
       .lastModifier(dto.getLastModifier())

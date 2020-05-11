@@ -458,7 +458,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   protected List<EventSourceEntryDto> createExternalEventSourceAsList() {
-    return Collections.singletonList(eventProcessClient.createExternalEventSourceEntry());
+    return Collections.singletonList(EventProcessClient.createExternalEventSourceEntry());
   }
 
   protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(

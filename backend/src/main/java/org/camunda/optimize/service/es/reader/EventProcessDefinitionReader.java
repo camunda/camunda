@@ -14,8 +14,6 @@ import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappin
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -44,44 +42,6 @@ public class EventProcessDefinitionReader {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
-
-  public Optional<EventProcessDefinitionDto> getEventProcessDefinition(final String eventProcessDefinitionId) {
-    log.debug("Fetching event based process definition with id [{}].", eventProcessDefinitionId);
-    final GetRequest getRequest = new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(
-      eventProcessDefinitionId);
-
-    final GetResponse getResponse;
-    try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      final String reason = String.format(
-        "Could not fetch event based process definition with id [%s].", eventProcessDefinitionId
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (!getResponse.isExists()) {
-      return Optional.empty();
-    }
-
-    try {
-      final EventProcessDefinitionDto result = objectMapper.readValue(
-        getResponse.getSourceAsString(),
-        EventProcessDefinitionDto.class
-      );
-      return Optional.of(result);
-    } catch (IOException e) {
-      final String reason = "Could not deserialize information for event based process definition with id: "
-        + eventProcessDefinitionId;
-      log.error(
-        "Was not able to retrieve event based process definition with id [{}]. Reason: {}",
-        eventProcessDefinitionId,
-        reason
-      );
-      throw new OptimizeRuntimeException(reason, e);
-    }
-  }
 
   public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(final String eventProcessDefinitionKey) {
     log.debug("Fetching event based process definition with key [{}].", eventProcessDefinitionKey);

@@ -16,6 +16,7 @@ import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.service.util.IdGenerator;
 
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +35,7 @@ public class EventSourceEntryDto {
   @Builder.Default
   private String id = IdGenerator.getNextId();
   @Builder.Default
+  @NotNull
   private EventSourceType type = EventSourceType.CAMUNDA;
   @Builder.Default
   private List<EventScopeType> eventScope = Arrays.asList(EventScopeType.ALL);

@@ -24,14 +24,6 @@ public class EventProcessDefinitionService {
   private final EventProcessDefinitionReader eventProcessDefinitionReader;
   private final EventProcessDefinitionWriter eventProcessDefinitionWriter;
 
-  public Optional<EventProcessDefinitionDto> getEventProcessDefinition(final String eventProcessDefinitionId) {
-    return eventProcessDefinitionReader.getEventProcessDefinition(eventProcessDefinitionId);
-  }
-
-  public void createEventProcessDefinition(final EventProcessDefinitionDto definitionDto) {
-    eventProcessDefinitionWriter.createEventProcessDefinition(definitionDto);
-  }
-
   public void importEventProcessDefinitions(final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
     eventProcessDefinitionWriter.importEventProcessDefinitions(definitionOptimizeDtos);
   }
@@ -42,10 +34,6 @@ public class EventProcessDefinitionService {
 
   public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKey(final String definitionKey) {
     return eventProcessDefinitionReader.getEventProcessDefinitionByKeyOmitXml(definitionKey);
-  }
-
-  public boolean deleteEventProcessDefinition(final String eventProcessDefinitionId) {
-    return eventProcessDefinitionWriter.deleteEventProcessDefinition(eventProcessDefinitionId);
   }
 
   public void deleteEventProcessDefinitions(final Collection<String> definitionIds) {

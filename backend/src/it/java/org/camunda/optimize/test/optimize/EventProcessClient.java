@@ -23,8 +23,10 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.util.IdGenerator;
 
 import javax.ws.rs.core.Response;
@@ -49,7 +51,7 @@ public class EventProcessClient {
   }
 
   public OptimizeRequestExecutor createCreateEventProcessMappingRequest(final EventProcessMappingDto eventProcessMappingDto) {
-    return getRequestExecutor().buildCreateEventProcessMappingRequest(eventProcessMappingDto);
+    return getRequestExecutor().buildCreateEventProcessMappingRequest(toEventProcessMappingCreateRequestDto(eventProcessMappingDto));
   }
 
   public String createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
@@ -63,18 +65,18 @@ public class EventProcessClient {
     return getRequestExecutor().buildGetEventProcessMappingRequest(eventProcessMappingId);
   }
 
-  public EventProcessMappingRestDto getEventProcessMapping(final String eventProcessMappingId) {
+  public EventProcessMappingResponseDto getEventProcessMapping(final String eventProcessMappingId) {
     return createGetEventProcessMappingRequest(eventProcessMappingId).execute(
-      EventProcessMappingRestDto.class,
+      EventProcessMappingResponseDto.class,
       Response.Status.OK.getStatusCode()
     );
   }
 
-  public OptimizeRequestExecutor createGetAllEventProcessMappingsRequest() {
+  private OptimizeRequestExecutor createGetAllEventProcessMappingsRequest() {
     return getRequestExecutor().buildGetAllEventProcessMappingsRequests();
   }
 
-  public OptimizeRequestExecutor createGetAllEventProcessMappingsRequest(final String userId, final String pw) {
+  private OptimizeRequestExecutor createGetAllEventProcessMappingsRequest(final String userId, final String pw) {
     return getRequestExecutor().withUserAuthentication(userId, pw).buildGetAllEventProcessMappingsRequests();
   }
 
@@ -248,6 +250,15 @@ public class EventProcessClient {
       .group(IdGenerator.getNextId())
       .source(IdGenerator.getNextId())
       .eventName(IdGenerator.getNextId())
+      .build();
+  }
+
+  private EventProcessMappingCreateRequestDto toEventProcessMappingCreateRequestDto(final EventProcessMappingDto eventProcessMappingDto) {
+    return EventProcessMappingCreateRequestDto.eventProcessMappingCreateBuilder()
+      .name(eventProcessMappingDto.getName())
+      .eventSources(eventProcessMappingDto.getEventSources())
+      .mappings(eventProcessMappingDto.getMappings())
+      .xml(eventProcessMappingDto.getXml())
       .build();
   }
 

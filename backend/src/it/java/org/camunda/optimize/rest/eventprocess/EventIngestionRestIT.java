@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest;
+package org.camunda.optimize.rest.eventprocess;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.http.HttpStatus;
@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
 import org.camunda.optimize.jetty.IngestionQoSFilter;
 import org.camunda.optimize.jetty.MaxRequestSizeFilter;
+import org.camunda.optimize.rest.IngestionRestService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.junit.jupiter.api.BeforeEach;

@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.MappedEventType;
-import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
@@ -159,7 +159,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     // then
-    final EventProcessMappingRestDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+    final EventProcessMappingResponseDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
@@ -300,7 +300,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final EventProcessMappingRestDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+    final EventProcessMappingResponseDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
@@ -353,7 +353,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final EventProcessMappingRestDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+    final EventProcessMappingResponseDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
@@ -553,7 +553,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final EventProcessMappingRestDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+    final EventProcessMappingResponseDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()

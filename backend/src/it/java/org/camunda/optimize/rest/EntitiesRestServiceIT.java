@@ -18,13 +18,13 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -581,9 +581,9 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
-  private String addEventProcessMappingToOptimize(String name) {
-    EventProcessMappingDto eventBasedProcessDto = EventProcessMappingDto.builder()
-      .name(name)
+  private String addEventProcessMappingToOptimize(final String eventProcessName) {
+    EventProcessMappingCreateRequestDto eventBasedProcessDto = EventProcessMappingCreateRequestDto.eventProcessMappingCreateBuilder()
+      .name(eventProcessName)
       .eventSources(Collections.singletonList(
         EventSourceEntryDto.builder()
           .eventScope(Collections.singletonList(EventScopeType.ALL))
