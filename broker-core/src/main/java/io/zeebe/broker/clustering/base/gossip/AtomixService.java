@@ -11,6 +11,8 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryBuilder;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
+import io.atomix.cluster.protocol.GroupMembershipProtocol;
+import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
 import io.atomix.core.AtomixBuilder;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
@@ -33,6 +35,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -105,6 +108,18 @@ public class AtomixService implements Service<Atomix> {
       }
     }
 
+    final GroupMembershipProtocol membershipProtocol =
+        SwimMembershipProtocol.builder()
+            .withBroadcastDisputes(clusterCfg.isGossipBroadcastDisputes())
+            .withFailureTimeout(Duration.ofMillis(clusterCfg.getGossipFailureTimeout()))
+            .withGossipFanout(clusterCfg.getGossipFanout())
+            .withGossipInterval(Duration.ofMillis(clusterCfg.getGossipInterval()))
+            .withProbeInterval(Duration.ofMillis(clusterCfg.getGossipProbeInterval()))
+            .withNotifySuspect(clusterCfg.isNotifySuspect())
+            .withSuspectProbes(clusterCfg.getSuspectedProbes())
+            .withBroadcastUpdates(clusterCfg.isGossipBroadcastUpdates())
+            .build();
+
     final Builder partitionGroupBuilder =
         RaftPartitionGroup.builder(raftPartitionGroupName)
             .withNumPartitions(configuration.getCluster().getPartitionsCount())
@@ -120,7 +135,10 @@ public class AtomixService implements Service<Atomix> {
 
     final RaftPartitionGroup partitionGroup = partitionGroupBuilder.build();
 
-    atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup);
+    atomixBuilder
+        .withMembershipProtocol(membershipProtocol)
+        .withManagementGroup(systemGroup)
+        .withPartitionGroups(partitionGroup);
 
     atomix = atomixBuilder.build();
 
