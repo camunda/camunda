@@ -12,7 +12,6 @@ import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.camunda.optimize.upgrade.version27.EventTraceStateIndexV1;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +53,7 @@ public class DeleteCamundaTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
       .indices()
       .refresh(new RefreshRequest(), RequestOptions.DEFAULT);
 
-    executeBulk("steps/trace_states/30-trace-state-bulk");
+    executeBulk("steps/3.0/trace_states/30-trace-state-bulk");
   }
 
   @SneakyThrows
@@ -84,7 +83,7 @@ public class DeleteCamundaTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
 
   @SneakyThrows
   private void createTraceStateIndexForDefinitionKey(final String definitionKey) {
-    createOptimizeIndexWithTypeAndVersion(new EventTraceStateIndexV1(definitionKey), EventTraceStateIndexV1.VERSION);
+    createOptimizeIndexWithTypeAndVersion(new EventTraceStateIndex(definitionKey), EventTraceStateIndex.VERSION);
   }
 
 }

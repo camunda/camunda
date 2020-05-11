@@ -53,7 +53,7 @@ public class DeleteCamundaSequenceCountIndicesUpgradeIT extends AbstractUpgradeI
       .indices()
       .refresh(new RefreshRequest(), RequestOptions.DEFAULT);
 
-    executeBulk("steps/sequence_counts/30-sequence_counts-bulk");
+    executeBulk("steps/3.0/sequence_counts/30-sequence_counts-bulk");
   }
 
   @SneakyThrows

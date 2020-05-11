@@ -47,7 +47,7 @@ public class AxisLabelMigrationIT extends AbstractUpgradeIT {
     ));
     setMetadataIndexVersion(FROM_VERSION);
 
-    executeBulk("steps/report_data/3.0/30-report-bulk");
+    executeBulk("steps/3.0/report_data/30-report-bulk");
   }
 
   @SuppressWarnings("unchecked")

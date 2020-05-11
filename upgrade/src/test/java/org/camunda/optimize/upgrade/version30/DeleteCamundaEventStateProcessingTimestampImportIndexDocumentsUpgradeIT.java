@@ -48,7 +48,7 @@ public class DeleteCamundaEventStateProcessingTimestampImportIndexDocumentsUpgra
       .indices()
       .refresh(new RefreshRequest(), RequestOptions.DEFAULT);
 
-    executeBulk("steps/timestamp_based_imports/30-timestamp-based-imports-bulk");
+    executeBulk("steps/3.0/timestamp_based_imports/30-timestamp-based-imports-bulk");
   }
 
   @SneakyThrows

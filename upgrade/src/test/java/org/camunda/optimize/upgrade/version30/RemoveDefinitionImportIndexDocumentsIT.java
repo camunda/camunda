@@ -37,7 +37,7 @@ public class RemoveDefinitionImportIndexDocumentsIT extends AbstractUpgradeIT {
     ));
     setMetadataIndexVersion(FROM_VERSION);
 
-    executeBulk("steps/report_data/3.0/30-import-index-bulk");
+    executeBulk("steps/3.0/report_data/30-import-index-bulk");
   }
 
   @SneakyThrows

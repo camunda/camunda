@@ -65,7 +65,7 @@ public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpg
       .indices()
       .refresh(new RefreshRequest(), RequestOptions.DEFAULT);
 
-    executeBulk("steps/camunda_activity_events/30-camunda-activity-events-bulk");
+    executeBulk("steps/3.0/camunda_activity_events/30-camunda-activity-events-bulk");
   }
 
   @SneakyThrows
