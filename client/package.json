@@ -14,7 +14,7 @@
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.1.2",
     "react-textarea-autosize": "^7.1.2",
-    "react-transition-group": "^4.3.0",
+    "react-transition-group": "^4.4.1",
     "styled-components": "^4.4.1"
   },
   "scripts": {
