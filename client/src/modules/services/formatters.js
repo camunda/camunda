@@ -304,3 +304,7 @@ export function formatTenantName({id, name}) {
 
   return name || id;
 }
+
+export function formatFileName(name) {
+  return name.replace(/\s+/g, '-').replace(/[/\\?%*:|"<>]/g, '');
+}

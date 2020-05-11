@@ -97,8 +97,9 @@ export function Heatmap({report, formatter, mightFail, context}) {
                         const hiddenElement = document.createElement('a');
                         hiddenElement.href = window.URL.createObjectURL(data);
                         hiddenElement.download =
-                          t('report.heatTarget.exceededInstances', {name: name.replace(' ', '-')}) +
-                          '.csv';
+                          t('report.heatTarget.exceededInstances', {
+                            name: formatters.formatFileName(name),
+                          }) + '.csv';
                         hiddenElement.click();
                       },
                       showError
@@ -106,7 +107,7 @@ export function Heatmap({report, formatter, mightFail, context}) {
                   }}
                 >
                   <Icon type="save" />
-                  {t('report.heatTarget.instanceIds')}
+                  {t('common.instanceIds')}
                 </Button>
               )}
             </div>

@@ -15,6 +15,7 @@ import {
   camelCaseToLabel,
   formatReportResult,
   createDurationFormattingOptions,
+  formatFileName,
 } from './formatters';
 const nbsp = '\u00A0';
 
@@ -355,4 +356,12 @@ it('should show nice ticks for duration formats on the y axis', () => {
 
   expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
   expect(config.callback(3 * 24 * 60 * 60 * 1000)).toBe('3d');
+});
+
+describe('File name formatting', () => {
+  const formattedFileName = formatFileName('/*File name:');
+  expect(formattedFileName).toBe('File-name');
+
+  const anotherFileName = formatFileName('<another?|name>');
+  expect(anotherFileName).toBe('anothername');
 });

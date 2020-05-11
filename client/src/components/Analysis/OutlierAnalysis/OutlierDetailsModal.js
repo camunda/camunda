@@ -12,6 +12,7 @@ import './OutlierDetailsModal.scss';
 import {t} from 'translation';
 import DurationChart from './DurationChart';
 import VariablesTable from './VariablesTable';
+import InstancesButton from './InstancesButton';
 
 export default class OutlierDetailsModal extends React.Component {
   state = {
@@ -20,7 +21,7 @@ export default class OutlierDetailsModal extends React.Component {
 
   render() {
     const {tableView} = this.state;
-    const {name, higherOutlier, data, totalCount} = this.props.selectedNode;
+    const {id, name, higherOutlier, data, totalCount} = this.props.selectedNode;
     return (
       <Modal open size="large" onClose={this.props.onClose} className="OutlierDetailsModal">
         <Modal.Header>{t('analysis.outlier.detailsModal.title', {name})}</Modal.Header>
@@ -45,6 +46,12 @@ export default class OutlierDetailsModal extends React.Component {
                   ),
                   percentage: Math.round(higherOutlier.relation * 100),
                 })}
+                <InstancesButton
+                  id={id}
+                  name={name}
+                  value={higherOutlier.boundValue}
+                  config={this.props.config}
+                />
               </p>
               <DurationChart data={data} />
             </>

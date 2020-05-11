@@ -265,7 +265,6 @@
       "invalidValue": "All fields should have a numeric value",
       "targetDuration": "Target duration",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% of the target value",
-      "instanceIds": "Instance Ids",
       "duration": {
         "avg": "Average duration: ",
         "min": "Minimum duration: ",
@@ -578,6 +577,7 @@
     "goToHome": "Go to Home",
     "editAccess": "Edit Access",
     "id": "ID",
+    "instanceIds": "Instance IDs",
     "errors": {
       "inValidLink": "This link is not valid."
     },

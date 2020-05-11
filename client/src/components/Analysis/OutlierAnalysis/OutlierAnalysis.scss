@@ -30,6 +30,11 @@
 
     .Button {
       float: right;
+      margin-left: 10px;
+
+      .Icon {
+        min-height: 14px;
+      }
     }
   }
 }

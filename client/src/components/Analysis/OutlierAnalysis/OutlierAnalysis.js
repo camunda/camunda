@@ -16,6 +16,7 @@ import OutlierDetailsModal from './OutlierDetailsModal';
 import {t} from 'translation';
 
 import './OutlierAnalysis.scss';
+import InstancesButton from './InstancesButton';
 
 export default class OutlierAnalysis extends React.Component {
   state = {
@@ -93,29 +94,30 @@ export default class OutlierAnalysis extends React.Component {
   };
 
   renderTooltip = (data, id) => {
+    const {flowNodeNames, config} = this.state;
     const nodeData = this.state.data[id];
     if (!data || !nodeData.higherOutlier) {
       return undefined;
     }
+    const {
+      higherOutlier: {count, relation, boundValue},
+      totalCount,
+    } = nodeData;
 
     return (
       <div className="nodeTooltip">
         <div className="tooltipTitle">
-          <b>{this.state.flowNodeNames[id] || id} :</b> {t('analysis.outlier.totalInstances')}{' '}
-          {nodeData.totalCount}
+          <b>{flowNodeNames[id] || id} :</b> {t('analysis.outlier.totalInstances')} {totalCount}
         </div>
         <p className="description">
           {t('analysis.outlier.tooltipText', {
-            count: nodeData.higherOutlier.count,
-            instance: t(
-              `analysis.outlier.tooltip.instance.label${
-                nodeData.higherOutlier.count === 1 ? '' : '-plural'
-              }`
-            ),
-            percentage: Math.round(nodeData.higherOutlier.relation * 100),
+            count,
+            instance: t(`analysis.outlier.tooltip.instance.label${count === 1 ? '' : '-plural'}`),
+            percentage: Math.round(relation * 100),
           })}
         </p>
         <Button onClick={() => this.loadChartData(id, nodeData)}>{t('common.viewDetails')}</Button>
+        <InstancesButton id={id} name={flowNodeNames[id]} value={boundValue} config={config} />
       </div>
     );
   };

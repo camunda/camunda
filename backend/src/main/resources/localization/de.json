@@ -265,7 +265,6 @@
       "invalidValue": "Alle Felder sollten einen numerischen Wert haben",
       "targetDuration": "Solldauer",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% des Sollwerts",
-      "instanceIds": "Instanz IDs",
       "duration": {
         "avg": "Durchschnittliche Dauer: ",
         "min": "Mindestdauer: ",
@@ -578,6 +577,7 @@
     "goToHome": "zur Homepage",
     "editAccess": "Zugriff bearbeiten",
     "id": "ID",
+    "instanceIds": "Instanz IDs",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig"
     },

@@ -30,6 +30,7 @@ jest.mock('services', () => {
       duration: durationFct,
       convertToMilliseconds: jest.fn(),
       objectifyResult: jest.fn().mockReturnValue({a: 1, b: 2}),
+      formatFileName: (name) => name,
     },
     loadRawData: jest.fn().mockReturnValue({result: {data: [{processInstanceId: 'test'}]}}),
     isDurationReport: jest.fn().mockReturnValue(false),
