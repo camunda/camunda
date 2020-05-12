@@ -18,9 +18,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.export.CSVUtils.mapCsvLinesToCsvBytes;
 import static org.camunda.optimize.service.export.RawDataHelper.NUMBER_OF_RAW_DECISION_REPORT_COLUMNS;
 import static org.camunda.optimize.service.export.RawDataHelper.NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS;
 
@@ -39,6 +42,25 @@ public class CSVUtilsTest {
       .hasSize(4)
       .first().extracting(first -> first.length)
       .isEqualTo(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS);
+  }
+
+  @Test
+  public void testRawProcessResultMapping_testQuoteEscapingInValue() {
+    //given
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("\"1\"", "test");
+    final List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtoWithVariables(variables);
+    final String expectedString =
+      "\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"businessKey\",\"startDate\"," +
+        "\"endDate\",\"duration\",\"engineName\",\"tenantId\",\"variable:\"\"1\"\"\"\r\n" +
+        "\"test_key\",\"test_id\",,\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
+        ".048+01:00\",\"0\",\"engine\",\"tenant\",\"test\"\r\n";
+
+    //when
+    final String resultString = new String(mapCsvLinesToCsvBytes(mapRawProcessReportInstances(toMap)));
+
+    //then matches expected String
+    assertThat(resultString).isEqualTo(expectedString);
   }
 
   @Test
@@ -382,7 +404,8 @@ public class CSVUtilsTest {
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
     List<String> firstRowOutputVariableColumnNames = Lists.newArrayList(toMap.get(0).getOutputVariables().keySet());
-    List<String> excludedColumns = Lists.newArrayList(CSVUtils.OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(0));
+    List<String> excludedColumns =
+      Lists.newArrayList(CSVUtils.OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(0));
 
     final SingleDecisionReportDefinitionDto reportDefinition = new SingleDecisionReportDefinitionDto();
     reportDefinition.getData().getConfiguration().setExcludedColumns(excludedColumns);
@@ -406,7 +429,8 @@ public class CSVUtilsTest {
     final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDatadecisionReportResultDto.setData(toMap);
     List<String> firstRowOutputVariableColumnNames = Lists.newArrayList(toMap.get(0).getOutputVariables().keySet());
-    List<String> includedColumns = Lists.newArrayList(CSVUtils.OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(0));
+    List<String> includedColumns =
+      Lists.newArrayList(CSVUtils.OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(0));
 
     final SingleDecisionReportDefinitionDto reportDefinition = new SingleDecisionReportDefinitionDto();
     reportDefinition.getData().getConfiguration().setIncludedColumns(includedColumns);

@@ -59,6 +59,26 @@ public class RawDataHelper {
     return toMap;
   }
 
+  public static List<RawDataProcessInstanceDto> getRawDataProcessInstanceDtoWithVariables(
+    final Map<String, Object> variables) {
+    final List<RawDataProcessInstanceDto> toMap = new ArrayList<>();
+
+    final RawDataProcessInstanceDto instance = new RawDataProcessInstanceDto();
+    instance.setProcessDefinitionId("test_id");
+    instance.setProcessDefinitionKey("test_key");
+    instance.setStartDate(OffsetDateTime.parse(FIXED_TIME));
+    instance.setEndDate(OffsetDateTime.parse(FIXED_TIME));
+    instance.setDuration(0L);
+    instance.setBusinessKey("aBusinessKey");
+    instance.setEngineName("engine");
+    instance.setTenantId("tenant");
+
+    instance.setVariables(variables);
+    toMap.add(instance);
+
+    return toMap;
+  }
+
   public static List<RawDataDecisionInstanceDto> getRawDataDecisionInstanceDtos() {
     final List<RawDataDecisionInstanceDto> toMap = new ArrayList<>();
 
