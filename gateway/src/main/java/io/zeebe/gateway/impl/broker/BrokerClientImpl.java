@@ -24,6 +24,7 @@ import io.zeebe.transport.ClientTransportBuilder;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.IncomingResponse;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.transport.impl.memory.UnboundedMemoryPool;
 import io.zeebe.util.ByteValue;
@@ -34,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 
 public class BrokerClientImpl implements BrokerClient {
@@ -171,16 +173,25 @@ public class BrokerClientImpl implements BrokerClient {
    * @see io.zeebe.gateway.impl.broker.BrokerClient#sendRequest(io.zeebe.gateway.impl.broker.request.BrokerRequest)
    */
   @Override
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request) {
+  public <T> ActorFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
     return requestManager.sendRequest(request);
   }
 
   @Override
   public <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer) {
     requestManager.sendRequest(request, responseConsumer, throwableConsumer);
+  }
+
+  @Override
+  public <T> void sendRequest(
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer,
+      final Predicate<IncomingResponse> shouldRetryPredicate) {
+    requestManager.sendRequest(request, responseConsumer, throwableConsumer, shouldRetryPredicate);
   }
 
   @Override

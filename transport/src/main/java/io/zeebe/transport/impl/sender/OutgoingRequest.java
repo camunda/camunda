@@ -34,7 +34,7 @@ public class OutgoingRequest {
 
   private final Supplier<RemoteAddress> remoteAddressSupplier;
 
-  private final Predicate<DirectBuffer> retryPredicate;
+  private final Predicate<IncomingResponse> retryPredicate;
 
   private final Duration timeout;
 
@@ -49,10 +49,10 @@ public class OutgoingRequest {
   private boolean isTimedout;
 
   public OutgoingRequest(
-      Supplier<RemoteAddress> remoteAddressSupplier,
-      Predicate<DirectBuffer> retryPredicate,
-      UnsafeBuffer requestBuffer,
-      Duration timeout) {
+      final Supplier<RemoteAddress> remoteAddressSupplier,
+      final Predicate<IncomingResponse> retryPredicate,
+      final UnsafeBuffer requestBuffer,
+      final Duration timeout) {
     this.remoteAddressSupplier = remoteAddressSupplier;
     this.retryPredicate = retryPredicate;
     this.requestBuffer = requestBuffer;
@@ -67,17 +67,19 @@ public class OutgoingRequest {
     return remoteAddressSupplier.get();
   }
 
-  public boolean tryComplete(IncomingResponse incomingResponse) {
-    final DirectBuffer data = incomingResponse.getResponseBuffer();
+  public boolean shouldRetry(final IncomingResponse incomingResponse) {
+    return retryPredicate.test(incomingResponse);
+  }
 
+  public boolean tryComplete(final IncomingResponse incomingResponse) {
     if (responseFuture.isDone()) {
       return true;
-    } else if (!retryPredicate.test(data)) {
+    } else if (!retryPredicate.test(incomingResponse)) {
       try {
         final RemoteAddress remoteAddress = remotesTried.peekFirst();
         final ClientResponseImpl response = new ClientResponseImpl(incomingResponse, remoteAddress);
         responseFuture.complete(response);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.debug("Could not complete request future", e);
       }
 
@@ -88,10 +90,10 @@ public class OutgoingRequest {
     }
   }
 
-  public void fail(Throwable throwable) {
+  public void fail(final Throwable throwable) {
     try {
       responseFuture.completeExceptionally(throwable);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.debug("Could not complete request future exceptionally", e);
     }
   }
@@ -108,7 +110,7 @@ public class OutgoingRequest {
     return timeout;
   }
 
-  public void markRemoteAddress(RemoteAddress remoteAddress) {
+  public void markRemoteAddress(final RemoteAddress remoteAddress) {
     if (!remoteAddress.equals(remotesTried.peekFirst())) {
       remotesTried.push(remoteAddress);
     }
@@ -118,7 +120,7 @@ public class OutgoingRequest {
     return headerWriter;
   }
 
-  public void setTimerId(long timerId) {
+  public void setTimerId(final long timerId) {
     this.timerId = timerId;
   }
 
@@ -134,7 +136,7 @@ public class OutgoingRequest {
     return lastRequestId;
   }
 
-  public void setLastRequestId(long requestId) {
+  public void setLastRequestId(final long requestId) {
     this.lastRequestId = requestId;
   }
 

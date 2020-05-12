@@ -12,6 +12,7 @@ import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.RequestMapper;
 import io.zeebe.gateway.ResponseMapper;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -22,15 +23,18 @@ public class ActivateJobsHandler {
 
   private final Map<String, Integer> jobTypeToNextPartitionId = new HashMap<>();
   private final BrokerClient brokerClient;
+  private final BrokerTopologyManager topologyManager;
 
-  public ActivateJobsHandler(BrokerClient brokerClient) {
+  public ActivateJobsHandler(
+      final BrokerClient brokerClient, final BrokerTopologyManager topologyManager) {
     this.brokerClient = brokerClient;
+    this.topologyManager = topologyManager;
   }
 
   public void activateJobs(
-      int partitionsCount,
-      ActivateJobsRequest request,
-      StreamObserver<ActivateJobsResponse> responseObserver) {
+      final int partitionsCount,
+      final ActivateJobsRequest request,
+      final StreamObserver<ActivateJobsResponse> responseObserver) {
     activateJobs(
         RequestMapper.toActivateJobsRequest(request),
         partitionIdIteratorForType(request.getType(), partitionsCount),
@@ -40,22 +44,21 @@ public class ActivateJobsHandler {
   }
 
   private void activateJobs(
-      BrokerActivateJobsRequest request,
-      PartitionIdIterator partitionIdIterator,
-      int remainingAmount,
-      String jobType,
-      StreamObserver<ActivateJobsResponse> responseObserver) {
+      final BrokerActivateJobsRequest request,
+      final PartitionIdIterator partitionIdIterator,
+      final int remainingAmount,
+      final String jobType,
+      final StreamObserver<ActivateJobsResponse> responseObserver) {
     activateJobs(request, partitionIdIterator, remainingAmount, jobType, responseObserver, false);
   }
 
   private void activateJobs(
-      BrokerActivateJobsRequest request,
-      PartitionIdIterator partitionIdIterator,
-      int remainingAmount,
-      String jobType,
-      StreamObserver<ActivateJobsResponse> responseObserver,
-      boolean pollPrevPartition) {
-
+      final BrokerActivateJobsRequest request,
+      final PartitionIdIterator partitionIdIterator,
+      final int remainingAmount,
+      final String jobType,
+      final StreamObserver<ActivateJobsResponse> responseObserver,
+      final boolean pollPrevPartition) {
     if (remainingAmount > 0 && (pollPrevPartition || partitionIdIterator.hasNext())) {
       final int partitionId =
           pollPrevPartition
@@ -90,7 +93,8 @@ public class ActivateJobsHandler {
                 partitionIdIterator.getCurrentPartitionId(),
                 error);
             activateJobs(request, partitionIdIterator, remainingAmount, jobType, responseObserver);
-          });
+          },
+          response -> false);
     } else {
       // enough jobs activated or no more partitions left to check
       jobTypeToNextPartitionId.put(jobType, partitionIdIterator.getCurrentPartitionId());
@@ -98,7 +102,8 @@ public class ActivateJobsHandler {
     }
   }
 
-  private PartitionIdIterator partitionIdIteratorForType(String jobType, int partitionsCount) {
+  private PartitionIdIterator partitionIdIteratorForType(
+      final String jobType, final int partitionsCount) {
     final Integer nextPartitionId = jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> 0);
     return new PartitionIdIterator(nextPartitionId, partitionsCount);
   }

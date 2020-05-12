@@ -7,12 +7,12 @@
  */
 package io.zeebe.transport;
 
+import io.zeebe.transport.impl.IncomingResponse;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.agrona.DirectBuffer;
 
 public interface ClientOutput {
 
@@ -43,6 +43,9 @@ public interface ClientOutput {
    */
   ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer, Duration timeout);
 
+  ActorFuture<ClientResponse> sendRequestWithRetry(
+      Supplier<Integer> nodeIdSupplier, BufferWriter writer, Duration timeout);
+
   /**
    * Send a request to a node with retries if there is no current connection or the node is not
    * resolvable. Makes this method more robust in the presence of short intermittent disconnects.
@@ -70,7 +73,7 @@ public interface ClientOutput {
    */
   ActorFuture<ClientResponse> sendRequestWithRetry(
       Supplier<Integer> nodeIdSupplier,
-      Predicate<DirectBuffer> responseInspector,
+      Predicate<IncomingResponse> responseInspector,
       BufferWriter writer,
       Duration timeout);
 }

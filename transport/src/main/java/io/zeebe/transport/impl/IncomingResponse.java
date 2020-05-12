@@ -12,10 +12,13 @@ import org.agrona.DirectBuffer;
 public class IncomingResponse {
   private final long requestId;
   private final DirectBuffer responseBuffer;
+  private final Exception exception;
 
-  public IncomingResponse(long requestId, DirectBuffer responseBuffer) {
+  public IncomingResponse(
+      final long requestId, final DirectBuffer responseBuffer, final Exception exception) {
     this.requestId = requestId;
     this.responseBuffer = responseBuffer;
+    this.exception = exception;
   }
 
   public long getRequestId() {
@@ -24,5 +27,9 @@ public class IncomingResponse {
 
   public DirectBuffer getResponseBuffer() {
     return responseBuffer;
+  }
+
+  public Exception getException() {
+    return exception;
   }
 }

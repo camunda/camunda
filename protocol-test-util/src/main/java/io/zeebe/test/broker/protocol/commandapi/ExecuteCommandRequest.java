@@ -18,6 +18,7 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.impl.IncomingResponse;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
@@ -38,12 +39,12 @@ public class ExecuteCommandRequest implements BufferWriter {
   protected int partitionId = partitionIdNullValue();
   protected long key = keyNullValue();
   protected ValueType valueType = ValueType.NULL_VAL;
-  private Intent intent = null;
   protected byte[] encodedCmd;
-
   protected ActorFuture<ClientResponse> responseFuture;
+  private Intent intent = null;
 
-  public ExecuteCommandRequest(ClientOutput output, int target, final MsgPackHelper msgPackHelper) {
+  public ExecuteCommandRequest(
+      final ClientOutput output, final int target, final MsgPackHelper msgPackHelper) {
     this.output = output;
     this.target = target;
     this.msgPackHelper = msgPackHelper;
@@ -64,7 +65,7 @@ public class ExecuteCommandRequest implements BufferWriter {
     return this;
   }
 
-  public ExecuteCommandRequest intent(Intent intent) {
+  public ExecuteCommandRequest intent(final Intent intent) {
     this.intent = intent;
     return this;
   }
@@ -74,7 +75,7 @@ public class ExecuteCommandRequest implements BufferWriter {
     return this;
   }
 
-  public ExecuteCommandRequest command(BufferWriter command) {
+  public ExecuteCommandRequest command(final BufferWriter command) {
     final int commandLength = command.getLength();
     this.encodedCmd = new byte[commandLength];
     command.write(new UnsafeBuffer(encodedCmd), 0);
@@ -86,7 +87,7 @@ public class ExecuteCommandRequest implements BufferWriter {
     return send(this::shouldRetryRequest);
   }
 
-  public ExecuteCommandRequest send(Predicate<DirectBuffer> retryFunction) {
+  public ExecuteCommandRequest send(final Predicate<IncomingResponse> retryFunction) {
     if (responseFuture != null) {
       throw new RuntimeException("Cannot send request more than once");
     }
@@ -116,7 +117,8 @@ public class ExecuteCommandRequest implements BufferWriter {
     return result;
   }
 
-  private boolean shouldRetryRequest(final DirectBuffer responseBuffer) {
+  private boolean shouldRetryRequest(final IncomingResponse response) {
+    final DirectBuffer responseBuffer = response.getResponseBuffer();
     final ErrorResponse error = new ErrorResponse(msgPackHelper);
     try {
       error.wrap(responseBuffer, 0, responseBuffer.capacity());

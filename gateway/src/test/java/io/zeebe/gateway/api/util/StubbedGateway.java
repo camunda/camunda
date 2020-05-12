@@ -28,20 +28,22 @@ import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import io.zeebe.transport.impl.IncomingResponse;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class StubbedGateway extends Gateway {
 
   private static final String SERVER_NAME = "server";
 
-  private Map<Class<?>, RequestHandler> requestHandlers = new HashMap<>();
-  private List<BrokerRequest> brokerRequests = new ArrayList<>();
+  private final Map<Class<?>, RequestHandler> requestHandlers = new HashMap<>();
+  private final List<BrokerRequest> brokerRequests = new ArrayList<>();
 
   public StubbedGateway() {
     super(new GatewayCfg(), cfg -> null, cfg -> InProcessServerBuilder.forName(SERVER_NAME));
@@ -49,7 +51,7 @@ public class StubbedGateway extends Gateway {
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
       void registerHandler(
-          Class<?> requestType, RequestHandler<RequestT, ResponseT> requestHandler) {
+          final Class<?> requestType, final RequestHandler<RequestT, ResponseT> requestHandler) {
     requestHandlers.put(requestType, requestHandler);
   }
 
@@ -69,15 +71,15 @@ public class StubbedGateway extends Gateway {
     return (T) brokerRequests.get(0);
   }
 
-  @FunctionalInterface
-  interface RequestHandler<RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>> {
-    ResponseT handle(RequestT request) throws Exception;
-  }
-
   public interface RequestStub<
           RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
       extends RequestHandler<RequestT, ResponseT> {
     void registerWith(StubbedGateway gateway);
+  }
+
+  @FunctionalInterface
+  interface RequestHandler<RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>> {
+    ResponseT handle(RequestT request) throws Exception;
   }
 
   private class StubbedBrokerClient implements BrokerClient {
@@ -88,15 +90,15 @@ public class StubbedGateway extends Gateway {
     public void close() {}
 
     @Override
-    public <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request) {
+    public <T> ActorFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
       throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
     public <T> void sendRequest(
-        BrokerRequest<T> request,
-        BrokerResponseConsumer<T> responseConsumer,
-        Consumer<Throwable> throwableConsumer) {
+        final BrokerRequest<T> request,
+        final BrokerResponseConsumer<T> responseConsumer,
+        final Consumer<Throwable> throwableConsumer) {
       brokerRequests.add(request);
       try {
         final RequestHandler requestHandler = requestHandlers.get(request.getClass());
@@ -111,9 +113,18 @@ public class StubbedGateway extends Gateway {
           throwableConsumer.accept(
               new IllegalBrokerResponseException("Unknown response received: " + response));
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throwableConsumer.accept(new BrokerResponseException(e));
       }
+    }
+
+    @Override
+    public <T> void sendRequest(
+        final BrokerRequest<T> request,
+        final BrokerResponseConsumer<T> responseConsumer,
+        final Consumer<Throwable> throwableConsumer,
+        final Predicate<IncomingResponse> shouldRetryPredicate) {
+      sendRequest(request, responseConsumer, throwableConsumer);
     }
 
     @Override
@@ -130,7 +141,7 @@ public class StubbedGateway extends Gateway {
       this(8);
     }
 
-    StubbedTopologyManager(int partitionsCount) {
+    StubbedTopologyManager(final int partitionsCount) {
       clusterState = new BrokerClusterStateImpl();
       clusterState.addBrokerIfAbsent(0);
       clusterState.setBrokerAddressIfPresent(0, "localhost:26501");

@@ -26,7 +26,9 @@ public class ClientReceiveHandler implements FragmentHandler {
   protected final List<ClientInputListener> listeners;
 
   public ClientReceiveHandler(
-      Sender requestPool, Dispatcher receiveBuffer, List<ClientInputListener> listeners) {
+      final Sender requestPool,
+      final Dispatcher receiveBuffer,
+      final List<ClientInputListener> listeners) {
     this.requestPool = requestPool;
     this.receiveBuffer = receiveBuffer;
     this.listeners = listeners;
@@ -34,7 +36,11 @@ public class ClientReceiveHandler implements FragmentHandler {
 
   @Override
   public int onFragment(
-      DirectBuffer buffer, int readOffset, int length, int streamId, boolean isMarkedFailed) {
+      final DirectBuffer buffer,
+      int readOffset,
+      int length,
+      final int streamId,
+      final boolean isMarkedFailed) {
     transportHeaderDescriptor.wrap(buffer, readOffset);
     readOffset += TransportHeaderDescriptor.headerLength();
     length -= TransportHeaderDescriptor.headerLength();
@@ -53,7 +59,7 @@ public class ClientReceiveHandler implements FragmentHandler {
         buffer.getBytes(readOffset, responseBuffer, 0, length);
 
         invokeResponseListeners(streamId, requestId, buffer, readOffset, length);
-        requestPool.submitResponse(new IncomingResponse(requestId, responseBuffer));
+        requestPool.submitResponse(new IncomingResponse(requestId, responseBuffer, null));
 
         return CONSUME_FRAGMENT_RESULT;
 
@@ -76,7 +82,8 @@ public class ClientReceiveHandler implements FragmentHandler {
     return CONSUME_FRAGMENT_RESULT;
   }
 
-  protected int onMessage(DirectBuffer buffer, int offset, int length, int streamId) {
+  protected int onMessage(
+      final DirectBuffer buffer, final int offset, final int length, final int streamId) {
     if (receiveBuffer == null) {
       return CONSUME_FRAGMENT_RESULT;
     }
@@ -89,7 +96,8 @@ public class ClientReceiveHandler implements FragmentHandler {
     }
   }
 
-  protected void invokeMessageListeners(int streamId, DirectBuffer buf, int offset, int length) {
+  protected void invokeMessageListeners(
+      final int streamId, final DirectBuffer buf, final int offset, final int length) {
     if (listeners != null) {
       for (int i = 0; i < listeners.size(); i++) {
         listeners.get(i).onMessage(streamId, buf, offset, length);
@@ -98,7 +106,11 @@ public class ClientReceiveHandler implements FragmentHandler {
   }
 
   protected void invokeResponseListeners(
-      int streamId, long requestId, DirectBuffer buf, int offset, int length) {
+      final int streamId,
+      final long requestId,
+      final DirectBuffer buf,
+      final int offset,
+      final int length) {
     if (listeners != null) {
       for (int i = 0; i < listeners.size(); i++) {
         listeners.get(i).onResponse(streamId, requestId, buf, offset, length);
