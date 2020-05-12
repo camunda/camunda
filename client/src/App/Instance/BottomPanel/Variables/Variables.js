@@ -218,7 +218,7 @@ export default function Variables({
                       {isRunning && (
                         <Styled.EditButtonsTD>
                           {hasActiveOperation ? (
-                            <Styled.Spinner />
+                            <Styled.Spinner data-test="edit-variable-spinner" />
                           ) : (
                             <Styled.EditButton
                               title="Enter edit mode"

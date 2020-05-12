@@ -11,7 +11,7 @@ import {OPERATION_STATE} from 'modules/constants';
 
 import OperationStatus from './OperationStatus';
 
-const actionSpinnerSelector = '[data-test="action-spinner"]';
+const operationSpinnerSelector = '[data-test="operation-spinner"]';
 
 describe('OperationStatus', () => {
   it('should render a spinner for scheduled operation', () => {
@@ -24,7 +24,7 @@ describe('OperationStatus', () => {
     );
 
     //then
-    expect(node.find(actionSpinnerSelector)).toExist();
+    expect(node.find(operationSpinnerSelector)).toExist();
   });
 
   it('should render a spinner for locked operation', () => {
@@ -37,7 +37,7 @@ describe('OperationStatus', () => {
     );
 
     //then
-    expect(node.find(actionSpinnerSelector)).toExist();
+    expect(node.find(operationSpinnerSelector)).toExist();
   });
 
   it('should render a spinner for sent operation', () => {
@@ -50,7 +50,7 @@ describe('OperationStatus', () => {
     );
 
     //then
-    expect(node.find(actionSpinnerSelector)).toExist();
+    expect(node.find(operationSpinnerSelector)).toExist();
   });
 
   it('should render a spinner if forceSpinner prop is true', () => {
@@ -64,7 +64,7 @@ describe('OperationStatus', () => {
     );
 
     //then
-    expect(node.find(actionSpinnerSelector)).toExist();
+    expect(node.find(operationSpinnerSelector)).toExist();
   });
 
   it('should not render a spinner', () => {
@@ -77,6 +77,6 @@ describe('OperationStatus', () => {
     );
 
     //then
-    expect(node.find(actionSpinnerSelector)).not.toExist();
+    expect(node.find(operationSpinnerSelector)).not.toExist();
   });
 });

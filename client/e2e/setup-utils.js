@@ -25,6 +25,18 @@ function createInstances(bpmnProcessId, version, numberOfInstances) {
   );
 }
 
+async function createSingleInstance(processId, version) {
+  const result = await zbc.createWorkflowInstance({
+    bpmnProcessId: processId,
+    version: version,
+    variables: {
+      testData: 'something',
+    },
+  });
+
+  return result.workflowInstanceKey;
+}
+
 function completeTask(taskType) {
   zbc.createWorker(null, taskType, handler);
 }
@@ -38,4 +50,4 @@ function handler(job, complete) {
   complete(updateToBrokerVariables);
 }
 
-export {deploy, createInstances, completeTask};
+export {deploy, createInstances, completeTask, createSingleInstance};

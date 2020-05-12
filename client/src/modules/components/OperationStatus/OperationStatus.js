@@ -24,7 +24,7 @@ const OperationStatus = ({
       <Styled.OperationSpinner
         selected={selected}
         title={`Instance ${instance.id} has scheduled Operations`}
-        data-test="action-spinner"
+        data-test="operation-spinner"
         {...props}
       />
     );
