@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,8 +63,7 @@ public class EngineVersionCheckerTest {
 
   private static Stream<String> invalidVersions() {
     List<String> invalidVersions = new ArrayList<>();
-    invalidVersions.add("0.0.0");
-    invalidVersions.add(findUnsupportedMajorVersion());
+    invalidVersions.addAll(findUnsupportedMajorVersions());
     invalidVersions.addAll(findUnsupportedMinorVersions());
     invalidVersions.addAll(findUnsupportedPatchVersions());
     return invalidVersions.stream();
@@ -109,13 +109,13 @@ public class EngineVersionCheckerTest {
       .collect(Collectors.toList());
   }
 
-  private static String findUnsupportedMajorVersion() {
-    String unsupportedMajor =
-      String.valueOf(SUPPORTED_ENGINES.stream()
+  private static List<String> findUnsupportedMajorVersions() {
+    long oldestSupportedMajor = SUPPORTED_ENGINES.stream()
                        .mapToLong(version -> Long.parseLong(getMajorVersionFrom(version)))
-                       .map(majorVersion -> majorVersion - 1)
-                       .min().getAsLong());
-    return buildVersionFromParts(unsupportedMajor, "0", "0");
+                       .min().getAsLong();
+    return LongStream.range(0, oldestSupportedMajor).boxed()
+      .map(majorVersion -> buildVersionFromParts(String.valueOf(majorVersion), "0", "0"))
+      .collect(Collectors.toList());
   }
 
   private static String incrementVersionPart(final String versionPart) {
