@@ -179,5 +179,11 @@ public class ElasticsearchExporterConfiguration {
     public String toString() {
       return "AuthenticationConfiguration{" + "username='" + username + '\'' + '}';
     }
+
+    @Override
+    public String toString() {
+      // we don't want to expose this information
+      return "AuthenticationConfiguration{Confidential information}";
+    }
   }
 }
