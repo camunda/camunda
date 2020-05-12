@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {render} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 
 import {FiltersPanel} from '.';
 
@@ -25,8 +25,9 @@ describe('<FiltersPanel />', () => {
       workflowInstances: [],
     });
 
-    const {getAllByTestId} = render(<FiltersPanel {...props} />);
-    const filterBadges = getAllByTestId('filter-panel-header-badge');
+    render(<FiltersPanel {...props} />);
+
+    const filterBadges = screen.getAllByTestId('filter-panel-header-badge');
 
     expect(filterBadges).toHaveLength(2);
     expect(filterBadges[0]).toHaveTextContent('909');

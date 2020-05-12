@@ -13,13 +13,7 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createInstance} from 'modules/testUtils';
 import {createMemoryHistory} from 'history';
 import PropTypes from 'prop-types';
-import {
-  render,
-  within,
-  fireEvent,
-  findByText,
-  getByTestId,
-} from '@testing-library/react';
+import {render, within, fireEvent, screen} from '@testing-library/react';
 import {location} from './Header.setup';
 import {instances} from 'modules/stores/instances';
 
@@ -49,10 +43,10 @@ jest.mock('modules/api/header', () => ({
 // Header component fetches user information in the background, which is an async action and might complete after the tests finished.
 // Tests also depend on the statistics fetch to be completed, in order to test the results that are rendered in the screen.
 // So we have to use this function in all tests, in order to verify all the async actions are completed, when we want them to be completed.
-const waitForComponentToLoad = async (container) => {
-  expect(await findByText(container, 'firstname lastname')).toBeInTheDocument();
+const waitForComponentToLoad = async () => {
+  expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
   expect(
-    within(getByTestId(container, 'header-link-incidents')).getByTestId('badge')
+    within(screen.getByTestId('header-link-incidents')).getByTestId('badge')
   ).toHaveTextContent(731);
 };
 
@@ -81,18 +75,16 @@ describe('Header', () => {
       dataManager,
       ...mockCollapsablePanelProps,
     };
-    const {getByText, queryByText, container} = render(
-      <MockApp {...mockProps} />
-    );
+    render(<MockApp {...mockProps} />);
 
-    await waitForComponentToLoad(container);
+    await waitForComponentToLoad();
 
-    expect(getByText('Camunda Operate')).toBeInTheDocument();
-    expect(getByText('Dashboard')).toBeInTheDocument();
-    expect(getByText('Running Instances')).toBeInTheDocument();
-    expect(getByText('Filters')).toBeInTheDocument();
-    expect(getByText('Incidents')).toBeInTheDocument();
-    expect(queryByText('Instance')).toBeNull();
+    expect(screen.getByText('Camunda Operate')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Running Instances')).toBeInTheDocument();
+    expect(screen.getByText('Filters')).toBeInTheDocument();
+    expect(screen.getByText('Incidents')).toBeInTheDocument();
+    expect(screen.queryByText('Instance')).toBeNull();
   });
 
   it('should render incident, filter and instances counts correctly', async () => {
@@ -103,28 +95,28 @@ describe('Header', () => {
     };
     instances.setInstances({filteredInstancesCount: 200});
 
-    const {container, getByTestId} = render(<MockApp {...mockProps} />);
+    render(<MockApp {...mockProps} />);
 
     expect(
-      within(getByTestId('header-link-incidents')).getByTestId('badge')
+      within(screen.getByTestId('header-link-incidents')).getByTestId('badge')
     ).toBeEmpty();
     expect(
-      within(getByTestId('header-link-filters')).getByTestId('badge')
+      within(screen.getByTestId('header-link-filters')).getByTestId('badge')
     ).toBeEmpty();
     expect(
-      within(getByTestId('header-link-instances')).getByTestId('badge')
+      within(screen.getByTestId('header-link-instances')).getByTestId('badge')
     ).toBeEmpty();
 
-    await waitForComponentToLoad(container);
+    await waitForComponentToLoad();
 
     expect(
-      within(getByTestId('header-link-incidents')).getByTestId('badge')
+      within(screen.getByTestId('header-link-incidents')).getByTestId('badge')
     ).toHaveTextContent(731);
     expect(
-      within(getByTestId('header-link-filters')).getByTestId('badge')
+      within(screen.getByTestId('header-link-filters')).getByTestId('badge')
     ).toHaveTextContent(200);
     expect(
-      within(getByTestId('header-link-instances')).getByTestId('badge')
+      within(screen.getByTestId('header-link-instances')).getByTestId('badge')
     ).toHaveTextContent(821);
   });
 
@@ -134,10 +126,10 @@ describe('Header', () => {
       dataManager,
       ...mockCollapsablePanelProps,
     };
-    const {container, getByText} = render(<MockApp {...mockProps} />);
+    render(<MockApp {...mockProps} />);
 
-    await waitForComponentToLoad(container);
-    expect(getByText('firstname lastname')).toBeInTheDocument();
+    await waitForComponentToLoad();
+    expect(screen.getByText('firstname lastname')).toBeInTheDocument();
   });
 
   it('should highlight links correctly on dashboard page', async () => {
@@ -146,13 +138,16 @@ describe('Header', () => {
       dataManager,
       ...mockCollapsablePanelProps,
     };
-    const {container, getByText} = render(<MockApp {...mockProps} />);
-    await waitForComponentToLoad(container);
+    render(<MockApp {...mockProps} />);
+    await waitForComponentToLoad();
 
-    expect(getByText('Dashboard')).not.toHaveStyleRule('opacity', '0.5');
-    expect(getByText('Running Instances')).toHaveStyleRule('opacity', '0.5');
-    expect(getByText('Filters')).toHaveStyleRule('opacity', '0.5');
-    expect(getByText('Incidents')).toHaveStyleRule('opacity', '0.5');
+    expect(screen.getByText('Dashboard')).not.toHaveStyleRule('opacity', '0.5');
+    expect(screen.getByText('Running Instances')).toHaveStyleRule(
+      'opacity',
+      '0.5'
+    );
+    expect(screen.getByText('Filters')).toHaveStyleRule('opacity', '0.5');
+    expect(screen.getByText('Incidents')).toHaveStyleRule('opacity', '0.5');
   });
 
   it('should highlight links correctly on instances page', async () => {
@@ -161,16 +156,16 @@ describe('Header', () => {
       dataManager,
       ...mockCollapsablePanelProps,
     };
-    const {container, getByText} = render(<MockApp {...mockProps} />);
-    await waitForComponentToLoad(container);
+    render(<MockApp {...mockProps} />);
+    await waitForComponentToLoad();
 
-    expect(getByText('Dashboard')).toHaveStyleRule('opacity', '0.5');
-    expect(getByText('Running Instances')).not.toHaveStyleRule(
+    expect(screen.getByText('Dashboard')).toHaveStyleRule('opacity', '0.5');
+    expect(screen.getByText('Running Instances')).not.toHaveStyleRule(
       'opacity',
       '0.5'
     );
-    expect(getByText('Filters')).not.toHaveStyleRule('opacity', '0.5');
-    expect(getByText('Incidents')).toHaveStyleRule('opacity', '0.5');
+    expect(screen.getByText('Filters')).not.toHaveStyleRule('opacity', '0.5');
+    expect(screen.getByText('Incidents')).toHaveStyleRule('opacity', '0.5');
   });
 
   it('should render instance details skeleton on instance view', async () => {
@@ -179,14 +174,12 @@ describe('Header', () => {
       dataManager,
       ...mockCollapsablePanelProps,
     };
-    const {container, getByTestId, queryByTestId} = render(
-      <MockApp {...mockProps} />
-    );
-    await waitForComponentToLoad(container);
+    render(<MockApp {...mockProps} />);
+    await waitForComponentToLoad();
 
-    expect(queryByTestId('instance-detail')).not.toBeInTheDocument();
-    expect(getByTestId('instance-skeleton-circle')).toBeInTheDocument();
-    expect(getByTestId('instance-skeleton-block')).toBeInTheDocument();
+    expect(screen.queryByTestId('instance-detail')).not.toBeInTheDocument();
+    expect(screen.getByTestId('instance-skeleton-circle')).toBeInTheDocument();
+    expect(screen.getByTestId('instance-skeleton-block')).toBeInTheDocument();
   });
 
   it('should render instance details on instance view', async () => {
@@ -197,10 +190,8 @@ describe('Header', () => {
       dataManager,
       ...mockCollapsablePanelProps,
     };
-    const {container, getByText, getByTestId, queryByTestId} = render(
-      <MockApp {...mockProps} />
-    );
-    await waitForComponentToLoad(container);
+    render(<MockApp {...mockProps} />);
+    await waitForComponentToLoad();
 
     const subscriptions = dataManager.subscriptions();
 
@@ -209,10 +200,16 @@ describe('Header', () => {
       response: {...createInstance({id: MOCK_INSTANCE_ID})},
     });
 
-    expect(getByText(`Instance ${MOCK_INSTANCE_ID}`)).toBeInTheDocument();
-    expect(getByTestId('instance-detail')).toBeInTheDocument();
-    expect(queryByTestId('instance-skeleton-circle')).not.toBeInTheDocument();
-    expect(queryByTestId('instance-skeleton-block')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(`Instance ${MOCK_INSTANCE_ID}`)
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('instance-detail')).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('instance-skeleton-circle')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('instance-skeleton-block')
+    ).not.toBeInTheDocument();
   });
 
   it('should render instance details on refresh', async () => {
@@ -223,10 +220,8 @@ describe('Header', () => {
       dataManager,
       ...mockCollapsablePanelProps,
     };
-    const {container, getByText, queryByText} = render(
-      <MockApp {...mockProps} />
-    );
-    await waitForComponentToLoad(container);
+    render(<MockApp {...mockProps} />);
+    await waitForComponentToLoad();
 
     const subscriptions = dataManager.subscriptions();
 
@@ -235,7 +230,9 @@ describe('Header', () => {
       response: {...createInstance({id: MOCK_FIRST_INSTANCE_ID})},
     });
 
-    expect(getByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)
+    ).toBeInTheDocument();
 
     subscriptions['CONSTANT_REFRESH']({
       state: 'LOADED',
@@ -243,10 +240,10 @@ describe('Header', () => {
         LOAD_INSTANCE: {...createInstance({id: MOCK_SECOND_INSTANCE_ID})},
       },
     });
-    expect(queryByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)).toBeNull();
+    expect(screen.queryByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)).toBeNull();
 
     expect(
-      getByText(`Instance ${MOCK_SECOND_INSTANCE_ID}`)
+      screen.getByText(`Instance ${MOCK_SECOND_INSTANCE_ID}`)
     ).toBeInTheDocument();
   });
 
@@ -260,24 +257,24 @@ describe('Header', () => {
       ...mockCollapsablePanelProps,
     };
 
-    const {container, findByText} = render(<MockApp {...mockProps} />);
-    await waitForComponentToLoad(container);
+    render(<MockApp {...mockProps} />);
+    await waitForComponentToLoad();
 
-    fireEvent.click(await findByText('Camunda Operate'));
+    fireEvent.click(await screen.findByText('Camunda Operate'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
 
-    fireEvent.click(await findByText('Running Instances'));
+    fireEvent.click(await screen.findByText('Running Instances'));
     let searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
     expect(searchParams.get('filter')).toBe('{"active":true,"incidents":true}');
 
-    fireEvent.click(await findByText('Dashboard'));
+    fireEvent.click(await screen.findByText('Dashboard'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
 
-    fireEvent.click(await findByText('Filters'));
+    fireEvent.click(await screen.findByText('Filters'));
     searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
     expect(searchParams.get('filter')).toBe('{"active":true,"incidents":true}');
 
-    fireEvent.click(await findByText('Incidents'));
+    fireEvent.click(await screen.findByText('Incidents'));
     searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
     expect(searchParams.get('filter')).toBe('{"incidents":true}');
   });

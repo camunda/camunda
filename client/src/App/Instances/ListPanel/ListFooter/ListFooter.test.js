@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {render} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 
 import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
 import {instances} from 'modules/stores/instances';
@@ -32,45 +32,45 @@ const defaultProps = {
 describe('ListFooter', () => {
   it('should show pagination, copyright, no dropdown', () => {
     instances.setInstances({filteredInstancesCount: 11});
-    const {getByText, queryByText} = render(
+    render(
       <InstanceSelectionContext.Provider value={defaultContext}>
         <ListFooter {...defaultProps} />
       </InstanceSelectionContext.Provider>
     );
 
-    const pageOneButton = getByText(/^1$/i);
-    const pageTwoButton = getByText(/^2$/i);
+    const pageOneButton = screen.getByText(/^1$/i);
+    const pageTwoButton = screen.getByText(/^2$/i);
     expect(pageOneButton).toBeInTheDocument();
     expect(pageTwoButton).toBeInTheDocument();
 
-    const copyrightText = getByText(COPYRIGHT_REGEX);
+    const copyrightText = screen.getByText(COPYRIGHT_REGEX);
     expect(copyrightText).toBeInTheDocument();
 
-    const dropdownButton = queryByText(DROPDOWN_REGEX);
+    const dropdownButton = screen.queryByText(DROPDOWN_REGEX);
     expect(dropdownButton).toBeNull();
   });
 
   it('should show copyright, no dropdown, no pagination', () => {
     instances.setInstances({filteredInstancesCount: 9});
-    const {getByText, queryByText} = render(
+    render(
       <InstanceSelectionContext.Provider value={defaultContext}>
         <ListFooter {...defaultProps} />
       </InstanceSelectionContext.Provider>
     );
 
-    expect(queryByText(/^1$/i)).toBeNull();
-    expect(queryByText(/^2$/i)).toBeNull();
+    expect(screen.queryByText(/^1$/i)).toBeNull();
+    expect(screen.queryByText(/^2$/i)).toBeNull();
 
-    const copyrightText = getByText(COPYRIGHT_REGEX);
+    const copyrightText = screen.getByText(COPYRIGHT_REGEX);
     expect(copyrightText).toBeInTheDocument();
 
-    const dropdownButton = queryByText(DROPDOWN_REGEX);
+    const dropdownButton = screen.queryByText(DROPDOWN_REGEX);
     expect(dropdownButton).toBeNull();
   });
 
   it('should show Dropdown when there is selection', () => {
     instances.setInstances({filteredInstancesCount: 9});
-    const {getByText} = render(
+    render(
       <InstanceSelectionContext.Provider
         value={{...defaultContext, getSelectedCount: () => 2}}
       >
@@ -78,16 +78,18 @@ describe('ListFooter', () => {
       </InstanceSelectionContext.Provider>
     );
 
-    const dropdownButton = getByText('Apply Operation on 2 Instances...');
+    const dropdownButton = screen.getByText(
+      'Apply Operation on 2 Instances...'
+    );
     expect(dropdownButton).toBeInTheDocument();
 
-    const copyrightText = getByText(COPYRIGHT_REGEX);
+    const copyrightText = screen.getByText(COPYRIGHT_REGEX);
     expect(copyrightText).toBeInTheDocument();
   });
 
   it('should not show the pagination buttons when there is no content', () => {
     instances.setInstances({filteredInstancesCount: 11});
-    const {queryByText, getByText} = render(
+    render(
       <InstanceSelectionContext.Provider
         value={{...defaultContext, getSelectedCount: () => 2}}
       >
@@ -95,15 +97,15 @@ describe('ListFooter', () => {
       </InstanceSelectionContext.Provider>
     );
 
-    const pageOneButton = queryByText(/^1$/i);
-    const pageTwoButton = queryByText(/^2$/i);
+    const pageOneButton = screen.queryByText(/^1$/i);
+    const pageTwoButton = screen.queryByText(/^2$/i);
     expect(pageOneButton).toBeNull();
     expect(pageTwoButton).toBeNull();
 
-    const dropdownButton = queryByText(DROPDOWN_REGEX);
+    const dropdownButton = screen.queryByText(DROPDOWN_REGEX);
     expect(dropdownButton).toBeNull();
 
-    const copyrightText = getByText(COPYRIGHT_REGEX);
+    const copyrightText = screen.getByText(COPYRIGHT_REGEX);
     expect(copyrightText).toBeInTheDocument();
   });
 });

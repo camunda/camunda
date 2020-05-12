@@ -10,6 +10,7 @@ import {
   render,
   waitForElementToBeRemoved,
   fireEvent,
+  screen,
 } from '@testing-library/react';
 import {createMemoryHistory} from 'history';
 
@@ -43,40 +44,42 @@ describe('<MetricPanel />', () => {
   };
 
   it('should first display skeleton, then the statistics', async () => {
-    const {getByText, getByTestId} = render(<MockApp />);
+    render(<MockApp />);
 
-    expect(getByTestId('instances-bar-skeleton')).toBeInTheDocument();
-    expect(getByTestId('total-instances-link')).toHaveTextContent(
+    expect(screen.getByTestId('instances-bar-skeleton')).toBeInTheDocument();
+    expect(screen.getByTestId('total-instances-link')).toHaveTextContent(
       'Running Instances in total'
     );
 
     statistics.fetchStatistics();
 
     await waitForElementToBeRemoved(() => [
-      getByTestId('instances-bar-skeleton'),
+      screen.getByTestId('instances-bar-skeleton'),
     ]);
-    expect(getByText('821 Running Instances in total')).toBeInTheDocument();
+    expect(
+      screen.getByText('821 Running Instances in total')
+    ).toBeInTheDocument();
   });
 
   it('should show active instances and instances with incidents', async () => {
-    const {getByText, findByTestId} = render(<MockApp />);
+    render(<MockApp />);
 
     statistics.fetchStatistics();
-    expect(getByText('Instances with Incident')).toBeInTheDocument();
-    expect(getByText('Active Instances')).toBeInTheDocument();
-    expect(await findByTestId('incident-instances-badge')).toHaveTextContent(
-      '731'
-    );
-    expect(await findByTestId('active-instances-badge')).toHaveTextContent(
-      '90'
-    );
+    expect(screen.getByText('Instances with Incident')).toBeInTheDocument();
+    expect(screen.getByText('Active Instances')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('incident-instances-badge')
+    ).toHaveTextContent('731');
+    expect(
+      await screen.findByTestId('active-instances-badge')
+    ).toHaveTextContent('90');
   });
 
   it('should go to the correct page when clicking on instances with incidents', async () => {
     const MOCK_HISTORY = createMemoryHistory();
-    const {getByText} = render(<MockApp history={MOCK_HISTORY} />);
+    render(<MockApp history={MOCK_HISTORY} />);
 
-    fireEvent.click(getByText('Instances with Incident'));
+    fireEvent.click(screen.getByText('Instances with Incident'));
 
     const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
 
@@ -86,9 +89,9 @@ describe('<MetricPanel />', () => {
 
   it('should go to the correct page when clicking on active instances', async () => {
     const MOCK_HISTORY = createMemoryHistory();
-    const {getByText} = render(<MockApp history={MOCK_HISTORY} />);
+    render(<MockApp history={MOCK_HISTORY} />);
 
-    fireEvent.click(getByText('Active Instances'));
+    fireEvent.click(screen.getByText('Active Instances'));
 
     const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
 
@@ -98,10 +101,10 @@ describe('<MetricPanel />', () => {
 
   it('should go to the correct page when clicking on total instances', async () => {
     const MOCK_HISTORY = createMemoryHistory();
-    const {findByText} = render(<MockApp history={MOCK_HISTORY} />);
+    render(<MockApp history={MOCK_HISTORY} />);
 
     statistics.fetchStatistics();
-    fireEvent.click(await findByText('821 Running Instances in total'));
+    fireEvent.click(await screen.findByText('821 Running Instances in total'));
 
     const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
 
