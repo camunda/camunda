@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <name>Zeebe Tasklist - Root POM</name>
+  <groupId>io.zeebe.tasklist</groupId>
+  <artifactId>parent</artifactId>
+  <version>0.24.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>client</module>
+    <module>common</module>
+    <module>els-schema</module>
+    <module>data-generator</module>
+    <module>importer-common</module>
+    <module>importer-024</module>
+    <module>importer</module>
+    <module>archiver</module>
+    <module>webapp</module>
+<!--    <module>qa</module>-->
+    <module>distro</module>
+  </modules>
+
+  <properties>
+    <project.previous_version>0.23.0</project.previous_version>
+
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <version.zeebe>0.24.0-alpha1</version.zeebe>
+
+    <version.elasticsearch>6.8.8</version.elasticsearch>
+    <version.spring.boot>2.2.7.RELEASE</version.spring.boot>
+    <version.junit>4.13</version.junit>
+    <version.javax.json>1.1.4</version.javax.json>
+    <version.micrometer>1.5.1</version.micrometer>
+    <version.mockito>3.3.3</version.mockito>
+    <version.assertj-core>3.16.1</version.assertj-core>
+
+    <version.node>v13.13.0</version.node>
+    <version.yarn>v1.22.4</version.yarn>
+
+    <zeebe-test-container.version>0.32.0</zeebe-test-container.version>
+    <elasticsearch-test-container.version>1.13.0</elasticsearch-test-container.version>
+
+    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+
+    <skip.fe.build>false</skip.fe.build>
+
+    <plugin.version.license>3.0</plugin.version.license>
+    <license.header>${project.baseUri}/../license/license-header</license.header>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+
+      <dependency>
+        <!-- Import dependency management from Spring Boot -->
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${version.spring.boot}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-bom</artifactId>
+        <version>${version.zeebe}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch.client</groupId>
+        <artifactId>elasticsearch-rest-high-level-client</artifactId>
+        <version>${version.elasticsearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.glassfish</groupId>
+        <artifactId>javax.json</artifactId>
+        <version>${version.javax.json}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${version.junit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-test-container</artifactId>
+        <version>${zeebe-test-container.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>elasticsearch</artifactId>
+        <version>${elasticsearch-test-container.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.9.10.4</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-registry-prometheus</artifactId>
+        <version>${version.micrometer}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-core</artifactId>
+        <version>${version.micrometer}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${version.mockito}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${version.assertj-core}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.1</version>
+          <configuration>
+            <forceJavacCompilerUse>true</forceJavacCompilerUse>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>1.6.0</version>
+        </plugin>
+
+        <plugin>
+          <groupId>com.github.eirslett</groupId>
+          <artifactId>frontend-maven-plugin</artifactId>
+          <version>1.10.0</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.5.3</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.2.1</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>appassembler-maven-plugin</artifactId>
+          <version>2.1.0</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.3.0</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${version.spring.boot}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <version>1.6.8</version>
+          <extensions>true</extensions>
+          <configuration>
+            <detectBuildFailures>true</detectBuildFailures>
+            <serverId>camunda-nexus</serverId>
+            <nexusUrl>https://app.camunda.com/nexus</nexusUrl>
+            <skipStaging>true</skipStaging>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.2.0</version>
+          <configuration>
+            <skip>true</skip>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.0.0-M4</version>
+          <configuration>
+            <forkCount>${env.LIMITS_CPU}</forkCount>
+            <reuseForks>true</reuseForks>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>3.0.0-M4</version>
+          <configuration>
+            <forkCount>${env.LIMITS_CPU}</forkCount>
+            <reuseForks>true</reuseForks>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            </systemPropertyVariables>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- LICENSE PLUGIN -->
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${plugin.version.license}</version>
+          <configuration>
+            <header>${license.header}</header>
+            <includes>
+              <include>**/*.java</include>
+            </includes>
+            <mapping>
+              <java>SLASHSTAR_STYLE</java>
+            </mapping>
+          </configuration>
+          <executions>
+            <execution>
+              <id>add-license</id>
+              <phase>compile</phase>
+              <goals>
+                <goal>format</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.2.3</version>
+        </plugin>
+      </plugins>
+
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.0.0-M3</version>
+        <executions>
+          <execution>
+            <id>enforce</id>
+            <configuration>
+              <rules>
+                <requirePluginVersion />
+                <banDuplicatePomDependencyVersions />
+              </rules>
+            </configuration>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>camunda-nexus</id>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-tasklist-snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>camunda-nexus</id>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-tasklist</url>
+    </repository>
+  </distributionManagement>
+
+  <scm>
+    <url>https://github.com/zeebe-io/zeebe-tasklist</url>
+    <connection>scm:git:git@github.com:zeebe-io/zeebe-tasklist.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe-tasklist.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <issueManagement>
+    <system>Git</system>
+    <url>https://github.com/zeebe-io/zeebe-tasklist/issues</url>
+  </issueManagement>
+
+  <organization>
+    <name>Camunda Services GmbH</name>
+    <url>http://www.camunda.com</url>
+  </organization>
+
+  <repositories>
+    <repository>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>zeebe-snapshots</id>
+      <name>Zeebe Snapshot Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>elasticsearch</id>
+      <name>Elasticsearch Repository</name>
+      <url>https://artifacts.elastic.co/maven/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+
+  </repositories>
+
+</project>

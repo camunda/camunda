@@ -21,3 +21,13 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+*.iml
+.idea/
+.classpath
+.project
+.settings
+target/
+.DS_Store
+.vscode/
+dependency-reduced-pom.xml

@@ -1,0 +1,34 @@
+# Tasklist configuration file
+
+zeebe.tasklist:
+  # Set Tasklist username and password.
+  # If user with <username> does not exists it will be created.
+  # Default: demo/demo
+  #username:
+  #password:
+  # ELS instance to store Tasklist data
+  elasticsearch:
+    # Cluster name
+    clusterName: elasticsearch
+    # Host
+    host: localhost
+    # Transport port
+    port: 9200
+  # Zeebe instance
+  zeebe:
+    # Broker contact point
+    brokerContactPoint: localhost:26500
+  # ELS instance to export Zeebe data to
+  zeebeElasticsearch:
+    # Cluster name
+    clusterName: elasticsearch
+    # Host
+    host: localhost
+    # Transport port
+    port: 9200
+    # Index prefix, configured in Zeebe Elasticsearch exporter
+    prefix: zeebe-record
+#Spring Boot Actuator endpoints to be exposed
+management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
+# Enable or disable metrics
+#management.metrics.export.prometheus.enabled: false

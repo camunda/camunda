@@ -1,0 +1,41 @@
+{
+	"aliases": {
+		"tasklist-import-position-${schema.version}_alias": {
+		}
+	},
+	"mappings": {
+		"dynamic": "strict",
+		"dynamic_templates": [
+			{
+				"string_template": {
+					"path_match": "*",
+					"match_mapping_type": "string",
+					"mapping": {
+						"index_options": "docs",
+						"norms": {
+							"enabled": false
+						},
+						"type": "string"
+					}
+				}
+			}
+		],
+		"properties": {
+			"aliasName": {
+				"type": "keyword"
+			},
+			"id": {
+				"type": "keyword"
+			},
+			"indexName": {
+				"type": "keyword"
+			},
+			"partitionId": {
+				"type": "integer"
+			},
+			"position": {
+				"type": "long"
+			}
+		}
+	}
+}
