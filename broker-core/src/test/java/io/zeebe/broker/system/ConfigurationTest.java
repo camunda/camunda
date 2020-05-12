@@ -18,6 +18,7 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUS
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DEBUG_EXPORTER;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRECTORIES;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EMBED_GATEWAY;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EXECUTION_METRICS_EXPORTER_ENABLED;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
@@ -32,6 +33,7 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
@@ -432,6 +434,15 @@ public class ConfigurationTest {
     assertEmbeddedGatewayEnabled("disabled-gateway", true);
   }
 
+  @Test
+  public void shouldEnableMetricsExporter() {
+    // given
+    environment.put(ENV_EXECUTION_METRICS_EXPORTER_ENABLED, "true");
+
+    // then
+    assertMetricsExporter();
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
@@ -590,5 +601,19 @@ public class ConfigurationTest {
     assertThat(cfgCluster.getReplicationFactor()).isEqualTo(replicationFactor);
     assertThat(cfgCluster.getClusterSize()).isEqualTo(clusterSize);
     assertThat(cfgCluster.getInitialContactPoints()).isEqualTo(initialContactPoints);
+  }
+
+  private void assertMetricsExporter() {
+    assertMetricsExporter("default");
+    assertMetricsExporter("empty");
+  }
+
+  private void assertMetricsExporter(final String configFileName) {
+    final ExporterCfg exporterCfg = MetricsExporter.defaultConfig();
+    final BrokerCfg brokerCfg = readConfig(configFileName);
+
+    assertThat(brokerCfg.getExporters())
+        .usingRecursiveFieldByFieldElementComparator()
+        .contains(exporterCfg);
   }
 }

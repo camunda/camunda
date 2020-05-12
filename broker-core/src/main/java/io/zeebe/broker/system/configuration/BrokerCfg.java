@@ -7,8 +7,11 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EXECUTION_METRICS_EXPORTER_ENABLED;
+
 import com.google.gson.GsonBuilder;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.zeebe.util.Environment;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,12 +25,19 @@ public class BrokerCfg {
   private List<ExporterCfg> exporters = new ArrayList<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
 
+  private boolean executionMetricsExporterEnabled;
+
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
   }
 
   public void init(final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
+
+    if (isExecutionMetricsExporterEnabled()) {
+      exporters.add(MetricsExporter.defaultConfig());
+    }
+
     network.init(this, brokerBase, environment);
     cluster.init(this, brokerBase, environment);
     threads.init(this, brokerBase, environment);
@@ -42,6 +52,9 @@ public class BrokerCfg {
         .ifPresent(
             value ->
                 exporters.add(DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
+    environment
+        .getBool(ENV_EXECUTION_METRICS_EXPORTER_ENABLED)
+        .ifPresent(this::setExecutionMetricsExporterEnabled);
   }
 
   public NetworkCfg getNetwork() {
@@ -91,6 +104,14 @@ public class BrokerCfg {
   public BrokerCfg setGateway(EmbeddedGatewayCfg gateway) {
     this.gateway = gateway;
     return this;
+  }
+
+  public boolean isExecutionMetricsExporterEnabled() {
+    return executionMetricsExporterEnabled;
+  }
+
+  public void setExecutionMetricsExporterEnabled(final boolean executionMetricsExporterEnabled) {
+    this.executionMetricsExporterEnabled = executionMetricsExporterEnabled;
   }
 
   @Override
