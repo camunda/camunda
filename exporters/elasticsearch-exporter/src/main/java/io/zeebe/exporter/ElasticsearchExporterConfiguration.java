@@ -196,5 +196,11 @@ public class ElasticsearchExporterConfiguration {
     public void setPassword(final String password) {
       this.password = password;
     }
+
+    @Override
+    public String toString() {
+      // we don't want to expose this information
+      return "AuthenticationConfiguration{Confidential information}";
+    }
   }
 }
