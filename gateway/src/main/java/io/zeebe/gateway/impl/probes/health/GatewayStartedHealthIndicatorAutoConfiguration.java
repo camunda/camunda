@@ -35,6 +35,6 @@ public class GatewayStartedHealthIndicatorAutoConfiguration {
      * <p>Later, the actual gateway status supplier will be registered at gatewayBridge. The
      * chaining allows us to delegate over two hops.
      */
-    return new GatewayStartedHealthIndicator(() -> gatewayBridge.getGatewayStatus());
+    return new GatewayStartedHealthIndicator(gatewayBridge::getGatewayStatus);
   }
 }

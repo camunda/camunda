@@ -111,6 +111,6 @@
 * [Appendix](appendix/index.md)
    * [Broker Configuration Template](appendix/broker-config-template.md)
    * [Gateway Configuration Template](appendix/gateway-config-template.md)
-   * [Gateway Health Probes](appendix/gateway-health-probes.md)
+   * [Gateway Health Indicators and Probes](appendix/gateway-health-probes.md)
    * [Environment Variables](appendix/environment-variables.md)
    * [Deprecated Features](appendix/deprecated-features.md)

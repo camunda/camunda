@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.gateway.impl.probes.health;
+package io.zeebe.gateway.impl.probes.liveness;
 
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.zeebe.gateway.impl.probes.health.MemoryHealthIndicator;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -16,19 +16,17 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * {@link EnableAutoConfiguration Auto-configuration} for {@link GatewayResponsiveHealthIndicator}.
- */
+/** {@link EnableAutoConfiguration Auto-configuration} for {@link MemoryHealthIndicator}. */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnEnabledHealthIndicator("gateway-responsive")
+@ConditionalOnEnabledHealthIndicator("memory")
 @AutoConfigureBefore(HealthContributorAutoConfiguration.class)
-@EnableConfigurationProperties(GatewayResponsiveHealthIndicatorProperties.class)
-public class GatewayResponsiveHealthIndicatorAutoConfiguration {
+@EnableConfigurationProperties(LivenessMemoryHealthIndicatorProperties.class)
+public class LivenessMemoryHealthIndicatorAutoConfiguration {
 
   @Bean
-  @ConditionalOnMissingBean(name = "gateway-responsiveHealthIndicator")
-  public GatewayResponsiveHealthIndicator gatewayResponsiveHealthIndicator(
-      GatewayCfg gatewayCfg, GatewayResponsiveHealthIndicatorProperties properties) {
-    return new GatewayResponsiveHealthIndicator(gatewayCfg, properties.getRequestTimeout());
+  @ConditionalOnMissingBean(name = "livenessMemoryHealthIndicator")
+  public MemoryHealthIndicator livenessMemoryHealthIndicator(
+      LivenessMemoryHealthIndicatorProperties properties) {
+    return new MemoryHealthIndicator(properties.getThreshold());
   }
 }

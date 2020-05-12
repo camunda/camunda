@@ -38,6 +38,6 @@ public class GatewayClusterAwarenessHealthIndicatorAutoConfiguration {
      * <p>Later, the actual cluster status supplier will be registered at gatewayBridge. The
      * chaining allows us to delegate over two hops.
      */
-    return new GatewayClusterAwarenessHealthIndicator(() -> gatewayBridge.getClusterState());
+    return new GatewayClusterAwarenessHealthIndicator(gatewayBridge::getClusterState);
   }
 }
