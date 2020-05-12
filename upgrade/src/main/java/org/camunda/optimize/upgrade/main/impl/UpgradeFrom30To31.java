@@ -67,12 +67,59 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateAxisLabels(COMBINED_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateProcessReportDateVariableFilter())
       .addUpgradeStep(migrateDecisionReportDateVariableFilter())
-      .addUpgradeStep(deleteDeprecatedDefinitionImportIndexDocument());
+      .addUpgradeStep(deleteDeprecatedDefinitionImportIndexDocument())
+      .addUpgradeStep(migrateExcludedColumnsToNewVersionForProcessReports())
+      .addUpgradeStep(migrateExcludedColumnsToNewVersionForDecisionReports());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteCamundaTraceStateIndices(upgradeBuilder);
     deleteCamundaSequenceCountIndices(upgradeBuilder);
     upgradeBuilder.addUpgradeStep(deleteCamundaTraceStateImportIndexData());
     return upgradeBuilder.build();
+  }
+
+  private UpgradeStep migrateExcludedColumnsToNewVersionForProcessReports() {
+    //@formatter:off
+    final String script =
+      "if (ctx._source.data.configuration != null) {\n" +
+        "  def excludedColumns = ctx._source.data.configuration.excludedColumns;\n" +
+        "  if (excludedColumns != null && !excludedColumns.isEmpty()) {\n" +
+        "    excludedColumns = excludedColumns.stream()" +
+        "                        .map(col -> col.replace(\"var__\", \"variable:\"))" +
+        "                        .distinct()\n" +
+        "                        .collect(Collectors.toList());\n" +
+        "  }\n" +
+        "  ctx._source.data.configuration.excludedColumns = excludedColumns;\n" +
+        "}\n"
+      ;
+    //@formatter:on
+    return new UpdateDataStep(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+  }
+
+  private UpgradeStep migrateExcludedColumnsToNewVersionForDecisionReports() {
+    //@formatter:off
+    final String script =
+      "if (ctx._source.data.configuration != null) {\n" +
+        "  def excludedColumns = ctx._source.data.configuration.excludedColumns;\n" +
+        "  if (excludedColumns != null && !excludedColumns.isEmpty()) {\n" +
+        "    excludedColumns = excludedColumns.stream()" +
+        "                        .map(col -> col.replace(\"inp__\", \"input:\"))" +
+        "                        .map(col -> col.replace(\"out__\", \"output:\"))" +
+        "                        .distinct()" +
+        "                        .collect(Collectors.toList());\n" +
+        "  }\n" +
+        "  ctx._source.data.configuration.excludedColumns = excludedColumns;\n" +
+        "}\n"
+      ;
+    //@formatter:on
+    return new UpdateDataStep(
+      SINGLE_DECISION_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
   }
 
   private UpgradeStep deleteDeprecatedDefinitionImportIndexDocument() {
