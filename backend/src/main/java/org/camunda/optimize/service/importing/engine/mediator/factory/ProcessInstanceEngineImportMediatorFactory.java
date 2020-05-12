@@ -36,9 +36,8 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
                                                     final CamundaEventImportService camundaEventService,
                                                     final CompletedProcessInstanceWriter completedProcessInstanceWriter,
                                                     final RunningProcessInstanceWriter runningProcessInstanceWriter,
-                                                    final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
-                                                    final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                                    final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.camundaEventService = camundaEventService;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
@@ -62,7 +61,7 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 
@@ -83,7 +82,7 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 

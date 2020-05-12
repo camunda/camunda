@@ -24,9 +24,8 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractImportMe
   public IdentityLinkLogEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                     final ConfigurationService configurationService,
-                                                    final IdentityLinkLogWriter identityLinkLogWriter,
-                                                    final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                                    final IdentityLinkLogWriter identityLinkLogWriter) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.identityLinkLogWriter = identityLinkLogWriter;
   }
 
@@ -45,7 +44,7 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractImportMe
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 }

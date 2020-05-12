@@ -30,9 +30,8 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractImportMed
                                                    final ConfigurationService configurationService,
                                                    final CamundaEventImportService camundaEventService,
                                                    final ProcessVariableUpdateWriter variableWriter,
-                                                   final VariableImportAdapterProvider variableImportAdapterProvider,
-                                                   final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                                   final VariableImportAdapterProvider variableImportAdapterProvider) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.camundaEventService = camundaEventService;
     this.variableWriter = variableWriter;
     this.variableImportAdapterProvider = variableImportAdapterProvider;
@@ -55,7 +54,7 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractImportMed
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 }

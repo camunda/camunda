@@ -30,9 +30,8 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractImportM
                                                      final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
                                                      final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
-                                                     final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter,
-                                                     final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                                     final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
     this.completedUserTaskInstanceWriter = completedUserTaskInstanceWriter;
   }
@@ -52,7 +51,7 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractImportM
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 
@@ -71,7 +70,7 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractImportM
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 

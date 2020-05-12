@@ -24,9 +24,8 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractImportM
   public UserOperationLogEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                      final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
-                                                     final RunningProcessInstanceWriter runningProcessInstanceWriter,
-                                                     final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                                     final RunningProcessInstanceWriter runningProcessInstanceWriter) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
   }
 
@@ -44,7 +43,7 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractImportM
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 }

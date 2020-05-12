@@ -24,9 +24,8 @@ public class TenantImportMediatorFactory extends AbstractImportMediatorFactory {
   public TenantImportMediatorFactory(final BeanFactory beanFactory,
                                      final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                      final ConfigurationService configurationService,
-                                     final TenantWriter tenantWriter,
-                                     final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                     final TenantWriter tenantWriter) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.tenantWriter = tenantWriter;
   }
 
@@ -41,7 +40,7 @@ public class TenantImportMediatorFactory extends AbstractImportMediatorFactory {
       new TenantImportService(elasticsearchImportJobExecutor, engineContext, tenantWriter),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 

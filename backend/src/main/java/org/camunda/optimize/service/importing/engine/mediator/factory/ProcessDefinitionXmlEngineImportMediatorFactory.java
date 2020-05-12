@@ -24,9 +24,8 @@ public class ProcessDefinitionXmlEngineImportMediatorFactory extends AbstractImp
   public ProcessDefinitionXmlEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                          final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                          final ConfigurationService configurationService,
-                                                         final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
-                                                         final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                                         final ProcessDefinitionXmlWriter processDefinitionXmlWriter) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
   }
 
@@ -45,7 +44,7 @@ public class ProcessDefinitionXmlEngineImportMediatorFactory extends AbstractImp
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 }

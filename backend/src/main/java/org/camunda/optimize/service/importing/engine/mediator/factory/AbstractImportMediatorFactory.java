@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
-import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 
@@ -16,5 +15,4 @@ public abstract class AbstractImportMediatorFactory {
   protected final BeanFactory beanFactory;
   protected final EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
   protected final ConfigurationService configurationService;
-  protected final BackoffCalculator idleBackoffCalculator;
 }

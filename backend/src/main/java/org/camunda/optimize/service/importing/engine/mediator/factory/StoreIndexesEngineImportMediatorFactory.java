@@ -23,7 +23,7 @@ public class StoreIndexesEngineImportMediatorFactory extends AbstractImportMedia
                                                  final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                  final ConfigurationService configurationService,
                                                  final ImportIndexWriter importIndexWriter) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, null);
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.importIndexWriter = importIndexWriter;
   }
 

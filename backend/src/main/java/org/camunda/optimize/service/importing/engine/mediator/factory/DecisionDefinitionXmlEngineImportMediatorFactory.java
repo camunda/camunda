@@ -27,9 +27,8 @@ public class DecisionDefinitionXmlEngineImportMediatorFactory extends AbstractIm
                                                           final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                           final ConfigurationService configurationService,
                                                           final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
-                                                          final DecisionDefinitionResolverService decisionDefinitionResolverService,
-                                                          final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                                          final DecisionDefinitionResolverService decisionDefinitionResolverService) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
     this.decisionDefinitionResolverService = decisionDefinitionResolverService;
   }
@@ -50,7 +49,7 @@ public class DecisionDefinitionXmlEngineImportMediatorFactory extends AbstractIm
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 }

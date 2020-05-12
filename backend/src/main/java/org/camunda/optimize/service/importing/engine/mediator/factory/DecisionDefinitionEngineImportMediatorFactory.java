@@ -24,9 +24,8 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractImpor
   public DecisionDefinitionEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                        final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                        final ConfigurationService configurationService,
-                                                       final BackoffCalculator idleBackoffCalculator,
                                                        final DecisionDefinitionWriter decisionDefinitionWriter) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.decisionDefinitionWriter = decisionDefinitionWriter;
   }
 
@@ -45,7 +44,7 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractImpor
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 }

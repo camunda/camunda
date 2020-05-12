@@ -33,9 +33,8 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
                                                      final RunningActivityInstanceWriter runningActivityInstanceWriter,
                                                      final BeanFactory beanFactory,
                                                      final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                     final ConfigurationService configurationService,
-                                                     final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                                     final ConfigurationService configurationService) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.camundaEventService = camundaEventService;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
@@ -57,7 +56,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 
@@ -77,7 +76,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 }

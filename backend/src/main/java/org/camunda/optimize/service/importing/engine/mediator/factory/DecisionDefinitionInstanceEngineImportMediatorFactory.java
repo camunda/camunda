@@ -33,9 +33,8 @@ public class DecisionDefinitionInstanceEngineImportMediatorFactory extends Abstr
                                                                final DecisionInstanceWriter decisionInstanceWriter,
                                                                final DecisionDefinitionResolverService decisionDefinitionResolverService,
                                                                final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider,
-                                                               final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider,
-                                                               final BackoffCalculator idleBackoffCalculator) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, idleBackoffCalculator);
+                                                               final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.decisionInstanceWriter = decisionInstanceWriter;
     this.decisionDefinitionResolverService = decisionDefinitionResolverService;
     this.decisionInputImportAdapterProvider = decisionInputImportAdapterProvider;
@@ -60,7 +59,7 @@ public class DecisionDefinitionInstanceEngineImportMediatorFactory extends Abstr
       ),
       configurationService,
       elasticsearchImportJobExecutor,
-      idleBackoffCalculator
+      new BackoffCalculator(configurationService)
     );
   }
 
