@@ -16,62 +16,62 @@
 
     <plugins>
 
-<!--      <plugin>-->
-<!--        <groupId>com.github.eirslett</groupId>-->
-<!--        <artifactId>frontend-maven-plugin</artifactId>-->
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
 
-<!--        <configuration>-->
-<!--          <installDirectory>target</installDirectory>-->
-<!--        </configuration>-->
+        <configuration>
+          <installDirectory>target</installDirectory>
+        </configuration>
 
-<!--        <executions>-->
-<!--          <execution>-->
-<!--            <id>install node and yarn</id>-->
-<!--            <goals>-->
-<!--              <goal>install-node-and-yarn</goal>-->
-<!--            </goals>-->
-<!--            <configuration>-->
-<!--              <skip>${skip.fe.build}</skip>-->
-<!--              <nodeVersion>${version.node}</nodeVersion>-->
-<!--              <yarnVersion>${version.yarn}</yarnVersion>-->
-<!--            </configuration>-->
-<!--          </execution>-->
+        <executions>
+          <execution>
+            <id>install node and yarn</id>
+            <goals>
+              <goal>install-node-and-yarn</goal>
+            </goals>
+            <configuration>
+              <skip>${skip.fe.build}</skip>
+              <nodeVersion>${version.node}</nodeVersion>
+              <yarnVersion>${version.yarn}</yarnVersion>
+            </configuration>
+          </execution>
 
-<!--          <execution>-->
-<!--            <id>update package.json version</id>-->
-<!--            <goals>-->
-<!--                <goal>yarn</goal>-->
-<!--            </goals>-->
-<!--            <configuration>-->
-<!--              <skip>${skip.fe.build}</skip>-->
-<!--              <arguments>version &#45;&#45;new-version=${project.version} &#45;&#45;no-git-tag-version</arguments>-->
-<!--            </configuration>-->
-<!--          </execution>-->
+          <execution>
+            <id>update package.json version</id>
+            <goals>
+                <goal>yarn</goal>
+            </goals>
+            <configuration>
+              <skip>${skip.fe.build}</skip>
+              <arguments>version --new-version=${project.version} --no-git-tag-version</arguments>
+            </configuration>
+          </execution>
 
-<!--          <execution>-->
-<!--            <id>yarn install</id>-->
-<!--            <goals>-->
-<!--              <goal>yarn</goal>-->
-<!--            </goals>-->
-<!--            <configuration>-->
-<!--              <failOnError>false</failOnError>-->
-<!--              <skip>${skip.fe.build}</skip>-->
-<!--            </configuration>-->
-<!--          </execution>-->
+          <execution>
+            <id>yarn install</id>
+            <goals>
+              <goal>yarn</goal>
+            </goals>
+            <configuration>
+              <failOnError>false</failOnError>
+              <skip>${skip.fe.build}</skip>
+            </configuration>
+          </execution>
 
-<!--          <execution>-->
-<!--            <id>yarn build</id>-->
-<!--            <goals>-->
-<!--              <goal>yarn</goal>-->
-<!--            </goals>-->
-<!--            <configuration>-->
-<!--              <failOnError>false</failOnError>-->
-<!--              <skip>${skip.fe.build}</skip>-->
-<!--              <arguments>build</arguments>-->
-<!--            </configuration>-->
-<!--          </execution>-->
-<!--        </executions>-->
-<!--      </plugin>-->
+          <execution>
+            <id>yarn build</id>
+            <goals>
+              <goal>yarn</goal>
+            </goals>
+            <configuration>
+              <failOnError>false</failOnError>
+              <skip>${skip.fe.build}</skip>
+              <arguments>build</arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 
     </plugins>
 
