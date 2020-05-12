@@ -1,0 +1,8 @@
+{
+  "plugins": ["prettier"],
+  "extends": [
+    "react-app",
+    "plugin:camunda-licensed/commercial",
+    "plugin:prettier/recommended"
+  ]
+}
