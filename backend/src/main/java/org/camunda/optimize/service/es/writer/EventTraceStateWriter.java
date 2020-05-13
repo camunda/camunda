@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.writer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,10 +17,16 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.script.Script;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.EVENT_TRACE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @AllArgsConstructor
 @Slf4j
@@ -56,11 +63,40 @@ public class EventTraceStateWriter {
   }
 
   private UpdateRequest createEventTraceStateUpsertRequest(final EventTraceStateDto eventTraceStateDto) {
-    return new UpdateRequest()
-      .index(getIndexName())
-      .id(eventTraceStateDto.getTraceId())
-      .doc(objectMapper.convertValue(eventTraceStateDto, Map.class))
-      .docAsUpsert(true);
+    try {
+      return new UpdateRequest()
+        .index(getIndexName())
+        .id(eventTraceStateDto.getTraceId())
+        .script(createUpdateScript(eventTraceStateDto))
+        .upsert(objectMapper.writeValueAsString(eventTraceStateDto), XContentType.JSON)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    } catch (JsonProcessingException ex) {
+      final String errorMessage = String.format(
+        "There was a problem creating an upsert for the event trace state with id [%s].",
+        eventTraceStateDto.getTraceId()
+      );
+      throw new OptimizeRuntimeException(errorMessage, ex);
+    }
+  }
+
+  private Script createUpdateScript(final EventTraceStateDto eventTraceStateDto) throws JsonProcessingException {
+    final Map<String, Object> params = new HashMap<>();
+    List jsonMap = objectMapper.readValue(
+      objectMapper.writeValueAsString(eventTraceStateDto.getEventTrace()),
+      List.class
+    );
+    params.put(EVENT_TRACE, jsonMap);
+    return ElasticsearchWriterUtil.createDefaultScript(updateScript(), params);
+  }
+
+  private String updateScript() {
+    return
+      // @formatter:off
+      "for (def tracedEvent : params.eventTrace) {" +
+        "ctx._source.eventTrace.removeIf(event -> event.eventId.equals(tracedEvent.eventId)) ;" +
+      "}" +
+      "ctx._source.eventTrace.addAll(params.eventTrace)";
+      // @formatter:on
   }
 
   private String getIndexName() {

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.event;
 
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
@@ -14,27 +13,18 @@ import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
-import org.elasticsearch.action.search.SearchResponse;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class ExternalEventTraceStateImportIT extends AbstractIT {
-
-  @BeforeEach
-  public void init() {
-    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-  }
+public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImportIT {
 
   @Test
   public void noEventsToProcess() {
@@ -544,10 +534,7 @@ public class ExternalEventTraceStateImportIT extends AbstractIT {
   }
 
   private Long getLastProcessedEntityTimestampFromElasticsearch() throws IOException {
-    return elasticSearchIntegrationTestExtension
-      .getLastProcessedEventTimestampForEventIndexSuffix(EXTERNAL_EVENTS_INDEX_SUFFIX)
-      .toInstant()
-      .toEpochMilli();
+    return getLastProcessedEntityTimestampFromElasticsearch(EXTERNAL_EVENTS_INDEX_SUFFIX);
   }
 
   private Long findMostRecentEventTimestamp() {
@@ -608,35 +595,6 @@ public class ExternalEventTraceStateImportIT extends AbstractIT {
       .build();
     eventSequenceCountDto.generateIdForEventSequenceCountDto();
     return eventSequenceCountDto;
-  }
-
-  private void processEventCountAndTraces() {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    embeddedOptimizeExtension.processEvents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  public List<EventDto> getAllStoredExternalEvents() {
-    return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
-  }
-
-  public List<EventTraceStateDto> getAllStoredExternalEventTraceStates() {
-    return getAllStoredDocumentsForIndexAsClass(
-      new EventTraceStateIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
-      EventTraceStateDto.class
-    );
-  }
-
-  public List<EventSequenceCountDto> getAllStoredExternalEventSequenceCounts() {
-    return getAllStoredDocumentsForIndexAsClass(
-      new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
-      EventSequenceCountDto.class
-    );
-  }
-
-  private <T> List<T> getAllStoredDocumentsForIndexAsClass(String indexName, Class<T> dtoClass) {
-    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(indexName);
-    return mapHits(response.getHits(), dtoClass, elasticSearchIntegrationTestExtension.getObjectMapper());
   }
 
 }
