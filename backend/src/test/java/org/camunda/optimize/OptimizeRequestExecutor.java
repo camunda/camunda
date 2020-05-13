@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountSearchRequestDto;
@@ -760,6 +761,20 @@ public class OptimizeRequestExecutor {
     this.path = "decision-variables/outputs/names";
     this.method = POST;
     this.body = getBody(variableRequestDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetAssigneesRequest(AssigneeRequestDto requestDto) {
+    this.path = "/assignee/values";
+    this.method = POST;
+    this.body = getBody(requestDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetCandidateGroupsRequest(AssigneeRequestDto requestDto) {
+    this.path = "/candidateGroups/values";
+    this.method = POST;
+    this.body = getBody(requestDto);
     return this;
   }
 
