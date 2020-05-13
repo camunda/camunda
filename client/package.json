@@ -25,7 +25,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jest-environment-jsdom-fifteen",
     "eject": "react-scripts eject",
-    "lint": "eslint src/**"
+    "lint": "eslint src/** --ext .ts,.tsx,.js,.jsx"
   },
   "browserslist": {
     "production": [
