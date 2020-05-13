@@ -23,7 +23,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @AllArgsConstructor
-@Path("/candidateGroups")
+@Path("/candidateGroup")
 @Component
 @Secured
 @Slf4j

@@ -772,7 +772,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetCandidateGroupsRequest(AssigneeRequestDto requestDto) {
-    this.path = "/candidateGroups/values";
+    this.path = "/candidateGroup/values";
     this.method = POST;
     this.body = getBody(requestDto);
     return this;
