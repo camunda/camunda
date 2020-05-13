@@ -34,7 +34,7 @@ public class RaftAppendTest {
   @Rule @Parameter public RaftRule raftRule;
 
   @Parameters(name = "{index}: {0}")
-  public static Object[][] reprocessingTriggers() {
+  public static Object[][] raftConfigurations() {
     return new Object[][] {
       new Object[] {RaftRule.withBootstrappedNodes(2)},
       new Object[] {RaftRule.withBootstrappedNodes(3)},

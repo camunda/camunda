@@ -35,7 +35,7 @@ public class RaftFailOverTest {
   @Rule @Parameter public RaftRule raftRule;
 
   @Parameters(name = "{index}: {0}")
-  public static Object[][] reprocessingTriggers() {
+  public static Object[][] raftConfigurations() {
     return new Object[][] {
       new Object[] {RaftRule.withBootstrappedNodes(3)},
       new Object[] {RaftRule.withBootstrappedNodes(4)},
