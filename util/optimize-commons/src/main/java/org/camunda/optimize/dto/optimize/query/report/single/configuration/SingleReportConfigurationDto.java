@@ -103,7 +103,7 @@ public class SingleReportConfigurationDto implements Combinable {
       return false;
     }
     SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
-    return (distributedBy != DistributedBy.USER_TASK && that.distributedBy != DistributedBy.USER_TASK);
+    return DistributedBy.NONE.equals(distributedBy) && DistributedBy.NONE.equals(that.distributedBy);
   }
 
   private boolean isUserTaskCommand(ProcessViewDto viewDto) {
