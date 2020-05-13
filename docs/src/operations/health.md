@@ -63,9 +63,9 @@ The started probe can be used as Kubernetes startup probe.
 The gateway is live if it:
 * Started successfully
 * Has a minimal amount of free memory and disk space to work with
-* Is able to respond to requests within a defined timeout
-* Is aware of other nodes in the cluster, or lost awareness of other nodes for less then 5 minutes
-* Is aware of leaders for partitions, or lost awareness of partition leaders for less then 5 minutes
+* Is able to respond to requests within a defined timeout, or misses the timeout for less than 10 minutes
+* Is aware of other nodes in the cluster, or lost awareness of other nodes for less than 5 minutes
+* Is aware of leaders for partitions, or lost awareness of partition leaders for less than 5 minutes
 
 The liveness probe can be used as Kubernetes liveness probe.
 

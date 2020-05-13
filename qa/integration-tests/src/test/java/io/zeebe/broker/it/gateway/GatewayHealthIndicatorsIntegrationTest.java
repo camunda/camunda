@@ -16,10 +16,10 @@ import io.zeebe.broker.it.gateway.GatewayHealthIndicatorsIntegrationTest.Config;
 import io.zeebe.gateway.Gateway.Status;
 import io.zeebe.gateway.impl.SpringGatewayBridge;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.probes.health.GatewayClusterAwarenessHealthIndicator;
-import io.zeebe.gateway.impl.probes.health.GatewayPartitionLeaderAwarenessHealthIndicator;
-import io.zeebe.gateway.impl.probes.health.GatewayStartedHealthIndicator;
-import io.zeebe.gateway.impl.probes.health.MemoryHealthIndicator;
+import io.zeebe.gateway.impl.probes.health.ClusterAwarenessHealthIndicator;
+import io.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
+import io.zeebe.gateway.impl.probes.health.StartedHealthIndicator;
+import io.zeebe.util.health.MemoryHealthIndicator;
 import java.util.List;
 import java.util.function.Supplier;
 import org.junit.After;
@@ -38,12 +38,11 @@ public class GatewayHealthIndicatorsIntegrationTest {
 
   @Autowired MemoryHealthIndicator memoryHealthIndicator;
 
-  @Autowired GatewayStartedHealthIndicator gatewayStartedHealthIndicator;
+  @Autowired StartedHealthIndicator startedHealthIndicator;
 
-  @Autowired GatewayClusterAwarenessHealthIndicator gatewayClusterAwarenessHealthIndicator;
+  @Autowired ClusterAwarenessHealthIndicator clusterAwarenessHealthIndicator;
 
-  @Autowired
-  GatewayPartitionLeaderAwarenessHealthIndicator gatewayPartitionLeaderAwarenessHealthIndicator;
+  @Autowired PartitionLeaderAwarenessHealthIndicator partitionLeaderAwarenessHealthIndicator;
 
   @Autowired SpringGatewayBridge springGatewayBridge;
 
@@ -62,18 +61,16 @@ public class GatewayHealthIndicatorsIntegrationTest {
   @Test
   public void shouldCreateGatewayStartedHealthIndicatorThatIsBackedBySpringGatewayBridge() {
     // precondition
-    assertThat(gatewayStartedHealthIndicator).isNotNull();
+    assertThat(startedHealthIndicator).isNotNull();
     assertThat(springGatewayBridge).isNotNull();
 
     // given
     final Supplier<Status> statusSupplier = () -> Status.SHUTDOWN;
 
     // when
-    final Health actualHealthBeforeRegisteringStatusSupplier =
-        gatewayStartedHealthIndicator.health();
+    final Health actualHealthBeforeRegisteringStatusSupplier = startedHealthIndicator.health();
     springGatewayBridge.registerGatewayStatusSupplier(statusSupplier);
-    final Health actualHealthAfterRegisteringStatusSupplier =
-        gatewayStartedHealthIndicator.health();
+    final Health actualHealthAfterRegisteringStatusSupplier = startedHealthIndicator.health();
 
     // then
     assertThat(actualHealthBeforeRegisteringStatusSupplier.getStatus())
@@ -86,7 +83,7 @@ public class GatewayHealthIndicatorsIntegrationTest {
   public void
       shouldCreateGatewayClusterAwarenessHealthIndicatorThatIsBackedBySpringGatewayBridge() {
     // precondition
-    assertThat(gatewayClusterAwarenessHealthIndicator).isNotNull();
+    assertThat(clusterAwarenessHealthIndicator).isNotNull();
     assertThat(springGatewayBridge).isNotNull();
 
     // given
@@ -97,14 +94,14 @@ public class GatewayHealthIndicatorsIntegrationTest {
 
     // when
     final Health actualHealthBeforeRegisteringStatusSupplier =
-        gatewayClusterAwarenessHealthIndicator.health();
+        clusterAwarenessHealthIndicator.health();
     springGatewayBridge.registerClusterStateSupplier(stateSupplier);
     final Health actualHealthAfterRegisteringStatusSupplier =
-        gatewayClusterAwarenessHealthIndicator.health();
+        clusterAwarenessHealthIndicator.health();
 
     // then
     assertThat(actualHealthBeforeRegisteringStatusSupplier.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.UNKNOWN);
+        .isSameAs(org.springframework.boot.actuate.health.Status.DOWN);
     assertThat(actualHealthAfterRegisteringStatusSupplier.getStatus())
         .isSameAs(org.springframework.boot.actuate.health.Status.UP);
   }
@@ -113,7 +110,7 @@ public class GatewayHealthIndicatorsIntegrationTest {
   public void
       shouldCreateGatewayPartitionLeaderAwarenessHealthIndicatorThatIsBackedBySpringGatewayBridge() {
     // precondition
-    assertThat(gatewayPartitionLeaderAwarenessHealthIndicator).isNotNull();
+    assertThat(partitionLeaderAwarenessHealthIndicator).isNotNull();
     assertThat(springGatewayBridge).isNotNull();
 
     // given
@@ -125,19 +122,19 @@ public class GatewayHealthIndicatorsIntegrationTest {
 
     // when
     final Health actualHealthBeforeRegisteringStatusSupplier =
-        gatewayPartitionLeaderAwarenessHealthIndicator.health();
+        partitionLeaderAwarenessHealthIndicator.health();
     springGatewayBridge.registerClusterStateSupplier(stateSupplier);
     final Health actualHealthAfterRegisteringStatusSupplier =
-        gatewayPartitionLeaderAwarenessHealthIndicator.health();
+        partitionLeaderAwarenessHealthIndicator.health();
 
     // then
     assertThat(actualHealthBeforeRegisteringStatusSupplier.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.UNKNOWN);
+        .isSameAs(org.springframework.boot.actuate.health.Status.DOWN);
     assertThat(actualHealthAfterRegisteringStatusSupplier.getStatus())
         .isSameAs(org.springframework.boot.actuate.health.Status.UP);
   }
 
   @Configuration
-  @ComponentScan({"io.zeebe.gateway.impl"})
+  @ComponentScan({"io.zeebe.gateway.impl", "io.zeebe.util.health"})
   static class Config {}
 }

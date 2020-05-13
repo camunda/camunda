@@ -32,7 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 
 public class StandaloneGateway {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
@@ -123,7 +123,7 @@ public class StandaloneGateway {
     SpringApplication.run(Launcher.class, args);
   }
 
-  @SpringBootApplication(exclude = RestClientAutoConfiguration.class)
+  @SpringBootApplication(exclude = ElasticsearchRestClientAutoConfiguration.class)
   public static class Launcher implements CommandLineRunner {
 
     @Autowired GatewayCfg configuration;

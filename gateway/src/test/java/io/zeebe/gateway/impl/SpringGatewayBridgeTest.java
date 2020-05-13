@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.Gateway.Status;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,10 +29,10 @@ public class SpringGatewayBridgeTest {
   @Test
   public void shouldReturnNoGatewayStatusByDefault() {
     // when
-    final Status actual = sutBrigde.getGatewayStatus();
+    final Optional<Status> actual = sutBrigde.getGatewayStatus();
 
     // then
-    assertThat(actual).describedAs("Gateway status when no supplier is set").isNull();
+    assertThat(actual).describedAs("Gateway status when no supplier is set").isEmpty();
   }
 
   @Test
@@ -41,10 +42,10 @@ public class SpringGatewayBridgeTest {
     sutBrigde.registerGatewayStatusSupplier(testSupplier);
 
     // when
-    final Status actual = sutBrigde.getGatewayStatus();
+    final var actual = sutBrigde.getGatewayStatus();
 
     // then
-    assertThat(actual).isSameAs(Status.RUNNING);
+    assertThat(actual).contains(Status.RUNNING);
   }
 
   @Test
@@ -53,7 +54,7 @@ public class SpringGatewayBridgeTest {
     final var actual = sutBrigde.getClusterState();
 
     // then
-    assertThat(actual).describedAs("Cluster status when no supplier is set").isNull();
+    assertThat(actual).describedAs("Cluster status when no supplier is set").isEmpty();
   }
 
   @Test
@@ -68,6 +69,6 @@ public class SpringGatewayBridgeTest {
     final var actual = sutBrigde.getClusterState();
 
     // then
-    assertThat(actual).isSameAs(mockClusterState);
+    assertThat(actual).contains(mockClusterState);
   }
 }

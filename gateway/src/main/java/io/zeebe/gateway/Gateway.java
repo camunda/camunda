@@ -42,7 +42,9 @@ public final class Gateway {
 
   private Server server;
   private BrokerClient brokerClient;
-  private Status status = Status.INITIAL;
+
+  @SuppressWarnings("squid:S3077")
+  private volatile Status status = Status.INITIAL;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
