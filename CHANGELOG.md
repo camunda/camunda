@@ -1,3 +1,17 @@
+<a name="0.20.2"></a>
+## 0.20.2 (2020-05-13)
+
+
+#### Features
+
+* **broker:**  add metric exporter (backport) ([2ed68a8e](https://github.com/zeebe-io/zeebe/commit/2ed68a8e4294b9be246c97b4ba6138a218eac8ca))
+
+#### Bug Fixes
+
+* **broker:**  run atomix compaction even under highload ([42c40aea](https://github.com/zeebe-io/zeebe/commit/42c40aea5b76462c33bd58d72b8e7e3e39c6c8d4))
+
+
+
 <a name="0.20.1"></a>
 ## 0.20.1 (2019-10-07)
 
