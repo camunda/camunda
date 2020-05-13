@@ -29,6 +29,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.concurrent.ThreadContextFactory;
+import io.zeebe.util.ZbLogger;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,10 +38,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
 
 /** Abstract partition. */
 public class RaftPartition implements Partition {
 
+  private static final Logger LOG = new ZbLogger(RaftPartition.class);
   private final PartitionId partitionId;
   private final RaftPartitionGroupConfig config;
   private final File dataDirectory;
@@ -167,7 +170,12 @@ public class RaftPartition implements Partition {
 
   /** Closes the partition. */
   CompletableFuture<Void> close() {
-    return closeServer().exceptionally(v -> null);
+    return closeServer()
+        .exceptionally(
+            error -> {
+              LOG.error("Error on shutdown partition: {}.", partitionId, error);
+              return null;
+            });
   }
 
   private CompletableFuture<Void> closeServer() {
