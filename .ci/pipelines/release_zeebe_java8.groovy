@@ -133,7 +133,8 @@ spec:
                 build job: 'zeebe-docker', parameters: [
                         string(name: 'BRANCH', value: env.RELEASE_BRANCH),
                         string(name: 'VERSION', value: params.RELEASE_VERSION),
-                        booleanParam(name: 'IS_LATEST', value: params.IS_LATEST)
+                        booleanParam(name: 'IS_LATEST', value: params.IS_LATEST),
+                        booleanParam(name: 'PUSH', value: true)
                 ]
             }
         }
