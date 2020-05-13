@@ -75,7 +75,15 @@ public class ActivateJobsHandler {
                 ResponseMapper.toActivateJobsResponse(key, response);
             final int jobsCount = grpcResponse.getJobsCount();
             if (jobsCount > 0) {
-              responseObserver.onNext(grpcResponse);
+              try {
+                responseObserver.onNext(grpcResponse);
+              } catch (Exception e) {
+                // An exception here usually mean the stream is closed
+                Loggers.GATEWAY_LOGGER.warn(
+                    "Expected to send activate jobs to the client, but encountered an exception",
+                    e);
+                return;
+              }
             }
 
             activateJobs(
@@ -97,14 +105,21 @@ public class ActivateJobsHandler {
           response -> false);
     } else {
       // enough jobs activated or no more partitions left to check
-      jobTypeToNextPartitionId.put(jobType, partitionIdIterator.getCurrentPartitionId());
-      responseObserver.onCompleted();
+      try {
+        responseObserver.onCompleted();
+      } catch (Exception e) {
+        // Cannot close the stream. Nothing to do
+        Loggers.GATEWAY_LOGGER.trace(
+            "Expected complete activate jobs request successfully, but encountered error", e);
+      }
     }
   }
 
   private PartitionIdIterator partitionIdIteratorForType(
       final String jobType, final int partitionsCount) {
-    final Integer nextPartitionId = jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> 0);
+    final Integer nextPartitionId =
+        jobTypeToNextPartitionId.compute(
+            jobType, (t, partitionId) -> partitionId == null ? 0 : partitionId + 1);
     return new PartitionIdIterator(nextPartitionId, partitionsCount);
   }
 }
