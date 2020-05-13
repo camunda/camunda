@@ -93,6 +93,7 @@
     * [Prerequisites](kubernetes/prerequisites.md)
     * [Installing HELM Charts](kubernetes/installing-helm.md)
     * [Accessing Operate](kubernetes/accessing-operate.md)
+    * [Zeebe Kubernetes Operator](kubernetes/zeebe-operator.md)
 * [Operate User Guide](operate-user-guide/index.md)
     * [Install & Start Operate](operate-user-guide/install-and-start.md)
     * [Getting Familiar With Operate](operate-user-guide/basic-operate-navigation.md)
