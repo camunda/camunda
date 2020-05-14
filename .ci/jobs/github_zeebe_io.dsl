@@ -22,6 +22,7 @@ organizationFolder('zeebe-io') {
                 pruneStaleBranchTrait()
                 localBranchTrait()
                 sourceWildcardFilter {
+                  includes('*')
                   excludes('zeebe-tasklist')
                 }
             }
