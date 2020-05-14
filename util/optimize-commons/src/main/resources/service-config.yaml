@@ -1,20 +1,53 @@
 ---
-auth:
-  cookie:
-    same-site:
-      # decides if the optimize auth cookie has the same site cookie flag set
-      enabled: true
-  token:
-    # Optimize uses token-based authentication to keep track of which users are
-    # logged in. Define when a token is supposed to expire.
-    lifeMin: 60
-    # Optional secret used to sign authentication tokens, it's recommended to use at least a 64 character secret.
-    # If set `null` a random secret will be generated with each startup of Optimize.
-    secret: null
-  # List of user id's that are granted full permission to all collections, reports & dashboards
-  # Note: For reports this users still are required to be granted access to the corresponding process/decision
-  # definitions in Camunda BPM Admin
-  superUserIds: []
+security:
+  # everything that's related to authentication
+  auth:
+    cookie:
+      same-site:
+        # decides if the optimize auth cookie has the same site cookie flag set
+        enabled: true
+    token:
+      # Optimize uses token-based authentication to keep track of which users are
+      # logged in. Define when a token is supposed to expire.
+      lifeMin: 60
+      # Optional secret used to sign authentication tokens, it's recommended to use at least a 64 character secret.
+      # If set `null` a random secret will be generated with each startup of Optimize.
+      secret: null
+    # List of user ids that are granted full permission to all collections, reports & dashboards
+    # Note: For reports these users are still required to be granted access to the corresponding process/decision
+    # definitions in Camunda BPM Admin
+    superUserIds: []
+
+  # Here you can define HTTP response headers that Optimize can send in its responses
+  # to increase the security of your application.
+  # Find more information here: https://owasp.org/www-project-secure-headers/
+  responseHeaders:
+    # HTTP Strict Transport Security (HSTS) is a web security policy mechanism which helps to protect websites
+    # against protocol downgrade attacks and cookie hijacking.
+    HSTS:
+      # The time, in seconds, that the browser should remember that this site is only to be accessed using HTTPS.
+      # If you set the number to a negative value no HSTS header is sent.
+      max-age: 31536000
+      # If this optional parameter is specified, this rule applies to all of the site’s subdomains as well.
+      includeSubDomains: true
+    # This header enables the cross-site scripting (XSS) filter in your browser.
+    # Can have one of the following options:
+    # * 0: Filter disabled.
+    # * 1: Filter enabled. If a cross-site scripting attack is detected, in order to stop the attack,
+    #      the browser will sanitize the page.
+    # * 1; mode=block: Filter enabled. Rather than sanitize the page, when a XSS attack is detected, the browser will
+    #                  prevent rendering of the page.
+    # * 1; report=http://[YOURDOMAIN]/your_report_URI: Filter enabled. The browser will sanitize the page and
+    #                                                  report the violation. This is a Chromium function utilizing CSP
+    #                                                  violation reports to send details to a URI of your choice.
+    X-XSS-Protection: 1; mode=block
+    # Setting this header will prevent the browser from interpreting files as a different MIME type to
+    # what is specified in the Content-Type HTTP header (e.g. treating text/plain as text/css).
+    X-Content-Type-Options: true
+    # A Content Security Policy (CSP) has significant impact on the way browsers render pages.
+    # By default Optimize uses the base-uri directive which restricts the URLs that can be used to the Optimize pages.
+    # Find more details: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+    Content-Security-Policy: base-uri 'self'
 
 container:
   # A host name or IP address, to identify a specific network interface on

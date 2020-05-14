@@ -125,6 +125,23 @@ public class ConfigurationValidatorTest {
   }
 
   @Test
+  public void deprecatedAuthConfigs() {
+    // given
+    ConfigurationService configurationService =
+      createConfiguration("config-samples/config-deprecated-auth-values.yaml");
+    String[] deprecatedLocations = {"deprecated-config.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+
+    // when
+    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+
+    // then
+    assertThat(deprecations).hasSize(1);
+    assertThat(deprecations.get("auth.cookie.same-site"))
+      .isEqualTo(generateExpectedDocUrl("/technical-guide/setup/configuration/#security"));
+  }
+
+  @Test
   public void testNonDeprecatedArrayLeafKey_allFine() {
     // given
     String[] locations = {"config-samples/config-wo-tcpPort-leaf-key.yaml"};

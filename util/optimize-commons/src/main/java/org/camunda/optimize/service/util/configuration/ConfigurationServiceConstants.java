@@ -10,10 +10,16 @@ package org.camunda.optimize.service.util.configuration;
  * string inlined in the service class.
  */
 public interface ConfigurationServiceConstants {
-  String TOKEN_LIFE_TIME = "$.auth.token.lifeMin";
-  String TOKEN_SECRET = "$.auth.token.secret";
-  String SAME_SITE_COOKIE_FLAG_ENABLED = "$.auth.cookie.same-site.enabled";
-  String SUPER_USER_IDS = "$.auth.superUserIds";
+  String TOKEN_LIFE_TIME = "$.security.auth.token.lifeMin";
+  String TOKEN_SECRET = "$.security.auth.token.secret";
+  String SAME_SITE_COOKIE_FLAG_ENABLED = "$.security.auth.cookie.same-site.enabled";
+  String SUPER_USER_IDS = "$.security.auth.superUserIds";
+
+  String RESPONSE_HEADER_HSTS_MAX_AGE = "$.security.responseHeaders.HSTS.max-age";
+  String RESPONSE_HEADER_HSTS_INCLUDE_SUBDOMAINS = "$.security.responseHeaders.HSTS.includeSubDomains";
+  String RESPONSE_HEADER_X_XSS_PROTECTION = "$.security.responseHeaders.X-XSS-Protection";
+  String RESPONSE_HEADER_X_CONTENT_TYPE_OPTIONS = "$.security.responseHeaders.X-Content-Type-Options";
+  String RESPONSE_HEADER_CONTENT_SECURITY_POLICY = "$.security.responseHeaders.Content-Security-Policy";
 
   String CONFIGURED_ENGINES = "$.engines";
 

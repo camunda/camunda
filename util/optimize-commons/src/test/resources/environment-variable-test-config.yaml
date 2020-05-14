@@ -1,7 +1,8 @@
 ---
-auth:
-  token:
-    lifeMin: ${AUTH_TOKEN_LIFEMIN}
+security:
+  auth:
+    token:
+      lifeMin: ${AUTH_TOKEN_LIFEMIN}
 
 engines:
   'camunda-bpm-1':

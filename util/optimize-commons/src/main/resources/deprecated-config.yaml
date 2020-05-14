@@ -11,4 +11,7 @@ es.security.ssl.verification_mode: '/technical-guide/setup/configuration/#securi
 alerting.email: '/technical-guide/setup/configuration/#email'
 email.username: '/technical-guide/setup/configuration/#email'
 email.password: '/technical-guide/setup/configuration/#email'
-email.securityProtocol: '/technical-guide/setup/configuration/#email'
+auth.cookie.same-site: '/technical-guide/setup/configuration/#security'
+auth.cookie.token.lifeMin: '/technical-guide/setup/configuration/#security'
+auth.cookie.token.secret: '/technical-guide/setup/configuration/#security'
+auth.superUserIds: '/technical-guide/setup/configuration/#security'

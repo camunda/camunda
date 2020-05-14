@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -37,6 +40,8 @@ import javax.ws.rs.core.Response;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.KeyManagementException;
+import java.security.cert.X509Certificate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
@@ -221,8 +226,12 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return getClient().target(IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint());
   }
 
-  public WebTarget rootTarget() {
+  private WebTarget rootTarget() {
     return getClient().target(IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint());
+  }
+
+  public WebTarget securedRootTarget() {
+    return getClient().target(IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint());
   }
 
   public final WebTarget rootTarget(String path) {
@@ -259,7 +268,29 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     client.property(ClientProperties.CONNECT_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
     client.property(ClientProperties.READ_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
     client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);
+
+    acceptSelfSignedCertificates(client);
     return client;
+  }
+
+  private void acceptSelfSignedCertificates(final Client client) {
+    try {
+      // @formatter:off
+      client.getSslContext().init(null, new TrustManager[]{new X509TrustManager() {
+        public void checkClientTrusted(X509Certificate[] arg0, String arg1) {}
+        public void checkServerTrusted(X509Certificate[] arg0, String arg1) {}
+        public X509Certificate[] getAcceptedIssuers() {
+          return new X509Certificate[0];
+        }
+      }}, new java.security.SecureRandom());
+      HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+      // @formatter:on
+    } catch (KeyManagementException e) {
+      throw new OptimizeIntegrationTestException(
+        "Was not able to configure jersey client to accept all certificates",
+        e
+      );
+    }
   }
 
   private InputStream wrapEntityStreamIfNecessary(final InputStream originalEntityStream) {

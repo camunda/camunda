@@ -1,7 +1,8 @@
 ---
-auth:
-  token:
-    lifeMin: 10
+security:
+  auth:
+    token:
+      lifeMin: 10
 
 container:
   keystore:

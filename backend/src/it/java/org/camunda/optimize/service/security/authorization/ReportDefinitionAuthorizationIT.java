@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.security;
+package org.camunda.optimize.service.security.authorization;
 
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;

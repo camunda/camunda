@@ -63,6 +63,15 @@ public class ConfigurationService {
   private Boolean sameSiteCookieFlagEnabled;
   private List<String> superUserIds;
 
+  // http response security header configurations
+  private Long HTTPStrictTransportSecurityMaxAge;
+  private Boolean HTTPStrictTransportSecurityIncludeSubdomains;
+  private String XXSSProtection;
+  private Boolean XContentTypeOptions;
+  private String contentSecurityPolicy;
+
+
+
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
   private String processDefinitionXmlEndpoint;
@@ -237,6 +246,48 @@ public class ConfigurationService {
       superUserIds = configJsonContext.read(ConfigurationServiceConstants.SUPER_USER_IDS, LIST_OF_STRINGS_TYPE_REF);
     }
     return superUserIds;
+  }
+
+  public Long getHTTPStrictTransportSecurityMaxAge() {
+    if (HTTPStrictTransportSecurityMaxAge == null) {
+      HTTPStrictTransportSecurityMaxAge =
+        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_HSTS_MAX_AGE, Long.class);
+    }
+    return HTTPStrictTransportSecurityMaxAge;
+  }
+
+  public Boolean getHTTPStrictTransportSecurityIncludeSubdomains() {
+    if (HTTPStrictTransportSecurityIncludeSubdomains == null) {
+      HTTPStrictTransportSecurityIncludeSubdomains =
+        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_HSTS_INCLUDE_SUBDOMAINS, Boolean.class);
+    }
+    return HTTPStrictTransportSecurityIncludeSubdomains;
+  }
+
+  public String getXXSSProtection() {
+    if (XXSSProtection == null) {
+      XXSSProtection = cutTrailingSlash(
+        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_X_XSS_PROTECTION)
+      );
+    }
+    return XXSSProtection;
+  }
+
+  public Boolean getXContentTypeOptions() {
+    if (XContentTypeOptions == null) {
+      XContentTypeOptions =
+        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_X_CONTENT_TYPE_OPTIONS, Boolean.class);
+    }
+    return XContentTypeOptions;
+  }
+
+  public String getContentSecurityPolicy() {
+    if (contentSecurityPolicy == null) {
+      contentSecurityPolicy = cutTrailingSlash(
+        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_CONTENT_SECURITY_POLICY)
+      );
+    }
+    return contentSecurityPolicy;
   }
 
   public List<ElasticsearchConnectionNodeConfiguration> getElasticsearchConnectionNodes() {

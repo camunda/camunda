@@ -13,6 +13,8 @@ import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactor
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.websocket.StatusWebSocket;
+import org.eclipse.jetty.rewrite.handler.HeaderPatternRule;
+import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
@@ -23,17 +25,20 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.context.ApplicationContext;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
+import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
+import static com.google.common.net.HttpHeaders.X_XSS_PROTECTION;
 
 /**
  * Jetty embedded server wrapping jersey servlet handler and loading properties from
@@ -48,10 +53,8 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     SLF4JBridgeHandler.install();
   }
 
-  private static final Logger logger = LoggerFactory.getLogger(EmbeddedCamundaOptimize.class);
-
-  private SpringAwareServletConfiguration jerseyCamundaOptimize;
-  private Server jettyServer;
+  private final SpringAwareServletConfiguration jerseyCamundaOptimize;
+  private final Server jettyServer;
 
   public EmbeddedCamundaOptimize() {
     this(null);
@@ -83,7 +86,11 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
     ServletContextHandler context = jerseyCamundaOptimize.getServletContextHandler();
 
-    jettyServer.setHandler(context);
+    HandlerCollection handlerCollection = new HandlerCollection();
+    handlerCollection.addHandler(createSecurityHeaderHandlers(configurationService));
+    handlerCollection.addHandler(context);
+    jettyServer.setHandler(handlerCollection);
+
     initWebSockets(context);
 
     jettyServer.setRequestLog(new CustomRequestLog(new Slf4jRequestLogWriter(),  CustomRequestLog.EXTENDED_NCSA_FORMAT));
@@ -91,13 +98,31 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     return jettyServer;
   }
 
+  private RewriteHandler createSecurityHeaderHandlers(final ConfigurationService configurationService) {
+    RewriteHandler rewriteHandler = new RewriteHandler();
+    HeaderPatternRule xssProtection =
+      new HeaderPatternRule("*", X_XSS_PROTECTION, configurationService.getXXSSProtection());
+    rewriteHandler.addRule(xssProtection);
+
+    if (configurationService.getXContentTypeOptions()) {
+      HeaderPatternRule xContentTypeOptions =
+        new HeaderPatternRule("*", X_CONTENT_TYPE_OPTIONS, "nosniff");
+      rewriteHandler.addRule(xContentTypeOptions);
+    }
+
+    HeaderPatternRule contentSecurityPolicy =
+      new HeaderPatternRule("*", CONTENT_SECURITY_POLICY, configurationService.getContentSecurityPolicy());
+    rewriteHandler.addRule(contentSecurityPolicy);
+    return rewriteHandler;
+  }
+
   /**
    * Add javax.websocket support
    */
   private void initWebSockets(ServletContextHandler context) {
-    WebSocketServerContainerInitializer.configure(context, (servletContext, serverContainer) -> {
-      serverContainer.addEndpoint(StatusWebSocket.class);
-    });
+    WebSocketServerContainerInitializer.configure(
+      context, (servletContext, serverContainer) -> serverContainer.addEndpoint(StatusWebSocket.class)
+    );
   }
 
   protected ConfigurationService constructConfigurationService() {
@@ -127,7 +152,12 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
                                              String keystorePass, String keystoreLocation, Server server) {
     HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
-    https.addCustomizer(new SecureRequestCustomizer());
+    https.addCustomizer(new SecureRequestCustomizer(
+      true,
+      configurationService.getHTTPStrictTransportSecurityMaxAge(),
+      configurationService.getHTTPStrictTransportSecurityIncludeSubdomains()
+    ));
+    https.setSecureScheme("https");
     SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
     sslContextFactory.setKeyStorePath(keystoreLocation);
     sslContextFactory.setKeyStorePassword(keystorePass);
@@ -187,13 +217,11 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
     while (!oneStarted) {
       EngineImportSchedulerFactory importSchedulerFactory = getImportSchedulerFactory();
-      if (importSchedulerFactory != null) {
-        List<EngineImportScheduler> importSchedulers = importSchedulerFactory.getImportSchedulers();
-        if (importSchedulers != null) {
-          for (EngineImportScheduler scheduler : importSchedulers) {
-            scheduler.startImportScheduling();
-            oneStarted = true;
-          }
+      List<EngineImportScheduler> importSchedulers = importSchedulerFactory.getImportSchedulers();
+      if (importSchedulers != null) {
+        for (EngineImportScheduler scheduler : importSchedulers) {
+          scheduler.startImportScheduling();
+          oneStarted = true;
         }
       }
     }

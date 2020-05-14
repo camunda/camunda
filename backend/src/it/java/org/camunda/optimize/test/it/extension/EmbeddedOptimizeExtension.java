@@ -95,7 +95,7 @@ public class EmbeddedOptimizeExtension
   }
 
   @Override
-  public void beforeAll(final ExtensionContext extensionContext) throws Exception {
+  public void beforeAll(final ExtensionContext extensionContext) {
     if (beforeAllMode) {
       setupOptimize();
     }
@@ -109,7 +109,7 @@ public class EmbeddedOptimizeExtension
   }
 
   @Override
-  public void afterAll(final ExtensionContext extensionContext) throws Exception {
+  public void afterAll(final ExtensionContext extensionContext) {
     if (beforeAllMode) {
       afterTest();
     }
@@ -325,7 +325,7 @@ public class EmbeddedOptimizeExtension
     getOptimize().refreshAuthenticationToken();
   }
 
-  public String getAuthenticationToken() {
+  private String getAuthenticationToken() {
     return getOptimize().getAuthenticationToken();
   }
 
@@ -395,8 +395,8 @@ public class EmbeddedOptimizeExtension
     return getOptimize().rootTarget(path);
   }
 
-  public final WebTarget rootTarget() {
-    return getOptimize().rootTarget();
+  public final WebTarget securedRootTarget() {
+    return getOptimize().securedRootTarget();
   }
 
   public List<Long> getImportIndexes() {
@@ -510,7 +510,7 @@ public class EmbeddedOptimizeExtension
     return getApplicationContext().getBean(OptimizeElasticsearchClient.class);
   }
 
-  public boolean isResetImportOnStart() {
+  private boolean isResetImportOnStart() {
     return resetImportOnStart;
   }
 

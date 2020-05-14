@@ -8,18 +8,9 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.Optional;
 
-import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.service.security.AuthCookieService.SAME_SITE_COOKIE_FLAG;
-import static org.camunda.optimize.service.security.AuthCookieService.SAME_SITE_COOKIE_STRICT_VALUE;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -95,72 +86,6 @@ public class AuthenticationRestServiceIT extends AbstractIT {
 
     //then
     assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
-  }
-
-  @Test
-  public void cookieIsInsecureIfHttpIsEnabled() {
-    //when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-
-    //then
-    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure(), is(false));
-  }
-
-
-  @Test
-  public void cookieIsSecureIfHttpIsDisabled() {
-    // given
-    embeddedOptimizeExtension.getConfigurationService().setContainerHttpPort(Optional.empty());
-
-    // when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-
-    // then
-    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure(), is(true));
-  }
-
-  @Test
-  public void cookieIsHttpOnly() {
-    // when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-
-    // then
-    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isHttpOnly(), is(true));
-  }
-
-  @Test
-  public void canDisableSameSiteCookieFlag() {
-    // given
-    embeddedOptimizeExtension.getConfigurationService().setSameSiteCookieFlagEnabled(false);
-
-    // when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-
-    // then
-    assertThat(
-      authResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE).toString(),
-      not(containsString(SAME_SITE_COOKIE_FLAG))
-    );
-
-    // cleanup
-    embeddedOptimizeExtension.getConfigurationService().setSameSiteCookieFlagEnabled(true);
-  }
-
-  @Test
-  public void cookieHasSameSiteCookieFlagEnabledByDefault() {
-    // when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-
-    // then
-    assertThat(
-      authResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE).toString(),
-      containsString(SAME_SITE_COOKIE_FLAG + "=" + SAME_SITE_COOKIE_STRICT_VALUE)
-    );
   }
 
   private String authenticateAdminUser() {

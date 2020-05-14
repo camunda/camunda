@@ -65,6 +65,10 @@ public class IntegrationTestConfigurationUtil {
     return "http://localhost:" + System.getProperty("optimizeHttpPort", "8090");
   }
 
+  public static String getSecuredEmbeddedOptimizeEndpoint() {
+    return "https://localhost:" + System.getProperty("optimizeHttpsPort", "8091");
+  }
+
   public static String getEmbeddedOptimizeRestApiEndpoint() {
     return getEmbeddedOptimizeEndpoint() + "/api";
   }
