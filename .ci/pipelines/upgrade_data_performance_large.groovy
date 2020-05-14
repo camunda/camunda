@@ -14,7 +14,7 @@ ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 PREV_ES_TEST_VERSION_POM_PROPERTY = "previous.optimize.elasticsearch.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
-static String mavenElasticsearchAgent(env, prevEsVersion, esVersion, cambpmVersion) {
+static String upgradePerformanceConfig(prevEsVersion, esVersion, camBpmVersion) {
   return """
 metadata:
   labels:
@@ -29,11 +29,13 @@ spec:
   securityContext:
     fsGroup: 1000
   volumes:
-    - name: es-storage
+    - name: ssd-storage
       hostPath:
         path: /mnt/disks/array0
         type: Directory
     - name: cambpm-storage
+      emptyDir: {}
+    - name: cambpm-invoice-override
       emptyDir: {}
     - name: es-snapshot
       emptyDir: {}
@@ -51,7 +53,7 @@ spec:
     imagePullPolicy: Always
     command: ["rm", "-fr", "/data/*"]
     volumeMounts:
-      - name: es-storage
+      - name: ssd-storage
         mountPath: /data
         subPath: data
   containers:
@@ -69,135 +71,149 @@ spec:
       - name: DOCKER_HOST
         value: tcp://localhost:2375
     resources:
+      # Note: high cpu request here to ensure this pod is deployed on a dedicated node, with an exclusive ssd
+      # this is 30 - (cpu of other containers)
+      limits:
+        cpu: 5
+        memory: 6Gi
+      requests:
+        cpu: 5
+        memory: 6Gi
+    volumeMounts:
+      - name: ssd-storage
+        mountPath: /ssd-storage
+""" \
+ + gcloudContainerSpec() \
+ + postgresContainerSpec() + camBpmContainerSpec(camBpmVersion) \
+ + elasticSearchContainerSpec(prevEsVersion, 9250, 'old') \
+ + elasticSearchContainerSpec(esVersion, 9200, 'new')
+}
+
+static String gcloudContainerSpec() {
+  return """
+  - name: gcloud
+    image: google/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+    volumeMounts:
+      - name: ssd-storage
+        mountPath: /db_dump
+        subPath: db-dump
+  """
+}
+
+static String postgresContainerSpec() {
+  return """
+  - name: postgresql
+    image: postgres:11.2
+    env:
+      - name: POSTGRES_USER
+        value: camunda
+      - name: POSTGRES_PASSWORD
+        value: camunda
+      - name: POSTGRES_DB
+        value: engine
+    resources:
       limits:
         cpu: 4
-        memory: 4Gi
+        memory: 6Gi
       requests:
         cpu: 4
-        memory: 4Gi
+        memory: 6Gi
     volumeMounts:
-      - name: es-storage
-        mountPath: /es-storage
-      - name: cambpm-storage
-        mountPath: /cambpm-storage
+      - name: ssd-storage
+        mountPath: /var/lib/postgresql/data
+        subPath: pg-data
+      - name: ssd-storage
+        mountPath: /db_dump
+        subPath: db-dump
+  """
+}
+
+static String camBpmContainerSpec(String camBpmVersion) {
+  return """
   - name: cambpm
-    image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    image: ${CAMBPM_DOCKER_IMAGE(camBpmVersion)}
+    tty: true
     env:
-      - name: DB_DRIVER
-        value: org.postgresql.Driver
-      - name: DB_USERNAME
-        value: camunda
-      - name: DB_PASSWORD
-        value: camunda123
-      - name: DB_URL
-        value: jdbc:postgresql://opt-ci-perf.db:5432/optimize-ci-performance
+      - name: JAVA_OPTS
+        value: "-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
+      - name: DB_DRIVER
+        value: "org.postgresql.Driver"
+      - name: DB_USERNAME
+        value: "camunda"
+      - name: DB_PASSWORD
+        value: "camunda"
+      - name: DB_URL
+        value: "jdbc:postgresql://localhost:5432/engine"
       - name: WAIT_FOR
-        value: opt-ci-perf.db:5432
-      - name: JAVA_OPTS
-        value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
+        value: localhost:5432
     resources:
       limits:
         cpu: 4
-        memory: 3Gi
+        memory: 5Gi
       requests:
         cpu: 4
-        memory: 3Gi
+        memory: 5Gi
     volumeMounts:
-      - name: cambpm-storage
-        mountPath: /camunda/logs
-  - name: elasticsearch-old
-    image: ${ELASTICSEARCH_DOCKER_IMAGE(prevEsVersion)}
-    env:
-    - name: ES_NODE_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.name
-    - name: ES_JAVA_OPTS
-      value: "-Xms3g -Xmx3g"
-    - name: cluster.name
-      value: elasticsearch
-    - name: discovery.type
-      value: single-node
-    - name: action.auto_create_index
-      value: false
-    - name: bootstrap.memory_lock
-      value: true
-    - name: http.port
-      value: 9250
-    - name: path.repo
-      value: /var/lib/elasticsearch/snapshots
-    securityContext:
-      privileged: true
-      capabilities:
-        add: ["IPC_LOCK", "SYS_RESOURCE"]
-    ports:
-    - containerPort: 9250
-      name: es-http
-      protocol: TCP
-    resources:
-      limits:
-        cpu: 6
-        memory: 6Gi
-      requests:
-        cpu: 6
-        memory: 6Gi
-    volumeMounts:
-      - name: es-storage
-        mountPath: /usr/share/elasticsearch/data
-        subPath: data-old
-      - name: es-storage
-        mountPath: /usr/share/elasticsearch/logs
-        subPath: logs-old
-      - name: es-snapshot
-        mountPath: /var/lib/elasticsearch/snapshots
-  - name: elasticsearch
+      - name: cambpm-invoice-override
+        mountPath: /camunda/webapps/camunda-invoice
+    """
+}
+
+static String elasticSearchContainerSpec(esVersion, httpPort = 9200, nameSuffix) {
+  return """
+  - name: elasticsearch-$nameSuffix
     image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
     env:
-    - name: ES_NODE_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.name
     - name: ES_JAVA_OPTS
-      value: "-Xms3g -Xmx3g"
+      value: "-Xms8g -Xmx8g"
     - name: cluster.name
       value: elasticsearch
     - name: discovery.type
       value: single-node
-    - name: action.auto_create_index
-      value: false
     - name: bootstrap.memory_lock
       value: true
     - name: http.port
-      value: 9200
+      value: $httpPort
     - name: path.repo
       value: /var/lib/elasticsearch/snapshots
     securityContext:
       privileged: true
       capabilities:
-        add: ["IPC_LOCK", "SYS_RESOURCE"]
+        add: ["IPC_LOCK"]
     ports:
-    - containerPort: 9200
+    - containerPort: $httpPort
       name: es-http
       protocol: TCP
     resources:
       limits:
-        cpu: 6
-        memory: 6Gi
+        cpu: 8
+        memory: 16Gi
       requests:
-        cpu: 6
-        memory: 6Gi
+        cpu: 8
+        memory: 16Gi
     volumeMounts:
-      - name: es-storage
+      - name: ssd-storage
         mountPath: /usr/share/elasticsearch/data
-        subPath: data-new
-      - name: es-storage
+        subPath: es-data-$nameSuffix
+      - name: ssd-storage
         mountPath: /usr/share/elasticsearch/logs
-        subPath: logs-new
-      - name: es-snapshot
+        subPath: es-logs-$nameSuffix
+      - name: ssd-storage
         mountPath: /var/lib/elasticsearch/snapshots
-"""
+        subPath: es-snapshots
+  """
 }
 
 static String mavenAgent() {
@@ -257,14 +273,7 @@ void runMaven(String cmd) {
 }
 
 pipeline {
-  agent {
-    kubernetes {
-      cloud 'optimize-ci'
-      label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-      defaultContainer 'jnlp'
-      yaml mavenAgent()
-    }
-  }
+  agent none
 
   environment {
     NEXUS = credentials("camunda-nexus")
@@ -273,11 +282,19 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '50'))
     timestamps()
-    timeout(time: 100, unit: 'MINUTES')
+    timeout(time: 240, unit: 'MINUTES')
   }
 
   stages {
     stage('Prepare') {
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml mavenAgent()
+        }
+      }
       steps {
         cloneGitRepo()
         script {
@@ -288,32 +305,64 @@ pipeline {
         }
       }
     }
-    stage('Performance') {
+    stage('Upgrade Performance Test') {
       agent {
         kubernetes {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenElasticsearchAgent(env, env.PREV_ES_VERSION, env.ES_VERSION, env.CAMBPM_VERSION)
+          yaml upgradePerformanceConfig(env.PREV_ES_VERSION, env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
-      steps {
-        cloneGitRepo()
-        container('maven') {
-          sh 'apt-get update && apt-get install jq netcat -y'
-          runMaven('-T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker clean install')
-          runMaven('-Dupgrade.timeout.seconds=${UPGRADE_TIMEOUT} -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots -Dskip.docker -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
+      stages {
+        stage('Build') {
+          steps {
+            cloneGitRepo()
+            container('maven') {
+              configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh 'apt-get update && apt-get install jq netcat -y'
+                sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s $MAVEN_SETTINGS_XML clean install -B'
+              }
+            }
+          }
         }
-      }
-      post {
-        always {
-          container('maven') {
-            sh 'curl localhost:9250/_cat/indices?v'
-            sh ('''#!/bin/bash -ex
-              cp -R --parents /es-storage/logs-old /es-storage/logs-new /cambpm-storage .
-              chown -R 10000:1000 ./{es-storage,cambpm-storage}
-            ''')
-            archiveArtifacts artifacts: 'es-storage/logs-*/*,cambpm-storage/**/*', onlyIfSuccessful: false
+        stage('Restore Test Data') {
+          steps {
+            timeout(90) {
+              container('gcloud') {
+                sh "gsutil -q cp gs://optimize-data/${SQL_DUMP} /db_dump/${SQL_DUMP}"
+              }
+              container('postgresql') {
+                sh "pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/${SQL_DUMP}"
+              }
+            }
+          }
+          post {
+            always {
+              container('gcloud') {
+                sh "rm -f /db_dump/${SQL_DUMP}"
+              }
+            }
+          }
+        }
+        stage('Run Upgrade Performance Tests') {
+          steps {
+            container('maven') {
+              runMaven('-Dupgrade.timeout.seconds=${UPGRADE_TIMEOUT} -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots -Dskip.docker -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
+            }
+          }
+          post {
+            always {
+              container('maven') {
+                sh 'curl localhost:9250/_cat/indices?v'
+                sh 'curl localhost:9200/_cat/indices?v'
+                sh ('''#!/bin/bash -ex
+                  cp -R --parents /ssd-storage/es-logs-old /ssd-storage/es-logs-new .
+                  chown -R 10000:1000 ./ssd-storage/
+                ''')
+                archiveArtifacts artifacts: 'ssd-storage/es-logs-*/*', onlyIfSuccessful: false
+              }
+            }
           }
         }
       }
