@@ -43,7 +43,7 @@
   },
   "home": {
     "createBtn": {
-      "default": "Erstelle neu",
+      "default": "Neu erstellen",
       "collection": "Neue Sammlung",
       "dashboard": "Neues Dashboard",
       "report": {
@@ -360,7 +360,7 @@
         "work": "Arbeitszeit",
         "total": "Summe"
       },
-      "userTaskDistributedBy": "Verteilt durch",
+      "userTaskDistributedBy": "Aufgeteilt nach",
       "nodeStatus": {
         "legend": "Prozessknoten-Status",
         "running": "In Ausführung",
@@ -508,7 +508,10 @@
       },
       "onlyCompletedHint": "Hinweis: Die Ausreißeranalyse wird nur für abgeschlossene Knoten durchgeführt",
       "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
-      "tooltipText": "{count} {instance} haben {percentage}% länger gedauert als der Durchschnitt.",
+      "tooltipText": {
+        "singular": "{count} Instanz hat {percentage}% länger gedauert als der Durchschnitt.",
+        "plural": "{count} Instanzen haben {percentage}% länger gedauert als der Durchschnitt."
+      },
       "detailsModal": {
         "title": "Ausreißer von {name} Prozessknoten",
         "durationChart": "Laufzeitverteilungsdiagramm",
@@ -526,8 +529,8 @@
       }
     },
     "selectLabel": "Für",
-    "gatewayLabel": "Analysieren Sie, wie der Verlauf von",
-    "endEventLabel": "die Wahrscheinlichkeit beeinflusst, dass eine Instanz erreichte",
+    "gatewayLabel": "analysieren, wie der Verlauf von",
+    "endEventLabel": "die Wahrscheinlichkeit beeinflusst, dass dieses Endereignis erreicht wird:",
     "emptySelectionLabel": {
       "gateway": "Gateway auswählen",
       "endEvent": "Endereignis auswählen"
@@ -549,7 +552,9 @@
     "edit": "Bearbeiten",
     "editName": "{name} bearbeiten",
     "delete": "Löschen",
+    "deleteEntity": "{entity} Löschen",
     "remove": "Entfernen",
+    "removeEntity": "{entity} entfernen",
     "save": "Speichern",
     "update": "Aktualisieren",
     "apply": "Anwenden",
@@ -572,6 +577,7 @@
     "and": "und",
     "off": "Aus",
     "none": "Keiner",
+    "nothing": "Nichts",
     "all": "Alle",
     "above": "über",
     "below": "unter",
@@ -722,23 +728,24 @@
           },
           "last": {
             "week": "In der letzten",
-            "all": "In den letzten"
+            "plural": "In den letzten",
+            "all": "In dem letzten"
           },
           "completed": {
             "week": "abgeschlossenen",
-            "all": "abgeschlossenem"
+            "all": "abgeschlossenen"
           }
         },
         "unit": {
           "today": "Heute",
           "yesterday": "Gestern",
           "fixed": "Festes Datum",
-          "this": "Diese...",
-          "last": "Letzte...",
+          "this": "Diese(n/s)...",
+          "last": "Letzte(n/s)...",
           "custom": "Gleitend"
         },
         "rollingInfo": "Hinweis: Der gleitende Zeitraum wird bis zum aktuellen Zeitpunkt berechnet",
-        "last": "Letzte"
+        "last": "Letzten"
       },
       "variableModal": {
         "inputLabel": "Variablenname",

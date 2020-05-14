@@ -43,7 +43,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
   <DeleterErrorHandler
     checkConflicts={[Function]}
     deleteEntity={[Function]}
-    deleteText="Remove"
+    deleteText="Remove Data Source"
     descriptionText="The '' Data Source will be removed from the Collection."
     entity={null}
     getName={[Function]}
@@ -177,7 +177,7 @@ exports[`should match snapshot 1`] = `
   <DeleterErrorHandler
     checkConflicts={[Function]}
     deleteEntity={[Function]}
-    deleteText="Remove"
+    deleteText="Remove Data Source"
     descriptionText="The '' Data Source will be removed from the Collection."
     entity={null}
     getName={[Function]}

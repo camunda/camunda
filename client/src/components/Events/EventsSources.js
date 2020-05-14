@@ -91,7 +91,7 @@ export default class EventSources extends React.Component {
         </Button>
         <Deleter
           type="processEvents"
-          deleteText={t('common.remove')}
+          deleteText={t('common.removeEntity', {entity: t('common.deleter.types.processEvents')})}
           entity={deleting}
           deleteEntity={this.removeSource}
           onClose={() => this.setState({deleting: null})}

@@ -32,7 +32,7 @@ export default function DistributedBy({
             }
           }}
         >
-          <Select.Option value="none">{t('common.none')}</Select.Option>
+          <Select.Option value="none">{t('common.nothing')}</Select.Option>
           {groupBy.type === 'userTasks' ? (
             <>
               <Select.Option key="assignee" value="assignee">

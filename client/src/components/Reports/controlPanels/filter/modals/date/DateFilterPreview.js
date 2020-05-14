@@ -31,9 +31,16 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
     const highlighted = `${+customNum} ${t(
       `common.unit.${makeSingular(unit)}.${+customNum === 1 ? 'label' : 'label-plural'}`
     )}`;
+
+    let prefix = 'all';
+    if (+customNum > 1) {
+      prefix = 'plural';
+    } else if (['weeks', 'minutes', 'hours'].includes(unit)) {
+      prefix = 'week';
+    }
     previewText = (
       <>
-        {t(`common.filter.dateModal.preview.last.all`)} {highlight(highlighted)}
+        {t('common.filter.dateModal.preview.last.' + prefix)} {highlight(highlighted)}
       </>
     );
   } else if (type === 'fixed') {

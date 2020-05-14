@@ -13,7 +13,7 @@ exports[`should match snapshot 1`] = `
     <Option
       value="none"
     >
-      None
+      Nothing
     </Option>
     <Option
       key="assignee"

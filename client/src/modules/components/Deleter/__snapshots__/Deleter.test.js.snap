@@ -23,9 +23,7 @@ exports[`should show the confirmation modal when entity is set 1`] = `
   open={true}
 >
   <Component>
-    Delete
-     
-    Report
+    Delete Report
   </Component>
   <Component>
     <p>
@@ -53,9 +51,7 @@ exports[`should show the confirmation modal when entity is set 1`] = `
       onClick={[Function]}
       warning={true}
     >
-      Delete
-       
-      Report
+      Delete Report
     </ForwardRef(Button)>
   </Component>
 </Modal>

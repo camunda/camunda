@@ -124,12 +124,17 @@ export default withErrorHandling(
             }
           />
           <Deleter
-            type={deleting && deleting.identity && deleting.identity.type}
-            entity={deleting && deleting.identity}
+            type={deleting?.identity?.type}
+            entity={deleting?.identity}
             onDelete={this.updateList}
             onClose={() => this.setState({deleting: null})}
             deleteEntity={() => removeUser(collection, deleting.id)}
-            deleteText={t('common.remove')}
+            deleteText={
+              deleting?.identity?.type &&
+              t('common.removeEntity', {
+                entity: t('common.deleter.types.' + deleting.identity.type),
+              })
+            }
             descriptionText={t('home.roles.deleteWarning', {
               name:
                 (deleting &&

@@ -155,7 +155,7 @@ export default withErrorHandling(
           <Deleter
             entity={deleting}
             getName={() => deleting.definitionName || deleting.definitionKey}
-            deleteText={t('common.remove')}
+            deleteText={t('common.removeEntity', {entity: t('common.deleter.types.source')})}
             descriptionText={t('home.sources.deleteWarning', {
               name: (deleting && (deleting.definitionName || deleting.definitionKey)) || '',
             })}

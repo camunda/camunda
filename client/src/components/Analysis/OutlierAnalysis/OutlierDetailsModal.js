@@ -37,15 +37,15 @@ export default class OutlierDetailsModal extends React.Component {
           {!tableView && (
             <>
               <p className="description">
-                {t('analysis.outlier.tooltipText', {
-                  count: higherOutlier.count,
-                  instance: t(
-                    `analysis.outlier.tooltip.instance.label${
-                      higherOutlier.count === 1 ? '' : '-plural'
-                    }`
-                  ),
-                  percentage: Math.round(higherOutlier.relation * 100),
-                })}
+                {t(
+                  `analysis.outlier.tooltipText.${
+                    higherOutlier.count === 1 ? 'singular' : 'plural'
+                  }`,
+                  {
+                    count: higherOutlier.count,
+                    percentage: Math.round(higherOutlier.relation * 100),
+                  }
+                )}
                 <InstancesButton
                   id={id}
                   name={name}

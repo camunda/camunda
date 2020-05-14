@@ -508,7 +508,10 @@
       },
       "onlyCompletedHint": "Note: The outlier analysis is performed on completed flow nodes only",
       "info": "Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.",
-      "tooltipText": "{count} {instance} took {percentage}% longer than average.",
+      "tooltipText": {
+        "singular": "{count} instance took {percentage}% longer than average.",
+        "plural": "{count} instances took {percentage}% longer than average."
+      },
       "detailsModal": {
         "title": "Outliers of {name} Flow Node",
         "durationChart": "Duration Distribution chart",
@@ -549,7 +552,9 @@
     "edit": "Edit",
     "editName": "Edit {name}",
     "delete": "Delete",
+    "deleteEntity": "Delete {entity}",
     "remove": "Remove",
+    "removeEntity": "Remove {entity}",
     "save": "Save",
     "update": "Update",
     "apply": "Apply",
@@ -572,6 +577,7 @@
     "and": "and",
     "off": "Off",
     "none": "None",
+    "nothing": "Nothing",
     "all": "All",
     "above": "above",
     "below": "below",
@@ -722,6 +728,7 @@
           },
           "last": {
             "week": "in the last",
+            "plural": "in the last",
             "all": "in the last"
           },
           "completed": {

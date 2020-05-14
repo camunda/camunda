@@ -62,7 +62,7 @@ exports[`should match snapshot 1`] = `
   </ForwardRef(Button)>
   <DeleterErrorHandler
     deleteEntity={[Function]}
-    deleteText="Remove"
+    deleteText="Remove process events"
     descriptionText="Removing the events from this event source will delete any mapping that had been created."
     entity={null}
     onClose={[Function]}

@@ -110,9 +110,8 @@ export default class OutlierAnalysis extends React.Component {
           <b>{flowNodeNames[id] || id} :</b> {t('analysis.outlier.totalInstances')} {totalCount}
         </div>
         <p className="description">
-          {t('analysis.outlier.tooltipText', {
+          {t(`analysis.outlier.tooltipText.${count === 1 ? 'singular' : 'plural'}`, {
             count,
-            instance: t(`analysis.outlier.tooltip.instance.label${count === 1 ? '' : '-plural'}`),
             percentage: Math.round(relation * 100),
           })}
         </p>
