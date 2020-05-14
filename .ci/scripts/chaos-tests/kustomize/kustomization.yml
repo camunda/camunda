@@ -9,6 +9,8 @@ resources:
   - configmap.yaml
   - service.yaml
   - worker.yaml
+  - gateway-service.yaml
+  - gateway-deployment.yaml
 
 
 patchesStrategicMerge:
