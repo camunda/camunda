@@ -25,10 +25,13 @@
     "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jest-environment-jsdom-fifteen",
+    "test:ci": "CI=true yarn test --maxWorkers=$LIMITS_CPU --ci",
     "eject": "react-scripts eject",
-    "lint": "eslint src/** --ext .ts,.tsx,.js,.jsx",
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",
-    "test:e2e:ci": "PORT=8080 testcafe chrome:headless tests/*.ts --ts-config-path e2e/tsconfig.json"
+    "test:e2e:ci": "PORT=8080 testcafe chrome:headless tests/*.ts --ts-config-path e2e/tsconfig.json",
+    "lint": "tsc && eslint src/** --ext .ts,.tsx,.js,.jsx",
+    "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=master --watchAll=false",
+    "coverage:ci": "CI=true yarn coverage --maxWorkers=$LIMITS_CPU --ci"
   },
   "browserslist": {
     "production": [
@@ -52,14 +55,29 @@
     "zeebe-node": "^0.22.1"
   },
   "lint-staged": {
-    "{src,e2e}/**/*.{js,jsx,ts,tsx}": [
-      "eslint",
+    "*": [
       "prettier --write"
+    ],
+    "*.{js,jsx,ts,tsx}": [
+      "yarn lint"
+    ],
+    "src/**/*.{js,jsx,ts,tsx}": [
+      "yarn coverage"
     ]
   },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged"
+    }
+  },
+  "jest": {
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
     }
   }
 }
