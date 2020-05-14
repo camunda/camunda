@@ -149,4 +149,12 @@ spec:
             }
         }
     }
+
+    post {
+        failure {
+            slackSend(
+              channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+              message: "Release job build ${currentBuild.absoluteUrl} failed!")
+        }
+    }
 }
