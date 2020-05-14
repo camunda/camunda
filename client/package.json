@@ -22,10 +22,13 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jest-environment-jsdom-fifteen",
     "eject": "react-scripts eject",
-    "lint": "eslint src/** --ext .ts,.tsx,.js,.jsx"
+    "lint": "eslint src/** --ext .ts,.tsx,.js,.jsx",
+    "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",
+    "test:e2e:ci": "PORT=8080 testcafe chrome:headless tests/*.ts --ts-config-path e2e/tsconfig.json"
   },
   "browserslist": {
     "production": [
@@ -41,9 +44,12 @@
   },
   "devDependencies": {
     "eslint-plugin-camunda-licensed": "^0.4.3",
+    "http-proxy-middleware": "^1.0.3",
     "husky": "^4.2.5",
     "lint-staged": "^10.2.2",
-    "prettier": "^2.0.5"
+    "prettier": "^2.0.5",
+    "testcafe": "^1.8.4",
+    "zeebe-node": "^0.22.1"
   },
   "lint-staged": {
     "{src,e2e}/**/*.{js,jsx,ts,tsx}": [
