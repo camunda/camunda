@@ -22,20 +22,14 @@ import static io.atomix.raft.RaftException.ConfigurationException;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.PrimitiveTypeRegistry;
-import io.atomix.primitive.operation.OperationType;
-import io.atomix.primitive.service.PrimitiveService;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.DefaultRaftServer;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.impl.RaftServiceManager;
+import io.atomix.raft.impl.zeebe.ZeebeRaftStateMachine;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
-import io.atomix.raft.storage.snapshot.impl.DefaultSnapshotStore;
-import io.atomix.raft.utils.LoadMonitor;
-import io.atomix.raft.utils.LoadMonitorFactory;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.concurrent.ThreadContextFactory;
@@ -60,10 +54,8 @@ import java.util.function.Supplier;
  *
  * <h2>State machines</h2>
  *
- * Underlying each server is a {@link PrimitiveService}. The state machine is responsible for
- * maintaining the state with relation to {@link OperationType#COMMAND}s and {@link
- * OperationType#QUERY}s submitted to the server by a client. State machines are provided in a
- * factory to allow servers to transition between stateful and stateless states.
+ * State machines are provided in a factory to allow servers to transition between stateful and
+ * stateless states.
  *
  * <pre>{@code
  * Address address = new Address("123.456.789.0", 5000);
@@ -75,20 +67,17 @@ import java.util.function.Supplier;
  *
  * }</pre>
  *
- * Server state machines are responsible for registering {@link OperationType#COMMAND}s which can be
- * submitted to the cluster. Raft relies upon determinism to ensure consistency throughout the
- * cluster, so <em>it is imperative that each server in a cluster have the same state machine with
- * the same commands.</em> State machines are provided to the server as a {@link Supplier factory}
- * to allow servers to {@link RaftMember#promote(RaftMember.Type) transition} between stateful and
- * stateless states.
+ * Raft relies upon determinism to ensure consistency throughout the cluster, so <em>it is
+ * imperative that each server in a cluster have the same state machine with the same commands.</em>
+ * State machines are provided to the server as a {@link Supplier factory} to allow servers to
+ * {@link RaftMember#promote(RaftMember.Type) transition} between stateful and stateless states.
  *
  * <h2>Storage</h2>
  *
- * As {@link OperationType#COMMAND}s are received by the server, they're written to the Raft {@link
- * RaftLog} and replicated to other members of the cluster. By default, the log is stored on disk,
- * but users can override the default {@link RaftStorage} configuration via {@link
- * RaftServer.Builder#withStorage(RaftStorage)}. Most notably, to configure the storage module to
- * store entries in memory instead of disk, configure the {@link StorageLevel}.
+ * By default, the log is stored on disk, but users can override the default {@link RaftStorage}
+ * configuration via {@link RaftServer.Builder#withStorage(RaftStorage)}. Most notably, to configure
+ * the storage module to store entries in memory instead of disk, configure the {@link
+ * StorageLevel}.
  *
  * <pre>{@code
  * RaftServer server = RaftServer.builder(address)
@@ -164,7 +153,6 @@ import java.util.function.Supplier;
  *
  * }</pre>
  *
- * @see PrimitiveService
  * @see RaftStorage
  */
 public interface RaftServer {
@@ -202,7 +190,7 @@ public interface RaftServer {
    *
    * <p>The server name is provided to the server via the {@link Builder#withName(String) builder
    * configuration}. The name is used internally to manage the server's on-disk state. {@link
-   * RaftLog Log}, {@link DefaultSnapshotStore snapshot}, and {@link
+   * RaftLog Log}, {@link io.atomix.raft.impl.zeebe.snapshot.DbSnapshotStore snapshot}, and {@link
    * io.atomix.raft.storage.system.MetaStore configuration} files stored on disk use the server name
    * as the prefix.
    *
@@ -556,10 +544,10 @@ public interface RaftServer {
    *
    * }</pre>
    *
-   * Each server <em>must</em> be configured with a {@link PrimitiveService}. The state machine is
-   * the component of the server that stores state and reacts to commands and queries submitted by
-   * clients to the cluster. State machines are provided to the server in the form of a state
-   * machine {@link Supplier factory} to allow the server to reconstruct its state when necessary.
+   * The state machine is the component of the server that stores state and reacts to commands and
+   * queries submitted by clients to the cluster. State machines are provided to the server in the
+   * form of a state machine {@link Supplier factory} to allow the server to reconstruct its state
+   * when necessary.
    *
    * <pre>{@code
    * RaftServer server = RaftServer.builder(address)
@@ -572,7 +560,6 @@ public interface RaftServer {
 
     private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(750);
     private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
-    private static final Duration DEFAULT_SESSION_TIMEOUT = Duration.ofMillis(5000);
     private static final ThreadModel DEFAULT_THREAD_MODEL = ThreadModel.SHARED_THREAD_POOL;
     private static final int DEFAULT_THREAD_POOL_SIZE =
         Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4);
@@ -584,13 +571,10 @@ public interface RaftServer {
     protected RaftStorage storage;
     protected Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
     protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
-    protected Duration sessionTimeout = DEFAULT_SESSION_TIMEOUT;
-    protected PrimitiveTypeRegistry primitiveTypes;
     protected ThreadModel threadModel = DEFAULT_THREAD_MODEL;
     protected int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
     protected ThreadContextFactory threadContextFactory;
-    protected RaftStateMachineFactory stateMachineFactory = RaftServiceManager::new;
-    protected LoadMonitorFactory loadMonitorFactory = LoadMonitor::new;
+    protected RaftStateMachineFactory stateMachineFactory = ZeebeRaftStateMachine::new;
     protected Supplier<JournalIndex> journalIndexFactory;
 
     protected Builder(final MemberId localMemberId) {
@@ -656,18 +640,6 @@ public interface RaftServer {
     }
 
     /**
-     * Sets the primitive types.
-     *
-     * @param primitiveTypes the primitive types
-     * @return the Raft server builder
-     * @throws NullPointerException if the {@code primitiveTypes} argument is {@code null}
-     */
-    public Builder withPrimitiveTypes(final PrimitiveTypeRegistry primitiveTypes) {
-      this.primitiveTypes = checkNotNull(primitiveTypes, "primitiveTypes cannot be null");
-      return this;
-    }
-
-    /**
      * Sets the Raft election timeout, returning the Raft configuration for method chaining.
      *
      * @param electionTimeout The Raft election timeout duration.
@@ -708,26 +680,6 @@ public interface RaftServer {
     }
 
     /**
-     * Sets the Raft session timeout, returning the Raft configuration for method chaining.
-     *
-     * @param sessionTimeout The Raft session timeout duration.
-     * @return The server builder.
-     * @throws IllegalArgumentException If the session timeout is not positive
-     * @throws NullPointerException if {@code sessionTimeout} is null
-     */
-    public Builder withSessionTimeout(final Duration sessionTimeout) {
-      checkNotNull(sessionTimeout, "sessionTimeout cannot be null");
-      checkArgument(
-          !sessionTimeout.isNegative() && !sessionTimeout.isZero(),
-          "sessionTimeout must be positive");
-      checkArgument(
-          sessionTimeout.toMillis() > electionTimeout.toMillis(),
-          "sessionTimeout must be greater than electionTimeout");
-      this.sessionTimeout = sessionTimeout;
-      return this;
-    }
-
-    /**
      * Sets the server thread pool size.
      *
      * @param threadPoolSize The server thread pool size.
@@ -762,18 +714,6 @@ public interface RaftServer {
     public Builder withStateMachineFactory(final RaftStateMachineFactory stateMachineFactory) {
       this.stateMachineFactory =
           checkNotNull(stateMachineFactory, "stateMachineFactory cannot be null");
-      return this;
-    }
-
-    /**
-     * Sets a load monitor factory which is used to create the load monitor. The monitor is used
-     * detect high load and to suspend compaction/snapshotting.
-     *
-     * @param loadMonitorFactory the factory to create the load monitor
-     * @return the server builder
-     */
-    public Builder withLoadMonitorFactory(final LoadMonitorFactory loadMonitorFactory) {
-      this.loadMonitorFactory = loadMonitorFactory;
       return this;
     }
 

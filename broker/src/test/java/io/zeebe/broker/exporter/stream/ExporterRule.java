@@ -11,12 +11,12 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.zeebe.broker.system.partitions.TestStreams;
+import io.zeebe.broker.system.partitions.impl.StateSnapshotController;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.util.TestStreams;
-import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;

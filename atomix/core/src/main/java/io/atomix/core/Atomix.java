@@ -18,7 +18,6 @@ package io.atomix.core;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
@@ -37,11 +36,6 @@ import io.atomix.core.profile.Profile;
 import io.atomix.core.profile.ProfileConfig;
 import io.atomix.core.utils.config.PolymorphicConfigMapper;
 import io.atomix.core.utils.config.PolymorphicTypeMapper;
-import io.atomix.primitive.PrimitiveType;
-import io.atomix.primitive.config.ConfigService;
-import io.atomix.primitive.config.PrimitiveConfig;
-import io.atomix.primitive.config.impl.DefaultConfigService;
-import io.atomix.primitive.impl.DefaultPrimitiveTypeRegistry;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.PartitionGroup;
@@ -51,7 +45,6 @@ import io.atomix.primitive.partition.impl.DefaultPartitionGroupTypeRegistry;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.primitive.protocol.PrimitiveProtocol;
 import io.atomix.primitive.protocol.PrimitiveProtocolConfig;
-import io.atomix.primitive.serialization.SerializationService;
 import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -100,34 +93,6 @@ import org.slf4j.LoggerFactory;
  *
  * The returned {@link CompletableFuture} will be completed once the node has been bootstrapped and
  * all services are available.
- *
- * <p>The instance can be used to access services for managing the cluster or communicating with
- * other nodes. Additionally, it provides various methods for creating and operating on distributed
- * primitives. Generally, the primitive methods are separated into two types. Primitive getters
- * return multiton instances of a primitive. Primitives created via getters must be pre-configured
- * in the Atomix instance configuration. Alternatively, primitive builders can be used to create and
- * configure primitives in code:
- *
- * <pre>{@code
- * DistributedMap<String, String> map = atomix.mapBuilder("my-map")
- *   .withProtocol(MultiRaftProtocol.builder("raft")
- *     .withReadConsistency(ReadConsistency.SEQUENTIAL)
- *     .build())
- *   .build();
- *
- * }</pre>
- *
- * Custom primitives can be constructed by providing a custom {@link PrimitiveType} and using the
- * {@link #primitiveBuilder(String, PrimitiveType)} method:
- *
- * <pre>{@code
- * MyPrimitive myPrimitive = atomix.primitiveBuilder("my-primitive, MyPrimitiveType.instance())
- *   .withProtocol(MultiRaftProtocol.builder("raft")
- *     .withReadConsistency(ReadConsistency.SEQUENTIAL)
- *     .build())
- *   .build();
- *
- * }</pre>
  */
 public class Atomix extends AtomixCluster {
 
@@ -153,9 +118,6 @@ public class Atomix extends AtomixCluster {
   }
 
   private final ScheduledExecutorService executorService;
-  private final AtomixRegistry registry;
-  private final ConfigService config;
-  private final SerializationService serializationService;
   private final ManagedPartitionService partitions;
   private final boolean enableShutdownHook;
   private final ThreadContext threadContext = new SingleThreadContext("atomix-%d");
@@ -202,13 +164,8 @@ public class Atomix extends AtomixCluster {
         Executors.newScheduledThreadPool(
             Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4),
             Threads.namedThreads("atomix-primitive-%d", LOGGER));
-    this.registry = registry;
-    this.config =
-        new DefaultConfigService(
-            config.getPrimitiveDefaults().values(), config.getPrimitives().values());
-    this.serializationService =
-        new CoreSerializationService(
-            config.isTypeRegistrationRequired(), config.isCompatibleSerialization());
+    new CoreSerializationService(
+        config.isTypeRegistrationRequired(), config.isCompatibleSerialization());
     this.partitions =
         buildPartitionService(config, getMembershipService(), getCommunicationService(), registry);
     this.enableShutdownHook = config.isEnableShutdownHook();
@@ -374,8 +331,6 @@ public class Atomix extends AtomixCluster {
             registry,
             new PolymorphicTypeMapper(
                 "type", PartitionGroupConfig.class, PartitionGroup.Type.class),
-            new PolymorphicTypeMapper("type", PrimitiveConfig.class, PrimitiveType.class),
-            new PolymorphicTypeMapper(null, PrimitiveConfig.class, PrimitiveType.class),
             new PolymorphicTypeMapper(
                 "type", PrimitiveProtocolConfig.class, PrimitiveProtocol.Type.class),
             new PolymorphicTypeMapper("type", ProfileConfig.class, Profile.Type.class),
@@ -517,46 +472,6 @@ public class Atomix extends AtomixCluster {
   }
 
   /**
-   * Returns the Atomix registry service.
-   *
-   * <p>The registry contains references to all registered Atomix extensions.
-   *
-   * @return the Atomix registry service
-   */
-  public AtomixRegistry getRegistry() {
-    return registry;
-  }
-
-  /**
-   * Returns the core Atomix executor service.
-   *
-   * @return the core Atomix executor service
-   */
-  public ScheduledExecutorService getExecutorService() {
-    return executorService;
-  }
-
-  /**
-   * Returns the primitive configuration service.
-   *
-   * <p>The primitive configuration service provides all pre-defined named primitive configurations.
-   *
-   * @return the primitive configuration service
-   */
-  public ConfigService getConfigService() {
-    return config;
-  }
-
-  /**
-   * Returns the primitive serialization service.
-   *
-   * @return the primitive serialization service
-   */
-  public SerializationService getSerializationService() {
-    return serializationService;
-  }
-
-  /**
    * Returns the partition service.
    *
    * <p>The partition service is responsible for managing the lifecycle of primitive partitions and
@@ -566,11 +481,6 @@ public class Atomix extends AtomixCluster {
    */
   public PartitionService getPartitionService() {
     return partitions;
-  }
-
-  /** Checks that the instance is running. */
-  private void checkRunning() {
-    checkState(isRunning(), "Atomix instance is not running");
   }
 
   /**
@@ -660,7 +570,6 @@ public class Atomix extends AtomixCluster {
     return new DefaultPartitionService(
         clusterMembershipService,
         messagingService,
-        new DefaultPrimitiveTypeRegistry(registry.getTypes(PrimitiveType.class)),
         partitionGroups,
         new DefaultPartitionGroupTypeRegistry(registry.getTypes(PartitionGroup.Type.class)));
   }

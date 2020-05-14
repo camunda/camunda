@@ -20,10 +20,10 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.atomix.raft.impl.zeebe.snapshot.DbSnapshotStoreFactory;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.snapshot.SnapshotStore;
-import io.atomix.raft.storage.snapshot.impl.DefaultSnapshotStore;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.StorageLevel;
@@ -698,7 +698,8 @@ public final class RaftStorage {
     @Override
     public RaftStorage build() {
       if (snapshotStore == null) {
-        snapshotStore = new DefaultSnapshotStore(directory.toPath(), prefix);
+        snapshotStore =
+            new DbSnapshotStoreFactory().createSnapshotStore(directory.toPath(), prefix);
       }
 
       return new RaftStorage(

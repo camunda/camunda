@@ -87,29 +87,11 @@ public class PrimitiveException extends AtomixRuntimeException {
     }
   }
 
-  /** Unknown session exception. */
-  public static class UnknownSession extends PrimitiveException {
-    public UnknownSession() {}
-
-    public UnknownSession(final String message) {
-      super(message);
-    }
-  }
-
   /** Unknown service exception. */
   public static class UnknownService extends PrimitiveException {
     public UnknownService() {}
 
     public UnknownService(final String message) {
-      super(message);
-    }
-  }
-
-  /** Closed session exception. */
-  public static class ClosedSession extends PrimitiveException {
-    public ClosedSession() {}
-
-    public ClosedSession(final String message) {
       super(message);
     }
   }

@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.session.RaftSessionRegistry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -40,7 +39,6 @@ import io.atomix.utils.concurrent.SingleThreadContext;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -84,9 +82,6 @@ public class LeaderRoleTest {
     leaderRole = new LeaderRole(context);
     // since we mock RaftContext we should simulate leader close on transition
     doAnswer(i -> leaderRole.stop().join()).when(context).transition(Role.FOLLOWER);
-    final RaftSessionRegistry mockSessionRegistry = mock(RaftSessionRegistry.class);
-    when(mockSessionRegistry.getSessions()).thenReturn(Collections.emptyList());
-    when(context.getSessions()).thenReturn(mockSessionRegistry);
     when(context.getMembershipService()).thenReturn(mock(ClusterMembershipService.class));
 
     reader = mock(RaftLogReader.class);

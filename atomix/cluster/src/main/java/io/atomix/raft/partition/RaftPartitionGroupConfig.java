@@ -20,7 +20,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.raft.RaftStateMachineFactory;
-import io.atomix.raft.impl.RaftServiceManager;
+import io.atomix.raft.impl.zeebe.ZeebeRaftStateMachine;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,13 +31,11 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private static final int DEFAULT_PARTITIONS = 7;
   private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
-  private static final Duration DEFAULT_DEFAULT_SESSION_TIMEOUT = Duration.ofMillis(5000);
 
   private Set<String> members = new HashSet<>();
   private int partitionSize;
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
-  private Duration defaultSessionTimeout = DEFAULT_DEFAULT_SESSION_TIMEOUT;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
   private RaftCompactionConfig compactionConfig = new RaftCompactionConfig();
 
@@ -47,7 +45,7 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   // was not aware of. The annotation tells Kryo to ignore this field unless a specific serializer
   // is configured for the given key
   @Optional("RaftStateMachineFactory")
-  private RaftStateMachineFactory stateMachineFactory = RaftServiceManager::new;
+  private RaftStateMachineFactory stateMachineFactory = ZeebeRaftStateMachine::new;
 
   /**
    * Returns the compaction configuration.
@@ -72,26 +70,6 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   @Override
   protected int getDefaultPartitions() {
     return DEFAULT_PARTITIONS;
-  }
-
-  /**
-   * Returns the default session timeout.
-   *
-   * @return the default session timeout
-   */
-  public Duration getDefaultSessionTimeout() {
-    return defaultSessionTimeout;
-  }
-
-  /**
-   * Sets the default session timeout.
-   *
-   * @param defaultSessionTimeout the default session timeout
-   * @return the Raft partition group configuration
-   */
-  public RaftPartitionGroupConfig setDefaultSessionTimeout(final Duration defaultSessionTimeout) {
-    this.defaultSessionTimeout = defaultSessionTimeout;
-    return this;
   }
 
   /**

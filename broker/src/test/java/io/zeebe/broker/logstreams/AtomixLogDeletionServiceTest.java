@@ -9,16 +9,16 @@ package io.zeebe.broker.logstreams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.impl.zeebe.snapshot.AtomixSnapshotStorage;
+import io.atomix.raft.impl.zeebe.snapshot.DbSnapshotStore;
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotMetrics;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.storage.journal.JournalSegmentDescriptor;
 import io.atomix.utils.time.WallClockTimestamp;
-import io.zeebe.broker.clustering.atomix.storage.snapshot.AtomixRecordEntrySupplierImpl;
-import io.zeebe.broker.clustering.atomix.storage.snapshot.AtomixSnapshotStorage;
-import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotStore;
-import io.zeebe.logstreams.state.SnapshotMetrics;
+import io.zeebe.logstreams.storage.atomix.AtomixRecordEntrySupplierImpl;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;

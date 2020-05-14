@@ -7,8 +7,9 @@
  */
 package io.zeebe.logstreams.spi;
 
+import io.atomix.raft.impl.zeebe.snapshot.Snapshot;
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotStorage;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.logstreams.state.Snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -21,8 +22,8 @@ public interface SnapshotController extends AutoCloseable {
    *
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
    * @return a committed snapshot, or nothing if the operation failed
-   * @see io.zeebe.logstreams.state.SnapshotStorage#commitSnapshot(Path)
-   * @see io.zeebe.logstreams.state.SnapshotStorage#getPendingSnapshotFor(long)
+   * @see SnapshotStorage#commitSnapshot(Path)
+   * @see SnapshotStorage#getPendingSnapshotFor(long)
    */
   Optional<Snapshot> takeSnapshot(long lowerBoundSnapshotPosition);
 
@@ -32,7 +33,7 @@ public interface SnapshotController extends AutoCloseable {
    *
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
    * @return a pending snapshot, or nothing if the operation fails
-   * @see io.zeebe.logstreams.state.SnapshotStorage#getPendingSnapshotFor(long)
+   * @see SnapshotStorage#getPendingSnapshotFor(long)
    */
   Optional<Snapshot> takeTempSnapshot(long lowerBoundSnapshotPosition);
 

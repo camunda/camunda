@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.core.profile.ProfileConfig;
-import io.atomix.primitive.config.PrimitiveConfig;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.utils.config.Config;
 import java.util.ArrayList;
@@ -33,8 +32,6 @@ public class AtomixConfig implements Config {
   private ClusterConfig cluster = new ClusterConfig();
   private boolean enableShutdownHook;
   private Map<String, PartitionGroupConfig<?>> partitionGroups = new HashMap<>();
-  private Map<String, PrimitiveConfig> primitiveDefaults = new HashMap<>();
-  private Map<String, PrimitiveConfig> primitives = new HashMap<>();
   private List<ProfileConfig> profiles = new ArrayList<>();
   private boolean typeRegistrationRequired = false;
   private boolean compatibleSerialization = false;
@@ -110,82 +107,6 @@ public class AtomixConfig implements Config {
   public AtomixConfig addPartitionGroup(final PartitionGroupConfig partitionGroup) {
     partitionGroups.put(partitionGroup.getName(), partitionGroup);
     return this;
-  }
-
-  /**
-   * Returns the primitive default configurations.
-   *
-   * @return the primitive default configurations
-   */
-  public Map<String, PrimitiveConfig> getPrimitiveDefaults() {
-    return primitiveDefaults;
-  }
-
-  /**
-   * Sets the primitive default configurations.
-   *
-   * @param primitiveDefaults the primitive default configurations
-   * @return the Atomix configuration
-   */
-  public AtomixConfig setPrimitiveDefaults(final Map<String, PrimitiveConfig> primitiveDefaults) {
-    this.primitiveDefaults = primitiveDefaults;
-    return this;
-  }
-
-  /**
-   * Returns a default primitive configuration.
-   *
-   * @param name the primitive name
-   * @param <C> the configuration type
-   * @return the primitive configuration
-   */
-  @SuppressWarnings("unchecked")
-  public <C extends PrimitiveConfig<C>> C getPrimitiveDefault(final String name) {
-    return (C) primitiveDefaults.get(name);
-  }
-
-  /**
-   * Returns the primitive configurations.
-   *
-   * @return the primitive configurations
-   */
-  public Map<String, PrimitiveConfig> getPrimitives() {
-    return primitives;
-  }
-
-  /**
-   * Sets the primitive configurations.
-   *
-   * @param primitives the primitive configurations
-   * @return the primitive configuration holder
-   */
-  public AtomixConfig setPrimitives(final Map<String, PrimitiveConfig> primitives) {
-    this.primitives = checkNotNull(primitives);
-    return this;
-  }
-
-  /**
-   * Adds a primitive configuration.
-   *
-   * @param name the primitive name
-   * @param config the primitive configuration
-   * @return the primitive configuration holder
-   */
-  public AtomixConfig addPrimitive(final String name, final PrimitiveConfig config) {
-    primitives.put(name, config);
-    return this;
-  }
-
-  /**
-   * Returns a primitive configuration.
-   *
-   * @param name the primitive name
-   * @param <C> the configuration type
-   * @return the primitive configuration
-   */
-  @SuppressWarnings("unchecked")
-  public <C extends PrimitiveConfig<C>> C getPrimitive(final String name) {
-    return (C) primitives.get(name);
   }
 
   /**

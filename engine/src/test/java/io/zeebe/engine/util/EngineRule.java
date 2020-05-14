@@ -45,7 +45,6 @@ import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.util.FileUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
@@ -188,14 +187,7 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(
         partitionId -> {
           try {
-
-            final var snapshotController = environmentRule.getStateSnapshotController(partitionId);
-
             environmentRule.closeStreamProcessor(partitionId);
-
-            if (snapshotController.getValidSnapshotsCount() > 0) {
-              FileUtil.deleteFolder(snapshotController.getLastValidSnapshotDirectory().toPath());
-            }
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }

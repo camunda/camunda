@@ -7,10 +7,10 @@
  */
 package io.zeebe.broker.logstreams;
 
+import io.atomix.raft.impl.zeebe.snapshot.Snapshot;
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotDeletionListener;
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotStorage;
 import io.zeebe.broker.Loggers;
-import io.zeebe.logstreams.state.Snapshot;
-import io.zeebe.logstreams.state.SnapshotDeletionListener;
-import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.util.sched.Actor;
 
 public final class LogDeletionService extends Actor implements SnapshotDeletionListener {

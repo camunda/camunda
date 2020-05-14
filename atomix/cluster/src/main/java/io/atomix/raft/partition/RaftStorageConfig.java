@@ -19,8 +19,8 @@ package io.atomix.raft.partition;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
+import io.atomix.raft.impl.zeebe.snapshot.DbSnapshotStoreFactory;
 import io.atomix.raft.storage.snapshot.SnapshotStoreFactory;
-import io.atomix.raft.storage.snapshot.impl.DefaultSnapshotStore;
 import io.atomix.storage.StorageLevel;
 import io.atomix.utils.memory.MemorySize;
 
@@ -33,7 +33,7 @@ public class RaftStorageConfig {
   private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
   private static final boolean DEFAULT_FLUSH_ON_COMMIT = false;
   private static final SnapshotStoreFactory DEFAULT_SNAPSHOT_STORE_FACTORY =
-      DefaultSnapshotStore::new;
+      new DbSnapshotStoreFactory();
 
   private String directory;
   private StorageLevel level = DEFAULT_STORAGE_LEVEL;

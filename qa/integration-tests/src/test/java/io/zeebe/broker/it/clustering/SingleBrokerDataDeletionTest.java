@@ -9,8 +9,8 @@ package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.impl.zeebe.snapshot.DbSnapshotMetadata;
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotMetadata;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;

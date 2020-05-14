@@ -23,8 +23,6 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.impl.ClasspathScanningPrimitiveTypeRegistry;
-import io.atomix.primitive.impl.DefaultPrimitiveTypeRegistry;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.impl.DefaultPartitionGroupTypeRegistry;
@@ -78,9 +76,7 @@ public class ZeebeTestNode {
   public CompletableFuture<Void> start(final Collection<ZeebeTestNode> nodes) {
     cluster = buildCluster(nodes);
     dataPartitionGroup =
-        buildPartitionGroup(RaftPartitionGroup.builder(DATA_PARTITION_GROUP_NAME), nodes)
-            .withStateMachineFactory(ZeebeRaftStateMachine::new)
-            .build();
+        buildPartitionGroup(RaftPartitionGroup.builder(DATA_PARTITION_GROUP_NAME), nodes).build();
     partitionService =
         buildPartitionService(cluster.getMembershipService(), cluster.getCommunicationService());
 
@@ -134,15 +130,12 @@ public class ZeebeTestNode {
   private ManagedPartitionService buildPartitionService(
       final ClusterMembershipService clusterMembershipService,
       final ClusterCommunicationService messagingService) {
-    final ClasspathScanningPrimitiveTypeRegistry registry =
-        new ClasspathScanningPrimitiveTypeRegistry(this.getClass().getClassLoader());
     final List<ManagedPartitionGroup> partitionGroups =
         Collections.singletonList(dataPartitionGroup);
 
     return new DefaultPartitionService(
         clusterMembershipService,
         messagingService,
-        new DefaultPrimitiveTypeRegistry(registry.getPrimitiveTypes()),
         partitionGroups,
         new DefaultPartitionGroupTypeRegistry(Collections.singleton(RaftPartitionGroup.TYPE)));
   }

@@ -7,10 +7,10 @@
  */
 package io.zeebe.broker.engine.impl;
 
+import io.atomix.raft.impl.zeebe.snapshot.SnapshotChunk;
 import io.zeebe.clustering.management.SnapshotChunkDecoder;
 import io.zeebe.clustering.management.SnapshotChunkEncoder;
 import io.zeebe.engine.util.SbeBufferWriterReader;
-import io.zeebe.logstreams.state.SnapshotChunk;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

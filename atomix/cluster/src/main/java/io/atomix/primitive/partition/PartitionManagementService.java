@@ -18,7 +18,6 @@ package io.atomix.primitive.partition;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.PrimitiveTypeRegistry;
 
 /** Partition management service. */
 public interface PartitionManagementService {
@@ -36,11 +35,4 @@ public interface PartitionManagementService {
    * @return the cluster messaging service
    */
   ClusterCommunicationService getMessagingService();
-
-  /**
-   * Returns the primitive type registry.
-   *
-   * @return the primitive type registry
-   */
-  PrimitiveTypeRegistry getPrimitiveTypes();
 }
