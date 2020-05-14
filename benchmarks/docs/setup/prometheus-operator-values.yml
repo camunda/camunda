@@ -1,0 +1,49 @@
+alertmanager:
+  enabled: false
+
+grafana:
+  adminPassword: camunda
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder:
+          type: file
+          disableDeletion: true
+          editable: false
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      zeebe:
+        url: https://raw.githubusercontent.com/zeebe-io/zeebe/develop/monitor/grafana/zeebe.json
+  persistence:
+    enabled: true
+    storageClassName: ssd
+  sidecar:
+    dashboards:
+      searchNamespace: ALL
+
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+
+prometheus:
+  prometheusSpec:
+    storageSpec:
+      volumeClaimTemplate:
+        metadata:
+          name: prometheus-data
+          selector:
+            matchLabels:
+              app: prometheus
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 50Gi
+          storageClassName: ssd
+
