@@ -23,7 +23,7 @@ const testSource = {
   processDefinitionName: 'Foo',
   versions: ['1'],
   tenants: ['a', 'b'],
-  eventScope: 'start_end',
+  eventScope: ['start_end'],
   tracedByBusinessKey: false,
   traceVariable: 'var',
 };
@@ -81,13 +81,12 @@ it('should edit a source when clicking confirm', () => {
   );
 
   node.find({type: 'radio'}).at(1).simulate('change');
-  node.find({type: 'radio'}).at(3).simulate('change');
 
   node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([
     {
-      eventScope: 'start_end',
+      eventScope: ['start_end'],
       processDefinitionKey: 'foo',
       processDefinitionName: 'Foo',
       tenants: ['a', 'b'],
@@ -111,6 +110,8 @@ it('should add a source when clicking confirm', () => {
 
   node.find('Typeahead').prop('onChange')('boolVar');
 
+  node.find({type: 'radio'}).at(2).simulate('change');
+
   node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([
@@ -121,7 +122,7 @@ it('should add a source when clicking confirm', () => {
       tenants: ['a', 'b'],
       tracedByBusinessKey: false,
       traceVariable: 'boolVar',
-      eventScope: 'start_end',
+      eventScope: ['process_instance'],
     },
   ]);
 });
@@ -154,4 +155,10 @@ it('should disable external source if already added', () => {
   const node = shallow(<EventsSourceModal {...props} existingSources={[{type: 'external'}]} />);
 
   expect(node.find('ButtonGroup').find(Button).at(1)).toBeDisabled();
+});
+
+it('should contain a change warning and not contain event scope selection', () => {
+  const node = shallow(<EventsSourceModal {...props} initialSource={testSource} />);
+
+  expect(node.find('.sourceOptions')).toMatchSnapshot();
 });

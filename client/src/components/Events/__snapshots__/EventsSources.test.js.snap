@@ -20,12 +20,17 @@ exports[`should match snapshot 1`] = `
       <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
-        Edit Event Selection
+        Edit Event Source
       </ForwardRef(DropdownOption)>
       <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
-        Remove
+        Edit Event List
+      </ForwardRef(DropdownOption)>
+      <ForwardRef(DropdownOption)
+        onClick={[Function]}
+      >
+        Remove Source
       </ForwardRef(DropdownOption)>
     </Dropdown>
     <Dropdown
@@ -41,7 +46,7 @@ exports[`should match snapshot 1`] = `
       <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
-        Remove
+        Remove Source
       </ForwardRef(DropdownOption)>
     </Dropdown>
   </div>

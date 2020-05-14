@@ -10,6 +10,7 @@ import classnames from 'classnames';
 
 import {Dropdown, Button, Icon, Deleter} from 'components';
 import EventsSourceModal from './EventsSourceModal';
+import VisibleEventsModal from './VisibleEventsModal';
 import {t} from 'translation';
 
 import './EventsSources.scss';
@@ -18,11 +19,14 @@ export default class EventSources extends React.Component {
   state = {
     editing: null,
     deleting: null,
+    editingScope: null,
   };
 
   openAddSourceModal = () => this.setState({editing: {}});
   openEditSourceModal = (editing) => this.setState({editing});
   closeSourceModal = () => this.setState({editing: null});
+  openEditScopeModal = (editingScope) => this.setState({editingScope});
+  closeEditScopeModal = () => this.setState({editingScope: null});
 
   removeSource = (target) => {
     this.props.onChange(
@@ -36,8 +40,20 @@ export default class EventSources extends React.Component {
     this.props.onChange(update(this.props.sources, {[sourceIndex]: {$toggle: ['hidden']}}), false);
   };
 
+  updateSourceScope = (newScope) => {
+    const sourceIndex = this.props.sources.findIndex(
+      ({processDefinitionKey}) =>
+        processDefinitionKey === this.state.editingScope.processDefinitionKey
+    );
+    const updateSources = update(this.props.sources, {
+      [sourceIndex]: {eventScope: {$set: newScope}},
+    });
+    this.props.onChange(updateSources, true);
+    this.closeEditScopeModal();
+  };
+
   render() {
-    const {editing, deleting} = this.state;
+    const {editing, deleting, editingScope} = this.state;
     const {sources} = this.props;
 
     return (
@@ -53,12 +69,17 @@ export default class EventSources extends React.Component {
                   {source.hidden ? t('events.sources.show') : t('events.sources.hide')}
                 </Dropdown.Option>
                 {source.type !== 'external' && (
-                  <Dropdown.Option onClick={() => this.openEditSourceModal(source)}>
-                    {t('events.sources.editSource')}
-                  </Dropdown.Option>
+                  <>
+                    <Dropdown.Option onClick={() => this.openEditSourceModal(source)}>
+                      {t('events.sources.editSource')}
+                    </Dropdown.Option>
+                    <Dropdown.Option onClick={() => this.openEditScopeModal(source)}>
+                      {t('events.sources.editScope')}
+                    </Dropdown.Option>
+                  </>
                 )}
                 <Dropdown.Option onClick={() => this.setState({deleting: source})}>
-                  {t('common.remove')}
+                  {t('events.sources.remove')}
                 </Dropdown.Option>
               </Dropdown>
             );
@@ -86,6 +107,13 @@ export default class EventSources extends React.Component {
               this.closeSourceModal();
             }}
             onClose={this.closeSourceModal}
+          />
+        )}
+        {editingScope && (
+          <VisibleEventsModal
+            initialScope={editingScope.eventScope}
+            onConfirm={this.updateSourceScope}
+            onClose={this.closeEditScopeModal}
           />
         )}
       </div>

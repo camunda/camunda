@@ -28,6 +28,7 @@ export const typeaheadOption = (typeahead, text) =>
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const externalEvents = Selector('.Button').withText('External Events');
 export const startNode = Selector('g[data-element-id=StartEvent_1]');
+export const startAndEndEvents = Selector('input[type=radio]').nth(3);
 export const startEvent = Selector('.StartEvent_1 input[type=checkbox]');
 export const activity = Selector('g[data-element-id=Activity_1s5va7f]');
 export const bankStart = Selector('.BankTransferStart input[type=checkbox]');

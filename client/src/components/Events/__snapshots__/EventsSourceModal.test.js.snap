@@ -2,7 +2,9 @@
 
 exports[`should apply the source to the state when editing a source 1`] = `
 Object {
-  "eventScope": "start_end",
+  "eventScope": Array [
+    "start_end",
+  ],
   "processDefinitionKey": "foo",
   "processDefinitionName": "Foo",
   "tenants": Array [
@@ -15,4 +17,51 @@ Object {
     "1",
   ],
 }
+`;
+
+exports[`should contain a change warning and not contain event scope selection 1`] = `
+<Form
+  className="sourceOptions"
+>
+  <FormGroup>
+    <h4>
+      Trace ID Location
+    </h4>
+    <ForwardRef(LabeledInput)
+      checked={true}
+      label="Variable"
+      onChange={[Function]}
+      type="radio"
+    />
+    <Typeahead
+      disabled={false}
+      noValuesMessage="No variables found"
+      onChange={[Function]}
+      onClose={[Function]}
+      onOpen={[Function]}
+      onSearch={[Function]}
+      placeholder="Select or search for a variable here"
+      value="var"
+    />
+    <ForwardRef(LabeledInput)
+      checked={false}
+      label="Business Key"
+      onChange={[Function]}
+      type="radio"
+    />
+  </FormGroup>
+  <MessageBox
+    type="warning"
+  >
+    Changing the process definition may add or remove events. Existing event mappings may be removed.
+     
+    <a
+      href="https://docs.camunda.org/optimize/undefined/user-guide/event-based-processes/#camunda-events"
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      Learn more
+    </a>
+  </MessageBox>
+</Form>
 `;

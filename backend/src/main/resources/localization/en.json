@@ -167,9 +167,8 @@
     "sources": {
       "add": "Add Event Source",
       "externalEvents": "External Events",
-      "editSource": "Edit Event Selection",
+      "editSource": "Edit Event Source",
       "addEvents": "Add Process Events",
-      "editEvents": "Edit Process Events",
       "alreadyExists": "The selected process is already added",
       "defineTrace": "Trace ID Location",
       "byVariable": "Variable",
@@ -186,7 +185,13 @@
       "allExternal": "all events",
       "hide": "Hide in table",
       "show": "Show in Table",
-      "learnMore": "Learn more"
+      "learnMore": "Learn more",
+      "generatedEvents": "Select events to autogenerate",
+      "editScope": "Edit Event List",
+      "eventListTip": "Configure which events are displayed in the table.",
+      "definitionChangeWarning": "Changing the process definition may add or remove events. Existing event mappings may be removed.",
+      "eventListChangeWarning": "Changing the event list may add or remove events. Existing event mappings may be removed.",
+      "remove": "Remove Source"
     }
   },
   "report": {

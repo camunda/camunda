@@ -167,9 +167,8 @@
     "sources": {
       "add": "Eventquelle hinzufügen",
       "externalEvents": "Externe Events",
-      "editSource": "Eventauswahl bearbeiten",
+      "editSource": "Eventquelle bearbeiten",
       "addEvents": "Prozessevents hinzufügen",
-      "editEvents": "Prozessevents bearbeiten",
       "alreadyExists": "Der ausgewählte Prozess wurde bereits hinzugefügt",
       "defineTrace": "Trace ID Ort",
       "byVariable": "Variable",
@@ -186,7 +185,13 @@
       "allExternal": "Alle Events",
       "hide": "In Tabelle ausblenden",
       "show": "In Tabelle anzeigen",
-      "learnMore": "Mehr Informationen"
+      "learnMore": "Mehr Informationen",
+      "generatedEvents": "Wählen Sie Events zur automatischen Generierung aus",
+      "editScope": "Event-Liste bearbeiten",
+      "eventListTip": "Konfigurieren Sie, welche Events in der Tabelle angezeigt werden.",
+      "definitionChangeWarning": "Durch die Änderung der Prozessdefinition können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
+      "eventListChangeWarning": "Durch die Änderung der Event-Liste können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
+      "remove": "Quelle entfernen"
     }
   },
   "report": {

@@ -16,6 +16,7 @@ import {
   Form,
   Message,
   ButtonGroup,
+  MessageBox,
 } from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -35,7 +36,7 @@ export default withErrorHandling(
         processDefinitionName: '',
         versions: [],
         tenants: [],
-        eventScope: 'start_end',
+        eventScope: ['process_instance'],
         tracedByBusinessKey: false,
         traceVariable: null,
       },
@@ -127,15 +128,15 @@ export default withErrorHandling(
     };
 
     render() {
-      const {onClose, existingSources} = this.props;
+      const {onClose, existingSources, autoGenerate} = this.props;
       const {optimizeVersion, source, variables, type, externalExist} = this.state;
       const {
         processDefinitionKey,
         versions,
         tenants,
-        eventScope,
         tracedByBusinessKey,
         traceVariable,
+        eventScope,
       } = source;
       const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/user-guide/event-based-processes/#camunda-events`;
       const externalAlreadyAdded = existingSources.some((src) => src.type === 'external');
@@ -143,7 +144,7 @@ export default withErrorHandling(
       return (
         <Modal open onClose={onClose} onConfirm={this.updateSources} className="EventsSourceModal">
           <Modal.Header>
-            {this.isEditing() ? t('events.sources.editEvents') : t('events.sources.addEvents')}
+            {this.isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
           </Modal.Header>
           <Modal.Content>
             <ButtonGroup>
@@ -218,32 +219,48 @@ export default withErrorHandling(
                       label={t('events.sources.byKey')}
                     />
                   </Form.Group>
-                  <Form.Group>
-                    <div className="displayHeader">
-                      <h4>{t('events.sources.display')}</h4>
+                  {!this.isEditing() && (
+                    <Form.Group>
+                      <div className="displayHeader">
+                        <h4>
+                          {autoGenerate
+                            ? t('events.source.generatedEvents')
+                            : t('events.sources.display')}
+                        </h4>
+                        <a href={docsLink} target="_blank" rel="noopener noreferrer">
+                          {t('events.sources.learnMore')}
+                        </a>
+                      </div>
+                      <LabeledInput
+                        label={t('events.sources.startAndEnd')}
+                        onChange={() => this.updateSource('eventScope', ['process_instance'])}
+                        checked={eventScope.includes('process_instance')}
+                        type="radio"
+                      />
+                      <LabeledInput
+                        onChange={() => this.updateSource('eventScope', ['start_end'])}
+                        checked={eventScope.includes('start_end')}
+                        label={t('events.sources.flownodeEvents')}
+                        type="radio"
+                      />
+                      {!autoGenerate && (
+                        <LabeledInput
+                          label={t('events.sources.allEvents')}
+                          onChange={() => this.updateSource('eventScope', ['all'])}
+                          checked={eventScope.includes('all')}
+                          type="radio"
+                        />
+                      )}
+                    </Form.Group>
+                  )}
+                  {this.isEditing() && (
+                    <MessageBox type="warning">
+                      {t('events.sources.definitionChangeWarning')}{' '}
                       <a href={docsLink} target="_blank" rel="noopener noreferrer">
                         {t('events.sources.learnMore')}
                       </a>
-                    </div>
-                    <LabeledInput
-                      label={t('events.sources.startAndEnd')}
-                      checked={eventScope === 'process_instance'}
-                      onChange={() => this.updateSource('eventScope', 'process_instance')}
-                      type="radio"
-                    />
-                    <LabeledInput
-                      checked={eventScope === 'start_end'}
-                      onChange={() => this.updateSource('eventScope', 'start_end')}
-                      label={t('events.sources.flownodeEvents')}
-                      type="radio"
-                    />
-                    <LabeledInput
-                      label={t('events.sources.allEvents')}
-                      checked={eventScope === 'all'}
-                      onChange={() => this.updateSource('eventScope', 'all')}
-                      type="radio"
-                    />
-                  </Form.Group>
+                    </MessageBox>
+                  )}
                 </Form>
               </>
             )}

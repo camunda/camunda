@@ -13,7 +13,12 @@ import {Dropdown} from 'components';
 
 const props = {
   sources: [{type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}],
+  onChange: jest.fn(),
 };
+
+beforeEach(() => {
+  props.onChange.mockClear();
+});
 
 it('should match snapshot', () => {
   const node = shallow(<EventsSources {...props} />);
@@ -30,23 +35,21 @@ it('should open addSourceModal when clicking the add button', () => {
 });
 
 it('should remove a source from the list', () => {
-  const spy = jest.fn();
-  const node = shallow(<EventsSources {...props} onChange={spy} />);
+  const node = shallow(<EventsSources {...props} />);
 
   node.find(Dropdown.Option).at(2).simulate('click');
 
   node.find('DeleterErrorHandler').prop('deleteEntity')(props.sources[0]);
 
-  expect(spy).toHaveBeenCalledWith([{type: 'external'}], true);
+  expect(props.onChange).toHaveBeenCalledWith([{type: 'external'}], true);
 });
 
 it('should hide/show source', () => {
-  const spy = jest.fn();
-  const node = shallow(<EventsSources {...props} onChange={spy} />);
+  const node = shallow(<EventsSources {...props} />);
 
   node.find(Dropdown.Option).at(0).simulate('click');
 
-  expect(spy).toHaveBeenCalledWith(
+  expect(props.onChange).toHaveBeenCalledWith(
     [{hidden: true, type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}],
     false
   );
@@ -61,4 +64,23 @@ it('should edit a source from the list', () => {
     processDefinitionKey: 'src1',
     type: 'camunda',
   });
+});
+
+it('should edit a scope of a source', () => {
+  const node = shallow(<EventsSources {...props} />);
+
+  node.find(Dropdown.Option).at(2).simulate('click');
+
+  const modal = node.find('VisibleEventsModal');
+  expect(modal).toExist();
+
+  modal.prop('onConfirm')(['start_end', 'processInstance']);
+
+  expect(props.onChange).toHaveBeenCalledWith(
+    [
+      {eventScope: ['start_end', 'processInstance'], processDefinitionKey: 'src1', type: 'camunda'},
+      {type: 'external'},
+    ],
+    true
+  );
 });

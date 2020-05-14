@@ -45,6 +45,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.typeaheadOption(e.processTypeahead, 'Invoice Receipt'));
   await t.click(e.optionsButton(e.variableTypeahead));
   await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));
+  await t.click(e.startAndEndEvents);
 
   await t.takeElementScreenshot(e.modalContainer, 'event-based-processes/sourceModal.png');
 
