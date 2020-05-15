@@ -2,7 +2,7 @@
 
 .PHONY: env-up
 env-up:
-	mvn compile \
+	mvn clean install -DskipTests=true \
 	&& mvn -pl webapp jib:dockerBuild \
 	&& docker-compose up -d elasticsearch zeebe zeebe-tasklist
 
@@ -25,6 +25,6 @@ start-e2e:
 	&& curl --request DELETE --url http://localhost:9200/e2e* \
 	&& docker rm -f zeebe-e2e || true \
 	&& docker-compose up --force-recreate -d zeebe-e2e \
-	&& mvn compile \
+	&& mvn install -DskipTests=true  \
 	&& mvn -pl webapp jib:dockerBuild \
 	&& docker-compose up -d zeebe-tasklist-e2e
