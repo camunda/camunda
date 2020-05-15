@@ -12,7 +12,7 @@ import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext
 
 import Authentication from './Authentication';
 import Header from './Header';
-import Login from './Login';
+import {Login} from './Login';
 import Dashboard from './Dashboard';
 import InstancesContainer from './Instances/InstancesContainer';
 import Instance from './Instance';

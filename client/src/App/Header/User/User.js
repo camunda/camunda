@@ -8,7 +8,7 @@ import React, {useState, useEffect} from 'react';
 import {ThemeConsumer} from 'modules/theme';
 
 import Dropdown from 'modules/components/Dropdown';
-import useLocalStorage from 'modules/hooks/useLocalStorage';
+import {storeStateLocally, getStateLocally} from 'modules/utils/localStorage';
 
 import PropTypes from 'prop-types';
 
@@ -20,8 +20,7 @@ User.propTypes = {
 };
 
 export default function User({handleRedirect}) {
-  const {storedValue, setLocalStorage} = useLocalStorage('sharedState');
-  const {firstname, lastname} = storedValue;
+  const {firstname, lastname} = getStateLocally();
   const [user, setUser] = useState({
     firstname,
     lastname,
@@ -36,7 +35,7 @@ export default function User({handleRedirect}) {
     try {
       const {firstname, lastname} = await api.fetchUser();
       setUser({firstname, lastname});
-      setLocalStorage({firstname, lastname});
+      storeStateLocally({firstname, lastname});
     } catch (e) {
       console.log('new user could not set');
     }
@@ -66,7 +65,7 @@ export default function User({handleRedirect}) {
               />
             </Styled.Dropdown>
           ) : (
-            <Styled.SkeletonBlock />
+            <Styled.SkeletonBlock data-test="username-skeleton" />
           )
         }
       </ThemeConsumer>

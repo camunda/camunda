@@ -8,18 +8,16 @@ import React, {Children, cloneElement} from 'react';
 import PropTypes from 'prop-types';
 
 import {PANE_ID, EXPAND_STATE} from 'modules/constants';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 import Pane from './Pane';
 import {twoNodesPropType} from './service';
 import * as Styled from './styled';
-import withSharedState from 'modules/components/withSharedState';
 
 const paneIds = [PANE_ID.TOP, PANE_ID.BOTTOM];
 
 class SplitPane extends React.Component {
   static propTypes = {
-    getStateLocally: PropTypes.func.isRequired,
-    storeStateLocally: PropTypes.func.isRequired,
     children: twoNodesPropType,
     expandedPaneId: PropTypes.string,
     titles: PropTypes.shape({top: PropTypes.string, bottom: PropTypes.string}),
@@ -30,7 +28,7 @@ class SplitPane extends React.Component {
   };
 
   getPaneExpandedState = (paneId) => {
-    const {getStateLocally, expandedPaneId} = this.props;
+    const {expandedPaneId} = this.props;
 
     const panelStates = getStateLocally('panelStates');
 
@@ -59,7 +57,7 @@ class SplitPane extends React.Component {
   };
 
   handleExpand = (paneId) => {
-    const {getStateLocally, storeStateLocally, expandedPaneId} = this.props;
+    const {expandedPaneId} = this.props;
     const panelStates = getStateLocally('panelStates');
 
     const expandState = {
@@ -78,7 +76,6 @@ class SplitPane extends React.Component {
   }
 }
 
-const SplitPaneWithSharedState = withSharedState(SplitPane);
-SplitPaneWithSharedState.Pane = Pane;
+SplitPane.Pane = Pane;
 
-export default SplitPaneWithSharedState;
+export default SplitPane;

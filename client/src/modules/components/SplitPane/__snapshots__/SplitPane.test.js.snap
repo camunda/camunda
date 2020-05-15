@@ -1,11 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`SplitPane expandState should render children with proper expandState when no pane is extended 1`] = `
-<styled.div
-  clearStateLocally={[Function]}
-  getStateLocally={[Function]}
-  storeStateLocally={[Function]}
->
+<styled.div>
   <FirstChild
     expandState="DEFAULT"
     handleExpand={[Function]}

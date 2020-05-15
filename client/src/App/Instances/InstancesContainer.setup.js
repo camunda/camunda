@@ -4,11 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const mockLocalStorageProps = {
-  getStateLocally: jest.fn(),
-  storeStateLocally: jest.fn(),
-};
-
 export const mockFullFilterWithoutWorkflow = {
   active: true,
   incidents: true,

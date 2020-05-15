@@ -19,7 +19,6 @@ import {instances} from 'modules/stores/instances';
 
 // props mocks
 const mockCollapsablePanelProps = {
-  getStateLocally: () => ({}),
   isFiltersCollapsed: false,
   expandFilters: jest.fn(),
 };

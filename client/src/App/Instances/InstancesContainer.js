@@ -7,9 +7,9 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import {isEqual, isEmpty} from 'lodash';
+import {storeStateLocally} from 'modules/utils/localStorage';
 
 import {withData} from 'modules/DataManager';
-import withSharedState from 'modules/components/withSharedState';
 import {
   DEFAULT_FILTER,
   DEFAULT_FILTER_CONTROLLED_VALUES,
@@ -48,8 +48,6 @@ import {
 
 class InstancesContainer extends Component {
   static propTypes = {
-    getStateLocally: PropTypes.func.isRequired,
-    storeStateLocally: PropTypes.func.isRequired,
     location: PropTypes.object.isRequired,
     history: PropTypes.object.isRequired,
     dataManager: PropTypes.shape({
@@ -210,7 +208,7 @@ class InstancesContainer extends Component {
 
     this.fetchNewData(filter, prevState);
 
-    this.props.storeStateLocally({
+    storeStateLocally({
       filter,
     });
 
@@ -483,7 +481,7 @@ class InstancesContainer extends Component {
   }
 }
 
-const WrappedInstancesContainer = withData(withSharedState(InstancesContainer));
+const WrappedInstancesContainer = withData(InstancesContainer);
 WrappedInstancesContainer.WrappedComponent = InstancesContainer;
 
 export default WrappedInstancesContainer;

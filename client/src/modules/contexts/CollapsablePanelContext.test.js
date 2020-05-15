@@ -11,9 +11,7 @@ import {CollapsablePanelProvider} from './CollapsablePanelContext';
 describe('CollapsablePanelProvider', () => {
   it('should store default panels collabsable states', () => {
     // given
-    const node = shallow(<CollapsablePanelProvider />)
-      .first()
-      .shallow();
+    const node = shallow(<CollapsablePanelProvider />);
 
     // then
     // Filters panel is not collapsed
@@ -27,9 +25,7 @@ describe('CollapsablePanelProvider', () => {
     it('should toggle target value', () => {
       // (1): isFiltersCollapsed: false
       // given
-      const node = shallow(<CollapsablePanelProvider />)
-        .first()
-        .shallow();
+      const node = shallow(<CollapsablePanelProvider />);
       // when
 
       node.instance().toggle('isFiltersCollapsed');
@@ -47,9 +43,7 @@ describe('CollapsablePanelProvider', () => {
       it('should call toggle with "isFiltersCollapsed"', () => {
         // (1): isFiltersCollapsed: false
         // given
-        const node = shallow(<CollapsablePanelProvider />)
-          .first()
-          .shallow();
+        const node = shallow(<CollapsablePanelProvider />);
         const toggleSpy = jest.spyOn(node.instance(), 'toggle');
 
         // when
@@ -63,9 +57,7 @@ describe('CollapsablePanelProvider', () => {
       it('should call toggle with "isFiltersCollapsed"', () => {
         // (1): isFiltersCollapsed: false
         // given
-        const node = shallow(<CollapsablePanelProvider />)
-          .first()
-          .shallow();
+        const node = shallow(<CollapsablePanelProvider />);
 
         const toggleSpy = jest.spyOn(node.instance(), 'toggle');
 
@@ -81,9 +73,7 @@ describe('CollapsablePanelProvider', () => {
   describe('expand', () => {
     it('should expand target', () => {
       // given
-      const node = shallow(<CollapsablePanelProvider />)
-        .first()
-        .shallow();
+      const node = shallow(<CollapsablePanelProvider />);
 
       // when
       node.instance().expand('isOperationsCollapsed');
@@ -94,9 +84,7 @@ describe('CollapsablePanelProvider', () => {
     describe('expandFilters', () => {
       it('should call expand with "isFiltersCollapsed', () => {
         // given
-        const node = shallow(<CollapsablePanelProvider />)
-          .first()
-          .shallow();
+        const node = shallow(<CollapsablePanelProvider />);
         const expandSpy = jest.spyOn(node.instance(), 'expand');
 
         // when
@@ -110,9 +98,7 @@ describe('CollapsablePanelProvider', () => {
     describe('expandOperations', () => {
       it('should call expand with "isOperationsCollapsed', () => {
         // given
-        const node = shallow(<CollapsablePanelProvider />)
-          .first()
-          .shallow();
+        const node = shallow(<CollapsablePanelProvider />);
         const expandSpy = jest.spyOn(node.instance(), 'expand');
 
         // when

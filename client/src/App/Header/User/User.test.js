@@ -5,146 +5,85 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, fireEvent, screen} from '@testing-library/react';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {
-  mockResolvedAsyncFn,
-  mockRejectedAsyncFn,
-  flushPromises,
-} from 'modules/testUtils';
-
-import useLocalStorage from 'modules/hooks/useLocalStorage';
+import {fetchUser, logout} from 'modules/api/header';
+import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 
 import User from './User';
-import * as api from 'modules/api/header/header';
 
-import * as Styled from './styled';
-
-jest.mock('modules/hooks/useLocalStorage');
-jest.mock('modules/utils/bpmn');
-
-useLocalStorage.mockImplementation(() => {
-  return {
-    storedValue: mockUser,
-    setLocalState: jest.fn(),
-  };
-});
-
-const defaultConsoleError = console.error;
-const defaultConsoleLog = console.log;
 const mockUser = {
-  firstname: 'foo',
-  lastname: 'bar',
+  firstname: 'Franz',
+  lastname: 'Kafka',
 };
 const mockSsoUser = {
-  firstname: null,
-  lastname: 'foo bar',
+  firstname: '',
+  lastname: 'Michael Jordan',
 };
+
+jest.mock('modules/api/header');
 
 describe('User', () => {
   beforeEach(() => {
-    console.error = jest.fn();
-    console.log = jest.fn();
+    jest.resetAllMocks();
   });
 
   afterEach(() => {
-    console.error = defaultConsoleError;
-    console.log = defaultConsoleLog;
-    useLocalStorage.mockClear();
+    clearStateLocally();
   });
 
   it('renders with locally stored User data', async () => {
-    useLocalStorage.mockImplementation(() => {
-      return {
-        storedValue: mockUser,
-        setLocalState: jest.fn(),
-      };
-    });
-    const node = mount(
-      <ThemeProvider>
-        <User />
-      </ThemeProvider>
-    );
+    fetchUser.mockResolvedValue({});
+    storeStateLocally({firstname: 'Sponge', lastname: 'Bob'});
 
-    expect(node.find('User').text()).toContain(
-      `${(mockUser.firstname, ' ', mockUser.lastname)}`
-    );
+    render(<User />, {
+      wrapper: ThemeProvider,
+    });
+
+    expect(await screen.findByText('Sponge Bob')).toBeInTheDocument();
   });
 
   it('renders with User data', async () => {
-    api.fetchUser = mockResolvedAsyncFn(mockUser);
-    const node = mount(
-      <ThemeProvider>
-        <User />
-      </ThemeProvider>
-    );
+    fetchUser.mockResolvedValue(mockUser);
 
-    await flushPromises();
-    node.update();
+    render(<User />, {
+      wrapper: ThemeProvider,
+    });
 
-    expect(node.find(Styled.Dropdown).text()).toContain(mockUser.firstname);
-    expect(node.find(Styled.Dropdown).text()).toContain(mockUser.lastname);
-  });
-
-  it('renders with SSO User data', async () => {
-    api.fetchUser = mockResolvedAsyncFn(mockSsoUser);
-    const node = mount(
-      <ThemeProvider>
-        <User />
-      </ThemeProvider>
-    );
-
-    await flushPromises();
-    node.update();
-
-    expect(node.find(Styled.Dropdown).text()).toContain(mockSsoUser.lastname);
+    expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
   });
 
   it('renders without User data', async () => {
-    useLocalStorage.mockImplementation(() => {
-      return {
-        storedValue: {},
-        setLocalStorage: jest.fn(),
-      };
+    fetchUser.mockRejectedValue({});
+
+    render(<User />, {
+      wrapper: ThemeProvider,
     });
-    api.fetchUser = mockRejectedAsyncFn();
 
-    const node = mount(
-      <ThemeProvider>
-        <User />
-      </ThemeProvider>
-    );
+    expect(await screen.findByTestId('username-skeleton')).toBeInTheDocument();
+  });
 
-    expect(node.find(Styled.SkeletonBlock)).toExist();
+  it('renders with SSO User data (firstname field is empty)', async () => {
+    fetchUser.mockResolvedValue(mockSsoUser);
+
+    render(<User />, {
+      wrapper: ThemeProvider,
+    });
+
+    expect(await screen.findByText('Michael Jordan')).toBeInTheDocument();
   });
 
   it('should handle logout', async () => {
-    useLocalStorage.mockImplementation(() => {
-      return {
-        storedValue: {},
-        setLocalStorage: jest.fn(),
-      };
+    fetchUser.mockResolvedValue(mockUser);
+
+    render(<User handleRedirect={() => {}} />, {
+      wrapper: ThemeProvider,
     });
-    api.fetchUser = mockResolvedAsyncFn(mockUser);
-    api.logout = mockResolvedAsyncFn();
 
-    const node = mount(
-      <ThemeProvider>
-        <User handleRedirect={() => {}} />
-      </ThemeProvider>
-    );
+    fireEvent.click(await screen.findByText('Franz Kafka'));
+    fireEvent.click(await screen.findByText('Logout'));
 
-    await flushPromises();
-    node.update();
-
-    node.find('button').simulate('click');
-    node.update();
-
-    expect(node.find('[data-test="logout-button"]')).toExist();
-    node.find('[data-test="logout-button"]').simulate('click');
-    node.update();
-
-    expect(api.logout).toHaveBeenCalled();
+    expect(logout).toHaveBeenCalled();
   });
 });

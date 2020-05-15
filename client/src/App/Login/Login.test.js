@@ -14,7 +14,7 @@ import {
   mockRejectedAsyncFn,
 } from 'modules/testUtils';
 
-import Login from './Login';
+import {Login} from './';
 import * as Styled from './styled';
 import * as api from 'modules/api/login/login';
 import {PAGE_TITLE} from 'modules/constants';
@@ -28,9 +28,8 @@ describe('Login', () => {
   let passwordInput;
 
   beforeEach(() => {
-    node = shallow(<Login location={{}} />)
-      .first()
-      .shallow();
+    jest.spyOn(localStorage, 'clear');
+    node = shallow(<Login location={{}} />);
 
     usernameInput = node.findWhere(
       (element) =>
@@ -42,6 +41,10 @@ describe('Login', () => {
         element.prop('type') === 'password' &&
         element.prop('name') === 'password'
     );
+  });
+
+  afterEach(() => {
+    localStorage.clear.mockClear();
   });
 
   it('should render initially with no state data', () => {
@@ -90,8 +93,6 @@ describe('Login', () => {
 
   it('should reset the stored state on login', async () => {
     // given
-    const spy = jest.fn();
-    node.setProps({clearStateLocally: spy});
     node.setState({username: 'foo', password: 'bar'});
 
     // when
@@ -99,7 +100,7 @@ describe('Login', () => {
     await flushPromises();
 
     // then
-    expect(spy).toHaveBeenCalled();
+    expect(localStorage.clear).toHaveBeenCalled();
   });
 
   describe('redirection', () => {

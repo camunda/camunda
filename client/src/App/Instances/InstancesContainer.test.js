@@ -38,7 +38,6 @@ import {parsedDiagram} from 'modules/utils/bpmn';
 import {
   mockFullFilterWithoutWorkflow,
   mockFullFilterWithWorkflow,
-  mockLocalStorageProps,
 } from './InstancesContainer.setup';
 
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
@@ -97,21 +96,17 @@ describe('InstancesContainer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(localStorage, 'setItem');
 
     dataManager = createMockDataManager();
   });
 
   describe('mounting', () => {
     it('should fetch the groupedWorkflows', async () => {
-      const test = <div></div>;
       // given
       const node = mount(
         <ProviderWrapper>
-          <InstancesContainerWrapped
-            {...mockLocalStorageProps}
-            {...getRouterProps()}
-            {...{dataManager}}
-          />
+          <InstancesContainerWrapped {...getRouterProps()} {...{dataManager}} />
         </ProviderWrapper>
       );
 
@@ -127,7 +122,6 @@ describe('InstancesContainer', () => {
       const node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...mockLocalStorageProps}
             {...getRouterProps(mockFullFilterWithWorkflow)}
             {...{dataManager}}
           />
@@ -162,7 +156,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(mockFullFilterWithWorkflow)}
           />
         </ProviderWrapper>
@@ -199,7 +192,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(initialFilterUrl)}
           />
         </ProviderWrapper>
@@ -249,7 +241,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(mockFullFilterWithWorkflow)}
           />
         </ProviderWrapper>
@@ -282,7 +273,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(emptyFilters)}
           />
         </ProviderWrapper>
@@ -307,7 +297,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps({
               active: true,
               incidents: true,
@@ -375,7 +364,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(mockFullFilterWithWorkflow)}
           />
         </ProviderWrapper>
@@ -403,11 +391,7 @@ describe('InstancesContainer', () => {
     // given
     const node = mount(
       <ProviderWrapper>
-        <InstancesContainerWrapped
-          {...{dataManager}}
-          {...mockLocalStorageProps}
-          {...getRouterProps()}
-        />
+        <InstancesContainerWrapped {...{dataManager}} {...getRouterProps()} />
       </ProviderWrapper>
     );
 
@@ -420,17 +404,13 @@ describe('InstancesContainer', () => {
     node.update();
 
     // then
-    expect(mockLocalStorageProps.storeStateLocally).toHaveBeenCalled();
+    expect(localStorage.setItem).toHaveBeenCalled();
   });
 
   it('should render the Instances', () => {
     const node = mount(
       <ProviderWrapper>
-        <InstancesContainerWrapped
-          {...{dataManager}}
-          {...mockLocalStorageProps}
-          {...getRouterProps()}
-        />
+        <InstancesContainerWrapped {...{dataManager}} {...getRouterProps()} />
       </ProviderWrapper>
     );
 
@@ -441,11 +421,7 @@ describe('InstancesContainer', () => {
     // given
     const node = mount(
       <ProviderWrapper>
-        <InstancesContainerWrapped
-          {...{dataManager}}
-          {...mockLocalStorageProps}
-          {...getRouterProps()}
-        />
+        <InstancesContainerWrapped {...{dataManager}} {...getRouterProps()} />
       </ProviderWrapper>
     );
 
@@ -472,7 +448,6 @@ describe('InstancesContainer', () => {
       <ProviderWrapper>
         <InstancesContainerWrapped
           {...{dataManager}}
-          {...mockLocalStorageProps}
           {...getRouterProps(decodeFields(mockFullFilterWithoutWorkflow))}
         />
       </ProviderWrapper>
@@ -495,7 +470,6 @@ describe('InstancesContainer', () => {
       <ProviderWrapper>
         <InstancesContainerWrapped
           {...{dataManager}}
-          {...mockLocalStorageProps}
           {...getRouterProps(mockFullFilterWithWorkflow)}
         />
       </ProviderWrapper>
@@ -526,7 +500,6 @@ describe('InstancesContainer', () => {
       <ProviderWrapper>
         <InstancesContainerWrapped
           {...{dataManager}}
-          {...mockLocalStorageProps}
           {...getRouterProps({
             ...rest,
             version: 'all',
@@ -558,11 +531,7 @@ describe('InstancesContainer', () => {
 
       const node = mount(
         <ProviderWrapper>
-          <InstancesContainerWrapped
-            {...{dataManager}}
-            {...mockLocalStorageProps}
-            {...routerProps}
-          />
+          <InstancesContainerWrapped {...{dataManager}} {...routerProps} />
         </ProviderWrapper>
       );
 
@@ -579,11 +548,7 @@ describe('InstancesContainer', () => {
 
       node.setProps({
         children: (
-          <InstancesContainerWrapped
-            {...{dataManager}}
-            {...mockLocalStorageProps}
-            {...newRouterProps}
-          />
+          <InstancesContainerWrapped {...{dataManager}} {...newRouterProps} />
         ),
       });
 
@@ -610,7 +575,6 @@ describe('InstancesContainer', () => {
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
-              {...mockLocalStorageProps}
               {...noFilterRouterProps}
             />
           </ProviderWrapper>
@@ -638,7 +602,6 @@ describe('InstancesContainer', () => {
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
-              {...mockLocalStorageProps}
               {...invalidFilterRouterProps}
             />
           </ProviderWrapper>
@@ -662,7 +625,6 @@ describe('InstancesContainer', () => {
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
-              {...mockLocalStorageProps}
               {...getRouterProps({
                 ...mockFullFilterWithWorkflow,
                 workflow: 'x',
@@ -693,7 +655,6 @@ describe('InstancesContainer', () => {
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
-              {...mockLocalStorageProps}
               {...getRouterProps({
                 ...mockFullFilterWithWorkflow,
                 version: 'x',
@@ -730,7 +691,6 @@ describe('InstancesContainer', () => {
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
-              {...mockLocalStorageProps}
               {...getRouterProps({
                 ...mockFullFilterWithWorkflow,
                 version: 'all',
@@ -761,7 +721,6 @@ describe('InstancesContainer', () => {
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
-              {...mockLocalStorageProps}
               {...getRouterProps({
                 ...mockFullFilterWithoutWorkflow,
               })}
@@ -798,7 +757,6 @@ describe('InstancesContainer', () => {
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
-              {...mockLocalStorageProps}
               {...getRouterProps(validFilterWithVersionAll)}
             />
           </ProviderWrapper>
@@ -825,7 +783,6 @@ describe('InstancesContainer', () => {
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
-              {...mockLocalStorageProps}
               {...getRouterProps(mockFullFilterWithWorkflow)}
             />
           </ProviderWrapper>
@@ -856,7 +813,6 @@ describe('InstancesContainer', () => {
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
-              {...mockLocalStorageProps}
               {...getRouterProps(mockFullFilterWithWorkflow)}
             />
           </ProviderWrapper>
@@ -897,7 +853,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(mockFullFilterWithoutWorkflow)}
           />
         </ProviderWrapper>
@@ -929,7 +884,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(mockFullFilterWithoutWorkflow)}
           />
         </ProviderWrapper>
@@ -957,7 +911,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(mockFullFilterWithoutWorkflow)}
           />
         </ProviderWrapper>
@@ -981,7 +934,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(INCIDENTS_FILTER)}
           />
         </ProviderWrapper>
@@ -1005,7 +957,6 @@ describe('InstancesContainer', () => {
         <ProviderWrapper>
           <InstancesContainerWrapped
             {...{dataManager}}
-            {...mockLocalStorageProps}
             {...getRouterProps(filterWithCompleted)}
           />
         </ProviderWrapper>
@@ -1028,11 +979,7 @@ describe('InstancesContainer', () => {
     it('should update state correctly on instances click', async () => {
       // given
       const node = mount(
-        <InstancesContainerWrapped
-          {...{dataManager}}
-          {...mockLocalStorageProps}
-          {...getRouterProps({})}
-        />
+        <InstancesContainerWrapped {...{dataManager}} {...getRouterProps({})} />
       );
       await flushPromises();
       node.update();

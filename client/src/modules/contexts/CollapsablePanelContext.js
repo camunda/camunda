@@ -6,7 +6,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import withSharedState from 'modules/components/withSharedState';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 const CollapsablePanelContext = React.createContext();
 
@@ -16,8 +16,6 @@ const CollapsablePanelConsumer = CollapsablePanelContext.Consumer;
 // Top level component to pass down theme in the App
 class CollapsablePanelProvider extends React.Component {
   static propTypes = {
-    getStateLocally: PropTypes.func.isRequired,
-    storeStateLocally: PropTypes.func.isRequired,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node,
@@ -31,7 +29,7 @@ class CollapsablePanelProvider extends React.Component {
     const currentPanelState = this.getCurrentPanelState();
     const expandState = {[target]: !currentPanelState[target]};
 
-    this.props.storeStateLocally(expandState, 'panelStates');
+    storeStateLocally(expandState, 'panelStates');
     // components should be rerendered after panel states changed
     this.setState(expandState);
   };
@@ -42,7 +40,7 @@ class CollapsablePanelProvider extends React.Component {
 
   expand = function (target) {
     const expandState = {[target]: false};
-    this.props.storeStateLocally(expandState, 'panelStates');
+    storeStateLocally(expandState, 'panelStates');
     // components should be rerendered after panel states changed
     this.setState(expandState);
   };
@@ -55,7 +53,7 @@ class CollapsablePanelProvider extends React.Component {
     const {
       isFiltersCollapsed = false,
       isOperationsCollapsed = true,
-    } = this.props.getStateLocally('panelStates');
+    } = getStateLocally('panelStates');
 
     return {
       isFiltersCollapsed,
@@ -100,13 +98,9 @@ const withCollapsablePanel = (Component) => {
   return WithCollapsablePanel;
 };
 
-const CollapsablePanelProviderWithSharedState = withSharedState(
-  CollapsablePanelProvider
-);
-
 export {
   CollapsablePanelContext as default,
   CollapsablePanelConsumer,
-  CollapsablePanelProviderWithSharedState as CollapsablePanelProvider,
+  CollapsablePanelProvider,
   withCollapsablePanel,
 };

@@ -5,6 +5,7 @@
  */
 
 import {observable, decorate, action} from 'mobx';
+import {storeStateLocally, getStateLocally} from 'modules/utils/localStorage';
 
 const DEFAULT_STATE = {
   filteredInstancesCount: null,
@@ -14,13 +15,27 @@ const DEFAULT_STATE = {
 class Instances {
   state = {...DEFAULT_STATE};
 
+  constructor() {
+    this.state.filteredInstancesCount =
+      getStateLocally().filteredInstancesCount || null;
+  }
+
   setInstances = ({filteredInstancesCount, workflowInstances}) => {
-    this.state = {filteredInstancesCount, workflowInstances};
+    this.state = {
+      workflowInstances,
+      filteredInstancesCount,
+    };
+    storeStateLocally({filteredInstancesCount});
+  };
+
+  reset = () => {
+    this.state = {...DEFAULT_STATE};
   };
 }
 
 decorate(Instances, {
   state: observable,
+  reset: action,
   setInstances: action,
 });
 

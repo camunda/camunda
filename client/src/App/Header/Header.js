@@ -16,7 +16,6 @@ import {observer} from 'mobx-react';
 
 import {instances} from 'modules/stores/instances';
 import {wrapWithContexts} from 'modules/contexts/contextHelpers';
-import withSharedState from 'modules/components/withSharedState';
 import {getFilterQueryString, parseQueryString} from 'modules/utils/filter';
 import {
   FILTER_SELECTION,
@@ -291,7 +290,7 @@ const Header = observer(
   }
 );
 
-const contexts = [withData, withCollapsablePanel, withSharedState, withRouter];
+const contexts = [withData, withCollapsablePanel, withRouter];
 
 const WrappedHeader = wrapWithContexts(contexts, Header);
 

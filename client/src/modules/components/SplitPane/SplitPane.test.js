@@ -21,9 +21,7 @@ describe('SplitPane', () => {
         <FirstChild />
         <SecondChild />
       </SplitPane>
-    )
-      .first()
-      .shallow();
+    );
 
     // then
     const FirstChildNode = node.find(FirstChild);
@@ -50,9 +48,7 @@ describe('SplitPane', () => {
           <FirstChild />
           <SecondChild />
         </SplitPane>
-      )
-        .first()
-        .shallow();
+      );
 
       // then
       const FirstChildNode = node.find(FirstChild);
@@ -73,9 +69,7 @@ describe('SplitPane', () => {
           <FirstChild />
           <SecondChild />
         </SplitPane>
-      )
-        .first()
-        .shallow();
+      );
 
       // Top panel is expanded on handle expand click
       node.find(FirstChild).prop('handleExpand')('TOP');

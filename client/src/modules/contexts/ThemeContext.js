@@ -6,9 +6,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import withSharedState from 'modules/components/withSharedState';
 
 import {Colors} from 'modules/theme';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 const THEME_NAME = {
   LIGHT: 'light',
@@ -23,8 +23,6 @@ const ThemeConsumer = ThemeContext.Consumer;
 // Top level component to pass down theme in the App
 class ThemeProvider extends React.Component {
   static propTypes = {
-    getStateLocally: PropTypes.func.isRequired,
-    storeStateLocally: PropTypes.func.isRequired,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node,
@@ -40,7 +38,7 @@ class ThemeProvider extends React.Component {
   state = {theme: THEME_NAME.LIGHT};
 
   componentDidMount() {
-    const localStorage = this.props.getStateLocally('theme');
+    const localStorage = getStateLocally('theme');
 
     if (localStorage.theme) {
       this.setState({theme: localStorage.theme});
@@ -55,7 +53,7 @@ class ThemeProvider extends React.Component {
     const newTheme =
       this.state.theme === THEME_NAME.DARK ? THEME_NAME.LIGHT : THEME_NAME.DARK;
 
-    this.props.storeStateLocally(
+    storeStateLocally(
       {
         theme: newTheme,
       },
@@ -120,12 +118,4 @@ const themed = (Component) => {
 
 const themeStyle = (config) => ({theme}) => config[theme];
 
-const WrappedThemeProvider = withSharedState(ThemeProvider);
-WrappedThemeProvider.WrappedComponent = ThemeProvider;
-
-export {
-  ThemeConsumer,
-  WrappedThemeProvider as ThemeProvider,
-  themed,
-  themeStyle,
-};
+export {ThemeConsumer, ThemeProvider, themed, themeStyle};
