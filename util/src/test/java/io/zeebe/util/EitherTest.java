@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -81,5 +83,56 @@ public class EitherTest {
     assertThat(mappedValue).isNotEqualTo(value);
     assertThat(Either.left(value).mapLeft(mapper)).isEqualTo(Either.left(mappedValue));
     assertThat(Either.right(value).mapLeft(mapper)).isEqualTo(Either.right(value));
+  }
+
+  @Test
+  public void onlyARightIsTransformedByFlatMap() {
+    assertThat(Either.right(value).flatMap(Either::left)).isEqualTo(Either.left(value));
+    assertThat(Either.left(value).flatMap(Either::right)).isEqualTo(Either.left(value));
+  }
+
+  @Test
+  public void onlyARightIsConsumedByIfRight() {
+    final var verifiableConsumer = new VerifiableConsumer();
+    Either.right(value).ifRight(verifiableConsumer);
+    assertThat(verifiableConsumer.hasBeenExecuted).isTrue();
+    Either.left(value).ifRight(new FailConsumer());
+  }
+
+  @Test
+  public void onlyALeftIsConsumedByIfLeft() {
+    final var verifiableConsumer = new VerifiableConsumer();
+    Either.left(value).ifLeft(verifiableConsumer);
+    assertThat(verifiableConsumer.hasBeenExecuted).isTrue();
+    Either.right(value).ifLeft(new FailConsumer());
+  }
+
+  @Test
+  public void onlyOneSideIsConsumedByIfRightOrLeft() {
+    final var rightConsumer = new VerifiableConsumer();
+    Either.right(value).ifRightOrLeft(rightConsumer, new FailConsumer());
+    assertThat(rightConsumer.hasBeenExecuted).isTrue();
+
+    final var leftConsumer = new VerifiableConsumer();
+    Either.left(value).ifRightOrLeft(new FailConsumer(), leftConsumer);
+    assertThat(leftConsumer.hasBeenExecuted).isTrue();
+  }
+
+  /** Simple Consumer that knows whether it's been executed. */
+  private static final class VerifiableConsumer implements Consumer<Object> {
+    boolean hasBeenExecuted = false;
+
+    @Override
+    public void accept(final Object o) {
+      hasBeenExecuted = true;
+    }
+  }
+
+  /** Simple Consumer that always fails a test when executed. */
+  private static class FailConsumer implements Consumer<Object> {
+    @Override
+    public void accept(final Object o) {
+      Assertions.fail("Expected NOT to perform this action!");
+    }
   }
 }

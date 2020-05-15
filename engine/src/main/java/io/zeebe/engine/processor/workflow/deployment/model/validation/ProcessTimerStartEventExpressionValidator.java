@@ -58,7 +58,8 @@ public class ProcessTimerStartEventExpressionValidator
       final ValidationResultCollector validationResultCollector) {
     final Either<Failure, Timer> timerOrError = tryEvaluateTimer(timerEventDefinition);
     if (timerOrError.isLeft()) {
-      final var message = String.format(ERROR_MESSAGE_TEMPLATE, timerOrError.getLeft());
+      final var message =
+          String.format(ERROR_MESSAGE_TEMPLATE, timerOrError.getLeft().getMessage());
       validationResultCollector.addError(0, message);
     }
   }

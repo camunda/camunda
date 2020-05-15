@@ -13,6 +13,8 @@ import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COM
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.EVENT_OCCURRED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN;
 
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Collections;
@@ -46,8 +48,10 @@ public final class WorkflowInstanceLifecycle {
     TRANSITION_RULES.put(ELEMENT_ACTIVATED, EnumSet.of(ELEMENT_COMPLETING, ELEMENT_TERMINATING));
     TRANSITION_RULES.put(ELEMENT_COMPLETING, EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATING));
     TRANSITION_RULES.put(ELEMENT_TERMINATING, EnumSet.of(ELEMENT_TERMINATED));
-    TRANSITION_RULES.put(ELEMENT_COMPLETED, Collections.emptySet());
+    TRANSITION_RULES.put(ELEMENT_COMPLETED, EnumSet.of(SEQUENCE_FLOW_TAKEN));
     TRANSITION_RULES.put(ELEMENT_TERMINATED, Collections.emptySet());
+    TRANSITION_RULES.put(EVENT_OCCURRED, EnumSet.of(ELEMENT_COMPLETING, ELEMENT_TERMINATING));
+    TRANSITION_RULES.put(SEQUENCE_FLOW_TAKEN, EnumSet.of(ELEMENT_ACTIVATING));
   }
 
   private WorkflowInstanceLifecycle() {}

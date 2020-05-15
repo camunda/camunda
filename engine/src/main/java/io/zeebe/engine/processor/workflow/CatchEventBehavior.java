@@ -57,7 +57,7 @@ public final class CatchEventBehavior {
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount) {
     this.state = state;
-    this.expressionProcessor = exporessionProcessor;
+    expressionProcessor = exporessionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.partitionsCount = partitionsCount;
   }
@@ -274,6 +274,8 @@ public final class CatchEventBehavior {
       final MessageCorrelationKeyContext scopeContext) {
     extractedCorrelationKeys.clear();
 
+    // TODO (saig0): extract logic to resolve the variable scope key
+    //  see BpmnIncidentBehavior
     for (final ExecutableCatchEvent event : events) {
       if (event.isMessage()) {
         final MessageCorrelationKeyContext context =
@@ -299,7 +301,7 @@ public final class CatchEventBehavior {
             event.getTimerFactory().apply(expressionProcessor, key);
         if (timerOrError.isLeft()) {
           // todo(#4323): deal with this exceptional case without throwing an exception
-          throw new EvaluationException(timerOrError.getLeft().toString());
+          throw new EvaluationException(timerOrError.getLeft().getMessage());
         }
         evaluatedTimers.put(event.getId(), timerOrError.get());
       }

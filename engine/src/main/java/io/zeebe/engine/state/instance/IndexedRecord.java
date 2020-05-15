@@ -57,6 +57,10 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public boolean hasState(final WorkflowInstanceIntent state) {
+    return getState() == state;
+  }
+
   public WorkflowInstanceRecord getValue() {
     return valueProp.getValue();
   }

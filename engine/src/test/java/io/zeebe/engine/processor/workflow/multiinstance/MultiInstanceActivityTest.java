@@ -26,6 +26,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -38,6 +39,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.groups.Tuple;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,7 +53,6 @@ public final class MultiInstanceActivityTest {
 
   private static final String PROCESS_ID = "process";
   private static final String ELEMENT_ID = "task";
-  private static final String JOB_TYPE = "test";
 
   private static final String INPUT_COLLECTION_EXPRESSION = "items";
   private static final String INPUT_ELEMENT_VARIABLE = "item";
@@ -79,6 +80,8 @@ public final class MultiInstanceActivityTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+
   @Parameterized.Parameter(0)
   public String loopCharacteristics;
 
@@ -88,13 +91,15 @@ public final class MultiInstanceActivityTest {
   @Parameterized.Parameter(2)
   public List<Tuple> expectedLifecycle;
 
-  private static BpmnModelInstance workflow(
+  private String jobType;
+
+  private BpmnModelInstance workflow(
       final Consumer<MultiInstanceLoopCharacteristicsBuilder> builder) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .serviceTask(
             ELEMENT_ID,
-            t -> t.zeebeJobType(JOB_TYPE).multiInstance(INPUT_VARIABLE_BUILDER.andThen(builder)))
+            t -> t.zeebeJobType(jobType).multiInstance(INPUT_VARIABLE_BUILDER.andThen(builder)))
         .endEvent()
         .done();
   }
@@ -105,6 +110,11 @@ public final class MultiInstanceActivityTest {
       {"parallel", multiInstance(m -> m.parallel()), parallelLifecycle()},
       {"sequential", multiInstance(m -> m.sequential()), sequentialLifecycle()},
     };
+  }
+
+  @Before
+  public void init() {
+    jobType = helper.getJobType();
   }
 
   private static Consumer<MultiInstanceLoopCharacteristicsBuilder> multiInstance(
@@ -304,7 +314,7 @@ public final class MultiInstanceActivityTest {
 
     // then
     assertThat(
-            RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(JOB_TYPE).limit(3))
+            RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).limit(3))
         .flatExtracting(r -> r.getValue().getJobs())
         .extracting(j -> j.getVariables().get(INPUT_ELEMENT_VARIABLE))
         .containsExactlyElementsOf(INPUT_COLLECTION);
@@ -477,7 +487,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
-                .withType(JOB_TYPE)
+                .withType(jobType)
                 .limit(INPUT_COLLECTION.size()))
         .flatExtracting(r -> r.getValue().getJobs())
         .flatExtracting(j -> j.getVariables().keySet())
@@ -514,7 +524,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
-                .withType(JOB_TYPE)
+                .withType(jobType)
                 .limit(INPUT_COLLECTION.size()))
         .flatExtracting(r -> r.getValue().getJobs())
         .extracting(j -> j.getVariables().get(INPUT_ELEMENT_VARIABLE))
@@ -1104,7 +1114,7 @@ public final class MultiInstanceActivityTest {
                   .isTrue();
 
               final var jobBatch =
-                  ENGINE.jobs().withType(JOB_TYPE).withMaxJobsToActivate(1).activate().getValue();
+                  ENGINE.jobs().withType(jobType).withMaxJobsToActivate(1).activate().getValue();
 
               jobBatch
                   .getJobKeys()

@@ -53,9 +53,9 @@ public final class TransformingDeploymentCreateProcessor
       final ZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final ExpressionProcessor expressionProcessor) {
-    this.workflowState = zeebeState.getWorkflowState();
-    this.keyGenerator = zeebeState.getKeyGenerator();
-    this.deploymentTransformer = new DeploymentTransformer(zeebeState, expressionProcessor);
+    workflowState = zeebeState.getWorkflowState();
+    keyGenerator = zeebeState.getKeyGenerator();
+    deploymentTransformer = new DeploymentTransformer(zeebeState, expressionProcessor);
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
   }
@@ -74,7 +74,7 @@ public final class TransformingDeploymentCreateProcessor
       if (workflowState.putDeployment(key, deploymentEvent)) {
         try {
           createTimerIfTimerStartEvent(command, streamWriter);
-        } catch (RuntimeException e) {
+        } catch (final RuntimeException e) {
           final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
           responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
           streamWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
@@ -120,7 +120,7 @@ public final class TransformingDeploymentCreateProcessor
               startEvent.getTimerFactory().apply(expressionProcessor, scopeKey);
           if (timerOrError.isLeft()) {
             // todo(#4323): deal with this exceptional case without throwing an exception
-            throw new EvaluationException(timerOrError.getLeft().toString());
+            throw new EvaluationException(timerOrError.getLeft().getMessage());
           }
           catchEventBehavior.subscribeToTimerEvent(
               NO_ELEMENT_INSTANCE,

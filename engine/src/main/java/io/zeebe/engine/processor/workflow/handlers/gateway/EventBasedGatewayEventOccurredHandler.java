@@ -18,8 +18,6 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
-// todo: this skips the sequence flow taken and just starts the next element
-// https://github.com/zeebe-io/zeebe/issues/1979
 public final class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBasedGateway>
     extends EventOccurredHandler<T> {
   public EventBasedGatewayEventOccurredHandler() {

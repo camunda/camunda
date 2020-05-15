@@ -16,7 +16,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.Transf
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import java.util.Collection;
 
 public final class ExclusiveGatewayTransformer
     implements ModelElementTransformer<ExclusiveGateway> {
@@ -37,20 +36,14 @@ public final class ExclusiveGatewayTransformer
   }
 
   private void bindLifecycle(final ExecutableExclusiveGateway gateway) {
-    final Collection<ExecutableSequenceFlow> outgoingFlows = gateway.getOutgoing();
-    final boolean hasNoOutgoingFlows = outgoingFlows.size() == 0;
-    final boolean hasSingleNonConditionalOutgoingFlow =
-        outgoingFlows.size() == 1 && outgoingFlows.iterator().next().getCondition() == null;
-
-    if (hasNoOutgoingFlows || hasSingleNonConditionalOutgoingFlow) {
-      gateway.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
-    } else {
-      gateway.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_ACTIVATING);
-      gateway.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_COMPLETED);
-    }
+    gateway.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    gateway.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    gateway.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    gateway.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 
   private void transformDefaultFlow(
