@@ -327,7 +327,22 @@
       "page": "Seite",
       "of": "von",
       "rows": "Zeilen pro Seite",
-      "relativeFrequency": "Relative Frequenz"
+      "relativeFrequency": "Relative Frequenz",
+      "rawData": {
+        "processDefinitionKey": "Prozess Definitions Schlüssel",
+        "processDefinitionId": "Prozess Definitions Id",
+        "processInstanceId": "Prozess Instanz Id",
+        "decisionDefinitionKey": "Entscheidungs Definitions Schlüssel",
+        "decisionDefinitionId": "Entscheidungs Definitions Id",
+        "decisionInstanceId": "Entscheidungs Instanz Id",
+        "evaluationDateTime": "Auswertungszeitpunkt",
+        "businessKey": "Fachlicher Schlüssel",
+        "startDate": "Startdatum",
+        "endDate": "Enddatum",
+        "duration": "Dauer",
+        "engineName": "Engine Name",
+        "tenantId": "Mandanten Id"
+      }
     },
     "progressBar": {
       "invalid": "Ungültige Konfiguration",

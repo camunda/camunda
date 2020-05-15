@@ -133,11 +133,6 @@ export const convertDurationToSingleNumber = (threshold) => {
   return threshold.value * timeUnits[threshold.unit].value;
 };
 
-export const convertCamelToSpaces = (label) => {
-  let formattedLabel = label.replace(/([A-Z])/g, ' $1');
-  return formattedLabel.charAt(0).toUpperCase() + formattedLabel.slice(1);
-};
-
 export function convertToMilliseconds(value, unit) {
   return value * timeUnits[unit].value;
 }

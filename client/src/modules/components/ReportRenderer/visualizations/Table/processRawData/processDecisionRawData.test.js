@@ -44,7 +44,7 @@ it('should return correct table props for decision tables', () => {
     data: [
       {
         decisionInstanceId: 'foo',
-        prop2: 'bar',
+        decisionDefinitionId: 'bar',
         inputVariables: {
           var1: {id: 'var1', value: 12, name: 'Var 1'},
           var2: {id: 'var2', value: null, name: 'Var 2'},
@@ -55,7 +55,7 @@ it('should return correct table props for decision tables', () => {
       },
       {
         decisionInstanceId: 'xyz',
-        prop2: 'abc',
+        decisionDefinitionId: 'abc',
         inputVariables: {
           var1: {id: 'var1', value: null, name: 'Var 1'},
           var2: {id: 'var2', value: true, name: 'Var 2'},
@@ -70,7 +70,7 @@ it('should return correct table props for decision tables', () => {
   expect(processDecisionRawData({report: {result, reportType: 'decision', data}})).toEqual({
     head: [
       'Decision Instance Id',
-      'Prop2',
+      'Decision Definition Id',
       {
         label: 'Input Variables',
         columns: [
@@ -92,7 +92,7 @@ it('should show no data message when all column are excluded for decision tables
     data: [
       {
         decisionInstanceId: 'foo',
-        prop2: 'bar',
+        decisionDefinitionId: 'bar',
         inputVariables: {
           var1: {id: 'var1', value: 12, name: 'Var 1'},
         },
@@ -109,7 +109,12 @@ it('should show no data message when all column are excluded for decision tables
         result,
         data: {
           configuration: {
-            excludedColumns: ['decisionInstanceId', 'prop2', 'input:var1', 'output:result'],
+            excludedColumns: [
+              'decisionInstanceId',
+              'decisionDefinitionId',
+              'input:var1',
+              'output:result',
+            ],
           },
         },
       },

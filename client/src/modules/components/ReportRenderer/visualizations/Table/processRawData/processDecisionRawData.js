@@ -4,11 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {formatters} from 'services';
 import {sortColumns, cockpitLink, getNoDataMessage} from './service';
 import {t} from 'translation';
-
-const {convertCamelToSpaces} = formatters;
 
 export default function processDecisionRawData(
   {
@@ -65,7 +62,7 @@ export default function processDecisionRawData(
     return [...propertyValues, ...inputVariableValues, ...outputVariableValues];
   });
 
-  const head = instanceProps.map(convertCamelToSpaces);
+  const head = instanceProps.map((key) => t('report.table.rawData.' + key));
 
   if (inputVariables.length > 0) {
     head.push({

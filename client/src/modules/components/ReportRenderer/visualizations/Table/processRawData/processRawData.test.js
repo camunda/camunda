@@ -18,7 +18,7 @@ const result = {
   data: [
     {
       processInstanceId: 'foo',
-      prop2: 'bar',
+      processDefinitionId: 'bar',
       variables: {
         var1: 12,
         var2: null,
@@ -26,7 +26,7 @@ const result = {
     },
     {
       processInstanceId: 'xyz',
-      prop2: 'abc',
+      processDefinitionId: 'abc',
       variables: {
         var1: null,
         var2: true,
@@ -37,7 +37,11 @@ const result = {
 
 it('should transform data to table compatible format', () => {
   expect(processRawData({report: {data, result}})).toEqual({
-    head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var1', 'var2']}],
+    head: [
+      'Process Instance Id',
+      'Process Definition Id',
+      {label: 'Variables', columns: ['var1', 'var2']},
+    ],
     body: [
       ['foo', 'bar', '12', ''],
       ['xyz', 'abc', '', 'true'],
@@ -48,7 +52,7 @@ it('should transform data to table compatible format', () => {
 it('should not include columns that are hidden', () => {
   const data = {
     configuration: {
-      excludedColumns: ['prop2'],
+      excludedColumns: ['processDefinitionId'],
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({
@@ -67,7 +71,7 @@ it('should exclude variable columns using the variable prefix', () => {
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({
-    head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var2']}],
+    head: ['Process Instance Id', 'Process Definition Id', {label: 'Variables', columns: ['var2']}],
     body: [
       ['foo', 'bar', ''],
       ['xyz', 'abc', 'true'],
@@ -142,7 +146,12 @@ it('should not make the processInstanceId a link if no endpoint is specified', (
 it('should show no data message when all column are excluded', () => {
   const data = {
     configuration: {
-      excludedColumns: ['processInstanceId', 'prop2', 'variable:var1', 'variable:var2'],
+      excludedColumns: [
+        'processInstanceId',
+        'processDefinitionId',
+        'variable:var1',
+        'variable:var2',
+      ],
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({

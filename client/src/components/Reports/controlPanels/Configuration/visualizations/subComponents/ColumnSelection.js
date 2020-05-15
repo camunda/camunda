@@ -7,13 +7,10 @@
 import React from 'react';
 
 import {Switch} from 'components';
-import {formatters} from 'services';
 import AllColumnsButtons from './AllColumnsButtons';
 
 import './ColumnSelection.scss';
 import {t} from 'translation';
-
-const {convertCamelToSpaces} = formatters;
 
 const labels = {
   inputVariables: 'input',
@@ -62,7 +59,7 @@ export default function ColumnSelection({report, onChange}) {
           prefix = t(`common.filter.types.${type}`) + ': ';
         } else {
           prefix = '';
-          name = convertCamelToSpaces(column);
+          name = t('report.table.rawData.' + column);
         }
 
         return (

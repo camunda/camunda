@@ -10,7 +10,7 @@ import {formatters} from 'services';
 import {sortColumns, cockpitLink, getNoDataMessage} from './service';
 import {t} from 'translation';
 
-const {convertCamelToSpaces, duration} = formatters;
+const {duration} = formatters;
 
 export default function processRawData(
   {
@@ -65,7 +65,7 @@ export default function processRawData(
     return row;
   });
 
-  const head = instanceProps.map(convertCamelToSpaces);
+  const head = instanceProps.map((key) => t('report.table.rawData.' + key));
 
   if (variableNames.length > 0) {
     head.push({label: t('report.variables.default'), columns: variableNames});

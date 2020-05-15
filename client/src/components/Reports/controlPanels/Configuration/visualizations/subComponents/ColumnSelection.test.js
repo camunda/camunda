@@ -13,7 +13,16 @@ it('should have a switch for every column + all columns switch', () => {
   const node = shallow(
     <ColumnSelection
       report={{
-        result: {data: [{a: 1, b: 2, c: 3, variables: {x: 1, y: 2}}]},
+        result: {
+          data: [
+            {
+              processDefinitionKey: 1,
+              processInstanceId: 2,
+              businessKey: 3,
+              variables: {x: 1, y: 2},
+            },
+          ],
+        },
         data: {configuration: {}},
       }}
     />
@@ -39,7 +48,10 @@ it('should call change with an empty array when all columns switch is enabled', 
   const spy = jest.fn();
   const node = shallow(
     <ColumnSelection
-      report={{result: {data: [{a: 1, b: 3, variables: {}}]}, data: {configuration: {}}}}
+      report={{
+        result: {data: [{processDefinitionKey: 1, processInstanceId: 3, variables: {}}]},
+        data: {configuration: {}},
+      }}
       onChange={spy}
     />
   );
