@@ -1,6 +1,7 @@
-auth:
-  token:
-    secret: 'redactedredactedredactedredactedredactedredactedredactedredacted'
+security:
+  auth:
+    token:
+      secret: 'redactedredactedredactedredactedredactedredactedredactedredacted'
 
 container:
   host: 0.0.0.0
