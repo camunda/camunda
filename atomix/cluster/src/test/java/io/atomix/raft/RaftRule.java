@@ -24,6 +24,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
@@ -31,6 +32,9 @@ import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.snapshot.Snapshot;
+import io.atomix.raft.storage.snapshot.SnapshotListener;
+import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageLevel;
@@ -38,9 +42,13 @@ import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.atomix.utils.time.WallClockTimestamp;
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +58,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -69,13 +78,14 @@ public final class RaftRule extends ExternalResource {
   private volatile int nextId;
   private volatile List<RaftMember> members;
   private Map<String, Long> memberLog;
-  private final List<RaftServer> servers = new ArrayList<>();
+  private final Map<String, RaftServer> servers = new HashMap<>();
   private volatile TestRaftProtocolFactory protocolFactory;
   private volatile ThreadContext context;
   private Path directory;
   private final int nodeCount;
   private volatile long highestCommit;
   private final AtomicReference<CommitAwaiter> commitAwaiterRef = new AtomicReference<>();
+  private final Map<String, AtomicReference<CountDownLatch>> compactAwaiters = new HashMap<>();
   private long position;
 
   private RaftRule(final int nodeCount) {
@@ -119,10 +129,7 @@ public final class RaftRule extends ExternalResource {
   protected void after() {
     try {
       CompletableFuture.allOf(
-              servers.stream()
-                  .filter(RaftServer::isRunning)
-                  .map(RaftServer::shutdown)
-                  .toArray(CompletableFuture[]::new))
+              servers.values().stream().map(RaftServer::shutdown).toArray(CompletableFuture[]::new))
           .get(30, TimeUnit.SECONDS);
     } catch (final Exception e) {
       // we failed to shutdown server
@@ -132,6 +139,7 @@ public final class RaftRule extends ExternalResource {
     context.close();
     context = null;
     members.clear();
+    compactAwaiters.clear();
     nextId = 0;
     protocolFactory = null;
     highestCommit = 0;
@@ -179,6 +187,7 @@ public final class RaftRule extends ExternalResource {
           .thenAccept(this::addCommitListener)
           .thenRun(latch::countDown);
       servers.add(server);
+      compactAwaiters.put(server.name(), new AtomicReference<>());
     }
 
     latch.await(30, TimeUnit.SECONDS);
@@ -186,54 +195,41 @@ public final class RaftRule extends ExternalResource {
     return servers;
   }
 
-  public void shutdownFollower() throws Exception {
+  public String shutdownFollower() throws Exception {
     final var follower = getFollower().orElseThrow();
     shutdownServer(follower);
+    return follower.name();
   }
 
-  public RaftServer shutdownLeader() throws Exception {
+  public void startNode(final String nodeId) throws Exception {
+    final RaftMember member = getRaftMember(nodeId);
+    createServer(member.memberId())
+        .join(getMemberIds())
+        .thenAccept(this::addCommitListener)
+        .get(30, TimeUnit.SECONDS);
+  }
+
+  public String shutdownLeader() throws Exception {
     final var leader = getLeader().orElseThrow();
     shutdownServer(leader);
-    return leader;
+    return leader.name();
   }
 
   public void restartLeader() throws Exception {
     awaitNewLeader();
     final var leader = shutdownLeader();
-
-    final RaftMember leaderMember = getRaftMember(leader.name());
-    createServer(leaderMember.memberId())
-        .join(getMemberIds())
-        .thenAccept(this::addCommitListener)
-        .get(30, TimeUnit.SECONDS);
+    startNode(leader);
   }
 
   private List<MemberId> getMemberIds() {
     return members.stream().map(RaftMember::memberId).collect(Collectors.toList());
   }
 
-  public void shutdownServer(final String memberId) throws Exception {
-    final var raftServer = getRaftServer(memberId);
-    shutdownServer(raftServer);
-  }
-
-  private RaftServer getRaftServer(final String memberId) {
-    return servers.stream()
-        .filter(server -> server.name().equals(memberId))
-        .findFirst()
-        .orElseThrow();
-  }
-
   public void shutdownServer(final RaftServer raftServer) throws Exception {
     raftServer.shutdown().get(30, TimeUnit.SECONDS);
-    servers.remove(raftServer);
+    servers.remove(raftServer.name());
+    compactAwaiters.remove(raftServer.name());
     memberLog.remove(raftServer.name());
-  }
-
-  public CompletableFuture<RaftServer> startServer(final String memberId) {
-    final RaftMember raftMember = getRaftMember(memberId);
-    final var server = createServer(raftMember.memberId());
-    return server.join(getMemberIds());
   }
 
   private RaftMember getRaftMember(final String memberId) {
@@ -243,26 +239,67 @@ public final class RaftRule extends ExternalResource {
         .orElseThrow();
   }
 
-  public CompletableFuture<Void> tryToCompactLogsOnServersExcept(
-      final String memberId, final long index) {
+  public void doSnapshot(final long index) throws Exception {
+    awaitNewLeader();
 
-    final var servers =
-        this.servers.stream()
-            .filter(server -> !server.name().equals(memberId))
-            .collect(Collectors.toList());
+    // we write on all nodes the same snapshot
+    // this is similar to our current logic where leader takes a snapshot and replicates it
+    // in the end all call the method #newSnapshot and the snapshot listener is triggered to compact
 
-    final List<CompletableFuture<Void>> futures = new ArrayList<>();
-    for (final RaftServer server : servers) {
-      futures.add(tryToCompactLogOnServer(server, index));
+    for (final RaftServer raftServer : servers.values()) {
+      if (raftServer.isRunning()) {
+        final var raftContext = raftServer.getContext();
+        final var snapshotStore = raftContext.getSnapshotStore();
+
+        compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
+        writeSnapshot(index, raftContext.getTerm(), snapshotStore);
+      }
     }
 
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    // await the compaction to avoid race condition with reading the logs
+    for (final RaftServer server : servers.values()) {
+      final var latchAtomicReference = compactAwaiters.get(server.name());
+      final var latch = latchAtomicReference.get();
+      if (!latch.await(30, TimeUnit.SECONDS)) {
+        throw new TimeoutException("Expected to compact the log after 30 seconds!");
+      }
+      latchAtomicReference.set(null);
+    }
   }
 
-  private CompletableFuture<Void> tryToCompactLogOnServer(
-      final RaftServer raftServer, final long index) {
-    raftServer.getContext().getServiceManager().setCompactableIndex(index);
-    return raftServer.compact();
+  public boolean allNodesHaveSnapshotWithIndex(final long index) {
+    return servers.values().stream()
+            .map(RaftServer::getContext)
+            .map(RaftContext::getSnapshotStore)
+            .map(SnapshotStore::getCurrentSnapshotIndex)
+            .filter(idx -> idx == index)
+            .count()
+        == servers.values().size();
+  }
+
+  public Snapshot snapshotOnNode(final String nodeId) {
+    final var raftServer = servers.get(nodeId);
+    final var context = raftServer.getContext();
+    final var snapshotStore = context.getSnapshotStore();
+    return snapshotStore.getCurrentSnapshot();
+  }
+
+  private void writeSnapshot(final long index, final long term, final SnapshotStore snapshotStore)
+      throws IOException {
+    final var dirName = index + "-snapshot";
+    final var snapshotDir = new File(snapshotStore.getPath().toFile(), dirName);
+    if (!snapshotDir.mkdirs()) {
+      throw new IllegalStateException("Was not able to create directory: " + snapshotDir.getName());
+    }
+
+    final var snapshotFile = new File(snapshotDir, "snapshot.file");
+    Files.write(
+        snapshotFile.toPath(),
+        RandomStringUtils.random(128).getBytes(),
+        StandardOpenOption.CREATE_NEW,
+        StandardOpenOption.WRITE);
+
+    snapshotStore.newSnapshot(index, term, new WallClockTimestamp(), snapshotDir.toPath());
   }
 
   public void awaitNewLeader() {
@@ -295,7 +332,7 @@ public final class RaftRule extends ExternalResource {
 
     final Map<String, List<Indexed<?>>> memberLogs = new HashMap<>();
 
-    for (final var server : servers) {
+    for (final var server : servers.values()) {
       if (server.isRunning()) {
 
         final var log = server.getContext().getLog();
@@ -355,7 +392,13 @@ public final class RaftRule extends ExternalResource {
 
   /** Creates a Raft server. */
   private RaftServer createServer(final MemberId memberId) {
-    return createServer(memberId, b -> b.withStorage(createStorage(memberId)));
+    return createServer(
+        memberId,
+        b -> {
+          final var storage = createStorage(memberId);
+          storage.getSnapshotStore().addListener(new RaftSnapshotListener(memberId));
+          return b.withStorage(storage);
+        });
   }
 
   private RaftServer createServer(
@@ -367,7 +410,7 @@ public final class RaftRule extends ExternalResource {
             .withProtocol(protocol);
     final RaftServer server = configurator.apply(defaults).build();
 
-    servers.add(server);
+    servers.put(memberId.id(), server);
     return server;
   }
 
@@ -378,6 +421,7 @@ public final class RaftRule extends ExternalResource {
   private RaftStorage createStorage(
       final MemberId memberId,
       final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
+
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
             .withStorageLevel(StorageLevel.DISK)
@@ -389,11 +433,11 @@ public final class RaftRule extends ExternalResource {
   }
 
   private Optional<RaftServer> getLeader() {
-    return servers.stream().filter(s -> s.getRole() == Role.LEADER).findFirst();
+    return servers.values().stream().filter(s -> s.getRole() == Role.LEADER).findFirst();
   }
 
   private Optional<RaftServer> getFollower() {
-    return servers.stream().filter(s -> s.getRole() == Role.FOLLOWER).findFirst();
+    return servers.values().stream().filter(s -> s.getRole() == Role.FOLLOWER).findFirst();
   }
 
   public long appendEntries(final int count) throws Exception {
@@ -453,6 +497,38 @@ public final class RaftRule extends ExternalResource {
   @Override
   public String toString() {
     return "RaftRule with " + nodeCount + " nodes.";
+  }
+
+  private final class RaftSnapshotListener implements SnapshotListener {
+
+    private final MemberId memberId;
+
+    public RaftSnapshotListener(final MemberId memberId) {
+      this.memberId = memberId;
+    }
+
+    @Override
+    public void onNewSnapshot(final Snapshot snapshot, final SnapshotStore store) {
+      final var raftServer = servers.get(memberId.id());
+      final var raftContext = raftServer.getContext();
+      final var serviceManager = raftContext.getServiceManager();
+      serviceManager.setCompactableIndex(snapshot.index());
+
+      raftServer
+          .compact()
+          .whenComplete(
+              (v, t) -> {
+                final var latch = compactAwaiters.get(memberId.id()).get();
+                if (latch != null) {
+                  latch.countDown();
+                }
+              });
+    }
+
+    @Override
+    public void onSnapshotDeletion(final Snapshot snapshot, final SnapshotStore store) {
+      // what should I do
+    }
   }
 
   private static final class CommitAwaiter {

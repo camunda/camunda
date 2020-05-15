@@ -21,7 +21,6 @@ import io.atomix.storage.journal.Indexed;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -118,19 +117,97 @@ public class RaftFailOverTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/4467")
-  public void testNodeCatchUpAfterCompaction() throws Exception {
+  public void shouldDoSnapshot() throws Exception {
     // given
-    raftRule.shutdownServer("1");
-    raftRule.awaitNewLeader();
-    raftRule.appendEntries(100);
-    raftRule.tryToCompactLogsOnServersExcept("1", 100).join();
+    raftRule.appendEntries(128);
 
     // when
-    final var future = raftRule.startServer("1");
+    raftRule.doSnapshot(100);
 
     // then
-    future.join();
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
+  }
+
+  @Test
+  public void shouldCompactLogOnSnapshot() throws Exception {
+    // given
+    raftRule.appendEntries(128);
+    final var memberLogs = raftRule.getMemberLogs();
+
+    // when
+    raftRule.doSnapshot(100);
+
+    // then
+    final var compactedLogs = raftRule.getMemberLogs();
+
+    assertThat(compactedLogs.isEmpty()).isFalse();
+    for (final String raftMember : compactedLogs.keySet()) {
+      final var compactedLog = compactedLogs.get(raftMember);
+      final var previousLog = memberLogs.get(raftMember);
+      assertThat(compactedLog.size()).isLessThan(previousLog.size());
+      assertThat(compactedLog).isSubsetOf(previousLog);
+    }
+  }
+
+  @Test
+  public void shouldReplicateSnapshotOnJoin() throws Exception {
+    // given
+    final var follower = raftRule.shutdownFollower();
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(100);
+
+    // when
+    raftRule.startNode(follower);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
+    final var snapshot = raftRule.snapshotOnNode(follower);
+
+    assertThat(snapshot.index()).isEqualTo(100);
+    assertThat(snapshot.term()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldTakeMultipleSnapshotAndReplicateSnapshotAfterRestart() throws Exception {
+    // given
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(100);
+    final var follower = raftRule.shutdownFollower();
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(200);
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(300);
+
+    // when
+    raftRule.startNode(follower);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(300)).isTrue();
+    final var snapshot = raftRule.snapshotOnNode(follower);
+
+    assertThat(snapshot.index()).isEqualTo(300);
+    assertThat(snapshot.term()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldReplicateSnapshotToOldLeaderAfterRestart() throws Exception {
+    // given
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(100);
+    final var leader = raftRule.shutdownLeader();
+    raftRule.awaitNewLeader();
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(200);
+
+    // when
+    raftRule.startNode(leader);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(200)).isTrue();
+    final var snapshot = raftRule.snapshotOnNode(leader);
+
+    assertThat(snapshot.index()).isEqualTo(200);
+    assertThat(snapshot.term()).isGreaterThan(1);
   }
 
   private void assertMemberLogs(final Map<String, List<Indexed<?>>> memberLog) {
