@@ -19,6 +19,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -146,6 +147,32 @@ public class EventSequenceCountReader {
       throw new OptimizeRuntimeException(errorMessage, e);
     }
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
+  }
+
+  public List<EventSequenceCountDto> getAllSequenceCounts() {
+    log.debug("Fetching all event sequences for index key: {}", indexKey);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(getIndexName())
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResponse;
+    try {
+      scrollResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      final String errorMessage = String.format("Was not able to retrieve event sequence counts for index key %s!", indexKey);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResponse,
+      EventSequenceCountDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
   }
 
   private QueryBuilder buildSequencedEventsQuery(

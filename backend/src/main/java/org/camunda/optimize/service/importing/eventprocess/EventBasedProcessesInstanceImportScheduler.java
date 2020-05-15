@@ -132,7 +132,4 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     return configurationService.getEventBasedProcessConfiguration();
   }
 
-  private EventImportConfiguration getEventImportConfiguration() {
-    return configurationService.getEventImportConfiguration();
-  }
 }

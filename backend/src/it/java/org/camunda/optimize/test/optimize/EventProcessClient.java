@@ -24,7 +24,6 @@ import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
-import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -51,7 +50,11 @@ public class EventProcessClient {
   }
 
   public OptimizeRequestExecutor createCreateEventProcessMappingRequest(final EventProcessMappingDto eventProcessMappingDto) {
-    return getRequestExecutor().buildCreateEventProcessMappingRequest(toEventProcessMappingCreateRequestDto(eventProcessMappingDto));
+    return createCreateEventProcessMappingRequest(toEventProcessMappingCreateRequestDto(eventProcessMappingDto));
+  }
+
+  public OptimizeRequestExecutor createCreateEventProcessMappingRequest(final EventProcessMappingCreateRequestDto createRequest) {
+    return getRequestExecutor().buildCreateEventProcessMappingRequest(createRequest);
   }
 
   public String createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {

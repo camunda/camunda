@@ -260,6 +260,7 @@ public class OptimizeRequestExecutor {
     this.path = null;
     this.method = null;
     this.queryParams = null;
+    this.mediaType = MediaType.APPLICATION_JSON;
     this.cookies.clear();
     this.requestHeaders.clear();
   }
