@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
@@ -103,6 +104,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EV
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -567,6 +569,16 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       //nothing to do
       log.error("can't clean optimize indexes", e);
     }
+  }
+
+  public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
+    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
+    return mapHits(response.getHits(), ProcessDefinitionOptimizeDto.class, getObjectMapper());
+  }
+
+  public List<TenantDto> getAllTenants() {
+    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
+    return mapHits(response.getHits(), TenantDto.class, getObjectMapper());
   }
 
   public List<EventDto> getAllStoredExternalEvents() {

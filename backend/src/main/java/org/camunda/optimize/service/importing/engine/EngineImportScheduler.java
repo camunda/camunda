@@ -55,6 +55,7 @@ public class EngineImportScheduler extends AbstractScheduledService {
 
   public synchronized void startImportScheduling() {
     log.info("Start scheduling import from engine {}.", engineAlias);
+    this.isImporting = true;
     startScheduling();
   }
 

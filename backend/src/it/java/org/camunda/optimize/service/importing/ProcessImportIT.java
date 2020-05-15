@@ -72,12 +72,12 @@ public class ProcessImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     BpmnModelInstance exampleProcess = Bpmn.createExecutableProcess().name("foo").startEvent().endEvent().done();
     engineIntegrationExtension.deployAndStartProcess(exampleProcess);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()).hasSizeGreaterThan(0);
     embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()
       .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);

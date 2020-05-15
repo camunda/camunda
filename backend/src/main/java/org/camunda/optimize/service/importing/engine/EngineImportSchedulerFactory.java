@@ -6,14 +6,11 @@
 package org.camunda.optimize.service.importing.engine;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.http.impl.nio.codecs.LengthDelimitedEncoder;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerProvider;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
-import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.UserOperationLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.factory.ActivityInstanceEngineImportMediatorFactory;
 import org.camunda.optimize.service.importing.engine.mediator.factory.DecisionDefinitionEngineImportMediatorFactory;
 import org.camunda.optimize.service.importing.engine.mediator.factory.DecisionDefinitionInstanceEngineImportMediatorFactory;
@@ -67,21 +64,10 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
 
   private List<EngineImportScheduler> buildSchedulers() {
     final List<EngineImportScheduler> result = new ArrayList<>();
-
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       try {
         final List<EngineImportMediator> mediators = createMediatorList(engineContext);
-        final EngineImportScheduler scheduler = new EngineImportScheduler(
-          mediators,
-          engineContext.getEngineAlias()
-        );
-
-        if (configurationService.isEngineImportEnabled(engineContext.getEngineAlias())) {
-          scheduler.startImportScheduling();
-        } else {
-          logger.info("Engine import was disabled by config for engine with alias {}.", engineContext.getEngineAlias());
-        }
-
+        final EngineImportScheduler scheduler = new EngineImportScheduler(mediators, engineContext.getEngineAlias());
         result.add(scheduler);
       } catch (Exception e) {
         logger.error("Can't create scheduler for engine [{}]", engineContext.getEngineAlias(), e);

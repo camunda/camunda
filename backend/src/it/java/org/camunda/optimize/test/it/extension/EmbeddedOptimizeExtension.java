@@ -174,6 +174,10 @@ public class EmbeddedOptimizeExtension
     getOptimize().startEngineImportSchedulers();
   }
 
+  public void stopEngineImportScheduling() {
+    getOptimize().stopEngineImportSchedulers();
+  }
+
   @SneakyThrows
   public void importAllEngineData() {
     boolean isDoneImporting;

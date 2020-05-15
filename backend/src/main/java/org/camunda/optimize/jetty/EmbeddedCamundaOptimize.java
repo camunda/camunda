@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.jetty;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.CamundaOptimize;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -44,6 +45,7 @@ import static com.google.common.net.HttpHeaders.X_XSS_PROTECTION;
  * Jetty embedded server wrapping jersey servlet handler and loading properties from
  * service and environment property files.
  */
+@Slf4j
 public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   private static final String PROTOCOL = "http/1.1";
@@ -67,10 +69,10 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   private void disableServerSignature(Server jettyServer) {
-    for(Connector y : jettyServer.getConnectors()) {
-      for(ConnectionFactory x  : y.getConnectionFactories()) {
-        if(x instanceof HttpConnectionFactory) {
-          ((HttpConnectionFactory)x).getHttpConfiguration().setSendServerVersion(false);
+    for (Connector y : jettyServer.getConnectors()) {
+      for (ConnectionFactory x : y.getConnectionFactories()) {
+        if (x instanceof HttpConnectionFactory) {
+          ((HttpConnectionFactory) x).getHttpConfiguration().setSendServerVersion(false);
         }
       }
     }
@@ -93,7 +95,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
     initWebSockets(context);
 
-    jettyServer.setRequestLog(new CustomRequestLog(new Slf4jRequestLogWriter(),  CustomRequestLog.EXTENDED_NCSA_FORMAT));
+    jettyServer.setRequestLog(new CustomRequestLog(new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT));
 
     return jettyServer;
   }
@@ -207,45 +209,41 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     jettyServer.destroy();
   }
 
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return jerseyCamundaOptimize.getApplicationContext().getBean(ElasticsearchImportJobExecutor.class);
-  }
-
   @Override
   public void startEngineImportSchedulers() {
-    boolean oneStarted = false;
-
-    while (!oneStarted) {
-      EngineImportSchedulerFactory importSchedulerFactory = getImportSchedulerFactory();
-      List<EngineImportScheduler> importSchedulers = importSchedulerFactory.getImportSchedulers();
-      if (importSchedulers != null) {
-        for (EngineImportScheduler scheduler : importSchedulers) {
+    EngineImportSchedulerFactory importSchedulerFactory = getImportSchedulerFactory();
+    List<EngineImportScheduler> importSchedulers = importSchedulerFactory.getImportSchedulers();
+    if (importSchedulers != null) {
+      for (EngineImportScheduler scheduler : importSchedulers) {
+        if (getConfigurationService().isEngineImportEnabled(scheduler.getEngineAlias())) {
           scheduler.startImportScheduling();
-          oneStarted = true;
+        } else {
+          log.info("Engine import was disabled by config for engine with alias {}.", scheduler.getEngineAlias());
         }
       }
     }
   }
 
-  private EngineImportSchedulerFactory getImportSchedulerFactory() {
-    return getOptimizeApplicationContext().getBean(EngineImportSchedulerFactory.class);
-  }
-
   @Override
-  public void disableEngineImportSchedulers() {
+  public void stopEngineImportSchedulers() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       scheduler.stopImportScheduling();
     }
   }
 
-  @Override
-  public void enableEngineImportSchedulers() {
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.startImportScheduling();
-    }
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return getOptimizeApplicationContext().getBean(ElasticsearchImportJobExecutor.class);
   }
 
   protected ApplicationContext getOptimizeApplicationContext() {
     return jerseyCamundaOptimize.getApplicationContext();
+  }
+
+  private ConfigurationService getConfigurationService() {
+    return getOptimizeApplicationContext().getBean(ConfigurationService.class);
+  }
+
+  private EngineImportSchedulerFactory getImportSchedulerFactory() {
+    return getOptimizeApplicationContext().getBean(EngineImportSchedulerFactory.class);
   }
 }

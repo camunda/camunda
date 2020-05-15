@@ -162,8 +162,11 @@ public class AbstractMultiEngineIT extends AbstractIT {
   }
 
   protected void addSecondEngineToConfiguration() {
-    addEngineToConfiguration(secondaryEngineIntegrationExtension.getEngineName());
-    embeddedOptimizeExtension.reloadConfiguration();
+    addSecondEngineToConfiguration(true);
+  }
+
+  protected void addSecondEngineToConfiguration(final boolean importEnabled) {
+    addEngineToConfiguration(secondaryEngineIntegrationExtension.getEngineName(), importEnabled);
   }
 
   protected void addSecureSecondEngineToConfiguration() {
@@ -172,34 +175,43 @@ public class AbstractMultiEngineIT extends AbstractIT {
       SECURE_REST_ENDPOINT,
       true,
       "admin",
-      "admin"
+      "admin",
+      true
     );
   }
 
-  protected void addEngineToConfiguration(String engineName) {
-    addEngineToConfiguration(engineName, REST_ENDPOINT, false, "", "");
+  protected void addEngineToConfiguration(String engineName, final boolean importEnabled) {
+    addEngineToConfiguration(engineName, REST_ENDPOINT, false, "", "", importEnabled);
   }
 
   protected void addNonExistingSecondEngineToConfiguration() {
-    addEngineToConfiguration("notExistingEngine", "http://localhost:9999/engine-rest", false, "", "");
-    embeddedOptimizeExtension.reloadConfiguration();
+    addEngineToConfiguration("notExistingEngine", "http://localhost:9999/engine-rest", false, "", "", true);
   }
 
-  protected void addEngineToConfiguration(String engineName, String restEndpoint, boolean withAuthentication,
-                                          String username, String password) {
-    EngineAuthenticationConfiguration engineAuthenticationConfiguration = constructEngineAuthenticationConfiguration(
-      withAuthentication,
-      username,
-      password
-    );
+  protected EngineConfiguration addEngineToConfiguration(final String engineName,
+                                                         final String restEndpoint,
+                                                         final boolean withAuthentication,
+                                                         final String username,
+                                                         final String password,
+                                                         final boolean importEnabled) {
+    final EngineConfiguration engineConfiguration = EngineConfiguration.builder()
+      .name(engineName)
+      .rest(restEndpoint)
+      .importEnabled(importEnabled)
+      .authentication(
+        EngineAuthenticationConfiguration.builder()
+          .enabled(withAuthentication)
+          .user(username)
+          .password(password)
+          .build())
+      .build();
 
-    EngineConfiguration anotherEngineConfig = new EngineConfiguration();
-    anotherEngineConfig.setName(engineName);
-    anotherEngineConfig.setRest(restEndpoint);
-    anotherEngineConfig.setAuthentication(engineAuthenticationConfiguration);
     configurationService
       .getConfiguredEngines()
-      .put(SECOND_ENGINE_ALIAS, anotherEngineConfig);
+      .put(SECOND_ENGINE_ALIAS, engineConfiguration);
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    return engineConfiguration;
   }
 
   protected void removeDefaultEngineConfiguration() {
@@ -209,16 +221,6 @@ public class AbstractMultiEngineIT extends AbstractIT {
     embeddedOptimizeExtension.reloadConfiguration();
   }
 
-
-  protected EngineAuthenticationConfiguration constructEngineAuthenticationConfiguration(boolean withAuthentication,
-                                                                                         String username,
-                                                                                         String password) {
-    EngineAuthenticationConfiguration engineAuthenticationConfiguration = new EngineAuthenticationConfiguration();
-    engineAuthenticationConfiguration.setEnabled(withAuthentication);
-    engineAuthenticationConfiguration.setPassword(password);
-    engineAuthenticationConfiguration.setUser(username);
-    return engineAuthenticationConfiguration;
-  }
 
   protected void setDefaultEngineDefaultTenant(final DefaultTenant defaultTenant) {
     embeddedOptimizeExtension.getConfigurationService()

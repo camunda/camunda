@@ -6,19 +6,29 @@
 package org.camunda.optimize.service.util.configuration.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.configuration.ConfigurationUtil;
 
 import java.util.Optional;
 
+@AllArgsConstructor
+@Builder
 @Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EngineConfiguration {
 
   private String name;
+  @Builder.Default
   private DefaultTenant defaultTenant = new DefaultTenant();
   private String rest;
   private EngineWebappsConfiguration webapps;
+  @Builder.Default
   private boolean importEnabled = false;
+  @Builder.Default
   private boolean eventImportEnabled = false;
 
   private EngineAuthenticationConfiguration authentication;
