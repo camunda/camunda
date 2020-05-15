@@ -23,11 +23,13 @@ public class CreateWorkflowHandler {
 
   private final BrokerClient brokerClient;
   private final RoundRobinDispatchStrategy roundRobinDispatchStrategy;
+  private BrokerTopologyManager topologyManager;
 
   public CreateWorkflowHandler(
       final BrokerClient brokerClient, final BrokerTopologyManager topologyManager) {
     this.brokerClient = brokerClient;
     roundRobinDispatchStrategy = new RoundRobinDispatchStrategy(topologyManager);
+    this.topologyManager = topologyManager;
   }
 
   public void createWorkflow(
@@ -90,6 +92,6 @@ public class CreateWorkflowHandler {
 
   private PartitionIdIterator partitionIdIteratorForType(final int partitionsCount) {
     final int nextPartitionId = roundRobinDispatchStrategy.determinePartition();
-    return new PartitionIdIterator(nextPartitionId, partitionsCount);
+    return new PartitionIdIterator(nextPartitionId, partitionsCount, topologyManager);
   }
 }

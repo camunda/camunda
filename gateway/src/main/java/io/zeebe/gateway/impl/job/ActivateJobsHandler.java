@@ -12,16 +12,19 @@ import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.RequestMapper;
 import io.zeebe.gateway.ResponseMapper;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.RequestDispatchStrategy;
+import io.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ActivateJobsHandler {
 
-  private final Map<String, Integer> jobTypeToNextPartitionId = new HashMap<>();
+  private final Map<String, RequestDispatchStrategy> jobTypeToNextPartitionId =
+      new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
 
@@ -117,9 +120,10 @@ public class ActivateJobsHandler {
 
   private PartitionIdIterator partitionIdIteratorForType(
       final String jobType, final int partitionsCount) {
-    final Integer nextPartitionId =
-        jobTypeToNextPartitionId.compute(
-            jobType, (t, partitionId) -> partitionId == null ? 0 : partitionId + 1);
-    return new PartitionIdIterator(nextPartitionId, partitionsCount);
+    final RequestDispatchStrategy nextPartitionSupplier =
+        jobTypeToNextPartitionId.computeIfAbsent(
+            jobType, t -> new RoundRobinDispatchStrategy(topologyManager));
+    return new PartitionIdIterator(
+        nextPartitionSupplier.determinePartition(), partitionsCount, topologyManager);
   }
 }
