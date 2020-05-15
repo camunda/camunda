@@ -42,3 +42,18 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+## Run operate backend
+
+While developing the frontend, you might need to have Elasticsearch, Zeebe and the backend up and running.
+In this case you can run the following command in the root of the project:
+
+```sh
+make env-up
+```
+
+You can then destroy the environment by pressing Ctrl+C and running:
+
+```sh
+make env-down
+```

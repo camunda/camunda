@@ -115,7 +115,7 @@
         <artifactId>micrometer-registry-prometheus</artifactId>
         <version>${version.micrometer}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>io.micrometer</groupId>
         <artifactId>micrometer-core</artifactId>
@@ -195,6 +195,12 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
           <version>${version.spring.boot}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>com.google.cloud.tools</groupId>
+          <artifactId>jib-maven-plugin</artifactId>
+          <version>2.2.0</version>
         </plugin>
 
         <plugin>

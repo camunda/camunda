@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -91,19 +93,19 @@
       <artifactId>tasklist-webjar</artifactId>
       <version>${project.version}</version>
     </dependency>
-    
+
     <!-- Micrometer Prometheus -->
     <dependency>
-  	  <groupId>io.micrometer</groupId>
-  	  <artifactId>micrometer-registry-prometheus</artifactId>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
-    
-     <!-- OAuth0 -->
-   <dependency>
-  	  <groupId>com.auth0</groupId>
-  	  <artifactId>mvc-auth-commons</artifactId>
-  	  <version>(1.0,2.0)</version>
-  </dependency>
+
+    <!-- OAuth0 -->
+    <dependency>
+      <groupId>com.auth0</groupId>
+      <artifactId>mvc-auth-commons</artifactId>
+      <version>(1.0,2.0)</version>
+    </dependency>
 
     <!-- TEST -->
 
@@ -162,6 +164,21 @@
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <configuration>
+          <to>
+            <image>docker.io/camunda/zeebe-tasklist</image>
+          </to>
+          <container>
+            <ports>
+              <port>8080</port>
+            </ports>
+          </container>
         </configuration>
       </plugin>
 

@@ -1,11 +1,16 @@
 version: '2.4'
+
+networks:
+  zeebe_network:
+    driver: bridge
+
 services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.8
     container_name: elasticsearch
     environment:
-      - cluster.name=docker-cluster
+      - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
     ulimits:
@@ -15,41 +20,97 @@ services:
     ports:
       - 9200:9200
       - 9300:9300
+    networks:
+      - zeebe_network
     restart: always
 
   kibana:
     image: docker.elastic.co/kibana/kibana-oss:6.8.6
     ports:
       - 5601:5601
-    links:
+    environment:
+      - elasticsearch.hosts=elasticsearch:9200
+    depends_on:
       - elasticsearch
+    networks:
+      - zeebe_network
 
   zeebe:
     container_name: zeebe
     image: camunda/zeebe:0.24.0-alpha1
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
+      - ZEEBE_BROKER_NETWORK_HOST=zeebe
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26500:26500
       - 8000:8000
-    restart: always
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
+    depends_on:
+      - elasticsearch
+    networks:
+      - zeebe_network
+    restart: always
+
+  zeebe-tasklist:
+    container_name: zeebe-tasklist
+    image: camunda/zeebe-tasklist:latest
+    ports:
+      - 8080:8080
+    environment:
+      - zeebe.tasklist.elasticsearch.host=elasticsearch
+      - zeebe.tasklist.zeebeElasticsearch.host=elasticsearch
+      - zeebe.tasklist.zeebe.brokerContactPoint=zeebe:26500
+      - spring.profiles.active=dev,dev-data,auth
+    volumes:
+      - ./distro/src/main/config/application.yml:/app/resources/application.yaml
+      - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
+    depends_on:
+      - elasticsearch
+      - zeebe
+    networks:
+      - zeebe_network
+    restart: always
 
   zeebe-e2e:
     container_name: zeebe-e2e
     image: camunda/zeebe:0.24.0-alpha1
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
+      - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
+      - ZEEBE_BROKER_GATEWAY_NETWORK_PORT=26503
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX=e2e
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
-      - 26503:26500
+      - 26503:26503
       - 8001:8000
-    restart: always
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
+    networks:
+      - zeebe_network
+    restart: always
+
+  zeebe-tasklist-e2e:
+    container_name: zeebe-tasklist-e2e
+    image: camunda/zeebe-tasklist:latest
+    ports:
+      - 8081:8080
+    environment:
+      - zeebe.tasklist.elasticsearch.host=elasticsearch
+      - zeebe.tasklist.elasticsearch.indexPrefix=e2etasklist
+      - zeebe.tasklist.zeebeElasticsearch.host=elasticsearch
+      - zeebe.tasklist.zeebeElasticsearch.prefix=e2e
+      - zeebe.tasklist.zeebe.brokerContactPoint=zeebe-e2e:26503
+      - zeebe.tasklist.importer.readerBackoff=0
+      - zeebe.tasklist.importer.schedulerBackoff=0
+    volumes:
+      - ./distro/src/main/config/application.yml:/app/resources/application.yaml
+      - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
+    depends_on:
+      - elasticsearch
+      - zeebe-e2e
+    networks:
+      - zeebe_network
+    restart: always
