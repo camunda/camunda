@@ -37,7 +37,7 @@ spec:
   volumes:
   - name: cambpm-config
     configMap:
-      # Defined in: https://github.com/camunda-internal/gcloud-infrastructure/tree/master/camunda-ci/deployments/optimize
+      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
       name: ci-optimize-cambpm-config
   - name: gcloud2postgres
     emptyDir: {}

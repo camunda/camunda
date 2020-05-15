@@ -102,8 +102,8 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        dir('gcloud-infrastructure') {
-          git url: 'git@github.com:camunda-internal/gcloud-infrastructure',
+        dir('infra-core') {
+          git url: 'git@github.com:camunda/infra-core',
             branch: "${params.INFRASTRUCTURE_BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
@@ -158,11 +158,11 @@ pipeline {
               env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty("camunda.engine.version")
             }
           }
-          dir('gcloud-infrastructure') {
+          dir('infra-core') {
             sh("""
               sed -i -e "s/@CAMBPM_VERSION@/$CAMBPM_VERSION/g" -e "s/@ES_VERSION@/$ES_VERSION/g" ${WORKSPACE}/optimize/.ci/branch-deployment/deployment.yml
               ./cmd/k8s/deploy-template-to-branch \
-              ${WORKSPACE}/gcloud-infrastructure/camunda-ci/deployments/optimize-branch \
+              ${WORKSPACE}/infra-core/camunda-ci/deployments/optimize-branch \
               ${WORKSPACE}/optimize/.ci/branch-deployment \
               ${params.BRANCH} \
               optimize
@@ -172,7 +172,7 @@ pipeline {
       }
       post {
         always {
-          archiveArtifacts artifacts: 'gcloud-infrastructure/rendered-templates/**/*'
+          archiveArtifacts artifacts: 'infra-core/rendered-templates/**/*'
         }
       }
     }
