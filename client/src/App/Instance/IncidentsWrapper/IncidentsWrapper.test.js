@@ -21,17 +21,8 @@ import IncidentsBanner from './IncidentsBanner';
 import IncidentsFilter from './IncidentsFilter';
 
 import {testData} from './IncidentsWrapper.setup';
-import {Router, Route} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
 
 jest.mock('modules/utils/bpmn');
-
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useParams: () => ({
-    id: 1,
-  }),
-}));
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -58,15 +49,10 @@ jest.mock('react-transition-group', () => {
   };
 });
 
-const history = createMemoryHistory({initialEntries: ['/instances/1']});
 const mountNode = () => {
   return mount(
     <ThemeProvider>
-      <Router history={history}>
-        <Route path="/instances/:id">
-          <IncidentsWrapper {...testData.props.default} />
-        </Route>
-      </Router>
+      <IncidentsWrapper {...testData.props.default} />
     </ThemeProvider>
   );
 };
@@ -82,6 +68,7 @@ describe('IncidentsWrapper', () => {
     const bar = node.find(IncidentsBanner);
 
     expect(bar).toExist();
+    expect(bar.props().id).toEqual(testData.props.default.instance.id);
     expect(bar.props().count).toEqual(testData.props.default.incidentsCount);
   });
 
@@ -294,13 +281,7 @@ describe('IncidentsWrapper', () => {
       // Incident is resolved
 
       node.setProps({
-        children: (
-          <Router history={history}>
-            <Route path="/instances/:id">
-              <IncidentsWrapper {...testData.props.incidentResolved} />
-            </Route>
-          </Router>
-        ),
+        children: <IncidentsWrapper {...testData.props.incidentResolved} />,
       });
       node.update();
 

@@ -5,153 +5,175 @@
  */
 
 import React from 'react';
+import {shallow} from 'enzyme';
+
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
-import {STATE, OPERATION_STATE} from 'modules/constants';
+
+import {createInstance, createOperation} from 'modules/testUtils';
+
+import {STATE, OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
+
 import Operations from './Operations';
-import {render, screen, fireEvent} from '@testing-library/react';
+import OperationStatus from 'modules/components/OperationStatus';
+import OperationItems from './OperationItems';
+
+jest.mock('modules/utils/bpmn');
 
 describe('Operations', () => {
-  describe('Operation Buttons', () => {
-    it('should render retry and cancel button if instance is running and has an incident', () => {
-      render(
-        <Operations.WrappedComponent
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-        />
-      );
+  let mockOperation, mockInstance, onButtonClick;
 
-      expect(
-        screen.getByTitle(`Retry Instance instance_1`)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByTitle(`Cancel Instance instance_1`)
-      ).toBeInTheDocument();
-    });
-    it('should render only cancel button if instance is running and does not have an incident', () => {
-      render(
-        <Operations.WrappedComponent
-          instance={{id: 'instance_1', state: STATE.ACTIVE, operations: []}}
-        />
-      );
-
-      expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
-      ).not.toBeInTheDocument();
-      expect(
-        screen.getByTitle(`Cancel Instance instance_1`)
-      ).toBeInTheDocument();
-    });
-    it('should not render retry and cancel buttons if instance is completed', () => {
-      render(
-        <Operations.WrappedComponent
-          instance={{id: 'instance_1', state: STATE.COMPLETED, operations: []}}
-        />
-      );
-
-      expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTitle(`Cancel Instance instance_1`)
-      ).not.toBeInTheDocument();
-    });
-    it('should not render retry and cancel buttons if instance is canceled', () => {
-      render(
-        <Operations.WrappedComponent
-          instance={{id: 'instance_1', state: STATE.COMPLETED, operations: []}}
-        />
-      );
-
-      expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTitle(`Cancel Instance instance_1`)
-      ).not.toBeInTheDocument();
-    });
-
-    it('should display spinner after clicking retry button', () => {
-      render(
-        <Operations.WrappedComponent
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-          onButtonClick={jest.fn()}
-          dataManager={createMockDataManager()}
-        />
-      );
-
-      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByTitle(`Retry Instance instance_1`));
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-    });
-
-    it('should display spinner after clicking cancel button', () => {
-      render(
-        <Operations.WrappedComponent
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-          onButtonClick={jest.fn()}
-          dataManager={createMockDataManager()}
-        />
-      );
-
-      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByTitle(`Cancel Instance instance_1`));
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-    });
+  it('should match snapshots', () => {
+    // when
+    mockOperation = createOperation({state: OPERATION_STATE.SCHEDULED});
+    mockInstance = createInstance({operations: [mockOperation]});
+    let node = shallow(<Operations.WrappedComponent instance={mockInstance} />);
+    //then
+    expect(node).toMatchSnapshot();
   });
-  describe('Spinner', () => {
-    it('should not display spinner', () => {
-      render(
-        <Operations.WrappedComponent
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-        />
-      );
 
-      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
+  it('should pass props OperationStatus', () => {
+    // when
+    mockOperation = createOperation({
+      state: OPERATION_STATE.SCHEDULED,
+      type: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
     });
-    it('should display spinner if it is forced', () => {
-      render(
-        <Operations.WrappedComponent
-          instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-          forceSpinner={true}
-        />
-      );
+    mockInstance = createInstance({operations: [mockOperation]});
+    const mockProps = {
+      forceSpinner: true,
+      onButtonClick: jest.fn(),
+    };
 
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    const node = shallow(
+      <Operations.WrappedComponent instance={mockInstance} {...mockProps} />
+    );
+
+    //then
+    expect(node.find(OperationStatus).props().operationState).toBe(
+      OPERATION_STATE.SCHEDULED
+    );
+
+    expect(node.find(OperationStatus).props().operationType).toBe(
+      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+    );
+    expect(node.find(OperationStatus).props().forceSpinner).toEqual(
+      mockProps.forceSpinner
+    );
+  });
+
+  describe('Operation Buttons', () => {
+    it('should render operation buttons for active instance', () => {
+      // when
+      mockInstance = createInstance({state: STATE.ACTIVE, operations: []});
+      const node = shallow(
+        <Operations.WrappedComponent instance={mockInstance} />
+      );
+      const OperationItemsNode = node.find(OperationItems);
+      const Button = OperationItemsNode.find(OperationItems.Item);
+
+      // then
+      expect(OperationItemsNode).toExist();
+      expect(Button.length).toEqual(1);
+      expect(Button.props().type).toEqual(
+        OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+      );
     });
 
-    it("should display spinner if incident's latest operation is scheduled, locked or sent", () => {
-      const {rerender} = render(
-        <Operations.WrappedComponent
-          instance={{
-            id: 'instance_1',
-            state: STATE.INCIDENT,
-            operations: [{type: 'Retry', state: OPERATION_STATE.SCHEDULED}],
-          }}
-        />
+    it('should render operation buttons for instance with incidents', () => {
+      // when
+      mockInstance = createInstance({state: STATE.INCIDENT, operations: []});
+      const node = shallow(
+        <Operations.WrappedComponent instance={mockInstance} />
       );
+      const OperationItemsNode = node.find(OperationItems);
 
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+      // then
+      expect(OperationItemsNode).toExist();
+      expect(OperationItemsNode.find(OperationItems.Item).length).toEqual(2);
+      expect(
+        OperationItemsNode.find(OperationItems.Item).at(0).props().type
+      ).toEqual(OPERATION_TYPE.RESOLVE_INCIDENT);
+      expect(
+        OperationItemsNode.find(OperationItems.Item).at(1).props().type
+      ).toEqual(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE);
+    });
 
-      rerender(
-        <Operations.WrappedComponent
-          instance={{
-            id: 'instance_1',
-            state: STATE.INCIDENT,
-            operations: [{type: 'Retry', state: OPERATION_STATE.LOCKED}],
-          }}
-        />
-      );
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    describe('Retry', () => {
+      beforeEach(() => {
+        mockInstance = createInstance({state: STATE.INCIDENT});
+        onButtonClick = jest.fn();
+      });
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
 
-      rerender(
-        <Operations.WrappedComponent
-          instance={{
-            id: 'instance_1',
-            state: STATE.INCIDENT,
-            operations: [{type: 'Retry', state: OPERATION_STATE.SENT}],
-          }}
-        />
-      );
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+      it('should handle retry of instance incident ', async () => {
+        //given
+        const node = shallow(
+          <Operations.WrappedComponent
+            instance={mockInstance}
+            dataManager={createMockDataManager()}
+            onButtonClick={onButtonClick}
+          />
+        );
+
+        const operationItem = node.find(OperationItems.Item).at(0);
+
+        // when
+        operationItem.simulate('click');
+
+        const {dataManager} = node.instance().props;
+
+        expect(dataManager.applyOperation).toBeCalledWith(mockInstance.id, {
+          operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
+        });
+        // expect Spinner to appear
+        expect(node.find(OperationStatus).props().operationState).toEqual(
+          OPERATION_STATE.SCHEDULED
+        );
+
+        // expect callback to be called
+        expect(onButtonClick).toHaveBeenCalled();
+      });
+    });
+
+    describe('Cancel', () => {
+      beforeEach(() => {
+        mockInstance = createInstance({state: STATE.ACTIVE});
+        onButtonClick = jest.fn();
+      });
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+
+      it('should handle the cancelation of an instance ', async () => {
+        //given
+        const node = shallow(
+          <Operations.WrappedComponent
+            instance={mockInstance}
+            dataManager={createMockDataManager()}
+            onButtonClick={onButtonClick}
+          />
+        );
+        const operationItem = node.find(OperationItems.Item);
+
+        // when
+        operationItem.simulate('click');
+
+        const {dataManager} = node.instance().props;
+
+        // then
+        expect(dataManager.applyOperation).toBeCalledWith(mockInstance.id, {
+          operationType: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
+        });
+
+        // expect Spinner to appear
+        expect(node.find(OperationStatus).props().operationState).toEqual(
+          OPERATION_STATE.SCHEDULED
+        );
+
+        // expect callback to be called
+        expect(onButtonClick).toHaveBeenCalled();
+      });
     });
   });
 });

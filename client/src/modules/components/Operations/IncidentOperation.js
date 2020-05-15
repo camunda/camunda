@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
 
 import {OPERATION_TYPE, LOADING_STATE} from 'modules/constants';
-import Operations from 'modules/components/Operations';
+import OperationStatus from 'modules/components/OperationStatus';
 
 import OperationItems from './OperationItems';
 
@@ -63,17 +63,15 @@ class IncidentOperation extends React.Component {
   render() {
     const isSpinnerVisible =
       this.state.isSpinnerVisible || this.props.showSpinner;
+
     return (
       <Styled.Operations>
-        {isSpinnerVisible && (
-          <Operations.Spinner data-test="operation-spinner" />
-        )}
+        {isSpinnerVisible && <OperationStatus.Spinner />}
 
         <OperationItems>
           <OperationItems.Item
             type={OPERATION_TYPE.RESOLVE_INCIDENT}
             onClick={this.handleOnClick}
-            data-test="retry-incident"
             title="Retry Incident"
           />
         </OperationItems>

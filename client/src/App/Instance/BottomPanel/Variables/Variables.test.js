@@ -9,7 +9,6 @@ import {mount} from 'enzyme';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createVariables, setProps} from 'modules/testUtils';
-import {currentInstance} from 'modules/stores/currentInstance';
 
 import Variables from './Variables';
 
@@ -21,18 +20,12 @@ const MODE = {
 const mockProps = {
   variables: createVariables(),
   editMode: '',
+  isRunning: true,
   onVariableUpdate: jest.fn(),
   isEditable: true,
   setVariables: jest.fn(),
   setEditMode: jest.fn(),
 };
-
-jest.mock('modules/api/instances', () => ({
-  fetchWorkflowInstance: jest.fn().mockImplementation((instanceId) => {
-    if (instanceId === 'active_instance') return {state: 'ACTIVE'};
-    else if (instanceId === 'canceled_instance') return {state: 'CANCELED'};
-  }),
-}));
 
 function mountNode(props = {}) {
   return mount(
@@ -47,9 +40,8 @@ describe('Variables', () => {
     jest.clearAllMocks();
   });
 
-  it('should render variables table', async () => {
+  it('should render variables table', () => {
     // given
-    await currentInstance.fetchCurrentInstance('active_instance');
     const node = mountNode();
 
     // then
@@ -233,8 +225,7 @@ describe('Variables', () => {
   describe('Edit variable', () => {
     let node;
 
-    beforeEach(async () => {
-      await currentInstance.fetchCurrentInstance('active_instance');
+    beforeEach(() => {
       node = mountNode();
     });
 
@@ -243,11 +234,15 @@ describe('Variables', () => {
         "button[data-test='enter-edit-btn']"
       );
       expect(openInlineEditButtons).toHaveLength(3);
+
+      node = mountNode({isRunning: true});
+
+      openInlineEditButtons = node.find("button[data-test='enter-edit-btn']");
+      expect(openInlineEditButtons).toHaveLength(3);
     });
 
-    it('should NOT show edit in-line buttons for finished instances', async () => {
-      await currentInstance.fetchCurrentInstance('canceled_instance');
-      node = mountNode();
+    it('should NOT show edit in-line buttons for finished instances', () => {
+      node = mountNode({isRunning: false});
 
       let openInlineEditButtons = node.find(
         "button[data-test='enter-edit-btn']"

@@ -22,6 +22,7 @@ function IncidentsWrapper(props) {
   const {
     incidents,
     incidentsCount,
+    instance,
     errorTypes,
     flowNodes,
     selectedFlowNodeInstanceIds,
@@ -132,6 +133,7 @@ function IncidentsWrapper(props) {
   return (
     <>
       <IncidentsBanner
+        id={instance.id}
         count={incidentsCount}
         onClick={handleToggle}
         isOpen={isOpen}
@@ -165,6 +167,7 @@ function IncidentsWrapper(props) {
           />
           <IncidentsTable
             incidents={sortedIncidents}
+            instanceId={instance.id}
             selectedFlowNodeInstanceIds={selectedFlowNodeInstanceIds}
             sorting={sorting}
             onIncidentSelection={onIncidentSelection}
@@ -179,6 +182,7 @@ function IncidentsWrapper(props) {
 IncidentsWrapper.propTypes = {
   incidents: PropTypes.array,
   incidentsCount: PropTypes.number.isRequired,
+  instance: PropTypes.object.isRequired,
   selectedFlowNodeInstanceIds: PropTypes.array,
   onIncidentSelection: PropTypes.func.isRequired,
   flowNodes: PropTypes.object,

@@ -17,7 +17,11 @@ import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 
 import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
-import {mockProps, mockedExpandedPaneId} from './TopPanel.setup';
+import {
+  mockProps,
+  instanceWithIncident,
+  mockedExpandedPaneId,
+} from './TopPanel.setup';
 
 import {
   mockedModules,
@@ -32,7 +36,6 @@ import SplitPane from 'modules/components/SplitPane';
 import {ThemeProvider} from 'modules/theme';
 
 import TopPanel from './TopPanel';
-import {currentInstance} from 'modules/stores/currentInstance';
 
 jest.mock('modules/utils/bpmn');
 
@@ -42,12 +45,6 @@ jest.mock('../IncidentsWrapper', () => {
     return <div />;
   };
 });
-
-jest.mock('modules/api/instances', () => ({
-  fetchWorkflowInstance: jest
-    .fn()
-    .mockImplementation(() => ({state: 'INCIDENT'})),
-}));
 
 jest.mock('./InstanceHeader', () => {
   /* eslint react/prop-types: 0  */
@@ -85,9 +82,8 @@ describe('DiagramPanel', () => {
     expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
   });
 
-  it('should render diagram', async () => {
+  it('should render diagram', () => {
     // given
-    await currentInstance.fetchCurrentInstance(1);
     const node = mountTopPanel({...mockProps});
     const {props, subscriptions} = node
       .find(TopPanel.WrappedComponent)
@@ -148,12 +144,9 @@ describe('DiagramPanel', () => {
     localStorage.clear();
   });
 
-  it('should render incidentsTable', async () => {
+  it('should render incidentsTable', () => {
     // given
-
-    await currentInstance.fetchCurrentInstance(1);
-
-    const node = mountTopPanel({...mockProps});
+    const node = mountTopPanel(instanceWithIncident);
 
     const {props, subscriptions} = node
       .find(TopPanel.WrappedComponent)

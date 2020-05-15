@@ -6,7 +6,10 @@
 
 import styled from 'styled-components';
 
-export const Operations = styled.div`
-  display: flex;
-  align-items: center;
+import DefaultStateIcon from 'modules/components/StateIcon';
+
+export const StateIcon = styled(DefaultStateIcon)`
+  top: 0px;
+  min-width: 16px;
+  min-height: 16px;
 `;

@@ -10,19 +10,12 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 import {NavElement} from './NavElements';
 import * as Styled from './NavElements/styled';
-import DefaultStateIcon from 'modules/components/StateIcon';
 
 export const HEADER_HEIGHT = 56;
 const separator = themeStyle({
   dark: 'rgba(246, 252, 251, 0.5)',
   light: 'rgba(98, 98, 110, 0.25)',
 });
-
-export const StateIcon = styled(DefaultStateIcon)`
-  top: 0px;
-  min-width: 16px;
-  min-height: 16px;
-`;
 
 export const FilterNavElement = styled(NavElement)`
   ${Styled.NavigationLabel} {

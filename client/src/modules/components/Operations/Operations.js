@@ -8,8 +8,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {isEqual} from 'lodash';
 import {withData} from 'modules/DataManager';
+
 import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
-import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 
 import {
   getLatestOperation,
@@ -17,6 +17,7 @@ import {
   isRunning,
 } from 'modules/utils/instance';
 
+import OperationStatus from 'modules/components/OperationStatus';
 import OperationItems from './OperationItems';
 
 import * as Styled from './styled';
@@ -40,6 +41,7 @@ class Operations extends React.Component {
     const {operations} = this.props.instance;
     if (operations.length > 0) {
       const {type, state} = getLatestOperation(operations);
+
       this.setState({
         operationState: state,
         operationType: type,
@@ -88,24 +90,26 @@ class Operations extends React.Component {
     );
   };
 
+  renderOperationButtons = () => (
+    <OperationItems>
+      {isWithIncident(this.props.instance) &&
+        this.renderItem(OPERATION_TYPE.RESOLVE_INCIDENT)}
+      {isRunning(this.props.instance) &&
+        this.renderItem(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)}
+    </OperationItems>
+  );
+
   render() {
-    const {instance, selected, forceSpinner} = this.props;
     return (
       <Styled.Operations>
-        {(forceSpinner ||
-          ACTIVE_OPERATION_STATES.includes(this.state.operationState)) && (
-          <Styled.OperationSpinner
-            selected={selected}
-            title={`Instance ${instance.id} has scheduled Operations`}
-            data-test="operation-spinner"
-          />
-        )}
-        <OperationItems>
-          {isWithIncident(this.props.instance) &&
-            this.renderItem(OPERATION_TYPE.RESOLVE_INCIDENT)}
-          {isRunning(this.props.instance) &&
-            this.renderItem(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)}
-        </OperationItems>
+        <OperationStatus
+          forceSpinner={this.props.forceSpinner}
+          operationState={this.state.operationState}
+          operationType={this.state.operationType}
+          selected={this.props.selected}
+          instance={this.props.instance}
+        />
+        {this.renderOperationButtons()}
       </Styled.Operations>
     );
   }
@@ -113,5 +117,5 @@ class Operations extends React.Component {
 
 const WrappedOperation = withData(Operations);
 WrappedOperation.WrappedComponent = Operations;
-WrappedOperation.Spinner = Styled.OperationSpinner;
+
 export default WrappedOperation;

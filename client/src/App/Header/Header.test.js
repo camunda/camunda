@@ -7,9 +7,10 @@
 import React from 'react';
 import {Router} from 'react-router-dom';
 
-import {currentInstance} from 'modules/stores/currentInstance';
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import Header from './Header';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {createInstance} from 'modules/testUtils';
 import {createMemoryHistory} from 'history';
 import PropTypes from 'prop-types';
 import {render, within, fireEvent, screen} from '@testing-library/react';
@@ -31,14 +32,7 @@ jest.mock('modules/api/instances', () => ({
       withIncidents: 731,
     },
   })),
-  fetchWorkflowInstance: jest.fn().mockImplementation((instanceId) => {
-    if (instanceId === 'first_instance_id')
-      return {id: 'first_instance_id', state: 'ACTIVE'};
-    else if (instanceId === 'second_instance_id')
-      return {id: 'second_instance_id', state: 'ACTIVE'};
-  }),
 }));
-
 jest.mock('modules/api/header', () => ({
   fetchUser: jest.fn().mockImplementation(() => ({
     firstname: 'firstname',
@@ -57,6 +51,8 @@ const waitForComponentToLoad = async () => {
 };
 
 describe('Header', () => {
+  let dataManager;
+
   const MockApp = (props) => (
     <Router history={props.history ? props.history : createMemoryHistory()}>
       <ThemeProvider>
@@ -69,9 +65,14 @@ describe('Header', () => {
     history: PropTypes.object,
   };
 
+  beforeEach(() => {
+    dataManager = createMockDataManager();
+  });
+
   it('should render all header links', async () => {
     const mockProps = {
       location: location.dashboard,
+      dataManager,
       ...mockCollapsablePanelProps,
     };
     render(<MockApp {...mockProps} />);
@@ -89,6 +90,7 @@ describe('Header', () => {
   it('should render incident, filter and instances counts correctly', async () => {
     const mockProps = {
       location: location.dashboard,
+      dataManager,
       ...mockCollapsablePanelProps,
     };
     instances.setInstances({filteredInstancesCount: 200});
@@ -121,6 +123,7 @@ describe('Header', () => {
   it('should render user element', async () => {
     const mockProps = {
       location: location.dashboard,
+      dataManager,
       ...mockCollapsablePanelProps,
     };
     render(<MockApp {...mockProps} />);
@@ -132,6 +135,7 @@ describe('Header', () => {
   it('should highlight links correctly on dashboard page', async () => {
     const mockProps = {
       location: location.dashboard,
+      dataManager,
       ...mockCollapsablePanelProps,
     };
     render(<MockApp {...mockProps} />);
@@ -149,6 +153,7 @@ describe('Header', () => {
   it('should highlight links correctly on instances page', async () => {
     const mockProps = {
       location: location.instances,
+      dataManager,
       ...mockCollapsablePanelProps,
     };
     render(<MockApp {...mockProps} />);
@@ -166,6 +171,7 @@ describe('Header', () => {
   it('should render instance details skeleton on instance view', async () => {
     const mockProps = {
       location: location.instance,
+      dataManager,
       ...mockCollapsablePanelProps,
     };
     render(<MockApp {...mockProps} />);
@@ -177,18 +183,22 @@ describe('Header', () => {
   });
 
   it('should render instance details on instance view', async () => {
-    currentInstance.reset();
-
-    const MOCK_INSTANCE_ID = 'first_instance_id';
+    const MOCK_INSTANCE_ID = 'instance_id';
 
     const mockProps = {
       location: location.instance,
+      dataManager,
       ...mockCollapsablePanelProps,
     };
     render(<MockApp {...mockProps} />);
     await waitForComponentToLoad();
 
-    await currentInstance.fetchCurrentInstance(MOCK_INSTANCE_ID);
+    const subscriptions = dataManager.subscriptions();
+
+    subscriptions['LOAD_INSTANCE']({
+      state: 'LOADED',
+      response: {...createInstance({id: MOCK_INSTANCE_ID})},
+    });
 
     expect(
       screen.getByText(`Instance ${MOCK_INSTANCE_ID}`)
@@ -203,27 +213,38 @@ describe('Header', () => {
   });
 
   it('should render instance details on refresh', async () => {
-    currentInstance.reset();
-
     const MOCK_FIRST_INSTANCE_ID = 'first_instance_id';
     const MOCK_SECOND_INSTANCE_ID = 'second_instance_id';
     const mockProps = {
       location: location.instance,
+      dataManager,
       ...mockCollapsablePanelProps,
     };
     render(<MockApp {...mockProps} />);
     await waitForComponentToLoad();
 
-    await currentInstance.fetchCurrentInstance(MOCK_FIRST_INSTANCE_ID);
+    const subscriptions = dataManager.subscriptions();
+
+    subscriptions['LOAD_INSTANCE']({
+      state: 'LOADED',
+      response: {...createInstance({id: MOCK_FIRST_INSTANCE_ID})},
+    });
+
     expect(
       screen.getByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)
     ).toBeInTheDocument();
 
-    await currentInstance.fetchCurrentInstance(MOCK_SECOND_INSTANCE_ID);
+    subscriptions['CONSTANT_REFRESH']({
+      state: 'LOADED',
+      response: {
+        LOAD_INSTANCE: {...createInstance({id: MOCK_SECOND_INSTANCE_ID})},
+      },
+    });
+    expect(screen.queryByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)).toBeNull();
+
     expect(
       screen.getByText(`Instance ${MOCK_SECOND_INSTANCE_ID}`)
     ).toBeInTheDocument();
-    expect(screen.queryByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)).toBeNull();
   });
 
   it('should go to the correct pages when clicking on header links', async () => {
@@ -232,6 +253,7 @@ describe('Header', () => {
     const mockProps = {
       history: MOCK_HISTORY,
       location: location.instance,
+      dataManager,
       ...mockCollapsablePanelProps,
     };
 

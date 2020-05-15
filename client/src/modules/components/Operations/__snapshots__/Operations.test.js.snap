@@ -1,0 +1,49 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Operations should match snapshots 1`] = `
+<styled.div>
+  <OperationStatus
+    forceSpinner={false}
+    instance={
+      Object {
+        "activities": Array [
+          Object {
+            "activityId": "activityId_0",
+            "endDate": "2018-10-10T09:20:38.658Z",
+            "id": "id_0",
+            "startDate": "2018-10-10T09:20:38.658Z",
+            "state": "ACTIVE",
+          },
+        ],
+        "bpmnProcessId": "someKey",
+        "endDate": null,
+        "id": "id_1",
+        "operations": Array [
+          Object {
+            "endDate": "2018-10-10T09:20:38.661Z",
+            "errorMessage": "string",
+            "startDate": "2018-10-10T09:20:38.661Z",
+            "state": "SCHEDULED",
+            "type": "RESOLVE_INCIDENT",
+          },
+        ],
+        "sequenceFlows": Array [],
+        "startDate": "2018-06-21",
+        "state": "ACTIVE",
+        "workflowId": "2",
+        "workflowName": "someWorkflowName",
+        "workflowVersion": 1,
+      }
+    }
+    operationState="SCHEDULED"
+    operationType="RESOLVE_INCIDENT"
+  />
+  <OperationItems>
+    <Item
+      onClick={[Function]}
+      title="Cancel Instance id_1"
+      type="CANCEL_WORKFLOW_INSTANCE"
+    />
+  </OperationItems>
+</styled.div>
+`;
