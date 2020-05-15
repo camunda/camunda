@@ -21,7 +21,8 @@
     "importing": "wird importiert ...",
     "connected": "ist verbunden",
     "notConnected": "ist nicht verbunden",
-    "rightsReserved": "Alle Rechte vorbehalten"
+    "rightsReserved": "Alle Rechte vorbehalten",
+    "connectionError": "Verbindungsstatus unbekannt (Websocket-Verbindung kann nicht hergestellt werden)"
   },
   "license": {
     "licensedFor": "Lizenziert für",

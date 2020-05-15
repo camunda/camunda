@@ -15,9 +15,11 @@ export default class Footer extends React.Component {
     super(props);
 
     this.state = {
+      loaded: false,
+      error: false,
       connectionStatus: {
         engineConnections: {},
-        connectedToElasticsearch: true, // initial status before we get first data
+        connectedToElasticsearch: false,
       },
       isImporting: {},
       optimizeVersion: null,
@@ -35,7 +37,12 @@ export default class Footer extends React.Component {
     );
 
     this.connection.addEventListener('message', ({data}) => {
+      this.setState({loaded: true});
       this.setState(JSON.parse(data));
+    });
+
+    this.connection.addEventListener('error', () => {
+      this.setState({error: true});
     });
 
     this.setState({
@@ -75,17 +82,27 @@ export default class Footer extends React.Component {
       isImporting,
       connectionStatus: {engineConnections, connectedToElasticsearch},
       optimizeVersion,
+      loaded,
+      error,
     } = this.state;
 
     return (
       <footer className="Footer">
         <div className="Footer__content">
-          <ul className="Footer__connect-status">
-            {Object.keys(engineConnections).map((key) => {
-              return this.renderListElement(key, engineConnections[key], isImporting[key]);
-            })}
-            {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}
-          </ul>
+          {error ? (
+            <span className="error">{t('footer.connectionError')}</span>
+          ) : (
+            <ul className="Footer__connect-status">
+              {loaded && (
+                <>
+                  {Object.keys(engineConnections).map((key) =>
+                    this.renderListElement(key, engineConnections[key], isImporting[key])
+                  )}
+                  {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}
+                </>
+              )}
+            </ul>
+          )}
           <div className="Footer__colophon">
             © Camunda Services GmbH {new Date().getFullYear()}, {t('footer.rightsReserved')} |{' '}
             {optimizeVersion}

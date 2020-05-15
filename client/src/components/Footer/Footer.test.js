@@ -5,12 +5,14 @@
  */
 
 import React from 'react';
-import {shallow, mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import {Server} from 'mock-socket';
 
 import Footer from './Footer';
 import {getOptimizeVersion} from 'config';
+
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 jest.mock('config', () => {
   return {
@@ -26,20 +28,19 @@ afterEach(() => {
   server.stop();
 });
 
-it('renders without crashing', () => {
-  shallow(<Footer />);
-});
-
 it('includes the version number retrieved from back-end', async () => {
   const version = 'alpha';
   getOptimizeVersion.mockReturnValue(version);
 
-  const node = await mount(<Footer />);
-  expect(node).toIncludeText(version);
+  const node = shallow(<Footer />);
+
+  await flushPromises();
+
+  expect(node.find('.Footer__colophon')).toIncludeText(version);
 });
 
 it('displays the loading indicator if is importing', () => {
-  const node = mount(<Footer />);
+  const node = shallow(<Footer />);
 
   node.setState({
     connectionStatus: {
@@ -51,13 +52,14 @@ it('displays the loading indicator if is importing', () => {
     isImporting: {
       property1: true,
     },
+    loaded: true,
   });
 
   expect(node.find('.is-in-progress')).toExist();
 });
 
 it('does not display the loading indicator if is not importing', () => {
-  const node = mount(<Footer />);
+  const node = shallow(<Footer />);
 
   node.setState({
     connectionStatus: {
@@ -69,21 +71,46 @@ it('does not display the loading indicator if is not importing', () => {
     isImporting: {
       property1: false,
     },
+    loaded: true,
   });
 
   expect(node.find('.is-in-progress')).not.toExist();
 });
 
 it('displays the connection status', () => {
-  const node = mount(<Footer />);
+  const node = shallow(<Footer />);
 
   node.setState({
     engineConnections: {
       engine1: true,
     },
+    loaded: true,
   });
 
   expect(node.find('.Footer__connect-status')).toExist();
+});
+
+it('should not display connection status before receiving data', () => {
+  const node = shallow(<Footer />);
+
+  expect(node.find('.Footer__connect-status-item')).not.toExist();
+
+  node.setState({loaded: true});
+
+  expect(node.find('.Footer__connect-status-item')).toExist();
+});
+
+it('should display an error message when the websocket connection goes wrong', () => {
+  const node = shallow(<Footer />);
+  node.setState({loaded: true});
+
+  expect(node.find('.Footer__connect-status-item')).toExist();
+  expect(node.find('.error')).not.toExist();
+
+  node.setState({error: true});
+
+  expect(node.find('.Footer__connect-status-item')).not.toExist();
+  expect(node.find('.error')).toExist();
 });
 
 it('should store data from the socket connection in state', () => {
@@ -100,7 +127,7 @@ it('should store data from the socket connection in state', () => {
     },
   };
 
-  const node = mount(<Footer />);
+  const node = shallow(<Footer />);
 
   server.on('connection', (server) => {
     server.send(JSON.stringify(data));

@@ -8,6 +8,10 @@
   color: #777777;
   cursor: default;
   flex-shrink: 0;
+
+  .error {
+    font-size: 0.7em;
+  }
 }
 
 .Footer__content {
