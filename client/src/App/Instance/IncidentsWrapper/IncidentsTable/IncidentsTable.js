@@ -15,18 +15,23 @@ import {TransitionGroup} from 'modules/components/Transition';
 import {IncidentOperation} from 'modules/components/Operations';
 
 import {formatDate} from 'modules/utils/date';
+import {withRouter} from 'react-router-dom';
 
 import * as Styled from './styled';
 const {THead, TBody, TH, TR, TD} = Table;
 
-export default class IncidentsTable extends React.Component {
+class IncidentsTable extends React.Component {
   static propTypes = {
     incidents: PropTypes.array.isRequired,
-    instanceId: PropTypes.string.isRequired,
     selectedFlowNodeInstanceIds: PropTypes.array,
     sorting: PropTypes.object.isRequired,
     onIncidentSelection: PropTypes.func.isRequired,
     onSort: PropTypes.func.isRequired,
+    match: PropTypes.shape({
+      params: PropTypes.shape({
+        id: PropTypes.string.isRequired,
+      }).isRequired,
+    }).isRequired,
   };
 
   static defaultProps = {
@@ -75,11 +80,9 @@ export default class IncidentsTable extends React.Component {
   };
 
   handleIncidentSelection = ({flowNodeInstanceId, flowNodeId}) => {
-    const {
-      selectedFlowNodeInstanceIds,
-      onIncidentSelection,
-      instanceId,
-    } = this.props;
+    const {selectedFlowNodeInstanceIds, onIncidentSelection} = this.props;
+    let {id: instanceId} = this.props.match.params;
+
     let newSelection;
 
     const isTheOnlySelectedIncident =
@@ -100,6 +103,7 @@ export default class IncidentsTable extends React.Component {
     const isJobIdPresent = (incidents) =>
       !Boolean(incidents.find((item) => Boolean(item.jobId)));
 
+    let {id: instanceId} = this.props.match.params;
     return (
       <>
         <Table>
@@ -159,6 +163,7 @@ export default class IncidentsTable extends React.Component {
                     unmountOnExit
                   >
                     <Styled.IncidentTR
+                      data-test={`tr-${incident.id}`}
                       isSelected={selectedFlowNodeInstanceIds.includes(
                         incident.flowNodeInstanceId
                       )}
@@ -202,7 +207,7 @@ export default class IncidentsTable extends React.Component {
                       </TD>
                       <TD>
                         <IncidentOperation
-                          instanceId={this.props.instanceId}
+                          instanceId={instanceId}
                           incident={incident}
                           showSpinner={incident.hasActiveOperation}
                         />
@@ -219,3 +224,5 @@ export default class IncidentsTable extends React.Component {
     );
   }
 }
+
+export default withRouter(IncidentsTable);

@@ -5,188 +5,128 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
+import {render, screen} from '@testing-library/react';
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
-
-import {createInstance, setProps} from 'modules/testUtils';
-
-import Pane from 'modules/components/SplitPane/Pane';
-
-import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
-import {
-  getWorkflowName,
-  getInstancesWithActiveOperations,
-} from 'modules/utils/instance';
-
-import Operations from 'modules/components/Operations';
-import Spinner from 'modules/components/Spinner';
-
+import {getWorkflowName} from 'modules/utils/instance';
 import InstanceHeader from './InstanceHeader';
-import Skeleton from './Skeleton';
+import {currentInstance} from 'modules/stores/currentInstance';
 
-jest.mock('modules/utils/bpmn');
+jest.mock('modules/api/instances', () => ({
+  fetchWorkflowInstance: jest.fn().mockImplementation((instance_id) => {
+    const {createInstance} = require('modules/testUtils');
+    const mockInstance = createInstance();
+    if (instance_id === 'instance_with_active_operations') {
+      return mockInstance;
+    } else if (instance_id === 'instance_without_active_operations')
+      return {...mockInstance, hasActiveOperation: false, operations: []};
+  }),
+}));
 
-const mockInstance = createInstance();
-createMockDataManager();
-
-const mountInstanceHeader = (props) => {
-  return mount(
+let dataManager = createMockDataManager();
+const renderComponent = () => {
+  render(
     <DataManagerProvider>
-      <InstanceHeader {...props} />
+      <InstanceHeader.WrappedComponent dataManager={dataManager} />
     </DataManagerProvider>
   );
 };
 
 describe('InstanceHeader', () => {
-  let root, node;
-
-  it('should subscribe when instance data is available', () => {
-    root = mountInstanceHeader();
-
-    node = root.find(InstanceHeader.WrappedComponent);
-
-    expect(Object.keys(node.instance().subscriptions)).toEqual([]);
-
-    setProps(root, InstanceHeader, {instance: mockInstance});
-
-    root.update();
-
-    node = root.find(InstanceHeader.WrappedComponent);
-    const {subscriptions} = node.instance().props.dataManager;
-
-    expect(Object.keys(subscriptions())).toEqual([
-      'OPERATION_APPLIED_INCIDENT_id_1',
-      'OPERATION_APPLIED_VARIABLE_id_1',
-      'OPERATION_APPLIED_INSTANCE_id_1',
-      'CONSTANT_REFRESH',
-    ]);
+  beforeEach(() => {
+    currentInstance.reset();
+    jest.clearAllMocks();
   });
 
-  it('should show skeleton before instance data is available', () => {
-    root = mountInstanceHeader();
+  it('should show skeleton before instance data is available', async () => {
+    renderComponent();
+    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
-    node = root.find(InstanceHeader.WrappedComponent);
+    await currentInstance.fetchCurrentInstance(
+      'instance_with_active_operations'
+    );
 
-    expect(node.find(Skeleton)).toExist();
-
-    setProps(root, InstanceHeader, {instance: mockInstance});
-
-    root.update();
-
-    node = root.find(InstanceHeader.WrappedComponent);
-
-    expect(node.find(Skeleton)).not.toExist();
+    expect(
+      screen.queryByTestId('instance-header-skeleton')
+    ).not.toBeInTheDocument();
   });
 
-  it('should render', () => {
-    root = mountInstanceHeader({
-      instance: mockInstance,
-    });
-    // given
+  it('should render instance data', async () => {
+    renderComponent();
+
+    await currentInstance.fetchCurrentInstance(
+      'instance_with_active_operations'
+    );
+    const {instance: mockInstance} = currentInstance.state;
     const workflowName = getWorkflowName(mockInstance);
     const instanceState = mockInstance.state;
     const formattedStartDate = formatDate(mockInstance.startDate);
     const formattedEndDate = formatDate(mockInstance.endDate);
 
-    // then
-    expect(root.find(Pane.Header)).toHaveLength(1);
-
-    // Pane.Header
-    const PaneHeaderNode = root.find(Pane.Header);
-
-    const TableNode = PaneHeaderNode.find('table');
-    expect(TableNode.text()).toContain(workflowName);
-    expect(TableNode.text()).toContain(mockInstance.id);
-    expect(TableNode.text()).toContain(
-      `Version ${mockInstance.workflowVersion}`
-    );
-    expect(TableNode.text()).toContain(formattedStartDate);
-    expect(TableNode.text()).toContain(formattedEndDate);
-
-    const StateIconNode = TableNode.find(StateIcon);
-    expect(StateIconNode).toHaveLength(1);
-    expect(StateIconNode.prop('state')).toBe(instanceState);
-
-    const OperationsNode = PaneHeaderNode.find(Operations);
-    expect(OperationsNode).toExist();
-    expect(OperationsNode.props().instance).toEqual(mockInstance);
-
-    expect(OperationsNode.props().forceSpinner).toEqual(
-      !!getInstancesWithActiveOperations([mockInstance]).length
-    );
+    expect(screen.getByText(workflowName)).toBeInTheDocument();
+    expect(screen.getByText(mockInstance.id)).toBeInTheDocument();
+    expect(
+      screen.getByText(`Version ${mockInstance.workflowVersion}`)
+    ).toBeInTheDocument();
+    expect(screen.getByText(formattedStartDate)).toBeInTheDocument();
+    expect(screen.getByText(formattedEndDate)).toBeInTheDocument();
+    expect(screen.getByTestId(`${instanceState}-icon`)).toBeInTheDocument();
   });
 
-  describe('operation feedback', () => {
-    it('should show spinner based on instance data', () => {
-      root = mountInstanceHeader({
-        instance: {...mockInstance, hasActiveOperation: false, operations: []},
-      });
+  it('should show spinner based on instance having active operations', async () => {
+    renderComponent();
 
-      let node = root.find(InstanceHeader.WrappedComponent);
+    await currentInstance.fetchCurrentInstance(
+      'instance_without_active_operations'
+    );
 
-      expect(node.find('Spinner')).not.toExist();
-      setProps(root, InstanceHeader, {
-        instance: {...mockInstance, hasActiveOperation: true},
-      });
+    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-      root.update();
+    await currentInstance.fetchCurrentInstance(
+      'instance_with_active_operations'
+    );
 
-      node = root.find(InstanceHeader.WrappedComponent);
+    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+  });
 
-      expect(node.find('Spinner')).toExist();
+  it('should show spinner when operation is applied', async () => {
+    renderComponent();
+
+    await currentInstance.fetchCurrentInstance(
+      'instance_without_active_operations'
+    );
+    const {instance} = currentInstance.state;
+
+    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
+
+    const subscriptions = dataManager.subscriptions();
+
+    dataManager.publish({
+      subscription: subscriptions[`OPERATION_APPLIED_INCIDENT_${instance.id}`],
+      state: 'LOADING',
     });
 
-    it('should show spinner when operation is published', () => {
-      root = mountInstanceHeader();
-      node = root.find(InstanceHeader.WrappedComponent);
+    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+  });
 
-      expect(root.find(Spinner)).not.toHaveLength(1);
+  it('should show spinner when variable is edited/created', async () => {
+    renderComponent();
 
-      setProps(root, InstanceHeader, {
-        instance: {...mockInstance, hasActiveOperation: false, operations: []},
-      });
+    await currentInstance.fetchCurrentInstance(
+      'instance_without_active_operations'
+    );
 
-      root.update();
+    const {instance} = currentInstance.state;
+    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-      const {subscriptions} = node.instance();
+    const subscriptions = dataManager.subscriptions();
 
-      node.instance().props.dataManager.publish({
-        subscription: subscriptions['OPERATION_APPLIED_INCIDENT_id_1'],
-        state: 'LOADING',
-      });
-
-      root.update();
-
-      //then
-      expect(root.find(Spinner)).toHaveLength(1);
+    dataManager.publish({
+      subscription: subscriptions[`OPERATION_APPLIED_VARIABLE_${instance.id}`],
+      state: 'LOADING',
     });
 
-    it('should show spinner when variable is edited/created', () => {
-      root = mountInstanceHeader();
-      node = root.find(InstanceHeader.WrappedComponent);
-
-      expect(root.find(Spinner)).not.toHaveLength(1);
-
-      setProps(root, InstanceHeader, {
-        instance: {...mockInstance, hasActiveOperation: false, operations: []},
-      });
-
-      root.update();
-
-      const {subscriptions} = node.instance();
-
-      node.instance().props.dataManager.publish({
-        subscription: subscriptions['OPERATION_APPLIED_VARIABLE_id_1'],
-        state: 'LOADING',
-      });
-
-      root.update();
-
-      //then
-      expect(root.find(Spinner)).toHaveLength(1);
-    });
+    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
 });

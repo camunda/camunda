@@ -5,27 +5,16 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
-import Table from 'modules/components/Table';
-import Button from 'modules/components/Button';
 import IncidentsTable from './IncidentsTable';
-import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
-import Modal from 'modules/components/Modal';
-
-import {IncidentOperation} from 'modules/components/Operations';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createIncident} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
-
 import {SORT_ORDER} from 'modules/constants';
-
 import {DataManagerProvider} from 'modules/DataManager';
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
-
-jest.mock('modules/utils/bpmn');
-
-const {TBody, TR, TD} = Table;
+import {Router, Route} from 'react-router-dom';
+import {createMemoryHistory} from 'history';
+import {render, screen, within, fireEvent} from '@testing-library/react';
 
 const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';
@@ -46,7 +35,6 @@ const mockProps = {
       flowNodeInstanceId: id,
     }),
   ],
-  instanceId: '1',
   onIncidentOperation: jest.fn(),
   onIncidentSelection: jest.fn(),
   selectedFlowNodeInstanceIds: [id],
@@ -57,184 +45,136 @@ const mockProps = {
   onSort: jest.fn(),
 };
 
+const renderComponent = (mockProps) =>
+  render(
+    <ThemeProvider>
+      <DataManagerProvider>
+        <Router
+          history={createMemoryHistory({initialEntries: ['/instances/1']})}
+        >
+          <Route path="/instances/:id">
+            <IncidentsTable {...mockProps} />
+          </Route>
+        </Router>
+      </DataManagerProvider>
+    </ThemeProvider>
+  );
+
 describe('IncidentsTable', () => {
-  let node;
   beforeEach(() => {
-    mockProps.onSort.mockClear();
-    mockProps.onIncidentOperation.mockClear();
-    mockProps.onIncidentSelection.mockClear();
-
     createMockDataManager();
-
-    node = mount(
-      <ThemeProvider>
-        <DataManagerProvider>
-          <IncidentsTable {...mockProps} />
-        </DataManagerProvider>
-      </ThemeProvider>
-    );
   });
 
   it('should render the right column headers', () => {
-    expect(node.find(ColumnHeader).length).toEqual(6);
-    expect(node.find(ColumnHeader).at(0).text()).toContain('Incident Type');
-    expect(node.find(ColumnHeader).at(0).props().sortKey).toEqual('errorType');
-
-    expect(node.find(ColumnHeader).at(1).text()).toContain('Flow Node');
-    expect(node.find(ColumnHeader).at(1).props().sortKey).toEqual(
-      'flowNodeName'
-    );
-
-    expect(node.find(ColumnHeader).at(2).text()).toContain('Job Id');
-    expect(node.find(ColumnHeader).at(2).props().sortKey).toEqual('jobId');
-    expect(node.find(ColumnHeader).at(2).props().disabled).toBe(false);
-
-    expect(node.find(ColumnHeader).at(3).text()).toContain('Creation Time');
-    expect(node.find(ColumnHeader).at(3).props().sortKey).toEqual(
-      'creationTime'
-    );
-
-    expect(node.find(ColumnHeader).at(4).text()).toContain('Error Message');
-    expect(node.find(ColumnHeader).at(5).text()).toContain('Operations');
+    renderComponent(mockProps);
+    expect(screen.getByText('Incident Type')).toBeInTheDocument();
+    expect(screen.getByText('Flow Node')).toBeInTheDocument();
+    expect(screen.getByText('Job Id')).toBeInTheDocument();
+    expect(screen.getByText('Creation Time')).toBeInTheDocument();
+    expect(screen.getByText('Error Message')).toBeInTheDocument();
+    expect(screen.getByText('Operations')).toBeInTheDocument();
   });
 
-  it('should render the right number of rows', () => {
-    expect(node.find(TBody).find(TR).length).toEqual(
-      mockProps.incidents.length
-    );
+  it('should render incident details', () => {
+    renderComponent(mockProps);
+    let row = screen.getByTestId(`tr-${mockProps.incidents[0].id}`);
+    expect(
+      within(row).getByText(mockProps.incidents[0].errorType)
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByText(mockProps.incidents[0].flowNodeName)
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByText(mockProps.incidents[0].jobId)
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByText(formatDate(mockProps.incidents[0].creationTime))
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByText(mockProps.incidents[0].errorMessage)
+    ).toBeInTheDocument();
+
+    row = screen.getByTestId(`tr-${mockProps.incidents[1].id}`);
+    expect(
+      within(row).getByText(mockProps.incidents[1].errorType)
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByText(mockProps.incidents[1].flowNodeName)
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByText(mockProps.incidents[1].jobId)
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByText(formatDate(mockProps.incidents[1].creationTime))
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByText(mockProps.incidents[1].errorMessage)
+    ).toBeInTheDocument();
   });
 
-  it('should render the right data in a row', () => {
-    expect(node.find(TBody).find(TR).find(TD).length).toEqual(
-      6 * mockProps.incidents.length
-    );
-
-    const firstRowCells = node.find(TBody).find(TR).at(0).find(TD);
-
-    expect(firstRowCells.at(0).text()).toContain(
-      mockProps.incidents[0].errorType
-    );
-    expect(firstRowCells.at(1).text()).toContain(
-      mockProps.incidents[0].flowNodeName
-    );
-    expect(firstRowCells.at(2).text()).toContain(
-      mockProps.incidents[0].jobId || '--'
-    );
-    expect(firstRowCells.at(3).text()).toContain(
-      formatDate(mockProps.incidents[0].creationTime)
-    );
-    expect(firstRowCells.at(4).text()).toContain(
-      mockProps.incidents[0].errorMessage
-    );
-    expect(firstRowCells.at(5).find(IncidentOperation)).toExist();
+  it('should display -- for jobId', () => {
+    let props = {...mockProps};
+    props.incidents = [
+      createIncident({
+        errorType: 'Error A',
+        errorMessage: shortError,
+        flowNodeName: 'Task A',
+        flowNodeInstanceId: 'flowNodeInstanceIdA',
+        jobId: null,
+      }),
+    ];
+    renderComponent(props);
+    let row = screen.getByTestId(`tr-${props.incidents[0].id}`);
+    expect(within(row).getByText('--')).toBeInTheDocument();
   });
 
   it('should show a more button for long error messages', () => {
-    const firstRowCells = node.find(TBody).find(TR).at(0).find(TD);
-    const secondRowCells = node.find(TBody).find(TR).at(1).find(TD);
+    renderComponent(mockProps);
 
-    expect(firstRowCells.at(4).text()).toContain(
-      mockProps.incidents[0].errorMessage
-    );
-    expect(firstRowCells.at(4).find(Button)).not.toExist();
+    let firstRow = screen.getByTestId(`tr-${mockProps.incidents[0].id}`);
+    expect(within(firstRow).queryByText('More...')).not.toBeInTheDocument();
 
-    // handle long error messages
-    expect(secondRowCells.at(4).text()).toContain(
-      mockProps.incidents[1].errorMessage
-    );
-    expect(secondRowCells.at(4).find(Button)).toExist();
-    expect(secondRowCells.at(4).find(Button).text()).toEqual('More...');
+    let secondRow = screen.getByTestId(`tr-${mockProps.incidents[1].id}`);
+    expect(within(secondRow).getByText('More...')).toBeInTheDocument();
   });
 
   it('should open an modal when clicking on the more button', () => {
-    const secondRowCells = node.find(TBody).find(TR).at(1).find(TD);
-    const moreButton = secondRowCells.at(4).find(Button);
+    renderComponent(mockProps);
 
-    // when
-    moreButton.simulate('click');
-    node.update();
-    // expect modal to appear
-    const modalNode = node.find('Modal');
-    expect(modalNode).toHaveLength(1);
-    // expect modal header to have the right text
-    expect(modalNode.find(Modal.Header).text()).toContain(
-      `Flow Node "${mockProps.incidents[1].flowNodeName}" Error`
-    );
-    // expect modal content to have the right error message
-    expect(modalNode.find(Modal.Body).text()).toContain(
-      mockProps.incidents[1].errorMessage
-    );
-  });
+    let secondRow = screen.getByTestId(`tr-${mockProps.incidents[1].id}`);
+    expect(within(secondRow).getByText('More...')).toBeInTheDocument();
 
-  describe('Selection', () => {
-    it('should call onIncidentSelection when clicking on a row', () => {
-      const RowNode = node.find(TBody).find(TR).at(0);
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
 
-      RowNode.simulate('click');
-      node.update();
+    fireEvent.click(within(secondRow).getByText('More...'));
 
-      expect(mockProps.onIncidentSelection).toHaveBeenCalled();
-      expect(mockProps.onIncidentSelection.mock.calls[0][0].id).toEqual(
-        mockProps.incidents[0].flowNodeInstanceId
-      );
-      expect(mockProps.onIncidentSelection.mock.calls[0][0].activityId).toEqual(
-        mockProps.incidents[0].flowNodeId
-      );
-    });
-
-    it('should call onIncidentSelection when deselecting a row', () => {
-      const RowNode = node.find(TBody).find(TR).at(1);
-
-      RowNode.simulate('click');
-      node.update();
-
-      node.find(TBody).find(TR).at(1).simulate('click');
-      node.update();
-
-      expect(mockProps.onIncidentSelection).toHaveBeenCalled();
-      expect(mockProps.onIncidentSelection.mock.calls[0][0].id).toEqual(
-        mockProps.instanceId
-      );
-      expect(mockProps.onIncidentSelection.mock.calls[0][0].activityId).toEqual(
-        null
-      );
-    });
-    it('shoud mark the selected incidents row', () => {
-      expect(node.find(TBody).find(TR).at(0).props().isSelected).toBe(false);
-
-      expect(node.find(TBody).find(TR).at(1).props().isSelected).toBe(true);
-    });
-
-    it('should handle multiple selections', () => {
-      mockProps.selectedFlowNodeInstanceIds = [id, 'flowNodeInstanceIdA'];
-      const node = mount(
-        <ThemeProvider>
-          <DataManagerProvider>
-            <IncidentsTable {...mockProps} />
-          </DataManagerProvider>
-        </ThemeProvider>
-      );
-      expect(node.find(TBody).find(TR).at(0).props().isSelected).toBe(true);
-
-      expect(node.find(TBody).find(TR).at(1).props().isSelected).toBe(true);
-
-      mockProps.selectedFlowNodeInstanceIds = [id];
-    });
+    const modal = screen.getByTestId('modal');
+    expect(modal).toBeInTheDocument();
+    expect(
+      within(modal).getByText(
+        `Flow Node "${mockProps.incidents[1].flowNodeName}" Error`
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByText(mockProps.incidents[1].errorMessage)
+    ).toBeInTheDocument();
   });
 
   describe('Sorting', () => {
-    it('should call onSort when clicking on a column header', () => {
-      const randomColumn = Math.floor(Math.random() * 3);
-      const ColumnHeaderNode = node.find(ColumnHeader).at(randomColumn);
+    it('should enable sorting for all', () => {
+      renderComponent(mockProps);
 
-      ColumnHeaderNode.simulate('click');
-
-      expect(mockProps.onSort).toHaveBeenCalledWith(
-        ColumnHeaderNode.props().sortKey
-      );
+      expect(screen.getByText('Job Id')).not.toHaveAttribute('disabled');
+      expect(screen.getByText('Incident Type')).not.toHaveAttribute('disabled');
+      expect(screen.getByText('Flow Node')).not.toHaveAttribute('disabled');
+      expect(screen.getByText('Job Id')).not.toHaveAttribute('disabled');
+      expect(screen.getByText('Creation Time')).not.toHaveAttribute('disabled');
+      expect(screen.getByText('Error Message')).not.toHaveAttribute('disabled');
+      expect(screen.getByText('Operations')).not.toHaveAttribute('disabled');
     });
-    it('should disable sorting for jobId column', () => {
-      mockProps.incidents = [
+    it('should disable sorting for jobId', () => {
+      let props = {...mockProps};
+      props.incidents = [
         createIncident({
           errorType: 'Error A',
           errorMessage: shortError,
@@ -242,24 +182,11 @@ describe('IncidentsTable', () => {
           flowNodeInstanceId: 'flowNodeInstanceIdA',
           jobId: null,
         }),
-        createIncident({
-          errorType: 'Error B',
-          errorMessage: longError,
-          flowNodeName: 'Task B',
-          flowNodeInstanceId: id,
-          jobId: null,
-        }),
       ];
-      const node = mount(
-        <ThemeProvider>
-          <DataManagerProvider>
-            <IncidentsTable {...mockProps} />
-          </DataManagerProvider>
-        </ThemeProvider>
-      );
 
-      const ColumnHeaderNode = node.find(ColumnHeader).at(2);
-      expect(ColumnHeaderNode.props().disabled).toBe(true);
+      renderComponent(props);
+
+      expect(screen.getByText('Job Id')).toHaveAttribute('disabled');
     });
   });
 });

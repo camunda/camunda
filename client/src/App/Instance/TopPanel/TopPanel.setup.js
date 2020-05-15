@@ -13,7 +13,6 @@ import {
 } from '../service';
 
 import {
-  createInstance,
   createRawTreeNode,
   createDefinitions,
   createIncident,
@@ -88,7 +87,6 @@ const mockIncidents = () => {
 };
 
 export const mockProps = {
-  instance: createInstance(),
   incidents: mockIncidents(),
   diagramDefinitions: createDefinitions(),
   activityIdToActivityInstanceMap: getActivityIdToActivityInstancesMap(
@@ -109,9 +107,6 @@ export const mockProps = {
 
 export const instanceWithIncident = {
   ...mockProps,
-  instance: createInstance({
-    state: STATE.INCIDENT,
-  }),
 };
 
 export const mockedExpandedPaneId = 'myExpandedPaneId';

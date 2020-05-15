@@ -9,14 +9,10 @@ import PropTypes from 'prop-types';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {EXPAND_STATE} from 'modules/constants';
 import * as Styled from './styled';
+import {useParams} from 'react-router-dom';
 
-export default function IncidentsBanner({
-  id,
-  count,
-  onClick,
-  isOpen,
-  expandState,
-}) {
+export default function IncidentsBanner({count, onClick, isOpen, expandState}) {
+  let {id} = useParams();
   const isOnlyOne = count === 1;
   const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${pluralSuffix(
     count,
@@ -39,7 +35,6 @@ export default function IncidentsBanner({
 }
 
 IncidentsBanner.propTypes = {
-  id: PropTypes.string.isRequired,
   count: PropTypes.number.isRequired,
   onClick: PropTypes.func,
   isOpen: PropTypes.bool,

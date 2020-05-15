@@ -13,7 +13,6 @@ import {
   MULTI_SCOPE_PLACEHOLDER,
   EMPTY_PLACEHOLDER,
 } from './constants';
-import {isRunning} from 'modules/utils/instance';
 
 import {withData} from 'modules/DataManager';
 import Skeleton from './Skeleton';
@@ -25,7 +24,6 @@ import * as Styled from './styled';
 class VariablePanel extends React.Component {
   static propTypes = {
     dataManager: PropTypes.object,
-    instance: PropTypes.object,
     variables: PropTypes.array,
     editMode: PropTypes.string.isRequired,
     isEditable: PropTypes.bool.isRequired,
@@ -132,7 +130,6 @@ class VariablePanel extends React.Component {
       editMode,
       onVariableUpdate,
       setEditMode,
-      instance,
     } = this.props;
 
     const TableReplacement = this.constructTableReplacement();
@@ -145,7 +142,6 @@ class VariablePanel extends React.Component {
           <Variables
             Placeholder={this.constructPlaceHolder()}
             Overlay={this.constructOverlay()}
-            isRunning={instance && isRunning({state: instance.state})}
             variables={variables}
             editMode={editMode}
             isEditable={isEditable}

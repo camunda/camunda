@@ -2,6 +2,7 @@
 
 exports[`StateIcon should render Active Icon 1`] = `
 <Styled(Component)
+  data-test="ACTIVE-icon"
   someProp="some prop"
   theme="dark"
 />
@@ -9,6 +10,7 @@ exports[`StateIcon should render Active Icon 1`] = `
 
 exports[`StateIcon should render Canceled Icon 1`] = `
 <Styled(Component)
+  data-test="CANCELED-icon"
   someProp="some prop"
   theme="dark"
 />
@@ -16,6 +18,7 @@ exports[`StateIcon should render Canceled Icon 1`] = `
 
 exports[`StateIcon should render Completed Icon 1`] = `
 <Styled(Component)
+  data-test="COMPLETED-icon"
   someProp="some prop"
   theme="dark"
 />
@@ -23,6 +26,7 @@ exports[`StateIcon should render Completed Icon 1`] = `
 
 exports[`StateIcon should render Incident Icon 1`] = `
 <Styled(Component)
+  data-test="INCIDENT-icon"
   someProp="some prop"
   theme="dark"
 />
@@ -30,6 +34,7 @@ exports[`StateIcon should render Incident Icon 1`] = `
 
 exports[`StateIcon should render an Alias Icon if no suitable icon is available 1`] = `
 <styled.div
+  data-test="SomeUnknownState-icon"
   someProp="some prop"
   theme="dark"
 />
