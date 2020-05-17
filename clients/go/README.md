@@ -16,12 +16,12 @@ GO111MODULE=off mockgen github.com/zeebe-io/zeebe/clients/go/pkg/pb GatewayClien
 To run the integration tests, a Docker image for Zeebe must be built with the tag 'current-test'. To do that you can run (in the zeebe-io/zeebe dir):
 
 ```
-docker build --build-arg DISTBALL=dist/target/zeebe-distribution*.tar.gz -t camunda/zeebe:current-test .
+docker build --build-arg DISTBALL=dist/target/zeebe-distribution*.tar.gz -t camunda/zeebe:current-test --target app .
 ```
 
 To add new zbctl tests, you must generate a golden file with the expected output of the command you are testing. The tests ignore numbers so you can leave any keys or timestamps in your golden file, even though these will most likely be different from test command's output. However, non-numeric variables are not ignored. For instance, the help menu contains:
 
-``` 
+```
 --clientCache string    Specify the path to use for the OAuth credentials cache. If omitted, will read from the environment variable 'ZEEBE_CLIENT_CONFIG_PATH' (default "YOUR_HOME/.camunda/credentials")
 ```
 
