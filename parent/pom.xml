@@ -336,19 +336,7 @@
 
       <dependency>
         <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
         <artifactId>elasticsearch-x-content</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch.client</groupId>
-        <artifactId>elasticsearch-rest-high-level-client</artifactId>
         <version>${version.elasticsearch}</version>
       </dependency>
 
@@ -446,12 +434,6 @@
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>${version.commons-codec}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.carrotsearch</groupId>
-        <artifactId>hppc</artifactId>
-        <version>${version.hppc}</version>
       </dependency>
 
       <dependency>
