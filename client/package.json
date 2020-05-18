@@ -10,6 +10,7 @@
     "@types/node": "^13.13.5",
     "@types/react": "^16.9.0",
     "@types/react-dom": "^16.9.0",
+    "@types/react-router-dom": "^5.1.5",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.3",
     "jest-environment-jsdom-fifteen": "^1.0.2",
@@ -17,6 +18,7 @@
     "mobx-react-lite": "^2.0.6",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-router-dom": "^5.2.0",
     "react-scripts": "3.4.1",
     "typescript": "~3.8.3"
   },
@@ -30,7 +32,7 @@
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",
     "test:e2e:ci": "PORT=8080 testcafe chrome:headless tests/*.ts --ts-config-path e2e/tsconfig.json",
     "lint": "tsc && eslint src/** --ext .ts,.tsx,.js,.jsx",
-    "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=master --watchAll=false",
+    "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false",
     "coverage:ci": "CI=true yarn coverage --maxWorkers=$LIMITS_CPU --ci"
   },
   "browserslist": {
@@ -46,7 +48,9 @@
     ]
   },
   "devDependencies": {
+    "@types/history": "^4.7.5",
     "eslint-plugin-camunda-licensed": "^0.4.3",
+    "history": "^4.10.1",
     "http-proxy-middleware": "^1.0.3",
     "husky": "^4.2.5",
     "lint-staged": "^10.2.2",
@@ -78,6 +82,7 @@
         "lines": 80,
         "statements": 80
       }
-    }
+    },
+    "resetMocks": true
   }
 }

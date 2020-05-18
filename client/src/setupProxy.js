@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+/* istanbul ignore file */
+
 // CRA does not support TS here, so this file needs to be written in pure JS
 
 const {createProxyMiddleware} = require('http-proxy-middleware');

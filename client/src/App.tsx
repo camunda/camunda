@@ -4,10 +4,31 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+/* istanbul ignore file */
 
-const App = () => {
-  return <h1>Tasklist</h1>;
+import * as React from 'react';
+import {BrowserRouter, Switch, Route} from 'react-router-dom';
+
+import {PrivateRoute} from './PrivateRoute';
+import {Tasklist} from './Tasklist';
+import {Login} from './Login';
+import {Pages} from './pages';
+
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <Switch>
+        <PrivateRoute
+          exact
+          path={Pages.Initial}
+          component={Tasklist}
+          redirectPath={Pages.Login}
+        />
+        <Route path={Pages.Login} component={Login} />
+        <Route render={() => <h1>Page not found</h1>} />
+      </Switch>
+    </BrowserRouter>
+  );
 };
 
 export {App};
