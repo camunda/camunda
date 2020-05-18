@@ -24,7 +24,6 @@ import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchE
 import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventElementCompletingHandler;
 import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventEventOccurredHandler;
-import io.zeebe.engine.processor.workflow.handlers.catchevent.StartEventEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ContainerElementActivatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ContainerElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ProcessCompletedHandler;
@@ -150,9 +149,6 @@ public final class BpmnStepHandlers {
         new IntermediateCatchEventElementTerminatingHandler<>(catchEventSubscriber));
 
     stepHandlers.put(BpmnStep.RECEIVE_TASK_EVENT_OCCURRED, new ReceiveTaskEventOccurredHandler<>());
-
-    stepHandlers.put(
-        BpmnStep.START_EVENT_EVENT_OCCURRED, new StartEventEventOccurredHandler<>(state));
 
     stepHandlers.put(
         BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED,

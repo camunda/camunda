@@ -11,6 +11,7 @@ import io.zeebe.engine.nwe.behavior.BpmnBehaviors;
 import io.zeebe.engine.nwe.container.MultiInstanceBodyProcessor;
 import io.zeebe.engine.nwe.container.ProcessProcessor;
 import io.zeebe.engine.nwe.container.SubProcessProcessor;
+import io.zeebe.engine.nwe.event.StartEventProcessor;
 import io.zeebe.engine.nwe.gateway.ExclusiveGatewayProcessor;
 import io.zeebe.engine.nwe.task.ServiceTaskProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
@@ -33,6 +34,8 @@ public final class BpmnElementProcessors {
     processors.put(BpmnElementType.SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));
     processors.put(
         BpmnElementType.MULTI_INSTANCE_BODY, new MultiInstanceBodyProcessor(bpmnBehaviors));
+    // events
+    processors.put(BpmnElementType.START_EVENT, new StartEventProcessor(bpmnBehaviors));
   }
 
   public <T extends ExecutableFlowElement> BpmnElementProcessor<T> getProcessor(

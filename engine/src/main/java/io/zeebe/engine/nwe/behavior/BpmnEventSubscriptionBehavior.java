@@ -18,6 +18,8 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableBou
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.deployment.DeployedWorkflow;
+import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.EventScopeInstanceState;
@@ -32,7 +34,12 @@ import io.zeebe.util.buffer.BufferUtil;
 
 public final class BpmnEventSubscriptionBehavior {
 
+  private static final String NO_WORKFLOW_FOUND_MESSAGE =
+      "Expected to create an instance of workflow with key '%d', but no such workflow was found";
+  private static final String NO_TRIGGERED_EVENT_MESSAGE = "No triggered event for workflow '%d'";
+
   private final WorkflowInstanceRecord eventRecord = new WorkflowInstanceRecord();
+  private final WorkflowInstanceRecord recordForWFICreation = new WorkflowInstanceRecord();
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -41,6 +48,7 @@ public final class BpmnEventSubscriptionBehavior {
   private final CatchEventBehavior catchEventBehavior;
   private final TypedStreamWriter streamWriter;
   private final KeyGenerator keyGenerator;
+  private final WorkflowState workflowState;
 
   public BpmnEventSubscriptionBehavior(
       final BpmnStateBehavior stateBehavior,
@@ -53,8 +61,9 @@ public final class BpmnEventSubscriptionBehavior {
     this.catchEventBehavior = catchEventBehavior;
     this.streamWriter = streamWriter;
 
-    eventScopeInstanceState = zeebeState.getWorkflowState().getEventScopeInstanceState();
-    elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
+    workflowState = zeebeState.getWorkflowState();
+    eventScopeInstanceState = workflowState.getEventScopeInstanceState();
+    elementInstanceState = workflowState.getElementInstanceState();
     keyGenerator = zeebeState.getKeyGenerator();
   }
 
@@ -68,22 +77,20 @@ public final class BpmnEventSubscriptionBehavior {
       return;
     }
 
-    eventRecord.reset();
-    eventRecord.wrap(context.getRecordValue());
-    eventRecord.setElementId(eventTrigger.getElementId());
-    eventRecord.setBpmnElementType(BpmnElementType.BOUNDARY_EVENT);
+    final var record =
+        getEventRecord(context.getRecordValue(), eventTrigger, BpmnElementType.BOUNDARY_EVENT);
 
     final var boundaryEvent = getBoundaryEvent(element, context, eventTrigger);
 
     final long boundaryElementInstanceKey = keyGenerator.nextKey();
     if (boundaryEvent.interrupting()) {
 
-      deferBoundaryEvent(context, boundaryElementInstanceKey);
+      deferBoundaryEvent(context, boundaryElementInstanceKey, record);
 
       stateTransitionBehavior.transitionToTerminating(context);
 
     } else {
-      activateBoundaryEvent(context, boundaryElementInstanceKey, eventRecord);
+      activateBoundaryEvent(context, boundaryElementInstanceKey, record);
     }
 
     stateBehavior
@@ -92,6 +99,75 @@ public final class BpmnEventSubscriptionBehavior {
 
     eventScopeInstanceState.deleteTrigger(
         context.getElementInstanceKey(), eventTrigger.getEventKey());
+  }
+
+  public void triggerStartEvent(final BpmnElementContext context) {
+    final long workflowKey = context.getWorkflowKey();
+    final long workflowInstanceKey = context.getWorkflowInstanceKey();
+    final DeployedWorkflow workflow = workflowState.getWorkflowByKey(context.getWorkflowKey());
+
+    if (workflow == null) {
+      // this should never happen because workflows are never deleted.
+      throw new IllegalStateException(String.format(NO_WORKFLOW_FOUND_MESSAGE, workflowKey));
+    }
+
+    final EventTrigger triggeredEvent = eventScopeInstanceState.peekEventTrigger(workflowKey);
+    if (triggeredEvent == null) {
+      throw new IllegalStateException(String.format(NO_TRIGGERED_EVENT_MESSAGE, workflowKey));
+    }
+
+    createWorkflowInstance(workflow, workflowInstanceKey);
+
+    final var record =
+        getEventRecord(context.getRecordValue(), triggeredEvent, BpmnElementType.START_EVENT)
+            .setWorkflowInstanceKey(workflowInstanceKey)
+            .setVersion(workflow.getVersion())
+            .setBpmnProcessId(workflow.getBpmnProcessId())
+            .setFlowScopeKey(workflowInstanceKey);
+
+    final var newEventInstanceKey = keyGenerator.nextKey();
+    elementInstanceState.storeRecord(
+        newEventInstanceKey,
+        workflowInstanceKey,
+        record,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+        Purpose.DEFERRED);
+
+    elementInstanceState
+        .getVariablesState()
+        .setTemporaryVariables(newEventInstanceKey, triggeredEvent.getVariables());
+
+    eventScopeInstanceState.deleteTrigger(workflowKey, triggeredEvent.getEventKey());
+  }
+
+  private void createWorkflowInstance(
+      final DeployedWorkflow workflow, final long workflowInstanceKey) {
+
+    recordForWFICreation
+        .setBpmnProcessId(workflow.getBpmnProcessId())
+        .setWorkflowKey(workflow.getKey())
+        .setVersion(workflow.getVersion())
+        .setWorkflowInstanceKey(workflowInstanceKey)
+        .setElementId(workflow.getWorkflow().getId())
+        .setBpmnElementType(workflow.getWorkflow().getElementType());
+
+    elementInstanceState.newInstance(
+        workflowInstanceKey, recordForWFICreation, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+
+    streamWriter.appendFollowUpEvent(
+        workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, recordForWFICreation);
+  }
+
+  private WorkflowInstanceRecord getEventRecord(
+      final WorkflowInstanceRecord value,
+      final EventTrigger event,
+      final BpmnElementType elementType) {
+    eventRecord.reset();
+    eventRecord.wrap(value);
+    eventRecord.setElementId(event.getElementId());
+    eventRecord.setBpmnElementType(elementType);
+
+    return eventRecord;
   }
 
   private <T extends ExecutableActivity> ExecutableBoundaryEvent getBoundaryEvent(
@@ -109,12 +185,14 @@ public final class BpmnEventSubscriptionBehavior {
   }
 
   private void deferBoundaryEvent(
-      final BpmnElementContext context, final long boundaryElementInstanceKey) {
+      final BpmnElementContext context,
+      final long boundaryElementInstanceKey,
+      final WorkflowInstanceRecord record) {
 
     elementInstanceState.storeRecord(
         boundaryElementInstanceKey,
         context.getElementInstanceKey(),
-        eventRecord,
+        record,
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         Purpose.DEFERRED);
   }

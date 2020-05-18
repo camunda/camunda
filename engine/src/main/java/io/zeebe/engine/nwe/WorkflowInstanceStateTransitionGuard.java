@@ -66,6 +66,9 @@ public final class WorkflowInstanceStateTransitionGuard {
         return hasElementInstanceWithState(context, context.getIntent());
 
       case EVENT_OCCURRED:
+        if (context.getBpmnElementType() == BpmnElementType.START_EVENT) {
+          return Either.right(null);
+        }
         return hasElementInstanceWithState(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
       case SEQUENCE_FLOW_TAKEN:

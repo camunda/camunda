@@ -96,7 +96,7 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
 
     stateBehavior.consumeToken(context);
-    stateBehavior.removeInstance(context);
+    stateBehavior.removeElementInstance(context);
   }
 
   @Override

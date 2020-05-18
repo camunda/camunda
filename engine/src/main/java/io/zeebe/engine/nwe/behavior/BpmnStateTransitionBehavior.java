@@ -166,7 +166,7 @@ public final class BpmnStateTransitionBehavior {
 
       } else if (childInstanceContext.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
         // clean up the state because the completed event will not be processed
-        stateBehavior.removeInstance(childInstanceContext);
+        stateBehavior.removeElementInstance(childInstanceContext);
       }
     }
 
