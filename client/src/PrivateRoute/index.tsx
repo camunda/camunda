@@ -18,10 +18,10 @@ const PrivateRoute: React.FC<Props> = observer(
   ({redirectPath, children, location, path, ...routeProps}) => {
     const {isLoggedIn, isCheckingExistingSession} = login;
 
-    if (isLoggedIn) {
+    if (isLoggedIn || isCheckingExistingSession) {
       return (
         <Route location={location} {...routeProps}>
-          {isCheckingExistingSession ? null : children}
+          {children}
         </Route>
       );
     }
