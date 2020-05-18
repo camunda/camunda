@@ -68,7 +68,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     ReportShareDto share = createReportShare(reportId);
 
     // when
-    Response response = createReportShareResponse(share);
+    Response response = sharingClient.createReportShareResponse(share);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -85,7 +85,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     ReportShareDto share = createReportShare(reportId);
 
     // when
-    Response response = createReportShareResponse(share);
+    Response response = sharingClient.createReportShareResponse(share);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -100,7 +100,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     sharingDto.setDashboardId(dashboard);
 
     // when
-    Response response = createDashboardShareResponse(sharingDto);
+    Response response = sharingClient.createDashboardShareResponse(sharingDto);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -249,10 +249,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     //when
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSharedDashboardRequest(dashboardShareId)
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+    DashboardDefinitionDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
     //then
     assertThat(dashboardShareDto, is(notNullValue()));

@@ -64,6 +64,13 @@ public class EventProcessClient {
     ).getId();
   }
 
+  public String createEventProcessMapping(final EventProcessMappingCreateRequestDto processMappingCreateRequestDto) {
+    return createCreateEventProcessMappingRequest(processMappingCreateRequestDto).execute(
+      IdDto.class,
+      Response.Status.OK.getStatusCode()
+    ).getId();
+  }
+
   public OptimizeRequestExecutor createGetEventProcessMappingRequest(final String eventProcessMappingId) {
     return getRequestExecutor().buildGetEventProcessMappingRequest(eventProcessMappingId);
   }

@@ -8,6 +8,8 @@ package org.camunda.optimize.test.optimize;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -29,6 +31,14 @@ public class EntitiesClient {
       .withUserAuthentication(username, password)
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
   }
+
+  public EntityNameDto getEntityNames(String collectionId, String dashboardId, String reportId,
+                                                String eventProcessId) {
+    return getRequestExecutor()
+      .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId, eventProcessId))
+      .execute(EntityNameDto.class, Response.Status.OK.getStatusCode());
+  }
+
 
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();

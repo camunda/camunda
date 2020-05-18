@@ -31,10 +31,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final JsonNode expectedLocaleJson = getExpectedLocalizationFile(localeCode);
 
     // when
-    final JsonNode localeJson = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetLocalizationRequest(localeCode)
-      .execute(JsonNode.class, Response.Status.OK.getStatusCode());
+    final JsonNode localeJson = localizationClient.getLocalizationJson(localeCode);
 
     // then
     assertThat(localeJson, is(expectedLocaleJson));
@@ -49,10 +46,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     );
 
     // when
-    final JsonNode localeJson = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetLocalizationRequest(localeCode)
-      .execute(JsonNode.class, Response.Status.OK.getStatusCode());
+    final JsonNode localeJson = localizationClient.getLocalizationJson(localeCode);
 
     // then
     assertThat(localeJson, is(expectedLocaleJson));
@@ -66,10 +60,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     );
 
     // when
-    final JsonNode localeJson = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetLocalizationRequest(null)
-      .execute(JsonNode.class, Response.Status.OK.getStatusCode());
+    final JsonNode localeJson = localizationClient.getLocalizationJson(null);
 
     // then
     assertThat(localeJson, is(expectedLocaleJson));
@@ -98,10 +89,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final String expectedLocalizedMarkdown = getExpectedWhatsNewMarkdownContentForLocale(localeCode);
 
     // when
-    final String localeMarkdown = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
-      .execute(String.class, Response.Status.OK.getStatusCode());
+    final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(localeCode);
 
     // then
     assertThat(localeMarkdown, is(expectedLocalizedMarkdown));
@@ -116,10 +104,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     );
 
     // when
-    final String localeMarkdown = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
-      .execute(String.class, Response.Status.OK.getStatusCode());
+    final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(localeCode);
 
     // then
     assertThat(localeMarkdown, is(expectedLocalizedMarkdown));
@@ -132,10 +117,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     );
 
     // when
-    final String localeMarkdown = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetLocalizedWhatsNewMarkdownRequest(null)
-      .execute(String.class, Response.Status.OK.getStatusCode());
+    final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(null);
 
     // then
     assertThat(localeMarkdown, is(expectedLocalizedMarkdown));

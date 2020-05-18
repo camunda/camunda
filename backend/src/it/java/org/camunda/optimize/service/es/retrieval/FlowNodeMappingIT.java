@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,11 +43,7 @@ public class FlowNodeMappingIT extends AbstractIT {
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(processDefinition.getKey());
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    FlowNodeNamesResponseDto result =
-            embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
-            .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
+    FlowNodeNamesResponseDto result = flowNodeNamesClient.getFlowNodeNames(flowNodeIdsToNamesRequestDto);
 
     // then
     assertThat(result, is(notNullValue()));
@@ -93,11 +88,7 @@ public class FlowNodeMappingIT extends AbstractIT {
     ids.add(start.getId());
     flowNodeIdsToNamesRequestDto.setNodeIds(ids);
 
-    FlowNodeNamesResponseDto result =
-            embeddedOptimizeExtension
-                    .getRequestExecutor()
-                    .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
-                    .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
+    FlowNodeNamesResponseDto result = flowNodeNamesClient.getFlowNodeNames(flowNodeIdsToNamesRequestDto);
 
     // then
     assertThat(result, is(notNullValue()));

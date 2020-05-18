@@ -112,7 +112,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     DashboardShareDto share = createDashboardShareDto(dashboardId);
-    Response response = createDashboardShareResponse(share);
+    Response response = sharingClient.createDashboardShareResponse(share);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -452,7 +452,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   public void createNewFakeReportShareThrowsError() {
 
     // when
-    Response response = createReportShareResponse(createReportShare());
+    Response response = sharingClient.createReportShareResponse(createReportShare());
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
@@ -465,7 +465,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     sharingDto.setReportId(FAKE_REPORT_ID);
 
     // when
-    Response response = createReportShareResponse(sharingDto);
+    Response response = sharingClient.createReportShareResponse(sharingDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
@@ -478,7 +478,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     dashboardShare.setDashboardId(FAKE_REPORT_ID);
 
     // when
-    Response response = createDashboardShareResponse(dashboardShare);
+    Response response = sharingClient.createDashboardShareResponse(dashboardShare);
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
@@ -491,7 +491,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     ReportShareDto share = createReportShare(reportId);
 
     // when
-    Response response = createReportShareResponse(share);
+    Response response = sharingClient.createReportShareResponse(share);
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -735,11 +735,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when I want to share the dashboard as kermit and kermit has no access to report 2
     DashboardShareDto share = createDashboardShareDto(dashboardId);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildShareDashboardRequest(share)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    Response response = sharingClient.createDashboardShareResponse(share, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -763,11 +759,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     DashboardShareDto share = createDashboardShareDto(dashboardId);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildShareDashboardRequest(share)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    Response response = sharingClient.createDashboardShareResponse(share, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());

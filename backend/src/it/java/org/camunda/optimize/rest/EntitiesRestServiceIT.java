@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
@@ -66,7 +68,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> privateEntities = getEntities();
+    final List<EntityDto> privateEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(privateEntities.size(), is(3));
@@ -92,7 +94,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when (default user)
-    final List<EntityDto> defaultUserEntities = getEntities();
+    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(2));
@@ -102,11 +104,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<EntityDto> kermitUserEntities = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication("kermit", "kermit")
-      .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+    final List<EntityDto> kermitUserEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(kermitUserEntities.size(), is(1));
@@ -126,13 +124,10 @@ public class EntitiesRestServiceIT extends AbstractIT {
     singleProcessReportDefinitionDto.setName("empty");
     // an empty string definition key caused trouble
     singleProcessReportDefinitionDto.getData().setProcessDefinitionKey("");
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(Response.Status.OK.getStatusCode());
+    reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when (default user)
-    final List<EntityDto> defaultUserEntities = getEntities();
+    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(1));
@@ -151,7 +146,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> privateEntities = getEntities();
+    final List<EntityDto> privateEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(privateEntities.size(), is(2));
@@ -168,7 +163,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when (default user)
-    final List<EntityDto> defaultUserEntities = getEntities();
+    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(1));
@@ -178,11 +173,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<EntityDto> kermitUserEntities = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication("kermit", "kermit")
-      .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+    final List<EntityDto> kermitUserEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(kermitUserEntities.size(), is(1));
@@ -195,13 +186,13 @@ public class EntitiesRestServiceIT extends AbstractIT {
   @Test
   public void getEntities_ReturnsCollections() {
     //given
-    addEmptyCollectionToOptimize();
-    addEmptyCollectionToOptimize();
+    collectionClient.createNewCollection();
+    collectionClient.createNewCollection();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> privateEntities = getEntities();
+    final List<EntityDto> privateEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(privateEntities.size(), is(2));
@@ -210,7 +201,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
   @Test
   public void getEntities_DoesNotReturnEntitiesInCollections() {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
 
     addSingleReportToOptimize("A Report", ReportType.DECISION);
     addSingleReportToOptimize("B Report", ReportType.PROCESS, collectionId, DEFAULT_USERNAME);
@@ -220,7 +211,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = getEntities();
+    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(3));
@@ -243,10 +234,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> entities = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+    final List<EntityDto> entities = entitiesClient.getAllEntities();
 
     // then
     assertThat(entities.size(), is(6));
@@ -267,12 +255,12 @@ public class EntitiesRestServiceIT extends AbstractIT {
   @Test
   public void getEntities_IncludesCollectionSubEntityCountsIfThereAreNoEntities() {
     // given
-    addEmptyCollectionToOptimize();
+    collectionClient.createNewCollection();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = getEntities();
+    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(1));
@@ -285,7 +273,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
   @Test
   public void getEntities_IncludesCollectionSubEntityCounts() {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
 
     addSingleReportToOptimize("A Report", ReportType.DECISION, collectionId, DEFAULT_USERNAME);
     addSingleReportToOptimize("B Report", ReportType.PROCESS, collectionId, DEFAULT_USERNAME);
@@ -295,7 +283,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = getEntities();
+    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(1));
@@ -308,12 +296,12 @@ public class EntitiesRestServiceIT extends AbstractIT {
   @Test
   public void getEntities_IncludesCollectionRoleCountsByDefault() {
     // given
-    addEmptyCollectionToOptimize();
+    collectionClient.createNewCollection();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = getEntities();
+    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(1));
@@ -326,7 +314,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
   @Test
   public void getEntities_IncludesCollectionRoleCounts() {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
     final String user1 = "user1";
     authorizationClient.addUserAndGrantOptimizeAccess(user1);
     addRoleToCollection(collectionId, user1, IdentityType.USER);
@@ -343,7 +331,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> defaultUserEntities = getEntities();
+    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(1));
@@ -362,13 +350,10 @@ public class EntitiesRestServiceIT extends AbstractIT {
 
     final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
     combinedReportUpdate.setData(createCombinedReportData(reportId1, reportId2));
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate)
-      .execute();
+    reportClient.updateCombinedReport(combinedReportId, Lists.newArrayList(reportId1, reportId2));
 
     // when
-    final List<EntityDto> defaultUserEntities = getEntities();
+    final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(3));
@@ -390,7 +375,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
+    EntityNameDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
 
     // then
     assertThat(result.getCollectionName(), is("aCollectionName"));
@@ -408,7 +393,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
+    EntityNameDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
 
     // then
     assertThat(result.getCollectionName(), is("aCollectionName"));
@@ -426,7 +411,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(null, null, reportId, null);
+    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName(), nullValue());
@@ -442,7 +427,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(null, null, reportId, null);
+    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName(), nullValue());
@@ -458,7 +443,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(null, null, reportId, null);
+    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName(), nullValue());
@@ -498,8 +483,8 @@ public class EntitiesRestServiceIT extends AbstractIT {
   }
 
   private String addCollection(final String collectionName) {
-    final String collectionId = addEmptyCollectionToOptimize();
-    updateCollectionRequest(collectionId, new PartialCollectionDefinitionDto(collectionName));
+    final String collectionId = collectionClient.createNewCollection();
+    collectionClient.updateCollection(collectionId, new PartialCollectionDefinitionDto(collectionName));
     return collectionId;
   }
 
@@ -513,10 +498,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
         : new IdentityDto(identityId, IdentityType.GROUP),
       RoleType.EDITOR
     );
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+    collectionClient.addRoleToCollection(collectionId, roleDto);
   }
 
   private String addSingleReportToOptimize(String name, ReportType reportType) {
@@ -529,22 +511,12 @@ public class EntitiesRestServiceIT extends AbstractIT {
         SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
         singleProcessReportDefinitionDto.setName(name);
         singleProcessReportDefinitionDto.setCollectionId(collectionId);
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-          .withUserAuthentication(user, user)
-          .execute(IdDto.class, Response.Status.OK.getStatusCode())
-          .getId();
+        return reportClient.createSingleProcessReportAsUser(singleProcessReportDefinitionDto, user, user);
       case DECISION:
         SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
         singleDecisionReportDefinitionDto.setName(name);
         singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-          .withUserAuthentication(user, user)
-          .execute(IdDto.class, Response.Status.OK.getStatusCode())
-          .getId();
+        return reportClient.createNewDecisionReportAsUser(singleDecisionReportDefinitionDto, user, user);
       default:
         throw new IllegalStateException("ReportType not allowed!");
     }
@@ -558,12 +530,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setName(name);
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .withUserAuthentication(user, user)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    return dashboardClient.createDashboardAsUser(dashboardDefinitionDto, user, user);
   }
 
   private String addCombinedReport(String name) {
@@ -590,41 +557,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
           .type(EventSourceType.EXTERNAL)
           .build()))
       .build();
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateEventProcessMappingRequest(eventBasedProcessDto)
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
+    return eventProcessClient.createEventProcessMapping(eventBasedProcessDto);
   }
 
-  private List<EntityDto> getEntities() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private EntityNameDto getEntityNames(String collectionId, String dashboardId, String reportId,
-                                       String eventProcessId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId, eventProcessId))
-      .execute(EntityNameDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private void updateCollectionRequest(String id, PartialCollectionDefinitionDto renameCollection) {
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdatePartialCollectionRequest(id, renameCollection)
-      .execute();
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-  }
 }

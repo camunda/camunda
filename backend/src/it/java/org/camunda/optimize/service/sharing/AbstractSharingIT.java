@@ -133,23 +133,9 @@ public abstract class AbstractSharingIT extends AbstractIT {
 
   protected String addShareForDashboard(String dashboardId) {
     DashboardShareDto share = createDashboardShareDto(dashboardId);
-    Response response = createDashboardShareResponse(share);
+    Response response = sharingClient.createDashboardShareResponse(share);
 
     return response.readEntity(IdDto.class).getId();
-  }
-
-  protected Response createReportShareResponse(ReportShareDto share) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildShareReportRequest(share)
-      .execute();
-  }
-
-  protected Response createDashboardShareResponse(DashboardShareDto share) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildShareDashboardRequest(share)
-      .execute();
   }
 
   ReportShareDto createReportShare() {
@@ -170,7 +156,7 @@ public abstract class AbstractSharingIT extends AbstractIT {
 
   protected String addShareForReport(String reportId) {
     ReportShareDto share = createReportShare(reportId);
-    Response response = createReportShareResponse(share);
+    Response response = sharingClient.createReportShareResponse(share);
 
     return response.readEntity(IdDto.class).getId();
   }

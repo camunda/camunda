@@ -69,11 +69,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(key);
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(version);
 
-    FlowNodeNamesResponseDto response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
-      .withoutAuthentication()
-      .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
+    FlowNodeNamesResponseDto response = getFlowNodeNamesWithoutAuth(flowNodeIdsToNamesRequestDto);
 
     // then
     assertThat(response.getFlowNodeNames().size(), is(1));
@@ -95,11 +91,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(version);
     flowNodeIdsToNamesRequestDto.setTenantId(tenantId2);
 
-    FlowNodeNamesResponseDto response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
-      .withoutAuthentication()
-      .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
+    FlowNodeNamesResponseDto response = getFlowNodeNamesWithoutAuth(flowNodeIdsToNamesRequestDto);
 
     // then
     assertThat(response.getFlowNodeNames().size(), is(2));
@@ -119,11 +111,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(version);
     flowNodeIdsToNamesRequestDto.setTenantId(tenantId1);
 
-    FlowNodeNamesResponseDto response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
-      .withoutAuthentication()
-      .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
+    FlowNodeNamesResponseDto response = getFlowNodeNamesWithoutAuth(flowNodeIdsToNamesRequestDto);
 
     // then
     assertThat(response.getFlowNodeNames().size(), is(1));
@@ -145,7 +133,11 @@ public class FlowNodeRestServiceIT extends AbstractIT {
       .tenantId(tenantId)
       .engine("testEngine")
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedProcessDefinitionId, expected);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME,
+      expectedProcessDefinitionId,
+      expected
+    );
     createProcessDefinitionXml(processDefinitionKey, processDefinitionVersion, flowNodeNames, tenantId);
   }
 
@@ -162,6 +154,18 @@ public class FlowNodeRestServiceIT extends AbstractIT {
       .flowNodeNames(flowNodeNames)
       .bpmn20Xml("XML123")
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedProcessDefinitionId, expectedXml);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME,
+      expectedProcessDefinitionId,
+      expectedXml
+    );
+  }
+
+  private FlowNodeNamesResponseDto getFlowNodeNamesWithoutAuth(FlowNodeIdsToNamesRequestDto requestDto) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetFlowNodeNames(requestDto)
+      .withoutAuthentication()
+      .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
   }
 }

@@ -9,9 +9,14 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 
 import javax.ws.rs.core.Response;
 import java.util.function.Supplier;
+
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 @AllArgsConstructor
 public class SharingClient {
@@ -36,6 +41,24 @@ public class SharingClient {
       .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
       .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
+
+  public Response createDashboardShareResponse(DashboardShareDto share) {
+    return createDashboardShareResponse(share, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  public Response createDashboardShareResponse(DashboardShareDto share, String username, String password) {
+    return getRequestExecutor()
+      .buildShareDashboardRequest(share)
+      .withUserAuthentication(username, password)
+      .execute();
+  }
+
+  public Response createReportShareResponse(ReportShareDto share) {
+    return getRequestExecutor()
+      .buildShareReportRequest(share)
+      .execute();
+  }
+
 
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
