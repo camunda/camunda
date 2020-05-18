@@ -12,21 +12,10 @@ import io.atomix.raft.impl.zeebe.snapshot.SnapshotStorage;
 import io.zeebe.db.ZeebeDb;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 public interface SnapshotController extends AutoCloseable {
-  /**
-   * Takes a snapshot based on the given position and immediately commits it.
-   *
-   * @param lowerBoundSnapshotPosition the lower bound snapshot position
-   * @return a committed snapshot, or nothing if the operation failed
-   * @see SnapshotStorage#commitSnapshot(Path)
-   * @see SnapshotStorage#getPendingSnapshotFor(long)
-   */
-  Optional<Snapshot> takeSnapshot(long lowerBoundSnapshotPosition);
-
   /**
    * Takes a snapshot based on the given position. The position is a last processed lower bound
    * event position.

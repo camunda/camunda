@@ -73,9 +73,7 @@ public final class FailingSnapshotChunkReplicationTest {
     // given
     final EvilReplicator replicator = new EvilReplicator();
     setup(replicator);
-
-    receiverSnapshotController.consumeReplicatedSnapshots();
-    replicatorSnapshotController.takeSnapshot(1);
+    takeSnapshot();
 
     // when
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
@@ -94,9 +92,7 @@ public final class FailingSnapshotChunkReplicationTest {
     // given
     final FlakyReplicator replicator = new FlakyReplicator();
     setup(replicator);
-
-    receiverSnapshotController.consumeReplicatedSnapshots();
-    replicatorSnapshotController.takeSnapshot(1);
+    takeSnapshot();
 
     // when
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
@@ -125,9 +121,7 @@ public final class FailingSnapshotChunkReplicationTest {
     // given
     final InterruptedReplicator replicator = new InterruptedReplicator();
     setup(replicator);
-
-    receiverSnapshotController.consumeReplicatedSnapshots();
-    replicatorSnapshotController.takeSnapshot(1);
+    takeSnapshot();
 
     // when
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
@@ -156,6 +150,12 @@ public final class FailingSnapshotChunkReplicationTest {
                 .orElseThrow())
         .doesNotExist();
     assertThat(receiverStorage.exists(pendingChunks.get(0).getSnapshotId())).isFalse();
+  }
+
+  private void takeSnapshot() {
+    receiverSnapshotController.consumeReplicatedSnapshots();
+    final var snapshot = replicatorSnapshotController.takeTempSnapshot(1).orElseThrow();
+    replicatorSnapshotController.commitSnapshot(snapshot);
   }
 
   private final class FlakyReplicator implements SnapshotReplication {

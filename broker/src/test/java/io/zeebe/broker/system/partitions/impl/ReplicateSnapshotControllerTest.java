@@ -76,7 +76,8 @@ public final class ReplicateSnapshotControllerTest {
   @Test
   public void shouldReplicateSnapshotChunks() {
     // given
-    replicatorSnapshotController.takeSnapshot(1);
+    final var snapshot = replicatorSnapshotController.takeTempSnapshot(1).orElseThrow();
+    replicatorSnapshotController.commitSnapshot(snapshot);
 
     // when
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
@@ -101,7 +102,8 @@ public final class ReplicateSnapshotControllerTest {
   @Test
   public void shouldContainChecksumPerChunk() {
     // given
-    replicatorSnapshotController.takeSnapshot(1);
+    final var snapshot = replicatorSnapshotController.takeTempSnapshot(1).orElseThrow();
+    replicatorSnapshotController.commitSnapshot(snapshot);
 
     // when
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
@@ -135,7 +137,8 @@ public final class ReplicateSnapshotControllerTest {
   public void shouldReceiveSnapshotChunks() throws Exception {
     // given
     receiverSnapshotController.consumeReplicatedSnapshots();
-    replicatorSnapshotController.takeSnapshot(1);
+    final var snapshot = replicatorSnapshotController.takeTempSnapshot(1).orElseThrow();
+    replicatorSnapshotController.commitSnapshot(snapshot);
 
     // when
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
@@ -154,7 +157,8 @@ public final class ReplicateSnapshotControllerTest {
   public void shouldNotFailOnReplicatingAndReceivingTwice() throws Exception {
     // given
     receiverSnapshotController.consumeReplicatedSnapshots();
-    replicatorSnapshotController.takeSnapshot(1);
+    final var snapshot = replicatorSnapshotController.takeTempSnapshot(1).orElseThrow();
+    replicatorSnapshotController.commitSnapshot(snapshot);
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
 
     // when

@@ -563,7 +563,6 @@ public final class StreamProcessorTest {
     // then
     assertThat(streamProcessor.isClosed()).isTrue();
     assertThat(stateSnapshotController.getValidSnapshotsCount()).isEqualTo(0);
-    verify(stateSnapshotController, TIMEOUT.times(0)).takeSnapshot(anyLong());
     verify(stateSnapshotController, TIMEOUT.times(0)).takeTempSnapshot(anyLong());
   }
 

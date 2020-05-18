@@ -18,6 +18,7 @@ import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.logstreams.util.TestSnapshotStorage;
 import io.zeebe.test.util.AutoCloseableRule;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -60,7 +61,7 @@ public final class StateSnapshotControllerTest {
 
     // then
     assertThat(snapshotController.isDbOpened()).isFalse();
-    assertThat(snapshotController.takeSnapshot(1)).isEmpty();
+    assertThat(snapshotController.takeTempSnapshot(1)).isEmpty();
   }
 
   @Test
@@ -106,10 +107,10 @@ public final class StateSnapshotControllerTest {
     snapshotController.openDb();
 
     // when
-    final var snapshot = snapshotController.takeSnapshot(snapshotPosition);
+    final var snapshot = takeSnapshot(snapshotPosition);
 
     // then
-    assertThat(snapshot).map(Snapshot::getCompactionBound).hasValue(exporterPosition.get());
+    assertThat(snapshot.getName()).contains(exporterPosition.toString());
   }
 
   @Test
@@ -124,7 +125,7 @@ public final class StateSnapshotControllerTest {
     // when
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
-    snapshotController.takeSnapshot(snapshotPosition);
+    takeSnapshot(snapshotPosition);
     snapshotController.close();
     wrapper.wrap(snapshotController.openDb());
 
@@ -169,13 +170,13 @@ public final class StateSnapshotControllerTest {
     wrapper.wrap(snapshotController.openDb());
 
     wrapper.putInt("x", 1);
-    snapshotController.takeSnapshot(1);
+    takeSnapshot(1);
 
     wrapper.putInt("x", 2);
-    snapshotController.takeSnapshot(2);
+    takeSnapshot(2);
 
     wrapper.putInt("x", 3);
-    snapshotController.takeSnapshot(3);
+    takeSnapshot(3);
 
     snapshotController.close();
 
@@ -194,10 +195,10 @@ public final class StateSnapshotControllerTest {
     wrapper.wrap(snapshotController.openDb());
 
     wrapper.putInt("x", 1);
-    snapshotController.takeSnapshot(1);
+    takeSnapshot(1);
 
     wrapper.putInt("x", 2);
-    snapshotController.takeSnapshot(2);
+    takeSnapshot(2);
 
     snapshotController.close();
     corruptLatestSnapshot();
@@ -218,7 +219,7 @@ public final class StateSnapshotControllerTest {
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt("x", 1);
 
-    snapshotController.takeSnapshot(1);
+    takeSnapshot(1);
     snapshotController.close();
     corruptLatestSnapshot();
 
@@ -235,9 +236,9 @@ public final class StateSnapshotControllerTest {
 
     assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(0);
 
-    snapshotController.takeSnapshot(1L);
-    snapshotController.takeSnapshot(3L);
-    snapshotController.takeSnapshot(5L);
+    takeSnapshot(1L);
+    takeSnapshot(3L);
+    takeSnapshot(5L);
     snapshotController.takeTempSnapshot(6L);
 
     // when/then
@@ -251,15 +252,21 @@ public final class StateSnapshotControllerTest {
 
     assertThat(snapshotController.getLastValidSnapshotDirectory()).isNull();
 
-    snapshotController.takeSnapshot(1L);
-    snapshotController.takeSnapshot(3L);
-    final var lastValidSnapshot = snapshotController.takeSnapshot(5L).orElseThrow();
+    takeSnapshot(1L);
+    takeSnapshot(3L);
+    final var lastValidSnapshot = takeSnapshot(5L);
     final var lastTempSnapshot = snapshotController.takeTempSnapshot(6L).orElseThrow();
 
     // when/then
     assertThat(snapshotController.getLastValidSnapshotDirectory().toPath())
-        .isEqualTo(lastValidSnapshot.getPath())
+        .isEqualTo(lastValidSnapshot.toPath())
         .isNotEqualTo(lastTempSnapshot.getPath());
+  }
+
+  private File takeSnapshot(final long position) {
+    final var snapshot = snapshotController.takeTempSnapshot(position).orElseThrow();
+    snapshotController.commitSnapshot(snapshot);
+    return snapshotController.getLastValidSnapshotDirectory();
   }
 
   private void corruptLatestSnapshot() throws IOException {
