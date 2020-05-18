@@ -18,8 +18,10 @@ const LOGIN_PATH = '/login';
 const Wrapper: React.FC = ({children}) => {
   return (
     <MemoryRouter>
-      <Switch>{children}</Switch>
-      <Route path={LOGIN_PATH} render={() => <h1>{LOGIN_CONTENT}</h1>} />
+      <Switch>
+        {children}
+        <Route path={LOGIN_PATH} render={() => <h1>{LOGIN_CONTENT}</h1>} />
+      </Switch>
     </MemoryRouter>
   );
 };
@@ -38,8 +40,12 @@ describe('<PrivateRoute />', () => {
     fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 204}));
 
     const CONTENT = 'Secret route';
+
+    await login.handleLogin('demo', 'demo');
+
     render(
       <PrivateRoute
+        exact
         path="/"
         redirectPath={LOGIN_PATH}
         render={() => {
@@ -49,14 +55,13 @@ describe('<PrivateRoute />', () => {
       {wrapper: Wrapper},
     );
 
-    await login.handleLogin('demo', 'demo');
-
     expect(screen.getByText(CONTENT)).toBeInTheDocument();
   });
 
-  it('should redirect when not authenticated', () => {
+  it('should redirect when not authenticated', async () => {
     render(
       <PrivateRoute
+        exact
         path="/"
         redirectPath={LOGIN_PATH}
         render={() => {
@@ -66,6 +71,6 @@ describe('<PrivateRoute />', () => {
       {wrapper: Wrapper},
     );
 
-    expect(screen.getByText(LOGIN_CONTENT)).toBeInTheDocument();
+    expect(await screen.findByText(LOGIN_CONTENT)).toBeInTheDocument();
   });
 });

@@ -26,9 +26,9 @@ describe('<Login />', () => {
 
   it('should redirect to the initial on success', async () => {
     fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 204}));
-    const MOCK_HISTORY = createMemoryHistory();
+    const historyMock = createMemoryHistory();
     render(
-      <Router history={MOCK_HISTORY}>
+      <Router history={historyMock}>
         <Login />
       </Router>,
     );
@@ -36,7 +36,7 @@ describe('<Login />', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(MOCK_HISTORY.location.pathname).toBe('/');
+    expect(historyMock.location.pathname).toBe('/');
   });
 
   it('should show an error on failure', async () => {
