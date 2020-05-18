@@ -13,8 +13,6 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
-import io.prometheus.client.exporter.HTTPServer;
-import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.gateway.impl.SpringGatewayBridge;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
@@ -33,12 +31,12 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
 
 public class StandaloneGateway {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
-  private final GatewayCfg gatewayCfg;
   private final ActorScheduler actorScheduler;
 
   public StandaloneGateway(
@@ -52,8 +50,6 @@ public class StandaloneGateway {
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () -> gateway.getBrokerClient().getTopologyManager().getTopology());
-
-    this.gatewayCfg = gatewayCfg;
   }
 
   private AtomixCluster createAtomixCluster(final ClusterCfg clusterCfg) {
@@ -86,21 +82,9 @@ public class StandaloneGateway {
   }
 
   public void run() throws IOException, InterruptedException {
-    HTTPServer monitoringServer = null;
-    if (gatewayCfg.getMonitoring().isEnabled()) {
-      monitoringServer =
-          new HTTPServer(
-              gatewayCfg.getMonitoring().getHost(), gatewayCfg.getMonitoring().getPort());
-      DefaultExports.initialize();
-    }
-
     gateway.listenAndServe();
     atomixCluster.stop();
     actorScheduler.stop();
-
-    if (monitoringServer != null) {
-      monitoringServer.stop();
-    }
   }
 
   public static void main(final String[] args) throws Exception {
@@ -123,7 +107,8 @@ public class StandaloneGateway {
     SpringApplication.run(Launcher.class, args);
   }
 
-  @SpringBootApplication(exclude = ElasticsearchRestClientAutoConfiguration.class)
+  @SpringBootApplication(exclude = {ElasticsearchRestClientAutoConfiguration.class})
+  @ComponentScan({"io.zeebe.gateway", "io.zeebe.shared", "io.zeebe.util"})
   public static class Launcher implements CommandLineRunner {
 
     @Autowired GatewayCfg configuration;

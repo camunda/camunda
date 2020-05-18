@@ -10,6 +10,7 @@ package io.zeebe;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.shared.EnvironmentHelper;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.core.env.Environment;

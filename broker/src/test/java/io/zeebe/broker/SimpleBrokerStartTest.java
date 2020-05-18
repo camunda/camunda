@@ -24,6 +24,8 @@ import org.junit.rules.TemporaryFolder;
 
 public final class SimpleBrokerStartTest {
 
+  private static final SpringBrokerBridge TEST_SPRING_BROKER_BRIDGE = new SpringBrokerBridge();
+
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File newTemporaryFolder;
 
@@ -38,7 +40,9 @@ public final class SimpleBrokerStartTest {
     final var brokerCfg = new BrokerCfg();
     brokerCfg.setStepTimeout(Duration.ofMillis(1));
 
-    final var broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+    final var broker =
+        new Broker(
+            brokerCfg, newTemporaryFolder.getAbsolutePath(), null, TEST_SPRING_BROKER_BRIDGE);
 
     // when
     final var catchedThrownBy = assertThatThrownBy(() -> broker.start().join());
@@ -55,7 +59,13 @@ public final class SimpleBrokerStartTest {
 
     // when
     final var catchedThrownBy =
-        assertThatThrownBy(() -> new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null));
+        assertThatThrownBy(
+            () ->
+                new Broker(
+                    brokerCfg,
+                    newTemporaryFolder.getAbsolutePath(),
+                    null,
+                    TEST_SPRING_BROKER_BRIDGE));
 
     // then
     catchedThrownBy.isInstanceOf(IllegalArgumentException.class);
@@ -65,7 +75,9 @@ public final class SimpleBrokerStartTest {
   public void shouldCallPartitionListenerAfterStart() throws Exception {
     // given
     final var brokerCfg = new BrokerCfg();
-    final var broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+    final var broker =
+        new Broker(
+            brokerCfg, newTemporaryFolder.getAbsolutePath(), null, TEST_SPRING_BROKER_BRIDGE);
     final var leaderLatch = new CountDownLatch(1);
     broker.addPartitionListener(
         new PartitionListener() {

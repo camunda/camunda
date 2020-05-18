@@ -26,6 +26,7 @@ import io.atomix.raft.snapshot.impl.FileBasedSnapshotMetadata;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.PartitionListener;
+import io.zeebe.broker.SpringBrokerBridge;
 import io.zeebe.broker.clustering.atomix.AtomixFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
@@ -233,7 +234,9 @@ public final class ClusteringRule extends ExternalResource {
   private Broker createBroker(final int nodeId) {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
-    final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
+    final Broker broker =
+        new Broker(
+            brokerCfg, brokerBase.getAbsolutePath(), controlledClock, new SpringBrokerBridge());
     broker.addPartitionListener(leaderListener);
     new Thread(broker::start).start();
     return broker;

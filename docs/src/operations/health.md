@@ -39,9 +39,12 @@ When a broker becomes unhealthy, it is recommended to check the logs to see what
 
 Zeebe gateway exposes three HTTP endpoints to query its health status:
 
-* Health Status - `http://{zeebe-gateway}:8080/actuator/health`
-* Startup Probe - `http://{zeebe-gateway}:8080/actuator/health/startup`
-* Liveness Probe - `http://{zeebe-gateway}:8080/actuator/health/liveness`
+* Health Status - `http://{zeebe-gateway}:9600/health`
+* Startup Probe - `http://{zeebe-gateway}:9600/actuator/health/startup`
+* Liveness Probe - `http://{zeebe-gateway}:9600/actuator/health/liveness`
+
+(The default port can be changed in the configuration: `{zeebe.gateway.monitoring.port}`)
+
 
 ### Health Status
 

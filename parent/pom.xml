@@ -40,6 +40,7 @@
     <version.agrona>1.5.1</version.agrona>
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.16.1</version.assertj>
+    <version.awaitility>4.0.3</version.awaitility>
     <version.camunda>7.13.0</version.camunda>
     <version.awaitility>4.0.3</version.awaitility>
     <version.commons-lang>3.10</version.commons-lang>
@@ -67,6 +68,7 @@
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.9.0</version.prometheus>
     <version.protobuf>3.12.2</version.protobuf>
+    <version.micrometer>1.5.1</version.micrometer>
     <version.rocksdbjni>6.8.1</version.rocksdbjni>
     <version.sbe>1.18.2</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
@@ -152,6 +154,14 @@
       </dependency>
 
       <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-client-java</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>
@@ -216,6 +226,13 @@
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
         <version>${version.assertj}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${version.awaitility}</version>
+        <scope>test</scope>
       </dependency>
 
       <dependency>
@@ -466,7 +483,7 @@
 
       <dependency>
         <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_common</artifactId>
+        <artifactId>simpleclient_httpserver</artifactId>
         <version>${version.prometheus}</version>
       </dependency>
 
@@ -476,10 +493,17 @@
         <version>${version.prometheus}</version>
       </dependency>
 
+
       <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_httpserver</artifactId>
-        <version>${version.prometheus}</version>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-core</artifactId>
+        <version>${version.micrometer}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-registry-prometheus</artifactId>
+        <version>${version.micrometer}</version>
       </dependency>
 
       <dependency>
@@ -534,11 +558,6 @@
 
       <dependency>
         <groupId>org.springframework</groupId>
-        <artifactId>spring-beans</artifactId>
-        <version>${version.spring-framework}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
         <artifactId>spring-context</artifactId>
         <version>${version.spring-framework}</version>
       </dependency>
@@ -547,9 +566,20 @@
         <artifactId>spring-core</artifactId>
         <version>${version.spring-framework}</version>
       </dependency>
+
       <dependency>
         <groupId>org.springframework</groupId>
-        <artifactId>spring-context</artifactId>
+        <artifactId>spring-beans</artifactId>
+        <version>${version.spring-framework}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-webmvc</artifactId>
+        <version>${version.spring-framework}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-web</artifactId>
         <version>${version.spring-framework}</version>
       </dependency>
       <dependency>
@@ -577,6 +607,11 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-autoconfigure</artifactId>
         <version>${version.spring-boot}</version>
       </dependency>
       <dependency>
