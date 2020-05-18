@@ -66,14 +66,11 @@
     ],
     "*.{js,jsx,ts,tsx}": [
       "yarn lint"
-    ],
-    "src/**/*.{js,jsx,ts,tsx}": [
-      "yarn coverage"
     ]
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "lint-staged && yarn coverage"
     }
   },
   "jest": {
