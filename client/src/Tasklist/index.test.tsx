@@ -16,7 +16,7 @@ describe('<Tasklist />', () => {
   it('should handle logout', () => {
     render(<Tasklist />);
 
-    fireEvent.click(screen.getByRole('button', {name: 'logout'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Logout'}));
 
     expect(login.handleLogout).toHaveBeenCalled();
   });

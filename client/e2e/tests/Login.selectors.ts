@@ -5,10 +5,8 @@
  */
 
 import {Selector} from 'testcafe';
-import {config} from '../config';
 
-fixture('Sample test').page(config.endpoint);
+const loginButton = Selector('button').withText('Login');
+const logoutButton = Selector('button').withText('Logout');
 
-test('should have the correct text', async (t) => {
-  await t.expect(Selector('h1').withText('Tasklist')).ok();
-});
+export {loginButton, logoutButton};

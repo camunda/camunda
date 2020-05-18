@@ -15,7 +15,7 @@ const Tasklist: React.FC = () => {
     <main>
       <h1>Tasklist</h1>
       <button type="button" onClick={handleLogout}>
-        logout
+        Logout
       </button>
     </main>
   );
