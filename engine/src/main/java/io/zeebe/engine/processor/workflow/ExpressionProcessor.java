@@ -224,14 +224,14 @@ public final class ExpressionProcessor {
    * Evaluates the given expression and returns the result no matter the type.
    *
    * @param expression the expression to evaluate
-   * @param context the element context to load the variables from
-   * @return the evaluation result as buffer, or {@link Optional#empty()} if an incident is raised
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as buffer, or a failure if the evaluation fails
    */
-  public Optional<DirectBuffer> evaluateAnyExpression(
-      final Expression expression, final BpmnStepContext<?> context) {
-    final var evaluationResult = evaluateExpression(expression, context.getKey());
-    return failureCheck(evaluationResult, ErrorType.EXTRACT_VALUE_ERROR, context)
-        .map(EvaluationResult::toBuffer);
+  public Either<Failure, DirectBuffer> evaluateAnyExpression(
+      final Expression expression, final long scopeKey) {
+    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey);
+    return evaluationResult.map(EvaluationResult::toBuffer);
   }
 
   /**
@@ -239,15 +239,15 @@ public final class ExpressionProcessor {
    * encoded in MessagePack and can have any type.
    *
    * @param expression the expression to evaluate
-   * @param context the element context to load the variables from
-   * @return the evaluation result as a list, or {@link Optional#empty()} if an incident is raised
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as a list, or a failure if the evaluation fails
    */
-  public Optional<List<DirectBuffer>> evaluateArrayExpression(
-      final Expression expression, final BpmnStepContext<?> context) {
-    final var evaluationResult = evaluateExpression(expression, context.getKey());
-    return failureCheck(evaluationResult, ErrorType.EXTRACT_VALUE_ERROR, context)
-        .flatMap(
-            result -> typeCheck(result, ResultType.ARRAY, ErrorType.EXTRACT_VALUE_ERROR, context))
+  public Either<Failure, List<DirectBuffer>> evaluateArrayExpression(
+      final Expression expression, final long scopeKey) {
+    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey);
+    return evaluationResult
+        .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey))
         .map(EvaluationResult::getList);
   }
 

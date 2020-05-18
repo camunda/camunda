@@ -45,19 +45,10 @@ import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElem
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementCompletingHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayEventOccurredHandler;
-import io.zeebe.engine.processor.workflow.handlers.gateway.ExclusiveGatewayElementActivatingHandler;
-import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyActivatedHandler;
-import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyActivatingHandler;
-import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyCompletedHandler;
-import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyCompletingHandler;
-import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyEventOccurredHandler;
-import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.receivetask.ReceiveTaskEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.FlowOutElementCompletedHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.ParallelMergeSequenceFlowTaken;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.SequenceFlowTakenHandler;
-import io.zeebe.engine.processor.workflow.handlers.servicetask.ServiceTaskElementActivatedHandler;
-import io.zeebe.engine.processor.workflow.handlers.servicetask.ServiceTaskElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.message.BufferedMessageToStartEventCorrelator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -141,13 +132,6 @@ public final class BpmnStepHandlers {
         new EventBasedGatewayElementCompletedHandler<>());
 
     stepHandlers.put(
-        BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_ACTIVATING,
-        new ExclusiveGatewayElementActivatingHandler<>(expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_COMPLETED,
-        new EventBasedGatewayElementCompletedHandler<>());
-
-    stepHandlers.put(
         BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_ACTIVATING,
         new IntermediateCatchEventElementActivatingHandler<>(
             catchEventSubscriber, expressionProcessor));
@@ -168,14 +152,6 @@ public final class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.RECEIVE_TASK_EVENT_OCCURRED, new ReceiveTaskEventOccurredHandler<>());
 
     stepHandlers.put(
-        BpmnStep.SERVICE_TASK_ELEMENT_ACTIVATED,
-        new ServiceTaskElementActivatedHandler<>(expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.SERVICE_TASK_ELEMENT_TERMINATING,
-        new ServiceTaskElementTerminatingHandler<>(
-            state.getIncidentState(), catchEventSubscriber, state.getJobState()));
-
-    stepHandlers.put(
         BpmnStep.START_EVENT_EVENT_OCCURRED, new StartEventEventOccurredHandler<>(state));
 
     stepHandlers.put(
@@ -185,30 +161,6 @@ public final class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN, new ParallelMergeSequenceFlowTaken<>());
     stepHandlers.put(BpmnStep.SEQUENCE_FLOW_TAKEN, new SequenceFlowTakenHandler<>());
-
-    stepHandlers.put(
-        BpmnStep.MULTI_INSTANCE_ACTIVATING,
-        new MultiInstanceBodyActivatingHandler(
-            this::handle, catchEventSubscriber, expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.MULTI_INSTANCE_ACTIVATED,
-        new MultiInstanceBodyActivatedHandler(this::handle, expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.MULTI_INSTANCE_COMPLETING,
-        new MultiInstanceBodyCompletingHandler(
-            this::handle, catchEventSubscriber, expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.MULTI_INSTANCE_COMPLETED,
-        new MultiInstanceBodyCompletedHandler(
-            stepHandlers::get, this::handle, expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.MULTI_INSTANCE_TERMINATING,
-        new MultiInstanceBodyTerminatingHandler(
-            this::handle, catchEventSubscriber, expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED,
-        new MultiInstanceBodyEventOccurredHandler(
-            stepHandlers::get, this::handle, expressionProcessor));
 
     stepHandlers.put(
         BpmnStep.CALL_ACTIVITY_ACTIVATING,

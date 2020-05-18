@@ -154,6 +154,42 @@ public final class BpmnStateTransitionBehavior {
     return stateBehavior.createChildElementInstance(context, childInstanceKey, childInstanceRecord);
   }
 
+  public void terminateChildInstances(final BpmnElementContext context) {
+
+    final var childInstances = stateBehavior.getChildInstances(context);
+
+    for (final BpmnElementContext childInstanceContext : childInstances) {
+
+      if (WorkflowInstanceLifecycle.canTransition(
+          childInstanceContext.getIntent(), WorkflowInstanceIntent.ELEMENT_TERMINATING)) {
+        transitionToTerminating(childInstanceContext);
+
+      } else if (childInstanceContext.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
+        // clean up the state because the completed event will not be processed
+        stateBehavior.removeInstance(childInstanceContext);
+      }
+    }
+
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final var activeChildInstances = elementInstance.getNumberOfActiveElementInstances();
+
+    if (activeChildInstances == 0) {
+      // terminate element instance if all child instances are terminated
+      transitionToTerminated(context);
+
+    } else {
+      // don't yet transition to terminated but wait for child instances to be terminated
+
+      // clean up the state because some events of child instances will not be processed (e.g.
+      // element completed, sequence flow taken)
+      final int pendingTokens = elementInstance.getNumberOfActiveTokens() - activeChildInstances;
+      for (int t = 0; t < pendingTokens; t++) {
+        elementInstance.consumeToken();
+      }
+      stateBehavior.updateElementInstance(elementInstance);
+    }
+  }
+
   public <T extends ExecutableFlowNode> void takeOutgoingSequenceFlows(
       final T element, final BpmnElementContext context) {
 
