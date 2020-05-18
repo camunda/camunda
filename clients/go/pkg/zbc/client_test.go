@@ -340,6 +340,34 @@ func (s *clientTestSuite) TestCommandExpireWithContext() {
 	}
 }
 
+func (s *clientTestSuite) TestClientWithEmptyDialOptions() {
+	// given
+	lis, grpcServer := createSecureServer()
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+
+	parts := strings.Split(lis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		CaCertificatePath: "testdata/ca.cert.pem",
+	}, []grpc.DialOption{}...)
+
+	s.NoError(err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send(context.Background())
+
+	// then
+	s.Error(err)
+	if grpcStatus, ok := status.FromError(err); ok {
+		s.EqualValues(codes.Unimplemented, grpcStatus.Code())
+	}
+}
+
 func createSecureServer() (net.Listener, *grpc.Server) {
 	creds, _ := credentials.NewServerTLSFromFile("testdata/chain.cert.pem", "testdata/private.key.pem")
 	return createServer(grpc.Creds(creds))

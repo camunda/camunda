@@ -121,8 +121,7 @@ func (c *ClientImpl) Close() error {
 	return c.connection.Close()
 }
 
-func NewClient(config *ClientConfig) (Client, error) {
-	var opts []grpc.DialOption
+func NewClient(config *ClientConfig, opts ...grpc.DialOption) (Client, error) {
 	err := applyClientEnvOverrides(config)
 	if err != nil {
 		return nil, err
