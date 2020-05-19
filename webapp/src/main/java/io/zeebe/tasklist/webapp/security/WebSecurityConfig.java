@@ -5,22 +5,20 @@
  */
 package io.zeebe.tasklist.webapp.security;
 
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static io.zeebe.tasklist.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.webapp.rest.HealthCheckRestService;
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.json.Json;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import io.zeebe.tasklist.property.TasklistProperties;
-import io.zeebe.tasklist.webapp.rest.HealthCheckRestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -44,7 +42,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component("webSecurityConfig")
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-  private static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
   public static final String X_CSRF_PARAM = "X-CSRF-PARAM";
   public static final String X_CSRF_HEADER = "X-CSRF-HEADER";
   public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
@@ -52,16 +49,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";
   public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
-  
-  // Used to store the CSRF Token in a cookie.
-  private final CookieCsrfTokenRepository cookieCSRFTokenRepository = new CookieCsrfTokenRepository();
-  
-  @Autowired
-  private TasklistProperties tasklistProperties;
-
-  @Autowired
-  private UserDetailsService userDetailsService;
-  
+  private static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
   private static final String[] AUTH_WHITELIST = {
     // -- swagger ui
     "/swagger-resources",
@@ -69,80 +57,92 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     "/swagger-ui.html",
     "/documentation",
     "/webjars/**",
+    "/graphql",
     HealthCheckRestService.HEALTH_CHECK_URL,
     ACTUATOR_ENDPOINTS,
     CLIENT_CONFIG_RESOURCE
-  };  
+  };
+  // Used to store the CSRF Token in a cookie.
+  private final CookieCsrfTokenRepository cookieCSRFTokenRepository =
+      new CookieCsrfTokenRepository();
+  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private UserDetailsService userDetailsService;
+
+  @Override
+  public void configure(AuthenticationManagerBuilder builder) throws Exception {
+    builder.userDetailsService(userDetailsService);
+  }
 
   @Override
   public void configure(HttpSecurity http) throws Exception {
-    if(tasklistProperties.isCsrfPreventionEnabled()){
+    if (tasklistProperties.isCsrfPreventionEnabled()) {
       cookieCSRFTokenRepository.setCookieName(X_CSRF_TOKEN);
       http.csrf()
-      .ignoringAntMatchers(LOGIN_RESOURCE)
-      .and()
-      .addFilterAfter(getCSRFHeaderFilter(),CsrfFilter.class);
-    }else {
+          .ignoringAntMatchers(LOGIN_RESOURCE)
+          .ignoringAntMatchers(AUTH_WHITELIST)
+          .and()
+          .addFilterAfter(getCSRFHeaderFilter(), CsrfFilter.class);
+    } else {
       http.csrf().disable();
     }
-    http
-      .authorizeRequests()
-        .antMatchers(AUTH_WHITELIST).permitAll()
-        .antMatchers("/api/**").authenticated()
-      .and()
-        .formLogin()
-          .loginProcessingUrl(LOGIN_RESOURCE)
-          .successHandler(this::successHandler)
-          .failureHandler(this::failureHandler)
+    http.authorizeRequests()
+        .antMatchers(AUTH_WHITELIST)
         .permitAll()
-      .and()
+        .antMatchers("/api/**")
+        .authenticated()
+        .and()
+        .formLogin()
+        .loginProcessingUrl(LOGIN_RESOURCE)
+        .successHandler(this::successHandler)
+        .failureHandler(this::failureHandler)
+        .permitAll()
+        .and()
         .logout()
         .logoutUrl(LOGOUT_RESOURCE)
         .logoutSuccessHandler(this::logoutSuccessHandler)
         .permitAll()
         .invalidateHttpSession(true)
-        .deleteCookies(COOKIE_JSESSIONID,X_CSRF_TOKEN)
-      .and()
-      .exceptionHandling().authenticationEntryPoint(this::failureHandler);
+        .deleteCookies(COOKIE_JSESSIONID, X_CSRF_TOKEN)
+        .and()
+        .exceptionHandling()
+        .authenticationEntryPoint(this::failureHandler);
   }
 
-  @Override
-  public void configure(AuthenticationManagerBuilder builder)
-      throws Exception {
-    builder.userDetailsService(userDetailsService);
-  }
-
-  private void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+  private void logoutSuccessHandler(
+      HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
     response.setStatus(NO_CONTENT.value());
   }
 
-  private void failureHandler(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex) throws IOException {
+  private void failureHandler(
+      HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
+      throws IOException {
     request.getSession().invalidate();
     response.reset();
     response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
-    
+
     PrintWriter writer = response.getWriter();
-    String jsonResponse = Json.createObjectBuilder()
-      .add("message", ex.getMessage())
-      .build()
-      .toString();
+    String jsonResponse =
+        Json.createObjectBuilder().add("message", ex.getMessage()).build().toString();
 
     writer.append(jsonResponse);
-    
+
     response.setStatus(UNAUTHORIZED.value());
     response.setContentType(APPLICATION_JSON.getMimeType());
   }
-  
+
   /**
-   * Stores the CSRF Token in HTTP Response Header (for REST Clients) and as Cookie (for JavaScript Browser applications)
-   * The CSRF Token is expected to be set in HTTP Request Header from the client. 
-   * So an attacker can't trick the user to submit unindented data to the server (by a link).
+   * Stores the CSRF Token in HTTP Response Header (for REST Clients) and as Cookie (for JavaScript
+   * Browser applications) The CSRF Token is expected to be set in HTTP Request Header from the
+   * client. So an attacker can't trick the user to submit unindented data to the server (by a
+   * link).
+   *
    * @param request
    * @param response
    * @return
    */
-  private HttpServletResponse addCSRFTokenWhenAvailable(HttpServletRequest request, HttpServletResponse response) {
-    if(shouldAddCSRF(request)) {
+  private HttpServletResponse addCSRFTokenWhenAvailable(
+      HttpServletRequest request, HttpServletResponse response) {
+    if (shouldAddCSRF(request)) {
       CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
       if (token != null) {
         response.setHeader(X_CSRF_HEADER, token.getHeaderName());
@@ -155,27 +155,29 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     }
     return response;
   }
-  
+
   protected boolean shouldAddCSRF(HttpServletRequest request) {
     final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     String path = request.getRequestURI();
-    if(auth!=null && auth.isAuthenticated() && (path==null || !path.contains("logout"))) {
+    if (auth != null && auth.isAuthenticated() && (path == null || !path.contains("logout"))) {
       return true;
     }
     return false;
   }
 
-  private void successHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+  private void successHandler(
+      HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
     addCSRFTokenWhenAvailable(request, response).setStatus(NO_CONTENT.value());
   }
-  
+
   protected OncePerRequestFilter getCSRFHeaderFilter() {
     return new OncePerRequestFilter() {
       @Override
-      protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+      protected void doFilterInternal(
+          HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+          throws ServletException, IOException {
         filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
       }
     };
   }
-
 }

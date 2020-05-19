@@ -107,6 +107,23 @@
       <version>(1.0,2.0)</version>
     </dependency>
 
+    <!-- GraphQL -->
+
+    <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>graphql-spring-boot-starter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>playground-spring-boot-starter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>graphql-java-tools</artifactId>
+    </dependency>
+
     <!-- TEST -->
 
     <dependency>

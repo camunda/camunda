@@ -53,3 +53,9 @@ JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate
 or 
 JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate.bat
 ```
+
+## GraphQL
+
+The GraphQL endpoint is `/graphql`.
+
+For development, the inspection tool GraphQL Playground is embedded and can be accesses under http://localhost:8080/playground.

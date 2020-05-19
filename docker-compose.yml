@@ -64,6 +64,7 @@ services:
       - zeebe.tasklist.zeebeElasticsearch.host=elasticsearch
       - zeebe.tasklist.zeebe.brokerContactPoint=zeebe:26500
       - spring.profiles.active=dev,dev-data,auth
+      - graphql.playground.enabled=true
     volumes:
       - ./distro/src/main/config/application.yml:/app/resources/application.yaml
       - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml

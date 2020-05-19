@@ -5,9 +5,9 @@
  */
 package io.zeebe.tasklist;
 
-import java.util.Arrays;
-
 import io.zeebe.tasklist.data.DataGenerator;
+import java.util.Arrays;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -42,16 +42,20 @@ public class Application {
     if(!isOneAuthProfileActive(args)) {
       springApplication.setAdditionalProfiles("auth");
     }
+
+    // GraphQL inspection tool is disabled by default
+    springApplication.setDefaultProperties(Map.of("graphql.playground.enabled", "false"));
+
     springApplication.run(args);
   }
-  
+
   protected static boolean isOneAuthProfileActive(String[] args) {
     String profilesFromEnv = String.format("%s", System.getenv("SPRING_PROFILES_ACTIVE"));
     String profilesFromArgs = String.join(",",Arrays.asList(args));
     String profilesFromProperties = String.format("%s", System.getProperty("spring.profiles.active"));
     return profilesFromArgs.contains("auth") || profilesFromEnv.contains("auth") || profilesFromProperties.contains("auth");
   }
-  
+
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {

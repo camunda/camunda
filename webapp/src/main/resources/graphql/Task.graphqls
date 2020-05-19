@@ -1,0 +1,10 @@
+# A task...
+type Task {
+    # the unique identifier of the task
+    key: ID!
+}
+
+type Query {
+    # find all tasks
+    tasks: [Task!]!
+}

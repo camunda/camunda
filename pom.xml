@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <name>Zeebe Tasklist - Root POM</name>
@@ -18,7 +20,7 @@
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
-<!--    <module>qa</module>-->
+    <!--    <module>qa</module>-->
     <module>distro</module>
   </modules>
 
@@ -37,6 +39,9 @@
     <version.micrometer>1.5.1</version.micrometer>
     <version.mockito>3.3.3</version.mockito>
     <version.assertj-core>3.16.1</version.assertj-core>
+    <version.graphql>7.0.1</version.graphql>
+    <version.graphql.tools>6.0.2</version.graphql.tools>
+
 
     <version.node>v13.13.0</version.node>
     <version.yarn>v1.22.4</version.yarn>
@@ -133,6 +138,25 @@
         <artifactId>assertj-core</artifactId>
         <version>${version.assertj-core}</version>
       </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-spring-boot-starter</artifactId>
+        <version>${version.graphql}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>playground-spring-boot-starter</artifactId>
+        <version>${version.graphql}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-java-tools</artifactId>
+        <version>${version.graphql.tools}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -308,8 +332,8 @@
             <id>enforce</id>
             <configuration>
               <rules>
-                <requirePluginVersion />
-                <banDuplicatePomDependencyVersions />
+                <requirePluginVersion/>
+                <banDuplicatePomDependencyVersions/>
               </rules>
             </configuration>
             <goals>
