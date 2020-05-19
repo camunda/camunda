@@ -7,7 +7,13 @@
 import {ClientFunction} from 'testcafe';
 
 import {config} from '../config';
-import {loginButton, logoutButton} from './Login.selectors';
+import {
+  loginButton,
+  logoutButton,
+  usernameInput,
+  passwordInput,
+  errorMessage,
+} from './Login.selectors';
 
 const getPathname = ClientFunction(() => window.location.pathname);
 const reloadPage = ClientFunction(() => {
@@ -17,13 +23,21 @@ const reloadPage = ClientFunction(() => {
 fixture('Login').page(config.endpoint);
 
 test('redirect to the main page on login', async (t) => {
-  await t.click(loginButton);
+  await t
+    .expect(passwordInput.getAttribute('type'))
+    .eql('password')
+    .typeText(usernameInput, 'demo')
+    .typeText(passwordInput, 'demo')
+    .click(loginButton);
 
   await t.expect(await getPathname()).eql('/');
 });
 
 test('persistency of a session', async (t) => {
-  await t.click(loginButton);
+  await t
+    .typeText(usernameInput, 'demo')
+    .typeText(passwordInput, 'demo')
+    .click(loginButton);
 
   await reloadPage();
 
@@ -31,9 +45,36 @@ test('persistency of a session', async (t) => {
 });
 
 test('logout redirect', async (t) => {
-  await t.click(loginButton);
+  await t
+    .typeText(usernameInput, 'demo')
+    .typeText(passwordInput, 'demo')
+    .click(loginButton);
 
   await t.click(logoutButton);
 
   await t.expect(await getPathname()).eql('/login');
+});
+
+test('block form submission with empty fields', async (t) => {
+  await t.click(loginButton);
+  await t.expect(await getPathname()).eql('/login');
+
+  await t.typeText(usernameInput, 'demo').click(loginButton);
+  await t.expect(await getPathname()).eql('/login');
+
+  await t
+    .selectText(usernameInput)
+    .pressKey('delete')
+    .typeText(passwordInput, 'demo')
+    .click(loginButton);
+  await t.expect(await getPathname()).eql('/login');
+});
+
+test('show error message on login failure', async (t) => {
+  await t
+    .typeText(usernameInput, 'demo')
+    .typeText(passwordInput, 'wrong-password')
+    .click(loginButton);
+
+  await t.expect(errorMessage).ok();
 });

@@ -6,9 +6,15 @@
 
 import * as React from 'react';
 import {useHistory} from 'react-router-dom';
+import {Form, Field} from 'react-final-form';
 
 import {login} from '../login.store';
 import {Pages} from '../pages';
+
+interface FormValues {
+  username: string;
+  password: string;
+}
 
 const Login: React.FC = () => {
   const [hasError, setHasError] = React.useState(false);
@@ -16,22 +22,50 @@ const Login: React.FC = () => {
   const {handleLogin} = login;
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={async () => {
-          try {
-            await handleLogin('demo', 'demo');
-            history.push(Pages.Initial);
-          } catch {
-            setHasError(true);
-          }
-        }}
-      >
-        Login
-      </button>
-      {hasError && <h1>error</h1>}
-    </>
+    <Form<FormValues>
+      onSubmit={async ({username, password}) => {
+        setHasError(false);
+        try {
+          await handleLogin(username, password);
+          history.push(Pages.Initial);
+        } catch {
+          setHasError(true);
+        }
+      }}
+    >
+      {({handleSubmit, form}) => {
+        const {invalid, submitting, pristine} = form.getState();
+
+        return (
+          <form onSubmit={handleSubmit}>
+            <label htmlFor="username">
+              Username
+              <Field<FormValues['username']>
+                name="username"
+                id="username"
+                required
+                component="input"
+                type="text"
+              />
+            </label>
+            <label htmlFor="password">
+              Password
+              <Field<FormValues['password']>
+                name="password"
+                id="password"
+                required
+                component="input"
+                type="password"
+              />
+            </label>
+            <button type="submit" disabled={invalid || submitting || pristine}>
+              Login
+            </button>
+            {hasError && <h1>error</h1>}
+          </form>
+        );
+      }}
+    </Form>
   );
 };
 

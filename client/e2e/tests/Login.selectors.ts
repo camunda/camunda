@@ -8,5 +8,8 @@ import {Selector} from 'testcafe';
 
 const loginButton = Selector('button').withText('Login');
 const logoutButton = Selector('button').withText('Logout');
+const usernameInput = Selector('input[name="username"]');
+const passwordInput = Selector('input[name="password"]');
+const errorMessage = Selector('h1').withText('error');
 
-export {loginButton, logoutButton};
+export {loginButton, logoutButton, usernameInput, passwordInput, errorMessage};
