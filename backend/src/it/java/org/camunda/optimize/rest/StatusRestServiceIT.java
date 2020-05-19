@@ -7,15 +7,18 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpResponse;
 
 import java.util.Map;
 
+import static javax.ws.rs.HttpMethod.GET;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.mockserver.model.HttpRequest.request;
 
 public class StatusRestServiceIT extends AbstractIT {
 
@@ -23,16 +26,16 @@ public class StatusRestServiceIT extends AbstractIT {
   public void getConnectedStatus() {
     final StatusWithProgressDto statusWithProgressDto = statusClient.getImportStatus();
 
-    assertThat(statusWithProgressDto.getConnectionStatus().isConnectedToElasticsearch(), is(true));
-    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().size(), is(1));
-    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().get(DEFAULT_ENGINE_ALIAS), is(true));
+    assertThat(statusWithProgressDto.getConnectionStatus().isConnectedToElasticsearch()).isTrue();
+    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().size()).isEqualTo(1);
+    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().get(DEFAULT_ENGINE_ALIAS)).isTrue();
   }
 
   @Test
   public void getImportStatus() {
     final StatusWithProgressDto statusWithProgressDto = statusClient.getImportStatus();
 
-    assertThat(statusWithProgressDto.getIsImporting().keySet(), contains(DEFAULT_ENGINE_ALIAS));
+    assertThat(statusWithProgressDto.getIsImporting().keySet()).contains(DEFAULT_ENGINE_ALIAS);
   }
 
   @Test
@@ -45,8 +48,8 @@ public class StatusRestServiceIT extends AbstractIT {
 
     // then
     final Map<String, Boolean> isImportingMap = status.getIsImporting();
-    assertThat(isImportingMap, is(notNullValue()));
-    assertThat(isImportingMap.get("1"), is(true));
+    assertThat(isImportingMap).isNotNull();
+    assertThat(isImportingMap.get(DEFAULT_ENGINE_ALIAS)).isTrue();
   }
 
   @Test
@@ -56,7 +59,29 @@ public class StatusRestServiceIT extends AbstractIT {
 
     // then
     final Map<String, Boolean> isImportingMap = status.getIsImporting();
-    assertThat(isImportingMap, is(notNullValue()));
-    assertThat(isImportingMap.get("1"), is(false));
+    assertThat(isImportingMap).isNotNull();
+    assertThat(isImportingMap.get(DEFAULT_ENGINE_ALIAS)).isFalse();
+  }
+
+  @Test
+  public void connectionStatusFalseWhenVersionEndpointFails() {
+    // given
+    final ClientAndServer esMockServer = useAndGetEngineMockServer();
+    esMockServer
+      .when(
+        request()
+          .withPath(".*" + EngineConstantsUtil.VERSION_ENDPOINT)
+          .withMethod(GET),
+        Times.once()
+      )
+      .respond(new HttpResponse().withStatusCode(500));
+
+    // when
+    final StatusWithProgressDto status = statusClient.getImportStatus();
+
+    // then
+    final Map<String, Boolean> connectionStatusMap = status.getConnectionStatus().getEngineConnections();
+    assertThat(connectionStatusMap).isNotNull();
+    assertThat(connectionStatusMap.get(DEFAULT_ENGINE_ALIAS)).isFalse();
   }
 }

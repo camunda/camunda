@@ -5,12 +5,9 @@
  */
 package org.camunda.optimize.service.importing.user_task;
 
-import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -18,7 +15,6 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,7 +39,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .allSatisfy(processInstanceDto -> {
@@ -78,7 +75,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .allSatisfy(processInstanceDto -> {
@@ -109,7 +107,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .allSatisfy(processInstanceDto -> {
@@ -136,7 +135,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(getStoredProcessInstances()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).isEmpty();
 
     // given ES update request fails
     deployAndStartTwoUserTasksProcess();
@@ -158,7 +157,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then expected user tasks are stored on next successful update
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .allSatisfy(processInstanceDto -> {
@@ -191,7 +191,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .allSatisfy(processInstanceDto -> {
@@ -215,7 +216,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(getStoredProcessInstances()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).isEmpty();
   }
 
   @Test
@@ -234,7 +235,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(2)
       .allSatisfy(persistedProcessInstanceDto -> {
@@ -269,7 +271,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(getStoredProcessInstances()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).isEmpty();
   }
 
   @Test
@@ -283,7 +285,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .allSatisfy(persistedProcessInstanceDto -> {
@@ -311,7 +314,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .allSatisfy(persistedProcessInstanceDto -> {
@@ -331,7 +335,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .allSatisfy(persistedProcessInstanceDto -> {
@@ -354,26 +359,14 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessInstanceDto> storedProcessInstances = getStoredProcessInstances();
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .allSatisfy(persistedProcessInstanceDto -> {
         persistedProcessInstanceDto.getUserTasks()
           .forEach(userTask -> assertThat(userTask.getWorkDurationInMs()).isEqualTo(workDuration));
       });
-  }
-
-  @SneakyThrows
-  private List<ProcessInstanceDto> getStoredProcessInstances() {
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    List<ProcessInstanceDto> storedInstances = new ArrayList<>();
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      storedInstances.add(objectMapper.readValue(
-        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
-      ));
-    }
-    return storedInstances;
   }
 
 }

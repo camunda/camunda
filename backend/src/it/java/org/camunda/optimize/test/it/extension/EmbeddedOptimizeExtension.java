@@ -145,6 +145,7 @@ public class EmbeddedOptimizeExtension
   private void afterTest() {
     try {
       this.getAlertService().getScheduler().clear();
+      stopEngineImportScheduling();
       TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
       LocalDateUtil.reset();
       reloadConfiguration();
