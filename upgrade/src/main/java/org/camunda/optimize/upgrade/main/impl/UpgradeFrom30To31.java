@@ -9,6 +9,8 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -17,6 +19,7 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -62,6 +65,8 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
+      .addUpgradeStep(new UpdateIndexStep(new SingleProcessReportIndex(), null))
+      .addUpgradeStep(new UpdateIndexStep(new SingleDecisionReportIndex(), null))
       .addUpgradeStep(migrateAxisLabels(SINGLE_PROCESS_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateAxisLabels(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateAxisLabels(COMBINED_REPORT_INDEX_NAME))

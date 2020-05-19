@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.service.EventProcessDefinitionService;
 import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceIndexManager;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 public class EventProcessDefinitionImportService {
 
   private final EventProcessDefinitionService eventProcessDefinitionService;
+  private final ReportService reportService;
   private final EventProcessInstanceIndexManager eventProcessInstanceIndexManager;
 
   public void syncPublishedEventProcessDefinitions() {
@@ -42,12 +44,13 @@ public class EventProcessDefinitionImportService {
         .map(EventProcessDefinitionDto::getId)
         .collect(Collectors.toSet());
 
-    final List<EventProcessDefinitionDto> definitions = publishedEventProcesses.stream()
+    final List<EventProcessDefinitionDto> newOrUpdatedDefinitions = publishedEventProcesses.stream()
       .filter(eventProcessPublishStateDto -> !existingEventProcessDefinitionIds.contains(eventProcessPublishStateDto.getId()))
       .map(this::createEventProcessDefinitionDto)
       .collect(Collectors.toList());
-    if (!definitions.isEmpty()) {
-      eventProcessDefinitionService.importEventProcessDefinitions(definitions);
+    if (!newOrUpdatedDefinitions.isEmpty()) {
+      eventProcessDefinitionService.importEventProcessDefinitions(newOrUpdatedDefinitions);
+      updateDefinitionXmlsInReports(newOrUpdatedDefinitions);
     }
 
     final Set<String> definitionIdsToDelete = existingEventProcessDefinitionIds.stream()
@@ -56,6 +59,14 @@ public class EventProcessDefinitionImportService {
     if (!definitionIdsToDelete.isEmpty()) {
       eventProcessDefinitionService.deleteEventProcessDefinitions(definitionIdsToDelete);
     }
+  }
+
+  private void updateDefinitionXmlsInReports(final List<EventProcessDefinitionDto> definitions) {
+    definitions.forEach(eventProcessDefinitionDto -> {
+      reportService.updateDefinitionXmlOfProcessReports(
+        eventProcessDefinitionDto.getKey(), eventProcessDefinitionDto.getBpmn20Xml()
+      );
+    });
   }
 
   private EventProcessDefinitionDto createEventProcessDefinitionDto(final EventProcessPublishStateDto eventProcessPublishStateDto) {

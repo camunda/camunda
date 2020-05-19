@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,11 +35,8 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
 
     // when
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventBasedProcess(eventProcessMappingId);
     final String expectedProcessDefinitionId = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId);
-
-    executeImportCycle();
-    executeImportCycle();
 
     // then
     final Optional<EventProcessDefinitionDto> eventProcessDefinition =
@@ -75,14 +73,11 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId2);
+    publishEventBasedProcess(eventProcessMappingId1);
+    publishEventBasedProcess(eventProcessMappingId2);
 
     final String expectedProcessDefinitionId1 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId1);
     final String expectedProcessDefinitionId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
-
-    executeImportCycle();
-    executeImportCycle();
 
     // then
     assertThat(getEventProcessDefinitionFromElasticsearch(expectedProcessDefinitionId1))
@@ -101,24 +96,16 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
       STARTED_EVENT, FINISHED_EVENT
     );
-    final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
-
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    final String eventProcessMappingId = createAndPublishEventProcess(simpleEventProcessMappingDto);
     final String previousProcessDefinitionId = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId);
-
-    executeImportCycle();
-    executeImportCycle();
 
     // when
     final String newName = "updatedProcess";
     simpleEventProcessMappingDto.setName(newName);
     eventProcessClient.updateEventProcessMapping(eventProcessMappingId, simpleEventProcessMappingDto);
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventBasedProcess(eventProcessMappingId);
 
     final String newProcessDefinitionId = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId);
-
-    executeImportCycle();
-    executeImportCycle();
 
     // then
     final Optional<EventProcessDefinitionDto> previousProcessDefinition =
@@ -132,6 +119,67 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
       .get()
       .hasFieldOrPropertyWithValue(DefinitionOptimizeDto.Fields.id, newProcessDefinitionId)
       .hasFieldOrPropertyWithValue(DefinitionOptimizeDto.Fields.name, newName);
+  }
+
+  @Test
+  public void eventProcessDefinitionRepublishCausesReportToGetUpdated() {
+    // given a published event process
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(FINISHED_EVENT);
+
+    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
+      STARTED_EVENT, FINISHED_EVENT
+    );
+    final String eventProcessMappingId = createAndPublishEventProcess(simpleEventProcessMappingDto);
+
+    final String reportId1 = createEventProcessReport(eventProcessMappingId, simpleEventProcessMappingDto.getXml());
+    final String reportId2 = createEventProcessReport(eventProcessMappingId, simpleEventProcessMappingDto.getXml());
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    // process is republished with new XML
+    final String newXml = createThreeEventActivitiesProcessDefinitionXml();
+    simpleEventProcessMappingDto.setXml(newXml);
+    eventProcessClient.updateEventProcessMapping(eventProcessMappingId, simpleEventProcessMappingDto);
+    publishEventBasedProcess(eventProcessMappingId);
+
+    // then the definition XML in existing reports for that event process are updated as well
+    final SingleProcessReportDefinitionDto reportDefinition1 = reportClient.getSingleProcessReportById(reportId1);
+    assertThat(reportDefinition1.getData().getConfiguration().getXml())
+      .isEqualTo(newXml);
+    final SingleProcessReportDefinitionDto reportDefinition2 = reportClient.getSingleProcessReportById(reportId2);
+    assertThat(reportDefinition2.getData().getConfiguration().getXml())
+      .isEqualTo(newXml);
+  }
+
+  @Test
+  public void eventProcessDefinitionRepublishCausesNoSideEffectToOtherProcessReports() {
+    // given a published event process
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(FINISHED_EVENT);
+
+    final EventProcessMappingDto simpleEventProcessMappingDto1 = buildSimpleEventProcessMappingDto(
+      STARTED_EVENT, FINISHED_EVENT
+    );
+    final String eventProcessMappingId1 = createAndPublishEventProcess(simpleEventProcessMappingDto1);
+
+    final String reportId1 = createEventProcessReport(eventProcessMappingId1, simpleEventProcessMappingDto1.getXml());
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when another event process gets published
+    final EventProcessMappingDto simpleEventProcessMappingDto2 = buildSimpleEventProcessMappingDto(
+      STARTED_EVENT, FINISHED_EVENT
+    );
+    final String eventProcessMappingId2 = createAndPublishEventProcess(simpleEventProcessMappingDto2);
+    // and republished with new xml
+    simpleEventProcessMappingDto2.setXml(createThreeEventActivitiesProcessDefinitionXml());
+    eventProcessClient.updateEventProcessMapping(eventProcessMappingId2, simpleEventProcessMappingDto2);
+    publishEventBasedProcess(eventProcessMappingId2);
+
+    // then the definition XML a the report on the first event process is not affected
+    final SingleProcessReportDefinitionDto reportDefinition1 = reportClient.getSingleProcessReportById(reportId1);
+    assertThat(reportDefinition1.getData().getConfiguration().getXml())
+      .isEqualTo(simpleEventProcessMappingDto1.getXml());
   }
 
   @ParameterizedTest(name = "Event Process Definition is deleted on {0}.")
@@ -187,6 +235,30 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     // then
     assertThat(getEventProcessDefinitionFromElasticsearch(expectedProcessDefinitionId))
       .isNotEmpty();
+  }
+
+  private String createAndPublishEventProcess(final EventProcessMappingDto simpleEventProcessMappingDto) {
+    final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+
+    publishEventBasedProcess(eventProcessMappingId);
+
+    return eventProcessMappingId;
+  }
+
+  private void publishEventBasedProcess(final String eventProcessMappingId) {
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+
+    // two cycles needed as the definition gets published with the next cycle after publish finished
+    executeImportCycle();
+    executeImportCycle();
+  }
+
+  private String createEventProcessReport(final String eventProcessMappingId, final String definitionXml) {
+    final SingleProcessReportDefinitionDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
+      null, eventProcessMappingId, Collections.emptyList()
+    );
+    reportDefinitionDto.getData().getConfiguration().setXml(definitionXml);
+    return reportClient.createSingleProcessReport(reportDefinitionDto);
   }
 
 }

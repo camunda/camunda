@@ -413,7 +413,13 @@ public class ReportClient {
       .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public ReportDefinitionDto getReportById(String id) {
+  public SingleProcessReportDefinitionDto getSingleProcessReportById(final String id) {
+    return getRequestExecutor()
+      .buildGetReportRequest(id)
+      .execute(SingleProcessReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public ReportDefinitionDto<?> getReportById(String id) {
     return getRequestExecutor()
       .buildGetReportRequest(id)
       .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());

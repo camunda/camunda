@@ -73,6 +73,9 @@ public class ReportWriter {
   private static final Set<String> UPDATABLE_FIELDS = ImmutableSet.of(
     NAME, DATA, LAST_MODIFIED, LAST_MODIFIER, CREATED, OWNER, COLLECTION_ID, COMBINED, REPORT_TYPE
   );
+  private static final String PROCESS_DEFINITION_PROPERTY = String.join(
+    ".", DATA, ProcessReportDataDto.Fields.processDefinitionKey
+  );
 
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
@@ -210,6 +213,28 @@ public class ReportWriter {
 
   public void updateCombinedReport(final ReportDefinitionUpdateDto updatedReport) {
     updateReport(updatedReport, COMBINED_REPORT_INDEX_NAME);
+  }
+
+  public void updateProcessDefinitionXmlForProcessReportsWithKey(final String definitionKey,
+                                                                 final String definitionXml) {
+    log.debug("Updating definition XML in reports with definitionKey [{}] in Elasticsearch", definitionKey);
+
+    final Script updateDefinitionXmlScript = new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      // this script is deliberately not updating the modified date as this is no user operation
+      "ctx._source.data.configuration.xml = params.newXml;",
+      Collections.singletonMap("newXml", definitionXml)
+    );
+
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+      esClient,
+      "report",
+      "definitionKey: " + definitionKey,
+      updateDefinitionXmlScript,
+      termQuery(PROCESS_DEFINITION_PROPERTY, definitionKey),
+      SINGLE_PROCESS_REPORT_INDEX_NAME
+    );
   }
 
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String indexName) {

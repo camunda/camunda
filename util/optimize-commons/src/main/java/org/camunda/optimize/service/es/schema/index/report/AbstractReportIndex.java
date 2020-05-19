@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.schema.index.report;
 
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
@@ -25,6 +27,9 @@ public abstract class AbstractReportIndex extends DefaultIndexMappingCreator {
   public static final String REPORT_TYPE = "reportType";
   public static final String COMBINED = "combined";
   public static final String DATA = "data";
+
+  public static final String CONFIGURATION = SingleReportDataDto.Fields.configuration.name();
+  public static final String XML = SingleReportConfigurationDto.Fields.xml.name();
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {

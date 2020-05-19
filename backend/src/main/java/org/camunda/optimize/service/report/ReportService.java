@@ -338,6 +338,10 @@ public class ReportService implements CollectionReferencingService {
     reportWriter.updateSingleProcessReport(reportUpdate);
   }
 
+  public void updateDefinitionXmlOfProcessReports(final String definitionKey, final String definitionXml) {
+    reportWriter.updateProcessDefinitionXmlForProcessReportsWithKey(definitionKey, definitionXml);
+  }
+
   public void updateSingleDecisionReport(String reportId,
                                          SingleDecisionReportDefinitionDto updatedReport,
                                          String userId,

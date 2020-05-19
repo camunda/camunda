@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -32,6 +33,7 @@ import java.util.Optional;
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @SuperBuilder
+@FieldNameConstants
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String processDefinitionKey;
