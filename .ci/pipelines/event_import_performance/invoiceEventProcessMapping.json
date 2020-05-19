@@ -50,14 +50,7 @@
         "all"
       ],
       "tenants": [
-        null,
-        "csm",
-        "engineering",
-        "hr",
-        "library",
-        "marketing",
-        "sales",
-        "support"
+        null
       ],
       "tracedByBusinessKey": false,
       "traceVariable": "alternativeCorrelationVariable"
