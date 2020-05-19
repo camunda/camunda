@@ -53,15 +53,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
 
-  private static final String START_EVENT = "startEvent";
-  private static final String END_EVENT = "endEvent";
   private static final String PROCESS_DEFINITION_KEY = "123";
-  private static final String USER_TASK_1 = "userTask1";
-  private static final String USER_TASK_1_NAME = "userTask1Name";
-  private static final String USER_TASK_2_NAME = "userTask2Name";
-  private static final String USER_TASK_2 = "userTask2";
-  private static final String SECOND_USER = "secondUser";
-  private static final String SECOND_USERS_PASSWORD = "fooPassword";
   private static final String USER_TASK_A = "userTaskA";
   private static final String USER_TASK_B = "userTaskB";
 

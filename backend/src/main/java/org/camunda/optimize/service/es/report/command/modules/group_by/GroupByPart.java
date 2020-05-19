@@ -58,7 +58,7 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
 
   protected abstract void addGroupByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);
 
-  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ProcessReportDataDto reportData,
+  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
                                                                    final BoolQueryBuilder baseQuery) {
     // this method is only needed for group by date reports with
     // automatic unit generation since we need to calculate the

@@ -35,6 +35,15 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String USER_TASK = "userTask";
   protected static final String DEFAULT_VARIABLE_NAME = "foo";
   protected static final String DEFAULT_VARIABLE_VALUE = "bar";
+  protected static final String USER_TASK_1 = "userTask1";
+  protected static final String USER_TASK_2 = "userTask2";
+  protected static final String USER_TASK_1_NAME = "userTask1Name";
+  protected static final String USER_TASK_2_NAME = "userTask2Name";
+
+  protected static final String FIRST_CANDIDATE_GROUP = "firstGroup";
+  protected static final String SECOND_CANDIDATE_GROUP = "secondGroup";
+  protected static final String SECOND_USER = "secondUser";
+  protected static final String SECOND_USERS_PASSWORD = "secondUserPW";
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
 
   @RegisterExtension

@@ -68,10 +68,10 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   }
 
   @Override
-  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ProcessReportDataDto reportData,
+  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
                                                                    final BoolQueryBuilder baseQuery) {
-    if (reportData.getGroupBy().getValue() instanceof DateGroupByValueDto) {
-      DateGroupByValueDto groupByDate = (DateGroupByValueDto) reportData.getGroupBy().getValue();
+    if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
+      DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         Stats minMaxStats = intervalAggregationService.getMinMaxStats(
           baseQuery,

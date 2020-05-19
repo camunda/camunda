@@ -133,7 +133,7 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {
     return processDefinitionReader
-      .getProcessDefinitionFromFirstTenantIfAvailable(
+      .getLatestProcessDefinition(
         reportData.getDefinitionKey(), reportData.getDefinitionVersions(), reportData.getTenantIds()
       )
       .map(ProcessDefinitionOptimizeDto::getUserTaskNames)

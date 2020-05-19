@@ -41,15 +41,9 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
-  private static final String START_EVENT = "startEvent";
-  private static final String END_EVENT = "endEvent";
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
-  private static final String USER_TASK_1 = "userTask1";
-  private static final String USER_TASK_2 = "userTask2";
   private static final String USER_TASK_A = "userTaskA";
   private static final String USER_TASK_B = "userTaskB";
-  private static final String SECOND_USER = "secondUser";
-  private static final String SECOND_USERS_PASSWORD = "secondUserPW";
 
   @BeforeEach
   public void init() {
@@ -115,18 +109,10 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
-      reportClient.evaluateHyperMapReport(reportData);
+    final ReportHyperMapResultDto actualResult =
+      reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
-
-    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)

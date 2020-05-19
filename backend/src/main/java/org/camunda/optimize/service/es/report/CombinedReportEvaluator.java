@@ -61,7 +61,9 @@ public class CombinedReportEvaluator {
       .forEach(
         reportDefinition -> {
           Command<?> command = singleReportEvaluator.extractCommand(reportDefinition);
-          Optional<Stats> stat = command.calculateDateRangeForAutomaticGroupByDate(reportDefinition);
+          CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
+          commandContext.setReportDefinition(reportDefinition);
+          Optional<Stats> stat = command.calculateDateRangeForAutomaticGroupByDate(commandContext);
           stat.ifPresent(calculator::addStat);
         }
       );

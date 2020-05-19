@@ -657,13 +657,13 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
-                                                                                                           .getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      latestDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, 40L);
 
@@ -681,7 +681,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .processInstanceCount(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -694,13 +693,13 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(3));
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
-                                                                                                           .getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      latestDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, 40L);
 
@@ -722,7 +721,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .processInstanceCount(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .doAssert(actualResult);
     // @formatter:on
   }

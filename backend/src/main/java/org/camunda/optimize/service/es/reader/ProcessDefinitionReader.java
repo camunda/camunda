@@ -44,9 +44,9 @@ public class ProcessDefinitionReader {
     );
   }
 
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionFromFirstTenantIfAvailable(final String definitionKey,
-                                                                                               final List<String> definitionVersions,
-                                                                                               final List<String> tenantIds) {
+  public Optional<ProcessDefinitionOptimizeDto> getLatestProcessDefinition(final String definitionKey,
+                                                                           final List<String> definitionVersions,
+                                                                           final List<String> tenantIds) {
     return definitionReader.getDefinitionFromFirstTenantIfAvailable(
       DefinitionType.PROCESS,
       definitionKey,

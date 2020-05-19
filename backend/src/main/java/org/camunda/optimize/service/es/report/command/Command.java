@@ -19,7 +19,7 @@ public interface Command<RD extends ReportDefinitionDto<?>> {
 
   String createCommandKey();
 
-  default Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final SingleProcessReportDefinitionDto reportDefinitionDto) {
+  default Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final CommandContext<SingleProcessReportDefinitionDto> reportDefinitionDto) {
     // this method is used for *combined* grouped by date with automatic interval
     // commands to calculate what's the total data range. This allows to calculate
     // the same date interval for each single report in the combined report.

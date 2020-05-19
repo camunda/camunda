@@ -501,13 +501,13 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
-                                                                                                           .getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      latestDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
     finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, 40L);
 
@@ -525,7 +525,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       .processInstanceCount(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
-        .distributedByContains(SECOND_USER, null)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -538,13 +537,13 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(3));
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
-                                                                                                           .getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      latestDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
     finishUserTaskRoundsOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, 40L);
 
@@ -566,7 +565,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       .processInstanceCount(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
-        .distributedByContains(SECOND_USER, null)
       .doAssert(actualResult);
     // @formatter:on
   }

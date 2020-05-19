@@ -66,7 +66,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
 
   private static final String STATS = "stats";
-  private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+  private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   private final ConfigurationService configurationService;
   private final IntervalAggregationService intervalAggregationService;
