@@ -7,35 +7,28 @@
 import React from 'react';
 import {Redirect} from 'react-router-dom';
 import PropTypes from 'prop-types';
-import {withData} from 'modules/DataManager';
 import {withRouter} from 'react-router';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {statistics} from 'modules/stores/statistics';
+import {currentInstance} from 'modules/stores/currentInstance';
 
 import {observer} from 'mobx-react';
 
 import {instances} from 'modules/stores/instances';
 import {wrapWithContexts} from 'modules/contexts/contextHelpers';
 import {getFilterQueryString, parseQueryString} from 'modules/utils/filter';
-import {
-  FILTER_SELECTION,
-  BADGE_TYPE,
-  LOADING_STATE,
-  DEFAULT_FILTER,
-} from 'modules/constants';
+import {FILTER_SELECTION, BADGE_TYPE, DEFAULT_FILTER} from 'modules/constants';
 
 import {isEqual} from 'lodash';
 import {labels, createTitle, PATHNAME} from './constants';
 
 import User from './User';
-import InstanceDetail from './InstanceDetail';
 import {NavElement, BrandNavElement, LinkElement} from './NavElements';
 import * as Styled from './styled.js';
 
 const Header = observer(
   class Header extends React.Component {
     static propTypes = {
-      dataManager: PropTypes.object,
       location: PropTypes.object,
       isFiltersCollapsed: PropTypes.bool.isRequired,
       expandFilters: PropTypes.func.isRequired,
@@ -45,41 +38,14 @@ const Header = observer(
     constructor(props) {
       super(props);
 
-      this.subscriptions = {
-        LOAD_INSTANCE: ({state, response}) => {
-          if (state === LOADING_STATE.LOADING) {
-            this.setState({
-              instance: null,
-            });
-          }
-          if (state === LOADING_STATE.LOADED) {
-            this.setState({
-              instance: response,
-            });
-          }
-        },
-        CONSTANT_REFRESH: ({response, state}) => {
-          if (state === LOADING_STATE.LOADED) {
-            const {LOAD_INSTANCE} = response;
-
-            this.setState({
-              instance: LOAD_INSTANCE,
-            });
-          }
-        },
-      };
       this.state = {
         forceRedirect: false,
         user: {},
-        instance: null,
         filter: null,
       };
     }
 
     componentDidMount = () => {
-      const {dataManager} = this.props;
-
-      dataManager.subscribe(this.subscriptions);
       statistics.fetchStatistics();
     };
 
@@ -99,7 +65,6 @@ const Header = observer(
     };
 
     componentWillUnmount() {
-      this.props.dataManager.unsubscribe(this.subscriptions);
       statistics.reset();
     }
 
@@ -213,8 +178,17 @@ const Header = observer(
     }
 
     renderInstanceDetails() {
-      if (this.state.instance) {
-        return <InstanceDetail instance={this.state.instance} />;
+      const {instance} = currentInstance.state;
+      if (instance) {
+        return (
+          <>
+            <Styled.StateIcon
+              data-test="instance-detail"
+              state={instance.state}
+            />
+            Instance {instance.id}
+          </>
+        );
       } else {
         return (
           <>
@@ -290,7 +264,7 @@ const Header = observer(
   }
 );
 
-const contexts = [withData, withCollapsablePanel, withRouter];
+const contexts = [withCollapsablePanel, withRouter];
 
 const WrappedHeader = wrapWithContexts(contexts, Header);
 

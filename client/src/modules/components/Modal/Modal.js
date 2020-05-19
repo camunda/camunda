@@ -132,6 +132,7 @@ export default class Modal extends React.Component {
       >
         <Styled.ModalRoot
           className={className}
+          data-test="modal"
           ref={this.modalRef}
           role="dialog"
         >

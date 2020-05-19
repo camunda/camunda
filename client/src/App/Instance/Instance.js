@@ -40,6 +40,7 @@ import {
   getProcessedSequenceFlows,
 } from './service';
 import {statistics} from 'modules/stores/statistics';
+import {currentInstance} from 'modules/stores/currentInstance';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
@@ -58,7 +59,6 @@ const Instance = observer(
       super(props);
 
       this.state = {
-        instance: null,
         selection: {
           treeRowIds: [],
           flowNodeId: null,
@@ -102,10 +102,6 @@ const Instance = observer(
             if (response.state === 'INCIDENT') {
               dataManager.getIncidents(response);
             }
-
-            this.setState({
-              instance: response,
-            });
           }
         },
         LOAD_VARIABLES: (responseData) =>
@@ -175,7 +171,6 @@ const Instance = observer(
 
             this.setState({
               isPollActive: false,
-              instance: LOAD_INSTANCE,
               events: LOAD_EVENTS,
               activityInstancesTree: {
                 ...LOAD_INSTANCE_TREE,
@@ -202,6 +197,7 @@ const Instance = observer(
     componentDidMount() {
       this.props.dataManager.subscribe(this.subscriptions);
       const id = this.props.match.params.id;
+      // should later be removed and call currentInstance.fetchCurrentInstance(id); instead
       this.props.dataManager.getWorkflowInstance(id);
     }
 
@@ -209,7 +205,7 @@ const Instance = observer(
       if (
         this.isAllDataLoaded() &&
         !this.state.isPollActive &&
-        isRunningInstance(this.state.instance)
+        isRunningInstance(currentInstance.state.instance)
       ) {
         this.setState({isPollActive: true}, () => {
           this.props.dataManager.poll.register(
@@ -229,7 +225,7 @@ const Instance = observer(
       let updateParams = {
         topic: SUBSCRIPTION_TOPIC.CONSTANT_REFRESH,
         endpoints: [
-          {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE},
+          {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE}, // should later be removed and call currentInstance.fetchCurrentInstance(id); instead
           {name: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS},
           {name: SUBSCRIPTION_TOPIC.LOAD_EVENTS},
           {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE},
@@ -237,7 +233,9 @@ const Instance = observer(
         ],
       };
       statistics.fetchStatistics();
-      const {selection, instance} = this.state;
+      const {selection} = this.state;
+      const {instance} = currentInstance.state;
+
       if (selection.treeRowIds.length === 1) {
         updateParams.endpoints = [
           ...updateParams.endpoints,
@@ -272,7 +270,8 @@ const Instance = observer(
      * @param {object} node: selected row node
      */
     handleTreeRowSelection = async (node) => {
-      const {selection, instance} = this.state;
+      const {selection} = this.state;
+      const {instance} = currentInstance.state;
       const isRootNode = node.id === instance.id;
 
       // get the first flow node id (i.e. activity id) corresponding to the flowNodeId
@@ -313,7 +312,8 @@ const Instance = observer(
         selectMultiInstanceChildrenOnly: false,
       }
     ) => {
-      const {instance, activityIdToActivityInstanceMap} = this.state;
+      const {activityIdToActivityInstanceMap} = this.state;
+      const {instance} = currentInstance.state;
 
       let treeRowIds = [instance.id];
 
@@ -430,8 +430,8 @@ const Instance = observer(
 
       // Add Node Name
       const nodeName =
-        node.id === this.state.instance.id
-          ? getWorkflowName(this.state.instance)
+        node.id === currentInstance.state.instance.id
+          ? getWorkflowName(currentInstance.state.instance)
           : (metaData && metaData.name) || UNNAMED_ACTIVITY;
 
       return {
@@ -456,10 +456,11 @@ const Instance = observer(
     handleVariableUpdate = async (key, value) => {
       const {
         selection: {treeRowIds},
-        instance: {id},
         variables,
       } = this.state;
-
+      const {
+        instance: {id},
+      } = currentInstance.state;
       const keyIdx = variables.findIndex((variable) => variable.name === key);
 
       this.setState({
@@ -484,11 +485,12 @@ const Instance = observer(
 
     areVariablesEditable = () => {
       const {
-        instance,
         activityIdToActivityInstanceMap,
         variables,
         selection: {flowNodeId, treeRowIds},
       } = this.state;
+
+      const {instance} = currentInstance.state;
 
       if (!variables) {
         return false;
@@ -514,7 +516,6 @@ const Instance = observer(
     render() {
       const {
         diagramDefinitions,
-        instance,
         incidents,
         selection,
         activityIdToActivityInstanceMap,
@@ -524,6 +525,7 @@ const Instance = observer(
         editMode,
         processedSequenceFlows,
       } = this.state;
+      const {instance} = currentInstance.state;
 
       return (
         <Styled.Instance>
@@ -535,7 +537,6 @@ const Instance = observer(
             expandedPaneId="instanceExpandedPaneId"
           >
             <TopPanel
-              instance={instance}
               selection={selection}
               incidents={incidents}
               nodeMetaDataMap={nodeMetaDataMap}
@@ -556,7 +557,6 @@ const Instance = observer(
                 onTreeRowSelection={this.handleTreeRowSelection}
               />
               <VariablePanel
-                instance={instance}
                 variables={variables}
                 editMode={editMode}
                 isEditable={this.areVariablesEditable()}

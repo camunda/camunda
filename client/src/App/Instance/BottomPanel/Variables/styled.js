@@ -8,7 +8,7 @@ import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Panel from 'modules/components/Panel';
-import OperationStatus from 'modules/components/OperationStatus';
+import Operations from 'modules/components/Operations';
 import DefaultButton from 'modules/components/Button';
 import IconButton from 'modules/components/IconButton';
 import BasicInput from 'modules/components/Input';
@@ -21,7 +21,7 @@ import {ReactComponent as DefaultClose} from 'modules/components/Icon/close.svg'
 import {ReactComponent as DefaultCheck} from 'modules/components/Icon/check.svg';
 import {ReactComponent as DefaultModal} from 'modules/components/Icon/modal.svg';
 
-export const Spinner = styled(OperationStatus.Spinner)`
+export const Spinner = styled(Operations.Spinner)`
   margin-top: 4px;
 `;
 

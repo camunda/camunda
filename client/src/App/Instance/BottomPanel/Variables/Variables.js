@@ -8,12 +8,14 @@ import React, {useRef, useState} from 'react';
 import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
+import {isRunning as isInstanceRunning} from 'modules/utils/instance';
+import {Observer} from 'mobx-react';
+import {currentInstance} from 'modules/stores/currentInstance';
 
 import * as Styled from './styled';
 
 export default function Variables({
   variables,
-  isRunning,
   editMode,
   onVariableUpdate,
   isEditable,
@@ -185,6 +187,8 @@ export default function Variables({
   }
 
   function renderContent() {
+    const {instance} = currentInstance.state;
+    const isRunning = instance && isInstanceRunning({state: instance.state});
     return (
       <Styled.TableScroll>
         <Styled.Table>
@@ -265,10 +269,14 @@ export default function Variables({
 
   return (
     <>
-      <Styled.VariablesContent ref={variablesContentRef}>
-        {Overlay && Overlay()}
-        {!editMode && Placeholder ? renderPlaceholder() : renderContent()}
-      </Styled.VariablesContent>
+      <Observer>
+        {() => (
+          <Styled.VariablesContent ref={variablesContentRef}>
+            {Overlay && Overlay()}
+            {!editMode && Placeholder ? renderPlaceholder() : renderContent()}
+          </Styled.VariablesContent>
+        )}
+      </Observer>
       <Styled.VariablesFooter>
         <Styled.Button
           title="Add variable"
@@ -285,7 +293,6 @@ export default function Variables({
 }
 
 Variables.propTypes = {
-  isRunning: PropTypes.bool,
   variables: PropTypes.array,
   editMode: PropTypes.string.isRequired,
   isEditable: PropTypes.bool.isRequired,

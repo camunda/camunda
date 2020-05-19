@@ -5,6 +5,7 @@
  */
 
 import {instances} from 'modules/stores/instances';
+import {currentInstance} from 'modules/stores/currentInstance';
 
 export default class Publisher {
   constructor(subscriptionTopics, loadingStates) {
@@ -74,6 +75,12 @@ export default class Publisher {
         workflowInstances,
         filteredInstancesCount: totalCount,
       });
+    }
+    if (topic === 'LOAD_INSTANCE' && value.state === 'LOADED') {
+      currentInstance.setCurrentInstance(value.response);
+    }
+    if (topic === 'CONSTANT_REFRESH' && value.state === 'LOADED') {
+      currentInstance.setCurrentInstance(value.response.LOAD_INSTANCE);
     }
   }
 

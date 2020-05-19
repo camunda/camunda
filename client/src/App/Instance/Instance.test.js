@@ -27,13 +27,13 @@ import TopPanel from './TopPanel';
 import BottomPanel from './BottomPanel';
 import VariablePanel from './BottomPanel/VariablePanel';
 import IncidentsWrapper from './IncidentsWrapper';
+import {currentInstance} from 'modules/stores/currentInstance';
 
 import Instance from './Instance';
 import {
   getActivityIdToActivityInstancesMap,
   getSelectableFlowNodes,
   createNodeMetaDataMap,
-  isRunningInstance,
 } from './service';
 
 // mock modules
@@ -82,6 +82,23 @@ jest.mock(
       return <div data-test="IncidentsWrapper" />;
     }
 );
+
+jest.mock('modules/api/instances', () => ({
+  fetchWorkflowInstance: jest.fn().mockImplementation((instance_id) => {
+    const {testData} = require('./Instance.setup');
+    if (instance_id === 'workflow_instance') {
+      return testData.fetch.onPageLoad.workflowInstance;
+    } else if (instance_id === 'completed_workflow_instance')
+      return testData.fetch.onPageLoad.workflowInstanceCompleted;
+  }),
+  fetchWorkflowCoreStatistics: jest.fn().mockImplementation(() => ({
+    coreStatistics: {
+      running: 821,
+      active: 90,
+      withIncidents: 731,
+    },
+  })),
+}));
 
 const {
   workflowInstance,
@@ -197,18 +214,6 @@ describe('Instance', () => {
           workflowInstanceWithIncident
         );
       });
-
-      it('should store instance in state', () => {
-        //given
-        const {dataManager} = node.instance().props;
-        // when
-        dataManager.publish({
-          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-          response: workflowInstance,
-        });
-
-        expect(node.instance().state.instance).toEqual(workflowInstance);
-      });
     });
     describe('load incidents', () => {
       it('should set loaded instance in state', () => {
@@ -224,14 +229,12 @@ describe('Instance', () => {
       });
     });
     describe('load variables', () => {
-      it('should set loaded variables in state', () => {
+      it('should set loaded variables in state', async () => {
         //given
         const {dataManager} = node.instance().props;
         // when
-        dataManager.publish({
-          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-          response: workflowInstance,
-        });
+        await currentInstance.fetchCurrentInstance('workflow_instance');
+
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
           response: variables,
@@ -346,7 +349,6 @@ describe('Instance', () => {
         });
 
         //then
-        expect(node.instance().state.instance).toEqual(workflowInstance);
         expect(node.instance().state.activityIdToActivityInstanceMap).toEqual(
           getActivityIdToActivityInstancesMap(instanceHistoryTree)
         );
@@ -357,8 +359,10 @@ describe('Instance', () => {
         expect(node.instance().state.incidents).toEqual(noIncidents);
       });
 
-      it('should update some data just if existing', () => {
+      it('should update some data just if existing', async () => {
         //given
+        await currentInstance.fetchCurrentInstance('workflow_instance');
+
         const {dataManager} = node.instance().props;
         // when
         dataManager.publish({
@@ -399,14 +403,10 @@ describe('Instance', () => {
       subscriptions = node.instance().subscriptions;
     });
 
-    it('should poll for active instances', () => {
+    it('should poll for active instances', async () => {
       //given
       const {dataManager} = node.instance().props;
-
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstance,
-      });
+      await currentInstance.fetchCurrentInstance('workflow_instance');
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
@@ -427,9 +427,6 @@ describe('Instance', () => {
       });
       node.update();
 
-      //when
-      expect(isRunningInstance(node.instance().state.instance)).toBe(true);
-
       //then
       expect(dataManager.poll.register).toHaveBeenCalledWith(
         'INSTANCE',
@@ -438,14 +435,11 @@ describe('Instance', () => {
       expect(dataManager.update).toHaveBeenCalled();
     });
 
-    it('should not poll for for completed instances', () => {
+    it('should not poll for for completed instances', async () => {
       //given
       const {dataManager} = node.instance().props;
 
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstanceCompleted,
-      });
+      await currentInstance.fetchCurrentInstance('completed_workflow_instance');
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
@@ -503,14 +497,11 @@ describe('Instance', () => {
       expect(dataManager.update).not.toHaveBeenCalled();
     });
 
-    it('should not trigger a new poll while one timer is already running', () => {
+    it('should not trigger a new poll while one timer is already running', async () => {
       //given
       const {dataManager} = node.instance().props;
 
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstance,
-      });
+      await currentInstance.fetchCurrentInstance('workflow_instance');
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
