@@ -142,6 +142,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
       case ELEMENT_TERMINATED:
         processor.onTerminated(element, context);
         break;
+      case SEQUENCE_FLOW_TAKEN:
+        // in order to keep the implementation simple, a sequence flow acts as an element that can
+        // process `activating`
+        processor.onActivating(element, context);
+        break;
       default:
         throw new UnsupportedOperationException(
             String.format(

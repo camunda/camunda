@@ -154,6 +154,25 @@ public final class BpmnStateTransitionBehavior {
     return stateBehavior.createChildElementInstance(context, childInstanceKey, childInstanceRecord);
   }
 
+  public void activateElementInstanceInFlowScope(
+      final BpmnElementContext context, final ExecutableFlowElement element) {
+
+    final var elementInstanceRecord =
+        context
+            .getRecordValue()
+            .setFlowScopeKey(context.getFlowScopeKey())
+            .setElementId(element.getId())
+            .setBpmnElementType(element.getElementType());
+
+    final var elementInstanceKey = keyGenerator.nextKey();
+
+    streamWriter.appendNewEvent(
+        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
+
+    stateBehavior.createElementInstanceInFlowScope(
+        context, elementInstanceKey, elementInstanceRecord);
+  }
+
   public void terminateChildInstances(final BpmnElementContext context) {
 
     final var childInstances = stateBehavior.getChildInstances(context);
