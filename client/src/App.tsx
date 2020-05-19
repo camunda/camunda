@@ -15,10 +15,12 @@ import {Tasklist} from './Tasklist';
 import {Login} from './Login';
 import {Pages} from './pages';
 import {theme} from './theme';
+import {GlobalStyle} from './GlobalStyle';
 
 const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
+      <GlobalStyle />
       <BrowserRouter>
         <Switch>
           <PrivateRoute
