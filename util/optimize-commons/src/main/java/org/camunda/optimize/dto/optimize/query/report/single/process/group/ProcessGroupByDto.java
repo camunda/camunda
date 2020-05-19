@@ -21,6 +21,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_CANDIDA
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_END_DATE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_NONE_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_RUNNING_DATE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_START_DATE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_USER_TASKS_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABLE_TYPE;
@@ -34,6 +35,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABL
 @JsonSubTypes({
   @JsonSubTypes.Type(value = StartDateGroupByDto.class, name = GROUP_BY_START_DATE_TYPE),
   @JsonSubTypes.Type(value = EndDateGroupByDto.class, name = GROUP_BY_END_DATE_TYPE),
+  @JsonSubTypes.Type(value = RunningDateGroupByDto.class, name = GROUP_BY_RUNNING_DATE_TYPE),
   @JsonSubTypes.Type(value = FlowNodesGroupByDto.class, name = GROUP_BY_FLOW_NODES_TYPE),
   @JsonSubTypes.Type(value = UserTasksGroupByDto.class, name = GROUP_BY_USER_TASKS_TYPE),
   @JsonSubTypes.Type(value = NoneGroupByDto.class, name = GROUP_BY_NONE_TYPE),

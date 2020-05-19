@@ -20,11 +20,15 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
+import java.sql.SQLException;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class AbstractProcessDefinitionIT extends AbstractIT {
 
@@ -48,7 +52,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  protected EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  protected EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcess(null);
@@ -69,7 +74,12 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables, BUSINESS_KEY, tenantId);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+      processModel,
+      variables,
+      BUSINESS_KEY,
+      tenantId
+    );
   }
 
 
@@ -106,18 +116,28 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
                                                                             String activityId,
                                                                             String tenantId) {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(key)
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .serviceTask(activityId)
-        .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:on
+    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(key, activityId);
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
       processModel, ImmutableMap.of(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE), tenantId
     );
+  }
+
+  protected List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int numberOfProcesses) {
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
+    return IntStream.range(0, numberOfProcesses)
+      .mapToObj(i -> {
+        ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.startProcessInstance(
+          processDefinition.getId());
+        processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
+        processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
+        return processInstanceEngineDto;
+      })
+      .collect(Collectors.toList());
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition() {
+    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance("aProcess", "anActivityId");
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   protected ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
@@ -150,6 +170,37 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .forEach(tenant -> deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant));
 
     return processKey;
+  }
+
+  protected List<ProcessInstanceEngineDto> startAndEndProcessInstancesWithGivenRuntime(
+    final int numberOfInstances,
+    final Duration instanceRuntime,
+    final OffsetDateTime startTimeOfFirstInstance) throws SQLException {
+    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(numberOfInstances);
+
+    for (int i = 0; i < numberOfInstances; i++) {
+      final OffsetDateTime startTime = startTimeOfFirstInstance.plus(instanceRuntime.multipliedBy(i));
+      final OffsetDateTime endTime = startTime.plus(instanceRuntime);
+      engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+        processInstanceDtos.get(i).getId(),
+        startTime,
+        endTime
+      );
+    }
+    return processInstanceDtos;
+  }
+
+  private BpmnModelInstance createSimpleServiceTaskModelInstance(final String key,
+                                                                 final String activityId) {
+    // @formatter:off
+    return Bpmn.createExecutableProcess(key)
+      .name("aProcessName")
+      .startEvent(START_EVENT)
+      .serviceTask(activityId)
+      .camundaExpression("${true}")
+      .endEvent(END_EVENT)
+      .done();
+    // @formatter:on
   }
 
   protected String createNewReport(ProcessReportDataDto processReportDataDto) {

@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -20,7 +20,7 @@ public class AutomaticIntervalSelectionGroupByEndProcessInstanceDateReportEvalua
   extends AbstractAutomaticIntervalSelectionGroupByProcessInstanceDateReportEvaluationIT {
 
   @Override
-  protected ProcessReportDataDto getGroupByStartDateReportData(String key, String version) {
+  protected ProcessReportDataDto getGroupByDateReportData(String key, String version) {
     return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(key)
@@ -32,12 +32,12 @@ public class AutomaticIntervalSelectionGroupByEndProcessInstanceDateReportEvalua
 
   @Override
   protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> updates) throws SQLException {
-    engineDatabaseExtension.updateProcessInstanceEndDates(updates);
+    engineDatabaseExtension.changeProcessInstanceEndDates(updates);
   }
 
   @Override
-  protected void updateProcessInstanceDate(final ZonedDateTime min, final ProcessInstanceEngineDto procInstMin) throws
-                                                                                                                SQLException {
+  protected void updateProcessInstanceDate(final ZonedDateTime min,
+                                           final ProcessInstanceEngineDto procInstMin) throws SQLException {
     engineDatabaseExtension.changeProcessInstanceEndDate(procInstMin.getId(), min.toOffsetDateTime());
   }
 }

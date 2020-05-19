@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDa
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.RunningDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
@@ -46,6 +47,19 @@ public class ProcessGroupByDtoCreator {
 
   public static ProcessGroupByDto<?> createGroupByEndDateDto() {
     return createGroupByEndDateDto(null);
+  }
+
+  public static ProcessGroupByDto<?> createGroupByRunningDateDto(GroupByDateUnit dateInterval) {
+    RunningDateGroupByDto groupByDto = new RunningDateGroupByDto();
+    DateGroupByValueDto valueDto = new DateGroupByValueDto();
+    valueDto.setUnit(dateInterval);
+    groupByDto.setValue(valueDto);
+
+    return groupByDto;
+  }
+
+  public static ProcessGroupByDto<?> createGroupByRunningDateDto() {
+    return createGroupByRunningDateDto(null);
   }
 
   public static ProcessGroupByDto<?> createGroupByFlowNode() {

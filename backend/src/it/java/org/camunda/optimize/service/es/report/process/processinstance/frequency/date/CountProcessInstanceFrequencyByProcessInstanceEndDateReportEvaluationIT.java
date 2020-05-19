@@ -55,7 +55,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluati
 
   @Override
   protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> newIdToDates) throws SQLException {
-    engineDatabaseExtension.updateProcessInstanceEndDates(newIdToDates);
+    engineDatabaseExtension.changeProcessInstanceEndDates(newIdToDates);
   }
 
   @Test

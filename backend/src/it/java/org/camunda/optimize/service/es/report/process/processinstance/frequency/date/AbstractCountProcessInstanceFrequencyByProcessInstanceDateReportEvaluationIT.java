@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.frequency.date;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -73,8 +71,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setReportDataType(getTestReportDataType())
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -107,8 +105,9 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     );
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReportById(
-      reportId);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReportById(
+        reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -130,15 +129,18 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
   }
 
 
-  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(final OffsetDateTime now) throws
-                                                                                                                  SQLException {
+  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(
+    final OffsetDateTime now) throws SQLException {
     final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstance1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
-    final ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
-    final ProcessInstanceEngineDto processInstance3 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstance3 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
     return processDefinition;
   }
@@ -146,7 +148,6 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
   @Test
   public void resultIsSortedInDescendingOrder() throws Exception {
     // given
-
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     final String definitionId = processInstanceDto.getDefinitionId();
@@ -173,7 +174,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
       resultKeys,
-      // expect ascending order
+      // expect descending order
       contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
@@ -429,11 +430,11 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertStartDateResultMap(resultData, size, now, unit, 1L);
   }
 
-  private void assertStartDateResultMap(List<MapResultEntryDto> resultData,
-                                        int size,
-                                        OffsetDateTime now,
-                                        ChronoUnit unit,
-                                        long expectedValue) {
+  protected void assertStartDateResultMap(List<MapResultEntryDto> resultData,
+                                          int size,
+                                          OffsetDateTime now,
+                                          ChronoUnit unit,
+                                          long expectedValue) {
     assertThat(resultData.size(), is(size));
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
@@ -669,29 +670,6 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // then
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
-  }
-
-  private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int number) {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    return IntStream.range(0, number)
-      .mapToObj(i -> {
-        ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-        processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
-        processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-        return processInstanceEngineDto;
-      })
-      .collect(Collectors.toList());
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {

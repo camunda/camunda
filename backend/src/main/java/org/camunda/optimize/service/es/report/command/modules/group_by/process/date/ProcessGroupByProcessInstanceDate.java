@@ -54,10 +54,10 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<ProcessReportDataDto> {
 
   protected final ConfigurationService configurationService;
-  private final IntervalAggregationService intervalAggregationService;
+  protected final IntervalAggregationService intervalAggregationService;
   private final DateTimeFormatter dateTimeFormatter;
 
-  private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
+  protected static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   protected ProcessGroupByProcessInstanceDate(final ConfigurationService configurationService,
                                               final IntervalAggregationService intervalAggregationService,
@@ -154,8 +154,8 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
     );
   }
 
-  private List<AggregationBuilder> createAutomaticIntervalAggregation(final SearchSourceBuilder builder,
-                                                                      final ExecutionContext<ProcessReportDataDto> context) {
+  protected List<AggregationBuilder> createAutomaticIntervalAggregation(final SearchSourceBuilder builder,
+                                                                        final ExecutionContext<ProcessReportDataDto> context) {
 
     Optional<AggregationBuilder> automaticIntervalAggregation =
       intervalAggregationService.createIntervalAggregation(

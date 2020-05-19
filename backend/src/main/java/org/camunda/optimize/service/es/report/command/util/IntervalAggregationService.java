@@ -122,7 +122,7 @@ public class IntervalAggregationService {
     }
   }
 
-  private long getDateHistogramIntervalFromMinMax(OffsetDateTime min, OffsetDateTime max) {
+  public static long getDateHistogramIntervalInMsFromMinMax(OffsetDateTime min, OffsetDateTime max) {
     long minInMs = min.toInstant().toEpochMilli();
     long maxInMs = max.toInstant().toEpochMilli();
     final long intervalFromMinToMax = (maxInMs - minInMs) / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -131,9 +131,10 @@ public class IntervalAggregationService {
     return Math.max(intervalFromMinToMax, 1);
   }
 
-  public Optional<AggregationBuilder> createIntervalAggregationFromGivenRange(String field, OffsetDateTime min,
+  public Optional<AggregationBuilder> createIntervalAggregationFromGivenRange(String field,
+                                                                              OffsetDateTime min,
                                                                               OffsetDateTime max) {
-    long msAsUnit = getDateHistogramIntervalFromMinMax(min, max);
+    long msAsUnit = getDateHistogramIntervalInMsFromMinMax(min, max);
     RangeAggregationBuilder rangeAgg = AggregationBuilders
       .range(RANGE_AGGREGATION)
       .field(field);

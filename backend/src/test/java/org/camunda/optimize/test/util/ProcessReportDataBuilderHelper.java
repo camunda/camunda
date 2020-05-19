@@ -28,6 +28,7 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByEndDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByRunningDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByStartDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByUserTasks;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByVariable;
@@ -78,6 +79,8 @@ public class ProcessReportDataBuilderHelper {
         return createGroupByStartDateDto(dateInterval);
       case END_DATE:
         return createGroupByEndDateDto(dateInterval);
+      case RUNNING_DATE:
+        return createGroupByRunningDateDto(dateInterval);
       case ASSIGNEE:
         return createGroupByAssignee();
       case CANDIDATE_GROUP:

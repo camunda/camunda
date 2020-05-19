@@ -41,6 +41,11 @@ public class EngineDatabaseExtension implements Extension {
   private static final String USER_H2 = "sa";
   private static final String PASS_H2 = "";
 
+  private static final String UPDATE_INSTANCE_END_TIME_SQL =
+    "UPDATE ACT_HI_PROCINST SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+  private static final String UPDATE_INSTANCE_START_TIME_SQL =
+    "UPDATE ACT_HI_PROCINST SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+
   private static final Map<String, Connection> CONNECTION_CACHE = new HashMap<>();
 
   private static String database = DATABASE_H2;
@@ -130,16 +135,6 @@ public class EngineDatabaseExtension implements Extension {
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setLong(1, duration);
     statement.setString(2, processDefinitionId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  public void changeProcessInstanceStartDate(String processInstanceId, OffsetDateTime startDate) throws SQLException {
-    String sql = "UPDATE ACT_HI_PROCINST " +
-      "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
-    statement.setString(2, processInstanceId);
     statement.executeUpdate();
     connection.commit();
   }
@@ -397,40 +392,55 @@ public class EngineDatabaseExtension implements Extension {
   }
 
 
-  public void updateProcessInstanceStartDates(Map<String, OffsetDateTime> processInstanceIdToStartDate) throws
-                                                                                                        SQLException {
-    String sql = "UPDATE ACT_HI_PROCINST " +
-      "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+  public void changeProcessInstanceStartDates(Map<String, OffsetDateTime> processInstanceIdToStartDate)
+    throws SQLException {
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(UPDATE_INSTANCE_START_TIME_SQL));
     for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToStartDate.entrySet()) {
-      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
-      statement.setString(2, idToStartDate.getKey());
-      statement.executeUpdate();
+      prepareAndExecuteStatementForTimeFieldUpdate(
+        statement,
+        idToStartDate.getKey(),
+        idToStartDate.getValue()
+      );
     }
     connection.commit();
+  }
+
+  public void changeProcessInstanceEndDates(Map<String, OffsetDateTime> processInstanceIdToEndDate)
+    throws SQLException {
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(UPDATE_INSTANCE_END_TIME_SQL));
+    for (Map.Entry<String, OffsetDateTime> idToEndDate : processInstanceIdToEndDate.entrySet()) {
+      prepareAndExecuteStatementForTimeFieldUpdate(
+        statement,
+        idToEndDate.getKey(),
+        idToEndDate.getValue()
+      );
+    }
+    connection.commit();
+  }
+
+  public void changeProcessInstanceStartDate(String processInstanceId, OffsetDateTime startDate) throws SQLException {
+    changeProcessInstanceStartAndEndDate(processInstanceId, startDate, null);
   }
 
   public void changeProcessInstanceEndDate(String processInstanceId, OffsetDateTime endDate) throws SQLException {
-    String sql = "UPDATE ACT_HI_PROCINST " +
-      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
-    statement.setString(2, processInstanceId);
-    statement.executeUpdate();
-    connection.commit();
+    changeProcessInstanceStartAndEndDate(processInstanceId, null, endDate);
   }
 
-  public void updateProcessInstanceEndDates(Map<String, OffsetDateTime> processInstanceIdToEndDate) throws
-                                                                                                    SQLException {
-    String sql = "UPDATE ACT_HI_PROCINST " +
-      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
-      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
-      statement.setString(2, idToStartDate.getKey());
-      statement.executeUpdate();
+  public void changeProcessInstanceStartAndEndDate(String processInstanceId,
+                                                   OffsetDateTime startDate,
+                                                   OffsetDateTime endDate) throws SQLException {
+    PreparedStatement statement;
+    if (startDate != null) {
+      statement = connection.prepareStatement(handleDatabaseSyntax(UPDATE_INSTANCE_START_TIME_SQL));
+      prepareAndExecuteStatementForTimeFieldUpdate(statement, processInstanceId, startDate);
     }
-    connection.commit();
+    if (endDate != null) {
+      statement = connection.prepareStatement(handleDatabaseSyntax(UPDATE_INSTANCE_END_TIME_SQL));
+      prepareAndExecuteStatementForTimeFieldUpdate(statement, processInstanceId, endDate);
+    }
+    if (startDate != null || endDate != null) {
+      connection.commit();
+    }
   }
 
   public int countHistoricActivityInstances() throws SQLException {
@@ -577,5 +587,13 @@ public class EngineDatabaseExtension implements Extension {
         .atZoneSameInstant(ZoneId.systemDefault())
         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"))
     );
+  }
+
+  private void prepareAndExecuteStatementForTimeFieldUpdate(final PreparedStatement statement,
+                                                            final String processInstanceId,
+                                                            final OffsetDateTime newDate) throws SQLException {
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(newDate));
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
   }
 }

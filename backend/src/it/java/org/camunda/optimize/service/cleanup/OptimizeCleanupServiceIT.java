@@ -275,7 +275,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
     Map<String, OffsetDateTime> procInstEndDateUpdates = new HashMap<>();
     procInstEndDateUpdates.put(firstProcInst.getId(), endTime);
     procInstEndDateUpdates.put(secondProcInst.getId(), endTime);
-    engineDatabaseExtension.updateProcessInstanceEndDates(procInstEndDateUpdates);
+    engineDatabaseExtension.changeProcessInstanceEndDates(procInstEndDateUpdates);
 
     return Lists.newArrayList(firstProcInst.getId(), secondProcInst.getId());
   }

@@ -62,7 +62,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReportEvaluationIT extends AbstractProcessDefinitionIT {
+public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReportEvaluationIT
+  extends AbstractProcessDefinitionIT {
 
   private static final String PROCESS_DEFINITION_KEY = "123";
 
@@ -237,10 +238,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
     adjustProcessInstanceDates(processInstanceDto1.getId(), referenceDate, 0L, 1L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinitionId);
     adjustProcessInstanceDates(processInstanceDto2.getId(), referenceDate, -2L, 3L);
 
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    final ProcessInstanceEngineDto processInstanceDto3 =
+      engineIntegrationExtension.startProcessInstance(processDefinitionId);
     adjustProcessInstanceDates(processInstanceDto3.getId(), referenceDate, -1L, 1L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -272,25 +275,24 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   public void testCustomOrderOnResultValueIsApplied() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
-    final String processDefinitionId = processInstanceDto1.getDefinitionId();
-    final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
-    final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
-    adjustProcessInstanceDates(processInstanceDto1.getId(), referenceDate, 0L, 1L);
+    final ProcessInstanceEngineDto instance1 = deployAndStartSimpleServiceTaskProcess();
+    final String processDefinitionId = instance1.getDefinitionId();
+    final String processDefinitionKey = instance1.getProcessDefinitionKey();
+    final String processDefinitionVersion = instance1.getProcessDefinitionVersion();
+    adjustProcessInstanceDates(instance1.getId(), referenceDate, 0L, 1L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto2.getId(), referenceDate, -1L, 2L);
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto3.getId(), referenceDate, -1L, 100L);
-
-    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto4.getId(), referenceDate, -2L, 1L);
-    final ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto5.getId(), referenceDate, -2L, 2L);
-    final ProcessInstanceEngineDto processInstanceDto6 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto6.getId(), referenceDate, -2L, 3L);
-    final ProcessInstanceEngineDto processInstanceDto7 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto7.getId(), referenceDate, -2L, 4L);
+    final ProcessInstanceEngineDto instance2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance2.getId(), referenceDate, -1L, 2L);
+    final ProcessInstanceEngineDto instance3 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance3.getId(), referenceDate, -1L, 100L);
+    final ProcessInstanceEngineDto instance4 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance4.getId(), referenceDate, -2L, 1L);
+    final ProcessInstanceEngineDto instance5 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance5.getId(), referenceDate, -2L, 2L);
+    final ProcessInstanceEngineDto instance6 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance6.getId(), referenceDate, -2L, 3L);
+    final ProcessInstanceEngineDto instance7 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance7.getId(), referenceDate, -2L, 4L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -330,25 +332,24 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   public void multipleBuckets_noFilter_resultLimitedByConfig() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
-    final String processDefinitionId = processInstanceDto1.getDefinitionId();
-    final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
-    final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
-    adjustProcessInstanceDates(processInstanceDto1.getId(), referenceDate, 0L, 1L);
+    final ProcessInstanceEngineDto instance1 = deployAndStartSimpleServiceTaskProcess();
+    final String processDefinitionId = instance1.getDefinitionId();
+    final String processDefinitionKey = instance1.getProcessDefinitionKey();
+    final String processDefinitionVersion = instance1.getProcessDefinitionVersion();
+    adjustProcessInstanceDates(instance1.getId(), referenceDate, 0L, 1L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto2.getId(), referenceDate, -1L, 2L);
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto3.getId(), referenceDate, -1L, 100L);
-
-    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto4.getId(), referenceDate, -2L, 1L);
-    final ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto5.getId(), referenceDate, -2L, 2L);
-    final ProcessInstanceEngineDto processInstanceDto6 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto6.getId(), referenceDate, -2L, 3L);
-    final ProcessInstanceEngineDto processInstanceDto7 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto7.getId(), referenceDate, -2L, 4L);
+    final ProcessInstanceEngineDto instance2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance2.getId(), referenceDate, -1L, 2L);
+    final ProcessInstanceEngineDto instance3 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance3.getId(), referenceDate, -1L, 100L);
+    final ProcessInstanceEngineDto instance4 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance4.getId(), referenceDate, -2L, 1L);
+    final ProcessInstanceEngineDto instance5 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance5.getId(), referenceDate, -2L, 2L);
+    final ProcessInstanceEngineDto instance6 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance6.getId(), referenceDate, -2L, 3L);
+    final ProcessInstanceEngineDto instance7 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(instance7.getId(), referenceDate, -2L, 4L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -375,18 +376,17 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   public void emptyIntervalBetweenTwoProcessInstances() {
     // given
     OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    String processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
-    String processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
+    ProcessInstanceEngineDto instance = deployAndStartSimpleServiceTaskProcess();
+    String processDefinitionKey = instance.getProcessDefinitionKey();
+    String processDefinitionVersion = instance.getProcessDefinitionVersion();
 
-    adjustProcessInstanceDates(processInstanceDto.getId(), referenceDate, 0L, 1L);
-    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    adjustProcessInstanceDates(processInstanceDto.getId(), referenceDate, 0L, 9L);
-    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    adjustProcessInstanceDates(processInstanceDto.getId(), referenceDate, 0L, 2L);
-    ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    adjustProcessInstanceDates(processInstanceDto3.getId(), referenceDate, -2L, 1L);
+    adjustProcessInstanceDates(instance.getId(), referenceDate, 0L, 1L);
+    instance = engineIntegrationExtension.startProcessInstance(instance.getDefinitionId());
+    adjustProcessInstanceDates(instance.getId(), referenceDate, 0L, 9L);
+    instance = engineIntegrationExtension.startProcessInstance(instance.getDefinitionId());
+    adjustProcessInstanceDates(instance.getId(), referenceDate, 0L, 2L);
+    ProcessInstanceEngineDto instance3 = engineIntegrationExtension.startProcessInstance(instance.getDefinitionId());
+    adjustProcessInstanceDates(instance3.getId(), referenceDate, -2L, 1L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -419,18 +419,17 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   public void automaticIntervalSelectionWorks() {
     // given
     OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    String processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
-    String processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
+    ProcessInstanceEngineDto instance = deployAndStartSimpleServiceTaskProcess();
+    String processDefinitionKey = instance.getProcessDefinitionKey();
+    String processDefinitionVersion = instance.getProcessDefinitionVersion();
 
-    adjustProcessInstanceDates(processInstanceDto.getId(), referenceDate, 0L, 1L);
-    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    adjustProcessInstanceDates(processInstanceDto.getId(), referenceDate, 0L, 9L);
-    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    adjustProcessInstanceDates(processInstanceDto.getId(), referenceDate, 0L, 2L);
-    ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    adjustProcessInstanceDates(processInstanceDto3.getId(), referenceDate, -2L, 1L);
+    adjustProcessInstanceDates(instance.getId(), referenceDate, 0L, 1L);
+    instance = engineIntegrationExtension.startProcessInstance(instance.getDefinitionId());
+    adjustProcessInstanceDates(instance.getId(), referenceDate, 0L, 9L);
+    instance = engineIntegrationExtension.startProcessInstance(instance.getDefinitionId());
+    adjustProcessInstanceDates(instance.getId(), referenceDate, 0L, 2L);
+    ProcessInstanceEngineDto instance3 = engineIntegrationExtension.startProcessInstance(instance.getDefinitionId());
+    adjustProcessInstanceDates(instance3.getId(), referenceDate, -2L, 1L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -470,13 +469,15 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      completeProcessInstanceDto.getId(),
+      completedProcInstStartDate
+    );
     engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
-    final ProcessInstanceEngineDto newRunningProcessInstance = engineIntegrationExtension.startProcessInstance(
-      completeProcessInstanceDto.getDefinitionId()
-    );
+    final ProcessInstanceEngineDto newRunningProcessInstance =
+      engineIntegrationExtension.startProcessInstance(completeProcessInstanceDto.getDefinitionId());
     OffsetDateTime runningProcInstStartDate = now.minusDays(1);
     engineDatabaseExtension.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
 
@@ -516,12 +517,14 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      completeProcessInstanceDto.getId(),
+      completedProcInstStartDate
+    );
     engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
-    final ProcessInstanceEngineDto completedProcessInstance2 = engineIntegrationExtension.startProcessInstance(
-      completeProcessInstanceDto.getDefinitionId()
-    );
+    final ProcessInstanceEngineDto completedProcessInstance2 =
+      engineIntegrationExtension.startProcessInstance(completeProcessInstanceDto.getDefinitionId());
     engineIntegrationExtension.finishAllRunningUserTasks(completedProcessInstance2.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(completedProcessInstance2.getId(), now.minusDays(1));
     engineDatabaseExtension.changeProcessInstanceEndDate(completedProcessInstance2.getId(), now);
@@ -607,8 +610,8 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
       });
 
     try {
-      engineDatabaseExtension.updateProcessInstanceStartDates(idToNewStartDate);
-      engineDatabaseExtension.updateProcessInstanceEndDates(idToNewEndDate);
+      engineDatabaseExtension.changeProcessInstanceStartDates(idToNewStartDate);
+      engineDatabaseExtension.changeProcessInstanceEndDates(idToNewEndDate);
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException("Failed updating process instance dates", e);
     }
@@ -886,29 +889,6 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
-  private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int number) {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    return IntStream.range(0, number)
-      .mapToObj(i -> {
-        ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-        processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
-        processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-        return processInstanceEngineDto;
-      })
-      .collect(Collectors.toList());
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
-  }
-
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -924,7 +904,8 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
-  private Map<AggregationType, ReportMapResultDto> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  private Map<AggregationType, ReportMapResultDto> evaluateMapReportForAllAggTypes(
+    final ProcessReportDataDto reportData) {
 
     Map<AggregationType, ReportMapResultDto> resultsMap = new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
@@ -948,19 +929,22 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     });
   }
 
-  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(final OffsetDateTime now) throws
-                                                                                                                  SQLException {
+  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(
+    final OffsetDateTime now) throws SQLException {
     final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstance1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
 
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance1.getId(), now.minusSeconds(1));
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstance1.getId(), now);
 
-    final ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
-    final ProcessInstanceEngineDto processInstance3 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstance3 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
     return processDefinition;
   }

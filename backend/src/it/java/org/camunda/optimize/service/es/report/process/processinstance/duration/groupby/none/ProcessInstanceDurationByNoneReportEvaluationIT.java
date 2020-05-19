@@ -138,12 +138,12 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     startDatesToUpdate.put(processInstanceDto.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto2.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto3.getId(), startDate);
-    engineDatabaseExtension.updateProcessInstanceStartDates(startDatesToUpdate);
+    engineDatabaseExtension.changeProcessInstanceStartDates(startDatesToUpdate);
     Map<String, OffsetDateTime> endDatesToUpdate = new HashMap<>();
     endDatesToUpdate.put(processInstanceDto.getId(), startDate.plusSeconds(1));
     endDatesToUpdate.put(processInstanceDto2.getId(), startDate.plusSeconds(2));
     endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(9));
-    engineDatabaseExtension.updateProcessInstanceEndDates(endDatesToUpdate);
+    engineDatabaseExtension.changeProcessInstanceEndDates(endDatesToUpdate);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -172,12 +172,12 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     startDatesToUpdate.put(processInstanceDto.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto2.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto3.getId(), startDate);
-    engineDatabaseExtension.updateProcessInstanceStartDates(startDatesToUpdate);
+    engineDatabaseExtension.changeProcessInstanceStartDates(startDatesToUpdate);
     Map<String, OffsetDateTime> endDatesToUpdate = new HashMap<>();
     endDatesToUpdate.put(processInstanceDto.getId(), startDate.plusSeconds(1));
     endDatesToUpdate.put(processInstanceDto2.getId(), startDate.plusSeconds(2));
     endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(9));
-    engineDatabaseExtension.updateProcessInstanceEndDates(endDatesToUpdate);
+    engineDatabaseExtension.changeProcessInstanceEndDates(endDatesToUpdate);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 

@@ -108,11 +108,11 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName(definitionKey);
     engineIntegrationExtension.finishAllRunningUserTasks();
     OffsetDateTime eventTimestamp = OffsetDateTime.now().withNano(0);
-    engineDatabaseExtension.updateProcessInstanceStartDates(ImmutableMap.of(
+    engineDatabaseExtension.changeProcessInstanceStartDates(ImmutableMap.of(
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));
-    engineDatabaseExtension.updateProcessInstanceEndDates(ImmutableMap.of(
+    engineDatabaseExtension.changeProcessInstanceEndDates(ImmutableMap.of(
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));
@@ -146,11 +146,11 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName(definitionKey);
     engineIntegrationExtension.finishAllRunningUserTasks();
     OffsetDateTime eventTimestamp = OffsetDateTime.now().withNano(0);
-    engineDatabaseExtension.updateProcessInstanceStartDates(ImmutableMap.of(
+    engineDatabaseExtension.changeProcessInstanceStartDates(ImmutableMap.of(
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));
-    engineDatabaseExtension.updateProcessInstanceEndDates(ImmutableMap.of(
+    engineDatabaseExtension.changeProcessInstanceEndDates(ImmutableMap.of(
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));
