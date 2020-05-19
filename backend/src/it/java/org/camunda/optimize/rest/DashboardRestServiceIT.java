@@ -12,6 +12,14 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.IntegerVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.LongVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.ShortVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -25,6 +33,7 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +43,8 @@ import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createExcludeUndefinedVariableFilterData;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createUndefinedVariableFilterData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
@@ -78,7 +89,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   }
 
   @ParameterizedTest
-  @MethodSource("dashboardFilterCombinations")
+  @MethodSource("validFilterCombinations")
   public void createNewDashboardWithFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
     // when
     final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
@@ -93,7 +104,26 @@ public class DashboardRestServiceIT extends AbstractIT {
     final DashboardDefinitionDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(idDto.getId())
       .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
-    assertThat(savedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
+    if (dashboardFilterDtos == null) {
+      assertThat(savedDefinition.getAvailableFilters()).isNull();
+    } else {
+      assertThat(savedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidFilterCombinations")
+  public void createNewDashboardWithInvalidFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
+    // when
+    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -226,8 +256,38 @@ public class DashboardRestServiceIT extends AbstractIT {
   }
 
   @ParameterizedTest
-  @MethodSource("dashboardFilterCombinations")
+  @MethodSource("validFilterCombinations")
   public void updateDashboardFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
+    // when
+    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // then
+    assertThat(dashboardId).isNotNull();
+    final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(dashboardId);
+    assertThat(savedDefinition.getAvailableFilters().isEmpty());
+
+    // when
+    dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .execute();
+    final DashboardDefinitionDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(updatedDefinition.getId()).isEqualTo(savedDefinition.getId());
+    if (dashboardFilterDtos == null) {
+      assertThat(updatedDefinition.getAvailableFilters()).isEmpty();
+    } else {
+      assertThat(updatedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidFilterCombinations")
+  public void updateDashboardFilterSpecification_invalidFilters(List<DashboardFilterDto> dashboardFilterDtos) {
     // when
     final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
     IdDto idDto = embeddedOptimizeExtension
@@ -237,24 +297,18 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     // then
     assertThat(idDto.getId()).isNotNull();
-    final DashboardDefinitionDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetDashboardRequest(idDto.getId())
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+    final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(idDto.getId());
     assertThat(savedDefinition.getAvailableFilters().isEmpty());
 
     // when
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
-    embeddedOptimizeExtension
+    final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateDashboardRequest(idDto.getId(), dashboardDefinitionDto)
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
-    final DashboardDefinitionDto updatedDefinition = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetDashboardRequest(idDto.getId())
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .execute();
 
     // then
-    assertThat(updatedDefinition.getId()).isEqualTo(savedDefinition.getId());
-    assertThat(updatedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -400,19 +454,112 @@ public class DashboardRestServiceIT extends AbstractIT {
     return storedShareIds.contains(shareId);
   }
 
-  private static Stream<List<DashboardFilterDto>> dashboardFilterCombinations() {
+  private static Stream<List<DashboardFilterDto>> validFilterCombinations() {
     return Stream.of(
+      null,
       Collections.emptyList(),
-      Collections.singletonList(new DashboardFilterDto(DashboardFilterType.START_DATE)),
+      Collections.singletonList(new DashboardFilterDto(DashboardFilterType.START_DATE, null)),
       Arrays.asList(
-        new DashboardFilterDto(DashboardFilterType.START_DATE),
-        new DashboardFilterDto(DashboardFilterType.END_DATE)
+        new DashboardFilterDto(DashboardFilterType.START_DATE, null),
+        new DashboardFilterDto(DashboardFilterType.END_DATE, null)
       ),
       Arrays.asList(
-        new DashboardFilterDto(DashboardFilterType.START_DATE),
-        new DashboardFilterDto(DashboardFilterType.END_DATE),
-        new DashboardFilterDto(DashboardFilterType.STATE)
+        new DashboardFilterDto(DashboardFilterType.START_DATE, null),
+        new DashboardFilterDto(DashboardFilterType.END_DATE, null),
+        new DashboardFilterDto(DashboardFilterType.STATE, null)
+      ),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        new BooleanVariableFilterDataDto("boolVar", null)
+      )),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        new DateVariableFilterDataDto("dateVar", null)
+      )),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        new LongVariableFilterDataDto("longVar", "in", Arrays.asList("1", "2"))
+      )),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        new ShortVariableFilterDataDto("shortVar", "in", Arrays.asList("1", "2"))
+      )),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        new IntegerVariableFilterDataDto("integerVar", "in", Arrays.asList("1", "2"))
+      )),
+      Arrays.asList(
+        new DashboardFilterDto(
+          DashboardFilterType.VARIABLE,
+          new BooleanVariableFilterDataDto("boolVar", null)
+        ),
+        new DashboardFilterDto(
+          DashboardFilterType.VARIABLE,
+          new LongVariableFilterDataDto("longVar", "in", Arrays.asList("1", "2"))
+        ),
+        new DashboardFilterDto(
+          DashboardFilterType.VARIABLE,
+          new DoubleVariableFilterDataDto("doubleVar", "in", Arrays.asList("1.0", "2.0"))
+        ),
+        new DashboardFilterDto(
+          DashboardFilterType.VARIABLE,
+          new StringVariableFilterDataDto("stringVar", "in", Arrays.asList("StringA", "StringB"))
+        ),
+        new DashboardFilterDto(DashboardFilterType.START_DATE, null),
+        new DashboardFilterDto(DashboardFilterType.END_DATE, null),
+        new DashboardFilterDto(DashboardFilterType.STATE, null)
       )
+    );
+  }
+
+  private static Stream<List<DashboardFilterDto>> invalidFilterCombinations() {
+    return Stream.of(
+      Collections.singletonList(new DashboardFilterDto(null, null)),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.START_DATE,
+        new BooleanVariableFilterDataDto("boolVar", true)
+      )),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.END_DATE,
+        new BooleanVariableFilterDataDto("boolVar", true)
+      )),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.STATE,
+        new BooleanVariableFilterDataDto("boolVar", true)
+      )),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        null
+      )),
+      Arrays.asList(
+        new DashboardFilterDto(DashboardFilterType.START_DATE, null),
+        new DashboardFilterDto(DashboardFilterType.START_DATE, null)
+      ),
+      Arrays.asList(
+        new DashboardFilterDto(DashboardFilterType.END_DATE, null),
+        new DashboardFilterDto(DashboardFilterType.END_DATE, null)
+      ),
+      Arrays.asList(
+        new DashboardFilterDto(DashboardFilterType.STATE, null),
+        new DashboardFilterDto(DashboardFilterType.STATE, null)
+      ),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        createUndefinedVariableFilterData("varName")
+      )),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        createExcludeUndefinedVariableFilterData("varName")
+      )),
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        new DateVariableFilterDataDto("dateVar", new FixedDateFilterDataDto(null, OffsetDateTime.now()))
+      ))
+      ,
+      Collections.singletonList(new DashboardFilterDto(
+        DashboardFilterType.VARIABLE,
+        new BooleanVariableFilterDataDto("boolVar", true)
+      ))
     );
   }
 

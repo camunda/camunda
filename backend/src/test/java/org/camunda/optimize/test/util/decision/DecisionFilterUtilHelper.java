@@ -73,14 +73,6 @@ public class DecisionFilterUtilHelper {
     return variableFilterDto;
   }
 
-  public static InputVariableFilterDto createBooleanInputVariableFilter(String variableName, Boolean variableValue) {
-    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableName, variableValue);
-    InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
-    variableFilterDto.setData(data);
-
-    return variableFilterDto;
-  }
-
   public static InputVariableFilterDto createFixedDateInputVariableFilter(String variableName,
                                                                           OffsetDateTime startDate,
                                                                           OffsetDateTime endDate) {
@@ -128,10 +120,15 @@ public class DecisionFilterUtilHelper {
     return variableFilterDto;
   }
 
-
   public static VariableFilterDataDto createUndefinedVariableFilterData(String variableName) {
     VariableFilterDataDto data = new StringVariableFilterDataDto(variableName, "whatever", Collections.emptyList());
     data.setFilterForUndefined(true);
+    return data;
+  }
+
+  public static VariableFilterDataDto createExcludeUndefinedVariableFilterData(String variableName) {
+    VariableFilterDataDto data = new StringVariableFilterDataDto(variableName, "whatever", Collections.emptyList());
+    data.setExcludeUndefined(true);
     return data;
   }
 

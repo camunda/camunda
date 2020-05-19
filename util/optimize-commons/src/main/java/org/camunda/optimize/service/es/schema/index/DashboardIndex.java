@@ -42,6 +42,7 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
   public static final String CONFIGURATION = "configuration";
 
   public static final String FILTER_TYPE = DashboardFilterDto.Fields.type;
+  public static final String FILTER_DATA = DashboardFilterDto.Fields.data;
 
   @Override
   public String getIndexName() {
@@ -90,6 +91,9 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
         .startObject("properties")
           .startObject(FILTER_TYPE)
             .field("type", "keyword")
+          .endObject()
+          .startObject(FILTER_DATA)
+            .field("enabled", false)
           .endObject()
         .endObject()
       .endObject();

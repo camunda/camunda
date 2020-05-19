@@ -7,13 +7,18 @@ package org.camunda.optimize.service.dashboard;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.DashboardFilterType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.BooleanVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -38,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -96,6 +102,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   public IdDto createNewDashboardAndReturnId(final String userId, final DashboardDefinitionDto dashboardDefinitionDto) {
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
+    Optional.ofNullable(dashboardDefinitionDto.getAvailableFilters()).ifPresent(this::validateDashboardFilters);
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
   }
 
@@ -202,6 +209,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
     final DashboardDefinitionUpdateDto updateDto = convertToUpdateDto(updatedDashboard, userId);
     final String dashboardCollectionId = dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
+    Optional.ofNullable(updatedDashboard.getAvailableFilters()).ifPresent(this::validateDashboardFilters);
     updateDto.getReports().forEach(reportLocationDto -> {
       if (IdGenerator.isValidId(reportLocationDto.getId())) {
         final ReportDefinitionDto reportDefinition =
@@ -238,6 +246,53 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       ));
     }
     return authorizedDashboardDefinition;
+  }
+
+  private void validateDashboardFilters(final List<DashboardFilterDto> availableFilters) {
+    if (availableFilters.stream().anyMatch(filter -> filter.getType() == null)) {
+      throw new BadRequestException("Dashboard Filters cannot have a null type");
+    }
+    final Map<DashboardFilterType, List<DashboardFilterDto>> filtersByType = availableFilters
+      .stream()
+      .collect(Collectors.groupingBy(DashboardFilterDto::getType));
+    filtersByType.entrySet().stream()
+      .filter(filterType -> !filterType.getKey().equals(DashboardFilterType.VARIABLE))
+      .forEach(byType -> {
+        if (byType.getValue().size() > 1) {
+          throw new BadRequestException("There can only be one of each non-variable filter types");
+        } else if (byType.getValue().stream().anyMatch(filter -> filter.getData() != null)) {
+          throw new BadRequestException("Additional data can only be supplied with variable filter types");
+        }
+      });
+    final List<DashboardFilterDto> variableFilters = filtersByType.get(DashboardFilterType.VARIABLE);
+    if (variableFilters != null) {
+      variableFilters.forEach(variableFilter -> {
+        final VariableFilterDataDto filterData = variableFilter.getData();
+        if (filterData == null) {
+          throw new BadRequestException("Variable dashboard filters require additional data");
+        }
+        if (filterData.isExcludeUndefined()) {
+          throw new BadRequestException("Cannot exclude undefined using dashboard filters");
+        }
+        if (filterData.isFilterForUndefined()) {
+          throw new BadRequestException("Cannot filter for undefined using dashboard filters");
+        }
+        final VariableType variableType = filterData.getType();
+        if (variableType.equals(VariableType.DATE)) {
+          if (filterData.getData() != null) {
+            throw new BadRequestException(String.format(
+              "Filter data cannot be supplied for %s variable type variable filters", variableType.toString()));
+          }
+        } else if (variableType.equals(VariableType.BOOLEAN)) {
+          final BooleanVariableFilterSubDataDto booleanFilterData =
+            (BooleanVariableFilterSubDataDto) variableFilter.getData().getData();
+          if (booleanFilterData.getValue() != null) {
+            throw new BadRequestException(String.format(
+              "Filter data cannot be supplied for %s variable type variable filters", variableType.toString()));
+          }
+        }
+      });
+    }
   }
 
   private void removeReportFromDashboards(final String reportId) {

@@ -12,7 +12,8 @@ import lombok.AllArgsConstructor;
 public enum DashboardFilterType {
   START_DATE("startDate"),
   END_DATE("endDate"),
-  STATE("state")
+  STATE("state"),
+  VARIABLE("variable")
   ;
 
   private String id;

@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
@@ -29,6 +30,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FIL
 })
 @Getter
 @Setter
+@EqualsAndHashCode
 public abstract class DateFilterDataDto<START> implements FilterDataDto {
 
   protected DateFilterType type;
