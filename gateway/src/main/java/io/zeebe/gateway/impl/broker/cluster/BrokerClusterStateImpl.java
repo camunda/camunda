@@ -55,7 +55,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   }
 
   public void setPartitionLeader(final int partitionId, final int leaderId, final long term) {
-    if (partitionLeaderTerms.getOrDefault(partitionId, -1L) < term) {
+    if (partitionLeaderTerms.getOrDefault(partitionId, -1L) <= term) {
       partitionLeaders.put(partitionId, leaderId);
       partitionLeaderTerms.put(partitionId, Long.valueOf(term));
       final List<Integer> followers = partitionFollowers.get(partitionId);
