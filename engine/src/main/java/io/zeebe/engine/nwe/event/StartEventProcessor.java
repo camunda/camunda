@@ -40,12 +40,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
   @Override
   public void onActivating(final ExecutableStartEvent element, final BpmnElementContext context) {
-    // todo(@korthout): discuss the input mappings, there are no tests for this
-    variableMappingBehavior
-        .applyInputMappings(context, element)
-        .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
-            failure -> incidentBehavior.createIncident(failure, context));
+    stateTransitionBehavior.transitionToActivated(context);
   }
 
   @Override

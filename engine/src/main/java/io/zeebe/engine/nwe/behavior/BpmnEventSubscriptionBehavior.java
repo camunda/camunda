@@ -36,7 +36,8 @@ public final class BpmnEventSubscriptionBehavior {
 
   private static final String NO_WORKFLOW_FOUND_MESSAGE =
       "Expected to create an instance of workflow with key '%d', but no such workflow was found";
-  private static final String NO_TRIGGERED_EVENT_MESSAGE = "No triggered event for workflow '%d'";
+  private static final String NO_TRIGGERED_EVENT_MESSAGE =
+      "Expected to create an instance of workflow with key '%d', but no triggered event could be found";
 
   private final WorkflowInstanceRecord eventRecord = new WorkflowInstanceRecord();
   private final WorkflowInstanceRecord recordForWFICreation = new WorkflowInstanceRecord();
@@ -104,14 +105,14 @@ public final class BpmnEventSubscriptionBehavior {
   public void triggerStartEvent(final BpmnElementContext context) {
     final long workflowKey = context.getWorkflowKey();
     final long workflowInstanceKey = context.getWorkflowInstanceKey();
-    final DeployedWorkflow workflow = workflowState.getWorkflowByKey(context.getWorkflowKey());
 
+    final var workflow = workflowState.getWorkflowByKey(context.getWorkflowKey());
     if (workflow == null) {
       // this should never happen because workflows are never deleted.
       throw new IllegalStateException(String.format(NO_WORKFLOW_FOUND_MESSAGE, workflowKey));
     }
 
-    final EventTrigger triggeredEvent = eventScopeInstanceState.peekEventTrigger(workflowKey);
+    final var triggeredEvent = eventScopeInstanceState.peekEventTrigger(workflowKey);
     if (triggeredEvent == null) {
       throw new IllegalStateException(String.format(NO_TRIGGERED_EVENT_MESSAGE, workflowKey));
     }
