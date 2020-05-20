@@ -108,7 +108,7 @@ public final class ExclusiveGatewayProcessor
             () -> stateTransitionBehavior.onElementCompleted(element, context));
 
     stateBehavior.consumeToken(context);
-    stateBehavior.removeInstance(context);
+    stateBehavior.removeElementInstance(context);
   }
 
   @Override
@@ -126,7 +126,7 @@ public final class ExclusiveGatewayProcessor
     stateTransitionBehavior.onElementTerminated(element, context);
 
     stateBehavior.consumeToken(context);
-    stateBehavior.removeInstance(context);
+    stateBehavior.removeElementInstance(context);
   }
 
   @Override
