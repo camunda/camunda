@@ -348,11 +348,11 @@
   <distributionManagement>
     <snapshotRepository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-tasklist-snapshots</url>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-tasklist-snapshots</url>
     </snapshotRepository>
     <repository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-tasklist</url>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-tasklist</url>
     </repository>
   </distributionManagement>
 

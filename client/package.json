@@ -31,13 +31,21 @@
     "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jest-environment-jsdom-fifteen",
-    "test:ci": "CI=true yarn test --maxWorkers=$LIMITS_CPU --ci",
+    "test:ci": "CI=true yarn test --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit",
     "eject": "react-scripts eject",
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",
     "test:e2e:ci": "PORT=8080 testcafe chrome:headless e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",
     "lint": "tsc && eslint src/** --ext .ts,.tsx,.js,.jsx",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
     "coverage:ci": "CI=true yarn coverage --maxWorkers=$LIMITS_CPU --ci"
+  },
+  "jest-junit": {
+    "suiteName": "client",
+    "outputName": "jest-test-results.xml",
+    "suiteNameTemplate": "{filename}",
+    "classNameTemplate": "client.{filename}",
+    "titleTemplate": "{title}",
+    "ancestorSeparator": " @ "
   },
   "browserslist": {
     "production": [
@@ -57,6 +65,7 @@
     "history": "^4.10.1",
     "http-proxy-middleware": "^1.0.3",
     "husky": "^4.2.5",
+    "jest-junit": "^10.0.0",
     "lint-staged": "^10.2.2",
     "prettier": "^2.0.5",
     "testcafe": "^1.8.4",

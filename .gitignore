@@ -31,3 +31,6 @@ target/
 .DS_Store
 .vscode/
 dependency-reduced-pom.xml
+
+# client JUnit style test results 
+client/jest-test-results.xml

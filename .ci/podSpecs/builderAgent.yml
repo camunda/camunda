@@ -1,0 +1,112 @@
+metadata:
+  labels:
+    agent: zeebe-tasklist-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
+  tolerations:
+    - key: "agents-n1-standard-32-netssd-preempt"
+      operator: "Exists"
+      effect: "NoSchedule"
+  initContainers:
+    - name: increase-vm-max-map
+      image: busybox
+      command: ["sysctl", "-w", "vm.max_map_count=262144"]
+      securityContext:
+        privileged: true
+  containers:
+    - name: maven
+      image: markhobson/maven-chrome:jdk-11
+      command: ["cat"]
+      tty: true
+      env:
+        - name: LIMITS_CPU
+          value: 4
+        - name: OLD_ZEEBE_TESTS_THREADS
+          value: 2
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+      resources:
+        limits:
+          cpu: 8
+          memory: 27Gi
+        requests:
+          cpu: 8
+          memory: 27Gi
+    - name: node
+      image: node:13.13.0-alpine
+      command: ["cat"]
+      tty: true
+      env:
+        - name: LIMITS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+      resources:
+        limits:
+          cpu: 2
+          memory: 2Gi
+        requests:
+          cpu: 2
+          memory: 2Gi
+    - name: elasticsearch
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.8
+      env:
+        - name: ES_JAVA_OPTS
+          value: "-Xms4096m -Xmx4096m"
+        - name: cluster.name
+          value: docker-cluster
+        - name: discovery.type
+          value: single-node
+        - name: action.auto_create_index
+          value: true
+        - name: processors
+          value: 4
+      securityContext:
+        privileged: true
+        capabilities:
+          add:
+            - IPC_LOCK
+            - SYS_RESOURCE
+      ports:
+        - containerPort: 9200
+          name: es-http
+          protocol: TCP
+        - containerPort: 9300
+          name: es-transport
+          protocol: TCP
+      resources:
+        limits:
+          cpu: 4
+          memory: 8Gi
+        requests:
+          cpu: 4
+          memory: 8Gi
+    - name: docker
+      image: docker:18.06-dind
+      args: ["--storage-driver=overlay2"]
+      securityContext:
+        privileged: true
+      tty: true
+      resources:
+        limits:
+          cpu: 1
+          memory: 4Gi
+        requests:
+          cpu: 1
+          memory: 4Gi
+    - name: zeebe
+      image: camunda/zeebe:0.24.0-alpha1
+      #imagePullPolicy: Always   #this must be uncommented when snapshot is used
+      env:
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+          value: io.zeebe.exporter.ElasticsearchExporter
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE
+          value: 1
+      resources:
+        limits:
+          cpu: 4
+          memory: 8Gi
+        requests:
+          cpu: 4
+          memory: 8Gi
