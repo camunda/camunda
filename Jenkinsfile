@@ -165,10 +165,10 @@ pipeline {
               container('maven') {
                 configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                   sh """
-                    mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${IMAGE_TAG}
+                    mvn -B -s $MAVEN_SETTINGS_XML -am -pl webapp jib:build -DskipTests -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${IMAGE_TAG}
 
                     if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                      mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:latest
+                      mvn -B -s $MAVEN_SETTINGS_XML -am -pl webapp jib:build -DskipTests  -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:latest
                     fi
                   """
                 }
@@ -195,7 +195,7 @@ pipeline {
               container('maven') {
                 configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                   sh """
-                    mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${IMAGE_NAME}:${IMAGE_TAG}
+                    mvn -B -s $MAVEN_SETTINGS_XML -am -pl webapp jib:build -DskipTests -Dimage=${IMAGE_NAME}:${IMAGE_TAG}
                   """
                 }
               }
