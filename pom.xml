@@ -170,6 +170,7 @@
         <skip.unit.tests>true</skip.unit.tests>
       </properties>
     </profile>
+
   </profiles>
 
   <dependencies>
@@ -358,6 +359,21 @@
     </pluginManagement>
 
     <plugins>
+      <plugin>
+        <groupId>com.amashchenko.maven.plugin</groupId>
+        <artifactId>gitflow-maven-plugin</artifactId>
+        <version>1.14.0</version>
+        <configuration>
+          <gitFlowConfig>
+            <productionBranch>latest</productionBranch>
+            <developmentBranch>master</developmentBranch>
+          </gitFlowConfig>
+          <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
+          <useSnapshotInRelease>true</useSnapshotInRelease>
+          <skipTestProject>true</skipTestProject>
+          <skipTag>true</skipTag>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
