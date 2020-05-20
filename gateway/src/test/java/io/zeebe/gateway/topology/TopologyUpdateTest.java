@@ -155,6 +155,25 @@ public final class TopologyUpdateTest {
     assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(newLeaderId);
   }
 
+  @Test
+  public void shouldUpdateTopologyOnBrokerRemoveAndDirectlyRejoin() {
+    // given
+    final int leaderId = 1;
+    final BrokerInfo leader = createBroker(leaderId);
+    leader.setLeaderForPartition(1, 1);
+    topologyManager.event(createMemberAddedEvent(leader));
+    waitUntil(() -> topologyManager.getTopology() != null);
+
+    // when
+    topologyManager.event(createMemberRemoveEvent(leader));
+    waitUntil(() -> topologyManager.getTopology().getBrokers().isEmpty());
+    topologyManager.event(createMemberAddedEvent(leader));
+
+    // then
+    waitUntil(() -> topologyManager.getTopology().getBrokers().contains(leaderId));
+    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(leaderId);
+  }
+
   private BrokerInfo createBroker(final int brokerId) {
     final BrokerInfo broker =
         new BrokerInfo()
