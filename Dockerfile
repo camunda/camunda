@@ -21,10 +21,10 @@ EXPOSE 8080
 
 ADD https://github.com/krallin/tini/releases/download/v0.18.0/tini /bin/tini
 
-RUN chmod +x /bin/tini
-
 WORKDIR /usr/local/operate
 
 COPY --from=prepare /tmp/operate /usr/local/operate
+
+RUN chmod +x /bin/tini /usr/local/operate/migration/migrate.sh
 
 ENTRYPOINT ["/bin/tini", "--", "/usr/local/operate/bin/operate"]
