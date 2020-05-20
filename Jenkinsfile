@@ -125,26 +125,26 @@ pipeline {
         }
       }
     }
-    stage('Deploy') {
-      parallel {
-        stage('Deploy - Nexus Snapshot') {
-          when {
-              branch 'master'
-          }
-          steps {
-            lock('zeebe-tasklist-snapshot-upload') {
-              container('maven') {
-                configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                  sh '''
-                    mvn org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true  -P -docker,skipFrontendBuild -B --fail-at-end \
-                      -s $MAVEN_SETTINGS_XML \
-                      -DaltStagingDirectory=$(pwd)/staging -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-                  '''
-                }
-              }
+    stage('Deploy - Nexus Snapshot') {
+      when {
+          branch 'master'
+      }
+      steps {
+        lock('zeebe-tasklist-snapshot-upload') {
+          container('maven') {
+            configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+              sh '''
+                mvn org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true  -P -docker,skipFrontendBuild -B --fail-at-end \
+                  -s $MAVEN_SETTINGS_XML \
+                  -DaltStagingDirectory=$(pwd)/staging -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+              '''
             }
           }
         }
+      }
+    }
+    stage('Docker') {
+      parallel {
         stage('Deploy - Docker Image') {
           when {
             not {
@@ -165,7 +165,6 @@ pipeline {
               container('maven') {
                 configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                   sh """
-                    mvn -B -s $MAVEN_SETTINGS_XML -pl webapp -am package -DskipTests
                     mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${IMAGE_TAG}
 
                     if [ "${env.BRANCH_NAME}" = 'master' ]; then
@@ -191,7 +190,6 @@ pipeline {
               container('maven') {
                 configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                   sh """
-                    mvn -B -s $MAVEN_SETTINGS_XML -pl webapp -am package -DskipTests
                     mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${IMAGE_NAME}:${IMAGE_TAG} -Djib.to.auth.username=${DOCKER_HUB_USR} -Djib.to.auth.password=${DOCKER_HUB_PSW}
                   """
                 }
