@@ -42,6 +42,16 @@ public class ProcessVariableRestService {
   }
 
   @POST
+  @Path("/reports")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public List<ProcessVariableNameResponseDto> getVariableNamesForReports(@Context ContainerRequestContext requestContext,
+                                                                         List<String> reportIds) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return processVariableService.getVariableNamesForReports(userId, reportIds);
+  }
+
+  @POST
   @Path("/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)

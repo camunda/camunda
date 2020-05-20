@@ -157,6 +157,24 @@ public class ReportReader {
     }
   }
 
+  public List<ReportDefinitionDto> getAllReportsForIdsOmitXml(final List<String> reportIds) {
+    log.debug("Fetching all report definitions for Ids {}", reportIds);
+    final String[] reportIdsAsArray = reportIds.toArray(new String[0]);
+    QueryBuilder qb = QueryBuilders.idsQuery().addIds(reportIdsAsArray);
+    SearchResponse searchResponse = performGetReportRequestOmitXml(
+      qb,
+      ALL_REPORT_INDICES,
+      LIST_FETCH_LIMIT
+    );
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      searchResponse,
+      ReportDefinitionDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
+  }
+
   public List<ReportDefinitionDto> getAllReportsOmitXml() {
     log.debug("Fetching all available reports");
     QueryBuilder qb = QueryBuilders.matchAllQuery();

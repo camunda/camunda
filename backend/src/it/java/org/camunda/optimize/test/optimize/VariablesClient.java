@@ -51,6 +51,12 @@ public class VariablesClient {
     return getProcessVariableNames(variableRequestDto);
   }
 
+  public List<ProcessVariableNameResponseDto> getProcessVariableNamesForReportIds(final List<String> reportIds) {
+    return getRequestExecutor()
+      .buildProcessVariableNamesForReportsRequest(reportIds)
+      .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
   public List<ProcessVariableNameResponseDto> getProcessVariableNames(final String key, final List<String> versions) {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(key);

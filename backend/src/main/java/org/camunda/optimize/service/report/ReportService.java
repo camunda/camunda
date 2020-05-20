@@ -186,6 +186,13 @@ public class ReportService implements CollectionReferencingService {
     );
   }
 
+  public List<ReportDefinitionDto> getAllAuthorizedReportsForIds(final String userId, final List<String> reportIds) {
+    return reportReader.getAllReportsForIdsOmitXml(reportIds)
+      .stream()
+      .filter(reportDefinitionDto -> reportAuthorizationService.isAuthorizedToReport(userId, reportDefinitionDto))
+      .collect(Collectors.toList());
+  }
+
   public AuthorizedReportDefinitionDto getReportDefinition(final String reportId, final String userId) {
     final ReportDefinitionDto report = reportReader.getReport(reportId);
     final RoleType currentUserRole = reportAuthorizationService.getAuthorizedRole(userId, report)
@@ -241,7 +248,7 @@ public class ReportService implements CollectionReferencingService {
     return filterAuthorizedReports(userId, reportsInCollection);
   }
 
-  public List<ReportDefinitionDto> getReportsForCollection(final String collectionId) {
+  private List<ReportDefinitionDto> getReportsForCollection(final String collectionId) {
     return reportReader.findReportsForCollectionOmitXml(collectionId);
   }
 
@@ -252,7 +259,8 @@ public class ReportService implements CollectionReferencingService {
     return reportEvaluator.evaluateSavedReportWithAdditionalFilters(userId, reportId, filters);
   }
 
-  public AuthorizedReportEvaluationResult evaluateReport(final String userId, final ReportDefinitionDto reportDefinition) {
+  public AuthorizedReportEvaluationResult evaluateReport(final String userId,
+                                                         final ReportDefinitionDto reportDefinition) {
     // auth is handled in evaluator as it also handles single reports of a combined report
     return reportEvaluator.evaluateReport(userId, reportDefinition);
   }

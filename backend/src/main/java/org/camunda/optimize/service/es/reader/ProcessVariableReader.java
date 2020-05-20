@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.reader;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
@@ -37,6 +38,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
@@ -81,14 +84,25 @@ public class ProcessVariableReader {
       requestDto.getProcessDefinitionVersions()
     );
 
-    BoolQueryBuilder query =
-      createDefinitionQuery(
-        requestDto.getProcessDefinitionKey(),
-        requestDto.getProcessDefinitionVersions(),
-        requestDto.getTenantIds(),
+    return getVariableNames(Collections.singletonList(requestDto));
+  }
+
+  public List<ProcessVariableNameResponseDto> getVariableNames(final List<ProcessVariableNameRequestDto> variableNameRequests) {
+    if (variableNameRequests.isEmpty()) {
+      log.debug("Cannot fetch variable names as no variable requests are provided.");
+      return Collections.emptyList();
+    }
+
+    BoolQueryBuilder query = boolQuery();
+    variableNameRequests.stream()
+      .filter(request -> !CollectionUtils.isEmpty(request.getProcessDefinitionVersions()))
+      .forEach(request -> query.should(createDefinitionQuery(
+        request.getProcessDefinitionKey(),
+        request.getProcessDefinitionVersions(),
+        request.getTenantIds(),
         new ProcessInstanceIndex(),
         processDefinitionReader::getLatestVersionToKey
-      );
+      )));
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -96,15 +110,19 @@ public class ProcessVariableReader {
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    addVariableNameAggregation(searchSourceBuilder, requestDto);
+    final List<String> prefixesSupplied = variableNameRequests.stream()
+      .map(ProcessVariableNameRequestDto::getNamePrefix)
+      .filter(Objects::nonNull)
+      .distinct()
+      .collect(Collectors.toList());
+    addVariableNameAggregation(searchSourceBuilder, prefixesSupplied);
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format(
-        "Was not able to fetch process variable names for definition with key [%s] and versions [%s]",
-        requestDto.getProcessDefinitionKey(),
-        requestDto.getProcessDefinitionVersions()
+        "Was not able to fetch process variable names for %s definitions",
+        variableNameRequests.size()
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -131,12 +149,14 @@ public class ProcessVariableReader {
   }
 
   private void addVariableNameAggregation(SearchSourceBuilder requestBuilder,
-                                          ProcessVariableNameRequestDto requestDto) {
-    String securedNamePrefix = requestDto.getNamePrefix() == null ? "" : requestDto.getNamePrefix();
-    FilterAggregationBuilder filterAllVariablesWithCertainPrefixInName = filter(
-      FILTERED_VARIABLES_AGGREGATION,
-      prefixQuery(getNestedVariableNameField(), securedNamePrefix)
-    );
+                                          List<String> prefixes) {
+    final BoolQueryBuilder filter = boolQuery();
+    prefixes.stream()
+      .distinct()
+      .map(prefix -> prefix == null ? "" : prefix)
+      .forEach(filterPrefix -> filter.should(prefixQuery(getNestedVariableNameField(), filterPrefix)));
+    FilterAggregationBuilder filterAllVariablesWithCertainPrefixInName = filter(FILTERED_VARIABLES_AGGREGATION, filter);
+
     TermsAggregationBuilder collectVariableNameBuckets = terms(VARIABLE_NAME_BUCKET_AGGREGATION)
       .field(getNestedVariableNameField())
       .size(MAX_RESPONSE_SIZE_LIMIT)

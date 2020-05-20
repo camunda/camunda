@@ -723,6 +723,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildProcessVariableNamesForReportsRequest(List<String> reportIds) {
+    this.path = "variables/reports";
+    this.method = POST;
+    this.body = getBody(reportIds);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildProcessVariableNamesRequest(ProcessVariableNameRequestDto variableRequestDto) {
     this.path = "variables/";
     this.method = POST;
