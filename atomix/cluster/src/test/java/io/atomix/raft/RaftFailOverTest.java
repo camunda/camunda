@@ -16,6 +16,7 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.storage.journal.Indexed;
 import java.util.Collection;
@@ -117,7 +118,7 @@ public class RaftFailOverTest {
   }
 
   @Test
-  public void shouldDoSnapshot() throws Exception {
+  public void shouldTakeSnapshot() throws Exception {
     // given
     raftRule.appendEntries(128);
 
@@ -155,20 +156,108 @@ public class RaftFailOverTest {
     final var follower = raftRule.shutdownFollower();
     raftRule.appendEntries(128);
     raftRule.doSnapshot(100);
+    final var leaderSnapshot = raftRule.getSnapshotFromLeader();
 
     // when
-    raftRule.startNode(follower);
+    raftRule.joinCluster(follower);
 
     // then
     assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
-    final var snapshot = raftRule.snapshotOnNode(follower);
+    final var snapshot = raftRule.getSnapshotOnNode(follower);
 
-    assertThat(snapshot.index()).isEqualTo(100);
-    assertThat(snapshot.term()).isEqualTo(1);
+    assertThat(snapshot.index()).isEqualTo(leaderSnapshot.index()).isEqualTo(100);
+    assertThat(snapshot.term()).isEqualTo(snapshot.term());
   }
 
   @Test
-  public void shouldTakeMultipleSnapshotAndReplicateSnapshotAfterRestart() throws Exception {
+  public void shouldReplicateEntriesAfterSnapshotOnJoin() throws Exception {
+    // given
+    final var follower = raftRule.shutdownFollower();
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(100);
+
+    // when
+    raftRule.joinCluster(follower);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
+
+    final var memberLogs = raftRule.getMemberLogs();
+    final var entries = memberLogs.get(follower);
+    // entries after snapshot should be replicated
+    assertThat(entries.get(0).index()).isEqualTo(100 + 1);
+
+    for (final String member : memberLogs.keySet()) {
+      if (!follower.equals(member)) {
+        final var memberEntries = memberLogs.get(member);
+        assertThat(memberEntries).endsWith(entries.toArray(new Indexed[0]));
+      }
+    }
+  }
+
+  @Test
+  public void shouldNotJoinAfterDataLoss() throws Exception {
+    // given
+    final var follower = raftRule.shutdownFollower();
+
+    // when
+    raftRule.triggerDataLossOnNode(follower);
+
+    // then
+    // follower is not allowed to join the cluster, he needs to bootstrap
+    assertThatThrownBy(() -> raftRule.joinCluster(follower))
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("not a member of the cluster");
+  }
+
+  @Test
+  public void shouldReplicateSnapshotAfterDataLoss() throws Exception {
+    // given
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(100);
+    final var follower = raftRule.shutdownFollower();
+    final var leaderSnapshot = raftRule.getSnapshotFromLeader();
+
+    // when
+    raftRule.triggerDataLossOnNode(follower);
+    raftRule.bootstrapNode(follower);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
+    final var snapshot = raftRule.getSnapshotOnNode(follower);
+
+    assertThat(snapshot.index()).isEqualTo(leaderSnapshot.index()).isEqualTo(100);
+    assertThat(snapshot.term()).isEqualTo(snapshot.term());
+  }
+
+  @Test
+  public void shouldReplicateEntriesAfterSnapshotAfterDataLoss() throws Exception {
+    // given
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(100);
+    final var follower = raftRule.shutdownFollower();
+
+    // when
+    raftRule.triggerDataLossOnNode(follower);
+    raftRule.bootstrapNode(follower);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
+    final var memberLogs = raftRule.getMemberLogs();
+    final var entries = memberLogs.get(follower);
+    // entries after snapshot should be replicated
+    assertThat(entries.get(0).index()).isEqualTo(100 + 1);
+
+    for (final String member : memberLogs.keySet()) {
+      if (!follower.equals(member)) {
+        final var memberEntries = memberLogs.get(member);
+        assertThat(memberEntries).endsWith(entries.toArray(new Indexed[0]));
+      }
+    }
+  }
+
+  @Test
+  public void shouldTakeMultipleSnapshotsAndReplicateSnapshotAfterRestart() throws Exception {
     // given
     raftRule.appendEntries(128);
     raftRule.doSnapshot(100);
@@ -177,16 +266,17 @@ public class RaftFailOverTest {
     raftRule.doSnapshot(200);
     raftRule.appendEntries(128);
     raftRule.doSnapshot(300);
+    final var leaderSnapshot = raftRule.getSnapshotFromLeader();
 
     // when
-    raftRule.startNode(follower);
+    raftRule.joinCluster(follower);
 
     // then
     assertThat(raftRule.allNodesHaveSnapshotWithIndex(300)).isTrue();
-    final var snapshot = raftRule.snapshotOnNode(follower);
+    final var snapshot = raftRule.getSnapshotOnNode(follower);
 
-    assertThat(snapshot.index()).isEqualTo(300);
-    assertThat(snapshot.term()).isEqualTo(1);
+    assertThat(snapshot.index()).isEqualTo(leaderSnapshot.index()).isEqualTo(300);
+    assertThat(snapshot.term()).isEqualTo(snapshot.term());
   }
 
   @Test
@@ -198,16 +288,17 @@ public class RaftFailOverTest {
     raftRule.awaitNewLeader();
     raftRule.appendEntries(128);
     raftRule.doSnapshot(200);
+    final var leaderSnapshot = raftRule.getSnapshotFromLeader();
 
     // when
-    raftRule.startNode(leader);
+    raftRule.joinCluster(leader);
 
     // then
     assertThat(raftRule.allNodesHaveSnapshotWithIndex(200)).isTrue();
-    final var snapshot = raftRule.snapshotOnNode(leader);
+    final var snapshot = raftRule.getSnapshotOnNode(leader);
 
-    assertThat(snapshot.index()).isEqualTo(200);
-    assertThat(snapshot.term()).isGreaterThan(1);
+    assertThat(snapshot.index()).isEqualTo(leaderSnapshot.index()).isEqualTo(200);
+    assertThat(snapshot.term()).isEqualTo(snapshot.term());
   }
 
   private void assertMemberLogs(final Map<String, List<Indexed<?>>> memberLog) {

@@ -40,9 +40,11 @@ import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
+import io.atomix.utils.AbstractIdentifier;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.time.WallClockTimestamp;
+import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -201,10 +203,18 @@ public final class RaftRule extends ExternalResource {
     return follower.name();
   }
 
-  public void startNode(final String nodeId) throws Exception {
+  public void joinCluster(final String nodeId) throws Exception {
     final RaftMember member = getRaftMember(nodeId);
     createServer(member.memberId())
         .join(getMemberIds())
+        .thenAccept(this::addCommitListener)
+        .get(30, TimeUnit.SECONDS);
+  }
+
+  public void bootstrapNode(final String nodeId) throws Exception {
+    final RaftMember member = getRaftMember(nodeId);
+    createServer(member.memberId())
+        .bootstrap(getMemberIds())
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
   }
@@ -218,7 +228,7 @@ public final class RaftRule extends ExternalResource {
   public void restartLeader() throws Exception {
     awaitNewLeader();
     final var leader = shutdownLeader();
-    startNode(leader);
+    joinCluster(leader);
   }
 
   private List<MemberId> getMemberIds() {
@@ -277,7 +287,14 @@ public final class RaftRule extends ExternalResource {
         == servers.values().size();
   }
 
-  public Snapshot snapshotOnNode(final String nodeId) {
+  public Snapshot getSnapshotFromLeader() {
+    final var leader = getLeader().orElseThrow();
+    final var context = leader.getContext();
+    final var snapshotStore = context.getSnapshotStore();
+    return snapshotStore.getCurrentSnapshot();
+  }
+
+  public Snapshot getSnapshotOnNode(final String nodeId) {
     final var raftServer = servers.get(nodeId);
     final var context = raftServer.getContext();
     final var snapshotStore = context.getSnapshotStore();
@@ -425,11 +442,15 @@ public final class RaftRule extends ExternalResource {
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
             .withStorageLevel(StorageLevel.DISK)
-            .withDirectory(new File(directory.toFile(), memberId.toString()))
+            .withDirectory(getMemberDirectory(directory, memberId.toString()))
             .withMaxEntriesPerSegment(10)
             .withMaxSegmentSize(1024 * 10)
             .withNamespace(RaftNamespaces.RAFT_STORAGE);
     return configurator.apply(defaults).build();
+  }
+
+  private File getMemberDirectory(final Path directory, final String s) {
+    return new File(directory.toFile(), s);
   }
 
   private Optional<RaftServer> getLeader() {
@@ -497,6 +518,19 @@ public final class RaftRule extends ExternalResource {
   @Override
   public String toString() {
     return "RaftRule with " + nodeCount + " nodes.";
+  }
+
+  public void triggerDataLossOnNode(final String node) throws IOException {
+    final var member =
+        members.stream()
+            .map(RaftMember::memberId)
+            .map(AbstractIdentifier::id)
+            .filter(id -> id.equals(node))
+            .findAny()
+            .orElseThrow();
+
+    final var memberDirectory = getMemberDirectory(directory, member);
+    FileUtil.deleteFolder(memberDirectory.toPath());
   }
 
   private final class RaftSnapshotListener implements SnapshotListener {
