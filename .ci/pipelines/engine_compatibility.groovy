@@ -198,6 +198,12 @@ pipeline {
     NEXUS = credentials("camunda-nexus")
     GCR_REGISTRY = credentials('docker-registry-ci3')
   }
+
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+    timestamps()
+    timeout(time: 60, unit: 'MINUTES')
+  }
   
   stages {
     stage("Prepare") {

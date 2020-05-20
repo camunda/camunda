@@ -232,7 +232,7 @@ pipeline {
     }
 
     options {
-        buildDiscarder(logRotator(numToKeepStr: '50'))
+        buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
         timeout(time: 45, unit: 'MINUTES')
     }
