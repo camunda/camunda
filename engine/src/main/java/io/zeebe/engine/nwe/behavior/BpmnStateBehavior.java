@@ -18,6 +18,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class BpmnStateBehavior {
@@ -101,6 +102,15 @@ public final class BpmnStateBehavior {
   public void removeInstance(final BpmnElementContext context) {
     eventScopeInstanceState.deleteInstance(context.getElementInstanceKey());
     elementInstanceState.removeInstance(context.getElementInstanceKey());
+  }
+
+  public List<BpmnElementContext> getChildInstances(final BpmnElementContext context) {
+    return elementInstanceState.getChildren(context.getElementInstanceKey()).stream()
+        .map(
+            childInstance ->
+                context.copy(
+                    childInstance.getKey(), childInstance.getValue(), childInstance.getState()))
+        .collect(Collectors.toList());
   }
 
   // todo(@korthout): remove this method

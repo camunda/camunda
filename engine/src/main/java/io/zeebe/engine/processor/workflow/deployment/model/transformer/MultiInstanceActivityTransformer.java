@@ -66,12 +66,12 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
           WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
 
       multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.MULTI_INSTANCE_TERMINATING);
+          WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
       multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ACTIVITY_ELEMENT_TERMINATED);
+          WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
 
       multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED);
+          WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
 
       // attach boundary events to the multi-instance body
       innerActivity.getBoundaryEvents().forEach(multiInstanceBody::attach);
