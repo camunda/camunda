@@ -8,13 +8,10 @@ package org.camunda.optimize.service.es.filter;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -314,24 +311,6 @@ public class VariableDateQueryFilterIT extends AbstractFilterIT {
 
   private void startInstanceForDefinitionWithDateVar(final String definitionId, final OffsetDateTime variableValue) {
     engineIntegrationExtension.startProcessInstance(definitionId, ImmutableMap.of(VARIABLE_NAME, variableValue));
-  }
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(final ProcessDefinitionEngineDto processDefinition,
-                                                                 final List<ProcessFilterDto<?>> filter) {
-    return evaluateReportWithFilter(processDefinition.getKey(), processDefinition.getVersionAsString(), filter);
-  }
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(String processDefinitionKey,
-                                                                 String processDefinitionVersion,
-                                                                 List<ProcessFilterDto<?>> filter) {
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .setFilter(filter)
-      .build();
-    return reportClient.evaluateReportAndReturnResult(reportData);
   }
 
 }

@@ -136,7 +136,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertThat(rawDataReportResultDto.getData().get(0).getProcessInstanceId(), is(expectedInstanceId));
   }
 
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto<?>> filter) {
+  protected RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData =
       createReportWithCompletedInstancesFilter(processDefinition);
     reportData.setFilter(filter);

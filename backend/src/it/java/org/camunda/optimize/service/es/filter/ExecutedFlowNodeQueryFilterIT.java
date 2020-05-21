@@ -468,13 +468,6 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                                 List<ProcessFilterDto<?>> filter) {
-    ProcessReportDataDto reportData = createReportWithDefinition(processDefinition);
-    reportData.setFilter(filter);
-    return reportClient.evaluateRawReport(reportData).getResult();
-  }
-
   private Response evaluateReportAndReturnResponse(List<ProcessFilterDto<?>> filterDto) {
     ProcessReportDataDto reportData = createReport(TEST_DEFINITION, "1");
     reportData.setFilter(filterDto);

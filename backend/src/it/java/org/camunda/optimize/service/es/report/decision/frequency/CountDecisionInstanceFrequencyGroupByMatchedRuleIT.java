@@ -30,10 +30,9 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.BEVERAGES_RULE_1_ID;
 import static org.camunda.optimize.util.DmnModels.BEVERAGES_RULE_2_ID;
-import static org.camunda.optimize.util.DmnModels.createDecideDishDecisionDefinition;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_GUEST_WITH_CHILDREN_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_NUMBER_OF_GUESTS_ID;
@@ -42,6 +41,7 @@ import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_1_ID;
 import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_2_ID;
 import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_3_ID;
 import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_4_ID;
+import static org.camunda.optimize.util.DmnModels.createDecideDishDecisionDefinition;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -332,7 +332,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
-      .setFilter(createDoubleInputVariableFilter(
+      .setFilter(createNumericInputVariableFilter(
         INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();

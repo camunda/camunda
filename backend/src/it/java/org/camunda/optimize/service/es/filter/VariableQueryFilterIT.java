@@ -19,293 +19,15 @@ import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 
 public class VariableQueryFilterIT extends AbstractFilterIT {
-
-  @Test
-  public void simpleVariableFilter() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", "value");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", "anotherValue");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name("var")
-      .stringType()
-      .values(Collections.singletonList("value"))
-      .operator(IN)
-      .add()
-      .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 1);
-  }
-
-  @Test
-  public void severalVariablesInSameProcessInstanceShouldNotAffectFilter() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("stringVar", "aStringValue");
-    variables.put("anotherStringVar", "anotherValue");
-    variables.put("boolVar", true);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name("stringVar")
-      .stringType()
-      .values(Collections.singletonList("aStringValue"))
-      .operator(NOT_IN)
-      .add()
-      .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 0);
-  }
-
-  @Test
-  public void stringEqualityFilterWithVariableOfDifferentType() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("stringVar", "aStringValue");
-    variables.put("anotherStringVar", "anotherValue");
-    variables.put("boolVar", true);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .stringType()
-      .name("stringVar")
-      .values(Collections.singletonList("aStringValue"))
-      .operator(IN)
-      .add()
-      .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 1);
-  }
-
-  @Test
-  public void stringInequalityFilterWithVariableOfDifferentTypeAndProcessInstance() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("stringVar", "aStringValue");
-    variables.put("boolVar", true);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("anotherStringVar", "aStringValue");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .stringType()
-      .name("anotherStringVar")
-      .operator(NOT_IN)
-      .values(Collections.singletonList("aStringValue"))
-      .add()
-      .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 2);
-  }
-
-  @Test
-  public void severalStringValueFiltersAreConcatenated() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("stringVar", "aStringValue");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("stringVar", "anotherValue");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-
-    List<String> values = new ArrayList<>();
-    values.add("aStringValue");
-    values.add("anotherValue");
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .stringType()
-      .name("stringVar")
-      .operator(IN)
-      .values(values)
-      .add()
-      .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 2);
-  }
-
-  @Test
-  public void variablesWithDifferentNameAreFiltered() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("stringVar", "value");
-    variables.put("anotherStringVar", "value");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .stringType()
-      .name("stringVar")
-      .operator(IN)
-      .values(Collections.singletonList("value"))
-      .add()
-      .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 1);
-  }
-
-  @Test
-  public void variablesWithDifferentTypeAreFiltered() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", "1");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", 1);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name("var")
-      .stringType()
-      .values(Collections.singletonList("1"))
-      .operator(IN)
-      .add()
-      .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 1);
-  }
-
-  @Test
-  public void stringInequalityVariableFilter() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", "value");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", "anotherValue");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", "aThirdValue");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name("var")
-      .stringType()
-      .values(Collections.singletonList("value"))
-      .operator(NOT_IN)
-      .add()
-      .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 2);
-  }
-
-  @Test
-  public void multipleStringInequalityVariableFilter() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", "1");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", "2");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", "3");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<String> values = new ArrayList<>();
-    values.add("2");
-    values.add("1");
-
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name("var")
-      .stringType()
-      .values(values)
-      .operator(NOT_IN)
-      .add()
-      .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertResults(result, 1);
-  }
 
   @Test
   public void booleanTrueVariableFilter() {
@@ -333,7 +55,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
-    assertResults(result, 2);
+    assertThat(result.getData()).hasSize(2);
   }
 
   @Test
@@ -361,394 +83,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
-    assertResults(result, 2);
-  }
-
-  @Test
-  public void numericLessThanVariableFilter() {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      // given
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-      List<ProcessFilterDto<?>> filter =
-        ProcessFilterBuilder
-          .filter()
-          .variable()
-          .type(variableType)
-          .name("var")
-          .operator(LESS_THAN)
-          .values(Collections.singletonList("5"))
-          .add()
-          .buildList();
-
-      RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-      // then
-      assertResults(result, 2);
-
-      resetIndexesAndClean();
-    }
-  }
-
-  @Test
-  public void multipleNumericEqualityVariableFilter() {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-    // given
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(3, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-      List<String> values = new ArrayList<>();
-      values.add("1");
-      values.add("2");
-
-      List<ProcessFilterDto<?>> filter =
-        ProcessFilterBuilder
-          .filter()
-          .variable()
-          .name("var")
-          .values(values)
-          .type(variableType)
-          .operator(IN)
-          .add()
-          .buildList();
-
-      RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-      // then
-      assertResults(result, 2);
-
-      resetIndexesAndClean();
-    }
-  }
-
-  @Test
-  public void multipleNumericInequalityVariableFilter() {
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      // given
-      ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(3, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-      List<String> values = new ArrayList<>();
-      values.add("1");
-      values.add("2");
-
-      List<ProcessFilterDto<?>> filter =
-        ProcessFilterBuilder
-          .filter()
-          .variable()
-          .name("var")
-          .values(values)
-          .type(variableType)
-          .operator(NOT_IN)
-          .add()
-          .buildList();
-
-      RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-      // then
-      assertResults(result, 1);
-
-      resetIndexesAndClean();
-    }
-
-  }
-
-  @Test
-  public void numericLessThanEqualVariableFilter() {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      // given
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-
-      List<ProcessFilterDto<?>> filter =
-        ProcessFilterBuilder
-          .filter()
-          .variable()
-          .name("var")
-          .values(Collections.singletonList("2"))
-          .type(variableType)
-          .operator(LESS_THAN_EQUALS)
-          .add()
-          .buildList();
-
-      RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-      // then
-      assertResults(result, 2);
-
-      resetIndexesAndClean();
-    }
-  }
-
-  @Test
-  public void numericGreaterThanVariableFilter() {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      // given
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-      List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-        .filter()
-        .variable()
-        .type(variableType)
-        .operator(GREATER_THAN)
-        .values(Collections.singletonList("1"))
-        .name("var")
-        .add()
-        .buildList();
-
-      RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-      // then
-      assertResults(result, 2);
-
-      resetIndexesAndClean();
-    }
-  }
-
-  @Test
-  public void numericGreaterThanEqualVariableFilter() {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      // given
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-      List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-        .filter()
-        .variable()
-        .type(variableType)
-        .operator(GREATER_THAN_EQUALS)
-        .values(Collections.singletonList("2"))
-        .name("var")
-        .add()
-        .buildList();
-
-      RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-      // then
-      assertResults(result, 2);
-
-      resetIndexesAndClean();
-    }
-  }
-
-  @Test
-  public void numericEqualVariableFilter() {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      // given
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-      List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-        .filter()
-        .variable()
-        .type(variableType)
-        .operator(IN)
-        .values(Collections.singletonList("2"))
-        .name("var")
-        .add()
-        .buildList();
-
-      RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-      // then
-      assertResults(result, 1);
-
-      resetIndexesAndClean();
-    }
-  }
-
-  @Test
-  public void numericUnequalVariableFilter() {
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      // given
-      ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-      List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-        .filter()
-        .variable()
-        .type(variableType)
-        .operator(NOT_IN)
-        .values(Collections.singletonList("2"))
-        .name("var")
-        .add()
-        .buildList();
-
-      RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-      // then
-      assertResults(result, 2);
-
-      resetIndexesAndClean();
-    }
-  }
-
-  @Test
-  public void numericWithinRangeVariableFilter() {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      // given
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-      List<ProcessFilterDto<?>> filters = ProcessFilterBuilder
-        .filter()
-        .variable()
-        .type(variableType)
-        .operator(GREATER_THAN)
-        .values(Collections.singletonList("1"))
-        .name("var")
-        .add()
-        .variable()
-        .name("var")
-        .type(variableType)
-        .values(Collections.singletonList("10"))
-        .operator(LESS_THAN)
-        .add()
-        .buildList();
-
-
-      RawDataProcessReportResultDto result =
-        evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
-
-      // then
-      assertResults(result, 1);
-
-      resetIndexesAndClean();
-    }
-  }
-
-  @Test
-  public void numericOffRangeVariableFilter() {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-
-    for (VariableType variableType : VariableType.getNumericTypes()) {
-      // given
-      Map<String, Object> variables = new HashMap<>();
-      variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-      // when
-      List<ProcessFilterDto<?>> filters = ProcessFilterBuilder
-        .filter()
-        .variable()
-        .type(variableType)
-        .operator(GREATER_THAN)
-        .values(Collections.singletonList("2"))
-        .name("var")
-        .add()
-        .variable()
-        .name("var")
-        .type(variableType)
-        .values(Collections.singletonList("2"))
-        .operator(LESS_THAN)
-        .add()
-        .buildList();
-
-      RawDataProcessReportResultDto result =
-        evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
-      // then
-      assertResults(result, 0);
-      elasticSearchIntegrationTestExtension.cleanAndVerify();
-    }
+    assertThat(result.getData()).hasSize(2);
   }
 
   @Test
@@ -796,7 +131,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
     // then
-    assertResults(result, 2);
+    assertThat(result.getData()).hasSize(2);
     assertThat(result.getData())
       .extracting(processInstanceDto -> processInstanceDto.getProcessInstanceId())
       .containsExactly(expectedInstanceId2, expectedInstanceId1);
@@ -869,7 +204,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
         evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
       // then
-      assertResults(result, 1);
+      assertThat(result.getData()).hasSize(1);
       assertThat(result.getData())
         .extracting(instance -> instance.getProcessInstanceId())
         .containsExactly(expectedInstanceId);
@@ -917,7 +252,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
     // then
-    assertResults(result, 4);
+    assertThat(result.getData()).hasSize(4);
   }
 
   @Test
@@ -981,7 +316,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
         evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
       // then
-      assertResults(result, 3);
+      assertThat(result.getData()).hasSize(3);
     }
   }
 
@@ -1058,10 +393,6 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private void resetIndexesAndClean() {
-    embeddedOptimizeExtension.resetImportStartIndexes();
-  }
-
   private Map<String, VariableType> createVarNameToTypeMap() {
     Map<String, VariableType> varToType = new HashMap<>();
     varToType.put("dateVar", VariableType.DATE);
@@ -1074,25 +405,6 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     return varToType;
   }
 
-  private Object changeNumericValueToType(int value, VariableType type) {
-    switch (type) {
-      case INTEGER:
-        return value;
-      case LONG:
-        return (long) value;
-      case SHORT:
-        return (short) value;
-      case DOUBLE:
-        return (double) value;
-    }
-    return value;
-  }
-
-  private void assertResults(RawDataProcessReportResultDto report, int piCount) {
-    assertThat(report.getData()).isNotNull();
-    assertThat(report.getData().size()).isEqualTo(piCount);
-  }
-
   private Response evaluateReportWithFilterAndGetResponse(List<ProcessFilterDto<?>> filterList) {
     final String TEST_DEFINITION_KEY = "testDefinition";
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
@@ -1103,28 +415,6 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
       .build();
     reportData.setFilter(filterList);
     return reportClient.evaluateReportAndReturnResponse(reportData);
-  }
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                                 List<ProcessFilterDto<?>> filterList) {
-    return this.evaluateReportWithFilter(
-      processDefinition.getKey(),
-      String.valueOf(processDefinition.getVersion()),
-      filterList
-    );
-  }
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(String processDefinitionKey,
-                                                                 String processDefinitionVersion,
-                                                                 List<ProcessFilterDto<?>> filter) {
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .setFilter(filter)
-      .build();
-    return reportClient.evaluateRawReport(reportData).getResult();
   }
 
 }

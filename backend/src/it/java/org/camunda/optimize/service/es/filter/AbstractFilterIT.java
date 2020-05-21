@@ -10,11 +10,16 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.util.List;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 
@@ -27,10 +32,14 @@ public abstract class AbstractFilterIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected ProcessReportDataDto createReportWithInstance(ProcessInstanceEngineDto processInstanceEngineDto) {
-    return createReport(processInstanceEngineDto.getProcessDefinitionKey(), processInstanceEngineDto.getProcessDefinitionVersion());
+    return createReport(
+      processInstanceEngineDto.getProcessDefinitionKey(),
+      processInstanceEngineDto.getProcessDefinitionVersion()
+    );
   }
 
   protected ProcessReportDataDto createReportWithDefinition(ProcessDefinitionEngineDto processDefinitionEngineDto) {
@@ -74,4 +83,25 @@ public abstract class AbstractFilterIT extends AbstractIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
+  protected RawDataProcessReportResultDto evaluateReportWithFilter(final ProcessDefinitionEngineDto processDefinition,
+                                                                   final List<ProcessFilterDto<?>> filterList) {
+    return this.evaluateReportWithFilter(
+      processDefinition.getKey(),
+      String.valueOf(processDefinition.getVersion()),
+      filterList
+    );
+  }
+
+  protected RawDataProcessReportResultDto evaluateReportWithFilter(final String processDefinitionKey,
+                                                                   final String processDefinitionVersion,
+                                                                   final List<ProcessFilterDto<?>> filter) {
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .setFilter(filter)
+      .build();
+    return reportClient.evaluateRawReport(reportData).getResult();
+  }
 }

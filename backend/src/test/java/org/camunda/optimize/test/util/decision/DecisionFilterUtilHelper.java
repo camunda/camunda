@@ -60,8 +60,8 @@ public class DecisionFilterUtilHelper {
     return variableFilterDto;
   }
 
-  public static InputVariableFilterDto createDoubleInputVariableFilter(String variableName, String operator,
-                                                                       String... variableValues) {
+  public static InputVariableFilterDto createNumericInputVariableFilter(String variableName, String operator,
+                                                                        String... variableValues) {
     DoubleVariableFilterDataDto data = new DoubleVariableFilterDataDto(
       variableName,
       operator,

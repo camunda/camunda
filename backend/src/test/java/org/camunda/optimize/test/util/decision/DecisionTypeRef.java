@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.test.util.decision;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 public enum DecisionTypeRef {
   STRING("string"),
   LONG("long"),
@@ -13,6 +18,10 @@ public enum DecisionTypeRef {
   BOOLEAN("boolean"),
   DATE("date"),
   ;
+
+  private static final Set<DecisionTypeRef> NUMERIC_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+    INTEGER, LONG, DOUBLE
+  )));
 
   private final String id;
 
@@ -23,4 +32,9 @@ public enum DecisionTypeRef {
   public String getId() {
     return id;
   }
+
+  public static Set<DecisionTypeRef> getNumericTypes() {
+    return NUMERIC_TYPES;
+  }
+
 }

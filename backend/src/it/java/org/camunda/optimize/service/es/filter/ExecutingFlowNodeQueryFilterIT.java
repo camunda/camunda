@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
@@ -105,13 +104,6 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     assertThat(result.getData().size(), is(3));
     assertThat(result.getData().stream().map(RawDataProcessInstanceDto::getProcessInstanceId).collect(Collectors.toList()),
                hasItems(secondInstanceEngineDto.getId(), thirdInstanceEngineDto.getId(), fourthInstanceEngineDto.getId()));
-  }
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                                 List<ProcessFilterDto<?>> filter) {
-    ProcessReportDataDto reportData = createReportWithDefinition(processDefinition);
-    reportData.setFilter(filter);
-    return reportClient.evaluateRawReport(reportData).getResult();
   }
 
 }

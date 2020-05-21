@@ -37,12 +37,12 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
+import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -352,7 +352,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
       .setVariableId(INPUT_AMOUNT_ID)
       .setVariableType(VariableType.DOUBLE)
-      .setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
+      .setFilter(Lists.newArrayList(createNumericInputVariableFilter(
         INPUT_AMOUNT_ID, FilterOperatorConstants.IN, "200.0"
       )))
       .build();

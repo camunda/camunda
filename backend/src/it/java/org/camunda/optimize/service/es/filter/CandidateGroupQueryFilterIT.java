@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
@@ -365,13 +364,5 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
       .containsExactlyInAnyOrder(expectedProcessInstance.getId());
   }
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                                 List<ProcessFilterDto<?>> filter) {
-    ProcessReportDataDto reportData = createReportWithDefinition(processDefinition);
-    reportData.setFilter(filter);
-    return reportClient.evaluateRawReport(reportData).getResult();
-  }
-
 
 }
