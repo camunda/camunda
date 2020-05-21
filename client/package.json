@@ -21,7 +21,7 @@
     "heatmap.js": "^2.0.5",
     "immutability-helper": "^3.0.2",
     "inferno": "~5.0.5",
-    "moment": "^2.24.0",
+    "moment": "^2.26.0",
     "object.values": "^1.1.0",
     "react": "16.13.1",
     "react-app-polyfill": "^1.0.6",
