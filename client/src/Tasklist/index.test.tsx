@@ -8,9 +8,9 @@ import * as React from 'react';
 import {render, fireEvent, screen} from '@testing-library/react';
 
 import {Tasklist} from './index';
-import {login} from '../login.store';
+import {login} from 'modules/stores/login';
 
-jest.mock('../login.store');
+jest.mock('modules/stores/login');
 
 describe('<Tasklist />', () => {
   it('should handle logout', () => {

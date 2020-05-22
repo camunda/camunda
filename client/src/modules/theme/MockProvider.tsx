@@ -5,20 +5,12 @@
  */
 
 import * as React from 'react';
+import {ThemeProvider} from 'styled-components';
 
-import {login} from 'modules/stores/login';
+import {theme} from './index';
 
-const Tasklist: React.FC = () => {
-  const {handleLogout} = login;
-
-  return (
-    <main>
-      <h1>Tasklist</h1>
-      <button type="button" onClick={handleLogout}>
-        Logout
-      </button>
-    </main>
-  );
+const MockThemeProvider: React.FC = ({children}) => {
+  return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
 };
 
-export {Tasklist};
+export {MockThemeProvider};

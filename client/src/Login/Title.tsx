@@ -4,10 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {theme} from './theme';
+import styled from 'styled-components';
 
-type CustomTheme = typeof theme;
+const Title = styled.h1`
+  color: ${({theme}) => theme.colors.ui[5]};
+  font-weight: normal;
+`;
 
-declare module 'styled-components' {
-  export interface DefaultTheme extends CustomTheme {}
-}
+export {Title};

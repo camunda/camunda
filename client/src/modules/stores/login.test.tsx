@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {login} from './login.store';
+import {login} from './login';
 
 const fetchMock = jest.spyOn(window, 'fetch');
 

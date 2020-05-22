@@ -6,19 +6,13 @@
 
 import * as React from 'react';
 
-import {login} from 'modules/stores/login';
+import {Overlay} from './Overlay';
+import {Spinner} from './Spinner';
 
-const Tasklist: React.FC = () => {
-  const {handleLogout} = login;
+const LoadingOverlay: React.FC = () => (
+  <Overlay>
+    <Spinner />
+  </Overlay>
+);
 
-  return (
-    <main>
-      <h1>Tasklist</h1>
-      <button type="button" onClick={handleLogout}>
-        Logout
-      </button>
-    </main>
-  );
-};
-
-export {Tasklist};
+export {LoadingOverlay};

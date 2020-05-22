@@ -9,7 +9,7 @@ import {render, screen} from '@testing-library/react';
 import {MemoryRouter, Switch, Route} from 'react-router-dom';
 
 import {PrivateRoute} from './index';
-import {login} from '../login.store';
+import {login} from 'modules/stores/login';
 
 const LOGIN_CONTENT = 'Login content';
 const fetchMock = jest.spyOn(window, 'fetch');

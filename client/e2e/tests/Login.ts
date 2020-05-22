@@ -76,5 +76,7 @@ test('show error message on login failure', async (t) => {
     .typeText(passwordInput, 'wrong-password')
     .click(loginButton);
 
-  await t.expect(errorMessage).ok();
+  await t
+    .expect(errorMessage.textContent)
+    .eql('Username and Password do not match.');
 });

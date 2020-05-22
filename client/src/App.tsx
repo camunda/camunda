@@ -13,8 +13,8 @@ import {ThemeProvider} from 'styled-components';
 import {PrivateRoute} from './PrivateRoute';
 import {Tasklist} from './Tasklist';
 import {Login} from './Login';
-import {Pages} from './pages';
-import {theme} from './theme';
+import {Pages} from './modules/constants/pages';
+import {theme} from './modules/theme';
 import {GlobalStyle} from './GlobalStyle';
 
 const App: React.FC = () => {
