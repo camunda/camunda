@@ -22,4 +22,8 @@ public class ExecutableEndEvent extends ExecutableFlowNode {
   public void setError(final ExecutableError error) {
     this.error = error;
   }
+
+  public boolean hasError() {
+    return error != null;
+  }
 }

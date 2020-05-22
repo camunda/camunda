@@ -9,7 +9,6 @@ package io.zeebe.engine.nwe.behavior;
 
 import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.EventScopeInstanceState;
@@ -28,10 +27,9 @@ public final class BpmnStateBehavior {
   private final EventScopeInstanceState eventScopeInstanceState;
   private final VariablesState variablesState;
   private final JobState jobState;
-  private final WorkflowState workflowState;
 
   public BpmnStateBehavior(final ZeebeState zeebeState) {
-    workflowState = zeebeState.getWorkflowState();
+    final var workflowState = zeebeState.getWorkflowState();
     elementInstanceState = workflowState.getElementInstanceState();
     eventScopeInstanceState = workflowState.getEventScopeInstanceState();
     variablesState = elementInstanceState.getVariablesState();

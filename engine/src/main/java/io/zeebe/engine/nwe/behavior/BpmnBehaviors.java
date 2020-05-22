@@ -17,6 +17,8 @@ public interface BpmnBehaviors {
 
   BpmnVariableMappingBehavior variableMappingBehavior();
 
+  BpmnEventPublicationBehavior eventPublicationBehavior();
+
   BpmnEventSubscriptionBehavior eventSubscriptionBehavior();
 
   BpmnIncidentBehavior incidentBehavior();
