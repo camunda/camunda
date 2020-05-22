@@ -135,7 +135,8 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
   }
 
   private void applyAll(final long index, final CompletableFuture<?> future) {
-    lastEnqueued = Math.max(lastEnqueued, raft.getSnapshotStore().getCurrentSnapshotIndex());
+    lastEnqueued =
+        Math.max(lastEnqueued, raft.getPersistedSnapshotStore().getCurrentSnapshotIndex());
     while (lastEnqueued < index) {
       final long nextIndex = ++lastEnqueued;
       applyIndex(nextIndex, future);
@@ -146,7 +147,7 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
     final var optionalFuture = Optional.ofNullable(future);
 
     // skip if we have a newer snapshot
-    if (raft.getSnapshotStore().getCurrentSnapshotIndex() >= index
+    if (raft.getPersistedSnapshotStore().getCurrentSnapshotIndex() >= index
         || reader.getNextIndex() > index) {
       optionalFuture.ifPresent(f -> f.complete(null));
       return;
@@ -164,8 +165,8 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
         logger.error("Failed to apply entry at index {}", index, e);
         optionalFuture.ifPresent(f -> f.completeExceptionally(e));
       }
-    } else if (reader.getNextIndex() < raft.getSnapshotStore().getCurrentSnapshotIndex()) {
-      reader.reset(raft.getSnapshotStore().getCurrentSnapshotIndex());
+    } else if (reader.getNextIndex() < raft.getPersistedSnapshotStore().getCurrentSnapshotIndex()) {
+      reader.reset(raft.getPersistedSnapshotStore().getCurrentSnapshotIndex());
     } else {
       // in the case where we tried to apply indexes out of order
       logger.error(

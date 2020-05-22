@@ -11,19 +11,24 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.broker.system.partitions.impl.StateSnapshotController;
+import io.atomix.raft.snapshot.PersistedSnapshot;
+import io.atomix.raft.snapshot.PersistedSnapshotStore;
+import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
+import io.atomix.raft.zeebe.ZeebeEntry;
+import io.atomix.storage.journal.Indexed;
+import io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
+import io.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.util.TestSnapshotStorage;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -34,6 +39,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,22 +58,35 @@ public final class AsyncSnapshotingTest {
   public final RuleChain chain =
       RuleChain.outerRule(autoCloseableRule).around(tempFolderRule).around(actorSchedulerRule);
 
-  private StateSnapshotController snapshotController;
+  private StateControllerImpl snapshotController;
   private LogStream logStream;
   private AsyncSnapshotDirector asyncSnapshotDirector;
   private StreamProcessor mockStreamProcessor;
   private List<ActorCondition> conditionList;
+  private PersistedSnapshotStore persistedSnapshotStore;
 
   @Before
   public void setup() throws IOException {
-    final var storage = new TestSnapshotStorage(tempFolderRule.getRoot().toPath());
+    final var rootDirectory = tempFolderRule.getRoot().toPath();
+    persistedSnapshotStore =
+        new FileBasedSnapshotStoreFactory().createSnapshotStore(rootDirectory, "1");
 
     snapshotController =
-        new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage);
+        new StateControllerImpl(
+            1,
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            persistedSnapshotStore,
+            rootDirectory.resolve("runtime"),
+            new NoneSnapshotReplication(),
+            l ->
+                Optional.ofNullable(
+                    new Indexed(
+                        l + 100, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
+            db -> Long.MAX_VALUE);
+
     snapshotController.openDb();
     autoCloseableRule.manage(snapshotController);
-    autoCloseableRule.manage(storage);
+    autoCloseableRule.manage(persistedSnapshotStore);
     snapshotController = spy(snapshotController);
 
     logStream = mock(LogStream.class);
@@ -113,17 +132,6 @@ public final class AsyncSnapshotingTest {
   }
 
   @Test
-  public void shouldStartToTakeSnapshot() {
-    // given
-
-    // when
-    clock.addTime(Duration.ofMinutes(1));
-
-    // then
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(0);
-  }
-
-  @Test
   public void shouldValidSnapshotWhenCommitPositionGreaterEquals() {
     // given
     clock.addTime(Duration.ofMinutes(1));
@@ -134,25 +142,6 @@ public final class AsyncSnapshotingTest {
     // then
     waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
     assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldNotStopTakingSnapshotsAfterFailingReplication() {
-    // given
-    final RuntimeException expectedException = new RuntimeException("expected");
-    doThrow(expectedException).when(snapshotController).replicateLatestSnapshot(any());
-
-    clock.addTime(Duration.ofMinutes(1));
-    setCommitPosition(99L);
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
-
-    // when
-    clock.addTime(Duration.ofMinutes(1));
-    setCommitPosition(100L);
-
-    // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 2);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(2);
   }
 
   @Test
@@ -167,8 +156,23 @@ public final class AsyncSnapshotingTest {
     setCommitPosition(100L);
 
     // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 2);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(2);
+    awaitSnapshot(100);
+    assertThat(persistedSnapshotStore.getLatestSnapshot())
+        .get()
+        .extracting(PersistedSnapshot::getIndex)
+        .isEqualTo(100L);
+  }
+
+  private void awaitSnapshot(final int index) {
+    waitUntil(
+        () -> {
+          final var optSnapshot = persistedSnapshotStore.getLatestSnapshot();
+          if (optSnapshot.isPresent()) {
+            final var snapshot = optSnapshot.get();
+            return snapshot.getIndex() == index;
+          }
+          return false;
+        });
   }
 
   @Test
@@ -250,32 +254,5 @@ public final class AsyncSnapshotingTest {
     // then
     waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
     assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldTakeSnapshotEvenExistsAfterRestart() {
-    // given
-    final long lastProcessedPosition = 25L;
-    final long lastWrittenPosition = lastProcessedPosition;
-    final long commitPosition = 100L;
-
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    setCommitPosition(commitPosition);
-
-    clock.addTime(Duration.ofMinutes(1));
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
-
-    // when
-    asyncSnapshotDirector.closeAsync().join();
-    createAsyncSnapshotDirector(actorSchedulerRule.get());
-
-    clock.addTime(Duration.ofMinutes(1));
-
-    // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() >= 2);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(2);
   }
 }

@@ -190,9 +190,8 @@ public interface RaftServer {
    *
    * <p>The server name is provided to the server via the {@link Builder#withName(String) builder
    * configuration}. The name is used internally to manage the server's on-disk state. {@link
-   * RaftLog Log}, {@link io.atomix.raft.impl.zeebe.snapshot.DbSnapshotStore snapshot}, and {@link
-   * io.atomix.raft.storage.system.MetaStore configuration} files stored on disk use the server name
-   * as the prefix.
+   * RaftLog Log}, {@link snapshot}, and {@link io.atomix.raft.storage.system.MetaStore
+   * configuration} files stored on disk use the server name as the prefix.
    *
    * @return The server name.
    */

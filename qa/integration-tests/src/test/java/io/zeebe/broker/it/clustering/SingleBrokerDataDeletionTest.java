@@ -9,7 +9,6 @@ package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.impl.zeebe.snapshot.DbSnapshotMetadata;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
@@ -72,7 +71,7 @@ public class SingleBrokerDataDeletionTest {
 
     // increase snapshot interval and wait
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    final DbSnapshotMetadata firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
+    final var firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
 
     // then
     final var logstream = clusteringRule.getLogStream(1);

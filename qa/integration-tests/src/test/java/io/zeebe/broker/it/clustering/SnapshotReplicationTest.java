@@ -9,7 +9,7 @@ package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.impl.zeebe.snapshot.DbSnapshotMetadata;
+import io.atomix.raft.snapshot.impl.FileBasedSnapshotMetadata;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -196,7 +196,7 @@ public final class SnapshotReplicationTest {
   private Map<String, Long> createChecksumsForSnapshot(final Path validSnapshotDir)
       throws IOException {
     final var snapshotMetadata =
-        DbSnapshotMetadata.ofPath(validSnapshotDir.getFileName()).orElseThrow();
+        FileBasedSnapshotMetadata.ofPath(validSnapshotDir.getFileName()).orElseThrow();
     final String prefix =
         String.format(
             "%d-%d-%d",
