@@ -33,7 +33,7 @@ An expression is written in **FEEL** (Friendly Enough Expression Language). FEEL
 * Simple syntax designed for business professionals and developers
 * Three-valued logic (true, false, null)
 
-Zeebe integrates the [Feel-Scala](https://github.com/camunda/feel-scala) engine to evaluate FEEL expressions. The following sections cover common use cases in Zeebe. A complete list of supported expressions can be found in the project's [documentation](https://camunda.github.io/feel-scala).
+Zeebe integrates the [Feel-Scala](https://github.com/camunda/feel-scala) engine to evaluate FEEL expressions. The following sections cover common use cases in Zeebe. A complete list of supported expressions can be found in the project's [documentation](https://camunda.github.io/feel-scala/1.11/).
 
 ### Access Variables
 
@@ -149,7 +149,7 @@ Any value can be transformed into a string value using the `string()` function.
 // "order-123"
 ```
 
-More functions for string values are available as [built-in functions](https://camunda.github.io/feel-scala/feel-built-in-functions#string-functions) (e.g. contains, matches, etc.).
+More functions for string values are available as [built-in functions](https://camunda.github.io/feel-scala/1.11/feel-built-in-functions#string-functions) (e.g. contains, matches, etc.).
 
 ### Temporal Expressions
 
@@ -272,7 +272,7 @@ some x in [1,2,3] satisfies x > 2
 
 ### Invoke Functions
 
-FEEL defines a set of [built-in functions](https://camunda.github.io/feel-scala/feel-built-in-functions) to convert values and to apply different operations on specific value types in addition to the operators.
+FEEL defines a set of [built-in functions](https://camunda.github.io/feel-scala/1.11/feel-built-in-functions) to convert values and to apply different operations on specific value types in addition to the operators.
 
 A function can be invoked by its name followed by the arguments. The arguments can be assigned to the function parameters either by their position or by defining the parameter names.
 
@@ -293,8 +293,8 @@ contains(string: "foobar", match: "foo")
 ## Additional Resources
 
 References:
-* [FEEL-Scala - Documentation](https://camunda.github.io/feel-scala)
-* [FEEL - Data Types](https://camunda.github.io/feel-scala/feel-data-types)
-* [FEEL - Expressions](https://camunda.github.io/feel-scala/feel-expression)
-* [FEEL - Built-in Functions](https://camunda.github.io/feel-scala/feel-built-in-functions)
+* [FEEL-Scala - Documentation](https://camunda.github.io/feel-scala/1.11/)
+* [FEEL - Data Types](https://camunda.github.io/feel-scala/1.11/feel-data-types)
+* [FEEL - Expressions](https://camunda.github.io/feel-scala/1.11/feel-expression)
+* [FEEL - Built-in Functions](https://camunda.github.io/feel-scala/1.11/feel-built-in-functions)
 * [DMN Specification](https://www.omg.org/spec/DMN/About-DMN/)
