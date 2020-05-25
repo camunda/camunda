@@ -6,29 +6,17 @@
 
 /* istanbul ignore file */
 
-import {createGlobalStyle, css} from 'styled-components';
+import {createGlobalStyle} from 'styled-components';
+
 import IBMPlexSansBold from '../fonts/IBMPlexSans-Bold.woff2';
 import IBMPlexSansItalic from '../fonts/IBMPlexSans-Italic.woff2';
 import IBMPlexSansMedium from '../fonts/IBMPlexSans-Medium.woff2';
 import IBMPlexSansRegular from '../fonts/IBMPlexSans-Regular.woff2';
 import IBMPlexSansSemiBold from '../fonts/IBMPlexSans-SemiBold.woff2';
 import IBMPlexSansMono from '../fonts/IBMPlexMono-Regular.woff2';
-interface Props {
-  isTabKeyPressed: boolean;
-}
+import {USING_KEYBOARD_CLASS_NAME} from './constans';
 
-const focusCss = css`
-  box-shadow: 0 0 0 1px ${({theme}) => theme.colors.focusInner},
-    0 0 0 4px ${({theme}) => theme.colors.focusOuter};
-
-  outline: none;
-
-  // the transition is here because we want an effect only when we
-  // enter the element for focus, not for leaving it
-  transition: box-shadow 0.05s ease-out;
-`;
-
-const GlobalStyle = createGlobalStyle<Props>`
+const GlobalStyle = createGlobalStyle`
   @font-face {
     font-family: 'IBMPlexSans';
     src: local('IBMPlexSans-Bold'), url('${IBMPlexSansBold}');
@@ -94,14 +82,20 @@ const GlobalStyle = createGlobalStyle<Props>`
     border-width: 0;
   }
 
-  // these elements have custom styling for :focus only on keyboard focus,
-  //  not on mouse click (clicking them does not show the focus style)
-  button:focus,
-  code:focus,
-  a:focus {
-    ${({isTabKeyPressed}) => (isTabKeyPressed ? focusCss : 'outline:none')};
+  body button:focus,
+  body code:focus,
+  body a:focus {
+    outline: none;
   }
 
+  body.${USING_KEYBOARD_CLASS_NAME} button:focus,
+  body.${USING_KEYBOARD_CLASS_NAME} code:focus,
+  body.${USING_KEYBOARD_CLASS_NAME} a:focus {
+    box-shadow: 0 0 0 1px ${({theme}) =>
+      theme.colors.focusInner}, 0 0 0 4px ${({theme}) =>
+  theme.colors.focusOuter};
+    transition: box-shadow 0.05s ease-out;
+  }
 `;
 
 export {GlobalStyle};

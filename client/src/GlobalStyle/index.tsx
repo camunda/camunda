@@ -6,34 +6,35 @@
 
 /* istanbul ignore file */
 
+import * as React from 'react';
+
 import * as Styled from './styled';
-import React, {useState, useEffect} from 'react';
+import {USING_KEYBOARD_CLASS_NAME} from './constans';
 
 const TAB_KEY_CODE = 9;
+
 const GlobalStyle: React.FC = () => {
-  const [isTabKeyPressed, setIsTabKeyPressed] = useState(false);
-
-  const onKeyPressed = (event: KeyboardEvent) => {
-    if (event.keyCode === TAB_KEY_CODE) {
-      setIsTabKeyPressed(true);
+  React.useEffect(() => {
+    function onMouseDown() {
+      document.body.classList.remove(USING_KEYBOARD_CLASS_NAME);
     }
-  };
 
-  const onMousePressed = () => {
-    setIsTabKeyPressed(false);
-  };
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.keyCode === TAB_KEY_CODE) {
+        document.body.classList.add(USING_KEYBOARD_CLASS_NAME);
+      }
+    }
 
-  useEffect(() => {
-    document.body.addEventListener('keydown', onKeyPressed, true);
-    document.body.addEventListener('mousedown', onMousePressed, true);
+    document.body.addEventListener('mousedown', onMouseDown);
+    document.body.addEventListener('keydown', onKeyDown);
 
     return () => {
-      document.body.removeEventListener('keydown', onKeyPressed, true);
-      document.body.removeEventListener('mousedown', onMousePressed, true);
+      document.body.removeEventListener('mousedown', onMouseDown);
+      document.body.removeEventListener('keydown', onKeyDown);
     };
   }, []);
 
-  return <Styled.GlobalStyle isTabKeyPressed={isTabKeyPressed} />;
+  return <Styled.GlobalStyle />;
 };
 
 export {GlobalStyle};
