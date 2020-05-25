@@ -18,17 +18,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
 	"net"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
+
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
 
 type clientTestSuite struct {
@@ -337,6 +339,35 @@ func (s *clientTestSuite) TestCommandExpireWithContext() {
 	code := status.Code(err)
 	if code != codes.DeadlineExceeded {
 		s.FailNow(fmt.Sprintf("expected command to fail with deadline exceeded, but got %s instead", code.String()))
+	}
+}
+
+func (s *clientTestSuite) TestClientWithEmptyDialOptions() {
+	// given
+	lis, grpcServer := createSecureServer()
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+
+	parts := strings.Split(lis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		CaCertificatePath: "testdata/ca.cert.pem",
+		DialOpts:          make([]grpc.DialOption, 0),
+	})
+
+	s.NoError(err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send(context.Background())
+
+	// then
+	s.Error(err)
+	if grpcStatus, ok := status.FromError(err); ok {
+		s.EqualValues(codes.Unimplemented, grpcStatus.Code())
 	}
 }
 
