@@ -13,8 +13,8 @@ const Button = styled.button`
   font-size: 18px;
   width: 340px;
   height: 48px;
-  background-color: ${({theme}) => theme.colors.ui[4]};
-  border: 1px solid ${({theme}) => theme.colors.ui[2]};
+  background-color: ${({theme}) => theme.colors.ui05};
+  border: 1px solid ${({theme}) => theme.colors.ui03};
   border-radius: 3px;
   text-align: center;
 `;

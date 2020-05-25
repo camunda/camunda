@@ -9,7 +9,7 @@ import styled from 'styled-components';
 import {ReactComponent} from 'modules/icons/logo.svg';
 
 const Logo = styled(ReactComponent)`
-  fill: ${({theme}) => theme.colors.ui[5]};
+  fill: ${({theme}) => theme.colors.ui06};
 `;
 
 export {Logo};

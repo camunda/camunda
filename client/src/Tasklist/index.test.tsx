@@ -5,19 +5,26 @@
  */
 
 import * as React from 'react';
-import {render, fireEvent, screen} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
 
 import {Tasklist} from './index';
-import {login} from 'modules/stores/login';
+import {MockThemeProvider} from 'modules/theme/MockProvider';
 
-jest.mock('modules/stores/login');
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <MemoryRouter>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </MemoryRouter>
+  );
+};
 
 describe('<Tasklist />', () => {
-  it('should handle logout', () => {
-    render(<Tasklist />);
+  it('should render', () => {
+    render(<Tasklist />, {
+      wrapper: Wrapper,
+    });
 
-    fireEvent.click(screen.getByRole('button', {name: 'Logout'}));
-
-    expect(login.handleLogout).toHaveBeenCalled();
+    expect(screen.getByText('Tasklist')).toBeInTheDocument();
   });
 });

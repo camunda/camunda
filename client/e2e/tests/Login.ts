@@ -10,6 +10,7 @@ import {config} from '../config';
 import {
   loginButton,
   logoutButton,
+  userDropdown,
   usernameInput,
   passwordInput,
   errorMessage,
@@ -50,6 +51,7 @@ test('logout redirect', async (t) => {
     .typeText(passwordInput, 'demo')
     .click(loginButton);
 
+  await t.click(userDropdown);
   await t.click(logoutButton);
 
   await t.expect(await getPathname()).eql('/login');

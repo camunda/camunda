@@ -7,7 +7,7 @@
 import styled from 'styled-components';
 
 const Title = styled.h1`
-  color: ${({theme}) => theme.colors.ui[5]};
+  color: ${({theme}) => theme.colors.ui06};
   font-weight: normal;
 `;
 

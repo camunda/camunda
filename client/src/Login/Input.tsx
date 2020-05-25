@@ -12,8 +12,8 @@ const Input = styled.input`
   width: 322px;
   height: 22px;
   border-radius: 3px;
-  background-color: ${({theme}) => theme.colors.ui[3]};
-  border: 1px solid ${({theme}) => theme.colors.ui[4]};
+  background-color: ${({theme}) => theme.colors.ui04};
+  border: 1px solid ${({theme}) => theme.colors.ui05};
   padding: 12px 8px;
 
   &::placeholder {

@@ -6,18 +6,16 @@
 
 import * as React from 'react';
 
-import {login} from 'modules/stores/login';
+import {Header} from './Header';
 
 const Tasklist: React.FC = () => {
-  const {handleLogout} = login;
-
   return (
-    <main>
-      <h1>Tasklist</h1>
-      <button type="button" onClick={handleLogout}>
-        Logout
-      </button>
-    </main>
+    <>
+      <Header />
+      <main>
+        <h1>Tasklist</h1>
+      </main>
+    </>
   );
 };
 

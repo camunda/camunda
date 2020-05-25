@@ -19,7 +19,7 @@ const Spinner = styled.div`
   border-radius: 50%;
   width: 20px;
   height: 20px;
-  border: 3px solid ${({theme}) => theme.colors.ui[5]};
+  border: 3px solid ${({theme}) => theme.colors.ui06};
   border-right-color: transparent;
   animation: ${SpinnerKeyframes} 0.7s infinite linear;
 `;
