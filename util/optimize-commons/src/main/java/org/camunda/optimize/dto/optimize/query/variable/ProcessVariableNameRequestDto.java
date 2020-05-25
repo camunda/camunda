@@ -24,7 +24,6 @@ public class ProcessVariableNameRequestDto {
   private String processDefinitionKey;
   private List<String> processDefinitionVersions = new ArrayList<>();
   private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
-  private String namePrefix = "";
 
   @JsonIgnore
   public void setProcessDefinitionVersion(String processDefinitionVersion) {

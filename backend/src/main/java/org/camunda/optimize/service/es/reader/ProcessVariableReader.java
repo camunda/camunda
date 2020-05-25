@@ -39,7 +39,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
@@ -51,7 +50,6 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
@@ -110,13 +108,7 @@ public class ProcessVariableReader {
       .size(0);
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
-
-    final List<String> prefixesSupplied = variableNameRequests.stream()
-      .map(ProcessVariableNameRequestDto::getNamePrefix)
-      .filter(Objects::nonNull)
-      .distinct()
-      .collect(Collectors.toList());
-    addVariableNameAggregation(searchSourceBuilder, prefixesSupplied);
+    addVariableNameAggregation(searchSourceBuilder);
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -134,8 +126,7 @@ public class ProcessVariableReader {
 
   private List<ProcessVariableNameResponseDto> extractVariableNames(Aggregations aggregations) {
     Nested variables = aggregations.get(VARIABLES);
-    Filter filteredVariables = variables.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    Terms nameTerms = filteredVariables.getAggregations().get(VARIABLE_NAME_BUCKET_AGGREGATION);
+    Terms nameTerms = variables.getAggregations().get(VARIABLE_NAME_BUCKET_AGGREGATION);
     List<ProcessVariableNameResponseDto> responseDtoList = new ArrayList<>();
     for (Terms.Bucket variableNameBucket : nameTerms.getBuckets()) {
       Terms variableTypes = variableNameBucket.getAggregations().get(VARIABLE_TYPE_AGGREGATION);
@@ -149,15 +140,7 @@ public class ProcessVariableReader {
     return responseDtoList;
   }
 
-  private void addVariableNameAggregation(SearchSourceBuilder requestBuilder,
-                                          List<String> prefixes) {
-    final BoolQueryBuilder filter = boolQuery();
-    prefixes.stream()
-      .distinct()
-      .map(prefix -> prefix == null ? "" : prefix)
-      .forEach(filterPrefix -> filter.should(prefixQuery(getNestedVariableNameField(), filterPrefix)));
-    FilterAggregationBuilder filterAllVariablesWithCertainPrefixInName = filter(FILTERED_VARIABLES_AGGREGATION, filter);
-
+  private void addVariableNameAggregation(SearchSourceBuilder requestBuilder) {
     TermsAggregationBuilder collectVariableNameBuckets = terms(VARIABLE_NAME_BUCKET_AGGREGATION)
       .field(getNestedVariableNameField())
       .size(MAX_RESPONSE_SIZE_LIMIT)
@@ -173,12 +156,9 @@ public class ProcessVariableReader {
       .aggregation(
         checkoutVariables
           .subAggregation(
-            filterAllVariablesWithCertainPrefixInName
+            collectVariableNameBuckets
               .subAggregation(
-                collectVariableNameBuckets
-                  .subAggregation(
-                    collectPossibleVariableTypes
-                  )
+                collectPossibleVariableTypes
               )
           )
       );

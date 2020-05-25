@@ -36,15 +36,6 @@ public class VariablesClient {
       .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<ProcessVariableNameResponseDto> getProcessVariableNames(final ProcessDefinitionEngineDto processDefinition,
-                                                                      final String namePrefix) {
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());
-    variableRequestDto.setProcessDefinitionVersions(ImmutableList.of(processDefinition.getVersionAsString()));
-    variableRequestDto.setNamePrefix(namePrefix);
-    return getProcessVariableNames(variableRequestDto);
-  }
-
   public List<ProcessVariableNameResponseDto> getProcessVariableNames(final ProcessDefinitionEngineDto processDefinition) {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());

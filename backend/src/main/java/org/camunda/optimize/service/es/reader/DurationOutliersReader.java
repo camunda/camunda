@@ -313,8 +313,7 @@ public class DurationOutliersReader {
       new ProcessVariableNameRequestDto(
         outlierParams.getProcessDefinitionKey(),
         outlierParams.getProcessDefinitionVersions(),
-        outlierParams.getTenantIds(),
-        ""
+        outlierParams.getTenantIds()
       )
     ).stream().map(ProcessVariableNameResponseDto::getName).collect(Collectors.toList());
 
