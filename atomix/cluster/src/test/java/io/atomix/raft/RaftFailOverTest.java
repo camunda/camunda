@@ -133,6 +133,7 @@ public class RaftFailOverTest {
   public void shouldCompactLogOnSnapshot() throws Exception {
     // given
     raftRule.appendEntries(128);
+    raftRule.awaitSameLogSizeOnAllNodes();
     final var memberLogs = raftRule.getMemberLogs();
 
     // when
