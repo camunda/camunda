@@ -82,7 +82,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
     if (processor == null) {
       // TODO (saig0): remove multi-instance fallback when the processors of all multi-instance
       // elements are migrated
-      LOGGER.debug("[NEW] No processor found for BPMN element type '{}'", bpmnElementType);
+      LOGGER.trace("[NEW] No processor found for BPMN element type '{}'", bpmnElementType);
 
       final var multiInstanceBody =
           workflowState.getFlowElement(
@@ -98,7 +98,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
       return;
     }
 
-    LOGGER.debug(
+    LOGGER.trace(
         "[NEW] process workflow instance event [BPMN element type: {}, intent: {}]",
         bpmnElementType,
         intent);
