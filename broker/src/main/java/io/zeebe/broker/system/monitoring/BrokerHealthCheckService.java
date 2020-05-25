@@ -66,8 +66,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(
-      final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
     return updateBrokerReadyStatus(partitionId);
   }
 

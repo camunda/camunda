@@ -39,7 +39,6 @@ import io.atomix.utils.logging.LoggerContext;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -351,7 +350,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    */
   public List<RaftMemberContext> getRemoteMemberStates(final RaftMember.Type type) {
     final List<RaftMemberContext> members = memberTypes.get(type);
-    return members != null ? members : Collections.EMPTY_LIST;
+    return members != null ? members : List.of();
   }
 
   /**

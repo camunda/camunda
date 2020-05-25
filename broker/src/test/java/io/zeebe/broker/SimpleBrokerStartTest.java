@@ -70,8 +70,7 @@ public final class SimpleBrokerStartTest {
     broker.addPartitionListener(
         new PartitionListener() {
           @Override
-          public ActorFuture<Void> onBecomingFollower(
-              final int partitionId, final long term, final LogStream logStream) {
+          public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
             return CompletableActorFuture.completed(null);
           }
 
