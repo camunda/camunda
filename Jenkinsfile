@@ -176,10 +176,12 @@ pipeline {
 
                 stage('Build Docs') {
                     steps {
+                      retry(3) {
                         container('maven') {
                             sh '.ci/scripts/docs/prepare.sh'
                             sh '.ci/scripts/docs/build.sh'
                         }
+                      }
                     }
                 }
             }
