@@ -11,6 +11,10 @@ cpuThreadCount: 4
 ioThreadCount: 4
 gatewayMetrics: true
 
+podSecurityContext:
+  capabilities:
+        add: ["NET_ADMIN"]
+
 gateway:
   replicas: 1
   logLevel: debug
