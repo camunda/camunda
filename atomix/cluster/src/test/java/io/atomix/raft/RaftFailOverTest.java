@@ -301,6 +301,40 @@ public class RaftFailOverTest {
     assertThat(snapshot.term()).isEqualTo(snapshot.term());
   }
 
+  @Test
+  public void shouldTruncateLogOnNewerSnapshot() throws Throwable {
+    // given
+    final var entryCount = 50;
+    raftRule.appendEntries(entryCount);
+    final var followerB = raftRule.shutdownFollower();
+    raftRule.appendEntries(entryCount);
+    raftRule.doSnapshot(65);
+    // Leader and Follower A Log [65-100].
+    // Follower B Log [0-50]
+    final var oldLeader = raftRule.shutdownLeader();
+
+    // when
+    // Follower B comes back we should be able to form a healthy cluster again
+    // Follower A need to replicate snapshot to Follower B
+    raftRule.joinCluster(followerB);
+    raftRule.appendEntries(entryCount);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(65)).isTrue();
+    final var memberLogs = raftRule.getMemberLogs();
+    final var entries = memberLogs.get(followerB);
+    // Follower B should have truncated his log to not have any gaps in his log
+    // entries after snapshot should be replicated
+    assertThat(entries.get(0).index()).isEqualTo(66);
+
+    for (final String member : memberLogs.keySet()) {
+      if (!oldLeader.equals(member)) {
+        final var memberEntries = memberLogs.get(member);
+        assertThat(memberEntries).endsWith(entries.toArray(new Indexed[0]));
+      }
+    }
+  }
+
   private void assertMemberLogs(final Map<String, List<Indexed<?>>> memberLog) {
     final var members = memberLog.keySet();
     final var iterator = members.iterator();
