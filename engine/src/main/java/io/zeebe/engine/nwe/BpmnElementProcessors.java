@@ -43,8 +43,7 @@ public final class BpmnElementProcessors {
 
   public <T extends ExecutableFlowElement> BpmnElementProcessor<T> getProcessor(
       final BpmnElementType bpmnElementType) {
-    if (bpmnElementType == BpmnElementType.SUB_PROCESS
-        || bpmnElementType == BpmnElementType.PROCESS) {
+    if (bpmnElementType == BpmnElementType.PROCESS) {
       return null;
     }
 
