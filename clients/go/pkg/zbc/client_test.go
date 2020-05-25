@@ -18,17 +18,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
 	"net"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
+
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
 
 type clientTestSuite struct {
@@ -354,7 +356,8 @@ func (s *clientTestSuite) TestClientWithEmptyDialOptions() {
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "testdata/ca.cert.pem",
-	}, []grpc.DialOption{}...)
+		DialOpts:          make([]grpc.DialOption, 0),
+	})
 
 	s.NoError(err)
 
