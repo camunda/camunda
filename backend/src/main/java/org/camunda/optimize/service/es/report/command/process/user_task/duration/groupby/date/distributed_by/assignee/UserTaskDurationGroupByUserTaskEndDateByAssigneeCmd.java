@@ -3,42 +3,42 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.distributed_by.none;
+package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.date.distributed_by.assignee;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
-import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByAssignee;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByUserTaskEndDate;
 import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewUserTaskDuration;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserTaskDurationGroupByUserTaskEndDateCmd extends ProcessCmd<ReportMapResultDto> {
+public class UserTaskDurationGroupByUserTaskEndDateByAssigneeCmd extends ProcessCmd<ReportHyperMapResultDto> {
 
-  public UserTaskDurationGroupByUserTaskEndDateCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public UserTaskDurationGroupByUserTaskEndDateByAssigneeCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<ReportMapResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+  protected ProcessReportCmdExecutionPlan<ReportHyperMapResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewUserTaskDuration.class)
       .groupBy(ProcessGroupByUserTaskEndDate.class)
-      .distributedBy(ProcessDistributedByNone.class)
-      .resultAsMap()
+      .distributedBy(ProcessDistributedByAssignee.class)
+      .resultAsHyperMap()
       .build();
   }
 
   @Override
   public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
-    final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
-    return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
+    final ReportHyperMapResultDto evaluate = executionPlan.evaluate(commandContext);
+    return new SingleProcessHyperMapReportResult(evaluate, commandContext.getReportDefinition());
   }
 }

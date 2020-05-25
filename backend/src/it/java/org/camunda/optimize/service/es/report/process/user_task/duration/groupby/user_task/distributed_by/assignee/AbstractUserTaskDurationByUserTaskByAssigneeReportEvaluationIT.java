@@ -107,16 +107,16 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       .processInstanceCount(1L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, 20L)
-      .distributedByContains(SECOND_USER, null)
+        .distributedByContains(SECOND_USER, null)
       .groupByContains(USER_TASK_2)
-      .distributedByContains(DEFAULT_USERNAME, null)
-      .distributedByContains(SECOND_USER, 20L)
+        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 20L)
       .groupByContains(USER_TASK_A)
-      .distributedByContains(DEFAULT_USERNAME, 20L)
-      .distributedByContains(SECOND_USER, null)
+        .distributedByContains(DEFAULT_USERNAME, 20L)
+        .distributedByContains(SECOND_USER, null)
       .groupByContains(USER_TASK_B)
-      .distributedByContains(DEFAULT_USERNAME, null)
-      .distributedByContains(SECOND_USER, 20L)
+        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 20L)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -914,17 +914,19 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   }
 
   private ProcessDefinitionEngineDto deployFourUserTasksDefinition() {
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
       .startEvent()
       .parallelGateway()
-      .userTask(USER_TASK_1)
-      .userTask(USER_TASK_2)
-      .endEvent()
+        .userTask(USER_TASK_1)
+        .userTask(USER_TASK_2)
+        .endEvent()
       .moveToLastGateway()
-      .userTask(USER_TASK_A)
-      .userTask(USER_TASK_B)
-      .endEvent()
+        .userTask(USER_TASK_A)
+        .userTask(USER_TASK_B)
+        .endEvent()
       .done();
+    // @formatter:on
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
