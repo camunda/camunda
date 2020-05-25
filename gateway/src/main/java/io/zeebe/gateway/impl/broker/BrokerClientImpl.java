@@ -13,10 +13,15 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.gateway.Loggers;
+import io.zeebe.gateway.impl.broker.backpressure.LimitFactory;
+import io.zeebe.gateway.impl.broker.backpressure.NoopPartitionAwareRequestLimiter;
+import io.zeebe.gateway.impl.broker.backpressure.PartitionAwareRequestLimiter;
+import io.zeebe.gateway.impl.broker.backpressure.PartitionAwareRequestLimiterImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.zeebe.gateway.impl.configuration.BackpressureCfg;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.transport.ClientTransport;
@@ -41,12 +46,12 @@ import org.slf4j.Logger;
 public class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
   protected final ActorScheduler actorScheduler;
-  private final boolean ownsActorScheduler;
   protected final ClientTransport transport;
   protected final BrokerTopologyManagerImpl topologyManager;
+  protected boolean isClosed;
+  private final boolean ownsActorScheduler;
   private final Dispatcher dataFrameReceiveBuffer;
   private final BrokerRequestManager requestManager;
-  protected boolean isClosed;
 
   public BrokerClientImpl(final GatewayCfg configuration, final AtomixCluster atomixCluster) {
     this(configuration, atomixCluster, null);
@@ -112,12 +117,20 @@ public class BrokerClientImpl implements BrokerClient {
         .forEach(
             member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
+    final BackpressureCfg backpressure = configuration.getBackpressure();
+    PartitionAwareRequestLimiter limiter = new NoopPartitionAwareRequestLimiter();
+    if (backpressure.isEnabled()) {
+      final LimitFactory factory = new LimitFactory();
+      limiter = new PartitionAwareRequestLimiterImpl(() -> factory.ofConfig(backpressure));
+    }
+
     requestManager =
         new BrokerRequestManager(
             transport.getOutput(),
             topologyManager,
             new RoundRobinDispatchStrategy(topologyManager),
-            clusterCfg.getRequestTimeout());
+            clusterCfg.getRequestTimeout(),
+            limiter);
     actorScheduler.submitActor(requestManager);
   }
 
@@ -161,14 +174,6 @@ public class BrokerClientImpl implements BrokerClient {
     LOG.debug("Gateway broker client closed.");
   }
 
-  protected void doAndLogException(final Runnable r) {
-    try {
-      r.run();
-    } catch (final Exception e) {
-      LOG.error("Exception when closing client. Ignoring", e);
-    }
-  }
-
   /* (non-Javadoc)
    * @see io.zeebe.gateway.impl.broker.BrokerClient#sendRequest(io.zeebe.gateway.impl.broker.request.BrokerRequest)
    */
@@ -197,6 +202,14 @@ public class BrokerClientImpl implements BrokerClient {
   @Override
   public BrokerTopologyManager getTopologyManager() {
     return topologyManager;
+  }
+
+  protected void doAndLogException(final Runnable r) {
+    try {
+      r.run();
+    } catch (final Exception e) {
+      LOG.error("Exception when closing client. Ignoring", e);
+    }
   }
 
   public ClientTransport getTransport() {

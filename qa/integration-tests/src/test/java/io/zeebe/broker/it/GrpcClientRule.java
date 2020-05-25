@@ -21,6 +21,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.function.Consumer;
@@ -29,9 +30,8 @@ import org.junit.rules.ExternalResource;
 
 public class GrpcClientRule extends ExternalResource {
 
-  private final Consumer<ZeebeClientBuilder> configurator;
-
   protected ZeebeClient client;
+  private final Consumer<ZeebeClientBuilder> configurator;
 
   public GrpcClientRule(final EmbeddedBrokerRule brokerRule) {
     this(brokerRule, config -> {});
@@ -152,5 +152,22 @@ public class GrpcClientRule extends ExternalResource {
         .send()
         .join()
         .getWorkflowInstanceKey();
+  }
+
+  public void awaitGateway(List<Integer> partitions) {
+    TestUtil.waitUntil(
+        () -> {
+          try {
+            final Topology topology = getClient().newTopologyRequest().send().join();
+            return topology.getBrokers().stream()
+                .flatMap(broker -> broker.getPartitions().stream())
+                .filter(PartitionInfo::isLeader)
+                .map(PartitionInfo::getPartitionId)
+                .collect(Collectors.toSet())
+                .containsAll(partitions);
+          } catch (final Exception e) {
+            return false;
+          }
+        });
   }
 }

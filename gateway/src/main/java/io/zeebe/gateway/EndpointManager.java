@@ -14,9 +14,11 @@ import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
+import io.zeebe.gateway.cmd.ClientResponseException;
 import io.zeebe.gateway.cmd.GrpcStatusException;
 import io.zeebe.gateway.cmd.GrpcStatusExceptionImpl;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.backpressure.ResourceExhaustedException;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
@@ -317,12 +319,24 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       status =
           Status.NOT_FOUND.augmentDescription(
               "Expected to find a leader for at least one partition to process the request, but none found. Please try again later.");
+    } else if (cause instanceof ResourceExhaustedException) {
+      status =
+          Status.RESOURCE_EXHAUSTED.augmentDescription(
+              "Brokers receiving too many requests. Please try again later.");
+    } else if (cause instanceof ClientResponseException && cause.getCause() != null) {
+      return convertThrowable(cause.getCause());
     } else {
       status = status.augmentDescription("Unexpected error occurred during the request processing");
     }
 
     final StatusRuntimeException convertedThrowable = status.withCause(cause).asRuntimeException();
-    Loggers.GATEWAY_LOGGER.error("Error handling gRPC request", convertedThrowable);
+
+    // When there is back pressure, there will be a lot of `RESOURCE_EXHAUSTED` errors and the log
+    // can get flooded. Until we find a way to limit the number of log messages,
+    // let's do not log them.
+    if (status.getCode() != Status.RESOURCE_EXHAUSTED.getCode()) {
+      Loggers.GATEWAY_LOGGER.error("Error handling gRPC request", convertedThrowable);
+    }
 
     return convertedThrowable;
   }
@@ -331,6 +345,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     switch (error.getCode()) {
       case WORKFLOW_NOT_FOUND:
         return Status.NOT_FOUND.augmentDescription(error.getMessage());
+      case RESOURCE_EXHAUSTED:
+        return Status.RESOURCE_EXHAUSTED.augmentDescription(error.getMessage());
       default:
         return Status.INTERNAL.augmentDescription(
             String.format(

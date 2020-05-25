@@ -19,6 +19,7 @@ import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.protocol.Protocol;
 import java.time.Duration;
 import java.util.stream.IntStream;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,6 +38,11 @@ public class JobWorkerWithMultiplePartitionsTest {
   @Rule public ExpectedException exception = ExpectedException.none();
 
   @Rule public Timeout timeout = Timeout.seconds(20);
+
+  @Before
+  public void setup() {
+    clientRule.awaitGateway(brokerRule.getBrokerCfg().getCluster().getPartitionIds());
+  }
 
   @Test
   public void shouldReceiveJobsFromMultiplePartitions() {

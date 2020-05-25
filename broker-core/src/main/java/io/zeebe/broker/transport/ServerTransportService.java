@@ -7,13 +7,11 @@
  */
 package io.zeebe.broker.transport;
 
-import io.zeebe.servicecontainer.Injector;
+import io.zeebe.broker.transport.commandapi.CommandApiMessageHandler;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.Loggers;
-import io.zeebe.transport.ServerMessageHandler;
-import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
@@ -26,27 +24,27 @@ import org.slf4j.Logger;
 public class ServerTransportService implements Service<ServerTransport> {
   public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-  protected final Injector<ServerRequestHandler> requestHandlerInjector = new Injector<>();
-  protected final Injector<ServerMessageHandler> messageHandlerInjector = new Injector<>();
-
-  protected final String readableName;
-  protected final InetSocketAddress bindAddress;
+  private final String readableName;
+  private final InetSocketAddress bindAddress;
   private final ByteValue sendBufferSize;
 
-  protected ServerTransport serverTransport;
+  private CommandApiMessageHandler commandApiMessageHandler;
+  private ServerTransport serverTransport;
 
   public ServerTransportService(
-      String readableName, InetSocketAddress bindAddress, ByteValue sendBufferSize) {
+      final String readableName,
+      final InetSocketAddress bindAddress,
+      final ByteValue sendBufferSize,
+      final CommandApiMessageHandler commandApiMessageHandler) {
     this.readableName = readableName;
     this.bindAddress = bindAddress;
     this.sendBufferSize = sendBufferSize;
+    this.commandApiMessageHandler = commandApiMessageHandler;
   }
 
   @Override
-  public void start(ServiceStartContext serviceContext) {
+  public void start(final ServiceStartContext serviceContext) {
     final ActorScheduler scheduler = serviceContext.getScheduler();
-    final ServerRequestHandler requestHandler = requestHandlerInjector.getValue();
-    final ServerMessageHandler messageHandler = messageHandlerInjector.getValue();
 
     serverTransport =
         Transports.newServerTransport()
@@ -54,13 +52,13 @@ public class ServerTransportService implements Service<ServerTransport> {
             .bindAddress(bindAddress)
             .scheduler(scheduler)
             .messageMemoryPool(new NonBlockingMemoryPool(sendBufferSize))
-            .build(messageHandler, requestHandler);
+            .build(commandApiMessageHandler, commandApiMessageHandler);
 
     LOG.info("Bound {} to {}", readableName, bindAddress);
   }
 
   @Override
-  public void stop(ServiceStopContext serviceStopContext) {
+  public void stop(final ServiceStopContext serviceStopContext) {
     serviceStopContext.async(serverTransport.closeAsync());
   }
 
@@ -75,13 +73,5 @@ public class ServerTransportService implements Service<ServerTransport> {
         serverTransport.releaseResources();
       }
     };
-  }
-
-  public Injector<ServerRequestHandler> getRequestHandlerInjector() {
-    return requestHandlerInjector;
-  }
-
-  public Injector<ServerMessageHandler> getMessageHandlerInjector() {
-    return messageHandlerInjector;
   }
 }

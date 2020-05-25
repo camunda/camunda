@@ -12,6 +12,7 @@ import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerResponseConsumer;
 import io.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
+import io.zeebe.gateway.impl.broker.backpressure.ResourceExhaustedException;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
@@ -23,11 +24,13 @@ public class CreateWorkflowHandler {
 
   private final BrokerClient brokerClient;
   private final RoundRobinDispatchStrategy roundRobinDispatchStrategy;
+  private BrokerTopologyManager topologyManager;
 
   public CreateWorkflowHandler(
       final BrokerClient brokerClient, final BrokerTopologyManager topologyManager) {
     this.brokerClient = brokerClient;
     roundRobinDispatchStrategy = new RoundRobinDispatchStrategy(topologyManager);
+    this.topologyManager = topologyManager;
   }
 
   public void createWorkflow(
@@ -82,14 +85,15 @@ public class CreateWorkflowHandler {
       return true;
     } else if (error instanceof BrokerErrorException) {
       return ((BrokerErrorException) error).getError().getCode()
-          == ErrorCode.PARTITION_LEADER_MISMATCH;
+              == ErrorCode.PARTITION_LEADER_MISMATCH
+          || ((BrokerErrorException) error).getError().getCode() == ErrorCode.RESOURCE_EXHAUSTED;
+    } else {
+      return error instanceof ResourceExhaustedException;
     }
-    // TODO: Add ResourceExhausted
-    return false;
   }
 
   private PartitionIdIterator partitionIdIteratorForType(final int partitionsCount) {
     final int nextPartitionId = roundRobinDispatchStrategy.determinePartition();
-    return new PartitionIdIterator(nextPartitionId, partitionsCount);
+    return new PartitionIdIterator(nextPartitionId, partitionsCount, topologyManager);
   }
 }

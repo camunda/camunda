@@ -24,6 +24,7 @@ public class BrokerCfg {
   private DataCfg data = new DataCfg();
   private List<ExporterCfg> exporters = new ArrayList<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
+  private BackpressureCfg backpressure = new BackpressureCfg();
 
   private boolean executionMetricsExporterEnabled;
 
@@ -44,6 +45,7 @@ public class BrokerCfg {
     data.init(this, brokerBase, environment);
     exporters.forEach(e -> e.init(this, brokerBase, environment));
     gateway.init(this, brokerBase, environment);
+    backpressure.init(this, brokerBase, environment);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -101,7 +103,7 @@ public class BrokerCfg {
     return gateway;
   }
 
-  public BrokerCfg setGateway(EmbeddedGatewayCfg gateway) {
+  public BrokerCfg setGateway(final EmbeddedGatewayCfg gateway) {
     this.gateway = gateway;
     return this;
   }
@@ -112,6 +114,15 @@ public class BrokerCfg {
 
   public void setExecutionMetricsExporterEnabled(final boolean executionMetricsExporterEnabled) {
     this.executionMetricsExporterEnabled = executionMetricsExporterEnabled;
+  }
+
+  public BackpressureCfg getBackpressure() {
+    return backpressure;
+  }
+
+  public BrokerCfg setBackpressure(final BackpressureCfg backpressure) {
+    this.backpressure = backpressure;
+    return this;
   }
 
   @Override
@@ -129,6 +140,8 @@ public class BrokerCfg {
         + exporters
         + ", gateway="
         + gateway
+        + ", backpressure="
+        + backpressure
         + '}';
   }
 

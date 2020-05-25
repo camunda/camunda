@@ -12,16 +12,19 @@ import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.RequestMapper;
 import io.zeebe.gateway.ResponseMapper;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.RequestDispatchStrategy;
+import io.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ActivateJobsHandler {
 
-  private final Map<String, Integer> jobTypeToNextPartitionId = new HashMap<>();
+  private final Map<String, RequestDispatchStrategy> jobTypeToNextPartitionId =
+      new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
 
@@ -75,7 +78,15 @@ public class ActivateJobsHandler {
                 ResponseMapper.toActivateJobsResponse(key, response);
             final int jobsCount = grpcResponse.getJobsCount();
             if (jobsCount > 0) {
-              responseObserver.onNext(grpcResponse);
+              try {
+                responseObserver.onNext(grpcResponse);
+              } catch (Exception e) {
+                // An exception here usually mean the stream is closed
+                Loggers.GATEWAY_LOGGER.warn(
+                    "Expected to send activate jobs to the client, but encountered an exception",
+                    e);
+                return;
+              }
             }
 
             activateJobs(
@@ -97,14 +108,22 @@ public class ActivateJobsHandler {
           response -> false);
     } else {
       // enough jobs activated or no more partitions left to check
-      jobTypeToNextPartitionId.put(jobType, partitionIdIterator.getCurrentPartitionId());
-      responseObserver.onCompleted();
+      try {
+        responseObserver.onCompleted();
+      } catch (Exception e) {
+        // Cannot close the stream. Nothing to do
+        Loggers.GATEWAY_LOGGER.trace(
+            "Expected complete activate jobs request successfully, but encountered error", e);
+      }
     }
   }
 
   private PartitionIdIterator partitionIdIteratorForType(
       final String jobType, final int partitionsCount) {
-    final Integer nextPartitionId = jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> 0);
-    return new PartitionIdIterator(nextPartitionId, partitionsCount);
+    final RequestDispatchStrategy nextPartitionSupplier =
+        jobTypeToNextPartitionId.computeIfAbsent(
+            jobType, t -> new RoundRobinDispatchStrategy(topologyManager));
+    return new PartitionIdIterator(
+        nextPartitionSupplier.determinePartition(), partitionsCount, topologyManager);
   }
 }

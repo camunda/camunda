@@ -160,4 +160,16 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .intent(intent.value())
         .putValue(value, 0, value.capacity());
   }
+
+  @Override
+  public String toString() {
+    return "ExecuteCommandRequest{"
+        + "key="
+        + key
+        + ", valueType="
+        + valueType
+        + ", intent="
+        + intent
+        + '}';
+  }
 }
