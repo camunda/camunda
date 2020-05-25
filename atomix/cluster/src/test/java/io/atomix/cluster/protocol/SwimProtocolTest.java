@@ -45,30 +45,34 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import net.jodah.concurrentunit.ConcurrentTestCase;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
 
 /** SWIM membership protocol test. */
 public class SwimProtocolTest extends ConcurrentTestCase {
+
+  private static final Duration GOSSIP_INTERVAL = Duration.ofMillis(25);
+  private static final Duration PROBE_INTERVAL = Duration.ofMillis(100);
+  private static final Duration PROBE_TIMEOUT = Duration.ofMillis(200);
+  private static final Duration FAILURE_INTERVAL = Duration.ofMillis(1000);
+  private static final Duration SYNC_INTERVAL = Duration.ofMillis(1000);
+  private final Version version1 = Version.from("1.0.0");
+  private final Version version2 = Version.from("2.0.0");
+  private final Map<MemberId, SwimMembershipProtocol> protocols = Maps.newConcurrentMap();
   private TestMessagingServiceFactory messagingServiceFactory = new TestMessagingServiceFactory();
   private TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
   private TestBroadcastServiceFactory broadcastServiceFactory = new TestBroadcastServiceFactory();
-
   private Member member1;
   private Member member2;
   private Member member3;
   private Collection<Member> members;
   private Collection<Node> nodes;
-
-  private Version version1 = Version.from("1.0.0");
-  private Version version2 = Version.from("2.0.0");
-
-  private Map<MemberId, SwimMembershipProtocol> protocols = Maps.newConcurrentMap();
   private Map<MemberId, TestGroupMembershipEventListener> listeners = Maps.newConcurrentMap();
 
   private Member member(final String id, final String host, final int port, final Version version) {
@@ -99,30 +103,73 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   }
 
   @Test
-  public void testSwimProtocol() throws Exception {
-    // Start a node and check its events.
+  public void shouldReceiveMemberAddedOnSingleNode() throws Exception {
+    // given
+
+    // when
     startProtocol(member1);
+
+    // then
     checkEvent(member1, MEMBER_ADDED, member1);
     checkMembers(member1, member1);
+  }
 
-    // Start a node and check its events.
+  @Test
+  public void shouldReceiveMultipleEventsOnTwoNodeCluster() throws Exception {
+    // given
+    startProtocol(member1);
+
+    // when
     startProtocol(member2);
+
+    // then
     checkEvent(member2, MEMBER_ADDED, member2);
     checkEvent(member2, MEMBER_ADDED, member1);
     checkMembers(member2, member1, member2);
+
+    checkEvent(member1, MEMBER_ADDED, member1);
     checkEvent(member1, MEMBER_ADDED, member2);
     checkMembers(member1, member1, member2);
+  }
 
-    // Start a node and check its events.
+  @Test
+  public void shouldReceiveMultipleEventsOnThreeNodeCluster() throws Exception {
+    // given
+    startProtocol(member1);
+    startProtocol(member2);
+
+    // when
     startProtocol(member3);
+
+    // then
+    checkEvent(member2, MEMBER_ADDED, member2);
+    checkEvent(member2, MEMBER_ADDED);
+    checkEvent(member2, MEMBER_ADDED);
+    checkMembers(member2, member1, member2, member3);
+
+    checkEvent(member1, MEMBER_ADDED, member1);
+    checkEvent(member1, MEMBER_ADDED);
+    checkEvent(member1, MEMBER_ADDED);
+    checkMembers(member1, member1, member2, member3);
+
     checkEvent(member3, MEMBER_ADDED, member3);
     checkEvent(member3, MEMBER_ADDED);
     checkEvent(member3, MEMBER_ADDED);
     checkMembers(member3, member1, member2, member3);
-    checkEvent(member2, MEMBER_ADDED, member3);
-    checkMembers(member2, member1, member2, member3);
-    checkEvent(member1, MEMBER_ADDED, member3);
-    checkMembers(member1, member1, member2, member3);
+  }
+
+  @Test
+  public void testSwimProtocol() throws Exception {
+    // Start a node and check its events.
+    startProtocol(member1);
+    startProtocol(member2);
+    startProtocol(member3);
+
+    awaitMembers(member3, member1, member2, member3);
+    awaitMembers(member2, member1, member2, member3);
+    awaitMembers(member1, member1, member2, member3);
+
+    clearEvents(member1, member2, member3);
 
     // Isolate node 3 from the rest of the cluster.
     partition(member3);
@@ -164,7 +211,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
 
     // Verify that neither node is ever removed from the cluster since node 3 can still ping nodes 1
     // and 2.
-    Thread.sleep(5000);
+    Thread.sleep(500);
     checkMembers(member1, member1, member2, member3);
     checkMembers(member2, member1, member2, member3);
     checkMembers(member3, member1, member2, member3);
@@ -196,13 +243,9 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   @Test
   public void shouldSynchronizePeriodically() throws InterruptedException {
     // given
-    final Duration gossipInterval = Duration.ofMillis(100);
-    final Duration syncInterval = Duration.ofMillis(500);
-    startProtocol(member1, c -> c.setSyncInterval(syncInterval).setGossipInterval(gossipInterval));
-    startProtocol(member2, c -> c.setSyncInterval(syncInterval).setGossipInterval(gossipInterval));
-    final SwimMembershipProtocol protocol3 =
-        startProtocol(
-            member3, c -> c.setSyncInterval(syncInterval).setGossipInterval(gossipInterval));
+    startProtocol(member1);
+    startProtocol(member2);
+    final SwimMembershipProtocol protocol3 = startProtocol(member3);
 
     // wait for all nodes to know about each other
     checkEvents(
@@ -248,15 +291,24 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     // it shouldn't try to update it with member1, and member1 is disconnected from member3 so will
     // not send it probe requests - the only way for member3 to receive the new property is for it
     // to sync with member2
-    Thread.sleep(gossipInterval.toMillis());
+    Thread.sleep(GOSSIP_INTERVAL.toMillis());
     heal(member2, member3);
     checkEvent(member2, MEMBER_ADDED, member3);
     checkEvents(member3, new GroupMembershipEvent(MEMBER_ADDED, member2));
 
     // then
     // wait until member3 has tried to sync
-    Thread.sleep(syncInterval.toMillis());
-    assertEquals(1, protocol3.getMember(member1.id()).properties().get("newProperty"));
+    Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> hasNewProperty(protocol3));
+  }
+
+  private boolean hasNewProperty(final SwimMembershipProtocol protocol3) {
+    final var memberOne = protocol3.getMember(member1.id());
+
+    if (memberOne != null) {
+      final var newProperty = memberOne.properties().get("newProperty");
+      return newProperty != null && Integer.parseInt(newProperty.toString()) == 1;
+    }
+    return false;
   }
 
   private SwimMembershipProtocol startProtocol(final Member member) {
@@ -268,7 +320,12 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     final SwimMembershipProtocol protocol =
         new SwimMembershipProtocol(
             configurator.apply(
-                new SwimMembershipProtocolConfig().setFailureTimeout(Duration.ofSeconds(2))));
+                new SwimMembershipProtocolConfig()
+                    .setGossipInterval(GOSSIP_INTERVAL)
+                    .setProbeInterval(PROBE_INTERVAL)
+                    .setProbeTimeout(PROBE_TIMEOUT)
+                    .setFailureTimeout(FAILURE_INTERVAL)
+                    .setSyncInterval(SYNC_INTERVAL)));
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);
     protocol.addListener(listener);
@@ -318,6 +375,21 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     assertEquals(Sets.newHashSet(members), protocol.getMembers());
   }
 
+  private void awaitMembers(final Member member, final Member... members) {
+    final SwimMembershipProtocol protocol = protocols.get(member.id());
+    final var expectedMembers = Sets.newHashSet(members);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(1))
+        .until(() -> expectedMembers.equals(protocol.getMembers()));
+  }
+
+  private void clearEvents(final Member... members) {
+    for (final Member member : members) {
+      listeners.get(member.id()).clear();
+    }
+  }
+
   private void checkEvents(final Member member, final GroupMembershipEvent... types)
       throws InterruptedException {
     final Multiset<GroupMembershipEvent> events = HashMultiset.create(Arrays.asList(types));
@@ -350,7 +422,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   }
 
   private class TestGroupMembershipEventListener implements GroupMembershipEventListener {
-    private BlockingQueue<GroupMembershipEvent> queue = new ArrayBlockingQueue<>(10);
+    private final BlockingDeque<GroupMembershipEvent> queue = new LinkedBlockingDeque<>(100);
 
     @Override
     public void event(final GroupMembershipEvent event) {
@@ -359,6 +431,10 @@ public class SwimProtocolTest extends ConcurrentTestCase {
 
     GroupMembershipEvent nextEvent() throws InterruptedException {
       return queue.poll(10, TimeUnit.SECONDS);
+    }
+
+    public void clear() {
+      queue.clear();
     }
   }
 }
