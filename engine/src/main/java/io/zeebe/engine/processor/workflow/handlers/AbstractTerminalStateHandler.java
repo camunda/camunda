@@ -12,6 +12,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Primarily to clean up once we reach final state.
@@ -45,17 +46,24 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
   }
 
   protected void publishDeferredRecords(final BpmnStepContext<T> context) {
+    publishDeferredRecords(context, record -> true);
+  }
+
+  protected void publishDeferredRecords(
+      final BpmnStepContext<T> context, final Predicate<IndexedRecord> filter) {
     final List<IndexedRecord> deferredRecords =
         context.getElementInstanceState().getDeferredRecords(context.getKey());
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
 
     for (final IndexedRecord record : deferredRecords) {
-      record.getValue().setFlowScopeKey(flowScopeInstance.getKey());
-      context
-          .getOutput()
-          .appendFollowUpEvent(record.getKey(), record.getState(), record.getValue());
+      if (filter.test(record)) {
+        record.getValue().setFlowScopeKey(flowScopeInstance.getKey());
+        context
+            .getOutput()
+            .appendFollowUpEvent(record.getKey(), record.getState(), record.getValue());
 
-      context.getStateDb().getElementInstanceState().spawnToken(flowScopeInstance.getKey());
+        context.getStateDb().getElementInstanceState().spawnToken(flowScopeInstance.getKey());
+      }
     }
   }
 
