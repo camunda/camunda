@@ -12,7 +12,7 @@ const {createProxyMiddleware} = require('http-proxy-middleware');
 
 module.exports = function (app) {
   app.use(
-    '/api',
+    ['/api', '/graphql'],
     createProxyMiddleware({
       target: `http://localhost:${process.env.IS_E2E ? '8081' : '8080'}`,
     }),
