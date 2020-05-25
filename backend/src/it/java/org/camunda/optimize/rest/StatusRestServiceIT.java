@@ -16,7 +16,7 @@ import org.mockserver.model.HttpResponse;
 import java.util.Map;
 
 import static javax.ws.rs.HttpMethod.GET;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.mockserver.model.HttpRequest.request;
 

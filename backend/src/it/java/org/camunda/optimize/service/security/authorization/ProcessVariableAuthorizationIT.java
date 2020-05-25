@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -214,6 +215,49 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
       .containsExactly(Tuple.tuple("var1", VariableType.STRING));
   }
 
+  @Test
+  public void getVariableValuesForReports_noAuth() {
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildProcessVariableValuesForReportsRequest(createVariableValuesForReportsRequest(
+        Collections.emptyList(), "someName", STRING
+      ))
+      .withoutAuthentication()
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void getVariableValuesForReports_canOnlySeeVariableValuesFromAuthorizedReports() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition("someKey");
+    final String variableName = "var1";
+    startInstanceAndImportEngineEntities(processDefinition1, ImmutableMap.of(variableName, "val1"));
+    authorizationClient.grantSingleResourceAuthorizationForKermit(
+      processDefinition1.getKey(),
+      RESOURCE_TYPE_PROCESS_DEFINITION
+    );
+    final String reportId1 = createSingleReport(processDefinition1, KERMIT_USER);
+
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition("otherKey");
+    startInstanceAndImportEngineEntities(processDefinition2, ImmutableMap.of(variableName, "val2"));
+    final String reportId2 = createSingleReport(processDefinition2, DEFAULT_USERNAME);
+
+    // when
+    List<String> variableValues = embeddedOptimizeExtension.getRequestExecutor()
+      .buildProcessVariableValuesForReportsRequest(createVariableValuesForReportsRequest(
+        Arrays.asList(reportId1, reportId2), variableName, STRING
+      ))
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(variableValues).containsExactly("val1");
+  }
+
   private List<Response> executeVariableRequestsAsKermit(final ProcessDefinitionEngineDto processDefinition) {
     return executeVariableRequestsAsKermit(
       processDefinition,
@@ -239,6 +283,16 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
       ))
       .execute();
     return Lists.newArrayList(variableNameResponse, variableValueResponse);
+  }
+
+  private ProcessVariableReportValuesRequestDto createVariableValuesForReportsRequest(final List<String> reportIds,
+                                                                                      final String name,
+                                                                                      final VariableType type) {
+    ProcessVariableReportValuesRequestDto dto = new ProcessVariableReportValuesRequestDto();
+    dto.setReportIds(reportIds);
+    dto.setName(name);
+    dto.setType(type);
+    return dto;
   }
 
   private ProcessVariableNameRequestDto createVariableNameRequest(final String processDefinitionKey,

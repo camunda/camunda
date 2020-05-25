@@ -8,28 +8,20 @@ package org.camunda.optimize.service.es.retrieval.variable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.groups.Tuple;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.test.util.decision.DmnHelper;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,9 +29,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
-public class ProcessVariableNameIT extends AbstractIT {
-
-  private static final String A_PROCESS = "aProcess";
+public class ProcessVariableNameIT extends AbstractVariableIT {
 
   @Test
   public void getVariableNames() {
@@ -71,6 +61,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = Lists.newArrayList(tenantId1);
     String processDefinition = deployAndStartMultiTenantUserTaskProcess(
+      "someVariableName",
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -584,64 +575,6 @@ public class ProcessVariableNameIT extends AbstractIT {
       .hasSize(1)
       .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
       .containsExactly(Tuple.tuple("var1", VariableType.STRING));
-  }
-
-  private DecisionDefinitionEngineDto startDecisionInstanceAndImportEngineEntities(Map<String, Object> variables) {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(
-      DmnHelper.createSimpleDmnModel("someKey"));
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    return decisionDefinitionEngineDto;
-  }
-
-  private void startInstanceAndImportEngineEntities(final ProcessDefinitionEngineDto processDefinition,
-                                                    final Map<String, Object> variables) {
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  private String createSingleReport(final ProcessDefinitionEngineDto processDefinition) {
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
-      reportClient.createSingleProcessReportDefinitionDto(
-        null,
-        processDefinition.getKey(),
-        new ArrayList<>(Collections.singletonList(null))
-      );
-    singleProcessReportDefinitionDto.getData().setProcessDefinitionVersion(processDefinition.getVersionAsString());
-    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
-    return deploySimpleProcessDefinition(null);
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleProcessDefinition(String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(A_PROCESS)
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
-  }
-
-  private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
-    deployedTenants.stream()
-      .filter(Objects::nonNull)
-      .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
-    deployedTenants
-      .forEach(tenant -> {
-
-        final ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleProcessDefinition(tenant);
-        String randomName = RandomStringUtils.random(10);
-        String randomValue = RandomStringUtils.random(10);
-        engineIntegrationExtension.startProcessInstance(
-          processDefinitionEngineDto.getId(),
-          ImmutableMap.of(randomName, randomValue)
-        );
-      });
-
-    return A_PROCESS;
   }
 
 }

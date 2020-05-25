@@ -41,6 +41,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
@@ -734,6 +735,13 @@ public class OptimizeRequestExecutor {
     this.path = "variables/";
     this.method = POST;
     this.body = getBody(variableRequestDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildProcessVariableValuesForReportsRequest(ProcessVariableReportValuesRequestDto valuesRequestDto) {
+    this.path = "variables/values/reports";
+    this.method = POST;
+    this.body = getBody(valuesRequestDto);
     return this;
   }
 

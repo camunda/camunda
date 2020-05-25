@@ -10,7 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableSourceDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
@@ -186,26 +187,28 @@ public class ProcessVariableReader {
 
   // ----------------------------
 
-  public List<String> getVariableValues(final ProcessVariableValueRequestDto requestDto) {
-    if (requestDto.getProcessDefinitionVersions() == null || requestDto.getProcessDefinitionVersions().isEmpty()) {
+  public List<String> getVariableValues(final ProcessVariableValuesQueryDto requestDto) {
+    final List<ProcessVariableSourceDto> processVariableSources = requestDto.getProcessVariableSources()
+      .stream()
+      .filter(source -> !CollectionUtils.isEmpty(source.getProcessDefinitionVersions()))
+      .collect(Collectors.toList());
+    if (processVariableSources.isEmpty()) {
       log.debug("Cannot fetch variable names for process definition with missing versions.");
       return Collections.emptyList();
     }
 
-    log.debug(
-      "Fetching input variable values for process definition with key [{}] and versions [{}]",
-      requestDto.getProcessDefinitionKey(),
-      requestDto.getProcessDefinitionVersions()
-    );
+    log.debug("Fetching input variable values from sources [{}]", processVariableSources);
 
-    final BoolQueryBuilder query =
+    final BoolQueryBuilder query = boolQuery();
+    processVariableSources.forEach(source -> query.should(
       createDefinitionQuery(
-        requestDto.getProcessDefinitionKey(),
-        requestDto.getProcessDefinitionVersions(),
-        requestDto.getTenantIds(),
+        source.getProcessDefinitionKey(),
+        source.getProcessDefinitionVersions(),
+        source.getTenantIds(),
         new ProcessInstanceIndex(),
         processDefinitionReader::getLatestVersionToKey
-      );
+      ))
+    );
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -232,7 +235,7 @@ public class ProcessVariableReader {
   }
 
   private List<String> extractVariableValues(final Aggregations aggregations,
-                                             final ProcessVariableValueRequestDto requestDto) {
+                                             final ProcessVariableValuesQueryDto requestDto) {
     Nested variablesFromType = aggregations.get(VARIABLES);
     Filter filteredVariables = variablesFromType.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     Terms valueTerms = filteredVariables.getAggregations().get(VALUE_AGGREGATION);
@@ -244,7 +247,7 @@ public class ProcessVariableReader {
     return allValues.subList(requestDto.getResultOffset(), lastIndex);
   }
 
-  private AggregationBuilder getVariableValueAggregation(final ProcessVariableValueRequestDto requestDto) {
+  private AggregationBuilder getVariableValueAggregation(final ProcessVariableValuesQueryDto requestDto) {
     final TermsAggregationBuilder collectAllVariableValues =
       terms(VALUE_AGGREGATION)
         .field(getNestedVariableValueFieldForType(requestDto.getType()))

@@ -7,8 +7,9 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
@@ -57,10 +58,18 @@ public class ProcessVariableRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public List<String> getVariableValues(@Context ContainerRequestContext requestContext,
                                         ProcessVariableValueRequestDto variableValueRequestDto) {
-
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return processVariableService.getVariableValues(userId, variableValueRequestDto);
   }
 
+  @POST
+  @Path("/values/reports")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public List<String> getVariableValuesForReports(@Context ContainerRequestContext requestContext,
+                                                  ProcessVariableReportValuesRequestDto requestDto) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return processVariableService.getVariableValuesForReports(userId, requestDto);
+  }
 
 }

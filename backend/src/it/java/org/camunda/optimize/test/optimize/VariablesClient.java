@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequ
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
@@ -55,6 +56,12 @@ public class VariablesClient {
     return getRequestExecutor()
       .buildProcessVariableNamesForReportsRequest(reportIds)
       .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public List<String> getProcessVariableValuesForReports(final ProcessVariableReportValuesRequestDto dto) {
+    return getRequestExecutor()
+      .buildProcessVariableValuesForReportsRequest(dto)
+      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
   }
 
   public List<ProcessVariableNameResponseDto> getProcessVariableNames(final String key, final List<String> versions) {
