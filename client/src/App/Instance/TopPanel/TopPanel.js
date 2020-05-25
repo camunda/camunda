@@ -23,6 +23,7 @@ import InstanceHeader from './InstanceHeader';
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
 import {currentInstance} from 'modules/stores/currentInstance';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 const TopPanel = observer(
   class TopPanel extends React.PureComponent {
@@ -34,7 +35,6 @@ const TopPanel = observer(
       nodeMetaDataMap: PropTypes.object,
       processedSequenceFlows: PropTypes.array,
       expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-      selection: PropTypes.object,
       diagramDefinitions: PropTypes.object,
       activityIdToActivityInstanceMap: PropTypes.object,
       onTreeRowSelection: PropTypes.func,
@@ -82,13 +82,13 @@ const TopPanel = observer(
       const {
         incidents,
         onInstanceOperation,
-        selection,
         diagramDefinitions,
         activityIdToActivityInstanceMap,
         nodeMetaDataMap,
         ...props
       } = this.props;
 
+      const {selection} = flowNodeInstance.state;
       const {instance} = currentInstance.state;
       return (
         <>
@@ -135,7 +135,6 @@ const TopPanel = observer(
       const {
         onInstanceOperation,
         incidents,
-        selection,
         diagramDefinitions,
         activityIdToActivityInstanceMap,
         nodeMetaDataMap,

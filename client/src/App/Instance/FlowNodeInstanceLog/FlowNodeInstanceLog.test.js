@@ -13,7 +13,7 @@ import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
 
 // Conponents
 import FlowNodeInstanceLog from './FlowNodeInstanceLog';
-import FlowNodeInstancesTree from '../FlowNodeInstancesTree';
+import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 
 import EmptyPanel from 'modules/components/EmptyPanel';
 import Skeleton from './Skeleton';
@@ -28,8 +28,10 @@ import {DataManagerProvider} from 'modules/DataManager';
 // mock modules
 jest.mock('modules/utils/bpmn');
 jest.mock('../FlowNodeInstancesTree', () => {
-  return function FlowNodeInstancesTree() {
-    return <div />;
+  return {
+    FlowNodeInstancesTree: function FlowNodeInstancesTree() {
+      return <div />;
+    },
   };
 });
 

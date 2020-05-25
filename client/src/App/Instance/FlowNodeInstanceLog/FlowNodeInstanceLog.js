@@ -17,7 +17,7 @@ import {LOADING_STATE} from 'modules/constants';
 
 import * as Styled from './styled';
 
-import FlowNodeInstancesTree from '../FlowNodeInstancesTree';
+import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 
 class FlowNodeInstanceLog extends React.Component {
   static propTypes = {
@@ -25,7 +25,6 @@ class FlowNodeInstanceLog extends React.Component {
     diagramDefinitions: PropTypes.object,
     activityInstancesTree: PropTypes.object,
     getNodeWithMetaData: PropTypes.func,
-    selectedTreeRowIds: PropTypes.array,
     onTreeRowSelection: PropTypes.func,
   };
 
@@ -103,7 +102,6 @@ class FlowNodeInstanceLog extends React.Component {
     const {label, type} = this.constructLabel();
 
     const {
-      selectedTreeRowIds,
       diagramDefinitions,
       activityInstancesTree,
       getNodeWithMetaData,
@@ -119,7 +117,6 @@ class FlowNodeInstanceLog extends React.Component {
                 node={activityInstancesTree}
                 getNodeWithMetaData={getNodeWithMetaData}
                 treeDepth={1}
-                selectedTreeRowIds={selectedTreeRowIds}
                 onTreeRowSelection={onTreeRowSelection}
               />
             </Styled.NodeContainer>

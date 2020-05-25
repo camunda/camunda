@@ -12,11 +12,12 @@ import {ReactComponent as FoldableRightIcon} from 'modules/components/Icon/right
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 import * as Styled from './styled';
-import FlowNodeInstancesTree from './FlowNodeInstancesTree';
+import {FlowNodeInstancesTree} from './index';
 import Foldable from './Foldable';
 import * as FoldableStyles from './Foldable/styled';
 
 import {testData} from './FlowNodeInstancesTree.setup';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 // Mock TimeStampLabel node;
 
@@ -63,6 +64,7 @@ describe('FlowNodeInstancesTree', () => {
       .find(`[data-test="SubProcessId"]`);
 
     ServiceNode = node.find(`[data-test="ServiceTaskId"]`).find('li');
+    flowNodeInstance.reset();
   });
 
   it('should show Connection-Line for scoped nodes starting from tree level 2', () => {
@@ -105,11 +107,16 @@ describe('FlowNodeInstancesTree', () => {
   });
 
   describe('FlowNode Instance Selection', () => {
+    beforeEach(() => {
+      flowNodeInstance.setCurrentSelection({
+        treeRowIds: testData.multipleSelectedTreeRowIds,
+      });
+    });
+
     it('should show root element as default selection', () => {
       //Given
-      node = mountNode({
-        selectedTreeRowIds: testData.multipleSelectedTreeRowIds,
-      });
+
+      node = mountNode();
       //Then
       const rootNode = node.find(`[data-test="ParentNodeId"]`);
 
@@ -118,9 +125,7 @@ describe('FlowNodeInstancesTree', () => {
 
     it('should call the OnSelect method from props with node obj of clicked row', () => {
       //Given
-      node = mountNode({
-        selectedTreeRowIds: testData.multipleSelectedTreeRowIds,
-      });
+      node = mountNode();
       const StartEventNodeButton = node
         .find(`[data-test="StartEventId"]`)
         .find(Foldable.Summary)

@@ -41,6 +41,7 @@ import {
 } from './service';
 import {statistics} from 'modules/stores/statistics';
 import {currentInstance} from 'modules/stores/currentInstance';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
@@ -59,10 +60,6 @@ const Instance = observer(
       super(props);
 
       this.state = {
-        selection: {
-          treeRowIds: [],
-          flowNodeId: null,
-        },
         nodeMetaDataMap: null,
         diagramDefinitions: null,
         activityInstancesTree: {},
@@ -147,8 +144,9 @@ const Instance = observer(
             this.setState({
               nodeMetaDataMap: nodeMetaDataMap,
               diagramDefinitions: response.definitions,
-              selection,
             });
+
+            flowNodeInstance.setCurrentSelection(selection);
           }
         },
         LOAD_SEQUENCE_FLOWS: ({response, state}) => {
@@ -219,6 +217,7 @@ const Instance = observer(
     componentWillUnmount() {
       this.props.dataManager.unsubscribe(this.subscriptions);
       this.props.dataManager.poll.unregister(POLL_TOPICS.INSTANCE);
+      flowNodeInstance.reset();
     }
 
     handlePoll = () => {
@@ -233,7 +232,7 @@ const Instance = observer(
         ],
       };
       statistics.fetchStatistics();
-      const {selection} = this.state;
+      const {selection} = flowNodeInstance.state;
       const {instance} = currentInstance.state;
 
       if (selection.treeRowIds.length === 1) {
@@ -270,7 +269,7 @@ const Instance = observer(
      * @param {object} node: selected row node
      */
     handleTreeRowSelection = async (node) => {
-      const {selection} = this.state;
+      const {selection} = flowNodeInstance.state;
       const {instance} = currentInstance.state;
       const isRootNode = node.id === instance.id;
 
@@ -285,8 +284,8 @@ const Instance = observer(
           ? {flowNodeId: null, treeRowIds: [instance.id]}
           : {flowNodeId, treeRowIds: [node.id]};
 
+      flowNodeInstance.setCurrentSelection(newSelection);
       this.setState({
-        selection: newSelection,
         // clear variables object if we don't have exactly 1 selected row
         ...(newSelection.treeRowIds.length !== 1 && {
           variables: null,
@@ -327,11 +326,15 @@ const Instance = observer(
           : getMultiInstanceBodies(activityInstancesMap);
       }
 
-      const selection = {...this.state.selection, treeRowIds, flowNodeId};
+      const selection = {
+        ...flowNodeInstance.state.selection,
+        treeRowIds,
+        flowNodeId,
+      };
 
+      flowNodeInstance.setCurrentSelection(selection);
       // get the first activity instance corresponding to the flowNodeId
       this.setState({
-        selection,
         // clear variables object if we don't have exactly 1 selected row
         ...(treeRowIds.length !== 1 && {variables: null, editMode: ''}),
       });
@@ -344,11 +347,10 @@ const Instance = observer(
     };
 
     getCurrentMetadata = () => {
+      const {events, activityIdToActivityInstanceMap} = this.state;
       const {
         selection: {flowNodeId, treeRowIds},
-        events,
-        activityIdToActivityInstanceMap,
-      } = this.state;
+      } = flowNodeInstance.state;
 
       const activityInstancesMap = activityIdToActivityInstanceMap.get(
         flowNodeId
@@ -454,13 +456,13 @@ const Instance = observer(
     };
 
     handleVariableUpdate = async (key, value) => {
-      const {
-        selection: {treeRowIds},
-        variables,
-      } = this.state;
+      const {variables} = this.state;
       const {
         instance: {id},
       } = currentInstance.state;
+      const {
+        selection: {treeRowIds},
+      } = flowNodeInstance.state;
       const keyIdx = variables.findIndex((variable) => variable.name === key);
 
       this.setState({
@@ -484,11 +486,10 @@ const Instance = observer(
     };
 
     areVariablesEditable = () => {
+      const {activityIdToActivityInstanceMap, variables} = this.state;
       const {
-        activityIdToActivityInstanceMap,
-        variables,
         selection: {flowNodeId, treeRowIds},
-      } = this.state;
+      } = flowNodeInstance.state;
 
       const {instance} = currentInstance.state;
 
@@ -517,7 +518,6 @@ const Instance = observer(
       const {
         diagramDefinitions,
         incidents,
-        selection,
         activityIdToActivityInstanceMap,
         nodeMetaDataMap,
         activityInstancesTree,
@@ -537,7 +537,6 @@ const Instance = observer(
             expandedPaneId="instanceExpandedPaneId"
           >
             <TopPanel
-              selection={selection}
               incidents={incidents}
               nodeMetaDataMap={nodeMetaDataMap}
               diagramDefinitions={diagramDefinitions}
@@ -553,7 +552,6 @@ const Instance = observer(
                 diagramDefinitions={diagramDefinitions}
                 activityInstancesTree={activityInstancesTree}
                 getNodeWithMetaData={this.getNodeWithMetaData}
-                selectedTreeRowIds={this.state.selection.treeRowIds}
                 onTreeRowSelection={this.handleTreeRowSelection}
               />
               <VariablePanel
