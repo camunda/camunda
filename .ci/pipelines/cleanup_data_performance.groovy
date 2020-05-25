@@ -139,7 +139,7 @@ pipeline {
     stage('CleanupPerformanceTest') {
       steps {
         container('maven') {
-          runMaven('-T\$LIMITS_CPU -pl backend -DskipTests -Dskip.fe.build -Dskip.docker clean install')
+          runMaven('-T\$LIMITS_CPU -pl backend -am -DskipTests -Dskip.fe.build -Dskip.docker clean install')
           runMaven("-Pcleanup-performance-test -f qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.${NAMESPACE}:5432/engine -Dengine.url=http://cambpm.${NAMESPACE}:8080/engine-rest -Des.host=elasticsearch.${NAMESPACE} -Dcleanup.timeout.minutes=${CLEANUP_TIMEOUT_MINUTES}")
         }
       }
