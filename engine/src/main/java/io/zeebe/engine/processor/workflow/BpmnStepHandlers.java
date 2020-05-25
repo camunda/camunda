@@ -46,8 +46,6 @@ import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElem
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.receivetask.ReceiveTaskEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.FlowOutElementCompletedHandler;
-import io.zeebe.engine.processor.workflow.handlers.seqflow.ParallelMergeSequenceFlowTaken;
-import io.zeebe.engine.processor.workflow.handlers.seqflow.SequenceFlowTakenHandler;
 import io.zeebe.engine.processor.workflow.message.BufferedMessageToStartEventCorrelator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -153,10 +151,6 @@ public final class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED,
         new EventSubProcessEventOccurredHandler<>(catchEventBehavior));
-
-    stepHandlers.put(
-        BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN, new ParallelMergeSequenceFlowTaken<>());
-    stepHandlers.put(BpmnStep.SEQUENCE_FLOW_TAKEN, new SequenceFlowTakenHandler<>());
 
     stepHandlers.put(
         BpmnStep.CALL_ACTIVITY_ACTIVATING,

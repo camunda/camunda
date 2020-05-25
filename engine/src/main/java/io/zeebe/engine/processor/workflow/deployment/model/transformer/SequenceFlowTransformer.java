@@ -18,7 +18,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.Transf
 import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
 
 public final class SequenceFlowTransformer implements ModelElementTransformer<SequenceFlow> {
   @Override
@@ -38,14 +37,8 @@ public final class SequenceFlowTransformer implements ModelElementTransformer<Se
   }
 
   private void bindLifecycle(final ExecutableSequenceFlow sequenceFlow) {
-    final ExecutableFlowNode target = sequenceFlow.getTarget();
-    if (target.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
-      sequenceFlow.bindLifecycleState(
-          WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN);
-    } else {
-      sequenceFlow.bindLifecycleState(
-          WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, BpmnStep.SEQUENCE_FLOW_TAKEN);
-    }
+    sequenceFlow.bindLifecycleState(
+        WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 
   private void connectWithFlowNodes(
