@@ -50,6 +50,44 @@ public final class GatewayCfgTest {
   private final Map<String, String> environment = new HashMap<>();
 
   @Test
+  public void configIsNotInitilazedByDefault() {
+    // given
+    final var gatewayCfg = new GatewayCfg();
+
+    // when
+    final boolean actual = gatewayCfg.isInitialized();
+
+    // then
+    assertThat(actual).isFalse();
+  }
+
+  @Test
+  public void shouldByInitializedAfterInitWithoutParametersIsCalled() {
+    // given
+    final var gatewayCfg = new GatewayCfg();
+
+    // when
+    gatewayCfg.init();
+    final boolean actual = gatewayCfg.isInitialized();
+
+    // then
+    assertThat(actual).isTrue();
+  }
+
+  @Test
+  public void shouldByInitializedAfterInitWithParametersIsCalled() {
+    // given
+    final var gatewayCfg = new GatewayCfg();
+
+    // when
+    gatewayCfg.init("Lorem Ipsum");
+    final boolean actual = gatewayCfg.isInitialized();
+
+    // then
+    assertThat(actual).isTrue();
+  }
+
+  @Test
   public void shouldHaveDefaultValues() {
     // when
     final GatewayCfg gatewayCfg = readDefaultConfig();

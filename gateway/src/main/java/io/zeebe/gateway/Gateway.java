@@ -43,6 +43,9 @@ public final class Gateway {
   private Server server;
   private BrokerClient brokerClient;
 
+  @SuppressWarnings("squid:S3077")
+  private volatile Status status = Status.INITIAL;
+
   public Gateway(
       final GatewayCfg gatewayCfg,
       final AtomixCluster atomixCluster,
@@ -76,11 +79,16 @@ public final class Gateway {
     return gatewayCfg;
   }
 
+  public Status getStatus() {
+    return status;
+  }
+
   public BrokerClient getBrokerClient() {
     return brokerClient;
   }
 
   public void start() throws IOException {
+    status = Status.STARTING;
     if (LOG.isInfoEnabled()) {
       LOG.info("Version: {}", VersionUtil.getVersion());
       LOG.info("Starting gateway with configuration {}", gatewayCfg.toJson());
@@ -112,6 +120,7 @@ public final class Gateway {
     server = serverBuilder.build();
 
     server.start();
+    status = Status.RUNNING;
   }
 
   private static NettyServerBuilder setNetworkConfig(final NetworkCfg cfg) {
@@ -173,6 +182,7 @@ public final class Gateway {
   }
 
   public void stop() {
+    status = Status.SHUTDOWN;
     if (server != null && !server.isShutdown()) {
       server.shutdownNow();
       try {
@@ -189,5 +199,12 @@ public final class Gateway {
       brokerClient.close();
       brokerClient = null;
     }
+  }
+
+  public static enum Status {
+    INITIAL,
+    STARTING,
+    RUNNING,
+    SHUTDOWN
   }
 }
