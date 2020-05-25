@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.upgrade.es;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchConstants {
 
   // Note: we cap listings to 1000 as a generous practical limit, no paging

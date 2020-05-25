@@ -21,13 +21,13 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.DEPLOYED_AFTER;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.DEPLOYED_AT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.DEPLOYMENT_ENDPOINT_TEMPLATE;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_BY;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_ASC;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.DEPLOYED_AFTER;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.DEPLOYED_AT;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.DEPLOYMENT_ENDPOINT_TEMPLATE;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.MAX_RESULTS_TO_RETURN;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.SORT_BY;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.SORT_ORDER;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.SORT_ORDER_ASC;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)

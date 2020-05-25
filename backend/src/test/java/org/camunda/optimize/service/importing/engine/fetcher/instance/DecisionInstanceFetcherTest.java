@@ -11,7 +11,7 @@ import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
+import org.camunda.optimize.service.util.configuration.EngineConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,6 +72,6 @@ public class DecisionInstanceFetcherTest {
 
     underTest.fetchHistoricDecisionInstances(new TimestampBasedImportPage());
 
-    verify(target, times(1)).queryParam(eq(EngineConstantsUtil.MAX_RESULTS_TO_RETURN), eq((long) maxPageSize));
+    verify(target, times(1)).queryParam(eq(EngineConstants.MAX_RESULTS_TO_RETURN), eq((long) maxPageSize));
   }
 }

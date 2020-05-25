@@ -36,10 +36,10 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE_OPERATIONS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUP_OPERATIONS;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_OPERATION_ADD;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_OPERATION_DELETE;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_TYPE_ASSIGNEE;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_TYPE_CANDIDATE;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_TYPE_ASSIGNEE;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_TYPE_CANDIDATE;
 
 @Component
 @Slf4j

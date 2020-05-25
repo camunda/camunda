@@ -13,7 +13,7 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
+import org.camunda.optimize.service.util.configuration.EngineConstants;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -60,7 +60,7 @@ public class StatusCheckingService {
     boolean isConnected = false;
     try {
       final String engineEndpoint = configurationService
-        .getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()) + EngineConstantsUtil.VERSION_ENDPOINT;
+        .getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()) + EngineConstants.VERSION_ENDPOINT;
       try (final Response response = engineContext.getEngineClient()
         .target(engineEndpoint).request(MediaType.APPLICATION_JSON).get()) {
         isConnected = response.getStatus() == Response.Status.OK.getStatusCode();

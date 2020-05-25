@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessInstanceConstants {
   public static String ACTIVE_STATE = "ACTIVE";
   public static String SUSPENDED_STATE = "SUSPENDED";

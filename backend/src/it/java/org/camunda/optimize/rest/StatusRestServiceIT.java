@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
-import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
+import org.camunda.optimize.service.util.configuration.EngineConstants;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -70,7 +70,7 @@ public class StatusRestServiceIT extends AbstractIT {
     esMockServer
       .when(
         request()
-          .withPath(".*" + EngineConstantsUtil.VERSION_ENDPOINT)
+          .withPath(".*" + EngineConstants.VERSION_ENDPOINT)
           .withMethod(GET),
         Times.once()
       )

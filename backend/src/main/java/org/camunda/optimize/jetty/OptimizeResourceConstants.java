@@ -6,7 +6,10 @@
 package org.camunda.optimize.jetty;
 
 import com.google.common.collect.ImmutableList;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class OptimizeResourceConstants {
 
   public static final String REST_API_PATH = "/api";

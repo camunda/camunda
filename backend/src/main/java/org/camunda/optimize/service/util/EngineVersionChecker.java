@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.EngineVersionDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
+import org.camunda.optimize.service.util.configuration.EngineConstants;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
@@ -41,7 +41,7 @@ public class EngineVersionChecker {
     Client client = engineContext.getEngineClient();
     Response response;
     try {
-      response = client.target(engineRestPath + EngineConstantsUtil.VERSION_ENDPOINT)
+      response = client.target(engineRestPath + EngineConstants.VERSION_ENDPOINT)
         .request()
         .get();
     } catch (Exception e) {

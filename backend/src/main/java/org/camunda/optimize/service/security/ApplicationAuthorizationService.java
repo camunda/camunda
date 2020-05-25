@@ -20,10 +20,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ACCESS_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.ACCESS_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_APPLICATION;
 
 @Component
 @Slf4j

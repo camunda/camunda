@@ -5,8 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ReportConstants {
 
   // report data structure constants

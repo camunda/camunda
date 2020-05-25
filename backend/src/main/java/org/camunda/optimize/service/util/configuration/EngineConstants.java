@@ -5,7 +5,11 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
-public class EngineConstantsUtil {
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class EngineConstants {
 
   public static final String MAX_RESULTS_TO_RETURN = "maxResults";
   public static final String INDEX_OF_FIRST_RESULT = "firstResult";

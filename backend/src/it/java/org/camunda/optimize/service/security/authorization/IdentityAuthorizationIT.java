@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_GROUP;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_GROUP;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class IdentityAuthorizationIT extends AbstractIT {

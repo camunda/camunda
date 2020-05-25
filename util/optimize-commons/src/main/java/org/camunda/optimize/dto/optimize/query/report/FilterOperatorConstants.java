@@ -6,9 +6,12 @@
 package org.camunda.optimize.dto.optimize.query.report;
 
 import com.google.common.collect.ImmutableSet;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FilterOperatorConstants {
 
   public static final String IN = "in";
