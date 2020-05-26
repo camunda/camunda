@@ -7,12 +7,14 @@
  */
 package io.zeebe.util.health;
 
+import static org.mockito.Mockito.when;
+
 import java.time.Duration;
+import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -65,7 +67,7 @@ public class DelayedHealthIndicatorTest {
     final var sutDelayedHealthIndicator =
         new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME);
 
-    Mockito.when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    when(mockHealthIndicator.health()).thenReturn(Health.down().build());
 
     // when
     sutDelayedHealthIndicator.checkHealth();
@@ -80,15 +82,17 @@ public class DelayedHealthIndicatorTest {
   public void
       shouldReportHealthStatusUpWhenBackendHealthIndicatorWasUpInThePastAndIsTemporarilyDown() {
     // given
+    final var testClock = new TestCLock();
     final var sutDelayedHealthIndicator =
-        new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME);
+        new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME, testClock);
     // backend health indicator was up in the past
-    Mockito.when(mockHealthIndicator.health()).thenReturn(Health.up().build());
+    when(mockHealthIndicator.health()).thenReturn(Health.up().build());
     sutDelayedHealthIndicator.checkHealth();
 
     // when
     // backend health indicator goes down
-    Mockito.when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    testClock.setTime(TEST_MAX_DOWNTIME.toMillis() - 1);
     sutDelayedHealthIndicator.checkHealth();
 
     final Health actualHealth = sutDelayedHealthIndicator.health();
@@ -104,21 +108,22 @@ public class DelayedHealthIndicatorTest {
       shouldReportHealthStatusDownWhenBackendHealthIndicatorWasUpInThePastAndIsDownForMoreThanMaxDowntime()
           throws InterruptedException {
     // given
+    final var testClock = new TestCLock();
     final var sutDelayedHealthIndicator =
-        new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME);
+        new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME, testClock);
     // backend health indicator was up in the past
-    Mockito.when(mockHealthIndicator.health()).thenReturn(Health.up().build());
+    when(mockHealthIndicator.health()).thenReturn(Health.up().build());
     sutDelayedHealthIndicator.checkHealth();
 
     // when
     // backend health indicator goes down
-    Mockito.when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    testClock.setTime(TEST_MAX_DOWNTIME.toMillis() - 1);
     sutDelayedHealthIndicator.checkHealth();
 
     final Health actualHealthImmediate = sutDelayedHealthIndicator.health();
 
-    // wait for more then the configured max downtime
-    Thread.sleep(50);
+    testClock.setTime(TEST_MAX_DOWNTIME.toMillis() + 1);
     sutDelayedHealthIndicator.checkHealth();
     final Health actualHealthAfterDelay = sutDelayedHealthIndicator.health();
 
@@ -137,25 +142,26 @@ public class DelayedHealthIndicatorTest {
       shouldReportHealthStatusUpWhenBackendHealthIndicatorGoesDownTemporarilyButComesUpBeforeTheMaxDowntimeExpired()
           throws InterruptedException {
     // given
+    final var testClock = new TestCLock();
     final var sutDelayedHealthIndicator =
-        new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME);
+        new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME, testClock);
     // backend health indicator was up in the past
-    Mockito.when(mockHealthIndicator.health()).thenReturn(Health.up().build());
+    when(mockHealthIndicator.health()).thenReturn(Health.up().build());
     sutDelayedHealthIndicator.checkHealth();
 
     // when
     // backend health indicator goes down
-    Mockito.when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    testClock.setTime(TEST_MAX_DOWNTIME.toMillis() - 5);
     sutDelayedHealthIndicator.checkHealth();
     final Health actualHealthImmediate = sutDelayedHealthIndicator.health();
 
     // backend health indicator is up again
-    Mockito.when(mockHealthIndicator.health()).thenReturn(Health.up().build());
+    when(mockHealthIndicator.health()).thenReturn(Health.up().build());
+    testClock.setTime(TEST_MAX_DOWNTIME.toMillis() - 1);
     sutDelayedHealthIndicator.checkHealth();
 
-    // wait for more then the configured max downtime
-    Thread.sleep(50);
-
+    testClock.setTime(TEST_MAX_DOWNTIME.toMillis() + 1);
     final Health actualHealthAfterDelay = sutDelayedHealthIndicator.health();
 
     // then
@@ -166,5 +172,18 @@ public class DelayedHealthIndicatorTest {
     // delayed health report is also up
     Assertions.assertThat(actualHealthAfterDelay).isNotNull();
     Assertions.assertThat(actualHealthAfterDelay.getStatus()).isEqualTo(Status.UP);
+  }
+
+  private static final class TestCLock implements Supplier<Long> {
+    private long time = 0;
+
+    public void setTime(final long time) {
+      this.time = time;
+    }
+
+    @Override
+    public Long get() {
+      return time;
+    }
   }
 }

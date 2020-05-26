@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Health.Builder;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -33,24 +34,33 @@ import org.springframework.scheduling.annotation.Scheduled;
 public class DelayedHealthIndicator implements HealthIndicator {
 
   private final HealthIndicator originalHealthIndicator;
-
   private final Duration maxDowntime;
+  private final Supplier<Long> clock;
 
   private Health lastHealthStatus;
   private Long lastTimeUp;
 
   private final Map<String, Object> staticDetails = new HashMap<>();
 
-  public DelayedHealthIndicator(
-      final HealthIndicator originalHealthIndicator, final Duration maxDowntime) {
+  /** Constructor for tests, mainly used to set a different clock */
+  protected DelayedHealthIndicator(
+      final HealthIndicator originalHealthIndicator,
+      final Duration maxDowntime,
+      Supplier<Long> clock) {
     if (requireNonNull(maxDowntime).toMillis() < 0) {
       throw new IllegalArgumentException("maxDonwtime must be >= 0");
     }
     this.originalHealthIndicator = requireNonNull(originalHealthIndicator);
     this.maxDowntime = maxDowntime;
+    this.clock = requireNonNull(clock);
 
     staticDetails.put("derivedFrom", originalHealthIndicator.getClass().getSimpleName());
     staticDetails.put("maxDowntime", maxDowntime);
+  }
+
+  public DelayedHealthIndicator(
+      final HealthIndicator originalHealthIndicator, final Duration maxDowntime) {
+    this(originalHealthIndicator, maxDowntime, () -> System.currentTimeMillis());
   }
 
   @Scheduled(fixedDelay = 5000)
@@ -58,14 +68,14 @@ public class DelayedHealthIndicator implements HealthIndicator {
     lastHealthStatus = originalHealthIndicator.health();
 
     if (lastHealthStatus.getStatus().equals(Status.UP)) {
-      lastTimeUp = System.currentTimeMillis();
+      lastTimeUp = clock.get();
     }
   }
 
   @Override
   public Health health() {
     final Builder responseBuilder;
-    final long now = System.currentTimeMillis();
+    final long now = clock.get();
 
     if (lastHealthStatus == null) { // was never checked
       responseBuilder = Health.unknown();
