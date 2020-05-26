@@ -11,8 +11,10 @@ import io.zeebe.engine.nwe.BpmnElementContainerProcessor;
 import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.nwe.behavior.BpmnBehaviors;
 import io.zeebe.engine.nwe.behavior.BpmnEventSubscriptionBehavior;
+import io.zeebe.engine.nwe.behavior.BpmnIncidentBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnStateBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnStateTransitionBehavior;
+import io.zeebe.engine.nwe.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
@@ -22,11 +24,100 @@ public final class SubProcessProcessor
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final BpmnVariableMappingBehavior variableMappingBehavior;
+  private final BpmnIncidentBehavior incidentBehavior;
 
   public SubProcessProcessor(final BpmnBehaviors bpmnBehaviors) {
     stateBehavior = bpmnBehaviors.stateBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
+    variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+    incidentBehavior = bpmnBehaviors.incidentBehavior();
+  }
+
+  @Override
+  public Class<ExecutableFlowElementContainer> getType() {
+    return ExecutableFlowElementContainer.class;
+  }
+
+  @Override
+  public void onActivating(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+
+    variableMappingBehavior
+        .applyInputMappings(context, element)
+        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+        .ifRightOrLeft(
+            ok -> stateTransitionBehavior.transitionToActivated(context),
+            failure -> incidentBehavior.createIncident(failure, context));
+  }
+
+  @Override
+  public void onActivated(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+
+    final var noneStartEvent = element.getNoneStartEvent();
+    if (noneStartEvent == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to activate the none start event of the sub-process but not found. [context: %s]",
+              context));
+    }
+
+    stateTransitionBehavior.activateChildInstance(context, noneStartEvent);
+  }
+
+  @Override
+  public void onCompleting(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+
+    variableMappingBehavior
+        .applyOutputMappings(context, element)
+        .ifRightOrLeft(
+            ok -> {
+              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              stateTransitionBehavior.transitionToCompleted(context);
+            },
+            failure -> incidentBehavior.createIncident(failure, context));
+  }
+
+  @Override
+  public void onCompleted(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+
+    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
+
+    stateBehavior.consumeToken(context);
+    stateBehavior.removeElementInstance(context);
+  }
+
+  @Override
+  public void onTerminating(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+
+    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+
+    stateTransitionBehavior.terminateChildInstances(context);
+  }
+
+  @Override
+  public void onTerminated(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+
+    eventSubscriptionBehavior.publishTriggeredBoundaryEvent(context);
+
+    incidentBehavior.resolveIncidents(context);
+
+    stateTransitionBehavior.onElementTerminated(element, context);
+
+    stateBehavior.consumeToken(context);
+  }
+
+  @Override
+  public void onEventOccurred(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+
+    eventSubscriptionBehavior.triggerBoundaryEvent(element, context);
   }
 
   @Override
@@ -35,8 +126,6 @@ public final class SubProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    // TODO (saig0): consume token before calling,
-    //  this can be done when the rest of this processor is implemented
     if (stateBehavior.isLastActiveExecutionPathInScope(childContext)) {
       stateTransitionBehavior.transitionToCompleting(flowScopeContext);
     }
@@ -56,37 +145,4 @@ public final class SubProcessProcessor
       eventSubscriptionBehavior.publishTriggeredEventSubProcess(flowScopeContext);
     }
   }
-
-  @Override
-  public Class<ExecutableFlowElementContainer> getType() {
-    return ExecutableFlowElementContainer.class;
-  }
-
-  @Override
-  public void onActivating(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {}
-
-  @Override
-  public void onActivated(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {}
-
-  @Override
-  public void onCompleting(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {}
-
-  @Override
-  public void onCompleted(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {}
-
-  @Override
-  public void onTerminating(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {}
-
-  @Override
-  public void onTerminated(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {}
-
-  @Override
-  public void onEventOccurred(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {}
 }
