@@ -41,6 +41,7 @@
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.16.1</version.assertj>
     <version.camunda>7.13.0</version.camunda>
+    <version.awaitility>4.0.3</version.awaitility>
     <version.commons-lang>3.10</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -214,6 +215,12 @@
         <groupId>io.rest-assured</groupId>
         <artifactId>rest-assured</artifactId>
         <version>${version.restassert}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${version.awaitility}</version>
       </dependency>
 
       <dependency>
