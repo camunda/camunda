@@ -40,7 +40,7 @@ it('invoke loadRawData on button Click', () => {
     filter: [
       {data: {flowNodeId: {operator: '>', unit: 'millis', value: 1250}}, type: 'flowNodeDuration'},
     ],
-    includedColumns: ['processInstanceId', 'startDate', 'endDate', 'duration'],
+    includedColumns: ['processInstanceId'],
     ...props.config,
   });
 });

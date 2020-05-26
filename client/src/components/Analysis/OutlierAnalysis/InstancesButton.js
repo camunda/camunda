@@ -24,7 +24,7 @@ export function InstancesButton({id, name, config, value, mightFail}) {
                 data: {[id]: {operator: '>', value, unit: 'millis'}},
               },
             ],
-            includedColumns: ['processInstanceId', 'startDate', 'endDate', 'duration'],
+            includedColumns: ['processInstanceId'],
           }),
           (data) => {
             const hiddenElement = document.createElement('a');
