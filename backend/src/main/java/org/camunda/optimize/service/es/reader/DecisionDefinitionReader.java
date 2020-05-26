@@ -42,7 +42,7 @@ public class DecisionDefinitionReader {
 
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(final boolean fullyImported,
                                                                     final boolean withXml) {
-    return (List<DecisionDefinitionOptimizeDto>) definitionReader.getDefinitions(
+    return definitionReader.getDefinitions(
       DefinitionType.DECISION,
       fullyImported,
       withXml

@@ -9,7 +9,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,10 +21,6 @@ public class ProcessDefinitionReader {
 
   private final DefinitionReader definitionReader;
 
-  public Optional<DefinitionWithTenantIdsDto> getProcessDefinition(final String processDefinitionKey) {
-    return definitionReader.getDefinition(DefinitionType.PROCESS, processDefinitionKey);
-  }
-
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionByKeyAndEngineOmitXml(final String processDefinitionKey,
                                                                                           final String engineAlias) {
     return definitionReader.getDefinitionByKeyAndEngineOmitXml(
@@ -37,11 +32,7 @@ public class ProcessDefinitionReader {
 
   public List<ProcessDefinitionOptimizeDto> getProcessDefinitions(final boolean fullyImported,
                                                                   final boolean withXml) {
-    return (List<ProcessDefinitionOptimizeDto>) definitionReader.getDefinitions(
-      DefinitionType.PROCESS,
-      fullyImported,
-      withXml
-    );
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, fullyImported, withXml);
   }
 
   public String getLatestVersionToKey(String key) {

@@ -77,12 +77,12 @@ public class ElasticsearchHelper {
     );
   }
 
-  public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
-                                                           final Class<T> itemClass,
-                                                           final Function<SearchHit, T> mappingFunction,
-                                                           final OptimizeElasticsearchClient esclient,
-                                                           final Integer scrollingTimeout,
-                                                           final Integer limit) {
+  private static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
+                                                            final Class<T> itemClass,
+                                                            final Function<SearchHit, T> mappingFunction,
+                                                            final OptimizeElasticsearchClient esclient,
+                                                            final Integer scrollingTimeout,
+                                                            final Integer limit) {
     final List<T> results = new ArrayList<>();
 
     SearchResponse currentScrollResp = initialScrollResponse;
@@ -194,7 +194,11 @@ public class ElasticsearchHelper {
     try {
       RolloverResponse rolloverResponse = esClient.rollover(rolloverRequest);
       if (rolloverResponse.isRolledOver()) {
-        log.info("Index with alias {} has been rolled over. New index name: {}", indexAliasName, rolloverResponse.getNewIndex());
+        log.info(
+          "Index with alias {} has been rolled over. New index name: {}",
+          indexAliasName,
+          rolloverResponse.getNewIndex()
+        );
       } else {
         log.debug("Index with alias {} has not been rolled over.", indexAliasName);
       }

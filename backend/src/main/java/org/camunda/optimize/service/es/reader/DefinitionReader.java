@@ -123,14 +123,14 @@ public class DefinitionReader {
     return getDefinitionWithTenantIdsDtos(QueryBuilders.matchAllQuery(), ALL_DEFINITION_INDEXES);
   }
 
-  public List<? extends DefinitionOptimizeDto> getDefinitions(final DefinitionType type,
-                                                              final boolean fullyImported,
-                                                              final boolean withXml) {
+  public <T extends DefinitionOptimizeDto> List<T> getDefinitions(final DefinitionType type,
+                                                                  final boolean fullyImported,
+                                                                  final boolean withXml) {
     return fetchDefinitions(type, fullyImported, withXml, matchAllQuery());
   }
 
-  public List<? extends DefinitionOptimizeDto> getFullyImportedDefinitions(final DefinitionType type,
-                                                                           final boolean withXml) {
+  public <T extends DefinitionOptimizeDto> List<T> getFullyImportedDefinitions(final DefinitionType type,
+                                                                               final boolean withXml) {
     return getDefinitions(type, true, withXml);
   }
 
@@ -163,7 +163,7 @@ public class DefinitionReader {
     return definition;
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getFullyImportedDefinition(
+  private <T extends DefinitionOptimizeDto> Optional<T> getFullyImportedDefinition(
     final DefinitionType type,
     final String definitionKey,
     final String definitionVersion,
@@ -209,17 +209,17 @@ public class DefinitionReader {
 
     if (searchResponse.getHits().getTotalHits().value == 0L) {
       log.debug(
-        "Could not find [%s] definition with key [{}], version [{}] and tenantId [{}]",
-        type,
+        "Could not find [%s] definition with type[{}], key [{}], version [{}] and tenantId [{}]",
         definitionKey,
+        type,
         validVersion,
         tenantId
       );
       return Optional.empty();
     }
 
-    final Class typeClass = resolveDefinitionClassFromType(type);
-    final T definitionOptimizeDto = (T) ElasticsearchHelper.mapHits(
+    final Class<T> typeClass = resolveDefinitionClassFromType(type);
+    final T definitionOptimizeDto = ElasticsearchHelper.mapHits(
       searchResponse.getHits(),
       1,
       typeClass,
@@ -227,7 +227,7 @@ public class DefinitionReader {
     ).stream()
       .findFirst()
       .orElse(null);
-    return Optional.of(definitionOptimizeDto);
+    return Optional.ofNullable(definitionOptimizeDto);
   }
 
   public Map<String, TenantIdWithDefinitionsDto> getDefinitionsGroupedByTenant() {
@@ -353,7 +353,7 @@ public class DefinitionReader {
     );
 
     return keyAndTypeAggBuckets.stream()
-      .map(keyAndTypeAgg -> createDefinitionVersionsWithTenantsDtosForKeyAndTypeAggregation(keyAndTypeAgg))
+      .map(this::createDefinitionVersionsWithTenantsDtosForKeyAndTypeAggregation)
       .collect(Collectors.toList());
   }
 
@@ -391,9 +391,11 @@ public class DefinitionReader {
     if (searchResponse.getHits().getTotalHits().value == 0L) {
       return Optional.empty();
     }
-    return (Optional<T>) Optional.ofNullable(
-      createMappingFunctionForDefinitionType(resolveDefinitionClassFromType(type))
-        .apply(searchResponse.getHits().getAt(0)));
+
+    final SearchHit firstHit = searchResponse.getHits().getAt(0);
+    final Function<SearchHit, T> mappingFunctionForDefinitionType =
+      createMappingFunctionForDefinitionType(resolveDefinitionClassFromType(type));
+    return Optional.ofNullable(mappingFunctionForDefinitionType.apply(firstHit));
   }
 
   public String getLatestVersionToKey(final DefinitionType type, final String key) {
@@ -433,10 +435,10 @@ public class DefinitionReader {
     throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
   }
 
-  private List<? extends DefinitionOptimizeDto> fetchDefinitions(final DefinitionType type,
-                                                                 final boolean fullyImported,
-                                                                 final boolean withXml,
-                                                                 final QueryBuilder query) {
+  private <T extends DefinitionOptimizeDto> List<T> fetchDefinitions(final DefinitionType type,
+                                                                     final boolean fullyImported,
+                                                                     final boolean withXml,
+                                                                     final QueryBuilder query) {
     final String xmlField = resolveXmlFieldFromType(type);
     final BoolQueryBuilder rootQuery = boolQuery().must(
       fullyImported ? existsQuery(xmlField) : matchAllQuery()
@@ -461,7 +463,7 @@ public class DefinitionReader {
       throw new OptimizeRuntimeException(errorMsg, e);
     }
 
-    final Class typeClass = resolveDefinitionClassFromType(type);
+    final Class<T> typeClass = resolveDefinitionClassFromType(type);
     return ElasticsearchHelper.retrieveAllScrollResults(
       scrollResp,
       typeClass,
@@ -722,6 +724,7 @@ public class DefinitionReader {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private <T extends DefinitionOptimizeDto> Class<T> resolveDefinitionClassFromType(final DefinitionType type) {
     switch (type) {
       case PROCESS:

@@ -90,7 +90,7 @@ public class DefinitionService {
                                                                                       final String userId,
                                                                                       final boolean withXml) {
     log.debug("Fetching definitions of type " + type);
-    List<T> definitionsResult = (List<T>) definitionReader.getFullyImportedDefinitions(type, withXml);
+    List<T> definitionsResult = definitionReader.getFullyImportedDefinitions(type, withXml);
 
     if (userId != null) {
       definitionsResult = filterAuthorizedDefinitions(userId, definitionsResult);
