@@ -8,7 +8,7 @@
 
 import * as React from 'react';
 
-import * as Styled from './styled';
+import {Style} from './styled';
 import {USING_KEYBOARD_CLASS_NAME} from './constans';
 
 const TAB_KEY_CODE = 9;
@@ -34,7 +34,7 @@ const GlobalStyle: React.FC = () => {
     };
   }, []);
 
-  return <Styled.GlobalStyle />;
+  return <Style />;
 };
 
 export {GlobalStyle};

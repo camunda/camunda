@@ -5,19 +5,25 @@
  */
 
 import * as React from 'react';
-import * as Styled from './styled';
+import {
+  HeaderContent,
+  BrandInfo,
+  Brand,
+  LogoIcon,
+  UserControls,
+} from './styled';
 
 const Header: React.FC = () => {
   return (
-    <Styled.HeaderContent>
-      <Styled.BrandInfo>
-        <Styled.Brand to="/">
-          <Styled.LogoIcon data-testid="logo" />
+    <HeaderContent>
+      <BrandInfo>
+        <Brand to="/">
+          <LogoIcon data-testid="logo" />
           <div>Zeebe Tasklist</div>
-        </Styled.Brand>
-      </Styled.BrandInfo>
-      <Styled.UserControls />
-    </Styled.HeaderContent>
+        </Brand>
+      </BrandInfo>
+      <UserControls />
+    </HeaderContent>
   );
 };
 

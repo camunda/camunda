@@ -6,8 +6,7 @@
 
 import * as React from 'react';
 
-import {Overlay} from './Overlay';
-import {Spinner} from './Spinner';
+import {Overlay, Spinner} from './styled';
 
 const LoadingOverlay: React.FC = () => (
   <Overlay>

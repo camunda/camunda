@@ -10,15 +10,17 @@ import {Form, Field} from 'react-final-form';
 
 import {login} from 'modules/stores/login';
 import {Pages} from 'modules/constants/pages';
-import {Container} from './Container';
-import {Input} from './Input';
-import {FormContainer} from './FormContainer';
-import {CopyrightNotice} from './CopyrightNotice';
-import {Logo} from './Logo';
-import {Title} from './Title';
-import {Button} from './Button';
 import {LoadingOverlay} from './LoadingOverlay';
-import {Error} from './Error';
+import {
+  Container,
+  Input,
+  FormContainer,
+  CopyrightNotice,
+  Logo,
+  Title,
+  Button,
+  Error,
+} from './styled';
 
 interface FormValues {
   username: string;

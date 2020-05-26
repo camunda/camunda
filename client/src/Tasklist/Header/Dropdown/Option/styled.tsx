@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 
-export const OptionButton = styled.button`
+const OptionButton = styled.button`
   /* Display & Box Model */
   width: 100%;
   padding: 0 10px;
@@ -72,7 +72,7 @@ const topPointer = css`
   }
 `;
 
-export const Li = styled.li`
+const Li = styled.li`
   ${topPointer}
 
   /* Add Border between options */
@@ -93,3 +93,5 @@ export const Li = styled.li`
     border-radius: 2px 2px 0 0;
   }
 `;
+
+export {OptionButton, Li};

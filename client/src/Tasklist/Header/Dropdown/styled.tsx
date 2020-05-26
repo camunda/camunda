@@ -6,14 +6,14 @@
 
 import styled from 'styled-components';
 
-export const Dropdown = styled.div`
+const Container = styled.div`
   position: relative;
 `;
 interface ButtonProps {
   onKeyDown: (e: React.KeyboardEvent<Element>) => void;
 }
 
-export const Button = styled.button<ButtonProps>`
+const Button = styled.button<ButtonProps>`
   display: flex;
   align-items: center;
   padding-right: 0px;
@@ -24,11 +24,11 @@ export const Button = styled.button<ButtonProps>`
   font-weight: 600;
 `;
 
-export const LabelWrapper = styled.div`
+const LabelWrapper = styled.div`
   margin-right: 8px;
 `;
 
-export const Menu = styled.ul`
+const Menu = styled.ul`
   /* Positioning */
   position: absolute;
   right: 0;
@@ -45,3 +45,5 @@ export const Menu = styled.ul`
   background-color: ${({theme}) => theme.colors.ui02};
   color: ${({theme}) => theme.colors.ui06};
 `;
+
+export {Container, Button, LabelWrapper, Menu};

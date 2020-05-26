@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import * as Styled from './styled';
+import {OptionButton, Li} from './styled';
 
 interface Props {
   children: string;
@@ -15,9 +15,9 @@ interface Props {
 
 const Option: React.FC<Props> = ({children, onClick, onKeyDown}) => {
   return (
-    <Styled.Li onClick={onClick} onKeyDown={onKeyDown}>
-      <Styled.OptionButton>{children}</Styled.OptionButton>
-    </Styled.Li>
+    <Li onClick={onClick} onKeyDown={onKeyDown}>
+      <OptionButton>{children}</OptionButton>
+    </Li>
   );
 };
 

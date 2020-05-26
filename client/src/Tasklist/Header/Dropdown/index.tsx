@@ -8,7 +8,7 @@ import React, {useState, useEffect, useRef} from 'react';
 import {ReactComponent as Icon} from 'modules/icons/down.svg';
 import {Option} from './Option';
 import {login} from 'modules/stores/login';
-import * as Styled from './styled';
+import {Button, LabelWrapper, Menu, Container} from './styled';
 
 const Dropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,17 +31,14 @@ const Dropdown: React.FC = () => {
   };
 
   return (
-    <Styled.Dropdown ref={dropdownRef}>
-      <Styled.Button
-        onKeyDown={handleKeyPress}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <Styled.LabelWrapper>Demo user</Styled.LabelWrapper>
+    <Container ref={dropdownRef}>
+      <Button onKeyDown={handleKeyPress} onClick={() => setIsOpen(!isOpen)}>
+        <LabelWrapper>Demo user</LabelWrapper>
         <Icon data-testid="dropdown-icon" />
-      </Styled.Button>
+      </Button>
 
       {isOpen && (
-        <Styled.Menu>
+        <Menu>
           <Option
             onClick={() => {
               login.handleLogout();
@@ -51,9 +48,9 @@ const Dropdown: React.FC = () => {
           >
             Logout
           </Option>
-        </Styled.Menu>
+        </Menu>
       )}
-    </Styled.Dropdown>
+    </Container>
   );
 };
 

@@ -16,7 +16,7 @@ import IBMPlexSansSemiBold from '../fonts/IBMPlexSans-SemiBold.woff2';
 import IBMPlexSansMono from '../fonts/IBMPlexMono-Regular.woff2';
 import {USING_KEYBOARD_CLASS_NAME} from './constans';
 
-const GlobalStyle = createGlobalStyle`
+const Style = createGlobalStyle`
   @font-face {
     font-family: 'IBMPlexSans';
     src: local('IBMPlexSans-Bold'), url('${IBMPlexSansBold}');
@@ -98,4 +98,4 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-export {GlobalStyle};
+export {Style};
