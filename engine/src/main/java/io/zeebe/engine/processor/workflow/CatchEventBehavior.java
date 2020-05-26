@@ -321,6 +321,7 @@ public final class CatchEventBehavior {
         messageNameOrFailure.ifRightOrLeft(
             messageName -> extractedMessageNames.put(event.getId(), wrapString(messageName)),
             failure -> {
+              // todo(#4323): deal with this exceptional case without throwing an exception
               throw new MessageNameException(failure, event.getId());
             });
       }

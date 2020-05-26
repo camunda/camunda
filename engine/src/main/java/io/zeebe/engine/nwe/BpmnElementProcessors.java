@@ -12,6 +12,7 @@ import io.zeebe.engine.nwe.container.MultiInstanceBodyProcessor;
 import io.zeebe.engine.nwe.container.ProcessProcessor;
 import io.zeebe.engine.nwe.container.SubProcessProcessor;
 import io.zeebe.engine.nwe.event.EndEventProcessor;
+import io.zeebe.engine.nwe.event.IntermediateCatchEventProcessor;
 import io.zeebe.engine.nwe.event.StartEventProcessor;
 import io.zeebe.engine.nwe.gateway.ExclusiveGatewayProcessor;
 import io.zeebe.engine.nwe.sequenceflow.SequenceFlowProcessor;
@@ -38,6 +39,9 @@ public final class BpmnElementProcessors {
         BpmnElementType.MULTI_INSTANCE_BODY, new MultiInstanceBodyProcessor(bpmnBehaviors));
     // events
     processors.put(BpmnElementType.START_EVENT, new StartEventProcessor(bpmnBehaviors));
+    processors.put(
+        BpmnElementType.INTERMEDIATE_CATCH_EVENT,
+        new IntermediateCatchEventProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.END_EVENT, new EndEventProcessor(bpmnBehaviors));
     // others
     processors.put(BpmnElementType.SEQUENCE_FLOW, new SequenceFlowProcessor(bpmnBehaviors));
