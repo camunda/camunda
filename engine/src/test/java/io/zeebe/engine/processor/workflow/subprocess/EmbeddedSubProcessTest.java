@@ -19,6 +19,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.MsgPackUtil;
@@ -357,5 +358,59 @@ public final class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "event"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "event"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "event"));
+  }
+
+  @Test
+  public void shouldTerminateSubProcessWithParallelFlow() {
+    // given
+    final var workflow =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .subProcess(
+                "sub-process",
+                subProcess ->
+                    subProcess
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .parallelGateway("fork")
+                        .serviceTask("task-1", b -> b.zeebeTaskType("task-1"))
+                        .sequenceFlowId("join-1")
+                        .parallelGateway("join")
+                        .moveToNode("fork")
+                        .serviceTask("task-2", b -> b.zeebeTaskType("task-2"))
+                        .sequenceFlowId("join-2")
+                        .connectTo("join")
+                        .endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+
+    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-1").complete();
+
+    RecordingExporter.workflowInstanceRecords()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withElementId("join-1")
+        .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+        .await();
+
+    // when
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSequence(
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
   }
 }

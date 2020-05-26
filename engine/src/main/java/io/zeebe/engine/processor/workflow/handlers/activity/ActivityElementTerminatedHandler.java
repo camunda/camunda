@@ -12,6 +12,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableAct
 import io.zeebe.engine.processor.workflow.handlers.IncidentResolver;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatedHandler;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 /**
  * Performs usual ElementTerminated logic and publishes any deferred record. At the moment, it will
@@ -29,7 +30,9 @@ public class ActivityElementTerminatedHandler<T extends ExecutableActivity>
 
   @Override
   protected boolean handleState(final BpmnStepContext<T> context) {
-    publishDeferredRecords(context);
+    publishDeferredRecords(
+        context,
+        record -> record.getValue().getBpmnElementType() == BpmnElementType.BOUNDARY_EVENT);
     return super.handleState(context);
   }
 }
