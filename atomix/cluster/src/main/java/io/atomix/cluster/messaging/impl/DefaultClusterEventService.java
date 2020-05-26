@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
@@ -189,6 +190,10 @@ public class DefaultClusterEventService
           Executors.newSingleThreadScheduledExecutor(
               namedThreads("atomix-cluster-event-executor-%d", LOGGER));
       membershipService.addListener(this);
+      // Listener doesn't receive notification about the Members added before the listener is added.
+      membershipService
+          .getMembers()
+          .forEach(m -> event(new ClusterMembershipEvent(Type.MEMBER_ADDED, m)));
       LOGGER.info("Started");
     }
     return CompletableFuture.completedFuture(this);

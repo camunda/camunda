@@ -9,7 +9,7 @@
 
   <Loggers>
     <Logger name="io.zeebe" level="debug"/>
-    <Logger name="io.atomix" level="debug"/>
+    <Logger name="io.atomix" level="trace"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>

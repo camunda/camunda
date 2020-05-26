@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.After;
 import org.junit.Test;
 
 /** Cluster event service test. */
@@ -116,7 +117,8 @@ public class DefaultClusterEventServiceTest {
     return clusterEventingService1.start().join();
   }
 
-  private void tearDown() {
+  @After
+  public void tearDown() {
     CompletableFuture.allOf(
             managedMemberShipServices.values().stream()
                 .map(Managed::stop)
@@ -191,8 +193,6 @@ public class DefaultClusterEventServiceTest {
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
     assertEquals(3, events.size());
-
-    tearDown();
   }
 
   @Test
@@ -242,8 +242,6 @@ public class DefaultClusterEventServiceTest {
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
     assertEquals(2, events.size());
-
-    tearDown();
   }
 
   @Test
@@ -290,8 +288,6 @@ public class DefaultClusterEventServiceTest {
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
     assertEquals(2, events.size());
     assertThat(events).containsExactlyInAnyOrder(1, 2);
-
-    tearDown();
   }
 
   @Test
@@ -331,8 +327,6 @@ public class DefaultClusterEventServiceTest {
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
     assertEquals(1, events.size());
-
-    tearDown();
   }
 
   @Test
@@ -374,8 +368,6 @@ public class DefaultClusterEventServiceTest {
 
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
     assertEquals(1, events.size());
-
-    tearDown();
   }
 
   @Test
@@ -405,7 +397,5 @@ public class DefaultClusterEventServiceTest {
     eventService1.broadcast("test", "bar");
     awaitCompletion.await(10, TimeUnit.SECONDS);
     assertEquals("bar", received.get());
-
-    tearDown();
   }
 }
