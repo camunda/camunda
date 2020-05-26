@@ -39,6 +39,18 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
   }
 
   public void addStartEvent(final ExecutableStartEvent startEvent) {
-    this.startEvents.add(startEvent);
+    startEvents.add(startEvent);
+  }
+
+  public boolean hasNoneStartEvent() {
+    return startEvents.stream().anyMatch(ExecutableCatchEventElement::isNone);
+  }
+
+  public boolean hasMessageStartEvent() {
+    return startEvents.stream().anyMatch(ExecutableCatchEventElement::isMessage);
+  }
+
+  public boolean hasTimerStartEvent() {
+    return startEvents.stream().anyMatch(ExecutableCatchEventElement::isTimer);
   }
 }

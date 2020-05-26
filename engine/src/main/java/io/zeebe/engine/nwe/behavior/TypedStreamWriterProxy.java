@@ -15,7 +15,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
 
-public final class TypesStreamWriterProxy implements TypedStreamWriter {
+public final class TypedStreamWriterProxy implements TypedStreamWriter {
 
   private TypedStreamWriter writer;
 

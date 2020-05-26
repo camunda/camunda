@@ -32,4 +32,8 @@ public interface BpmnBehaviors {
   BpmnDeferredRecordsBehavior deferredRecordsBehavior();
 
   WorkflowInstanceStateTransitionGuard stateTransitionGuard();
+
+  BpmnWorkflowResultSenderBehavior workflowResultSenderBehavior();
+
+  BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior();
 }

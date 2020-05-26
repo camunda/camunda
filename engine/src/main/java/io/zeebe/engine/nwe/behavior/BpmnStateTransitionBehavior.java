@@ -10,6 +10,7 @@ package io.zeebe.engine.nwe.behavior;
 import io.zeebe.engine.metrics.WorkflowEngineMetrics;
 import io.zeebe.engine.nwe.BpmnElementContainerProcessor;
 import io.zeebe.engine.nwe.BpmnElementContext;
+import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.nwe.WorkflowInstanceStateTransitionGuard;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.TypedStreamWriter;
@@ -50,10 +51,6 @@ public final class BpmnStateTransitionBehavior {
   }
 
   public void transitionToActivated(final BpmnElementContext context) {
-    if (!WorkflowInstanceLifecycle.canTransition(
-        context.getIntent(), WorkflowInstanceIntent.ELEMENT_ACTIVATED)) {
-      throw new IllegalStateTransitionException(WorkflowInstanceIntent.ELEMENT_ACTIVATED, context);
-    }
 
     transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
@@ -62,21 +59,14 @@ public final class BpmnStateTransitionBehavior {
   }
 
   public void transitionToCompleting(final BpmnElementContext context) {
-    if (!WorkflowInstanceLifecycle.canTransition(
-        context.getIntent(), WorkflowInstanceIntent.ELEMENT_COMPLETING)) {
-      throw new IllegalStateTransitionException(WorkflowInstanceIntent.ELEMENT_COMPLETING, context);
-    }
 
     transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
+
     stateTransitionGuard.registerStateTransition(
         context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
   }
 
   public void transitionToCompleted(final BpmnElementContext context) {
-    if (!WorkflowInstanceLifecycle.canTransition(
-        context.getIntent(), WorkflowInstanceIntent.ELEMENT_COMPLETED)) {
-      throw new IllegalStateTransitionException(WorkflowInstanceIntent.ELEMENT_COMPLETED, context);
-    }
 
     transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
@@ -85,22 +75,14 @@ public final class BpmnStateTransitionBehavior {
   }
 
   public void transitionToTerminating(final BpmnElementContext context) {
-    if (!WorkflowInstanceLifecycle.canTransition(
-        context.getIntent(), WorkflowInstanceIntent.ELEMENT_TERMINATING)) {
-      throw new IllegalStateTransitionException(
-          WorkflowInstanceIntent.ELEMENT_TERMINATING, context);
-    }
 
     transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
+
     stateTransitionGuard.registerStateTransition(
         context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
   }
 
   public void transitionToTerminated(final BpmnElementContext context) {
-    if (!WorkflowInstanceLifecycle.canTransition(
-        context.getIntent(), WorkflowInstanceIntent.ELEMENT_TERMINATED)) {
-      throw new IllegalStateTransitionException(WorkflowInstanceIntent.ELEMENT_TERMINATED, context);
-    }
 
     transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
@@ -109,18 +91,30 @@ public final class BpmnStateTransitionBehavior {
     metrics.elementInstanceTerminated(context.getBpmnElementType());
   }
 
-  private void transitionTo(final BpmnElementContext context, final WorkflowInstanceIntent intent) {
+  private void transitionTo(
+      final BpmnElementContext context, final WorkflowInstanceIntent transition) {
+
+    verifyTransition(context, transition);
+
     streamWriter.appendFollowUpEvent(
-        context.getElementInstanceKey(), intent, context.getRecordValue());
+        context.getElementInstanceKey(), transition, context.getRecordValue());
+  }
+
+  private void verifyTransition(
+      final BpmnElementContext context, final WorkflowInstanceIntent transition) {
+
+    if (!WorkflowInstanceLifecycle.canTransition(context.getIntent(), transition)) {
+      throw new BpmnProcessingException(
+          context,
+          String.format(
+              "Expected to take transition to '%s' but element instance is in state '%s'.",
+              transition, context.getIntent()));
+    }
   }
 
   public void takeSequenceFlow(
       final BpmnElementContext context, final ExecutableSequenceFlow sequenceFlow) {
-    if (!WorkflowInstanceLifecycle.canTransition(
-        context.getIntent(), WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)) {
-      throw new IllegalStateTransitionException(
-          WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, context);
-    }
+    verifyTransition(context, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
     final var record =
         context
@@ -240,16 +234,5 @@ public final class BpmnStateTransitionBehavior {
     final var flowScopeContext = stateBehavior.getFlowScopeContext(childContext);
 
     flowScopeProcessor.onChildTerminated(flowScope, flowScopeContext, childContext);
-  }
-
-  private static final class IllegalStateTransitionException extends IllegalStateException {
-
-    private static final String MESSAGE =
-        "Expected to take transition to '%s' but element instance is in state '%s'. [context: %s]";
-
-    private IllegalStateTransitionException(
-        final WorkflowInstanceIntent transition, final BpmnElementContext context) {
-      super(String.format(MESSAGE, transition, context.getIntent(), context));
-    }
   }
 }

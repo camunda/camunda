@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 public final class BpmnStepContext<T extends ExecutableFlowElement> {
 
   private final IncidentRecord incidentCommand = new IncidentRecord();
-  private final SideEffectQueue sideEffect = new SideEffectQueue();
+  private SideEffectQueue sideEffect = new SideEffectQueue();
 
   private final EventOutput eventOutput;
   private final WorkflowState stateDb;
@@ -111,6 +111,10 @@ public final class BpmnStepContext<T extends ExecutableFlowElement> {
 
   public SideEffectQueue getSideEffect() {
     return sideEffect;
+  }
+
+  public void setSideEffect(final SideEffectQueue sideEffect) {
+    this.sideEffect = sideEffect;
   }
 
   public void raiseIncident(final ErrorType errorType, final String errorMessage) {

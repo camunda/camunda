@@ -21,9 +21,6 @@ import io.zeebe.engine.processor.workflow.handlers.callactivity.CallActivityActi
 import io.zeebe.engine.processor.workflow.handlers.callactivity.CallActivityTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ContainerElementActivatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ContainerElementTerminatingHandler;
-import io.zeebe.engine.processor.workflow.handlers.container.ProcessCompletedHandler;
-import io.zeebe.engine.processor.workflow.handlers.container.ProcessTerminatedHandler;
-import io.zeebe.engine.processor.workflow.handlers.container.WorkflowResultSender;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandler;
@@ -38,11 +35,9 @@ import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElem
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.FlowOutElementCompletedHandler;
-import io.zeebe.engine.processor.workflow.message.BufferedMessageToStartEventCorrelator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 
 public final class BpmnStepHandlers {
@@ -55,11 +50,6 @@ public final class BpmnStepHandlers {
       final CatchEventBehavior catchEventBehavior) {
     final IncidentResolver incidentResolver = new IncidentResolver(state.getIncidentState());
     final CatchEventSubscriber catchEventSubscriber = new CatchEventSubscriber(catchEventBehavior);
-    final BufferedMessageToStartEventCorrelator messageStartEventCorrelator =
-        new BufferedMessageToStartEventCorrelator(
-            state.getKeyGenerator(),
-            state.getMessageState(),
-            state.getWorkflowState().getEventScopeInstanceState());
 
     stepHandlers.put(
         BpmnStep.ELEMENT_ACTIVATING, new ElementActivatingHandler<>(expressionProcessor));
@@ -93,13 +83,6 @@ public final class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.CONTAINER_ELEMENT_TERMINATING,
         new ContainerElementTerminatingHandler<>(catchEventSubscriber));
-    stepHandlers.put(
-        BpmnStep.PROCESS_COMPLETED,
-        new ProcessCompletedHandler(
-            List.of(new WorkflowResultSender(), messageStartEventCorrelator)));
-    stepHandlers.put(
-        BpmnStep.PROCESS_TERMINATED,
-        new ProcessTerminatedHandler(incidentResolver, messageStartEventCorrelator));
 
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATING,

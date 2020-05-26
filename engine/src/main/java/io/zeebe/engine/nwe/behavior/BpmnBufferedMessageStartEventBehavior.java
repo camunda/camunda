@@ -5,42 +5,43 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processor.workflow.message;
+package io.zeebe.engine.nwe.behavior;
 
-import io.zeebe.engine.processor.KeyGenerator;
-import io.zeebe.engine.processor.workflow.BpmnStepContext;
+import io.zeebe.engine.nwe.BpmnElementContext;
+import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.EventHandle;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.processor.workflow.handlers.container.WorkflowPostProcessor;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.instance.EventScopeInstanceState;
+import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.message.Message;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public final class BufferedMessageToStartEventCorrelator implements WorkflowPostProcessor {
+public final class BpmnBufferedMessageStartEventBehavior {
 
   private final MessageState messageState;
+  private final WorkflowState workflowState;
+  private final TypedStreamWriter streamWriter;
+
   private final EventHandle eventHandle;
 
-  private final Correlation messageCorrelation = new Correlation();
+  public BpmnBufferedMessageStartEventBehavior(
+      final ZeebeState zeebeState, final TypedStreamWriter streamWriter) {
+    messageState = zeebeState.getMessageState();
+    workflowState = zeebeState.getWorkflowState();
+    this.streamWriter = streamWriter;
 
-  public BufferedMessageToStartEventCorrelator(
-      final KeyGenerator keyGenerator,
-      final MessageState messageState,
-      final EventScopeInstanceState eventScopeInstanceState) {
-    this.messageState = messageState;
-
-    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
+    eventHandle =
+        new EventHandle(zeebeState.getKeyGenerator(), workflowState.getEventScopeInstanceState());
   }
 
-  @Override
-  public void accept(final BpmnStepContext<ExecutableFlowElementContainer> context) {
+  public void correlateMessage(final BpmnElementContext context) {
 
-    final var workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
+    final var workflowInstanceKey = context.getWorkflowInstanceKey();
     final var correlationKey = messageState.getWorkflowInstanceCorrelationKey(workflowInstanceKey);
 
     if (correlationKey != null) {
@@ -55,31 +56,28 @@ public final class BufferedMessageToStartEventCorrelator implements WorkflowPost
   }
 
   private void correlateNextBufferedMessage(
-      final DirectBuffer correlationKey,
-      final BpmnStepContext<ExecutableFlowElementContainer> context) {
+      final DirectBuffer correlationKey, final BpmnElementContext context) {
 
-    final var bpmnProcessId = context.getValue().getBpmnProcessIdBuffer();
-    final var workflow = context.getStateDb().getLatestWorkflowVersionByProcessId(bpmnProcessId);
+    final var bpmnProcessId = context.getBpmnProcessId();
+    final var workflow = workflowState.getLatestWorkflowVersionByProcessId(bpmnProcessId);
 
-    final var messageCorrelation = findNextMessageToCorrelate(workflow, correlationKey);
-
-    if (messageCorrelation == null) {
-      // no buffered message to correlate
-      // - release the workflow-correlation-key lock
-      messageState.removeActiveWorkflowInstance(bpmnProcessId, correlationKey);
-
-    } else {
-      final var message = messageState.getMessage(messageCorrelation.messageKey);
-
-      correlateMessage(workflow, messageCorrelation.elementId, message, context);
-    }
+    findNextMessageToCorrelate(workflow, correlationKey)
+        .ifPresentOrElse(
+            messageCorrelation -> {
+              final var message = messageState.getMessage(messageCorrelation.messageKey);
+              correlateMessage(workflow, messageCorrelation.elementId, message);
+            },
+            () -> {
+              // no buffered message to correlate
+              // - release the workflow-correlation-key lock
+              messageState.removeActiveWorkflowInstance(bpmnProcessId, correlationKey);
+            });
   }
 
-  private Correlation findNextMessageToCorrelate(
+  private Optional<Correlation> findNextMessageToCorrelate(
       final DeployedWorkflow workflow, final DirectBuffer correlationKey) {
 
-    messageCorrelation.messageKey = Long.MAX_VALUE;
-    messageCorrelation.elementId = null;
+    final var messageCorrelation = new Correlation();
 
     for (final ExecutableStartEvent startEvent : workflow.getWorkflow().getStartEvents()) {
       if (startEvent.isMessage()) {
@@ -111,21 +109,19 @@ public final class BufferedMessageToStartEventCorrelator implements WorkflowPost
       }
     }
 
-    return messageCorrelation.elementId != null ? messageCorrelation : null;
+    if (messageCorrelation.elementId != null) {
+      return Optional.of(messageCorrelation);
+    } else {
+      return Optional.empty();
+    }
   }
 
   private void correlateMessage(
-      final DeployedWorkflow workflow,
-      final DirectBuffer elementId,
-      final Message message,
-      final BpmnStepContext<ExecutableFlowElementContainer> context) {
+      final DeployedWorkflow workflow, final DirectBuffer elementId, final Message message) {
 
     final var workflowInstanceKey =
         eventHandle.triggerStartEvent(
-            context.getOutput().getStreamWriter(),
-            workflow.getKey(),
-            elementId,
-            message.getVariables());
+            streamWriter, workflow.getKey(), elementId, message.getVariables());
 
     if (workflowInstanceKey > 0) {
       // mark the message as correlated
@@ -136,7 +132,7 @@ public final class BufferedMessageToStartEventCorrelator implements WorkflowPost
   }
 
   private static class Correlation {
-    private long messageKey;
-    private DirectBuffer elementId;
+    private long messageKey = Long.MAX_VALUE;
+    private DirectBuffer elementId = null;
   }
 }
