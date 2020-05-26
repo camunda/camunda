@@ -8,6 +8,7 @@
 package io.zeebe.engine.processor.workflow;
 
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.el.Expression;
 import io.zeebe.engine.processor.Failure;
@@ -32,11 +33,9 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public final class CatchEventBehavior {
@@ -234,11 +233,11 @@ public final class CatchEventBehavior {
         correlationKeyExpression, context);
   }
 
-  private Optional<DirectBuffer> extractMessageName(
-      final ExecutableMessage message, final BpmnStepContext context) {
+  private Either<Failure, String> extractMessageName(
+      final ExecutableMessage message, final long scopeKey) {
 
     final Expression messageNameExpression = message.getMessageNameExpression();
-    return expressionProcessor.evaluateStringExpression(messageNameExpression, context);
+    return expressionProcessor.evaluateStringExpression(messageNameExpression, scopeKey);
   }
 
   private boolean sendCloseMessageSubscriptionCommand(
@@ -311,25 +310,20 @@ public final class CatchEventBehavior {
   }
 
   private Map<DirectBuffer, DirectBuffer> extractMessageNames(
-      final List<ExecutableCatchEvent> events, final BpmnStepContext context) {
+      final List<ExecutableCatchEvent> events, final BpmnStepContext<?> context) {
     final Map<DirectBuffer, DirectBuffer> extractedMessageNames = new HashMap<>();
 
-    final List<DirectBuffer> eventIdsWithNameEvaluationFailures = new ArrayList<>();
-
+    final var scopeKey = context.getKey();
     for (final ExecutableCatchEvent event : events) {
       if (event.isMessage()) {
-        final Optional<DirectBuffer> messageName = extractMessageName(event.getMessage(), context);
-
-        if (messageName.isPresent()) {
-          extractedMessageNames.put(event.getId(), cloneBuffer(messageName.get()));
-        } else {
-          eventIdsWithNameEvaluationFailures.add(event.getId());
-        }
+        final Either<Failure, String> messageNameOrFailure =
+            extractMessageName(event.getMessage(), scopeKey);
+        messageNameOrFailure.ifRightOrLeft(
+            messageName -> extractedMessageNames.put(event.getId(), wrapString(messageName)),
+            failure -> {
+              throw new MessageNameException(failure, event.getId());
+            });
       }
-    }
-
-    if (!eventIdsWithNameEvaluationFailures.isEmpty()) {
-      throw new MessageNameException(context, eventIdsWithNameEvaluationFailures);
     }
 
     return extractedMessageNames;

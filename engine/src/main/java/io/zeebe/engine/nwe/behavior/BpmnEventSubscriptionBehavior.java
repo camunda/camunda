@@ -17,6 +17,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableAct
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableBoundaryEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
+import io.zeebe.engine.processor.workflow.message.MessageNameException;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.deployment.WorkflowState;
@@ -238,6 +239,8 @@ public final class BpmnEventSubscriptionBehavior {
       return Either.left(
           new Failure(
               e.getMessage(), ErrorType.EXTRACT_VALUE_ERROR, context.getElementInstanceKey()));
+    } catch (final MessageNameException e) {
+      return Either.left(e.getFailure());
     }
   }
 
