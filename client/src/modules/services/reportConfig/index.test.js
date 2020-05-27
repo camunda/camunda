@@ -27,4 +27,22 @@ describe('process update', () => {
 
     expect(changes.configuration.hiddenNodes).not.toBeDefined();
   });
+
+  it('should keep distributed by compatible when changing group by', () => {
+    let changes = config.process.update(
+      'groupBy',
+      {type: 'assignee'},
+      {report: {data: {configuration: {distributedBy: 'assignee'}}}}
+    );
+
+    expect(changes.configuration.distributedBy).toEqual({$set: 'none'});
+
+    changes = config.process.update(
+      'groupBy',
+      {type: 'startDate'},
+      {report: {data: {configuration: {distributedBy: 'assignee'}}}}
+    );
+
+    expect(changes.configuration.distributedBy).not.toBeDefined();
+  });
 });

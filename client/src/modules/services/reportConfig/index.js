@@ -23,7 +23,8 @@ config.process.update = (type, data, props) => {
     const distributedBy = props.report.data.configuration?.distributedBy;
     if (
       (data.type === 'userTasks' && distributedBy === 'userTask') ||
-      (data.type !== 'userTasks' && ['assignee', 'candidateGroup'].includes(distributedBy))
+      (['assignee', 'candidateGroup'].includes(data.type) &&
+        ['assignee', 'candidateGroup'].includes(distributedBy))
     ) {
       changes.configuration.distributedBy = {$set: 'none'};
     }
