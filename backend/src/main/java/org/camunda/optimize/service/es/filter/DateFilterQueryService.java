@@ -18,7 +18,6 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.DateFilterUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.springframework.stereotype.Component;
@@ -27,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit.QUARTERS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
@@ -37,77 +37,95 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 public class DateFilterQueryService {
   private final DateTimeFormatter formatter;
 
-  public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto<?>> dates, String dateField) {
+  public void addFilters(final BoolQueryBuilder query, final List<DateFilterDataDto<?>> dates, final String dateField) {
     if (dates != null) {
-      List<QueryBuilder> filters = query.filter();
       for (DateFilterDataDto<?> dateDto : dates) {
-        RangeQueryBuilder queryDate = null;
+        final Optional<RangeQueryBuilder> dateRangeQuery;
         if (DateFilterType.FIXED.equals(dateDto.getType())) {
           FixedDateFilterDataDto fixedDateFilterDataDto = (FixedDateFilterDataDto) dateDto;
-          queryDate = createFixedDateFilter(fixedDateFilterDataDto, dateField);
+          dateRangeQuery = createFixedDateFilter(fixedDateFilterDataDto, dateField);
         } else if (DateFilterType.RELATIVE.equals(dateDto.getType())) {
           RelativeDateFilterDataDto relativeDateFilterDataDto = (RelativeDateFilterDataDto) dateDto;
-          queryDate = createRelativeDateFilter(relativeDateFilterDataDto, dateField);
+          dateRangeQuery = createRelativeDateFilter(relativeDateFilterDataDto, dateField);
         } else if (DateFilterType.ROLLING.equals(dateDto.getType())) {
           RollingDateFilterDataDto rollingDateFilterDataDto = (RollingDateFilterDataDto) dateDto;
-          queryDate = createRollingDateFilter(rollingDateFilterDataDto, dateField);
+          dateRangeQuery = createRollingDateFilter(rollingDateFilterDataDto, dateField);
         } else {
+          dateRangeQuery = Optional.empty();
           log.warn("Cannot execute date filter. Unknown type [{}]", dateDto.getType());
         }
 
-        if (queryDate != null) {
-          queryDate.format(OPTIMIZE_DATE_FORMAT);
-          filters.add(queryDate);
+        if (dateRangeQuery.isPresent()) {
+          query.filter(dateRangeQuery.get().format(OPTIMIZE_DATE_FORMAT));
         }
       }
     }
   }
 
-  private RangeQueryBuilder createFixedDateFilter(FixedDateFilterDataDto dateDto, String dateField) {
-    RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
+  private Optional<RangeQueryBuilder> createFixedDateFilter(final FixedDateFilterDataDto dateDto,
+                                                            final String dateField) {
+    if (dateDto.getEnd() == null && dateDto.getStart() == null) {
+      return Optional.empty();
+    }
+
+    final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
     if (dateDto.getEnd() != null) {
       queryDate.lte(formatter.format(dateDto.getEnd()));
     }
     if (dateDto.getStart() != null) {
       queryDate.gte(formatter.format(dateDto.getStart()));
     }
-    return queryDate;
+    return Optional.of(queryDate);
   }
 
-  private RangeQueryBuilder createRelativeDateFilter(RelativeDateFilterDataDto dateDto, String dateField) {
-    RelativeDateFilterStartDto startDto = dateDto.getStart();
-    RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
-    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    queryDate.lte(formatter.format(now));
-
-    if (startDto.getUnit().equals(QUARTERS)) {
-      log.warn("Cannot create date filter: {} is not supported for {} filters", startDto.getUnit(), dateDto.getType());
-      throw new OptimizeValidationException(String.format("%s is not supported for %s filters", startDto.getUnit(), dateDto.getType()));
+  private Optional<RangeQueryBuilder> createRelativeDateFilter(final RelativeDateFilterDataDto dateDto,
+                                                               final String dateField) {
+    final RelativeDateFilterStartDto startDto = dateDto.getStart();
+    if (startDto == null || startDto.getUnit() == null || startDto.getValue() == null) {
+      return Optional.empty();
     }
 
-    OffsetDateTime dateBeforeGivenFilter = now.minus(startDto.getValue(), ChronoUnit.valueOf(startDto.getUnit().getId().toUpperCase()));
+    final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
+    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    queryDate.lte(formatter.format(now));
+
+    if (QUARTERS.equals(startDto.getUnit())) {
+      log.warn("Cannot create date filter: {} is not supported for {} filters", startDto.getUnit(), dateDto.getType());
+      throw new OptimizeValidationException(
+        String.format("%s is not supported for %s filters", startDto.getUnit(), dateDto.getType())
+      );
+    }
+
+    final OffsetDateTime dateBeforeGivenFilter = now.minus(
+      startDto.getValue(), ChronoUnit.valueOf(startDto.getUnit().getId().toUpperCase())
+    );
     queryDate.gte(formatter.format(dateBeforeGivenFilter));
-    return queryDate;
+    return Optional.of(queryDate);
   }
 
-  private RangeQueryBuilder createRollingDateFilter(RollingDateFilterDataDto dateDto, String dateField) {
-    RollingDateFilterStartDto startDto = dateDto.getStart();
-    RangeQueryBuilder queryDateFilter = QueryBuilders.rangeQuery(dateField);
-    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+  private Optional<RangeQueryBuilder> createRollingDateFilter(final RollingDateFilterDataDto dateDto,
+                                                              final String dateField) {
+    final RollingDateFilterStartDto startDto = dateDto.getStart();
+    if (startDto == null || startDto.getUnit() == null || startDto.getValue() == null) {
+      return Optional.empty();
+    }
+
+    final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
+    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     if (startDto.getValue() == 0) {
-      queryDateFilter.lte(formatter.format(now));
-      queryDateFilter.gte(formatter.format(DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit())));
+      queryDate.lte(formatter.format(now));
+      queryDate.gte(formatter.format(DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit())));
     } else {
-      OffsetDateTime startOfCurrentInterval = DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit());
-      OffsetDateTime startOfPreviousInterval = DateFilterUtil.getStartOfPreviousInterval(
+      final OffsetDateTime startOfCurrentInterval = DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit());
+      final OffsetDateTime startOfPreviousInterval = DateFilterUtil.getStartOfPreviousInterval(
         startOfCurrentInterval,
         startDto.getUnit(),
         startDto.getValue()
       );
-      queryDateFilter.lt(formatter.format(startOfCurrentInterval));
-      queryDateFilter.gte(formatter.format(startOfPreviousInterval));
+      queryDate.lt(formatter.format(startOfCurrentInterval));
+      queryDate.gte(formatter.format(startOfPreviousInterval));
     }
-    return queryDateFilter;
+    return Optional.of(queryDate);
   }
 
 }

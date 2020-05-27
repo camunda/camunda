@@ -339,24 +339,6 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void validationExceptionOnNullStartDateValueField() {
-    //given
-    List<ProcessFilterDto<?>> variableFilterDto = ProcessFilterBuilder.filter()
-      .variable()
-      .dateType()
-      .name("foo")
-      .fixedDate(null, null)
-      .add()
-      .buildList();
-
-    // when
-    Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-  }
-
-  @Test
   public void validationExceptionOnNullNumericValuesField() {
     //given
     List<ProcessFilterDto<?>> variableFilterDto = ProcessFilterBuilder

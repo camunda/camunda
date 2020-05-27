@@ -6,7 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
 public class RollingDateFilterDataDto extends DateFilterDataDto<RollingDateFilterStartDto> {
-  protected RollingDateFilterDataDto() {
+  public RollingDateFilterDataDto() {
     this(null);
   }
 

@@ -99,8 +99,7 @@ public class ProcessVariableHelper {
           .must(termQuery(getNestedVariableTypeField(), variableTypeId))
           .must(existsQuery(getNestedVariableValueField())),
         ScoreMode.None
-      ))
-      .minimumShouldMatch(1);
+      ));
   }
 
 }

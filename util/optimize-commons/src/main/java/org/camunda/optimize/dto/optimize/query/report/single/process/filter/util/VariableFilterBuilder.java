@@ -33,9 +33,12 @@ public class VariableFilterBuilder {
   private String operator;
   private DateFilterDataDto<?> dateFilterDataDto;
   private String name;
+  // to be removed with OPT-3719
+  @Deprecated
   private boolean filterForUndefined = false;
+  // to be removed with OPT-3719
+  @Deprecated
   private boolean excludeUndefined = false;
-
 
   private VariableFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -124,6 +127,11 @@ public class VariableFilterBuilder {
 
   public VariableFilterBuilder operator(String operator) {
     this.operator = operator;
+    return this;
+  }
+
+  public VariableFilterBuilder dateFilter(final DateFilterDataDto dateFilterDataDto) {
+    this.dateFilterDataDto = dateFilterDataDto;
     return this;
   }
 

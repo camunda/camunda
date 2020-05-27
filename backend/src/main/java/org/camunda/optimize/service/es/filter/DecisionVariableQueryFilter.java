@@ -68,7 +68,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     }
 
     QueryBuilder queryBuilder = dto.isExcludeUndefined()
-      ? createExcludeUndefinedOrNullQueryFilterBuilder(dto)
+      ? createExcludeUndefinedOrNullQueryBuilder(dto)
       : matchAllQuery();
 
     switch (dto.getType()) {
@@ -198,20 +198,24 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
   }
 
   private QueryBuilder createDateQueryBuilder(DateVariableFilterDataDto dto) {
-    final BoolQueryBuilder variableBaseQuery = boolQuery()
+    final BoolQueryBuilder dateFilterBuilder = boolQuery().minimumShouldMatch(1);
+
+    if (dto.getData().isIncludeUndefined()) {
+      dateFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(dto));
+    } else if (dto.getData().isExcludeUndefined()) {
+      dateFilterBuilder.should(createExcludeUndefinedOrNullQueryBuilder(dto));
+    }
+
+    final BoolQueryBuilder dateValueFilterQuery = boolQuery()
       .must(termQuery(getVariableIdField(), dto.getName()));
-
     dateFilterQueryService.addFilters(
-      variableBaseQuery,
-      Collections.singletonList(dto.getData()),
-      getVariableValueFieldForType(dto.getType())
+      dateValueFilterQuery, Collections.singletonList(dto.getData()), getVariableValueFieldForType(dto.getType())
     );
+    if (dateValueFilterQuery.filter().size() > 0) {
+      dateFilterBuilder.should(nestedQuery(getVariablePath(), dateValueFilterQuery, ScoreMode.None));
+    }
 
-    return nestedQuery(
-      getVariablePath(),
-      variableBaseQuery,
-      ScoreMode.None
-    );
+    return dateFilterBuilder;
   }
 
   private QueryBuilder createFilterForUndefinedOrNullQueryBuilder(VariableFilterDataDto<?> dto) {
@@ -237,7 +241,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
       .minimumShouldMatch(1);
   }
 
-  private QueryBuilder createExcludeUndefinedOrNullQueryFilterBuilder(VariableFilterDataDto<?> dto) {
+  private QueryBuilder createExcludeUndefinedOrNullQueryBuilder(VariableFilterDataDto<?> dto) {
     return boolQuery()
       .must(nestedQuery(
         getVariablePath(),
@@ -245,8 +249,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
           .must(termQuery(getVariableIdField(), dto.getName()))
           .must(existsQuery(getVariableStringValueField(getVariablePath()))),
         ScoreMode.None
-      ))
-      .minimumShouldMatch(1);
+      ));
   }
 
   private String getVariableValueFieldForType(final VariableType type) {

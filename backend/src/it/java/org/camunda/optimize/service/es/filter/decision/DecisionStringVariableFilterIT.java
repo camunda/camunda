@@ -140,7 +140,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(), Collections.singletonMap(camInputVariable, null)
     );
-    // instance where the variable has the value
+    // instance where the variable has the value null
     engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
       Collections.singletonMap(camInputVariable, new EngineVariableValue(null, "String"))

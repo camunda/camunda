@@ -48,7 +48,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @RequiredArgsConstructor
 @Slf4j
 @Component
-public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter implements QueryFilter<VariableFilterDataDto<?>> {
+public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
+  implements QueryFilter<VariableFilterDataDto<?>> {
   private final DateFilterQueryService dateFilterQueryService;
 
   @Override
@@ -178,24 +179,26 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter impl
     return getNestedVariableValueFieldForType(type);
   }
 
-  private QueryBuilder createDateQueryBuilder(DateVariableFilterDataDto dto) {
-    ValidationHelper.ensureAtLeastOneNotNull(
-      "date filter start/end value",
-      dto.getData().getStart(),
-      dto.getData().getEnd()
-    );
+  private QueryBuilder createDateQueryBuilder(final DateVariableFilterDataDto dto) {
+    final BoolQueryBuilder dateFilterBuilder = boolQuery().minimumShouldMatch(1);
 
-    BoolQueryBuilder filterDateVariables = boolQuery()
+    if (dto.getData().isIncludeUndefined()) {
+      dateFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(dto));
+    } else if (dto.getData().isExcludeUndefined()) {
+      dateFilterBuilder.should(createExcludeUndefinedOrNullQueryBuilder(dto));
+    }
+
+    final BoolQueryBuilder dateValueFilterQuery = boolQuery()
       .must(termsQuery(getNestedVariableNameField(), dto.getName()))
       .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
-
     dateFilterQueryService.addFilters(
-      filterDateVariables,
-      Collections.singletonList(dto.getData()),
-      getVariableValueFieldForType(dto.getType())
+      dateValueFilterQuery, Collections.singletonList(dto.getData()), getVariableValueFieldForType(dto.getType())
     );
+    if (dateValueFilterQuery.filter().size() > 0) {
+      dateFilterBuilder.should(nestedQuery(VARIABLES, dateValueFilterQuery, ScoreMode.None));
+    }
 
-    return nestedQuery(VARIABLES, filterDateVariables, ScoreMode.None);
+    return dateFilterBuilder;
   }
 
   private QueryBuilder createBoolQueryBuilder(BooleanVariableFilterDataDto dto) {
