@@ -51,6 +51,20 @@ it('should allow only groupBy options that make sense for the selected view', ()
   expect(
     isAllowed(null, {property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
   ).toBeFalsy();
+  expect(
+    isAllowed(
+      null,
+      {property: 'frequency', entity: 'processInstance'},
+      {type: 'runningDate', value: {unit: 'automatic'}}
+    )
+  ).toBeTruthy();
+  expect(
+    isAllowed(
+      null,
+      {property: 'duration', entity: 'processInstance'},
+      {type: 'runningDate', value: {unit: 'automatic'}}
+    )
+  ).toBeFalsy();
 });
 
 it('should allow only visualization options that make sense for the selected view and group', () => {

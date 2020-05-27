@@ -227,6 +227,7 @@
       "flowNodes": "Flow Nodes",
       "userTasks": "User Tasks",
       "startDate": "Start Date",
+      "runningDate": "Running Date",
       "automatic": "Automatic",
       "endDate": "End Date",
       "variable": "Variable",

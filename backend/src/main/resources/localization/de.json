@@ -227,6 +227,7 @@
       "flowNodes": "Prozessknoten",
       "userTasks": "Benutzeraufgaben",
       "startDate": "Startdatum",
+      "runningDate": "Ausführungsdatum",
       "automatic": "Automatisch",
       "endDate": "Enddatum",
       "variable": "Variable",

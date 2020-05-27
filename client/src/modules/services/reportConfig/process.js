@@ -8,16 +8,15 @@ export const view = [
   {key: 'rawData', group: 'raw', data: {property: 'rawData', entity: null}},
   {
     key: 'pi',
-    group: 'pi',
     options: [
       {
         key: 'pi_count',
-
+        group: 'pi_count',
         data: {property: 'frequency', entity: 'processInstance'},
       },
       {
         key: 'pi_duration',
-
+        group: 'pi_duration',
         data: {property: 'duration', entity: 'processInstance'},
       },
     ],
@@ -73,6 +72,22 @@ export const groupBy = [
     ],
   },
   {
+    key: 'runningDate',
+    group: 'runningDate',
+    options: [
+      {
+        key: 'runningDate_automatic',
+
+        data: {type: 'runningDate', value: {unit: 'automatic'}},
+      },
+      {key: 'runningDate_year', data: {type: 'runningDate', value: {unit: 'year'}}},
+      {key: 'runningDate_month', data: {type: 'runningDate', value: {unit: 'month'}}},
+      {key: 'runningDate_week', data: {type: 'runningDate', value: {unit: 'week'}}},
+      {key: 'runningDate_day', data: {type: 'runningDate', value: {unit: 'day'}}},
+      {key: 'runningDate_hour', data: {type: 'runningDate', value: {unit: 'hour'}}},
+    ],
+  },
+  {
     key: 'endDate',
     group: 'date',
     options: [
@@ -110,9 +125,15 @@ export const combinations = {
   raw: {
     none: ['table'],
   },
-  pi: {
+  pi_duration: {
     none: ['number'],
     date: ['table', 'chart'],
+    variable: ['table', 'chart'],
+  },
+  pi_count: {
+    none: ['number'],
+    date: ['table', 'chart'],
+    runningDate: ['table', 'chart'],
     variable: ['table', 'chart'],
   },
   fn: {

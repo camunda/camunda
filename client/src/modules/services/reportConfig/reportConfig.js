@@ -91,7 +91,13 @@ export default function reportConfig({view, groupBy, visualization, combinations
       return false;
     });
 
-    return entry && entry.group;
+    if (entry?.group) {
+      return entry.group;
+    }
+
+    const option = entry?.options?.find((entry) => equal(entry.data, data, {strict: true}));
+
+    return option?.group;
   }
 
   function getOnlyOptionFor(type, group) {
