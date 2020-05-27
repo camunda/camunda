@@ -39,7 +39,6 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +46,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,10 +65,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
   protected static final String END_EVENT = "endEvent";
   protected static final String USER_TASK_1 = "userTask1";
   protected static final String USER_TASK_2 = "userTask2";
-
-  private static Stream<GroupByDateUnit> staticGroupByDateUnits() {
-    return Arrays.stream(GroupByDateUnit.values()).filter(g -> !g.equals(GroupByDateUnit.AUTOMATIC));
-  }
 
   @Test
   public void reportEvaluationForOneProcess() {

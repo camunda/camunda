@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.date.distributed_by.assignee;
+package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.date.distributed_by.candidate_group;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,19 +34,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 
-public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluationIT
-  extends UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT {
+public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportEvaluationIT
+  extends UserTaskDurationByUserTaskDateByCandidateGroupReportEvaluationIT {
 
   @Test
   public void reportEvaluationForOneProcessWithUnassignedTasks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -68,21 +67,29 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
   @ParameterizedTest
   @MethodSource("getExecutionStateExpectedValues")
   public void evaluateReportWithExecutionState(final FlowNodeExecutionState executionState,
-                                               final ExecutionStateTestValues assignee2Count) {
+                                               final ExecutionStateTestValues candidateGroup1Count,
+                                               final ExecutionStateTestValues candidateGroup2Count) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
-    final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    changeUserTaskDate(processInstance1, USER_TASK_1, now);
+    // finish first running task, second now runs but unclaimed
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
     changeDuration(processInstance1, USER_TASK_1, 100L);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.claimAllRunningUserTasks(processInstance1.getId());
+    changeUserTaskStartDate(processInstance1, now, USER_TASK_2, 700L);
+    changeUserTaskClaimDate(processInstance1, now, USER_TASK_2, 500L);
 
     final ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstance2.getId());
-
+    // claim first running task
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(processInstance2.getId(), FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.claimAllRunningUserTasks(processInstance2.getId());
     changeUserTaskStartDate(processInstance2, now, USER_TASK_1, 700L);
     changeUserTaskClaimDate(processInstance2, now, USER_TASK_1, 500L);
 
@@ -99,7 +106,8 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(DEFAULT_USERNAME, getCorrectTestExecutionValue(assignee2Count))
+      .distributedByContains(SECOND_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup2Count))
+      .distributedByContains(FIRST_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup1Count))
       .doAssert(result);
     // @formatter:on
   }
@@ -117,11 +125,13 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
     return Stream.of(
       Arguments.of(
         FlowNodeExecutionState.RUNNING,
+        new ExecutionStateTestValues(200L, 500L, 700L),
         new ExecutionStateTestValues(200L, 500L, 700L)
       ),
       Arguments.of(
         FlowNodeExecutionState.COMPLETED,
-        new ExecutionStateTestValues(100L, 100L, 100L)
+        new ExecutionStateTestValues(100L, 100L, 100L),
+        new ExecutionStateTestValues(null, null, null)
       ),
       Arguments.of(
         FlowNodeExecutionState.ALL,
@@ -129,6 +139,11 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
           calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L),
           calculateExpectedValueGivenDurationsDefaultAggr(100L, 500L),
           calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L)
+        ),
+        new ExecutionStateTestValues(
+          calculateExpectedValueGivenDurationsDefaultAggr(200L),
+          calculateExpectedValueGivenDurationsDefaultAggr(500L),
+          calculateExpectedValueGivenDurationsDefaultAggr(700L)
         )
       )
     );
@@ -137,27 +152,6 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
   private String getLocalisedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
-  }
-
-  protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
-                                         final OffsetDateTime now,
-                                         final String userTaskKey,
-                                         final long offsetDuration) {
-
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto ->
-        {
-          try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-              historicUserTaskInstanceDto.getId(),
-              now.minus(offsetDuration, ChronoUnit.MILLIS)
-            );
-          } catch (SQLException e) {
-            throw new OptimizeIntegrationTestException(e);
-          }
-        }
-      );
   }
 
   protected abstract Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues);
@@ -169,7 +163,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_ASSIGNEE;
+    return ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_CANDIDATE_GROUP;
   }
 
   @Override

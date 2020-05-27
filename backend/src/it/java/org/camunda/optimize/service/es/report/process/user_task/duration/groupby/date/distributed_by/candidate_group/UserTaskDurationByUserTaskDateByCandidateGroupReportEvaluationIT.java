@@ -3,13 +3,14 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.frequency.groupby.date.distributed_by.assignee;
+package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.date.distributed_by.candidate_group;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -54,26 +55,28 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationIT extends AbstractProcessDefinitionIT {
+public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   @BeforeEach
   public void init() {
-    // create second user
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
-    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
   }
 
   @Test
   public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
+
+    final long expectedDuration = 20L;
+    changeDuration(processInstance, expectedDuration);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -88,14 +91,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView())
-      .isEqualToComparingFieldByField(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.FREQUENCY));
+      .isEqualToComparingFieldByField(new ProcessViewDto(ProcessViewEntity.USER_TASK, ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())
       .extracting(DateGroupByValueDto.class::cast)
       .extracting(DateGroupByValueDto::getUnit)
       .isEqualTo(GroupByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy()).isEqualTo(DistributedBy.ASSIGNEE);
+    assertThat(resultReportDataDto.getConfiguration().getDistributedBy()).isEqualTo(DistributedBy.CANDIDATE_GROUP);
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -103,7 +106,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(DEFAULT_USERNAME, 1L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, expectedDuration)
       .doAssert(result);
     // @formatter:on
   }
@@ -115,17 +118,19 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
+    changeDuration(processInstance1, USER_TASK_1, 30L);
     changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
+    changeDuration(processInstance1, USER_TASK_2, 10L);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
+    changeDuration(processInstance2, USER_TASK_1, 20L);
     changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
+    changeDuration(processInstance2, USER_TASK_2, 40L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -139,17 +144,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, 1L)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 10L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_USER, null)
-        .distributedByContains(DEFAULT_USERNAME, 1L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 20L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_USER, null)
-        .distributedByContains(DEFAULT_USERNAME, 1L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 30L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(SECOND_USER, 1L)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 40L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
       .doAssert(result);
     // @formatter:on
   }
@@ -161,17 +166,19 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
+    changeDuration(processInstance1, USER_TASK_1, 30L);
     changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
+    changeDuration(processInstance1, USER_TASK_2, 10L);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
+    changeDuration(processInstance2, USER_TASK_1, 20L);
     changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
+    changeDuration(processInstance2, USER_TASK_2, 40L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -186,17 +193,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(DEFAULT_USERNAME, null)
-        .distributedByContains(SECOND_USER, 1L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 10L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(DEFAULT_USERNAME, 1L)
-        .distributedByContains(SECOND_USER, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 20L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(DEFAULT_USERNAME, 1L)
-        .distributedByContains(SECOND_USER, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 30L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(DEFAULT_USERNAME, null)
-        .distributedByContains(SECOND_USER, 1L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 40L)
       .doAssert(result);
     // @formatter:on
   }
@@ -208,24 +215,27 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
+    changeDuration(processInstance1, USER_TASK_1, 10L);
     changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
+    changeDuration(processInstance1, USER_TASK_2, 10L);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
+    changeDuration(processInstance2, USER_TASK_1, 20L);
     changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
+    changeDuration(processInstance2, USER_TASK_2, 50L);
 
     ProcessInstanceEngineDto processInstance3 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance3, USER_TASK_1, referenceDate.minusDays(3));
+    changeDuration(processInstance3, USER_TASK_1, 30L);
     changeUserTaskDate(processInstance3, USER_TASK_2, referenceDate.minusDays(3));
+    changeDuration(processInstance3, USER_TASK_2, 30L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -240,14 +250,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, 1L)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 10L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(DEFAULT_USERNAME, 1L)
-        .distributedByContains(SECOND_USER, 1L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 50L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 20L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(DEFAULT_USERNAME, 2L)
-        .distributedByContains(SECOND_USER, 1L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 30L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 20L)
       .doAssert(result);
     // @formatter:on
   }
@@ -259,16 +269,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
     changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
+    changeDuration(processInstance1, USER_TASK_2, 10L);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
+    changeDuration(processInstance2, USER_TASK_1, 20L);
     changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -286,33 +296,35 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, 1L)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 10L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_USER, null)
-        .distributedByContains(DEFAULT_USERNAME, 1L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 20L)
       .doAssert(result);
     // @formatter:on
   }
 
   @Test
-  public void userTasksStartedAtSameIntervalAreGroupedTogether() {
+  public void userTasksStartedAtSameIntervalAreGroupedTogetherAndMeanDurationUsed() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
+    changeDuration(processInstance1, USER_TASK_1, 5L);
     changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(2));
+    changeDuration(processInstance1, USER_TASK_2, 100L);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
+    changeDuration(processInstance2, USER_TASK_1, 15L);
     changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
+    changeDuration(processInstance2, USER_TASK_2, 300L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -326,11 +338,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, null)
-        .distributedByContains(DEFAULT_USERNAME, 2L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 10L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_USER, 2L)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 200L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
       .doAssert(result);
     // @formatter:on
   }
@@ -342,10 +354,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    finishTwoUserTasksWithDifferentCandidateGroups();
     changeUserTaskDate(processInstance, USER_TASK_1, referenceDate.minusDays(1));
+    changeDuration(processInstance, USER_TASK_1, 10L);
     changeUserTaskDate(processInstance, USER_TASK_2, referenceDate.minusDays(3));
+    changeDuration(processInstance, USER_TASK_2, 30L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -359,14 +372,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, null)
-        .distributedByContains(DEFAULT_USERNAME, 1L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 10L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_USER, null)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_USER, 1L)
-        .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 30L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
       .doAssert(result);
     // @formatter:on
   }
@@ -389,8 +402,9 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
         return processInstanceEngineDto;
       })
       .collect(Collectors.toList());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    updateUserTaskTime(processInstanceDtos, referenceDate, groupByUnitAsChrono);
+    updateUserTaskDateAndDuration(processInstanceDtos, referenceDate, groupByUnitAsChrono);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -405,12 +419,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
       .processInstanceCount(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
-      .distributedByContains(DEFAULT_USERNAME, 1L);
+      .distributedByContains(FIRST_CANDIDATE_GROUP, 10L);
 
     for (int i = 1; i < groupingCount; i++) {
       groupByAdder = groupByAdder
         .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
-        .distributedByContains(DEFAULT_USERNAME, 1L);
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 10L);
     }
     groupByAdder.doAssert(result);
   }
@@ -422,14 +436,18 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     ProcessDefinitionEngineDto processDefinition1 = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
+    changeDuration(processInstance1, USER_TASK_1, 10L);
 
     ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
+    changeDuration(processInstance2, USER_TASK_1, 200L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -443,7 +461,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(DEFAULT_USERNAME, 1L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 10L)
       .doAssert(result);
     // @formatter:on
   }
@@ -475,8 +493,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(processInstance, USER_TASK_1, 10L);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -494,7 +515,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-        .distributedByContains(DEFAULT_USERNAME, 1L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 10L)
       .doAssert(result);
     // @formatter:on
   }
@@ -503,19 +524,23 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   public void automaticIntervalSelection_simpleSetup() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto1 =
+    ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    ProcessInstanceEngineDto processInstanceDto2 =
+    ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    ProcessInstanceEngineDto processInstanceDto3 =
+    ProcessInstanceEngineDto processInstance3 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
     Map<String, OffsetDateTime> updates = new HashMap<>();
     OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
-    updates.put(processInstanceDto1.getId(), startOfToday);
-    updates.put(processInstanceDto2.getId(), startOfToday);
-    updates.put(processInstanceDto3.getId(), startOfToday.minusDays(1));
+    updates.put(processInstance1.getId(), startOfToday);
+    updates.put(processInstance2.getId(), startOfToday);
+    updates.put(processInstance3.getId(), startOfToday.minusDays(1));
     changeUserTaskDates(updates);
+    changeDuration(processInstance1, USER_TASK_1, 10L);
+    changeDuration(processInstance2, USER_TASK_1, 20L);
+    changeDuration(processInstance3, USER_TASK_1, 30L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -527,27 +552,31 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     // then
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertFirstValueEquals(resultData, 2L);
-    assertLastValueEquals(resultData, 1L);
+    assertFirstValueEquals(resultData, 15L);
+    assertLastValueEquals(resultData, 30L);
   }
 
   @Test
   public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
     //given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto1 =
+    ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    ProcessInstanceEngineDto processInstanceDto2 =
+    ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    ProcessInstanceEngineDto processInstanceDto3 =
+    ProcessInstanceEngineDto processInstance3 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
     Map<String, OffsetDateTime> updates = new HashMap<>();
     OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
-    updates.put(processInstanceDto1.getId(), startOfToday);
-    updates.put(processInstanceDto2.getId(), startOfToday.plusDays(2));
-    updates.put(processInstanceDto3.getId(), startOfToday.plusDays(5));
+    updates.put(processInstance1.getId(), startOfToday);
+    updates.put(processInstance2.getId(), startOfToday.plusDays(2));
+    updates.put(processInstance3.getId(), startOfToday.plusDays(5));
     changeUserTaskDates(updates);
+    changeDuration(processInstance1, USER_TASK_1, 10L);
+    changeDuration(processInstance2, USER_TASK_1, 20L);
+    changeDuration(processInstance3, USER_TASK_1, 30L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -559,8 +588,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     // then
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertFirstValueEquals(resultData, 1L);
-    assertLastValueEquals(resultData, 1L);
+    assertFirstValueEquals(resultData, 30L);
+    assertLastValueEquals(resultData, 10L);
     final int sumOfAllValues = resultData.stream()
       .map(HyperMapResultEntryDto::getValue)
       .flatMap(List::stream)
@@ -568,7 +597,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)
       .mapToInt(Long::intValue).sum();
-    assertThat(sumOfAllValues).isEqualTo(3);
+    assertThat(sumOfAllValues).isEqualTo(60);
   }
 
   @Test
@@ -614,13 +643,18 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   public void multipleVersionsRespectLatestNodesWhereLatestHasMoreFlowNodes(final List<String> definitionVersionsThatSpanMultipleDefinitions) {
     // given
     ProcessDefinitionEngineDto firstDefinition = deployOneUserTaskDefinition();
-    engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    final ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(processInstance1, USER_TASK_1, 10L);
 
     ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
-    engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    final ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    finishTwoUserTasksWithDifferentCandidateGroups();
+    changeDuration(processInstance2, USER_TASK_1, 20L);
+    changeDuration(processInstance2, USER_TASK_2, 30L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -635,8 +669,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(SECOND_USER, 1L)
-        .distributedByContains(DEFAULT_USERNAME, 2L)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 30L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 15L)
       .doAssert(result);
     // @formatter:on
   }
@@ -646,13 +680,18 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   public void multipleVersionsRespectLatestNodesWhereLatestHasFewerFlowNodes(final List<String> definitionVersionsThatSpanMultipleDefinitions) {
     // given
     ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
-    engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+    final ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    finishTwoUserTasksWithDifferentCandidateGroups();
+    changeDuration(processInstance1, USER_TASK_1, 10L);
 
     ProcessDefinitionEngineDto latestDefinition = deployOneUserTaskDefinition();
-    engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    final ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(processInstance2, USER_TASK_1, 20L);
+    changeDuration(processInstance2, USER_TASK_2, 30L);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -667,7 +706,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(DEFAULT_USERNAME, 2L)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 15L)
       .doAssert(result);
     // @formatter:on
   }
@@ -693,9 +732,9 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .isEqualTo(expected);
   }
 
-  private void updateUserTaskTime(List<ProcessInstanceEngineDto> procInsts,
-                                  OffsetDateTime now,
-                                  ChronoUnit unit) {
+  private void updateUserTaskDateAndDuration(List<ProcessInstanceEngineDto> procInsts,
+                                             OffsetDateTime now,
+                                             ChronoUnit unit) {
     Map<String, OffsetDateTime> idToNewStartDate = new HashMap<>();
     IntStream.range(0, procInsts.size())
       .forEach(i -> {
@@ -704,6 +743,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
         idToNewStartDate.put(id, newStartDate);
       });
     changeUserTaskDates(idToNewStartDate);
+    procInsts.forEach(processInstance -> changeDuration(processInstance, 10L));
   }
 
   protected ProcessReportDataDto createReportData(final String processDefinitionKey, final String version,
@@ -717,6 +757,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
+      .setUserTaskDurationTime(getUserTaskDurationTime())
       .setReportDataType(getReportDataType())
       .setDateInterval(groupByDateUnit)
       .build();
@@ -748,7 +789,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     return processKey;
   }
 
-  private ProcessDefinitionEngineDto deployOneUserTaskDefinition() {
+  protected ProcessDefinitionEngineDto deployOneUserTaskDefinition() {
     return deployOneUserTaskDefinition("aProcess", null);
   }
 
@@ -778,6 +819,15 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
+  private void finishTwoUserTasksWithDifferentCandidateGroups() {
+    // finish user task 1 with first candidate group
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    // finish user task 2 with second candidate group
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+  }
+
   private String localDateTimeToString(ZonedDateTime time) {
     return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
@@ -789,6 +839,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   private String groupedByDateAsString(final OffsetDateTime referenceDate, final ChronoUnit chronoUnit) {
     return localDateTimeToString(truncateToStartOfUnit(referenceDate, chronoUnit));
   }
+
+  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                         final String userTaskKey,
+                                         final long duration);
+
+  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration);
+
+  protected abstract UserTaskDurationTime getUserTaskDurationTime();
 
   protected abstract ProcessGroupByType getGroupByType();
 

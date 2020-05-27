@@ -1059,38 +1059,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     assertThat(response.getStatus(), is(400));
   }
 
-  private void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
-                                       final OffsetDateTime now,
-                                       final String userTaskId,
-                                       final long offsetDuration) {
-    engineDatabaseExtension.changeUserTaskStartDate(
-      processInstanceDto.getId(),
-      userTaskId,
-      now.minus(offsetDuration, ChronoUnit.MILLIS)
-    );
-  }
-
-  private void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
-                                       final OffsetDateTime now,
-                                       final String userTaskKey,
-                                       final long offsetDuration) {
-
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto ->
-        {
-          try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-              historicUserTaskInstanceDto.getId(),
-              now.minus(offsetDuration, ChronoUnit.MILLIS)
-            );
-          } catch (SQLException e) {
-            throw new OptimizeIntegrationTestException(e);
-          }
-        }
-      );
-  }
-
   protected abstract UserTaskDurationTime getUserTaskDurationTime();
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,

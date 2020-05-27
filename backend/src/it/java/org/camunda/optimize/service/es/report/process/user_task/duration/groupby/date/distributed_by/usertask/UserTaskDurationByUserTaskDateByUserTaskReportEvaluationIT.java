@@ -70,10 +70,6 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   protected static final String USER_TASK_1_NAME = "userTask1Name";
   private static final String USER_TASK_2_NAME = "userTask2Name";
 
-  private static Stream<GroupByDateUnit> staticGroupByDateUnits() {
-    return Arrays.stream(GroupByDateUnit.values()).filter(g -> !g.equals(GroupByDateUnit.AUTOMATIC));
-  }
-
   @Test
   public void reportEvaluationForOneProcess() {
     // given
