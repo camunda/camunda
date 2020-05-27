@@ -517,15 +517,15 @@ public class DashboardRestServiceIT extends AbstractIT {
       Collections.singletonList(new DashboardFilterDto(null, null)),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.START_DATE,
-        new BooleanVariableFilterDataDto("boolVar", true)
+        new BooleanVariableFilterDataDto("boolVar", Collections.singletonList(true))
       )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.END_DATE,
-        new BooleanVariableFilterDataDto("boolVar", true)
+        new BooleanVariableFilterDataDto("boolVar", Collections.singletonList(true))
       )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.STATE,
-        new BooleanVariableFilterDataDto("boolVar", true)
+        new BooleanVariableFilterDataDto("boolVar", Collections.singletonList(true))
       )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
@@ -558,7 +558,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       ,
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
-        new BooleanVariableFilterDataDto("boolVar", true)
+        new BooleanVariableFilterDataDto("boolVar", Collections.singletonList(true))
       ))
     );
   }

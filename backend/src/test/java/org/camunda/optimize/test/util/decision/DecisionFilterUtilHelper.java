@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 public class DecisionFilterUtilHelper {
 
@@ -105,8 +106,18 @@ public class DecisionFilterUtilHelper {
     );
   }
 
-  public static OutputVariableFilterDto createBooleanOutputVariableFilter(String variableName, Boolean variableValue) {
-    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableName, variableValue);
+  public static InputVariableFilterDto createBooleanInputVariableFilter(final String variableName,
+                                                                         final List<Boolean> variableValues) {
+    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableName, variableValues);
+    InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
+    variableFilterDto.setData(data);
+
+    return variableFilterDto;
+  }
+
+  public static OutputVariableFilterDto createBooleanOutputVariableFilter(final String variableName,
+                                                                          final List<Boolean> variableValues) {
+    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableName, variableValues);
     OutputVariableFilterDto variableFilterDto = new OutputVariableFilterDto();
     variableFilterDto.setData(data);
 

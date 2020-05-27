@@ -25,6 +25,8 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class VariableFilterBuilder {
   private ProcessFilterBuilder filterBuilder;
@@ -91,6 +93,17 @@ public class VariableFilterBuilder {
 
   public VariableFilterBuilder name(String name) {
     this.name = name;
+    return this;
+  }
+
+  public VariableFilterBuilder booleanValues(final List<Boolean> values) {
+    values(
+      Optional.ofNullable(values)
+        .map(theValues -> theValues.stream()
+          .map(aBoolean -> aBoolean != null ? aBoolean.toString() : null)
+          .collect(Collectors.toList())
+        ).orElse(null)
+    );
     return this;
   }
 
@@ -168,9 +181,13 @@ public class VariableFilterBuilder {
   }
 
   public ProcessFilterBuilder createBooleanVariableFilter() {
-    BooleanVariableFilterDataDto dataDto = new BooleanVariableFilterDataDto(
+    final BooleanVariableFilterDataDto dataDto = new BooleanVariableFilterDataDto(
       name,
-      values == null || values.isEmpty() ? null : Boolean.valueOf(values.get(0))
+      Optional.ofNullable(values)
+        .map(theValues -> theValues.stream()
+          .map(value -> value != null ? Boolean.valueOf(value) : null)
+          .collect(Collectors.toList()))
+        .orElse(null)
     );
     dataDto.setFilterForUndefined(filterForUndefined);
     VariableFilterDto filter = new VariableFilterDto();
@@ -180,7 +197,6 @@ public class VariableFilterBuilder {
   }
 
   public ProcessFilterBuilder createVariableDateFilter() {
-
     DateVariableFilterDataDto dateVariableFilterDataDto = new DateVariableFilterDataDto(
       name,
       dateFilterDataDto != null ? dateFilterDataDto : new FixedDateFilterDataDto(null, null)

@@ -205,7 +205,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setVariableId(OUTPUT_AUDIT_ID)
       .setVariableType(VariableType.BOOLEAN)
       .setFilter(Lists.newArrayList(createBooleanOutputVariableFilter(
-        OUTPUT_AUDIT_ID, true
+        OUTPUT_AUDIT_ID, Collections.singletonList(true)
       )))
       .build();
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();

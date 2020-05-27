@@ -660,7 +660,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   private List<ProcessFilterDto<?>> createVariableFilter() {
-    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto("var", true);
+    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto("var", Collections.singletonList(true));
 
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);

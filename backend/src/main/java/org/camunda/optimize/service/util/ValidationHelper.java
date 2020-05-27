@@ -32,6 +32,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,7 +44,7 @@ public class ValidationHelper {
     ensureNotEmpty("end activity id", dto.getEnd());
     ensureNotEmpty("query dto", dto);
     ValidationHelper.ensureNotEmpty("ProcessDefinitionKey", dto.getProcessDefinitionKey());
-    ValidationHelper.ensureListNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersions());
+    ValidationHelper.ensureCollectionNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersions());
     validateProcessFilters(dto.getFilter());
   }
 
@@ -61,7 +62,7 @@ public class ValidationHelper {
     }
   }
 
-  public static void ensureListNotEmpty(String fieldName, List target) {
+  public static void ensureCollectionNotEmpty(String fieldName, Collection<?> target) {
     if (target == null || target.isEmpty()) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
     }

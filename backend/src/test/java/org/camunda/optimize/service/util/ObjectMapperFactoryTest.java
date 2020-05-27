@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,12 +28,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
-
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 public class ObjectMapperFactoryTest {
@@ -68,12 +62,13 @@ public class ObjectMapperFactoryTest {
       getClass().getResourceAsStream("/test/data/single-process-report-definition-create-request.json"),
       ReportDefinitionDto.class
     );
-    assertThat(reportDefinitionDto.getCombined(), is(false));
-    assertThat(reportDefinitionDto.getReportType(), is(ReportType.PROCESS));
-    assertThat(reportDefinitionDto, instanceOf(SingleProcessReportDefinitionDto.class));
-    SingleProcessReportDefinitionDto singleProcessReport =
-      (SingleProcessReportDefinitionDto) reportDefinitionDto;
-    assertThat(singleProcessReport.getData(), CoreMatchers.notNullValue());
+    assertThat(reportDefinitionDto.getCombined()).isFalse();
+    assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
+    assertThat(reportDefinitionDto)
+      .isInstanceOf(SingleProcessReportDefinitionDto.class)
+      .satisfies(processDefinition -> {
+        assertThat(processDefinition.getData()).isNotNull();
+      });
   }
 
   @Test
@@ -82,9 +77,11 @@ public class ObjectMapperFactoryTest {
       getClass().getResourceAsStream("/test/data/single-process-report-definition-create-request.json"),
       SingleProcessReportDefinitionDto.class
     );
-    assertThat(reportDefinitionDto.getCombined(), is(false));
-    assertThat(reportDefinitionDto.getReportType(), is(ReportType.PROCESS));
-    assertThat(reportDefinitionDto, instanceOf(SingleProcessReportDefinitionDto.class));
+
+    assertThat(reportDefinitionDto.getCombined()).isFalse();
+    assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
+    assertThat(reportDefinitionDto)
+      .isInstanceOf(SingleProcessReportDefinitionDto.class);
   }
 
   @Test
@@ -93,9 +90,11 @@ public class ObjectMapperFactoryTest {
       getClass().getResourceAsStream("/test/data/single-decision-report-definition-create-request.json"),
       SingleDecisionReportDefinitionDto.class
     );
-    assertThat(reportDefinitionDto.getCombined(), is(false));
-    assertThat(reportDefinitionDto.getReportType(), is(ReportType.DECISION));
-    assertThat(reportDefinitionDto, instanceOf(SingleDecisionReportDefinitionDto.class));
+
+    assertThat(reportDefinitionDto.getCombined()).isFalse();
+    assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.DECISION);
+    assertThat(reportDefinitionDto)
+      .isInstanceOf(SingleDecisionReportDefinitionDto.class);
   }
 
   @Test
@@ -104,9 +103,11 @@ public class ObjectMapperFactoryTest {
       getClass().getResourceAsStream("/test/data/combined-process-report-definition-create-request.json"),
       CombinedReportDefinitionDto.class
     );
-    assertThat(reportDefinitionDto.getCombined(), is(true));
-    assertThat(reportDefinitionDto.getReportType(), is(ReportType.PROCESS));
-    assertThat(reportDefinitionDto, instanceOf(CombinedReportDefinitionDto.class));
+
+    assertThat(reportDefinitionDto.getCombined()).isTrue();
+    assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
+    assertThat(reportDefinitionDto)
+      .isInstanceOf(CombinedReportDefinitionDto.class);
   }
 
   @Test
@@ -116,13 +117,15 @@ public class ObjectMapperFactoryTest {
         .getResourceAsStream("/test/data/filter_request.json"),
       ProcessReportDataDto.class
     );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is(true));
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValues())
+      .containsExactly(true);
 
     data = optimizeMapper.readValue(
       this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
       ProcessReportDataDto.class
     );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is(true));
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValues())
+      .containsExactly(true);
   }
 
 
@@ -133,27 +136,29 @@ public class ObjectMapperFactoryTest {
         .getResourceAsStream("/test/data/filter_request_lowercase_type.json"),
       ProcessReportDataDto.class
     );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is(true));
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValues())
+      .containsExactly(true);
 
     data = optimizeMapper.readValue(
       this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
       ProcessReportDataDto.class
     );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is(true));
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValues())
+      .containsExactly(true);
   }
 
   @Test
   public void testDateSerialization() throws Exception {
     DateHolder instance = new DateHolder();
     instance.setDate(OffsetDateTime.now());
-    String s = optimizeMapper.writeValueAsString(instance);
-    assertThat(s, is(notNullValue()));
+    String parsedString = optimizeMapper.writeValueAsString(instance);
+    assertThat(parsedString).isNotNull();
 
     DateHolder result = optimizeMapper.readValue(
-      s,
+      parsedString,
       DateHolder.class
     );
-    assertThat(result.getDate(), is(instance.getDate()));
+    assertThat(result.getDate()).isEqualTo(instance.getDate());
   }
 
   @Test
@@ -162,7 +167,7 @@ public class ObjectMapperFactoryTest {
     DateHolder toTest = new DateHolder();
     toTest.setDate(OffsetDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")));
 
-    assertThat("value is [" + value + "]", optimizeMapper.writeValueAsString(toTest), containsString(value));
+    assertThat(optimizeMapper.writeValueAsString(toTest)).contains(value);
   }
 
   @Test
@@ -175,21 +180,21 @@ public class ObjectMapperFactoryTest {
         .toOffsetDateTime()
     );
 
-    assertThat("value is [" + value + "]", optimizeMapper.writeValueAsString(toTest), containsString(value));
+    assertThat(optimizeMapper.writeValueAsString(toTest)).contains(value);
   }
 
   @Test
   public void testEngineDateSerialization() throws Exception {
     DateHolder instance = new DateHolder();
     instance.setDate(OffsetDateTime.now());
-    String s = engineMapper.writeValueAsString(instance);
-    assertThat(s, is(notNullValue()));
+    String parsedString = engineMapper.writeValueAsString(instance);
+    assertThat(parsedString).isNotNull();
 
     DateHolder result = engineMapper.readValue(
-      s,
+      parsedString,
       DateHolder.class
     );
-    assertThat(result.getDate(), is(instance.getDate()));
+    assertThat(result.getDate()).isEqualTo(instance.getDate());
   }
 
   @Test
@@ -198,7 +203,7 @@ public class ObjectMapperFactoryTest {
     DateHolder toTest = new DateHolder();
     toTest.setDate(OffsetDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")));
 
-    assertThat("value is [" + value + "]", engineMapper.writeValueAsString(toTest), containsString(value));
+    assertThat(engineMapper.writeValueAsString(toTest)).contains(value);
   }
 
   @Test
@@ -211,7 +216,7 @@ public class ObjectMapperFactoryTest {
         .toOffsetDateTime()
     );
 
-    assertThat("value is [" + value + "]", engineMapper.writeValueAsString(toTest), containsString(value));
+    assertThat(engineMapper.writeValueAsString(toTest)).contains(value);
   }
 
 

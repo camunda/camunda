@@ -30,63 +30,6 @@ import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConst
 public class VariableQueryFilterIT extends AbstractFilterIT {
 
   @Test
-  public void booleanTrueVariableFilter() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", true);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", false);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", false);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name("var")
-      .booleanFalse()
-      .add()
-      .buildList();
-
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertThat(result.getData()).hasSize(2);
-  }
-
-  @Test
-  public void booleanFalseVariableFilter() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var", true);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", true);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", false);
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name("var")
-      .booleanTrue()
-      .add()
-      .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
-
-    // then
-    assertThat(result.getData()).hasSize(2);
-  }
-
-  @Test
   public void excludeUndefinedDoesNotOverwriteOtherFilterData() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();

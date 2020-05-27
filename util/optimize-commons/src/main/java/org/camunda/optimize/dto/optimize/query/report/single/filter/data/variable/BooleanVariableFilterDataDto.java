@@ -8,12 +8,14 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variab
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.BooleanVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
+import java.util.List;
+
 public class BooleanVariableFilterDataDto extends VariableFilterDataDto<BooleanVariableFilterSubDataDto> {
   protected BooleanVariableFilterDataDto() {
     this(null, null);
   }
 
-  public BooleanVariableFilterDataDto(final String name, final Boolean value) {
-    super(name, VariableType.BOOLEAN, new BooleanVariableFilterSubDataDto(value));
+  public BooleanVariableFilterDataDto(final String name, final List<Boolean> values) {
+    super(name, VariableType.BOOLEAN, new BooleanVariableFilterSubDataDto(values));
   }
 }

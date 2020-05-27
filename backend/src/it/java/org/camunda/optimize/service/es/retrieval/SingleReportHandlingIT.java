@@ -324,7 +324,7 @@ public class SingleReportHandlingIT extends AbstractIT {
 
   private List<ProcessFilterDto<?>> createVariableFilter() {
     VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setData(new BooleanVariableFilterDataDto("foo", true));
+    variableFilterDto.setData(new BooleanVariableFilterDataDto("foo", Collections.singletonList(true)));
     return Collections.singletonList(variableFilterDto);
   }
 

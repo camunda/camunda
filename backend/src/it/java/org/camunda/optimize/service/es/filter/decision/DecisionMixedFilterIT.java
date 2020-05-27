@@ -20,6 +20,7 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
@@ -82,7 +83,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       INPUT_CATEGORY_ID, FilterOperatorConstants.IN, expectedCategory
     );
     final OutputVariableFilterDto booleanOutputVariableFilter = createBooleanOutputVariableFilter(
-      OUTPUT_AUDIT_ID, expectedAuditOutput
+      OUTPUT_AUDIT_ID, Collections.singletonList(expectedAuditOutput)
     );
     final EvaluationDateFilterDto relativeEvaluationDateFilter = createRelativeEvaluationDateFilter(
       1L, DateFilterUnit.DAYS

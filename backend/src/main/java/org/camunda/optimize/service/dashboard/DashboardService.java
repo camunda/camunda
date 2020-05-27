@@ -267,7 +267,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final List<DashboardFilterDto> variableFilters = filtersByType.get(DashboardFilterType.VARIABLE);
     if (variableFilters != null) {
       variableFilters.forEach(variableFilter -> {
-        final VariableFilterDataDto filterData = variableFilter.getData();
+        final VariableFilterDataDto<?> filterData = variableFilter.getData();
         if (filterData == null) {
           throw new BadRequestException("Variable dashboard filters require additional data");
         }
@@ -286,7 +286,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         } else if (variableType.equals(VariableType.BOOLEAN)) {
           final BooleanVariableFilterSubDataDto booleanFilterData =
             (BooleanVariableFilterSubDataDto) variableFilter.getData().getData();
-          if (booleanFilterData.getValue() != null) {
+          if (booleanFilterData.getValues() != null) {
             throw new BadRequestException(String.format(
               "Filter data cannot be supplied for %s variable type variable filters", variableType.toString()));
           }

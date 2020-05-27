@@ -74,7 +74,9 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateDecisionReportDateVariableFilter())
       .addUpgradeStep(deleteDeprecatedDefinitionImportIndexDocument())
       .addUpgradeStep(migrateExcludedColumnsToNewVersionForProcessReports())
-      .addUpgradeStep(migrateExcludedColumnsToNewVersionForDecisionReports());
+      .addUpgradeStep(migrateExcludedColumnsToNewVersionForDecisionReports())
+      .addUpgradeStep(migrateProcessReportBooleanVariableFilter())
+      .addUpgradeStep(migrateDecisionReportBooleanVariableFilter());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteCamundaTraceStateIndices(upgradeBuilder);
     deleteCamundaSequenceCountIndices(upgradeBuilder);
@@ -181,6 +183,53 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       "    }\n" +
       "  }\n" +
       "}\n"
+      ;
+    //@formatter:on
+    return new UpdateDataStep(
+      SINGLE_DECISION_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+  }
+
+  private UpgradeStep migrateProcessReportBooleanVariableFilter() {
+    //@formatter:off
+    final String script =
+      "if (ctx._source.data.filter != null) {\n" +
+        "  for (filter in ctx._source.data.filter) {\n" +
+        "    if (\"variable\".equalsIgnoreCase(filter.type) && \"Boolean\".equalsIgnoreCase(filter.data.type)) {\n" +
+        "      filter.data.data.values = new ArrayList();\n" +
+        "      if (filter.data.data.value != null) {\n" +
+        "        filter.data.data.values.add(filter.data.data.value);\n" +
+        "      }\n" +
+        "      filter.data.data.value = null;\n" +
+        "    }\n" +
+        "  }\n" +
+        "}\n"
+      ;
+    //@formatter:on
+    return new UpdateDataStep(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+  }
+
+  private UpgradeStep migrateDecisionReportBooleanVariableFilter() {
+    //@formatter:off
+    final String script =
+      "if (ctx._source.data.filter != null) {\n" +
+        "  for (filter in ctx._source.data.filter) {\n" +
+        "    if (\"inputVariable\".equalsIgnoreCase(filter.type) || \"outputVariable\".equalsIgnoreCase(filter.type)\n" +
+        "         && \"Boolean\".equalsIgnoreCase(filter.data.type)) {\n" +
+        "      filter.data.data.values = new ArrayList();\n" +
+        "      if (filter.data.data.value != null) {\n" +
+        "        filter.data.data.values.add(filter.data.data.value);\n" +
+        "      }\n" +
+        "      filter.data.data.value = null;\n" +
+        "    }\n" +
+        "  }\n" +
+        "}\n"
       ;
     //@formatter:on
     return new UpdateDataStep(

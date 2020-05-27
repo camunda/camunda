@@ -13,10 +13,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.BooleanVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -33,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
-public class VariableDateFilterMigrationIT extends AbstractUpgradeIT {
+public class VariableBooleanFilterMigrationIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "3.0.0";
 
   @BeforeEach
@@ -51,7 +49,7 @@ public class VariableDateFilterMigrationIT extends AbstractUpgradeIT {
     ));
     setMetadataIndexVersion(FROM_VERSION);
 
-    executeBulk("steps/3.0/report_data/30-report-with-date-filters-bulk");
+    executeBulk("steps/3.0/report_data/30-report-with-boolean-filters-bulk");
   }
 
   @SneakyThrows
@@ -73,11 +71,10 @@ public class VariableDateFilterMigrationIT extends AbstractUpgradeIT {
       .flatExtracting(ProcessReportDataDto::getFilter)
       .filteredOn(filter -> filter instanceof VariableFilterDto)
       .extracting(ProcessFilterDto::getData)
-      .filteredOn(filterData -> filterData instanceof DateVariableFilterDataDto)
+      .filteredOn(filterData -> filterData instanceof BooleanVariableFilterDataDto)
       .hasOnlyOneElementSatisfying(filterData -> {
-        final DateFilterDataDto<?> dateFilterDataDto = ((DateVariableFilterDataDto) filterData).getData();
-        assertThat(dateFilterDataDto).isInstanceOf(FixedDateFilterDataDto.class);
-        assertThat(dateFilterDataDto.getType()).isEqualTo(DateFilterType.FIXED);
+        final BooleanVariableFilterSubDataDto dateFilterDataDto = ((BooleanVariableFilterDataDto) filterData).getData();
+        assertThat(dateFilterDataDto.getValues()).containsExactly(true);
       });
 
     final List<SingleDecisionReportDefinitionDto> decisionReports = getAllDocumentsOfIndex(
@@ -89,22 +86,20 @@ public class VariableDateFilterMigrationIT extends AbstractUpgradeIT {
       .flatExtracting(DecisionReportDataDto::getFilter)
       .filteredOn(filter -> filter instanceof InputVariableFilterDto)
       .extracting(DecisionFilterDto::getData)
-      .filteredOn(filterData -> filterData instanceof DateVariableFilterDataDto)
+      .filteredOn(filterData -> filterData instanceof BooleanVariableFilterDataDto)
       .hasOnlyOneElementSatisfying(filterData -> {
-        final DateFilterDataDto<?> dateFilterDataDto = ((DateVariableFilterDataDto) filterData).getData();
-        assertThat(dateFilterDataDto).isInstanceOf(FixedDateFilterDataDto.class);
-        assertThat(dateFilterDataDto.getType()).isEqualTo(DateFilterType.FIXED);
+        final BooleanVariableFilterSubDataDto dateFilterDataDto = ((BooleanVariableFilterDataDto) filterData).getData();
+        assertThat(dateFilterDataDto.getValues()).containsExactly(true);
       });
     assertThat(decisionReports)
       .extracting(ReportDefinitionDto::getData)
       .flatExtracting(DecisionReportDataDto::getFilter)
       .filteredOn(filter -> filter instanceof OutputVariableFilterDto)
       .extracting(DecisionFilterDto::getData)
-      .filteredOn(filterData -> filterData instanceof DateVariableFilterDataDto)
+      .filteredOn(filterData -> filterData instanceof BooleanVariableFilterDataDto)
       .hasOnlyOneElementSatisfying(filterData -> {
-        final DateFilterDataDto<?> dateFilterDataDto = ((DateVariableFilterDataDto) filterData).getData();
-        assertThat(dateFilterDataDto).isInstanceOf(FixedDateFilterDataDto.class);
-        assertThat(dateFilterDataDto.getType()).isEqualTo(DateFilterType.FIXED);
+        final BooleanVariableFilterSubDataDto dateFilterDataDto = ((BooleanVariableFilterDataDto) filterData).getData();
+        assertThat(dateFilterDataDto.getValues()).containsExactly(false);
       });
   }
 
