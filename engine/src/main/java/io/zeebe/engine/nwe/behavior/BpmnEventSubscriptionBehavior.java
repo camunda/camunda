@@ -69,13 +69,14 @@ public final class BpmnEventSubscriptionBehavior {
     keyGenerator = zeebeState.getKeyGenerator();
   }
 
-  public void triggerIntermediateEvent(final BpmnElementContext context) {
+  /** @return true if the intermediate event was triggered, false otherwise */
+  public boolean triggerIntermediateEvent(final BpmnElementContext context) {
     final var eventTrigger =
         eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
 
     if (eventTrigger == null) {
       // the activity (i.e. its event scope) is left - discard the event
-      return;
+      return false;
     }
 
     stateBehavior
@@ -84,6 +85,7 @@ public final class BpmnEventSubscriptionBehavior {
 
     eventScopeInstanceState.deleteTrigger(
         context.getElementInstanceKey(), eventTrigger.getEventKey());
+    return true;
   }
 
   public <T extends ExecutableActivity> void triggerBoundaryEvent(

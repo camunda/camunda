@@ -89,7 +89,6 @@ public class IntermediateCatchEventProcessor
   @Override
   public void onTerminated(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.publishTriggeredBoundaryEvent(context);
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.onElementTerminated(element, context);
     stateBehavior.consumeToken(context);
@@ -98,7 +97,8 @@ public class IntermediateCatchEventProcessor
   @Override
   public void onEventOccurred(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.triggerIntermediateEvent(context);
-    stateTransitionBehavior.transitionToCompleting(context);
+    if (eventSubscriptionBehavior.triggerIntermediateEvent(context)) {
+      stateTransitionBehavior.transitionToCompleting(context);
+    }
   }
 }
