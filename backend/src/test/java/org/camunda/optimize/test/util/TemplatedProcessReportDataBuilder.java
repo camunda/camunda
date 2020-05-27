@@ -434,6 +434,20 @@ public class TemplatedProcessReportDataBuilder {
         reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
+      case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_CANDIDATE_GROUP:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedBy(DistributedBy.CANDIDATE_GROUP)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+
+        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+        setUserTaskDurationTimeIfConfigured(reportData);
+        break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
@@ -467,6 +481,20 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ProcessViewProperty.DURATION)
           .groupByType(ProcessGroupByType.END_DATE)
           .distributedBy(DistributedBy.ASSIGNEE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+
+        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+        setUserTaskDurationTimeIfConfigured(reportData);
+        break;
+      case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE_BY_CANDIDATE_GROUP:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedBy(DistributedBy.CANDIDATE_GROUP)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)

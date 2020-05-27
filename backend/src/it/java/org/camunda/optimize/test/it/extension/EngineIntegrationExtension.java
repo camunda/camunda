@@ -38,13 +38,13 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
-import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.engine.TenantEngineDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.EngineUserDto;
@@ -228,18 +228,24 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public void addCandidateGroupForAllRunningUserTasks(final String groupId) {
+    addCandidateGroupForAllRunningUserTasks(null, groupId);
+  }
+
+  public void addCandidateGroupForAllRunningUserTasks(final String processInstanceId,
+                                                      final String groupId) {
     try (final CloseableHttpClient httpClient = createClientWithDefaultBasicAuth()) {
-      final List<TaskDto> tasks = getUserTasks(httpClient, null);
+      final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
       for (TaskDto task : tasks) {
-        addCandidateGroupToUserTask(httpClient, task.getId(), groupId);
+        addCandidateGroupToUserTask(httpClient, groupId, task.getId());
       }
     } catch (IOException e) {
       log.error("Error while trying to create http client auth authentication!", e);
     }
   }
 
-  private void addCandidateGroupToUserTask(final CloseableHttpClient httpClient, final String taskId,
-                                           final String groupId) throws IOException {
+  private void addCandidateGroupToUserTask(final CloseableHttpClient httpClient,
+                                           final String groupId,
+                                           final String taskId) throws IOException {
     HttpPost addCandidateGroupPost = new HttpPost(getAddIdentityLinkUrl(taskId));
     String bodyAsString = String.format("{\"groupId\": \"%s\", \"type\": \"candidate\"}", groupId);
     addCandidateGroupPost.setEntity(new StringEntity(bodyAsString));

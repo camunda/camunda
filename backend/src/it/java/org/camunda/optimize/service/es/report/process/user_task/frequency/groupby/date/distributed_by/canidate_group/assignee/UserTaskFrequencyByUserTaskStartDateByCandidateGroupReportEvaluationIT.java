@@ -56,8 +56,8 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
   @ParameterizedTest
   @MethodSource("getExecutionStateExpectedValues")
   public void evaluateReportWithExecutionState(final FlowNodeExecutionState executionState,
-                                               final Long assignee1Count,
-                                               final Long assignee2Count) {
+                                               final Long candidateGroup1Count,
+                                               final Long candidateGroup2Count) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -79,8 +79,8 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, assignee2Count)
-        .distributedByContains(FIRST_CANDIDATE_GROUP, assignee1Count)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, candidateGroup2Count)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, candidateGroup1Count)
       .doAssert(result);
     // @formatter:on
   }

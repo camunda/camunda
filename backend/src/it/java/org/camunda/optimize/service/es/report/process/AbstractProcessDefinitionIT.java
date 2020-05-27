@@ -11,9 +11,11 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.Order;
@@ -23,12 +25,15 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class AbstractProcessDefinitionIT extends AbstractIT {
 
@@ -220,6 +225,44 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
+  }
+
+  protected void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
+                                         final OffsetDateTime now,
+                                         final String userTaskId,
+                                         final long offsetDuration) {
+    engineDatabaseExtension.changeUserTaskStartDate(
+      processInstanceDto.getId(),
+      userTaskId,
+      now.minus(offsetDuration, ChronoUnit.MILLIS)
+    );
+  }
+
+  // this method is used for the parameterized tests
+  @SuppressWarnings("unused")
+  protected static Stream<GroupByDateUnit> staticGroupByDateUnits() {
+    return Arrays.stream(GroupByDateUnit.values()).filter(g -> !g.equals(GroupByDateUnit.AUTOMATIC));
+  }
+
+  protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
+                                         final OffsetDateTime now,
+                                         final String userTaskKey,
+                                         final long offsetDuration) {
+
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+      .forEach(
+        historicUserTaskInstanceDto ->
+        {
+          try {
+            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+              historicUserTaskInstanceDto.getId(),
+              now.minus(offsetDuration, ChronoUnit.MILLIS)
+            );
+          } catch (SQLException e) {
+            throw new OptimizeIntegrationTestException(e);
+          }
+        }
+      );
   }
 
 }

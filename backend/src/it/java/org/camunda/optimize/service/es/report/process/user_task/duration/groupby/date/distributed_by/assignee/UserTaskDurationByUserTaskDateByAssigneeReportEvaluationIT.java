@@ -62,10 +62,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_D
 
 public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
-  private static Stream<GroupByDateUnit> staticGroupByDateUnits() {
-    return Arrays.stream(GroupByDateUnit.values()).filter(g -> !g.equals(GroupByDateUnit.AUTOMATIC));
-  }
-
   @BeforeEach
   public void init() {
     // create second user

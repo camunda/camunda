@@ -752,17 +752,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   protected abstract void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
                                                                  final FlowNodeExecutionState executionState);
 
-  private void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
-                                       final OffsetDateTime now,
-                                       final String userTaskId,
-                                       final long offsetDuration) {
-    engineDatabaseExtension.changeUserTaskStartDate(
-      processInstanceDto.getId(),
-      userTaskId,
-      now.minus(offsetDuration, ChronoUnit.MILLIS)
-    );
-  }
-
   protected abstract UserTaskDurationTime getUserTaskDurationTime();
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
@@ -770,27 +759,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
                                          final long duration);
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration);
-
-  private void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
-                                       final OffsetDateTime now,
-                                       final String userTaskKey,
-                                       final long offsetDuration) {
-
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto ->
-        {
-          try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-              historicUserTaskInstanceDto.getId(),
-              now.minus(offsetDuration, ChronoUnit.MILLIS)
-            );
-          } catch (SQLException e) {
-            throw new OptimizeIntegrationTestException(e);
-          }
-        }
-      );
-  }
 
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
 
