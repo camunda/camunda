@@ -49,3 +49,48 @@ it('should change the visualization if it is incompatible with the new configura
     true
   );
 });
+
+it('should offer the correct options based on the group by type', () => {
+  const spy = jest.fn();
+  let node = shallow(
+    <DistributedBy
+      report={{
+        data: {
+          ...data,
+          groupBy: {type: 'userTasks'},
+        },
+      }}
+      onChange={spy}
+    />
+  );
+
+  expect(node.find({value: 'assignee'})).toExist();
+  expect(node.find({value: 'candidateGroup'})).toExist();
+  expect(node.find({value: 'userTask'})).not.toExist();
+
+  node.setProps({
+    report: {
+      data: {
+        ...data,
+        groupBy: {type: 'startDate'},
+      },
+    },
+  });
+
+  expect(node.find({value: 'assignee'})).toExist();
+  expect(node.find({value: 'candidateGroup'})).toExist();
+  expect(node.find({value: 'userTask'})).toExist();
+
+  node.setProps({
+    report: {
+      data: {
+        ...data,
+        groupBy: {type: 'assignee'},
+      },
+    },
+  });
+
+  expect(node.find({value: 'assignee'})).not.toExist();
+  expect(node.find({value: 'candidateGroup'})).not.toExist();
+  expect(node.find({value: 'userTask'})).toExist();
+});
