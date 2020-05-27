@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -38,13 +39,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_REPLICAS_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class SchemaInitializerIT extends AbstractIT {
@@ -147,6 +152,37 @@ public class SchemaInitializerIT extends AbstractIT {
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
 
     assertMappingSettings(mappings, getSettingsResponse);
+  }
+
+  @Test
+  public void dynamicSettingsContainUpdatedConfigurations() throws IOException {
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getEsRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getEsNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
+
+    // given schema exists
+    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval("100s");
+    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(2);
+    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(10);
+
+    // when
+    initializeSchema();
+
+    // then the settings contain the updated dynamic values
+    final GetSettingsResponse getSettingsResponse =
+      getIndexSettingsFor(Collections.singletonList(new ProcessDefinitionIndex()));
+    final String indexName =
+      indexNameService.getVersionedOptimizeIndexNameForIndexMapping(new ProcessDefinitionIndex());
+    final Settings settings = getSettingsResponse.getIndexToSettings().get(indexName);
+    assertThat(settings.get("index." + REFRESH_INTERVAL_SETTING)).isEqualTo("100s");
+    assertThat(settings.getAsInt("index." + NUMBER_OF_REPLICAS_SETTING, 111)).isEqualTo(2);
+    assertThat(settings.getAsInt("index." + MAPPING_NESTED_OBJECTS_LIMIT, 111)).isEqualTo(10);
+
+    // cleanup
+    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval(oldRefreshInterval);
+    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(oldReplicaCount);
+    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(oldNestedDocumentLimit);
+    initializeSchema();
   }
 
   @Test

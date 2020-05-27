@@ -14,6 +14,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ANALYSIS_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_REPLICAS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -60,7 +61,8 @@ public class IndexSettingsBuilder {
     return builder
       .field(DYNAMIC_SETTING_MAX_NGRAM_DIFF, MAX_GRAM - 1)
       .field(REFRESH_INTERVAL_SETTING, configurationService.getEsRefreshInterval())
-      .field(NUMBER_OF_REPLICAS_SETTING, configurationService.getEsNumberOfReplicas());
+      .field(NUMBER_OF_REPLICAS_SETTING, configurationService.getEsNumberOfReplicas())
+      .field(MAPPING_NESTED_OBJECTS_LIMIT, configurationService.getEsNestedDocumentsLimit());
   }
 
   private static XContentBuilder addAnalysis(XContentBuilder builder) throws IOException {
@@ -105,7 +107,7 @@ public class IndexSettingsBuilder {
     // @formatter:on
   }
 
-  public static Settings toSettings(final XContentBuilder builder) {
+  private static Settings toSettings(final XContentBuilder builder) {
     return Settings.builder().loadFromSource(Strings.toString(builder), XContentType.JSON).build();
   }
 }

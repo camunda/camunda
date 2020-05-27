@@ -100,6 +100,7 @@ public class ConfigurationService {
   private Integer esNumberOfShards;
   private String esRefreshInterval;
   private String esIndexPrefix;
+  private Integer esNestedDocumentsLimit;
 
   // elastic query settings
   private Integer esAggregationBucketLimit;
@@ -499,6 +500,16 @@ public class ConfigurationService {
       esIndexPrefix = configJsonContext.read(ConfigurationServiceConstants.ES_INDEX_PREFIX, String.class);
     }
     return esIndexPrefix;
+  }
+
+  public int getEsNestedDocumentsLimit() {
+    if (esNestedDocumentsLimit == null) {
+      esNestedDocumentsLimit = configJsonContext.read(
+        ConfigurationServiceConstants.ES_INDEX_NESTED_DOCUMENTS_LIMIT, Integer.class
+      );
+    }
+    ensureGreaterThanZero(esNestedDocumentsLimit);
+    return esNestedDocumentsLimit;
   }
 
   public int getEngineImportProcessDefinitionXmlMaxPageSize() {

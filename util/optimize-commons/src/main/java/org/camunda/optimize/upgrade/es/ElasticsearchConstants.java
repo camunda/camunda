@@ -25,6 +25,7 @@ public class ElasticsearchConstants {
   public static final String NUMBER_OF_REPLICAS_SETTING = "number_of_replicas";
   public static final String NUMBER_OF_SHARDS_SETTING = "number_of_shards";
   public static final String REFRESH_INTERVAL_SETTING = "refresh_interval";
+  public static final String MAPPING_NESTED_OBJECTS_LIMIT = "mapping.nested_objects.limit";
   public static final String ANALYSIS_SETTING = "analysis";
   public static final String SORT_SETTING = "sort";
   public static final String SORT_FIELD_SETTING = "field";

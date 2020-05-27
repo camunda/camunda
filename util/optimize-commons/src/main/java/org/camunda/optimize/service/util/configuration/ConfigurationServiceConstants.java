@@ -92,6 +92,7 @@ public class ConfigurationServiceConstants {
   public static final String ES_NUMBER_OF_REPLICAS = "$.es.settings.index.number_of_replicas";
   public static final String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";
   public static final String ES_INDEX_PREFIX = "$.es.settings.index.prefix";
+  public static final String ES_INDEX_NESTED_DOCUMENTS_LIMIT = "$.es.settings.index.nested_documents_limit";
 
   public static final String ENGINE_DATE_FORMAT = "$.serialization.engineDateFormat";
   public static final String CONTAINER_HOST = "$.container.host";

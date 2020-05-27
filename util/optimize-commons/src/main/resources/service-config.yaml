@@ -302,6 +302,10 @@ es:
       # for search. A positive value defines the duration in seconds.
       # A value of -1 means that a refresh needs to be done manually.
       refresh_interval: 2s
+      # Optimize uses nested documents to store list information such as activities or variables belonging to a
+      # process instance. So this setting defines the maximum number of activities/variables that a single
+      # process instance can contain. This limit helps to prevent out of memory errors and should be used with care.
+      nested_documents_limit: 10000
 
 plugin:
   # Defines the directory path in the local Optimize file system which should be checked for plugins
