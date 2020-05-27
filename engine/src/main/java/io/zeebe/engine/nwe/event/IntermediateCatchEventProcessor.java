@@ -53,9 +53,7 @@ public class IntermediateCatchEventProcessor
   @Override
   public void onActivated(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    if (element.isNone()) {
-      stateTransitionBehavior.transitionToCompleting(context);
-    }
+    // nothing to do here
   }
 
   @Override
