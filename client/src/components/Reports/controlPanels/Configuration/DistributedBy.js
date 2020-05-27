@@ -33,21 +33,35 @@ export default function DistributedBy({
           }}
         >
           <Select.Option value="none">{t('common.nothing')}</Select.Option>
-          {groupBy.type === 'userTasks' ? (
-            <>
-              <Select.Option key="assignee" value="assignee">
-                {t('report.groupBy.userAssignee')}
-              </Select.Option>
-              <Select.Option key="candidateGroup" value="candidateGroup">
-                {t('report.groupBy.userGroup')}
-              </Select.Option>
-            </>
-          ) : (
-            <Select.Option value="userTask">{t('report.view.userTask')}</Select.Option>
-          )}
+          {getOptionsFor(groupBy.type)}
         </Select>
       </fieldset>
     );
   }
   return null;
+}
+
+function getOptionsFor(type) {
+  const options = [];
+
+  if (['userTasks', 'startDate', 'endDate'].includes(type)) {
+    options.push(
+      <Select.Option key="assignee" value="assignee">
+        {t('report.groupBy.userAssignee')}
+      </Select.Option>,
+      <Select.Option key="candidateGroup" value="candidateGroup">
+        {t('report.groupBy.userGroup')}
+      </Select.Option>
+    );
+  }
+
+  if (type !== 'userTasks') {
+    options.push(
+      <Select.Option key="userTask" value="userTask">
+        {t('report.view.userTask')}
+      </Select.Option>
+    );
+  }
+
+  return options;
 }
