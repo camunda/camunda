@@ -37,7 +37,7 @@ const newAlert = {
   },
   reminder: null,
   fixNotification: false,
-  webhook: null,
+  webhook: undefined,
 };
 
 export default class AlertModal extends React.Component {
@@ -355,7 +355,7 @@ export default class AlertModal extends React.Component {
                     </Typeahead>
                     <Button
                       disabled={!webhook}
-                      onClick={() => this.setState({webhook: null})}
+                      onClick={() => this.setState({webhook: undefined})}
                       className="reset"
                     >
                       {t('common.reset')}
