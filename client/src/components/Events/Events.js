@@ -19,6 +19,7 @@ import UsersModal from './UsersModal';
 import {loadProcesses, createProcess, removeProcess, cancelPublish} from './service';
 
 import './Events.scss';
+import GenerationModal from './GenerationModal';
 
 export default withErrorHandling(
   class Events extends React.Component {
@@ -28,6 +29,7 @@ export default withErrorHandling(
       publishing: null,
       redirect: null,
       editingAccess: null,
+      openGenerationModal: false,
     };
 
     fileInput = React.createRef();
@@ -95,7 +97,7 @@ export default withErrorHandling(
             .getElementsByTagName('bpmn:process')[0];
           const name = process.getAttribute('name') || process.getAttribute('id');
 
-          this.props.mightFail(createProcess(name, xml, {}), this.loadList, showError);
+          this.props.mightFail(createProcess({name, xml, mappings: {}}), this.loadList, showError);
         } catch (e) {
           showError(t('events.parseError'));
         }
@@ -103,8 +105,20 @@ export default withErrorHandling(
       reader.readAsText(this.fileInput.current.files[0]);
     };
 
+    toggleGenerationModal = () =>
+      this.setState(({openGenerationModal}) => ({
+        openGenerationModal: !openGenerationModal,
+      }));
+
     render() {
-      const {processes, deleting, redirect, publishing, editingAccess} = this.state;
+      const {
+        processes,
+        deleting,
+        redirect,
+        publishing,
+        editingAccess,
+        openGenerationModal,
+      } = this.state;
 
       if (redirect) {
         return <Redirect to={redirect} />;
@@ -118,6 +132,9 @@ export default withErrorHandling(
             isLoading={!processes}
             action={
               <Dropdown main primary label={t('events.new')}>
+                <Dropdown.Option onClick={this.toggleGenerationModal}>
+                  {t('events.autogenerate')}
+                </Dropdown.Option>
                 <Dropdown.Option link="new/edit">{t('events.modelProcess')}</Dropdown.Option>
                 <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
               </Dropdown>
@@ -205,6 +222,7 @@ export default withErrorHandling(
               onClose={() => this.setState({editingAccess: null})}
             />
           )}
+          {openGenerationModal && <GenerationModal onClose={this.toggleGenerationModal} />}
           <input
             className="hidden"
             onChange={this.createUploadedProcess}

@@ -12,6 +12,7 @@ import {EntityList, Deleter} from 'components';
 import PublishModal from './PublishModal';
 import {loadProcesses} from './service';
 import EventsWithErrorHandling from './Events';
+import GenerationModal from './GenerationModal';
 
 const Events = EventsWithErrorHandling.WrappedComponent;
 
@@ -72,4 +73,10 @@ it('should correctly set the republish prop on the PublishModal', () => {
   node.find(EntityList).prop('data')[2].actions[0].action();
 
   expect(node.find(PublishModal).prop('republish')).toBe(true);
+});
+
+it('should open generation modal', () => {
+  const node = shallow(<Events {...props} />);
+  node.instance().toggleGenerationModal();
+  expect(node.find(GenerationModal)).toExist();
 });

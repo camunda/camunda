@@ -28,8 +28,8 @@ export async function cancelPublish(id) {
   return await post(`/api/eventBasedProcess/${id}/_cancelPublish`);
 }
 
-export async function createProcess(name, xml, mappings, eventSources) {
-  const response = await post('/api/eventBasedProcess', {name, xml, mappings, eventSources});
+export async function createProcess(payload) {
+  const response = await post('/api/eventBasedProcess', payload);
   const json = await response.json();
 
   return json.id;

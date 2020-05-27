@@ -88,7 +88,7 @@ export default withErrorHandling(
       this.props.onConfirm(updatedSources);
     };
 
-    isEditing = () => this.props.initialSource.processDefinitionKey;
+    isEditing = () => this.props.initialSource?.processDefinitionKey;
 
     alreadyExists = () =>
       this.props.existingSources.some(
@@ -224,7 +224,7 @@ export default withErrorHandling(
                       <div className="displayHeader">
                         <h4>
                           {autoGenerate
-                            ? t('events.source.generatedEvents')
+                            ? t('events.sources.generatedEvents')
                             : t('events.sources.display')}
                         </h4>
                         <a href={docsLink} target="_blank" rel="noopener noreferrer">

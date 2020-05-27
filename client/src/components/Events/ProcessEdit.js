@@ -70,15 +70,13 @@ export class ProcessEdit extends React.Component {
     }
   }
 
-  initializeNewProcess = async () => {
+  createNewProcessXML = (withStartEvent) => {
     const id = 'Process_' + Math.random().toString(36).substr(2);
 
-    this.setState({
-      name: t('events.new'),
-      xml: `<?xml version="1.0" encoding="UTF-8"?>
+    return `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_15hceqv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.4.1">
       <bpmn:process id="${id}" name="${t('events.new')}" isExecutable="true">
-        <bpmn:startEvent id="StartEvent_1" />
+        ${withStartEvent && `<bpmn:startEvent id="StartEvent_1" />`}
       </bpmn:process>
       <bpmndi:BPMNDiagram id="BPMNDiagram_1">
         <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${id}">
@@ -88,7 +86,13 @@ export class ProcessEdit extends React.Component {
         </bpmndi:BPMNPlane>
       </bpmndi:BPMNDiagram>
     </bpmn:definitions>
-    `,
+    `;
+  };
+
+  initializeNewProcess = async () => {
+    this.setState({
+      name: t('events.new'),
+      xml: this.createNewProcessXML(true),
       mappings: {},
       eventSources: [],
       lastModifier: (await this.props.getUser()).id,
@@ -102,7 +106,7 @@ export class ProcessEdit extends React.Component {
       ({name, xml, mappings, eventSources, lastModifier, lastModified}) =>
         this.setState({
           name,
-          xml,
+          xml: xml || this.createNewProcessXML(),
           mappings,
           eventSources,
           lastModifier,
@@ -118,7 +122,7 @@ export class ProcessEdit extends React.Component {
       const {name, mappings, xml, eventSources} = this.state;
 
       if (this.isNew()) {
-        mightFail(createProcess(name, xml, mappings, eventSources), resolve, (error) =>
+        mightFail(createProcess({name, xml, mappings, eventSources}), resolve, (error) =>
           reject(showError(error))
         );
       } else {

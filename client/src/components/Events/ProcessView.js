@@ -7,7 +7,15 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
-import {LoadingIndicator, Button, Icon, Deleter, BPMNDiagram, ModificationInfo} from 'components';
+import {
+  LoadingIndicator,
+  Button,
+  Icon,
+  Deleter,
+  BPMNDiagram,
+  ModificationInfo,
+  MessageBox,
+} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
@@ -16,6 +24,7 @@ import ProcessRenderer from './ProcessRenderer';
 import PublishModal from './PublishModal';
 import {removeProcess, cancelPublish, loadProcess} from './service';
 import {checkDeleteConflict} from 'services';
+import {getOptimizeVersion} from 'config';
 
 import './ProcessView.scss';
 
@@ -26,11 +35,19 @@ export default withErrorHandling(
       deleting: null,
       publishing: null,
       isPublishing: false,
+      optimizeVersion: 'latest',
     };
 
-    componentDidMount() {
+    async componentDidMount() {
       this.load();
       this.setupPoll();
+
+      const version = (await getOptimizeVersion()).split('.');
+      version.length = 2;
+
+      this.setState({
+        optimizeVersion: version.join('.'),
+      });
     }
 
     componentWillUnmount() {
@@ -80,11 +97,13 @@ export default withErrorHandling(
       const {
         deleting,
         publishing,
+        optimizeVersion,
         data: {id, name, xml, mappings, state, publishingProgress, lastModified, lastModifier},
       } = this.state;
 
       const isPublishing = state === 'publish_pending';
       const canPublish = state === 'mapped' || state === 'unpublished_changes';
+      const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/user-guide/event-based-processes`;
 
       return (
         <div className="ProcessView">
@@ -133,6 +152,14 @@ export default withErrorHandling(
             </div>
             <ModificationInfo user={lastModifier} date={lastModified} />
           </div>
+          {this.props.generated && (
+            <MessageBox type="warning">
+              {t('events.generationWarning')}{' '}
+              <a href={docsLink} target="_blank" rel="noopener noreferrer">
+                {t('events.sources.learnMore')}
+              </a>
+            </MessageBox>
+          )}
           <BPMNDiagram xml={xml}>
             <ProcessRenderer mappings={mappings} />
           </BPMNDiagram>

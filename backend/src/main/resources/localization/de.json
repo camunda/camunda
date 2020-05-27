@@ -118,6 +118,9 @@
   },
   "events": {
     "new": "Neuer Prozess",
+    "autogenerate": "Autogenerieren",
+    "generate": "Generieren",
+    "addedSources": "Added sources",
     "modelProcess": "Prozess modellieren",
     "upload": ".bpmn hochladen",
     "empty": "Es wurden noch keine Eventbasierten Prozesse erstellt",
@@ -129,6 +132,8 @@
     "publishStart": "Veröffentliche Prozess. Das kann eine Weile dauern.",
     "publishSuccess": "{name} wurde veröffentlicht.",
     "stateColumn": "Status",
+    "generationInfo": "Fügen Sie Eventquellen hinzu, um automatisch einen End-to-End-Prozess zu generieren. Generierte Prozesse basieren auf einer Stichprobe von Daten und repräsentieren möglicherweise nicht alle Events. Bearbeiten Sie den generierten Prozess, um ihn manuell zu verfeinern.",
+    "generationWarning": "Autogenerierte Prozesse basieren auf einer Stichprobe von Daten und repräsentieren möglicherweise nicht alle Events. Bearbeiten Sie den generierten Prozess, um ihn manuell zu verfeinern.",
     "table": {
       "group": "Gruppe",
       "mapping": "Zugeordnet als…",
@@ -192,7 +197,8 @@
       "eventListTip": "Konfigurieren Sie, welche Events in der Tabelle angezeigt werden.",
       "definitionChangeWarning": "Durch die Änderung der Prozessdefinition können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
       "eventListChangeWarning": "Durch die Änderung der Event-Liste können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
-      "remove": "Quelle entfernen"
+      "remove": "Quelle entfernen",
+      "camundaProcess": "Camunda Prozess"
     }
   },
   "report": {
