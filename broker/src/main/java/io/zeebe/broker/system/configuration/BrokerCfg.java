@@ -12,6 +12,7 @@ import static io.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.exporter.metrics.MetricsExporter;
+import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.util.Environment;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import java.time.Duration;
