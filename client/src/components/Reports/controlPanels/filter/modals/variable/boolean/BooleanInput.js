@@ -29,18 +29,20 @@ export default function BooleanInput({changeFilter, setValid, filter}) {
       : t('common.filter.variableModal.bool.' + value.toString());
 
   return (
-    <TypeaheadMultipleSelection
-      availableValues={[true, false, null]}
-      selectedValues={filter.values}
-      toggleValue={toggleValue}
-      format={formatValue}
-      labels={{
-        available: t('common.filter.variableModal.multiSelect.available'),
-        selected: t('common.filter.variableModal.multiSelect.selected'),
-        empty: t('common.filter.variableModal.multiSelect.empty'),
-      }}
-      hideSearch
-    />
+    <div className="BooleanInput">
+      <TypeaheadMultipleSelection
+        availableValues={[true, false, null]}
+        selectedValues={filter.values}
+        toggleValue={toggleValue}
+        format={formatValue}
+        labels={{
+          available: t('common.filter.variableModal.multiSelect.available'),
+          selected: t('common.filter.variableModal.multiSelect.selected'),
+          empty: t('common.filter.variableModal.multiSelect.empty'),
+        }}
+        hideSearch
+      />
+    </div>
   );
 }
 

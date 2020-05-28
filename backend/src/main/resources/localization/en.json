@@ -457,12 +457,21 @@
     "noAuthorization": "Missing authorization",
     "noReportAccess": "No access to report",
     "filter": {
+      "varAbbreviation": "Var",
       "label": "Filters",
       "notice": "Filters apply to all compatible Reports on this Dashboard.",
+      "modal": {
+        "pretext": {
+          "Date": "Date selection will be available in the resulting filter.",
+          "Boolean": "True and false values will be available in the resulting filter.",
+          "default": "Selected options will be available in the resulting filter."
+        }
+      },
       "types": {
         "state": "Instance State",
         "startDate": "Start Date",
         "endDate": "End Date",
+        "variable": "Variable",
         "runningInstancesOnly": "Running",
         "completedInstancesOnly": "Completed",
         "canceledInstancesOnly": "Canceled",

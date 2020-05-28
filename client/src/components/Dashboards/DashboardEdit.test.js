@@ -10,6 +10,8 @@ import {shallow} from 'enzyme';
 import {nowDirty} from 'saveGuard';
 import {EntityNameForm} from 'components';
 
+import {FiltersEdit} from './filters';
+
 import DashboardEdit from './DashboardEdit';
 
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
@@ -69,9 +71,9 @@ it('should react to layout changes', () => {
 it('should have a toggleable Filters Edit section', () => {
   const node = shallow(<DashboardEdit />);
 
-  expect(node.find('FiltersEdit')).not.toExist();
+  expect(node.find(FiltersEdit)).not.toExist();
 
   node.find(EntityNameForm).find('.tool-button').simulate('click');
 
-  expect(node.find('FiltersEdit')).toExist();
+  expect(node.find(FiltersEdit)).toExist();
 });

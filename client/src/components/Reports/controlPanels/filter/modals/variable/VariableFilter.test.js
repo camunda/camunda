@@ -36,6 +36,18 @@ const props = {
   },
 };
 
+const filterData = {
+  type: 'variable',
+  data: {
+    name: 'foo',
+    type: 'String',
+    data: {
+      operator: 'not in',
+      values: ['value1', 'value2'],
+    },
+  },
+};
+
 it('should contain a modal', () => {
   const node = shallow(<VariableFilter {...props} />);
 
@@ -51,17 +63,6 @@ it('should disable add filter button if no variable is selected', () => {
 });
 
 it('should take filter given by properties', async () => {
-  const filterData = {
-    type: 'variable',
-    data: {
-      name: 'foo',
-      type: 'String',
-      data: {
-        operator: 'not in',
-        values: ['value1', 'value2'],
-      },
-    },
-  };
   const spy = jest.fn();
   const node = shallow(<VariableFilter {...props} filterData={filterData} addFilter={spy} />);
 
@@ -185,4 +186,22 @@ it('should contain a typeahead with the available variables', async () => {
   expect(node.find({value: 'varA'})).toExist();
   expect(node.find({value: 'varB'})).toExist();
   expect(node.find({value: 'varC'})).toExist();
+});
+
+it('should allow rendering a pretext if provided', () => {
+  const spy = jest.fn().mockReturnValue(<span className="pretext">pretext value</span>);
+  const node = shallow(<VariableFilter {...props} filterData={filterData} getPretext={spy} />);
+
+  expect(spy).toHaveBeenCalledWith({id: undefined, name: 'foo', type: 'String'});
+  expect(node.find('.pretext')).toExist();
+});
+
+it('should allow forcing the add button to be enabled', () => {
+  const node = shallow(<VariableFilter {...props} />);
+
+  expect(node.find(Button).last()).toBeDisabled();
+
+  node.setProps({forceEnabled: () => true});
+
+  expect(node.find(Button).last()).not.toBeDisabled();
 });

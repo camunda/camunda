@@ -4,14 +4,45 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
+import useDeepCompareEffect from 'use-deep-compare-effect';
+
+import {getVariableNames, getVariableValues} from './service';
 
 import {ActionItem, Dropdown} from 'components';
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
 import {t} from 'translation';
 
 import './FiltersEdit.scss';
 
-export default function FiltersEdit({availableFilters, setAvailableFilters}) {
+import {VariableFilter} from '../../Reports';
+
+export function FiltersEdit({availableFilters, setAvailableFilters, reports = [], mightFail}) {
+  const [showVariableModal, setShowVariableModal] = useState(false);
+  const [availableVariables, setAvailableVariables] = useState([]);
+
+  useDeepCompareEffect(() => {
+    mightFail(
+      getVariableNames(reports),
+      (availableVariables) => {
+        setAvailableVariables(availableVariables);
+        setAvailableFilters(
+          availableFilters.filter(({type, data}) => {
+            if (type !== 'variable') {
+              return true;
+            }
+
+            return availableVariables.some(
+              ({type, name}) => data.type === type && data.name === name
+            );
+          })
+        );
+      },
+      showError
+    );
+  }, [reports]);
+
   function addFilter(type) {
     setAvailableFilters([...availableFilters, {type}]);
   }
@@ -29,10 +60,17 @@ export default function FiltersEdit({availableFilters, setAvailableFilters}) {
       <h3>{t('dashboard.filter.label')}</h3>
       <span className="hint">{t('dashboard.filter.notice')}</span>
       <ul>
-        {availableFilters.map(({type}, idx) => (
-          <li key={type}>
+        {availableFilters.map(({type, data}, idx) => (
+          <li key={idx}>
             <ActionItem onClick={() => removeFilter(idx)}>
-              {t('dashboard.filter.types.' + type)}
+              {type === 'variable' ? (
+                <>
+                  {t('dashboard.filter.varAbbreviation')}:{' '}
+                  <span className="variableName">{data.name}</span>
+                </>
+              ) : (
+                t('dashboard.filter.types.' + type)
+              )}
             </ActionItem>
           </li>
         ))}
@@ -47,9 +85,57 @@ export default function FiltersEdit({availableFilters, setAvailableFilters}) {
                 {t('dashboard.filter.types.' + type)}
               </Dropdown.Option>
             ))}
+            <Dropdown.Option
+              disabled={reports.length === 0}
+              onClick={() => setShowVariableModal(true)}
+            >
+              {t('dashboard.filter.types.variable')}
+            </Dropdown.Option>
           </Dropdown>
         </li>
       </ul>
+      {showVariableModal && (
+        <VariableFilter
+          className="dashboardVariableFilter"
+          forceEnabled={(variable) => ['Date', 'Boolean'].includes(variable?.type)}
+          addFilter={({type, data}) => {
+            if (['Boolean', 'Date'].includes(data.type)) {
+              setAvailableFilters([
+                ...availableFilters,
+                {type, data: {name: data.name, type: data.type}},
+              ]);
+            } else {
+              setAvailableFilters([
+                ...availableFilters,
+                {type, data: {data: data.data, name: data.name, type: data.type}},
+              ]);
+            }
+            setShowVariableModal(false);
+          }}
+          getPretext={(variable) => {
+            if (variable) {
+              let text;
+              switch (variable?.type) {
+                case 'Date':
+                case 'Boolean':
+                  text = t('dashboard.filter.modal.pretext.' + variable.type);
+                  break;
+                default:
+                  text = t('dashboard.filter.modal.pretext.default');
+              }
+              return <div className="preText">{text}</div>;
+            }
+          }}
+          close={() => setShowVariableModal(false)}
+          config={{
+            getVariables: () => availableVariables,
+            getValues: (...args) => getVariableValues(reports, ...args),
+          }}
+          filterType="variable"
+        />
+      )}
     </div>
   );
 }
+
+export default withErrorHandling(FiltersEdit);

@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import classnames from 'classnames';
 import {Modal, Button, Typeahead, Labeled} from 'components';
 
 import {BooleanInput} from './boolean';
@@ -81,18 +82,20 @@ export default class VariableFilter extends React.Component {
   };
 
   render() {
-    const {selectedVariable, variables} = this.state;
+    const {selectedVariable, variables, filter, valid} = this.state;
+    const {close, className, filterType, getPretext, config, filterData, forceEnabled} = this.props;
 
     const ValueInput = this.getInputComponentForVariable(selectedVariable);
 
     return (
-      <Modal open={true} onClose={this.props.close} className="VariableFilter__modal">
+      <Modal open onClose={close} className={classnames('VariableFilter__modal', className)}>
         <Modal.Header>
           {t('common.filter.modalHeader', {
-            type: t(`common.filter.types.${this.props.filterType}`),
+            type: t(`common.filter.types.${filterType}`),
           })}
         </Modal.Header>
         <Modal.Content>
+          {getPretext?.(selectedVariable)}
           <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
             <Typeahead
               onChange={this.selectVariable}
@@ -108,19 +111,24 @@ export default class VariableFilter extends React.Component {
             </Typeahead>
           </Labeled>
           <ValueInput
-            config={this.props.config}
+            config={config}
             variable={selectedVariable}
             setValid={this.setValid}
             changeFilter={this.changeFilter}
-            filter={this.state.filter}
+            filter={filter}
           />
         </Modal.Content>
         <Modal.Actions>
-          <Button main onClick={this.props.close}>
+          <Button main onClick={close}>
             {t('common.cancel')}
           </Button>
-          <Button main primary disabled={!this.state.valid} onClick={this.createFilter}>
-            {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
+          <Button
+            main
+            primary
+            disabled={!valid && !forceEnabled?.(selectedVariable)}
+            onClick={this.createFilter}
+          >
+            {filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>

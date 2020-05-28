@@ -457,12 +457,21 @@
     "noAuthorization": "Fehlende Berechtigung",
     "noReportAccess": "Kein Zugriff auf Report",
     "filter": {
+      "varAbbreviation": "Var",
       "label": "Filter",
       "notice": "Filter gelten für alle kompatiblen Berichte in diesem Dashboard.",
+      "modal": {
+        "pretext": {
+          "Date": "Datumsauswahl wird im resultierenden Filter verfügbar sein.",
+          "Boolean": "Wahr und Falsch Werte werden im resultierenden Filter verfügbar sein.",
+          "default": "Ausgewählte Optionen werden im resultierenden Filter verfügbar sein."
+        }
+      },
       "types": {
         "state": "Instanzstatus",
         "startDate": "Startdatum",
         "endDate": "Enddatum",
+        "variable": "Variable",
         "runningInstancesOnly": "Laufend",
         "completedInstancesOnly": "Abgeschlossen",
         "canceledInstancesOnly": "Abgebrochen",

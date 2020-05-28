@@ -199,6 +199,7 @@ export default class DashboardEdit extends React.Component {
         </div>
         {filtersShown && (
           <FiltersEdit
+            reports={reports?.map(({id}) => id).filter((id) => !!id)}
             availableFilters={availableFilters}
             setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
           />
