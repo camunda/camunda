@@ -6,26 +6,37 @@
 
 import * as React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
+
 import {Dropdown} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
+import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
+import {mockGetHeaderUser} from 'modules/queries/get-header-user';
 
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <MockedApolloProvider mocks={[mockGetHeaderUser]}>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </MockedApolloProvider>
+  );
+};
 describe('<Dropdown />', () => {
-  it('should render dropdown', () => {
+  it('should render dropdown', async () => {
     render(<Dropdown />, {
-      wrapper: MockThemeProvider,
+      wrapper: Wrapper,
     });
-    expect(screen.getByText('Demo user')).toBeInTheDocument();
+
+    expect(await screen.findByText('Demo user')).toBeInTheDocument();
     expect(screen.getByTestId('dropdown-icon')).toBeInTheDocument();
   });
 
-  it('should show&hide dropdown menu behavior works correctly', () => {
+  it('should show&hide dropdown menu behavior works correctly', async () => {
     render(
       <>
         <Dropdown />
         <div data-testid="some-other-element" />
       </>,
       {
-        wrapper: MockThemeProvider,
+        wrapper: Wrapper,
       },
     );
 
@@ -33,7 +44,7 @@ describe('<Dropdown />', () => {
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
 
     // menu should be displayed on dropdown click
-    fireEvent.click(screen.getByText('Demo user'));
+    fireEvent.click(await screen.findByText('Demo user'));
     expect(screen.getByText('Logout')).toBeInTheDocument();
 
     // menu should not be displayed after clicking dropdown again

@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+/* istanbul ignore file */
+
 import * as React from 'react';
 
 import {Header} from './Header';

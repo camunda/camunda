@@ -5,14 +5,18 @@
  */
 
 import React, {useState, useEffect, useRef} from 'react';
+import {useQuery} from '@apollo/react-hooks';
+
 import {ReactComponent as Icon} from 'modules/icons/down.svg';
 import {Option} from './Option';
 import {login} from 'modules/stores/login';
 import {Button, LabelWrapper, Menu, Container} from './styled';
+import {GET_HEADER_USER} from 'modules/queries/get-header-user';
 
 const Dropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const {data, loading} = useQuery(GET_HEADER_USER);
 
   useEffect(() => {
     const onClose = (event: Event) => {
@@ -30,10 +34,18 @@ const Dropdown: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return null;
+  }
+
+  const {
+    currentUser: {firstname, lastname},
+  } = data;
+
   return (
     <Container ref={dropdownRef}>
       <Button onKeyDown={handleKeyPress} onClick={() => setIsOpen(!isOpen)}>
-        <LabelWrapper>Demo user</LabelWrapper>
+        <LabelWrapper>{`${firstname} ${lastname}`}</LabelWrapper>
         <Icon data-testid="dropdown-icon" />
       </Button>
 

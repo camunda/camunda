@@ -18,9 +18,11 @@ import {Login} from './Login';
 import {Pages} from 'modules/constants/pages';
 import {theme} from 'modules/theme';
 import {GlobalStyle} from './GlobalStyle';
+import {resolvers} from 'modules/mock-schema/resolvers';
 
 const client = new ApolloClient({
   uri: '/graphql',
+  resolvers,
 });
 
 const App: React.FC = () => {
