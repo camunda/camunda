@@ -74,7 +74,6 @@ export default class DatePicker extends React.Component {
         startDate={this.state.startDate}
         endDate={this.state.endDate}
         setValidState={this.setValidState}
-        disabled={this.props.disabled}
         forceOpen={this.props.forceOpen}
       />
     );

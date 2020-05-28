@@ -5,8 +5,6 @@
  */
 
 import React from 'react';
-
-import {t} from 'translation';
 import {Form, DateRangeInput} from 'components';
 import {convertFilterToState, convertStateToFilter, DateFilterPreview, isValid} from '../../date';
 
@@ -27,13 +25,12 @@ export default class DateInput extends React.Component {
   }
 
   render() {
-    const {filter, variable, disabled, changeFilter, setValid} = this.props;
+    const {filter, variable, changeFilter, setValid} = this.props;
 
     return (
       <Form className="DateInput">
         <DateRangeInput
           {...filter}
-          disabled={disabled}
           onChange={(change) => {
             const newFilter = {...filter, ...change};
             changeFilter(newFilter);
@@ -41,22 +38,12 @@ export default class DateInput extends React.Component {
           }}
         />
         <Form.Group className="previewContainer">
-          {disabled ? (
-            <>
-              <span className="parameterName">{variable.name}</span>
-              <span> {t('common.filter.list.operators.is')} </span>
-              <span className="previewItemValue">{t('common.filter.list.values.null')}</span>
-              <span> {t('common.filter.list.operators.or')} </span>
-              <span className="previewItemValue">{t('common.filter.list.values.undefined')}</span>
-            </>
-          ) : (
-            isValid(filter) && (
-              <DateFilterPreview
-                filterType="variable"
-                variableName={variable.name}
-                filter={convertStateToFilter(filter)}
-              />
-            )
+          {isValid(filter) && (
+            <DateFilterPreview
+              filterType="variable"
+              variableName={variable.name}
+              filter={convertStateToFilter(filter)}
+            />
           )}
         </Form.Group>
       </Form>
@@ -65,14 +52,12 @@ export default class DateInput extends React.Component {
 
   static parseFilter = ({data}) => convertFilterToState(data.data);
 
-  static addFilter = (addFilter, variable, filter, filterForUndefined, excludeUndefined) => {
+  static addFilter = (addFilter, variable, filter) => {
     addFilter({
       type: 'variable',
       data: {
         name: variable.name,
         type: variable.type,
-        filterForUndefined,
-        excludeUndefined,
         data: convertStateToFilter(filter),
       },
     });

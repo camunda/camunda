@@ -7,7 +7,6 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import moment from 'moment';
-import update from 'immutability-helper';
 
 import DateInput from './DateInput';
 
@@ -26,7 +25,6 @@ const exampleFilter = {
   data: {
     name: 'aVariableName',
     type: 'Date',
-    filterForUndefined: false,
     data: {
       start: '2018-07-09T00:00:00',
       end: '2018-07-12T23:59:59',
@@ -71,13 +69,4 @@ it('should show a date filter preview if the filter is valid', () => {
   const node = shallow(<DateInput {...props} filter={DateInput.parseFilter(exampleFilter)} />);
 
   expect(node.find('DateFilterPreview')).toExist();
-});
-
-it('should show a date filter preview even if the value should be undefined or null', () => {
-  const nullFilter = update(exampleFilter, {data: {filterForUndefined: {$set: true}}});
-  const node = shallow(
-    <DateInput {...props} filter={DateInput.parseFilter(nullFilter)} disabled />
-  );
-
-  expect(node.find('.previewContainer')).toMatchSnapshot();
 });

@@ -65,7 +65,6 @@ export default class DateFields extends React.PureComponent {
             onClick={this.toggleDateRangeForStart}
             value={startDate}
             isInvalid={!isDateValid(startDate)}
-            disabled={this.props.disabled}
           />
           <DateInput
             className={classnames({
@@ -80,7 +79,6 @@ export default class DateFields extends React.PureComponent {
             onClick={this.toggleDateRangeForEnd}
             value={endDate}
             isInvalid={!isDateValid(endDate)}
-            disabled={this.props.disabled}
           />
         </div>
         {(this.state.popupOpen || forceOpen) && (

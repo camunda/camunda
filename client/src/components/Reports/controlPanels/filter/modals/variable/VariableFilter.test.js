@@ -9,7 +9,6 @@ import React from 'react';
 import VariableFilter from './VariableFilter';
 
 import {DateInput} from './date';
-import {StringInput} from './string';
 
 import {shallow} from 'enzyme';
 import {Button} from 'components';
@@ -51,32 +50,6 @@ it('should disable add filter button if no variable is selected', () => {
   expect(buttons.at(1).prop('disabled')).toBeTruthy(); // create filter
 });
 
-it('should enable add filter button if filter for undefined is checked', async () => {
-  const node = shallow(<VariableFilter {...props} />);
-
-  await node.setState({
-    valid: true,
-    selectedVariable: {type: 'String', name: 'StrVar'},
-    filterForUndefined: true,
-  });
-
-  const buttons = node.find(Button);
-  expect(buttons.at(0).prop('disabled')).toBeFalsy();
-  expect(buttons.at(1).prop('disabled')).toBeFalsy();
-});
-
-it('should disable value input if filter for undefined is checked', async () => {
-  const node = await shallow(<VariableFilter {...props} />);
-
-  await node.setState({
-    valid: true,
-    selectedVariable: {type: 'String', name: 'StrVar'},
-    filterForUndefined: true,
-  });
-
-  expect(node.find(StringInput).prop('disabled')).toBeTruthy();
-});
-
 it('should take filter given by properties', async () => {
   const filterData = {
     type: 'variable',
@@ -87,8 +60,6 @@ it('should take filter given by properties', async () => {
         operator: 'not in',
         values: ['value1', 'value2'],
       },
-      filterForUndefined: false,
-      excludeUndefined: true,
     },
   };
   const spy = jest.fn();
@@ -135,20 +106,17 @@ it('should create a new filter', () => {
         operator: 'not in',
         values: ['value1', 'value2'],
       },
-      filterForUndefined: false,
-      excludeUndefined: false,
     },
   });
 });
 
-it('should create a new filter even if only filter for undefined is checked', () => {
+it('should create a new filter', () => {
   const spy = jest.fn();
   const node = shallow(<VariableFilter {...props} addFilter={spy} />);
 
   node.setState({
     selectedVariable: {name: 'foo', type: 'String'},
     valid: true,
-    filterForUndefined: true,
   });
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
@@ -159,8 +127,6 @@ it('should create a new filter even if only filter for undefined is checked', ()
       name: 'foo',
       type: 'String',
       data: {},
-      filterForUndefined: true,
-      excludeUndefined: false,
     },
   });
 });
@@ -200,7 +166,7 @@ it('should use custom filter adding logic from input components', () => {
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
-  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter, false, false);
+  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter);
 });
 
 it('should load available variables', () => {

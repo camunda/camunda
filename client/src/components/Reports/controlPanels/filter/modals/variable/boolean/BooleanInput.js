@@ -25,7 +25,7 @@ export default class BooleanInput extends React.Component {
   render() {
     return (
       <div className="VariableFilter__buttonRow">
-        <ButtonGroup disabled={this.props.disabled}>
+        <ButtonGroup>
           <Button onClick={this.setOperator(true)} active={this.props.filter.value === true}>
             {t('common.filter.variableModal.bool.isTrue')}
           </Button>

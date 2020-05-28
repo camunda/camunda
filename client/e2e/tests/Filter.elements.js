@@ -31,5 +31,4 @@ export const durationFilterOperator = Selector('.DurationFilter .Select');
 export const durationFilterInput = Selector('.DurationFilter input[type="text"]');
 export const modalCancel = Selector('.Modal .Button').withText('Cancel');
 export const addValueButton = Selector('.Modal .NumberInput__addValueButton');
-export const nullSwitch = Selector('.Modal__content .Form .Switch');
 export const stringValues = Selector('.TypeaheadMultipleSelection__valueList');

@@ -72,24 +72,6 @@ it('should display a simple variable filter', () => {
   expect(node.find('ActionItem').dive()).toIncludeText('varName is varValue');
 });
 
-it('should display a variable filter with filter for undefined values selected', () => {
-  const data = [
-    {
-      type: 'variable',
-      data: {
-        name: 'varName',
-        type: 'String',
-        filterForUndefined: true,
-        data: {},
-      },
-    },
-  ];
-
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
-
-  expect(node.find('ActionItem').dive()).toIncludeText('varName is null or undefined');
-});
-
 it('should use the variables prop to resolve variable names', () => {
   const data = [
     {

@@ -11,7 +11,6 @@ import {BooleanInput} from './boolean';
 import {NumberInput} from './number';
 import {StringInput} from './string';
 import {DateInput} from './date';
-import UndefinedOptions from './UndefinedOptions';
 
 import './VariableFilter.scss';
 import {t} from 'translation';
@@ -22,8 +21,6 @@ export default class VariableFilter extends React.Component {
     filter: {},
     variables: [],
     selectedVariable: null,
-    filterForUndefined: false,
-    excludeUndefined: false,
   };
 
   componentDidMount = async () => {
@@ -35,13 +32,11 @@ export default class VariableFilter extends React.Component {
         ? InputComponent.parseFilter(this.props.filterData)
         : filterData.data;
 
-      const {id, name, type, filterForUndefined, excludeUndefined} = filterData;
+      const {id, name, type} = filterData;
       this.setState({
         selectedVariable: {id, name, type},
         filter,
         valid: true,
-        filterForUndefined,
-        excludeUndefined,
       });
     }
 
@@ -55,7 +50,6 @@ export default class VariableFilter extends React.Component {
     this.setState({
       selectedVariable: variable,
       filter: this.getInputComponentForVariable(variable).defaultFilter,
-      filterForUndefined: false,
     });
   };
 
@@ -80,9 +74,6 @@ export default class VariableFilter extends React.Component {
 
   changeFilter = (filter) => this.setState({filter});
 
-  changeFilterForUndefined = (filterForUndefined) => this.setState({filterForUndefined});
-  changeExcludeUndefined = (excludeUndefined) => this.setState({excludeUndefined});
-
   getId = (variable) => {
     if (variable) {
       return variable.id || variable.name;
@@ -90,7 +81,7 @@ export default class VariableFilter extends React.Component {
   };
 
   render() {
-    const {selectedVariable, variables, filterForUndefined, excludeUndefined} = this.state;
+    const {selectedVariable, variables} = this.state;
 
     const ValueInput = this.getInputComponentForVariable(selectedVariable);
 
@@ -122,27 +113,13 @@ export default class VariableFilter extends React.Component {
             setValid={this.setValid}
             changeFilter={this.changeFilter}
             filter={this.state.filter}
-            disabled={filterForUndefined}
           />
-          {selectedVariable && (
-            <UndefinedOptions
-              filterForUndefined={filterForUndefined}
-              changeFilterForUndefined={this.changeFilterForUndefined}
-              excludeUndefined={excludeUndefined}
-              changeExcludeUndefined={this.changeExcludeUndefined}
-            />
-          )}
         </Modal.Content>
         <Modal.Actions>
           <Button main onClick={this.props.close}>
             {t('common.cancel')}
           </Button>
-          <Button
-            main
-            primary
-            disabled={!this.state.valid && !filterForUndefined}
-            onClick={this.createFilter}
-          >
+          <Button main primary disabled={!this.state.valid} onClick={this.createFilter}>
             {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
@@ -157,24 +134,16 @@ export default class VariableFilter extends React.Component {
 
     const variable = this.state.selectedVariable;
     const InputComponent = this.getInputComponentForVariable(variable);
-    const {filter, filterForUndefined, excludeUndefined} = this.state;
+    const {filter} = this.state;
 
     InputComponent.addFilter
-      ? InputComponent.addFilter(
-          this.props.addFilter,
-          variable,
-          filter,
-          filterForUndefined,
-          excludeUndefined
-        )
+      ? InputComponent.addFilter(this.props.addFilter, variable, filter)
       : this.props.addFilter({
           type: this.props.filterType,
           data: {
             name: variable.id || variable.name,
             type: variable.type,
             data: filter,
-            filterForUndefined,
-            excludeUndefined,
           },
         });
   };

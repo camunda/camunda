@@ -718,10 +718,6 @@
           "or": "or",
           "occurs": "occurs"
         },
-        "values": {
-          "null": "null",
-          "undefined": "undefined"
-        },
         "executedFlowNode": "Executed Flow Node",
         "executingFlowNode": "Executing Flow Node"
       },
@@ -769,8 +765,6 @@
         "inputPlaceholder": "Select or search for a variable here",
         "noVariables": "No variables found",
         "loadMore": "Load More",
-        "filterForUndefined": "Only display instances where variables are <b>null</b> or <b>undefined</b>.",
-        "excludeUndefined": "Exclude instances where variables are <b>null</b> or <b>undefined</b>.",
         "bool": {
           "isTrue": "is true",
           "isFalse": "is false"

@@ -7,7 +7,6 @@
 import React from 'react';
 
 import TypeaheadMultipleSelection from './TypeaheadMultipleSelection';
-import {Input, LabeledInput} from 'components';
 
 import {shallow} from 'enzyme';
 
@@ -211,25 +210,4 @@ it('make invok onOrderChange with the new selectedvalues data on drag end', () =
   node.instance().dragEnd(dragOverEvt);
 
   expect(spy).toHaveBeenCalledWith(['b', 'a']);
-});
-
-it('can be disabled', async () => {
-  const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
-  const toggleValue = jest.fn();
-  const setFilter = jest.fn();
-  const node = shallow(
-    <TypeaheadMultipleSelection
-      toggleValue={toggleValue}
-      setFilter={setFilter}
-      selectedValues={[]}
-      availableValues={allValues}
-      disabled
-    />
-  );
-
-  node.find(LabeledInput).forEach((input) => {
-    expect(input.props().disabled).toBeTruthy();
-  });
-  expect(node.find(Input).props().disabled).toBeTruthy();
-  expect(node.find('.TypeaheadMultipleSelection').props().disabled).toBeTruthy();
 });

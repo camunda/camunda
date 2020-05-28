@@ -53,7 +53,6 @@ export default class TypeaheadMultipleSelection extends React.Component {
                     checked
                     value={idx}
                     onChange={this.toggleSelected}
-                    disabled={this.props.disabled}
                   />
                   {this.props.customItemSettings && this.props.customItemSettings(value, idx)}
                 </li>
@@ -130,7 +129,6 @@ export default class TypeaheadMultipleSelection extends React.Component {
                     checked={selectedValues.includes(value)}
                     value={idx}
                     onChange={this.toggleAvailable}
-                    disabled={this.props.disabled}
                   />
                 </li>
               );
@@ -160,14 +158,13 @@ export default class TypeaheadMultipleSelection extends React.Component {
           value={this.state.searchQuery}
           onChange={(e) => this.setFilter(e.target.value)}
           onClear={() => this.setFilter('')}
-          disabled={this.props.disabled}
         />
       </div>
     );
     const loadingIndicator = loading ? <LoadingIndicator /> : '';
     if (availableValues.length === 0) {
       return (
-        <div className="TypeaheadMultipleSelection" disabled={this.props.disabled}>
+        <div className="TypeaheadMultipleSelection">
           {input}
           {loadingIndicator}
           <div className="TypeaheadMultipleSelection__valueList">
@@ -185,7 +182,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
       );
     }
     return (
-      <div className="TypeaheadMultipleSelection" disabled={this.props.disabled}>
+      <div className="TypeaheadMultipleSelection">
         {input}
         {loadingIndicator}
         <div className="TypeaheadMultipleSelection__valueList">

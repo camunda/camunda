@@ -57,13 +57,6 @@ test('variable filter modal dependent on variable type', async (t) => {
     'process/filter/variable-filter-numeric.png'
   );
 
-  await t.click(Filter.nullSwitch);
-
-  await t.takeElementScreenshot(
-    Report.modalContainer,
-    'process/filter/variable-filter-undefinedOrNull.png'
-  );
-
   await t.typeText(Filter.typeaheadInput, 'dateVar', {replace: true});
   await t.click(Filter.typeaheadOption('dateVar'));
   await t.click(Filter.dateFilterTypeSelect);

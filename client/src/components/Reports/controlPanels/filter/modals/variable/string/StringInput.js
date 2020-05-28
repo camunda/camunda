@@ -127,7 +127,7 @@ export default class StringInput extends React.Component {
     return (
       <React.Fragment>
         <div className="VariableFilter__buttonRow">
-          <ButtonGroup disabled={this.props.disabled}>
+          <ButtonGroup>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>
               {t('common.filter.list.operators.is')}
             </Button>
@@ -150,7 +150,6 @@ export default class StringInput extends React.Component {
                 search: t('common.filter.variableModal.multiSelect.search'),
                 empty: t('common.filter.variableModal.multiSelect.empty'),
               }}
-              disabled={this.props.disabled}
             />
             {!this.state.valuesAreComplete && (
               <Button

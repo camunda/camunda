@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .TypeaheadMultipleSelection {
   width: 100%;
 
@@ -58,10 +56,6 @@
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
-
-    &[disabled] {
-      color: graytext;
-    }
   }
 
   .TypeaheadMultipleSelection__load-more-button {
