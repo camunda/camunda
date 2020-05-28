@@ -19,11 +19,6 @@ import io.zeebe.engine.processor.workflow.handlers.activity.ActivityElementTermi
 import io.zeebe.engine.processor.workflow.handlers.activity.ActivityEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.callactivity.CallActivityActivatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.callactivity.CallActivityTerminatingHandler;
-import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventElementActivatedHandler;
-import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventElementActivatingHandler;
-import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventElementCompletingHandler;
-import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventElementTerminatingHandler;
-import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ContainerElementActivatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ContainerElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ProcessCompletedHandler;
@@ -123,24 +118,6 @@ public final class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETED,
         new EventBasedGatewayElementCompletedHandler<>());
-
-    stepHandlers.put(
-        BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_ACTIVATING,
-        new IntermediateCatchEventElementActivatingHandler<>(
-            catchEventSubscriber, expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_ACTIVATED,
-        new IntermediateCatchEventElementActivatedHandler<>());
-    stepHandlers.put(
-        BpmnStep.INTERMEDIATE_CATCH_EVENT_EVENT_OCCURRED,
-        new IntermediateCatchEventEventOccurredHandler<>());
-    stepHandlers.put(
-        BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_COMPLETING,
-        new IntermediateCatchEventElementCompletingHandler<>(
-            catchEventSubscriber, expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_TERMINATING,
-        new IntermediateCatchEventElementTerminatingHandler<>(catchEventSubscriber));
 
     stepHandlers.put(BpmnStep.RECEIVE_TASK_EVENT_OCCURRED, new ReceiveTaskEventOccurredHandler<>());
 

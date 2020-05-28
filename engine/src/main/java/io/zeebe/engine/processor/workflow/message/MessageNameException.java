@@ -7,30 +7,23 @@
  */
 package io.zeebe.engine.processor.workflow.message;
 
-import static java.util.stream.Collectors.joining;
-
-import io.zeebe.engine.processor.workflow.BpmnStepContext;
-import io.zeebe.util.buffer.BufferUtil;
-import java.util.List;
+import io.zeebe.engine.processor.Failure;
 import org.agrona.DirectBuffer;
 
 public final class MessageNameException extends RuntimeException {
 
-  private final BpmnStepContext context;
+  private final Failure failure;
 
-  public MessageNameException(
-      final BpmnStepContext context, final List<DirectBuffer> failedEventIds) {
-    super(generateMessage(failedEventIds));
-    this.context = context;
+  public MessageNameException(final Failure failure, final DirectBuffer failedEventId) {
+    super(generateMessage(failedEventId));
+    this.failure = failure;
   }
 
-  private static String generateMessage(final List<DirectBuffer> failedEventIds) {
-    return failedEventIds.stream()
-        .map(BufferUtil::bufferAsString)
-        .collect(joining(", ", "Message name could not be resolved for: EventIDs [", "]"));
+  private static String generateMessage(final DirectBuffer failedEventId) {
+    return String.format("Message name could not be resolved for: EventID '%s'", failedEventId);
   }
 
-  public BpmnStepContext getContext() {
-    return context;
+  public Failure getFailure() {
+    return failure;
   }
 }

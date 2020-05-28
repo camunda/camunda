@@ -17,6 +17,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableAct
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableBoundaryEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
+import io.zeebe.engine.processor.workflow.message.MessageNameException;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.deployment.WorkflowState;
@@ -66,6 +67,25 @@ public final class BpmnEventSubscriptionBehavior {
     eventScopeInstanceState = workflowState.getEventScopeInstanceState();
     elementInstanceState = workflowState.getElementInstanceState();
     keyGenerator = zeebeState.getKeyGenerator();
+  }
+
+  /** @return true if the intermediate event was triggered, false otherwise */
+  public boolean triggerIntermediateEvent(final BpmnElementContext context) {
+    final var eventTrigger =
+        eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
+
+    if (eventTrigger == null) {
+      // the activity (i.e. its event scope) is left - discard the event
+      return false;
+    }
+
+    stateBehavior
+        .getVariablesState()
+        .setTemporaryVariables(context.getElementInstanceKey(), eventTrigger.getVariables());
+
+    eventScopeInstanceState.deleteTrigger(
+        context.getElementInstanceKey(), eventTrigger.getEventKey());
+    return true;
   }
 
   public <T extends ExecutableActivity> void triggerBoundaryEvent(
@@ -238,6 +258,8 @@ public final class BpmnEventSubscriptionBehavior {
       return Either.left(
           new Failure(
               e.getMessage(), ErrorType.EXTRACT_VALUE_ERROR, context.getElementInstanceKey()));
+    } catch (final MessageNameException e) {
+      return Either.left(e.getFailure());
     }
   }
 

@@ -35,9 +35,10 @@ public final class CatchEventSubscriber {
       context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, e.getMessage());
       return false;
     } catch (final MessageNameException e) {
-      // incident was already raised internally; processing was interrupted at the point the
-      // exception was thrown; no further processing shall take place, that's why we return false
-      // here
+      // processing was interrupted at the point the exception was thrown; no further processing
+      // shall take place, that's why we return false here
+      // todo verify that this is the correct level to raise the incident at
+      context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, e.getFailure().getMessage());
       return false;
     }
   }
