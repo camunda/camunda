@@ -246,6 +246,16 @@ pipeline {
         }
       }
     }
+    changed {
+      script {
+        // Do not send notification if the node disconnected
+        if (env.BRANCH_NAME == 'master' && !nodeDisconnected()) {
+          slackSend(
+              channel: "#operate-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+              message: "Operate ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+        }
+      }
+    }
     always {
       // Retrigger the build if the node disconnected
       script {

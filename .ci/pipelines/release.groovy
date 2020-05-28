@@ -194,6 +194,13 @@ pipeline {
       script {
         def notification = load "${pwd()}/.ci/pipelines/build_notification.groovy"
         notification.buildNotification(currentBuild.result)
+
+        // Do not send notification on failed test releases
+        if (params.PUSH_CHANGES) {
+          slackSend(
+            channel: "#operate-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+            message: "Release job build ${currentBuild.absoluteUrl} failed!")
+        }
       }
     }
   }

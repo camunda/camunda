@@ -250,6 +250,10 @@ pipeline {
       script {
         def notification = load "${pwd()}/.ci/pipelines/build_notification.groovy"
         notification.buildNotification(currentBuild.result)
+
+        slackSend(
+          channel: "#operate-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+          message: "Job build ${currentBuild.absoluteUrl} failed!")
       }
     }
   }
