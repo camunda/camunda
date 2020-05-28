@@ -50,6 +50,7 @@ Create a main.go file inside the module and add the following lines to bootstrap
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
@@ -67,7 +68,8 @@ func main() {
 		panic(err)
 	}
 
-	topology, err := zbClient.NewTopologyCommand().Send()
+	ctx := context.Background()
+	topology, err := zbClient.NewTopologyCommand().Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -127,6 +129,7 @@ The broker stores the workflow under its BPMN process id and assigns a version (
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 )
@@ -143,7 +146,8 @@ func main() {
 		panic(err)
 	}
 
-	response, err := zbClient.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send()
+	ctx := context.Background()
+	response, err := zbClient.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -169,8 +173,8 @@ be set on creation.
 package main
 
 import (
+	"context"
 	"fmt"
-
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 )
 
@@ -195,7 +199,8 @@ func main() {
 		panic(err)
 	}
 
-	msg, err := request.Send()
+	ctx := context.Background()
+	msg, err := request.Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -242,6 +247,7 @@ complete a job of the first task type:
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -263,7 +269,8 @@ func main() {
 	}
 
 	// deploy workflow
-	response, err := client.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send()
+	ctx := context.Background()
+	response, err := client.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -279,7 +286,7 @@ func main() {
 		panic(err)
 	}
 
-	result, err := request.Send()
+	result, err := request.Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -321,7 +328,8 @@ func handleJob(client worker.JobClient, job entities.Job) {
 	log.Println("Processing order:", variables["orderId"])
 	log.Println("Collect money using payment method:", headers["method"])
 
-	request.Send()
+	ctx := context.Background()
+	request.Send(ctx)
 }
 
 func failJob(client worker.JobClient, job entities.Job) {
