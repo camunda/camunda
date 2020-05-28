@@ -13,6 +13,25 @@ import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_NODE_ID;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_PARTITIONS_COUNT;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BACKPRESSURE_ALGORITHM;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BACKPRESSURE_ENABLED;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BACKPRESSURE_WINDOWED;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_AIMD_BACKOFF_RATIO;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_AIMD_INITIAL_LIMIT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_AIMD_MAX_LIMIT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_AIMD_MIN_LIMIT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_AIMD_REQUEST_TIMEOUT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_FIXED_LIMIT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_GRADIENT2_INITIALLIMIT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_GRADIENT2_LONGWINDOW;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_GRADIENT2_MINLIMIT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_GRADIENT2_RTTTOLERANCE;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_GRADIENT_INITIALLIMIT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_GRADIENT_MINLIMIT;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_GRADIENT_RTTTOLERANCE;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_VEGAS_ALPHA;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_VEGAS_BETA;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_BROKER_BACKPRESSURE_VEGAS_INITIALLIMIT;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_NAME;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_SIZE;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DEBUG_EXPORTER;
@@ -34,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.exporter.metrics.MetricsExporter;
+import io.zeebe.broker.system.configuration.AIMDCfg;
 import io.zeebe.broker.system.configuration.BackpressureCfg;
 import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -41,7 +61,11 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.EmbeddedGatewayCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.broker.system.configuration.Gradient2Cfg;
+import io.zeebe.broker.system.configuration.GradientCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.broker.system.configuration.VegasCfg;
+import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
 import io.zeebe.util.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
@@ -445,6 +469,7 @@ public class ConfigurationTest {
     assertMetricsExporter();
   }
 
+  @Test
   public void shouldSetBackpressureConfig() {
     // when
     final BrokerCfg cfg = readConfig("backpressure-cfg");
@@ -454,6 +479,67 @@ public class ConfigurationTest {
     assertThat(backpressure.isEnabled()).isTrue();
     assertThat(backpressure.useWindowed()).isFalse();
     assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT);
+  }
+
+  @Test
+  public void shouldSetBackpressureConfigFromEnv() {
+    // given
+    environment.put(ENV_BACKPRESSURE_ENABLED, "true");
+    environment.put(ENV_BACKPRESSURE_ALGORITHM, "fixed");
+    environment.put(ENV_BACKPRESSURE_WINDOWED, "true");
+
+    environment.put(ENV_BROKER_BACKPRESSURE_AIMD_BACKOFF_RATIO, "0.75");
+    environment.put(ENV_BROKER_BACKPRESSURE_AIMD_INITIAL_LIMIT, "15");
+    environment.put(ENV_BROKER_BACKPRESSURE_AIMD_MAX_LIMIT, "150");
+    environment.put(ENV_BROKER_BACKPRESSURE_AIMD_MIN_LIMIT, "2");
+    environment.put(ENV_BROKER_BACKPRESSURE_AIMD_REQUEST_TIMEOUT, "1.5s");
+
+    environment.put(ENV_BROKER_BACKPRESSURE_FIXED_LIMIT, "25");
+
+    environment.put(ENV_BROKER_BACKPRESSURE_VEGAS_ALPHA, "4");
+    environment.put(ENV_BROKER_BACKPRESSURE_VEGAS_BETA, "8");
+    environment.put(ENV_BROKER_BACKPRESSURE_VEGAS_INITIALLIMIT, "14");
+
+    environment.put(ENV_BROKER_BACKPRESSURE_GRADIENT2_INITIALLIMIT, "13");
+    environment.put(ENV_BROKER_BACKPRESSURE_GRADIENT2_LONGWINDOW, "300");
+    environment.put(ENV_BROKER_BACKPRESSURE_GRADIENT2_MINLIMIT, "3");
+    environment.put(ENV_BROKER_BACKPRESSURE_GRADIENT2_RTTTOLERANCE, "1.3");
+
+    environment.put(ENV_BROKER_BACKPRESSURE_GRADIENT_INITIALLIMIT, "17");
+    environment.put(ENV_BROKER_BACKPRESSURE_GRADIENT_MINLIMIT, "7");
+    environment.put(ENV_BROKER_BACKPRESSURE_GRADIENT_RTTTOLERANCE, "1.7");
+
+    // when
+    final BackpressureCfg backpressure = new BackpressureCfg();
+    backpressure.init(new BrokerCfg(), BROKER_BASE, new Environment(environment));
+
+    // then
+    assertThat(backpressure.isEnabled()).isTrue();
+    assertThat(backpressure.useWindowed()).isTrue();
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.FIXED);
+
+    final AIMDCfg aimd = backpressure.getAimd();
+    assertThat(aimd.getBackoffRatio()).isEqualTo(0.75);
+    assertThat(aimd.getInitialLimit()).isEqualTo(15);
+    assertThat(aimd.getMaxLimit()).isEqualTo(150);
+    assertThat(aimd.getMinLimit()).isEqualTo(2);
+    assertThat(aimd.getRequestTimeout()).isEqualTo(DurationUtil.parse("1.5s"));
+
+    final VegasCfg vegas = backpressure.getVegas();
+    assertThat(vegas.getAlpha()).isEqualTo(4);
+    assertThat(vegas.getBeta()).isEqualTo(8);
+    assertThat(vegas.getInitialLimit()).isEqualTo(14);
+
+    final Gradient2Cfg gradient2 = backpressure.getGradient2();
+    assertThat(gradient2.getInitialLimit()).isEqualTo(13);
+    assertThat(gradient2.getLongWindow()).isEqualTo(300);
+    assertThat(gradient2.getMinLimit()).isEqualTo(3);
+    assertThat(gradient2.getRttTolerance()).isEqualTo(1.3);
+
+    final GradientCfg gradient = backpressure.getGradient();
+    assertThat(gradient.getInitialLimit()).isEqualTo(17);
+    assertThat(gradient.getMinLimit()).isEqualTo(7);
+    assertThat(gradient.getRttTolerance()).isEqualTo(1.7);
   }
 
   private BrokerCfg readConfig(final String name) {
@@ -478,7 +564,7 @@ public class ConfigurationTest {
     assertThat(cfg.getCluster().getNodeId()).isEqualTo(nodeId);
   }
 
-  private void assertDefaultClusterName(String clusterName) {
+  private void assertDefaultClusterName(final String clusterName) {
     assertClusterName("default", clusterName);
     assertClusterName("empty", clusterName);
   }
@@ -563,22 +649,22 @@ public class ConfigurationTest {
     assertThat(cfg.getDirectories()).containsExactlyElementsOf(expected);
   }
 
-  private void assertDefaultEmbeddedGatewayEnabled(boolean enabled) {
+  private void assertDefaultEmbeddedGatewayEnabled(final boolean enabled) {
     assertEmbeddedGatewayEnabled("default", enabled);
     assertEmbeddedGatewayEnabled("empty", enabled);
   }
 
-  private void assertEmbeddedGatewayEnabled(String configFileName, boolean enabled) {
+  private void assertEmbeddedGatewayEnabled(final String configFileName, final boolean enabled) {
     final EmbeddedGatewayCfg gatewayCfg = readConfig(configFileName).getGateway();
     assertThat(gatewayCfg.isEnable()).isEqualTo(enabled);
   }
 
-  private void assertDefaultDebugLogExporter(boolean prettyPrint) {
+  private void assertDefaultDebugLogExporter(final boolean prettyPrint) {
     assertDebugLogExporter("default", prettyPrint);
     assertDebugLogExporter("empty", prettyPrint);
   }
 
-  private void assertDebugLogExporter(String configFileName, boolean prettyPrint) {
+  private void assertDebugLogExporter(final String configFileName, final boolean prettyPrint) {
     final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
     final BrokerCfg brokerCfg = readConfig(configFileName);
 
@@ -588,11 +674,11 @@ public class ConfigurationTest {
   }
 
   private void assertDefaultSystemClusterConfiguration(
-      int nodeId,
-      int partitionsCount,
-      int replicationFactor,
-      int clusterSize,
-      List<String> initialContactPoints) {
+      final int nodeId,
+      final int partitionsCount,
+      final int replicationFactor,
+      final int clusterSize,
+      final List<String> initialContactPoints) {
     assertSystemClusterConfiguration(
         "default", nodeId, partitionsCount, replicationFactor, clusterSize, initialContactPoints);
     assertSystemClusterConfiguration(
@@ -600,12 +686,12 @@ public class ConfigurationTest {
   }
 
   private void assertSystemClusterConfiguration(
-      String configFileName,
-      int nodeId,
-      int partitionsCount,
-      int replicationFactor,
-      int clusterSize,
-      List<String> initialContactPoints) {
+      final String configFileName,
+      final int nodeId,
+      final int partitionsCount,
+      final int replicationFactor,
+      final int clusterSize,
+      final List<String> initialContactPoints) {
     final BrokerCfg cfg = readConfig(configFileName);
     final ClusterCfg cfgCluster = cfg.getCluster();
 
