@@ -6,11 +6,12 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.identity;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -31,11 +32,11 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
+import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -50,32 +51,37 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
 
   protected final ConfigurationService configurationService;
   protected final LocalizationService localizationService;
+  protected final ProcessDefinitionReader processDefinitionReader;
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
     final NestedAggregationBuilder groupByIdentityAggregation = nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
         filter(
           FILTERED_USER_TASKS_AGGREGATION,
-          addExecutionStateFilter(
-            boolQuery(),
-            flowNodeExecutionState,
-            USER_TASKS + "." + USER_TASK_END_DATE
-          )
-        )
-          .subAggregation(
-            AggregationBuilders
-              .terms(GROUP_BY_IDENTITY_TERMS_AGGREGATION)
-              .size(configurationService.getEsAggregationBucketLimit())
-              .order(BucketOrder.key(true))
-              .field(USER_TASKS + "." + getIdentityField())
-              .missing(GROUP_BY_IDENTITY_MISSING_KEY)
-              .subAggregation(distributedByPart.createAggregation(context)))
-      );
+          createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
+        ).subAggregation(
+          AggregationBuilders
+            .terms(GROUP_BY_IDENTITY_TERMS_AGGREGATION)
+            .size(configurationService.getEsAggregationBucketLimit())
+            .order(BucketOrder.key(true))
+            .field(USER_TASKS + "." + getIdentityField())
+            .missing(GROUP_BY_IDENTITY_MISSING_KEY)
+            .subAggregation(distributedByPart.createAggregation(context))
+        ));
 
     return Collections.singletonList(groupByIdentityAggregation);
+  }
+
+  private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
+    return processDefinitionReader
+      .getLatestProcessDefinition(
+        reportData.getDefinitionKey(), reportData.getDefinitionVersions(), reportData.getTenantIds()
+      )
+      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
+      .map(Map::keySet)
+      .orElse(Collections.emptySet());
   }
 
   protected abstract String getIdentityField();

@@ -26,7 +26,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.Report
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
@@ -38,9 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -735,8 +732,6 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       .processInstanceCount(2L)
       .groupByContains(DEFAULT_USERNAME)
         .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L), USER_TASK_1_NAME)
-      .groupByContains(SECOND_USER)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -778,8 +773,6 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       .processInstanceCount(2L)
       .groupByContains(DEFAULT_USERNAME)
         .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L), USER_TASK_1_NAME)
-      .groupByContains(SECOND_USER)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }

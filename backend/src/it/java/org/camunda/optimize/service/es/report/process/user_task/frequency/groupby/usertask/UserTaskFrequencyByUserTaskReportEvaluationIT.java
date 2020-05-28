@@ -8,6 +8,8 @@ package org.camunda.optimize.service.es.report.process.user_task.frequency.group
 import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -31,6 +33,7 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
@@ -44,9 +47,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
@@ -65,7 +72,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishAllUserTasks(processInstanceDto);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -104,10 +112,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   public void reportEvaluationForSeveralProcesses() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishAllUserTasks(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -136,10 +146,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishAllUserTasks(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -164,10 +176,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishAllUserTasks(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -195,10 +209,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishAllUserTasks(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -228,10 +244,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishAllUserTasks(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -255,10 +273,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
+                                                                                                           .getId());
     finishAllUserTasks(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      latestDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -289,10 +309,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(3));
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
+                                                                                                           .getId());
     finishAllUserTasks(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      latestDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -326,10 +348,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
+                                                                                                           .getId());
     finishAllUserTasks(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      latestDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -356,10 +380,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(3));
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
+                                                                                                           .getId());
     finishAllUserTasks(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      latestDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -386,13 +412,16 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   public void otherProcessDefinitionsDoNotInfluenceResult() {
     // given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition1.getId());
     finishAllUserTasks(processInstanceDto1);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition1.getId());
     finishAllUserTasks(processInstanceDto2);
 
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(
+      processDefinition2.getId());
     finishAllUserTasks(processInstanceDto3);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -481,11 +510,13 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     // finish first running task, second now runs but unclaimed
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     // claim first running task
     engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto2.getId());
 
@@ -522,10 +553,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
         .done();
     // @formatter:on
 
-    final ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      processWithMultiInstanceUserTask
-    );
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        processWithMultiInstanceUserTask
+      );
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -550,7 +583,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
 
     for (int i = 0; i < 11; i++) {
-      final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+      final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId());
       engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     }
 
@@ -574,11 +608,13 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   public void filterInReport() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
-    final OffsetDateTime processStartTime = engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto.getId())
-      .getStartTime();
+    final OffsetDateTime processStartTime =
+      engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto.getId())
+        .getStartTime();
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -612,7 +648,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   public void canAlsoBeEvaluatedIfAggregationTypeAndUserTaskDurationTimeIsDifferentFromDefault() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishAllUserTasks(processInstanceDto);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -675,6 +712,99 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+  }
+
+  public static Stream<Arguments> assigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_USER}, null, 1L),
+      Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 1L, 1L),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 1L, null),
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, null, null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("assigneeFilterScenarios")
+  public void filterByAssigneeOnlyCountsUserTasksWithThatAssignee(final String filterOperator,
+                                                                  final String[] filterValues,
+                                                                  final Long expectedUserTask1Count,
+                                                                  final Long expectedUserTask2Count) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    Assertions.assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(USER_TASK_1, expectedUserTask1Count),
+        Tuple.tuple(USER_TASK_2, expectedUserTask2Count)
+      );
+  }
+
+  public static Stream<Arguments> candidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, null, 1L),
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 1L, 1L),
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L, null),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, null, null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("candidateGroupFilterScenarios")
+  public void filterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final String filterOperator,
+                                                                              final String[] filterValues,
+                                                                              final Long expectedUserTask1Count,
+                                                                              final Long expectedUserTask2Count) {
+    // given
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    Assertions.assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(USER_TASK_1, expectedUserTask1Count),
+        Tuple.tuple(USER_TASK_2, expectedUserTask2Count)
+      );
   }
 
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {

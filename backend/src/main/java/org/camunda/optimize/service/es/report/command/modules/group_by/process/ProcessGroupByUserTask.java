@@ -7,11 +7,11 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
@@ -34,12 +34,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -58,17 +56,9 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
     final NestedAggregationBuilder groupByAssigneeAggregation = nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
-        filter(
-          FILTERED_USER_TASKS_AGGREGATION,
-          addExecutionStateFilter(
-            boolQuery(),
-            flowNodeExecutionState,
-            USER_TASKS + "." + USER_TASK_END_DATE
-          )
-        )
+        filter(FILTERED_USER_TASKS_AGGREGATION, createUserTaskAggregationFilter(context.getReportData()))
           .subAggregation(
             AggregationBuilders
               .terms(USER_TASK_ID_TERMS_AGGREGATION)
@@ -123,8 +113,13 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
     final int bucketLimit = configurationService.getEsAggregationBucketLimit();
     userTaskNames.keySet().forEach(userTaskKey -> {
       if (groupedData.size() < bucketLimit) {
-        // Add empty result for each missing bucket
-        GroupByResult emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey, context);
+        GroupByResult emptyResult;
+        if (distributedByPart instanceof ProcessDistributedByNone) {
+          emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey);
+        } else {
+          // Add empty result for each missing bucket
+          emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey, context);
+        }
         emptyResult.setLabel(userTaskNames.get(userTaskKey));
         groupedData.add(emptyResult);
       }

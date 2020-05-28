@@ -8,6 +8,8 @@ package org.camunda.optimize.service.es.report.process.user_task.duration.groupb
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import lombok.Data;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -25,19 +27,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -48,10 +48,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -366,7 +370,6 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     );
   }
 
-
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
     // given
@@ -662,6 +665,104 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     assertThat(result.getData().size(), is(0));
   }
 
+  public static Stream<Arguments> assigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_USER}, null, 10L),
+      Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 10L, 10L),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 10L, null),
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, null, null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("assigneeFilterScenarios")
+  public void filterByAssigneeOnlyIncludesUserTasksWithThatAssignee(final String filterOperator,
+                                                                  final String[] filterValues,
+                                                                  final Long expectedUserTask1Duration,
+                                                                  final Long expectedUserTask2Duration) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+    changeDuration(processInstanceDto, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto, USER_TASK_2, 10L);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    Assertions.assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(expectedUserTask1Duration)),
+        Tuple.tuple(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(expectedUserTask2Duration))
+      );
+  }
+
+  public static Stream<Arguments> candidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, null, 10L),
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 10L, 10L),
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 10L, null),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, null, null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("candidateGroupFilterScenarios")
+  public void filterByCandidateGroupOnlyIncludesUserTasksWithThatCandidateGroup(final String filterOperator,
+                                                                              final String[] filterValues,
+                                                                              final Long expectedUserTask1Duration,
+                                                                              final Long expectedUserTask2Duration) {
+    // given
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(processInstanceDto, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto, USER_TASK_2, 10L);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    Assertions.assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(expectedUserTask1Duration)),
+        Tuple.tuple(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(expectedUserTask2Duration))
+      );
+  }
+
   @Data
   static class ExecutionStateTestValues {
     FlowNodeExecutionState executionState;
@@ -763,8 +864,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     final ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      processWithMultiInstanceUserTask
-    );
+        processWithMultiInstanceUserTask
+      );
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
@@ -824,7 +925,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     changeDuration(processInstanceDto, 10L);
 
     final OffsetDateTime processStartTime = engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto
-                                                                                                        .getId())
+                                                                                                    .getId())
       .getStartTime();
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();

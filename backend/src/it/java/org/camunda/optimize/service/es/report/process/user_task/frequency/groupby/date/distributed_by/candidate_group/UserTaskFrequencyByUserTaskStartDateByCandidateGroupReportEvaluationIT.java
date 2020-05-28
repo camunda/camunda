@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.frequency.groupby.date.distributed_by.canidate_group.assignee;
+package org.camunda.optimize.service.es.report.process.user_task.frequency.groupby.date.distributed_by.candidate_group;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
@@ -76,13 +76,16 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
 
     // then
     // @formatter:off
-    HyperMapAsserter.asserter()
+    final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, candidateGroup2Count)
-        .distributedByContains(FIRST_CANDIDATE_GROUP, candidateGroup1Count)
-      .doAssert(result);
-    // @formatter:on
+      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
+    if (candidateGroup2Count != null) {
+      groupByAsserter.distributedByContains(SECOND_CANDIDATE_GROUP, candidateGroup2Count);
+    }
+    if (candidateGroup1Count != null) {
+      groupByAsserter.distributedByContains(FIRST_CANDIDATE_GROUP, candidateGroup1Count);
+    }
+    groupByAsserter.doAssert(result);
   }
 
   protected static Stream<Arguments> getExecutionStateExpectedValues() {

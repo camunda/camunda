@@ -9,7 +9,7 @@ import com.google.common.base.Function;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.AssigneeCandidateGroupFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,55 +18,55 @@ import java.util.List;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 
-public class AssigneeOrCandidateGroupFilterBuilder {
+public class IdentityLinkFilterBuilder {
 
   private String operator = IN;
   private List<String> values = new ArrayList<>();
-  private Function<AssigneeCandidateGroupFilterDataDto, ProcessFilterDto<AssigneeCandidateGroupFilterDataDto>> filterCreator;
+  private Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>> filterCreator;
   private ProcessFilterBuilder filterBuilder;
 
-  private AssigneeOrCandidateGroupFilterBuilder(
+  private IdentityLinkFilterBuilder(
     ProcessFilterBuilder processFilterBuilder,
-    Function<AssigneeCandidateGroupFilterDataDto, ProcessFilterDto<AssigneeCandidateGroupFilterDataDto>> filterCreator) {
+    Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>> filterCreator) {
     this.filterBuilder = processFilterBuilder;
     this.filterCreator = filterCreator;
   }
 
-  public static AssigneeOrCandidateGroupFilterBuilder constructAssigneeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
-    return new AssigneeOrCandidateGroupFilterBuilder(processFilterBuilder, AssigneeFilterDto::new);
+  public static IdentityLinkFilterBuilder constructAssigneeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
+    return new IdentityLinkFilterBuilder(processFilterBuilder, AssigneeFilterDto::new);
   }
 
-  public static AssigneeOrCandidateGroupFilterBuilder constructCandidateGroupFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
-    return new AssigneeOrCandidateGroupFilterBuilder(processFilterBuilder, CandidateGroupFilterDto::new);
+  public static IdentityLinkFilterBuilder constructCandidateGroupFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
+    return new IdentityLinkFilterBuilder(processFilterBuilder, CandidateGroupFilterDto::new);
   }
 
-  public AssigneeOrCandidateGroupFilterBuilder id(String flowNodeId) {
+  public IdentityLinkFilterBuilder id(String flowNodeId) {
     values.add(flowNodeId);
     return this;
   }
 
-  public AssigneeOrCandidateGroupFilterBuilder inOperator() {
+  public IdentityLinkFilterBuilder inOperator() {
     operator = IN;
     return this;
   }
 
-  public AssigneeOrCandidateGroupFilterBuilder operator(String operator) {
+  public IdentityLinkFilterBuilder operator(String operator) {
     this.operator = operator;
     return this;
   }
 
-  public AssigneeOrCandidateGroupFilterBuilder notInOperator() {
+  public IdentityLinkFilterBuilder notInOperator() {
     operator = NOT_IN;
     return this;
   }
 
-  public AssigneeOrCandidateGroupFilterBuilder ids(String... flowNodeIds) {
+  public IdentityLinkFilterBuilder ids(String... flowNodeIds) {
     values.addAll(Arrays.asList(flowNodeIds));
     return this;
   }
 
   public ProcessFilterBuilder add() {
-    filterBuilder.addFilter(filterCreator.apply(new AssigneeCandidateGroupFilterDataDto(operator, values)));
+    filterBuilder.addFilter(filterCreator.apply(new IdentityLinkFilterDataDto(operator, values)));
     return filterBuilder;
   }
 

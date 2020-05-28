@@ -65,13 +65,12 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.getNewLimitedStartDate;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
+import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -214,23 +213,9 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
                                                                    final AggregationBuilder aggregationToWrap) {
     return nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
-        filter(
-          FILTERED_USER_TASKS_AGGREGATION,
-          addExecutionStateFilter(
-            boolQuery(),
-            context.getReportData().getConfiguration().getFlowNodeExecutionState(),
-            USER_TASKS + "." + USER_TASK_END_DATE
-          )
-        )
-          .subAggregation(
-            aggregationToWrap
-          )
-          .subAggregation(
-            filter(
-              FILTER_USER_TASKS_WITH_DATE_FIELD_SET_AGGREGATION,
-              existsQuery(getDateField())
-            )
-          )
+        filter(FILTERED_USER_TASKS_AGGREGATION, createUserTaskAggregationFilter(context.getReportData()))
+          .subAggregation(aggregationToWrap)
+          .subAggregation(filter(FILTER_USER_TASKS_WITH_DATE_FIELD_SET_AGGREGATION, existsQuery(getDateField())))
       )
       // sibling aggregation for distributedByPart for retrieval of all keys that
       // should be present in distributedBy result

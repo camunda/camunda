@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -25,9 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -102,14 +99,16 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
+    final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-      .distributedByContains(SECOND_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup2Count))
-      .distributedByContains(FIRST_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup1Count))
-      .doAssert(result);
-    // @formatter:on
+      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
+    if (candidateGroup2Count != null) {
+      groupByAsserter.distributedByContains(SECOND_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup2Count));
+    }
+    if (candidateGroup1Count != null) {
+      groupByAsserter.distributedByContains(FIRST_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup1Count));
+    }
+    groupByAsserter.doAssert(result);
   }
 
   @Data
@@ -131,7 +130,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
       Arguments.of(
         FlowNodeExecutionState.COMPLETED,
         new ExecutionStateTestValues(100L, 100L, 100L),
-        new ExecutionStateTestValues(null, null, null)
+        null
       ),
       Arguments.of(
         FlowNodeExecutionState.ALL,

@@ -16,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AssigneeCandidateGroupFilterDataDto implements FilterDataDto {
+public class IdentityLinkFilterDataDto implements FilterDataDto {
 
   protected String operator;
   protected List<String> values;

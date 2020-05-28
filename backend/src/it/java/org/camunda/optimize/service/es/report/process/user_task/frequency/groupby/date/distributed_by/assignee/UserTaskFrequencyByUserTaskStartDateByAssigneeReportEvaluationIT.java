@@ -62,7 +62,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
                                                final Long assignee2Count) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
     engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
 
@@ -83,14 +83,16 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
+    final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(SECOND_USER, assignee2Count)
-        .distributedByContains(DEFAULT_USERNAME, assignee1Count)
-      .doAssert(result);
-    // @formatter:on
+      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
+    if (assignee2Count != null) {
+      groupByAsserter.distributedByContains(SECOND_USER, assignee2Count);
+    }
+    if (assignee1Count != null) {
+      groupByAsserter.distributedByContains(DEFAULT_USERNAME, assignee1Count);
+    }
+    groupByAsserter.doAssert(result);
   }
 
   protected static Stream<Arguments> getExecutionStateExpectedValues() {

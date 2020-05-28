@@ -37,7 +37,8 @@ public class HyperMapAsserter {
   }
 
   public GroupByAdder groupByContains(String groupByKey) {
-    return new GroupByAdder(this, groupByKey);
+    final GroupByAdder groupByAdder = new GroupByAdder(this, groupByKey);
+    return groupByAdder;
   }
 
   public void doAssert(ReportHyperMapResultDto actualResult) {
@@ -174,12 +175,17 @@ public class HyperMapAsserter {
     }
 
     public GroupByAdder groupByContains(String groupByKey) {
-      asserter.addEntryToHyperMap(new HyperMapResultEntryDto(this.groupByKey, distributedByEntry, this.groupByKey));
+      add();
       return new GroupByAdder(asserter, groupByKey);
     }
 
-    public void doAssert(ReportHyperMapResultDto actualResult) {
+    public HyperMapAsserter add() {
       asserter.addEntryToHyperMap(new HyperMapResultEntryDto(this.groupByKey, distributedByEntry, this.groupByKey));
+      return asserter;
+    }
+
+    public void doAssert(ReportHyperMapResultDto actualResult) {
+      add();
       asserter.doAssert(actualResult);
     }
   }

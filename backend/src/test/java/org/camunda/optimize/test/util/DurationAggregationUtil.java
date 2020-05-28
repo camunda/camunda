@@ -10,6 +10,7 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
@@ -18,6 +19,13 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 
 public class DurationAggregationUtil {
+
+  public static Long calculateExpectedValueGivenDurationsDefaultAggr(final Long setDuration) {
+    return Optional.ofNullable(setDuration)
+      .map(DurationAggregationUtil::calculateExpectedValueGivenDurations)
+      .map(stats -> stats.get(AVERAGE))
+      .orElse(null);
+  }
 
   public static Long calculateExpectedValueGivenDurationsDefaultAggr(final Long... setDuration) {
     return calculateExpectedValueGivenDurations(setDuration).get(AVERAGE);

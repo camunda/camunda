@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.date.distributed_by.candidate_group;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -34,6 +36,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
@@ -52,9 +55,13 @@ import java.util.stream.Stream;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
@@ -518,6 +525,111 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
         .distributedByContains(FIRST_CANDIDATE_GROUP, 10L)
       .doAssert(result);
     // @formatter:on
+  }
+
+  public static Stream<Arguments> assigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 10L))),
+      Arguments.of(
+        IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10L), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10L))
+      ),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10L))),
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("assigneeFilterScenarios")
+  @SuppressWarnings("unchecked")
+  public void filterByAssigneeOnlyCountsUserTaskWithThatAssignee(final String filterOperator,
+                                                                 final String[] filterValues,
+                                                                 final List<Tuple> expectedResult) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+    changeDuration(processInstanceDto, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto, USER_TASK_2, 10L);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData())
+      .flatExtracting(HyperMapResultEntryDto::getValue)
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
+  }
+
+  public static Stream<Arguments> candidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 10L))
+      ),
+      Arguments.of(
+        IN,
+        new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
+        Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10L), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10L))
+      ),
+      Arguments.of(
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10L))
+      ),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("candidateGroupFilterScenarios")
+  @SuppressWarnings("unchecked")
+  public void filterByCandidateGroupOnlyCountsUserTaskWithThatCandidateGroup(final String filterOperator,
+                                                                             final String[] filterValues,
+                                                                             final List<Tuple> expectedResult) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(processInstanceDto, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto, USER_TASK_2, 10L);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData())
+      .flatExtracting(HyperMapResultEntryDto::getValue)
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
 
   @Test

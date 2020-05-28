@@ -26,7 +26,6 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -67,7 +66,7 @@ public class CompositeCommandResult {
       return new GroupByResult(
         key,
         null,
-        DistributedByResult.createEmptyDistributedByResultsForAllPossibleKeys(context, key)
+        DistributedByResult.createEmptyDistributedByResultsForAllPossibleKeys(context)
       );
     }
 
@@ -115,14 +114,8 @@ public class CompositeCommandResult {
     }
 
     public static List<DistributedByResult> createEmptyDistributedByResultsForAllPossibleKeys(
-      final ExecutionContext<ProcessReportDataDto> context,
-      final String groupByKey) {
-      Set<String> allDistributedByKeys = context.getAllDistributedByKeys();
-      if (allDistributedByKeys.isEmpty()) {
-        // should only be the case for DistributedByNone
-        return Collections.singletonList(DistributedByResult.createResultWithEmptyValue(groupByKey));
-      }
-
+      final ExecutionContext<ProcessReportDataDto> context) {
+      final Set<String> allDistributedByKeys = context.getAllDistributedByKeys();
       List<DistributedByResult> emptyDistributedByResult = new ArrayList<>();
       for (String key : allDistributedByKeys) {
         emptyDistributedByResult.add(createResultWithEmptyValue(key, null));

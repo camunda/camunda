@@ -30,12 +30,12 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -47,9 +47,13 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -117,7 +121,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReportById(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReportById(
       reportId
     );
 
@@ -471,6 +476,99 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     assertThat(result.getData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(1L);
+  }
+
+  public static Stream<Arguments> assigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_USER}, 1L),
+      Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 1L),
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("assigneeFilterScenarios")
+  public void filterByAssigneeOnlyCountsUserTasksWithThatAssignee(final String filterOperator,
+                                                                  final String[] filterValues,
+                                                                  final Long expectedUserTaskCount) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    if (expectedUserTaskCount != null) {
+      assertThat(result.getData())
+        .extracting(MapResultEntryDto::getValue)
+        .containsExactly(expectedUserTaskCount);
+    } else {
+      assertThat(result.getData()).hasSize(0);
+    }
+  }
+
+  public static Stream<Arguments> candidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L),
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 2L),
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("candidateGroupFilterScenarios")
+  public void filterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final String filterOperator,
+                                                                              final String[] filterValues,
+                                                                              final Long expectedUserTaskCount) {
+    // given
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    if (expectedUserTaskCount != null) {
+      assertThat(result.getData())
+        .extracting(MapResultEntryDto::getValue)
+        .containsExactly(expectedUserTaskCount);
+    } else {
+      assertThat(result.getData()).hasSize(0);
+    }
   }
 
   @Test

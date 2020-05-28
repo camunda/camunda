@@ -5,8 +5,11 @@
  */
 package org.camunda.optimize.service.es.report.process.user_task.frequency.groupby.assignee;
 
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -30,6 +33,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
@@ -45,6 +49,8 @@ import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
@@ -385,6 +391,100 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // then
     assertThat(result.getData().size(), is(0));
+  }
+
+  public static Stream<Arguments> assigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 1L))),
+      Arguments.of(
+        IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1L), Tuple.tuple(SECOND_USER, 1L))
+      ),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1L))),
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("assigneeFilterScenarios")
+  public void filterByAssigneeOnlyCountsThoseAssignees(final String filterOperator,
+                                                       final String[] filterValues,
+                                                       final List<Tuple> expectedResult) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    Assertions.assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
+  }
+
+  public static Stream<Arguments> candidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 1L))
+      ),
+      Arguments.of(
+        IN,
+        new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
+        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1L), Tuple.tuple(SECOND_USER, 1L))
+      ),
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1L))),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("candidateGroupFilterScenarios")
+  public void filterByCandidateGroupOnlyCountsAssigneesFromThoseUserTasks(final String filterOperator,
+                                                                          final String[] filterValues,
+                                                                          final List<Tuple> expectedResult) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    Assertions.assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
 
   @Data

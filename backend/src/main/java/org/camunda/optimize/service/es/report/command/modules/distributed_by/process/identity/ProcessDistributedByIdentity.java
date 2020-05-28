@@ -15,7 +15,6 @@ import org.camunda.optimize.service.es.report.command.modules.distributed_by.pro
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -31,9 +30,9 @@ import java.util.Map;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
 
 @RequiredArgsConstructor
 public abstract class ProcessDistributedByIdentity extends ProcessDistributedByPart {
@@ -45,14 +44,10 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
   private static final String DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION = "identity";
   // temporary GROUP_BY_IDENTITY_MISSING_KEY to ensure no overlap between this label and userTask names
   private static final String DISTRIBUTE_BY_IDENTITY_MISSING_KEY = "unassignedUserTasks___";
-  // it's possible to do report evaluations over several definitions versions. However, only the most recent
-  // one is used to decide which user tasks should be taken into account. To make sure that we only fetch assignees
-  // related to this definition version we filter for user tasks that only occur in the latest version.
-  private static final String USER_TASK_FOR_LATEST_DEFINITION_VERSION = "userTasksForLatestDefinitionVersionAgg";
+  private static final String FILTERED_USER_TASKS_AGGREGATION = "userTasksFilterAggregation";
 
   @Override
   public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
     final TermsAggregationBuilder getIdentities = AggregationBuilders
       .terms(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
@@ -61,18 +56,19 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
       .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)
       .subAggregation(viewPart.createAggregation(context));
     return AggregationBuilders.filter(
-      USER_TASK_FOR_LATEST_DEFINITION_VERSION,
-      QueryBuilders.termsQuery(USER_TASKS + "." + USER_TASK_ACTIVITY_ID, userTaskNames.keySet())
+      FILTERED_USER_TASKS_AGGREGATION,
+      createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
     ).subAggregation(getIdentities);
   }
 
-  private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {
+  private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
     return processDefinitionReader
       .getLatestProcessDefinition(
         reportData.getDefinitionKey(), reportData.getDefinitionVersions(), reportData.getTenantIds()
       )
       .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
-      .orElse(Collections.emptyMap());
+      .map(Map::keySet)
+      .orElse(Collections.emptySet());
   }
 
   protected abstract String getIdentityField();
@@ -82,7 +78,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
                                                                          final Aggregations aggregations,
                                                                          final ExecutionContext<ProcessReportDataDto> context) {
     final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
-      aggregations.get(USER_TASK_FOR_LATEST_DEFINITION_VERSION);
+      aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byIdentityAggregations =
       onlyIdentitiesRelatedToTheLatestDefinitionVersion.getAggregations().get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
     List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
@@ -119,7 +115,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
     final ExecutionContext<ProcessReportDataDto> context,
     final Aggregations aggregations) {
     final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
-      aggregations.get(USER_TASK_FOR_LATEST_DEFINITION_VERSION);
+      aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms allIdentityAggregation =
       onlyIdentitiesRelatedToTheLatestDefinitionVersion.getAggregations().get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
     final Set<String> allDistributedByIdentityKeys = allIdentityAggregation.getBuckets()
