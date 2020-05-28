@@ -16,6 +16,7 @@ import io.zeebe.engine.nwe.event.IntermediateCatchEventProcessor;
 import io.zeebe.engine.nwe.event.StartEventProcessor;
 import io.zeebe.engine.nwe.gateway.ExclusiveGatewayProcessor;
 import io.zeebe.engine.nwe.sequenceflow.SequenceFlowProcessor;
+import io.zeebe.engine.nwe.task.ReceiveTaskProcessor;
 import io.zeebe.engine.nwe.task.ServiceTaskProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -30,6 +31,7 @@ public final class BpmnElementProcessors {
   public BpmnElementProcessors(final BpmnBehaviors bpmnBehaviors) {
     // tasks
     processors.put(BpmnElementType.SERVICE_TASK, new ServiceTaskProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.RECEIVE_TASK, new ReceiveTaskProcessor(bpmnBehaviors));
     // gateways
     processors.put(BpmnElementType.EXCLUSIVE_GATEWAY, new ExclusiveGatewayProcessor(bpmnBehaviors));
     // containers
