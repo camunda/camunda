@@ -37,7 +37,6 @@ import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElem
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementCompletingHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayEventOccurredHandler;
-import io.zeebe.engine.processor.workflow.handlers.receivetask.ReceiveTaskEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.FlowOutElementCompletedHandler;
 import io.zeebe.engine.processor.workflow.message.BufferedMessageToStartEventCorrelator;
 import io.zeebe.engine.state.ZeebeState;
@@ -118,8 +117,6 @@ public final class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETED,
         new EventBasedGatewayElementCompletedHandler<>());
-
-    stepHandlers.put(BpmnStep.RECEIVE_TASK_EVENT_OCCURRED, new ReceiveTaskEventOccurredHandler<>());
 
     stepHandlers.put(
         BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED,

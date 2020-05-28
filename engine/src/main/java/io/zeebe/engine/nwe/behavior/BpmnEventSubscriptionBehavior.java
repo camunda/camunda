@@ -16,6 +16,7 @@ import io.zeebe.engine.processor.workflow.ExpressionProcessor.EvaluationExceptio
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableBoundaryEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableReceiveTask;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.engine.processor.workflow.message.MessageNameException;
 import io.zeebe.engine.state.ZeebeState;
@@ -69,15 +70,38 @@ public final class BpmnEventSubscriptionBehavior {
     keyGenerator = zeebeState.getKeyGenerator();
   }
 
-  /** @return true if the intermediate event was triggered, false otherwise */
-  public boolean triggerIntermediateEvent(final BpmnElementContext context) {
+  public void triggerBoundaryOrIntermediateEvent(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
     final var eventTrigger =
         eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
+    if (eventTrigger == null) {
+      // no event trigger found, there is nothing to act on
+      return;
+    }
+    final boolean hasEventTriggeredForBoundaryEvent =
+        element.getBoundaryEvents().stream()
+            .anyMatch(boundaryEvent -> boundaryEvent.getId().equals(eventTrigger.getElementId()));
+    if (hasEventTriggeredForBoundaryEvent) {
+      triggerBoundaryEvent(element, context, eventTrigger);
+    } else {
+      triggerIntermediateEvent(context, eventTrigger);
+    }
+  }
 
+  public void triggerIntermediateEvent(final BpmnElementContext context) {
+    final var eventTrigger =
+        eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
+    triggerIntermediateEvent(context, eventTrigger);
+  }
+
+  private void triggerIntermediateEvent(
+      final BpmnElementContext context, final EventTrigger eventTrigger) {
     if (eventTrigger == null) {
       // the activity (i.e. its event scope) is left - discard the event
-      return false;
+      return;
     }
+
+    stateTransitionBehavior.transitionToCompleting(context);
 
     stateBehavior
         .getVariablesState()
@@ -85,14 +109,19 @@ public final class BpmnEventSubscriptionBehavior {
 
     eventScopeInstanceState.deleteTrigger(
         context.getElementInstanceKey(), eventTrigger.getEventKey());
-    return true;
   }
 
-  public <T extends ExecutableActivity> void triggerBoundaryEvent(
-      final T element, final BpmnElementContext context) {
+  public void triggerBoundaryEvent(
+      final ExecutableActivity element, final BpmnElementContext context) {
     final var eventTrigger =
         eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
+    triggerBoundaryEvent(element, context, eventTrigger);
+  }
 
+  private void triggerBoundaryEvent(
+      final ExecutableActivity element,
+      final BpmnElementContext context,
+      final EventTrigger eventTrigger) {
     if (eventTrigger == null) {
       // the activity (i.e. its event scope) is left - discard the event
       return;
