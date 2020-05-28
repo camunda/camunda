@@ -37,4 +37,10 @@ public final class BpmnDeferredRecordsBehavior {
   public List<IndexedRecord> getDeferredRecords(final BpmnElementContext context) {
     return elementInstanceState.getDeferredRecords(context.getElementInstanceKey());
   }
+
+  public void removeDeferredRecord(
+      final BpmnElementContext context, final IndexedRecord deferredRecord) {
+    elementInstanceState.removeStoredRecord(
+        context.getElementInstanceKey(), deferredRecord.getKey(), Purpose.DEFERRED);
+  }
 }

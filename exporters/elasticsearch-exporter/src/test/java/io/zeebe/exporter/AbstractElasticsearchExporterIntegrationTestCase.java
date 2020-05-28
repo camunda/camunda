@@ -9,9 +9,12 @@ package io.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.carrotsearch.hppc.cursors.ObjectCursor;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.exporter.dto.GetDocumentResponse;
+import io.zeebe.exporter.dto.GetSettingsForIndicesResponse;
+import io.zeebe.exporter.dto.GetSettingsForIndicesResponse.IndexSettings;
 import io.zeebe.exporter.util.ElasticsearchContainer;
 import io.zeebe.exporter.util.ElasticsearchNode;
 import io.zeebe.protocol.record.Record;
@@ -21,12 +24,7 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.util.Map;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
-import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.client.Request;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,12 +64,14 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   }
 
   protected void assertIndexSettings() {
-    final ImmutableOpenMap<String, Settings> settingsForIndices = esClient.getSettingsForIndices();
-    for (final ObjectCursor<String> key : settingsForIndices.keys()) {
-      final String indexName = key.value;
-      final Settings settings = settingsForIndices.get(indexName);
-      final Integer numberOfShards = settings.getAsInt("index.number_of_shards", -1);
-      final Integer numberOfReplicas = settings.getAsInt("index.number_of_replicas", -1);
+    final var settingsForIndices = esClient.getSettingsForIndices();
+    final var indices = settingsForIndices.getIndices();
+    assertThat(indices).isNotEmpty();
+
+    for (final String indexName : indices.keySet()) {
+      final IndexSettings settings = indices.get(indexName);
+      final Integer numberOfShards = settings.getNumberOfShards();
+      final Integer numberOfReplicas = settings.getNumberOfReplicas();
 
       final int expectedNumberOfShards = numberOfShardsForIndex(indexName);
 
@@ -89,12 +89,11 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   }
 
   protected void assertRecordExported(final Record<?> record) {
-    final Map<String, Object> source = esClient.get(record);
+    final Map<String, Object> source = esClient.getDocument(record);
     assertThat(source)
         .withFailMessage("Failed to fetch record %s from elasticsearch", record)
-        .isNotNull();
-
-    assertThat(source).isEqualTo(recordToMap(record));
+        .isNotNull()
+        .isEqualTo(recordToMap(record));
   }
 
   protected ElasticsearchTestClient createElasticsearchClient(
@@ -111,7 +110,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
       throw new AssertionError("Failed to deserialize json of record " + record.toJson(), e);
     }
 
-    return MAPPER.convertValue(jsonNode, Map.class);
+    return MAPPER.convertValue(jsonNode, new TypeReference<>() {});
   }
 
   private int numberOfShardsForIndex(final String indexName) {
@@ -155,35 +154,39 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   }
 
   protected static class ElasticsearchTestClient extends ElasticsearchClient {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     ElasticsearchTestClient(
         final ElasticsearchExporterConfiguration configuration, final Logger log) {
       super(configuration, log);
     }
 
-    ImmutableOpenMap<String, Settings> getSettingsForIndices() {
-      final GetSettingsRequest settingsRequest = new GetSettingsRequest();
+    GetSettingsForIndicesResponse getSettingsForIndices() {
+      final var request = new Request("GET", "/_all/_settings");
       try {
-        return client
-            .indices()
-            .getSettings(settingsRequest, RequestOptions.DEFAULT)
-            .getIndexToSettings();
+        final var response = client.performRequest(request);
+        final var statusLine = response.getStatusLine();
+        if (statusLine.getStatusCode() >= 400) {
+          throw new ElasticsearchExporterException(
+              "Failed to get index settings: " + statusLine.getReasonPhrase());
+        }
+
+        return MAPPER.readValue(
+            response.getEntity().getContent(), GetSettingsForIndicesResponse.class);
       } catch (final IOException e) {
         throw new ElasticsearchExporterException("Failed to get index settings", e);
       }
     }
 
-    Map<String, Object> get(final Record<?> record) {
-      final GetRequest request =
-          new GetRequest(indexFor(record), typeFor(record), idFor(record))
-              .routing(String.valueOf(record.getPartitionId()));
+    Map<String, Object> getDocument(final Record<?> record) {
+      final var request =
+          new Request("GET", "/" + indexFor(record) + "/" + typeFor(record) + "/" + idFor(record));
+      request.addParameter("routing", String.valueOf(record.getPartitionId()));
       try {
-        final GetResponse response = client.get(request, RequestOptions.DEFAULT);
-        if (response.isExists()) {
-          return response.getSourceAsMap();
-        } else {
-          return null;
-        }
+        final var response = client.performRequest(request);
+        final var document =
+            MAPPER.readValue(response.getEntity().getContent(), GetDocumentResponse.class);
+        return document.getSource();
       } catch (final IOException e) {
         throw new ElasticsearchExporterException(
             "Failed to get record " + idFor(record) + " from index " + indexFor(record));

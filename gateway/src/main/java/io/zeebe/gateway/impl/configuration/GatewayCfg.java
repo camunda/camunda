@@ -24,6 +24,7 @@ public class GatewayCfg {
   private ThreadsCfg threads = new ThreadsCfg();
   private MonitoringCfg monitoring = new MonitoringCfg();
   private SecurityCfg security = new SecurityCfg();
+  private boolean initialized = false;
 
   public void init() {
     init(ConfigurationDefaults.DEFAULT_HOST);
@@ -32,6 +33,11 @@ public class GatewayCfg {
   public void init(final String defaultHost) {
     network.init(defaultHost);
     monitoring.init(defaultHost);
+    initialized = true;
+  }
+
+  public boolean isInitialized() {
+    return initialized;
   }
 
   public NetworkCfg getNetwork() {

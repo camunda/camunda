@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -35,10 +37,11 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.4.1</version.agrona>
+    <version.agrona>1.5.1</version.agrona>
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.16.1</version.assertj>
-    <version.camunda>7.12.0</version.camunda>
+    <version.camunda>7.13.0</version.camunda>
+    <version.awaitility>4.0.3</version.awaitility>
     <version.commons-lang>3.10</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -63,9 +66,9 @@
     <version.netty-tcnative>2.0.30.Final</version.netty-tcnative>
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.9.0</version.prometheus>
-    <version.protobuf>3.12.0</version.protobuf>
+    <version.protobuf>3.12.2</version.protobuf>
     <version.rocksdbjni>6.8.1</version.rocksdbjni>
-    <version.sbe>1.17.0</version.sbe>
+    <version.sbe>1.18.2</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
     <version.scala>2.13.2</version.scala>
     <version.slf4j>1.7.30</version.slf4j>
@@ -77,9 +80,9 @@
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>0.32.0</version.zeebe-test-container>
     <version.feel-scala>1.11.0</version.feel-scala>
+    <version.restassert>4.3.0</version.restassert>
     <version.spring-framework>5.2.6.RELEASE</version.spring-framework>
-    <version.spring-boot>2.2.6.RELEASE</version.spring-boot>
-    <version.spring-boot>2.2.7.RELEASE</version.spring-boot>
+    <version.spring-boot>2.3.0.RELEASE</version.spring-boot>
     <version.classgraph>4.8.78</version.classgraph>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.0</version.config>
@@ -206,6 +209,18 @@
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
         <version>${version.assertj}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured</artifactId>
+        <version>${version.restassert}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${version.awaitility}</version>
       </dependency>
 
       <dependency>
@@ -336,19 +351,7 @@
 
       <dependency>
         <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
         <artifactId>elasticsearch-x-content</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch.client</groupId>
-        <artifactId>elasticsearch-rest-high-level-client</artifactId>
         <version>${version.elasticsearch}</version>
       </dependency>
 
@@ -449,12 +452,6 @@
       </dependency>
 
       <dependency>
-        <groupId>com.carrotsearch</groupId>
-        <artifactId>hppc</artifactId>
-        <version>${version.hppc}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.prometheus</groupId>
         <artifactId>simpleclient</artifactId>
         <version>${version.prometheus}</version>
@@ -543,6 +540,17 @@
         <artifactId>spring-core</artifactId>
         <version>${version.spring-framework}</version>
       </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>${version.spring-framework}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-test</artifactId>
+        <version>${version.spring-framework}</version>
+      </dependency>
+
 
       <dependency>
         <groupId>org.springframework.boot</groupId>
@@ -553,6 +561,32 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-autoconfigure</artifactId>
         <version>${version.spring-boot}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-actuator</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+        <version>${version.spring-boot}</version>
+
+        <exclusions>
+          <exclusion>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -886,7 +920,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -979,7 +1013,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
                 </rules>
               </configuration>
             </execution>

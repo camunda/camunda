@@ -78,9 +78,7 @@ public class BrokerRestartTest {
     }
 
     @Override
-    public ActorFuture<Void> onBecomingFollower(
-        final int partitionId, final long term, final LogStream logStream) {
-      this.logStream = logStream;
+    public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
       return CompletableActorFuture.completed(null);
     }
 

@@ -11,7 +11,7 @@ import io.zeebe.el.Expression;
 import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableServiceTask;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.VariablesState;
@@ -40,7 +40,7 @@ public final class BpmnVariableMappingBehavior {
    * @return either void if successful, otherwise a failure
    */
   public Either<Failure, Void> applyInputMappings(
-      final BpmnElementContext context, final ExecutableServiceTask element) {
+      final BpmnElementContext context, final ExecutableFlowNode element) {
     final long scopeKey = context.getElementInstanceKey();
     final Optional<Expression> inputMappingExpression = element.getInputMappings();
     if (inputMappingExpression.isPresent()) {
@@ -64,7 +64,7 @@ public final class BpmnVariableMappingBehavior {
    * @return either void if successful, otherwise a failure
    */
   public Either<Failure, Void> applyOutputMappings(
-      final BpmnElementContext context, final ExecutableServiceTask element) {
+      final BpmnElementContext context, final ExecutableFlowNode element) {
     final WorkflowInstanceRecord record = context.getRecordValue();
     final long elementInstanceKey = context.getElementInstanceKey();
     final long workflowKey = record.getWorkflowKey();

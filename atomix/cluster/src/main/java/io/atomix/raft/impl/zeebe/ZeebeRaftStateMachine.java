@@ -41,7 +41,7 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
     this.lastEnqueued = reader.getFirstIndex() - 1;
     this.logger =
         ContextualLoggerFactory.getLogger(
-            getClass(), LoggerContext.builder(getClass()).add("partition", raft.getName()).build());
+            getClass(), LoggerContext.builder(getClass()).addValue(raft.getName()).build());
     this.metrics = new RaftServiceMetrics(raft.getName());
   }
 

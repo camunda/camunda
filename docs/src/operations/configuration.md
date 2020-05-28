@@ -144,3 +144,9 @@ To enable Google Stackdriver compatible JSON logging you can set the environment
 ```
 {{#include ../../../dist/src/main/config/log4j2.xml}}
 ```
+
+## Health Probes
+Health probes are set to sensible defaults which cover common use cases.
+
+For specific use cases, it might be necessary to customize health probes:
+* [Gateway Health Probes](/appendix/gateway-health-probes.md)

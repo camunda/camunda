@@ -33,8 +33,7 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(
-      final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
     return actor.call(
         () -> {
           leaderForPartitions.remove(partitionId);

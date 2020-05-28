@@ -31,4 +31,20 @@ public final class EnvironmentHelper {
 
     return result;
   }
+
+  /**
+   * This method disables the gateway's health indicator and probes before launching a broker. This
+   * is necessary, because broker and gateway share the same classpath. Therefore, all health
+   * indicators targeted at the gateway, will by default also be enabled for the broker. This method
+   * is here to prevent this.
+   *
+   * <p>Note that currently this is a very crude implementation which takes advantage of the fact
+   * that no Spring health indicators are currently implemented for the broker. Therefore, we can
+   * simply disable all. In the future, this implementation will need to become more sophisticated.
+   *
+   * <p>This method must be called by the broker before launching Spring system.
+   */
+  public static void disableGatewayHealthIndicatorsAndProbes() {
+    System.setProperty("management.health.defaults.enabled", "false");
+  }
 }

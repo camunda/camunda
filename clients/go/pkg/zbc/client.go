@@ -18,18 +18,20 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/keepalive"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
+
+	"google.golang.org/grpc"
+
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
-	"google.golang.org/grpc"
 )
 
 const DefaultRequestTimeout = 15 * time.Second
@@ -54,6 +56,8 @@ type ClientConfig struct {
 	// whether or not there are active requests. Negative values will result in error and zero will result in the default
 	// of 45 seconds being used
 	KeepAlive time.Duration
+
+	DialOpts []grpc.DialOption
 }
 
 // ErrFileNotFound is returned whenever a file can't be found at the provided path. Use this value to do error comparison.
@@ -122,28 +126,27 @@ func (c *ClientImpl) Close() error {
 }
 
 func NewClient(config *ClientConfig) (Client, error) {
-	var opts []grpc.DialOption
 	err := applyClientEnvOverrides(config)
 	if err != nil {
 		return nil, err
 	}
 
-	opts, err = configureConnectionSecurity(config, opts)
+	err = configureConnectionSecurity(config)
 	if err != nil {
 		return nil, err
 	}
 
-	opts, err = configureCredentialsProvider(config, opts)
+	err = configureCredentialsProvider(config)
 	if err != nil {
 		return nil, err
 	}
 
-	opts, err = configureKeepAlive(config, opts)
+	err = configureKeepAlive(config)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, err := grpc.Dial(config.GatewayAddress, opts...)
+	conn, err := grpc.Dial(config.GatewayAddress, config.DialOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,10 +179,10 @@ func applyClientEnvOverrides(config *ClientConfig) error {
 	return nil
 }
 
-func configureCredentialsProvider(config *ClientConfig, opts []grpc.DialOption) ([]grpc.DialOption, error) {
+func configureCredentialsProvider(config *ClientConfig) error {
 	if config.CredentialsProvider == nil && shouldUseDefaultCredentialsProvider() {
 		if err := setDefaultCredentialsProvider(config); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -189,12 +192,12 @@ func configureCredentialsProvider(config *ClientConfig, opts []grpc.DialOption) 
 		}
 
 		callCredentials := &callCredentials{credentialsProvider: config.CredentialsProvider}
-		opts = append(opts, grpc.WithPerRPCCredentials(callCredentials))
+		config.DialOpts = append(config.DialOpts, grpc.WithPerRPCCredentials(callCredentials))
 	} else {
 		config.CredentialsProvider = &noopCredentialsProvider{}
 	}
 
-	return opts, nil
+	return nil
 }
 
 func shouldUseDefaultCredentialsProvider() bool {
@@ -217,37 +220,38 @@ func setDefaultCredentialsProvider(config *ClientConfig) error {
 	return nil
 }
 
-func configureConnectionSecurity(config *ClientConfig, opts []grpc.DialOption) ([]grpc.DialOption, error) {
+func configureConnectionSecurity(config *ClientConfig) error {
 	if !config.UsePlaintextConnection {
 		var creds credentials.TransportCredentials
 
 		if config.CaCertificatePath == "" {
 			creds = credentials.NewTLS(&tls.Config{})
 		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
-			return nil, fmt.Errorf("expected to find CA certificate but no such file at '%s': %w", config.CaCertificatePath, ErrFileNotFound)
+			return fmt.Errorf("expected to find CA certificate but no such file at '%s': %w", config.CaCertificatePath, ErrFileNotFound)
 		} else {
 			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, "")
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
-		opts = append(opts, grpc.WithTransportCredentials(creds))
+		config.DialOpts = append(config.DialOpts, grpc.WithTransportCredentials(creds))
 	} else {
-		opts = append(opts, grpc.WithInsecure())
+		config.DialOpts = append(config.DialOpts, grpc.WithInsecure())
 	}
 
-	return opts, nil
+	return nil
 }
 
-func configureKeepAlive(config *ClientConfig, opts []grpc.DialOption) ([]grpc.DialOption, error) {
+func configureKeepAlive(config *ClientConfig) error {
 	keepAlive := DefaultKeepAlive
 
 	if config.KeepAlive < time.Duration(0) {
-		return nil, errors.New("keep alive must be a positive duration")
+		return errors.New("keep alive must be a positive duration")
 	} else if config.KeepAlive != time.Duration(0) {
 		keepAlive = config.KeepAlive
 	}
+	config.DialOpts = append(config.DialOpts, grpc.WithKeepaliveParams(keepalive.ClientParameters{Time: keepAlive}))
 
-	return append(opts, grpc.WithKeepaliveParams(keepalive.ClientParameters{Time: keepAlive})), nil
+	return nil
 }

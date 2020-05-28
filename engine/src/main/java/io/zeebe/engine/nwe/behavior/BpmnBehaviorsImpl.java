@@ -23,6 +23,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
   private final ExpressionProcessor expressionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
+  private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateBehavior stateBehavior;
@@ -56,6 +57,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     incidentBehavior = new BpmnIncidentBehavior(zeebeState, streamWriter);
     this.streamWriter = streamWriter;
     deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
+    eventPublicationBehavior = new BpmnEventPublicationBehavior(zeebeState, streamWriter);
   }
 
   @Override
@@ -66,6 +68,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnVariableMappingBehavior variableMappingBehavior() {
     return variableMappingBehavior;
+  }
+
+  @Override
+  public BpmnEventPublicationBehavior eventPublicationBehavior() {
+    return eventPublicationBehavior;
   }
 
   @Override

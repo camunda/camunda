@@ -13,21 +13,17 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.EmbeddedSubProcessBuilder;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,327 +31,369 @@ import org.junit.Test;
 public final class EmbeddedSubProcessTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final BpmnModelInstance ONE_TASK_SUBPROCESS =
-      Bpmn.createExecutableProcess("ONE_TASK_SUBPROCESS")
-          .startEvent("start")
-          .sequenceFlowId("flow1")
-          .subProcess("subProcess")
-          .embeddedSubProcess()
-          .startEvent("subProcessStart")
-          .sequenceFlowId("subProcessFlow1")
-          .serviceTask("subProcessTask", b -> b.zeebeJobType("type"))
-          .sequenceFlowId("subProcessFlow2")
-          .endEvent("subProcessEnd")
-          .subProcessDone()
-          .sequenceFlowId("flow2")
-          .endEvent("end")
-          .done();
+
+  private static final String PROCESS_ID = "workflow-with-sub-process";
+
+  private static final BpmnModelInstance NO_TASK_SUB_PROCESS =
+      workflowWithSubProcess(subProcess -> subProcess.startEvent().endEvent());
+
+  private static final BpmnModelInstance ONE_TASK_SUB_PROCESS =
+      workflowWithSubProcess(
+          subProcess ->
+              subProcess.startEvent().serviceTask("task", b -> b.zeebeJobType("task")).endEvent());
+
+  private static final BpmnModelInstance PARALLEL_TASKS_SUB_PROCESS =
+      workflowWithSubProcess(
+          subProcess ->
+              subProcess
+                  .startEvent()
+                  .parallelGateway("fork")
+                  .serviceTask("task-1", b -> b.zeebeJobType("task-1"))
+                  .sequenceFlowId("join-1")
+                  .parallelGateway("join")
+                  .moveToNode("fork")
+                  .serviceTask("task-2", b -> b.zeebeJobType("task-2"))
+                  .sequenceFlowId("join-2")
+                  .connectTo("join")
+                  .endEvent());
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void init() {
-    ENGINE.deployment().withXmlResource(ONE_TASK_SUBPROCESS).deploy();
+  private static BpmnModelInstance workflowWithSubProcess(
+      final Consumer<EmbeddedSubProcessBuilder> subProcessBuilder) {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .subProcess(
+            "sub-process", subProcess -> subProcessBuilder.accept(subProcess.embeddedSubProcess()))
+        .endEvent()
+        .done();
   }
 
   @Test
-  public void shouldCreateJobForServiceTaskInEmbeddedSubprocess() {
+  public void shouldActivateSubProcess() {
     // given
+    ENGINE.deployment().withXmlResource(NO_TASK_SUB_PROCESS).deploy();
 
     // when
-    final long workflowInstanceKey =
-        ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("ONE_TASK_SUBPROCESS")
-            .withVariable("key", "val")
-            .create();
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final Record<JobRecordValue> jobCreatedEvent =
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSequence(
+            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED));
+
+    final var subProcessActivating =
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .getFirst();
+
+    Assertions.assertThat(subProcessActivating.getValue())
+        .hasFlowScopeKey(workflowInstanceKey)
+        .hasElementId("sub-process");
+  }
+
+  @Test
+  public void shouldCompleteSubProcess() {
+    // given
+    ENGINE.deployment().withXmlResource(NO_TASK_SUB_PROCESS).deploy();
+
+    // when
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSequence(
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING));
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(Record::getIntent)
+        .contains(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+  }
+
+  @Test
+  public void shouldCreateJobForInnerTask() {
+    // given
+    ENGINE.deployment().withXmlResource(ONE_TASK_SUB_PROCESS).deploy();
+
+    // when
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final var serviceTaskActivated =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst();
+
+    final Record<JobRecordValue> jobCreated =
         RecordingExporter.jobRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
             .withIntent(JobIntent.CREATED)
             .getFirst();
 
-    Assertions.assertThat(jobCreatedEvent.getValue()).hasElementId("subProcessTask");
+    Assertions.assertThat(jobCreated.getValue())
+        .hasElementId("task")
+        .hasElementInstanceKey(serviceTaskActivated.getKey())
+        .hasBpmnProcessId(serviceTaskActivated.getValue().getBpmnProcessId())
+        .hasWorkflowDefinitionVersion(serviceTaskActivated.getValue().getVersion())
+        .hasWorkflowKey(serviceTaskActivated.getValue().getWorkflowKey());
   }
 
   @Test
-  public void shouldGenerateEventStream() {
+  public void shouldTerminateSubProcess() {
     // given
+    ENGINE.deployment().withXmlResource(ONE_TASK_SUB_PROCESS).deploy();
+
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.workflowInstanceRecords()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        .await();
 
     // when
-    final long workflowInstanceKey =
-        ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("ONE_TASK_SUBPROCESS")
-            .withVariable("key", "val")
-            .create();
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .limit(
-                r ->
-                    r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
-                        && "subProcessTask".equals(r.getValue().getElementId()))
-            .asList();
-
-    assertThat(workflowInstanceEvents)
-        .extracting(Record::getIntent, e -> e.getValue().getElementId())
-        .containsExactly(
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "ONE_TASK_SUBPROCESS"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "ONE_TASK_SUBPROCESS"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "start"),
-            tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessStart"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessStart"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessStart"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessStart"),
-            tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessTask"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"));
-
-    final Record<WorkflowInstanceRecordValue> subProcessReady =
-        RecordingExporter.workflowInstanceRecords()
-            .withElementId("subProcess")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
-    assertThat(subProcessReady.getValue().getFlowScopeKey()).isEqualTo(workflowInstanceKey);
-
-    final Record<WorkflowInstanceRecordValue> subProcessTaskReady =
-        RecordingExporter.workflowInstanceRecords()
-            .withElementId("subProcessTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
-    assertThat(subProcessTaskReady.getValue().getFlowScopeKey())
-        .isEqualTo(subProcessReady.getKey());
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSequence(
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
-  public void shouldCompleteEmbeddedSubProcess() {
+  public void shouldInterruptSubProcess() {
     // given
+    final var workflow =
+        workflowWithSubProcess(
+            subProcess ->
+                subProcess
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .subProcessDone()
+                    .boundaryEvent(
+                        "cancel",
+                        b -> b.message(m -> m.name("cancel").zeebeCorrelationKeyExpression("key")))
+                    .endEvent());
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
     final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("ONE_TASK_SUBPROCESS").create();
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "key-1").create();
+
+    RecordingExporter.workflowInstanceRecords()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        .await();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("type").complete();
+    ENGINE.message().withName("cancel").withCorrelationKey("key-1").publish();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .limitToWorkflowInstanceCompleted()
-            .collect(Collectors.toList());
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSequence(
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED));
 
-    assertThat(workflowInstanceEvents)
-        .extracting(Record::getIntent, e -> e.getValue().getElementId())
-        .containsExactly(
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "ONE_TASK_SUBPROCESS"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "ONE_TASK_SUBPROCESS"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "start"),
-            tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessStart"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessStart"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessStart"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessStart"),
-            tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessTask"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessTask"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessTask"),
-            tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow2"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessEnd"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessEnd"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessEnd"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessEnd"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcess"),
-            tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow2"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "end"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "end"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "end"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "end"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "ONE_TASK_SUBPROCESS"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "ONE_TASK_SUBPROCESS"));
-  }
-
-  @Test
-  public void shouldRunServiceTaskAfterEmbeddedSubProcess() {
-    // given
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess("shouldRunServiceTaskAfterEmbeddedSubProcess")
-            .startEvent()
-            .subProcess()
-            .embeddedSubProcess()
-            .startEvent()
-            .endEvent()
-            .subProcessDone()
-            .serviceTask("task", b -> b.zeebeJobType("type"))
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(model).deploy();
-
-    // when
-    final long workflowInstanceKey =
-        ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("shouldRunServiceTaskAfterEmbeddedSubProcess")
-            .create();
-
-    // then
-    final Record<JobRecordValue> jobCreatedEvent =
-        RecordingExporter.jobRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withIntent(JobIntent.CREATED)
-            .getFirst();
-
-    Assertions.assertThat(jobCreatedEvent.getValue()).hasElementId("task");
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(Record::getIntent)
+        .contains(WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
   public void shouldCompleteNestedSubProcess() {
     // given
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess("shouldCompleteNestedSubProcess")
-            .startEvent()
-            .subProcess("outerSubProcess")
-            .embeddedSubProcess()
-            .startEvent()
-            .subProcess("innerSubProcess")
-            .embeddedSubProcess()
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeJobType("type"))
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-    ENGINE.deployment().withXmlResource(model).deploy();
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("shouldCompleteNestedSubProcess").create();
+    final Consumer<SubProcessBuilder> nestedSubProcess =
+        subProcess -> subProcess.embeddedSubProcess().startEvent().endEvent();
+
+    final BpmnModelInstance workflow =
+        workflowWithSubProcess(
+            subProcess ->
+                subProcess
+                    .startEvent()
+                    .subProcess("nestedSubProcess", nestedSubProcess)
+                    .endEvent());
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("type").complete();
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .limitToWorkflowInstanceCompleted()
-            .asList();
-
-    assertThat(workflowInstanceEvents)
-        .extracting(Record::getIntent, e -> e.getValue().getElementId())
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "task"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "task"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "task"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "task"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "outerSubProcess"));
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
-  public void shouldTerminateBeforeTriggeringBoundaryEvent() {
+  public void shouldCompleteSubProcessWithParallelFlow() {
     // given
-    final Consumer<SubProcessBuilder> innerSubProcess =
-        inner ->
-            inner
-                .embeddedSubProcess()
-                .startEvent()
-                .serviceTask("task", b -> b.zeebeJobType("type"))
-                .endEvent();
-    final Consumer<SubProcessBuilder> outSubProcess =
-        outer ->
-            outer
-                .embeddedSubProcess()
-                .startEvent()
-                .subProcess("innerSubProcess", innerSubProcess)
-                .endEvent();
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess("shouldTerminateBeforeTriggeringBoundaryEvent")
-            .startEvent()
-            .subProcess("outerSubProcess", outSubProcess)
-            .boundaryEvent("event")
-            .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
-            .endEvent("msgEnd")
-            .moveToActivity("outerSubProcess")
-            .endEvent()
-            .done();
-    ENGINE.deployment().withXmlResource(model).deploy();
-    final long workflowInstanceKey =
-        ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("shouldTerminateBeforeTriggeringBoundaryEvent")
-            .withVariable("key", "123")
-            .create();
+    final var workflow =
+        workflowWithSubProcess(
+            subProcess ->
+                subProcess
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .serviceTask("task-1", b -> b.zeebeJobType("task-1"))
+                    .endEvent()
+                    .moveToLastGateway()
+                    .serviceTask("task-2", b -> b.zeebeJobType("task-2"))
+                    .endEvent());
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
-                .exists())
-        .isTrue(); // await first subscription opened
-    final Record<WorkflowInstanceRecordValue> activatedRecord =
-        RecordingExporter.workflowInstanceRecords()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withElementId("task")
-            .getFirst();
+    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-1").complete();
 
-    ENGINE
-        .message()
-        .withName("msg")
-        .withCorrelationKey("123")
-        .withVariables(MsgPackUtil.asMsgPack("foo", 1))
-        .publish();
+    RecordingExporter.workflowInstanceRecords()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withElementType(BpmnElementType.END_EVENT)
+        .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        .await();
+
+    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-2").complete();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .skipUntil(r -> r.getPosition() > activatedRecord.getPosition())
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .limitToWorkflowInstanceCompleted()
-            .asList();
-
-    assertThat(workflowInstanceEvents)
-        .extracting(Record::getIntent, e -> e.getValue().getElementId())
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(WorkflowInstanceIntent.EVENT_OCCURRED, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "task"),
-            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "task"),
-            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "event"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "event"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "event"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "event"));
+            tuple(BpmnElementType.PARALLEL_GATEWAY, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldTerminateSubProcessWithParallelFlow() {
+    // given
+    ENGINE.deployment().withXmlResource(PARALLEL_TASKS_SUB_PROCESS).deploy();
+
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .limit(2)
+        .await();
+
+    // when
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSequence(
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldTerminateSubProcessWithPendingParallelGateway() {
+    // given
+    ENGINE.deployment().withXmlResource(PARALLEL_TASKS_SUB_PROCESS).deploy();
+
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-1").complete();
+
+    // await that one sequence flow on the joining parallel gateway is taken
+    RecordingExporter.workflowInstanceRecords()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withElementId("join-1")
+        .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+        .await();
+
+    // when
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSequence(
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
   }
 }
