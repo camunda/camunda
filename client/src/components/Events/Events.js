@@ -16,10 +16,10 @@ import {checkDeleteConflict} from 'services';
 
 import PublishModal from './PublishModal';
 import UsersModal from './UsersModal';
+import GenerationModal from './GenerationModal';
 import {loadProcesses, createProcess, removeProcess, cancelPublish} from './service';
 
 import './Events.scss';
-import GenerationModal from './GenerationModal';
 
 export default withErrorHandling(
   class Events extends React.Component {

@@ -612,6 +612,7 @@
     "editAccess": "Edit Access",
     "id": "ID",
     "instanceIds": "Instance IDs",
+    "seeDocs": "See documentation",
     "errors": {
       "inValidLink": "This link is not valid."
     },

@@ -612,6 +612,7 @@
     "editAccess": "Zugriff bearbeiten",
     "id": "ID",
     "instanceIds": "Instanz IDs",
+    "seeDocs": "Siehe Dokumentation",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig"
     },

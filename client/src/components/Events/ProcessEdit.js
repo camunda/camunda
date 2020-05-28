@@ -70,29 +70,24 @@ export class ProcessEdit extends React.Component {
     }
   }
 
-  createNewProcessXML = (withStartEvent) => {
-    const id = 'Process_' + Math.random().toString(36).substr(2);
-
-    return `<?xml version="1.0" encoding="UTF-8"?>
-    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_15hceqv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.4.1">
-      <bpmn:process id="${id}" name="${t('events.new')}" isExecutable="true">
-        ${withStartEvent && `<bpmn:startEvent id="StartEvent_1" />`}
-      </bpmn:process>
-      <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${id}">
-          <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
-            <dc:Bounds x="179" y="99" width="36" height="36" />
-          </bpmndi:BPMNShape>
-        </bpmndi:BPMNPlane>
-      </bpmndi:BPMNDiagram>
-    </bpmn:definitions>
-    `;
-  };
-
   initializeNewProcess = async () => {
+    const id = 'Process_' + Math.random().toString(36).substr(2);
     this.setState({
       name: t('events.new'),
-      xml: this.createNewProcessXML(true),
+      xml: `<?xml version="1.0" encoding="UTF-8"?>
+      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_15hceqv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.4.1">
+        <bpmn:process id="${id}" name="${t('events.new')}" isExecutable="true">
+        <bpmn:startEvent id="StartEvent_1" />
+        </bpmn:process>
+        <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+          <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${id}">
+            <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+              <dc:Bounds x="179" y="99" width="36" height="36" />
+            </bpmndi:BPMNShape>
+          </bpmndi:BPMNPlane>
+        </bpmndi:BPMNDiagram>
+      </bpmn:definitions>
+      `,
       mappings: {},
       eventSources: [],
       lastModifier: (await this.props.getUser()).id,
@@ -106,7 +101,7 @@ export class ProcessEdit extends React.Component {
       ({name, xml, mappings, eventSources, lastModifier, lastModified}) =>
         this.setState({
           name,
-          xml: xml || this.createNewProcessXML(),
+          xml,
           mappings,
           eventSources,
           lastModifier,

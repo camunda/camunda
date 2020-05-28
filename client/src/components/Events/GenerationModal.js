@@ -5,16 +5,16 @@
  */
 
 import React, {useState, useEffect} from 'react';
+import {Redirect} from 'react-router';
 import {Button, Modal, EntityList, Icon} from 'components';
 import {t} from 'translation';
 import EventsSourceModal from './EventsSourceModal';
 import {createProcess} from './service';
 import {getOptimizeVersion} from 'config';
 import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
 
 import './GenerationModal.scss';
-import {showError} from 'notifications';
-import {Redirect} from 'react-router';
 
 export function GenerationModal({onClose, mightFail}) {
   const [sources, setSources] = useState([]);
@@ -58,7 +58,7 @@ export function GenerationModal({onClose, mightFail}) {
         <EntityList
           embedded
           action={
-            <Button onClick={setOpenEventsSourceModal}>
+            <Button onClick={() => setOpenEventsSourceModal(true)}>
               <Icon type="plus" />
               {t('events.sources.add')}
             </Button>

@@ -151,15 +151,16 @@ export default withErrorHandling(
               </div>
             </div>
             <ModificationInfo user={lastModifier} date={lastModified} />
+            {this.props.generated && (
+              <MessageBox type="warning">
+                {t('events.generationWarning')}{' '}
+                <a href={docsLink} target="_blank" rel="noopener noreferrer">
+                  {t('common.seeDocs')}
+                </a>
+              </MessageBox>
+            )}
           </div>
-          {this.props.generated && (
-            <MessageBox type="warning">
-              {t('events.generationWarning')}{' '}
-              <a href={docsLink} target="_blank" rel="noopener noreferrer">
-                {t('events.sources.learnMore')}
-              </a>
-            </MessageBox>
-          )}
+
           <BPMNDiagram xml={xml}>
             <ProcessRenderer mappings={mappings} />
           </BPMNDiagram>
