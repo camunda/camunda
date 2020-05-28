@@ -73,13 +73,27 @@ pipeline {
             }
 
             steps {
-                container('maven') {
-                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
-                }
+                retry(3) {
+                    container('maven') {
+                        sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
+                    }
 
-                container('docker') {
-                    sh '.ci/scripts/docker/build.sh'
+                    container('docker') {
+                        sh '.ci/scripts/docker/pull.sh'
+                        sh '.ci/scripts/docker/build.sh'
+                    }
                 }
+            }
+
+            post {
+              failure {
+                  script {
+                      currentBuild.result = 'ABORTED'
+                      currentBuild.description = "Aborted due to problems building or pulling docker images"
+
+                      build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
+                  }
+              }
             }
         }
 
