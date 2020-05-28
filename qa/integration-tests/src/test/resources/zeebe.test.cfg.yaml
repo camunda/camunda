@@ -1,0 +1,17 @@
+zeebe.broker:
+  cluster:
+    partitionsCount: 2
+
+  exporters:
+#    debug:
+#      className: io.zeebe.broker.exporter.DebugExporter
+#      args:
+#        logLevel: "debug"
+#        prettyPrint: true
+    elasticsearch:
+      className: io.zeebe.exporter.ElasticsearchExporter
+      args:
+        bulk:
+          delay: 1
+          size: 1
+        index.prefix: "test-record"

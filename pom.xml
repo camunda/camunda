@@ -20,7 +20,7 @@
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
-    <!--    <module>qa</module>-->
+    <module>qa</module>
     <module>distro</module>
   </modules>
 
@@ -142,6 +142,12 @@
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-starter</artifactId>
+        <version>${version.graphql}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-spring-boot-starter-test</artifactId>
         <version>${version.graphql}</version>
       </dependency>
 

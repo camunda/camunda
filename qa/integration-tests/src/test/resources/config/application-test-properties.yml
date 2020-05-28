@@ -1,0 +1,27 @@
+zeebe.tasklist:
+  csrfPreventionEnabled: false
+  batchOperationMaxSize: 500
+  elasticsearch:
+    clusterName: clusterName
+    host: someHost
+    port: 12345
+    dateFormat: yyyy-MM-dd
+    batchSize: 111
+  zeebeElasticsearch:
+    clusterName: zeebeElasticClusterName
+    host: someOtherHost
+    port: 54321
+    dateFormat: dd-MM-yyyy
+    batchSize: 222
+    prefix: somePrefix
+  importer:
+    startLoadingDataOnStartup: false
+  zeebe:
+    brokerContactPoint: someZeebeHost:999
+  operationExecutor:
+    batchSize: 555
+    workerId: someWorker
+    lockTimeout: 15000
+    executorEnabled: false
+#Spring Boot Actuator endpoints to be exposed
+management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
