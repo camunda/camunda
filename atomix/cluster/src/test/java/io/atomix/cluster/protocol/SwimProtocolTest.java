@@ -209,13 +209,6 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     // Partition node 1 from node 2.
     partition(member1, member2);
 
-    // Verify that neither node is ever removed from the cluster since node 3 can still ping nodes 1
-    // and 2.
-    Thread.sleep(500);
-    checkMembers(member1, member1, member2, member3);
-    checkMembers(member2, member1, member2, member3);
-    checkMembers(member3, member1, member2, member3);
-
     // Heal the partition.
     heal(member1, member2);
 
