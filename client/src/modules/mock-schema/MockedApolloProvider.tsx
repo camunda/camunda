@@ -7,13 +7,11 @@
 import * as React from 'react';
 import {MockedProvider} from '@apollo/react-testing';
 
-import {resolvers} from './resolvers';
-
 const MockedApolloProvider: React.FC<React.ComponentProps<
   typeof MockedProvider
 >> = ({children, ...props}) => {
   return (
-    <MockedProvider resolvers={resolvers} {...props}>
+    <MockedProvider addTypename={false} {...props}>
       {children}
     </MockedProvider>
   );
