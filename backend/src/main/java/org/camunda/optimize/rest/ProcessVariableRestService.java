@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
@@ -47,9 +48,9 @@ public class ProcessVariableRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<ProcessVariableNameResponseDto> getVariableNamesForReports(@Context ContainerRequestContext requestContext,
-                                                                         List<String> reportIds) {
+                                                                         GetVariableNamesForReportsRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processVariableService.getVariableNamesForReports(userId, reportIds);
+    return processVariableService.getVariableNamesForReports(userId, requestDto.getReportIds());
   }
 
   @POST

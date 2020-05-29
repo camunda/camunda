@@ -47,6 +47,7 @@ import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
+import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -725,9 +726,11 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildProcessVariableNamesForReportsRequest(List<String> reportIds) {
+    GetVariableNamesForReportsRequestDto requestDto = new GetVariableNamesForReportsRequestDto();
+    requestDto.setReportIds(reportIds);
     this.path = "variables/reports";
     this.method = POST;
-    this.body = getBody(reportIds);
+    this.body = getBody(requestDto);
     return this;
   }
 
