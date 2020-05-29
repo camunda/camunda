@@ -84,14 +84,14 @@ public class ImportIT extends AbstractImportIT {
 
     // make sure fetching endpoint is called during import
     embeddedOptimizeExtension.startContinuousImportScheduling();
-    Thread.sleep(5000);
+    Thread.sleep(1000);
     esMockServer.verify(importFetcherEndpointMatcher);
 
     // endpoint no longer fails
     esMockServer.reset();
 
     // wait for import to finish
-    Thread.sleep(5000);
+    Thread.sleep(1000);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then everything has been imported
