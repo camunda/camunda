@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.report.ReportEvaluationService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -50,6 +51,7 @@ import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullS
 public class ReportRestService {
 
   private final ReportService reportService;
+  private final ReportEvaluationService reportEvaluationService;
   private final SessionService sessionService;
 
   /**
@@ -162,7 +164,7 @@ public class ReportRestService {
                                                                      AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
-      reportService.evaluateSavedReportWithAdditionalFilters(userId, reportId, reportEvaluationFilter);
+      reportEvaluationService.evaluateSavedReportWithAdditionalFilters(userId, reportId, reportEvaluationFilter);
     return ReportEvaluationResultMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
 
@@ -178,7 +180,7 @@ public class ReportRestService {
   public AuthorizedEvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
                                                               @NotNull ReportDefinitionDto reportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final AuthorizedReportEvaluationResult reportEvaluationResult = reportService.evaluateReport(
+    final AuthorizedReportEvaluationResult reportEvaluationResult = reportEvaluationService.evaluateReport(
       userId,
       reportDefinitionDto
     );

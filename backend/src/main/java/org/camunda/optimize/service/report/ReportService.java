@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType;
-import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
@@ -33,13 +32,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.UncombinableReportsException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
@@ -84,10 +81,8 @@ public class ReportService implements CollectionReferencingService {
 
   private final ReportWriter reportWriter;
   private final ReportReader reportReader;
-  private final AuthorizationCheckReportEvaluationHandler reportEvaluator;
   private final ReportAuthorizationService reportAuthorizationService;
   private final ReportRelationService reportRelationService;
-
   private final AuthorizedCollectionService collectionService;
 
   @Override
@@ -155,6 +150,13 @@ public class ReportService implements CollectionReferencingService {
     return copyAndMoveReport(reportId, userId, collectionId, newReportName, new HashMap<>());
   }
 
+  public List<ReportDefinitionDto> getAllAuthorizedReportsForIds(final String userId, final List<String> reportIds) {
+    return reportReader.getAllReportsForIdsOmitXml(reportIds)
+      .stream()
+      .filter(reportDefinitionDto -> reportAuthorizationService.isAuthorizedToReport(userId, reportDefinitionDto))
+      .collect(Collectors.toList());
+  }
+
   private IdDto copyAndMoveReport(final String reportId,
                                   final String userId,
                                   final String collectionId,
@@ -184,13 +186,6 @@ public class ReportService implements CollectionReferencingService {
     return copyAndMoveReport(
       originalReportDefinition, userId, newReportName, newCollectionId, existingReportCopies, keepSubReportNames
     );
-  }
-
-  public List<ReportDefinitionDto> getAllAuthorizedReportsForIds(final String userId, final List<String> reportIds) {
-    return reportReader.getAllReportsForIdsOmitXml(reportIds)
-      .stream()
-      .filter(reportDefinitionDto -> reportAuthorizationService.isAuthorizedToReport(userId, reportDefinitionDto))
-      .collect(Collectors.toList());
   }
 
   public AuthorizedReportDefinitionDto getReportDefinition(final String reportId, final String userId) {
@@ -250,19 +245,6 @@ public class ReportService implements CollectionReferencingService {
 
   private List<ReportDefinitionDto> getReportsForCollection(final String collectionId) {
     return reportReader.findReportsForCollectionOmitXml(collectionId);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateSavedReportWithAdditionalFilters(final String userId,
-                                                                                   final String reportId,
-                                                                                   final AdditionalProcessReportEvaluationFilterDto filters) {
-    // auth is handled in evaluator as it also handles single reports of a combined report
-    return reportEvaluator.evaluateSavedReportWithAdditionalFilters(userId, reportId, filters);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateReport(final String userId,
-                                                         final ReportDefinitionDto reportDefinition) {
-    // auth is handled in evaluator as it also handles single reports of a combined report
-    return reportEvaluator.evaluateReport(userId, reportDefinition);
   }
 
   public void updateCombinedProcessReport(final String userId,

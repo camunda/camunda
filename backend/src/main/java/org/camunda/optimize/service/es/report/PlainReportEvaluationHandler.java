@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -16,10 +17,11 @@ import java.util.Optional;
 @Component
 public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
 
-
-  public PlainReportEvaluationHandler(ReportReader reportReader, SingleReportEvaluator singleReportEvaluator,
-                                      CombinedReportEvaluator combinedReportEvaluator) {
-    super(reportReader, singleReportEvaluator, combinedReportEvaluator);
+  public PlainReportEvaluationHandler(ReportReader reportReader,
+                                      SingleReportEvaluator singleReportEvaluator,
+                                      CombinedReportEvaluator combinedReportEvaluator,
+                                      ProcessVariableService processVariableService) {
+    super(reportReader, singleReportEvaluator, combinedReportEvaluator, processVariableService);
   }
 
   public AuthorizedReportEvaluationResult evaluateSavedReport(String reportId) {

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -72,6 +74,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
@@ -695,6 +698,154 @@ public class CombinedReportHandlingIT extends AbstractIT {
         .extracting(MapResultEntryDto::getValue)
         .containsOnlyNulls()
       );
+  }
+
+  @Test
+  public void combinedReportsCanBeEvaluatedWithAdditionalFilters_filterVariableNotPresentForEitherReport() {
+    // given
+    ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartSimpleUserTaskProcess();
+    String report1 = createNewSingleMapReport(processInstanceEngineDto);
+    String report2 = createNewSingleMapReport(processInstanceEngineDto);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when no filters are applied
+    String combinedReportId = createNewCombinedReport(report1, report2);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
+      reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, null);
+
+    // then both reports contain the expected data instance
+    assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(result.getResult().getData().entrySet()).hasSize(2);
+    assertThat(result.getResult().getData().get(report1).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+    assertThat(result.getResult().getData().get(report2).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+
+    // when variable filter applied
+    AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
+    filterDto.setFilter(buildStringVariableFilter("someVarName", "varValue"));
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> filteredResult =
+      reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, filterDto);
+
+    // then the filter is ignored as the filter name/type is not known
+    assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
+    assertThat(filteredResult.getResult().getData().get(report1).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+    assertThat(filteredResult.getResult().getData().get(report2).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+  }
+
+  @Test
+  public void combinedReportsCanBeEvaluatedWithAdditionalFilters_filterVariableExistsInOneReport() {
+    // given
+    final String varName = "var1";
+    ProcessInstanceEngineDto variableInstance = deployAndStartSimpleUserTaskProcessWithVariables(ImmutableMap.of(
+      varName, "val1"
+    ));
+    ProcessInstanceEngineDto noVariableInstance = deployAndStartSimpleUserTaskProcess();
+    String variableReport = createNewSingleMapReport(variableInstance);
+    String noVariableReport = createNewSingleMapReport(noVariableInstance);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when no filters are applied
+    String combinedReportId = createNewCombinedReport(variableReport, noVariableReport);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
+      reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, null);
+
+    // then both reports contain the expected data instance
+    assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(result.getResult().getData().entrySet()).hasSize(2);
+    assertThat(result.getResult().getData().get(variableReport).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+    assertThat(result.getResult().getData().get(noVariableReport).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+
+    // when variable filter applied
+    AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
+    filterDto.setFilter(buildStringVariableFilter(varName, "someOtherValue"));
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> filteredResult =
+      reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, filterDto);
+
+    // then the filter is applied to the report where it exists and ignored in the no variable report
+    assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
+    assertThat(filteredResult.getResult().getData().get(variableReport).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .containsOnlyNulls();
+    assertThat(filteredResult.getResult().getData().get(noVariableReport).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+  }
+
+  @Test
+  public void combinedReportsCanBeEvaluatedWithAdditionalFilters_filterVariableExistsInBothReports() {
+    // given
+    final String varName = "var1";
+    ProcessInstanceEngineDto instance1 = deployAndStartSimpleUserTaskProcessWithVariables(ImmutableMap.of(
+      varName, "val1"
+    ));
+    ProcessInstanceEngineDto instance2 = deployAndStartSimpleUserTaskProcessWithVariables(ImmutableMap.of(
+      varName, "val2"
+    ));
+    String report1 = createNewSingleMapReport(instance1);
+    String report2 = createNewSingleMapReport(instance2);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when no filters are applied
+    String combinedReportId = createNewCombinedReport(report1, report2);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
+      reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, null);
+
+    // then both reports contain the expected data instance
+    assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(result.getResult().getData().entrySet()).hasSize(2);
+    assertThat(result.getResult().getData().get(report1).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+    assertThat(result.getResult().getData().get(report2).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+
+    // when variable filter applied with other value
+    AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
+    filterDto.setFilter(buildStringVariableFilter(varName, "someOtherValue"));
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> filteredResult =
+      reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, filterDto);
+
+    // then the filter is applied to both reports correctly
+    assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
+    assertThat(filteredResult.getResult().getData().get(report1).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .containsOnlyNulls();
+    assertThat(filteredResult.getResult().getData().get(report2).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .containsOnlyNulls();
+
+    // when variable filter applied that matches value form single report
+    filterDto = new AdditionalProcessReportEvaluationFilterDto();
+    filterDto.setFilter(buildStringVariableFilter(varName, "val1"));
+    filteredResult = reportClient.evaluateCombinedReportByIdWithFilters(combinedReportId, filterDto);
+
+    // then the filter is applied to both reports correctly
+    assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
+    assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
+    assertThat(filteredResult.getResult().getData().get(report1).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1L, 1L, null);
+    assertThat(filteredResult.getResult().getData().get(report2).getResult().getData())
+      .extracting(MapResultEntryDto::getValue)
+      .containsOnlyNulls();
   }
 
   @Test
@@ -1326,6 +1477,17 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(resultMap).isEmpty();
   }
 
+  private List<ProcessFilterDto<?>> buildStringVariableFilter(final String varName, final String varValue) {
+    return ProcessFilterBuilder.filter()
+      .variable()
+      .name(varName)
+      .stringType()
+      .operator(IN)
+      .values(Collections.singletonList(varValue))
+      .add()
+      .buildList();
+  }
+
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {
     return createNewSingleMapReportWithFilter(engineDto, null);
   }
@@ -1337,7 +1499,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
-    Optional.ofNullable(filterDto).ifPresent(filters -> templatedProcessReportDataBuilder.setFilter(filters.getFilter()));
+    Optional.ofNullable(filterDto)
+      .ifPresent(filters -> templatedProcessReportDataBuilder.setFilter(filters.getFilter()));
     return createNewSingleMapReport(templatedProcessReportDataBuilder.build());
   }
 
@@ -1478,12 +1641,16 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
+    return deployAndStartSimpleUserTaskProcessWithVariables(Collections.emptyMap());
+  }
+
+  private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent("startEvent")
       .userTask(USER_TASK_ID)
       .endEvent()
       .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private void deleteReport(String reportId) {
