@@ -35,7 +35,6 @@ const App: React.FC = () => {
             <Route path={Pages.Login} component={Login} />
             <PrivateRoute
               redirectPath={Pages.Login}
-              exact
               path={Pages.Initial}
               component={Tasklist}
             />

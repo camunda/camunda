@@ -4,12 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const Pages = {
-  Initial: '/',
-  Login: '/login',
-  TaskDetails(key: string = ':key') {
-    return `/${key}`;
-  },
-} as const;
+import * as React from 'react';
 
-export {Pages};
+const Tasks: React.FC = () => {
+  return <h1>Tasks</h1>;
+};
+
+export {Tasks};

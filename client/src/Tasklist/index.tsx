@@ -7,16 +7,33 @@
 /* istanbul ignore file */
 
 import * as React from 'react';
+import {Route} from 'react-router-dom';
 
+import {Pages} from 'modules/constants/pages';
 import {Header} from './Header';
+import {Panel} from './Panel';
+import {Filters} from './Filters';
+import {Tasks} from './Tasks';
+import {Details} from './Details';
+import {Variables} from './Variables';
+import {Container, SingleTaskContainer} from './styled';
 
 const Tasklist: React.FC = () => {
   return (
     <>
       <Header />
-      <main>
-        <h1>Tasklist</h1>
-      </main>
+      <Container>
+        <Panel>
+          <Filters />
+          <Tasks />
+        </Panel>
+        <Route path={Pages.TaskDetails()}>
+          <SingleTaskContainer>
+            <Details />
+            <Variables />
+          </SingleTaskContainer>
+        </Route>
+      </Container>
     </>
   );
 };

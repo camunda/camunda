@@ -4,12 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const Pages = {
-  Initial: '/',
-  Login: '/login',
-  TaskDetails(key: string = ':key') {
-    return `/${key}`;
-  },
-} as const;
+import styled from 'styled-components';
 
-export {Pages};
+const Container = styled.main`
+  display: flex;
+  height: 100%;
+`;
+
+const SingleTaskContainer = styled.div`
+  height: 100%;
+`;
+
+export {Container, SingleTaskContainer};
