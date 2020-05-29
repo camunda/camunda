@@ -30,8 +30,8 @@ test('should apply a filter to the report result', async (t) => {
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Input Variable'));
-  await t.click(Filter.variableFilterTypeahead);
-  await t.click(Filter.variableFilterTypeaheadOption('Invoice Amount'));
+  await t.click(Filter.typeahead);
+  await t.click(Filter.typeaheadOption('Invoice Amount'));
   await t.click(Filter.variableFilterOperatorButton('is less than'));
 
   await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});
@@ -54,14 +54,14 @@ test('should have seperate input and output variables', async (t) => {
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Input Variable'));
-  await t.click(Filter.variableFilterTypeahead);
-  await t.expect(Filter.variableFilterTypeahead.textContent).notContains('Classification');
+  await t.click(Filter.typeahead);
+  await t.expect(Filter.typeahead.textContent).notContains('Classification');
   await t.click(Filter.modalCancel);
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Output Variable'));
-  await t.click(Filter.variableFilterTypeahead);
+  await t.click(Filter.typeahead);
 
-  await t.expect(Filter.variableFilterTypeahead.textContent).notContains('Invoice Amount');
-  await t.expect(Filter.variableFilterTypeahead.textContent).contains('Classification');
+  await t.expect(Filter.typeahead.textContent).notContains('Invoice Amount');
+  await t.expect(Filter.typeahead.textContent).contains('Classification');
 });

@@ -6,15 +6,16 @@
 
 import {Selector} from 'testcafe';
 
-export const variableFilterTypeahead = Selector('.Modal__content .Typeahead');
-export const variableFilterTypeaheadInput = Selector('.Modal__content .Typeahead .Input');
-export const variableFilterTypeaheadOption = (text) =>
+export const typeahead = Selector('.Modal__content .Typeahead');
+export const typeaheadInput = Selector('.Modal__content .Typeahead .Input');
+export const typeaheadOption = (text) =>
   Selector('.Modal__content .Typeahead .DropdownOption').withText(text);
 export const variableFilterOperatorButton = (text) =>
   Selector('.Modal .VariableFilter__buttonRow .Button').withText(text);
 export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input').nth(
   -1
 );
+export const typeaheadAddButton = Selector('.InputGroup > .Button').withText('Add');
 export const dateFilterTypeSelect = Selector('.DateRangeInput .Dropdown');
 export const dateFilterTypeOption = (text) =>
   Selector('.DateRangeInput .DropdownOption').withText(text);
