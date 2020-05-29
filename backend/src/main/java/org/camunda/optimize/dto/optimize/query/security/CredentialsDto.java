@@ -19,4 +19,9 @@ public class CredentialsDto implements Serializable {
 
   protected String username;
   protected String password;
+
+  @Override
+  public String toString() {
+    return "[CredentialsDto(username=[hidden], password='[hidden]')]";
+  }
 }
