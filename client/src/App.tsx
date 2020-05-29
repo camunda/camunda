@@ -35,7 +35,7 @@ const App: React.FC = () => {
             <Route path={Pages.Login} component={Login} />
             <PrivateRoute
               redirectPath={Pages.Login}
-              path={Pages.Initial}
+              path={Pages.Initial({useKeyParam: true})}
               component={Tasklist}
             />
           </Switch>

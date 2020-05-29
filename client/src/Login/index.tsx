@@ -39,7 +39,7 @@ const Login: React.FC = () => {
           setHasError(false);
           try {
             await handleLogin(username, password);
-            history.push(Pages.Initial);
+            history.push(Pages.Initial());
           } catch {
             setHasError(true);
           }

@@ -4,10 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+/* istanbul ignore file */
+
+const KEY_PARAM = ':key';
+
 const Pages = {
-  Initial: '/',
+  Initial({useKeyParam} = {useKeyParam: false}) {
+    return `/${useKeyParam ? `${KEY_PARAM}?` : ''}`;
+  },
   Login: '/login',
-  TaskDetails(key: string = ':key') {
+  TaskDetails(key: string = KEY_PARAM) {
     return `/${key}`;
   },
 } as const;
