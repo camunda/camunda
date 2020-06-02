@@ -65,6 +65,60 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
   }
 
   @Test
+  public void createFromExternalSource_noStartEventFound() {
+    // given
+    final Instant now = Instant.now();
+    final String traceIdOne = "tracingIdOne";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, traceIdOne, now),
+      createCloudEventOfType(EVENT_B, traceIdOne, now.plusSeconds(10)),
+      createCloudEventOfType(EVENT_C, traceIdOne, now.plusSeconds(20))
+    ));
+    final String traceIdTwo = "tracingIdTwo";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_B, traceIdTwo, now),
+      createCloudEventOfType(EVENT_A, traceIdTwo, now.plusSeconds(10))
+    ));
+    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
+
+    // when
+    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then the created process is configured correctly
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.UNMAPPED);
+    assertThat(processMapping.getMappings()).isEmpty();
+    assertThat(processMapping.getXml()).isNotNull();
+  }
+
+  @Test
+  public void createFromExternalSource_noEndEventFound() {
+    // given
+    final Instant now = Instant.now();
+    final String traceIdOne = "tracingIdOne";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, traceIdOne, now),
+      createCloudEventOfType(EVENT_B, traceIdOne, now.plusSeconds(10)),
+      createCloudEventOfType(EVENT_C, traceIdOne, now.plusSeconds(20))
+    ));
+    final String traceIdTwo = "tracingIdTwo";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_C, traceIdTwo, now),
+      createCloudEventOfType(EVENT_B, traceIdTwo, now.plusSeconds(10))
+    ));
+    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
+
+    // when
+    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then the created process is configured correctly
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.UNMAPPED);
+    assertThat(processMapping.getMappings()).isEmpty();
+    assertThat(processMapping.getXml()).isNotNull();
+  }
+
+  @Test
   public void createFromExternalSource_simpleLinearModel() {
     // given
     final String traceId = "tracingId";
@@ -84,7 +138,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the created process is configured correctly
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
     final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
-    assertProcessMappingConfiguration(processMapping, externalSource);
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
@@ -124,7 +178,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the created process is configured correctly
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
     final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
-    assertProcessMappingConfiguration(processMapping, externalSource);
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
@@ -177,7 +231,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the created process is configured correctly
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
     final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
-    assertProcessMappingConfiguration(processMapping, externalSource);
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
@@ -229,7 +283,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the created process is configured correctly
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
     final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
-    assertProcessMappingConfiguration(processMapping, externalSource);
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
@@ -287,7 +341,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the created process is configured correctly
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
     final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
-    assertProcessMappingConfiguration(processMapping, externalSource);
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
@@ -365,7 +419,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the created process is configured correctly
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
     final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
-    assertProcessMappingConfiguration(processMapping, externalSource);
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Collections.singletonList(EVENT_A));
@@ -402,7 +456,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the created process is configured correctly
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
     final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
-    assertProcessMappingConfiguration(processMapping, externalSource);
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
@@ -510,9 +564,10 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
   }
 
   private void assertProcessMappingConfiguration(final EventProcessMappingResponseDto eventProcessMapping,
-                                                 final List<EventSourceEntryDto> externalSources) {
+                                                 final List<EventSourceEntryDto> externalSources,
+                                                 final EventProcessState processState) {
     assertThat(eventProcessMapping.getName()).isEqualTo(EventProcessService.DEFAULT_AUTOGENERATED_PROCESS_NAME);
-    assertThat(eventProcessMapping.getState()).isEqualTo(EventProcessState.MAPPED);
+    assertThat(eventProcessMapping.getState()).isEqualTo(processState);
     assertThat(eventProcessMapping.getEventSources()).extracting(
       EventSourceEntryResponseDto::getEventScope,
       EventSourceEntryResponseDto::getType
