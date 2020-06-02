@@ -6,6 +6,8 @@
 
 import {gql} from 'apollo-boost';
 
+import {Task} from 'modules/types';
+
 const GET_TASK = gql`
   query GetTask($key: ID!) {
     task(key: $key) @client {
@@ -16,4 +18,17 @@ const GET_TASK = gql`
   }
 `;
 
+interface GetTask {
+  task: {
+    key: Task['key'];
+    name: Task['name'];
+    assignee: Task['assignee'];
+  };
+}
+
+interface GetTaskVariables {
+  key: Task['key'];
+}
+
+export type {GetTask, GetTaskVariables};
 export {GET_TASK};

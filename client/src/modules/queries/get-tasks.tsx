@@ -6,6 +6,8 @@
 
 import {gql} from 'apollo-boost';
 
+import {Task} from 'modules/types';
+
 const GET_TASKS = gql`
   query GetTasks {
     tasks @client {
@@ -16,4 +18,13 @@ const GET_TASKS = gql`
   }
 `;
 
+interface GetTasks {
+  tasks: ReadonlyArray<{
+    key: Task['key'];
+    name: Task['name'];
+    assignee: Task['assignee'];
+  }>;
+}
+
+export type {GetTasks};
 export {GET_TASKS};
