@@ -5,35 +5,43 @@
  */
 
 import React from 'react';
-
-import {ButtonGroup, Button} from 'components';
-
 import {t} from 'translation';
+import {TypeaheadMultipleSelection} from 'components';
 
-export default class BooleanInput extends React.Component {
-  static defaultFilter = {value: true};
+export default function BooleanInput({changeFilter, setValid, filter}) {
+  const toggleValue = (value, checked) => {
+    let newValues;
+    if (checked) {
+      newValues = filter.values.concat(value);
+    } else {
+      newValues = filter.values.filter((existingValue) => existingValue !== value);
+    }
 
-  componentDidMount() {
-    this.props.setValid(true);
-  }
-
-  setOperator = (value) => (evt) => {
-    evt.preventDefault();
-    this.props.changeFilter({value});
+    changeFilter({
+      values: newValues,
+    });
+    setValid(newValues.length > 0);
   };
 
-  render() {
-    return (
-      <div className="VariableFilter__buttonRow">
-        <ButtonGroup>
-          <Button onClick={this.setOperator(true)} active={this.props.filter.value === true}>
-            {t('common.filter.variableModal.bool.isTrue')}
-          </Button>
-          <Button onClick={this.setOperator(false)} active={this.props.filter.value === false}>
-            {t('common.filter.variableModal.bool.isFalse')}
-          </Button>
-        </ButtonGroup>
-      </div>
-    );
-  }
+  const formatValue = (value) =>
+    value === null
+      ? t('common.filter.variableModal.bool.isNullOrUndefined')
+      : t('common.filter.variableModal.bool.' + value.toString());
+
+  return (
+    <TypeaheadMultipleSelection
+      availableValues={[true, false, null]}
+      selectedValues={filter.values}
+      toggleValue={toggleValue}
+      format={formatValue}
+      labels={{
+        available: t('common.filter.variableModal.multiSelect.available'),
+        selected: t('common.filter.variableModal.multiSelect.selected'),
+        empty: t('common.filter.variableModal.multiSelect.empty'),
+      }}
+      hideSearch
+    />
+  );
 }
+
+BooleanInput.defaultFilter = {values: []};

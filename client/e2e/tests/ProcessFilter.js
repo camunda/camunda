@@ -30,6 +30,7 @@ test('variable filter modal dependent on variable type', async (t) => {
 
   await t.typeText(Filter.typeaheadInput, 'boolVar', {replace: true});
   await t.click(Filter.typeaheadOption('boolVar'));
+  await t.click(Filter.firstMultiSelectValue);
 
   await t.takeElementScreenshot(
     Report.modalContainer,

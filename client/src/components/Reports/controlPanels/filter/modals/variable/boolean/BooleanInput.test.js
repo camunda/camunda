@@ -9,29 +9,26 @@ import React from 'react';
 import BooleanInput from './BooleanInput';
 
 import {shallow} from 'enzyme';
-import {Button} from 'components';
 
 const props = {
   filter: BooleanInput.defaultFilter,
   setValid: jest.fn(),
 };
 
-it('should assume variable value true per default', () => {
-  expect(BooleanInput.defaultFilter.value).toEqual(true);
+it('should assume no value is selected per default', () => {
+  expect(BooleanInput.defaultFilter.values).toEqual([]);
 });
 
-it('should show true and false operator fields', () => {
-  const node = shallow(<BooleanInput {...props} />);
-
-  expect(node.find(Button).at(0)).toIncludeText('true');
-  expect(node.find(Button).at(1)).toIncludeText('false');
-});
-
-it('should set the value when clicking on the operator fields', () => {
+it('should add/remove values to the list of selected values', () => {
   const spy = jest.fn();
   const node = shallow(<BooleanInput {...props} changeFilter={spy} />);
 
-  node.find(Button).at(1).simulate('click', {preventDefault: jest.fn()});
+  node.find('TypeaheadMultipleSelection').prop('toggleValue')(true, true);
 
-  expect(spy).toHaveBeenCalledWith({value: false});
+  expect(spy).toHaveBeenCalledWith({values: [true]});
+
+  node.find('TypeaheadMultipleSelection').prop('toggleValue')(true, false);
+  node.find('TypeaheadMultipleSelection').prop('toggleValue')(null, true);
+
+  expect(spy).toHaveBeenCalledWith({values: [null]});
 });

@@ -32,3 +32,6 @@ export const durationFilterInput = Selector('.DurationFilter input[type="text"]'
 export const modalCancel = Selector('.Modal .Button').withText('Cancel');
 export const addValueButton = Selector('.Modal .NumberInput__addValueButton');
 export const stringValues = Selector('.TypeaheadMultipleSelection__valueList');
+export const firstMultiSelectValue = Selector(
+  '.TypeaheadMultipleSelection__valueList .LabeledInput'
+);

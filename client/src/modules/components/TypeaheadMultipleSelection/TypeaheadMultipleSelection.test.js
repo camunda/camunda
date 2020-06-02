@@ -211,3 +211,16 @@ it('make invok onOrderChange with the new selectedvalues data on drag end', () =
 
   expect(spy).toHaveBeenCalledWith(['b', 'a']);
 });
+
+it('should hide search input from typeahead if specified', () => {
+  const node = shallow(
+    <TypeaheadMultipleSelection
+      selectedValues={[]}
+      availableValues={[]}
+      toggleValue={() => {}}
+      hideSearch
+    />
+  );
+
+  expect(node.find('.TypeaheadMultipleSelection__input')).not.toExist();
+});

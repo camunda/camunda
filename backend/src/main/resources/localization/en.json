@@ -613,6 +613,8 @@
     "id": "ID",
     "instanceIds": "Instance IDs",
     "seeDocs": "See documentation",
+    "undefined": "undefined",
+    "null": "null",
     "errors": {
       "inValidLink": "This link is not valid."
     },
@@ -773,8 +775,9 @@
         "noVariables": "No variables found",
         "loadMore": "Load More",
         "bool": {
-          "isTrue": "is true",
-          "isFalse": "is false"
+          "true": "is true",
+          "false": "is false",
+          "isNullOrUndefined": "is null or undefined"
         },
         "enterValue": "Enter value",
         "addValue": "Add Value",

@@ -73,6 +73,7 @@ export default class FilterList extends React.Component {
               </li>
             );
           } else if (type === 'Boolean') {
+            const {values} = data;
             list.push(
               <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
                 <ActionItem
@@ -83,7 +84,23 @@ export default class FilterList extends React.Component {
                 >
                   <span className="parameterName">{this.getVariableName(filter.type, name)}</span>
                   {this.createOperator(t('common.filter.list.operators.is'))}
-                  <span className="previewItemValue">{data.value.toString()}</span>
+                  {values.map((value, idx) => {
+                    return (
+                      <span key={idx}>
+                        {value === null ? (
+                          <>
+                            <span className="previewItemValue">{t('common.null')}</span>
+                            {this.createOperator(t('common.filter.list.operators.or'))}
+                            <span className="previewItemValue">{t('common.undefined')}</span>
+                          </>
+                        ) : (
+                          <span className="previewItemValue">{value.toString()}</span>
+                        )}
+                        {idx < values.length - 1 &&
+                          this.createOperator(t('common.filter.list.operators.or'))}
+                      </span>
+                    );
+                  })}
                 </ActionItem>
               </li>
             );

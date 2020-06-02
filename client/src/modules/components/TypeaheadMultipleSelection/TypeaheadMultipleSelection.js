@@ -149,8 +149,8 @@ export default class TypeaheadMultipleSelection extends React.Component {
   };
 
   render() {
-    const {availableValues, selectedValues, loading} = this.props;
-    const input = (
+    const {availableValues, selectedValues, loading, hideSearch} = this.props;
+    const input = !hideSearch && (
       <div className="TypeaheadMultipleSelection__labeled-input">
         <Input
           className="TypeaheadMultipleSelection__input"
