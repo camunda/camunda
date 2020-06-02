@@ -11,12 +11,15 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
-import static org.hamcrest.CoreMatchers.containsString;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.BrokerRejectionException;
+import io.zeebe.gateway.cmd.ClientResponseException;
+import io.zeebe.gateway.cmd.PartitionNotFoundException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
@@ -26,11 +29,9 @@ import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.RejectionType;
@@ -46,7 +47,6 @@ import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -120,13 +120,10 @@ public final class BrokerClientTest {
         .errorData("test")
         .register();
 
-    final BrokerResponse<WorkflowInstanceCreationRecord> response =
-        client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
-
-    assertThat(response.isError()).isTrue();
-    final BrokerError error = response.getError();
-    assertThat(error.getCode()).isEqualTo(ErrorCode.INTERNAL_ERROR);
-    assertThat(error.getMessage()).isEqualTo("test");
+    assertThatThrownBy(
+            () -> client.sendRequestWithRetry(new BrokerCreateWorkflowInstanceRequest()).join())
+        .hasCauseInstanceOf(BrokerErrorException.class)
+        .hasCause(new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "test")));
 
     // then
     final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
@@ -153,15 +150,13 @@ public final class BrokerClientTest {
         };
 
     // then
-    exception.expect(ExecutionException.class);
-    exception.expectMessage("Catch Me");
-
-    // when
-    client.sendRequest(request).join();
+    assertThatThrownBy(() -> client.sendRequestWithRetry(request).join())
+        .hasCauseInstanceOf(ClientResponseException.class)
+        .hasMessageContaining("Catch Me");
   }
 
   @Test
-  public void shouldThrowExceptionIfPartitionNotFoundResponse() {
+  public void shouldTimeoutIfPartitionLeaderMismatchResponse() {
     // given
     broker
         .onExecuteCommandRequest(
@@ -171,18 +166,37 @@ public final class BrokerClientTest {
         .errorData("")
         .register();
 
+    // when
+    final var future = client.sendRequestWithRetry(new BrokerCreateWorkflowInstanceRequest());
+
     // then
-    exception.expect(ExecutionException.class);
-    exception.expectMessage(containsString("timed out"));
     // when the partition is repeatedly not found, the client loops
     // over refreshing the topology and making a request that fails and so on. The timeout
     // kicks in at any point in that loop, so we cannot assert the exact error message any more
     // specifically. It is also possible that Atomix times out before hand if we calculated a very
     // small time out for the request, e.g. < 50ms, so we also cannot assert the value of the
     // timeout
+    assertThatThrownBy(future::join).hasCauseInstanceOf(TimeoutException.class);
+  }
+
+  @Test
+  public void shouldNotTimeoutIfPartitionLeaderMismatchResponseWhenRetryDisabled() {
+    // given
+    broker
+        .onExecuteCommandRequest(
+            ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
+        .respondWithError()
+        .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
+        .errorData("")
+        .register();
 
     // when
-    client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
+    final var future = client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
+
+    // then
+    assertThatThrownBy(future::join)
+        .hasCause(
+            new BrokerErrorException(new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "")));
   }
 
   @Test
@@ -207,7 +221,7 @@ public final class BrokerClientTest {
     final long key = Protocol.encodePartitionId(1, 123);
     final var request = new BrokerCompleteJobRequest(key, DocumentValue.EMPTY_DOCUMENT);
     request.setPartitionId(1);
-    final var async = client.sendRequest(request, Duration.ofMillis(100));
+    final var async = client.sendRequestWithRetry(request, Duration.ofMillis(100));
 
     // then
     assertThatThrownBy(async::join).hasRootCauseInstanceOf(TimeoutException.class);
@@ -222,13 +236,13 @@ public final class BrokerClientTest {
     request.setLocal(false);
 
     // when
-    final var async = client.sendRequest(request);
+    final var async = client.sendRequestWithRetry(request);
 
     // then
     final String expected =
         "Expected to execute command, but this command refers to an element that doesn't exist.";
     assertThatThrownBy(async::join)
-        .isInstanceOf(ExecutionException.class)
+        .hasCauseInstanceOf(PartitionNotFoundException.class)
         .hasMessageContaining(expected);
   }
 
@@ -239,7 +253,9 @@ public final class BrokerClientTest {
 
     // when
     try {
-      client.sendRequest(new BrokerCompleteJobRequest(1, new UnsafeBuffer(new byte[0]))).join();
+      client
+          .sendRequestWithRetry(new BrokerCompleteJobRequest(1, new UnsafeBuffer(new byte[0])))
+          .join();
 
       fail("should throw exception");
     } catch (final Exception e) {
@@ -259,19 +275,22 @@ public final class BrokerClientTest {
     broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.INVALID_ARGUMENT, "foo"));
 
     // when
-    final BrokerResponse<JobRecord> response =
-        client
-            .sendRequest(
-                new BrokerCompleteJobRequest(
-                    Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 79),
-                    DocumentValue.EMPTY_DOCUMENT))
-            .join();
+    final var responseFuture =
+        client.sendRequestWithRetry(
+            new BrokerCompleteJobRequest(
+                Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 79),
+                DocumentValue.EMPTY_DOCUMENT));
 
     // then
-    assertThat(response.isRejection()).isTrue();
-    final BrokerRejection rejection = response.getRejection();
-    assertThat(rejection.getType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getReason()).isEqualTo("foo");
+    assertThatThrownBy(responseFuture::join)
+        .hasCauseInstanceOf(BrokerRejectionException.class)
+        .hasCause(
+            new BrokerRejectionException(
+                new BrokerRejection(
+                    JobIntent.COMPLETE,
+                    Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 79),
+                    RejectionType.INVALID_ARGUMENT,
+                    "foo")));
   }
 
   private void registerCreateWfCommand() {

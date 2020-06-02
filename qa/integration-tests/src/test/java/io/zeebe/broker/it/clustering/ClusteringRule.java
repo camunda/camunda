@@ -563,7 +563,7 @@ public final class ClusteringRule extends ExternalResource {
     request.setPartitionId(partitionId);
 
     final BrokerResponse<WorkflowInstanceCreationRecord> response =
-        gateway.getBrokerClient().sendRequest(request).join();
+        gateway.getBrokerClient().sendRequestWithRetry(request).join();
 
     if (response.isResponse()) {
       return response.getResponse().getWorkflowInstanceKey();
