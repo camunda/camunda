@@ -27,11 +27,11 @@ import io.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.zeebe.broker.system.EmbeddedGatewayService;
 import io.zeebe.broker.system.SystemContext;
-import io.zeebe.broker.system.configuration.BackpressureCfg;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
+import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -239,12 +239,10 @@ public final class Broker implements AutoCloseable {
   private AutoCloseable commandApiHandlerStep(
       final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
 
-    final BackpressureCfg backpressure = brokerCfg.getBackpressure();
+    final BackpressureCfg backpressureCfg = brokerCfg.getBackpressure();
     PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
-    if (backpressure.isEnabled()) {
-      limiter =
-          PartitionAwareRequestLimiter.newLimiter(
-              backpressure.getAlgorithm(), backpressure.useWindowed());
+    if (backpressureCfg.isEnabled()) {
+      limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
     }
 
     commandHandler = new CommandApiService(serverTransport, localBroker, limiter);

@@ -24,7 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.exporter.metrics.MetricsExporter;
-import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
+import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
 import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
 import java.nio.file.Paths;
@@ -478,6 +479,42 @@ public final class BrokerCfgTest {
     assertThat(backpressure.isEnabled()).isTrue();
     assertThat(backpressure.useWindowed()).isFalse();
     assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT);
+  }
+
+  @Test
+  public void shouldUseConfiguredBackpressureAlgorithms() {
+
+    final BackpressureCfg backpressure = new BackpressureCfg();
+
+    // when
+    backpressure.setAlgorithm("gradient");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT);
+
+    // when
+    backpressure.setAlgorithm("gradient");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT);
+
+    // when
+    backpressure.setAlgorithm("gradient2");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT2);
+
+    // when
+    backpressure.setAlgorithm("vegas");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.VEGAS);
+
+    // when
+    backpressure.setAlgorithm("fixed");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.FIXED);
+
+    // when
+    backpressure.setAlgorithm("aimd");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.AIMD);
   }
 
   @Test

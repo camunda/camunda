@@ -1252,6 +1252,9 @@
         <sonar.organization>zeebe-io</sonar.organization>
         <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
         <sonar.links.issue>${scm.url}/issues</sonar.links.issue>
+        <sonar.cpd.exclusions>
+          broker/src/main/java/io/zeebe/broker/system/configuration/backpressure/Gradient2Cfg.java,broker/src/main/java/io/zeebe/broker/system/configuration/backpressure/GradientCfg.java
+        </sonar.cpd.exclusions>
       </properties>
       <build>
         <plugins>
