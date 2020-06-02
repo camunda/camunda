@@ -39,7 +39,7 @@ public interface ClientTransport extends AutoCloseable {
    *     timeout.
    */
   default ActorFuture<DirectBuffer> sendRequestWithRetry(
-      Supplier<String> nodeAddressSupplier,
+      final Supplier<String> nodeAddressSupplier,
       final ClientRequest clientRequest,
       final Duration timeout) {
     return sendRequestWithRetry(nodeAddressSupplier, response -> true, clientRequest, timeout);
@@ -76,4 +76,26 @@ public interface ClientTransport extends AutoCloseable {
       Predicate<DirectBuffer> responseValidator,
       ClientRequest clientRequest,
       Duration timeout);
+
+  /**
+   * Send a request to a node with out any retries.
+   *
+   * <p>Guarantees:
+   *
+   * <ul>
+   *   <li>Not garbage-free
+   *   <li>1 intermediary copies of the request
+   *
+   * @param nodeAddressSupplier supplier for the node address the retries are executed against
+   *     (retries may be executed against different nodes). The supplier may resolve to <code>null
+   *     </code> to signal that a node address can not be determined. In that case, the request will
+   *     be completed with a NoRemoteAddressFoundException.
+   * @param clientRequest the request which should be send
+   * @param timeout The timeout until the returned future fails if no response is received.
+   * @return a future carrying the response that was accepted or null in case no memory is currently
+   *     available to allocate the request. Can complete exceptionally in failure cases such as
+   *     timeout.
+   */
+  ActorFuture<DirectBuffer> sendRequest(
+      Supplier<String> nodeAddressSupplier, ClientRequest clientRequest, Duration timeout);
 }
