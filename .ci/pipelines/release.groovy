@@ -60,7 +60,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    agent: operate-ci-build
+    agent: zeebe-tasklist-ci-build
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
@@ -96,8 +96,8 @@ spec:
 pipeline {
   agent {
     kubernetes {
-      cloud 'operate-ci'
-      label "operate-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+      cloud 'zeebe-tasklist-ci'
+      label "zeebe-tasklist-ci-buil_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
       yaml mavenAgent(env)
     }
@@ -128,7 +128,7 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda/camunda-operate',
+        git url: 'git@github.com:zeebe-io/zeebe-tasklist',
             branch: "${params.BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
@@ -142,7 +142,7 @@ pipeline {
             mkdir -p ~/.ssh
             ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 
-            git config --global user.email "ci@operate.camunda.cloud"
+            git config --global user.email "ci@tasklist.camunda.cloud"
             git config --global user.name "camunda-jenkins"
           ''')
         }
