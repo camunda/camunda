@@ -21,6 +21,7 @@ import {
   Button,
   Error,
 } from './styled';
+import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
 interface FormValues {
   username: string;
@@ -85,9 +86,7 @@ const Login: React.FC = () => {
           );
         }}
       </Form>
-      <CopyrightNotice>
-        © Camunda Services GmbH {new Date().getFullYear()}. All rights reserved.
-      </CopyrightNotice>
+      <CopyrightNotice>{getCurrentCopyrightNoticeText()}</CopyrightNotice>
     </Container>
   );
 };

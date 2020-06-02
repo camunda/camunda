@@ -16,10 +16,14 @@ const theme = {
     ui04: '#fdfdfe',
     ui05: '#d8dce3',
     ui06: '#62626e',
-    item: {odd: '#fdfdfe', even: '#f9fafc'},
+    item: {
+      odd: '#fdfdfe',
+      even: '#f9fafc',
+    },
     text: {
       button: 'rgba(69, 70, 78, 0.9)',
       copyrightNotice: 'rgba(98, 98, 110, 0.9)',
+      black: '#45464e',
     },
     overlay: 'rgba(255, 255, 255, 0.75)',
     active: '#bcc6d2',

@@ -11,28 +11,46 @@ import {Route} from 'react-router-dom';
 
 import {Pages} from 'modules/constants/pages';
 import {Header} from './Header';
-import {Panel} from './Panel';
 import {Filters} from './Filters';
 import {Tasks} from './Tasks';
 import {Details} from './Details';
 import {Variables} from './Variables';
-import {Container, SingleTaskContainer} from './styled';
+import {
+  Container,
+  TasksPanel,
+  DetailsPanel,
+  NoTaskSelectedMessage,
+} from './styled';
+import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
 const Tasklist: React.FC = () => {
   return (
     <>
       <Header />
       <Container>
-        <Panel>
+        <TasksPanel
+          title="Tasks"
+          hasRoundTopRightCorner
+          hasTransparentBackground
+        >
           <Filters />
           <Tasks />
-        </Panel>
-        <Route path={Pages.TaskDetails()}>
-          <SingleTaskContainer>
+        </TasksPanel>
+        <DetailsPanel
+          title="Details"
+          footer={getCurrentCopyrightNoticeText()}
+          hasRoundTopLeftCorner
+        >
+          <Route exact path={Pages.Initial()}>
+            <NoTaskSelectedMessage>
+              Select a task to see the details.
+            </NoTaskSelectedMessage>
+          </Route>
+          <Route path={Pages.TaskDetails()}>
             <Details />
             <Variables />
-          </SingleTaskContainer>
-        </Route>
+          </Route>
+        </DetailsPanel>
       </Container>
     </>
   );
