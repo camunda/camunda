@@ -20,6 +20,7 @@ import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.MEMBER_ADDED;
 import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.MEMBER_REMOVED;
 import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.METADATA_CHANGED;
 import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.REACHABILITY_CHANGED;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.HashMultiset;
@@ -219,18 +220,27 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     checkEvent(member1, METADATA_CHANGED, member1);
     checkEvent(member2, METADATA_CHANGED, member1);
     checkEvent(member3, METADATA_CHANGED, member1);
+  }
 
-    // Stop member 3 and change its version.
-    stopProtocol(member3);
+  @Test
+  public void shouldRemoveOldMemberVersions() throws InterruptedException {
+    // given
+    startProtocol(member1);
+    startProtocol(member2);
+
+    awaitMembers(member2, member1, member2);
+    awaitMembers(member1, member1, member2);
+
+    clearEvents(member1, member2);
+
+    // when - starting a member with new version
     final Member member =
-        member(member3.id().id(), member3.address().host(), member3.address().port(), version2);
+        member(member2.id().id(), member2.address().host(), member2.address().port(), version2);
     startProtocol(member);
 
-    // Verify that version 1 is removed and version 2 is added.
-    checkEvent(member1, MEMBER_REMOVED, member3);
+    // then - verify that version 1 is removed and version 2 is added.
+    checkEvent(member1, MEMBER_REMOVED, member2);
     checkEvent(member1, MEMBER_ADDED, member);
-    checkEvent(member2, MEMBER_REMOVED, member3);
-    checkEvent(member2, MEMBER_ADDED, member);
   }
 
   @Test
@@ -403,9 +413,10 @@ public class SwimProtocolTest extends ConcurrentTestCase {
       final Member member, final GroupMembershipEvent.Type type, final Member value)
       throws InterruptedException {
     final GroupMembershipEvent event = nextEvent(member);
-    assertEquals(type, event.type());
+    assertThat(event).isNotNull();
+    assertThat(event.type()).isEqualTo(type);
     if (value != null) {
-      assertEquals(value, event.member());
+      assertThat(event.member()).isEqualTo(value);
     }
   }
 
