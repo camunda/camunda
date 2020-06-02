@@ -27,8 +27,8 @@ const resolvers: AppResolvers = {
     name({index}) {
       return tasks[index].name;
     },
-    worflowName({index}) {
-      return tasks[index].worflowName;
+    workflowName({index}) {
+      return tasks[index].workflowName;
     },
     creationTime({index}) {
       return tasks[index].creationTime;

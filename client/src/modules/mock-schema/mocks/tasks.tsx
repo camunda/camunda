@@ -10,7 +10,7 @@ const tasks: ReadonlyArray<Task> = [
   {
     key: '0',
     name: 'name',
-    worflowName: 'worflowName',
+    workflowName: 'workflowName',
     creationTime: new Date().toISOString(),
     completionTime: new Date().toISOString(),
     assignee: {
@@ -24,7 +24,7 @@ const tasks: ReadonlyArray<Task> = [
   {
     key: '1',
     name: 'name',
-    worflowName: 'worflowName',
+    workflowName: 'workflowName',
     creationTime: new Date().toISOString(),
     completionTime: new Date().toISOString(),
     assignee: {

@@ -6,8 +6,8 @@
 
 type User = Readonly<{
   username: string;
-  firstname: string;
-  lastname: string;
+  firstname: string | null;
+  lastname: string | null;
 }>;
 
 type Variable = Readonly<{
@@ -20,10 +20,10 @@ type TaskState = 'CREATED' | 'COMPLETED';
 type Task = Readonly<{
   key: string;
   name: string;
-  worflowName: string;
+  workflowName: string;
   creationTime: string;
-  completionTime: string;
-  assignee: User;
+  completionTime: string | null;
+  assignee: User | null;
   variables: ReadonlyArray<Variable>;
   taskState: TaskState;
 }>;
