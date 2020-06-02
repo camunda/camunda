@@ -100,13 +100,13 @@ describe('Header', () => {
 
     expect(
       within(screen.getByTestId('header-link-incidents')).getByTestId('badge')
-    ).toBeEmpty();
+    ).toBeEmptyDOMElement();
     expect(
       within(screen.getByTestId('header-link-filters')).getByTestId('badge')
-    ).toBeEmpty();
+    ).toBeEmptyDOMElement();
     expect(
       within(screen.getByTestId('header-link-instances')).getByTestId('badge')
-    ).toBeEmpty();
+    ).toBeEmptyDOMElement();
 
     await waitForComponentToLoad();
 
