@@ -434,7 +434,7 @@ public final class ClusteringRule extends ExternalResource {
    * <p>Returns to the user if the broker is back in the cluster.
    */
   public void restartBroker(final int nodeId) {
-    stopBroker(nodeId);
+    stopBrokerAndAwaitNewLeader(nodeId);
     final Broker broker = getBroker(nodeId).start().join();
     final InetSocketAddress commandApi =
         broker.getConfig().getNetwork().getCommandApi().getAddress();
@@ -509,16 +509,24 @@ public final class ClusteringRule extends ExternalResource {
         .count();
   }
 
+  public void stopBrokerAndAwaitNewLeader(final int nodeId) {
+    final Broker broker = brokers.get(nodeId);
+    if (broker != null) {
+      final InetSocketAddress socketAddress =
+          broker.getConfig().getNetwork().getCommandApi().getAddress();
+      final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
+      stopBroker(nodeId);
+      waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
+    }
+  }
+
   public void stopBroker(final int nodeId) {
     final Broker broker = brokers.remove(nodeId);
     if (broker != null) {
       final InetSocketAddress socketAddress =
           broker.getConfig().getNetwork().getCommandApi().getAddress();
-      final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
       broker.close();
-
       waitUntilBrokerIsRemovedFromTopology(socketAddress);
-      waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
     }
   }
 

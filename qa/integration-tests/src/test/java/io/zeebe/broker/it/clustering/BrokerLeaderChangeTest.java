@@ -48,7 +48,7 @@ public final class BrokerLeaderChangeTest {
     final int partition = Protocol.START_PARTITION_ID;
     final int oldLeader = clusteringRule.getLeaderForPartition(partition).getNodeId();
 
-    clusteringRule.stopBroker(oldLeader);
+    clusteringRule.stopBrokerAndAwaitNewLeader(oldLeader);
 
     waitUntil(() -> clusteringRule.getLeaderForPartition(partition).getNodeId() != oldLeader);
 
@@ -73,7 +73,7 @@ public final class BrokerLeaderChangeTest {
     final long jobKey = clientRule.createSingleJob(JOB_TYPE);
 
     // when
-    clusteringRule.stopBroker(leaderForPartition.getNodeId());
+    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
     final JobCompleter jobCompleter = new JobCompleter(jobKey);
 
     // then

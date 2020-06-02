@@ -86,6 +86,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.0</version.config>
     <version.kryo>4.0.2</version.kryo>
+    <version.awaitility>4.0.3</version.awaitility>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -196,6 +197,12 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${version.junit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${version.awaitility}</version>
       </dependency>
 
       <dependency>
