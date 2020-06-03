@@ -92,6 +92,11 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_PRIVATEKEYPATH.
         # privateKeyPath:
 
+      # longPolling:
+        # Enables long polling for available jobs
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_LONGPOLLING_ENABLED.
+        # enabled: true
+
     # network:
       # This section contains the network configuration. Particularly, it allows to
       # configure the hosts and ports the broker should bind to. The broker exposes three sockets:

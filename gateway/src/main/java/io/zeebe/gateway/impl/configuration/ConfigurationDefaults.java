@@ -20,6 +20,7 @@ public final class ConfigurationDefaults {
   public static final String DEFAULT_MAX_MESSAGE_SIZE = "4M";
   public static final int DEFAULT_MAX_MESSAGE_COUNT = 16;
   public static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(15);
+  public static final boolean DEFAULT_LONG_POLLING_ENABLED = true;
   public static final boolean DEFAULT_TLS_ENABLED = false;
 
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
