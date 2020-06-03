@@ -5,7 +5,7 @@
  */
 
 export {DateFilter, DateFilterPreview} from './date';
-export {VariableFilter} from './variable';
+export {VariableFilter, VariablePreview} from './variable';
 export {NodeFilter, NodeListPreview} from './node';
 export {DurationFilter} from './duration';
 export {NodeDuration} from './NodeDuration';

@@ -615,6 +615,7 @@
     "seeDocs": "See documentation",
     "undefined": "undefined",
     "null": "null",
+    "nullOrUndefined": "Null or undefined",
     "errors": {
       "inValidLink": "This link is not valid."
     },

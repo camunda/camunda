@@ -5,3 +5,4 @@
  */
 
 export {default as VariableFilter} from './VariableFilter';
+export {default as VariablePreview} from './VariablePreview';

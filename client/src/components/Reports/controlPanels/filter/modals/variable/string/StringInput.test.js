@@ -40,7 +40,10 @@ it('should pass available values to the typeahead', () => {
     availableValues,
   });
 
-  expect(node.find('TypeaheadMultipleSelection').props().availableValues).toEqual(availableValues);
+  expect(node.find('TypeaheadMultipleSelection').props().availableValues).toEqual([
+    null,
+    ...availableValues,
+  ]);
 });
 
 it('should load 10 more values if the user wants more', () => {

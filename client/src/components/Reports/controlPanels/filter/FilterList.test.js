@@ -52,26 +52,6 @@ it('should display "and" between filter entries', () => {
   expect(node).toIncludeText('and');
 });
 
-it('should display a simple variable filter', () => {
-  const data = [
-    {
-      type: 'variable',
-      data: {
-        name: 'varName',
-        type: 'String',
-        data: {
-          operator: 'in',
-          values: ['varValue'],
-        },
-      },
-    },
-  ];
-
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
-
-  expect(node.find('ActionItem').dive()).toIncludeText('varName is varValue');
-});
-
 it('should use the variables prop to resolve variable names', () => {
   const data = [
     {
@@ -91,7 +71,7 @@ it('should use the variables prop to resolve variable names', () => {
     <FilterList variables={{inputVariable: []}} data={data} openEditFilterModal={jest.fn()} />
   );
 
-  expect(node.find('ActionItem span').first()).toIncludeText('notANameButAnId');
+  expect(node.find('VariablePreview').prop('variableName')).toBe('notANameButAnId');
 
   node.setProps({
     variables: {
@@ -99,7 +79,7 @@ it('should use the variables prop to resolve variable names', () => {
     },
   });
 
-  expect(node.find('ActionItem span').first()).toIncludeText('Resolved Name');
+  expect(node.find('VariablePreview').prop('variableName')).toBe('Resolved Name');
 });
 
 it('should use the DateFilterPreview component for date variables', () => {
@@ -122,46 +102,6 @@ it('should use the DateFilterPreview component for date variables', () => {
   const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
   expect(node.find('ActionItem').find('DateFilterPreview')).toExist();
-});
-
-it('should combine multiple variable values with or', () => {
-  const data = [
-    {
-      type: 'variable',
-      data: {
-        name: 'varName',
-        type: 'String',
-        data: {
-          operator: 'in',
-          values: ['varValue', 'varValue2'],
-        },
-      },
-    },
-  ];
-
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
-
-  expect(node.find('ActionItem').dive()).toIncludeText('varName is varValue or varValue2');
-});
-
-it('should combine multiple variable names with neither/nor for the not in operator', () => {
-  const data = [
-    {
-      type: 'variable',
-      data: {
-        name: 'varName',
-        type: 'String',
-        data: {
-          operator: 'not in',
-          values: ['varValue', 'varValue2'],
-        },
-      },
-    },
-  ];
-
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
-
-  expect(node.find('ActionItem').dive()).toIncludeText('varName is neither varValue nor varValue2');
 });
 
 it('should display nodeListPreview for flow node filter', async () => {

@@ -7,7 +7,7 @@
 import React from 'react';
 
 import {ActionItem} from 'components';
-import {NodeListPreview, DateFilterPreview} from './modals';
+import {NodeListPreview, DateFilterPreview, VariablePreview} from './modals';
 
 import './FilterList.scss';
 
@@ -54,91 +54,28 @@ export default class FilterList extends React.Component {
       } else {
         if (filter.type.toLowerCase().includes('variable')) {
           const {name, type, data} = filter.data;
+          const variableName = this.getVariableName(filter.type, name);
 
-          if (type === 'Date') {
-            list.push(
-              <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
-                <ActionItem
-                  onClick={(evt) => {
-                    evt.stopPropagation();
-                    this.props.deleteFilter(filter);
-                  }}
-                >
+          list.push(
+            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+              <ActionItem
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  this.props.deleteFilter(filter);
+                }}
+              >
+                {type === 'Date' ? (
                   <DateFilterPreview
                     filterType="variable"
-                    variableName={this.getVariableName(filter.type, name)}
-                    filter={filter.data.data}
+                    variableName={variableName}
+                    filter={data}
                   />
-                </ActionItem>
-              </li>
-            );
-          } else if (type === 'Boolean') {
-            const {values} = data;
-            list.push(
-              <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
-                <ActionItem
-                  onClick={(evt) => {
-                    evt.stopPropagation();
-                    this.props.deleteFilter(filter);
-                  }}
-                >
-                  <span className="parameterName">{this.getVariableName(filter.type, name)}</span>
-                  {this.createOperator(t('common.filter.list.operators.is'))}
-                  {values.map((value, idx) => {
-                    return (
-                      <span key={idx}>
-                        {value === null ? (
-                          <>
-                            <span className="previewItemValue">{t('common.null')}</span>
-                            {this.createOperator(t('common.filter.list.operators.or'))}
-                            <span className="previewItemValue">{t('common.undefined')}</span>
-                          </>
-                        ) : (
-                          <span className="previewItemValue">{value.toString()}</span>
-                        )}
-                        {idx < values.length - 1 &&
-                          this.createOperator(t('common.filter.list.operators.or'))}
-                      </span>
-                    );
-                  })}
-                </ActionItem>
-              </li>
-            );
-          } else {
-            const {operator, values} = data;
-            list.push(
-              <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
-                <ActionItem
-                  onClick={(evt) => {
-                    evt.stopPropagation();
-                    this.props.deleteFilter(filter);
-                  }}
-                >
-                  <span className="parameterName">{this.getVariableName(filter.type, name)}</span>
-                  {(operator === 'in' || operator === '=') &&
-                    this.createOperator(t('common.filter.list.operators.is'))}
-                  {operator === 'not in' &&
-                    (values.length === 1
-                      ? this.createOperator(t('common.filter.list.operators.not'))
-                      : this.createOperator(t('common.filter.list.operators.neither')))}
-                  {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
-                  {operator === '>' &&
-                    this.createOperator(t('common.filter.list.operators.greater'))}
-                  {values.map((value, idx) => {
-                    return (
-                      <span key={idx}>
-                        <span className="previewItemValue">{value.toString()}</span>
-                        {idx < values.length - 1 &&
-                          (operator === 'not in'
-                            ? this.createOperator(t('common.filter.list.operators.nor'))
-                            : this.createOperator(t('common.filter.list.operators.or')))}
-                      </span>
-                    );
-                  })}
-                </ActionItem>
-              </li>
-            );
-          }
+                ) : (
+                  <VariablePreview variableName={variableName} filter={data} />
+                )}
+              </ActionItem>
+            </li>
+          );
         } else if (['executedFlowNodes', 'executingFlowNodes'].includes(filter.type)) {
           const {values, operator} = filter.data;
           const flowNodeNames = this.props.flowNodeNames || {};

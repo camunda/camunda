@@ -50,6 +50,7 @@ it('should convert a start and end-date to two compatible variable filters', () 
   const spy = jest.fn();
   DateInput.addFilter(
     spy,
+    'variable',
     {name: 'aVariableName', type: 'Date'},
     {
       valid: false,

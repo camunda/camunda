@@ -126,7 +126,7 @@ export default class StringInput extends React.Component {
 
     return (
       <React.Fragment>
-        <div className="VariableFilter__buttonRow">
+        <div className="buttonRow">
           <ButtonGroup>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>
               {t('common.filter.list.operators.is')}
@@ -136,13 +136,14 @@ export default class StringInput extends React.Component {
             </Button>
           </ButtonGroup>
         </div>
-        <div className="VariableFilter__valueFields">
+        <div className="valueFields">
           <div className="StringInput__selection">
             <TypeaheadMultipleSelection
-              availableValues={this.state.availableValues}
+              availableValues={[null, ...this.state.availableValues]}
               selectedValues={this.props.filter.values}
               setFilter={this.setValueFilter}
               toggleValue={this.toggleValue}
+              format={(val) => (val === null ? t('common.nullOrUndefined') : val)}
               loading={this.state.loading ? 1 : 0}
               labels={{
                 available: t('common.filter.variableModal.multiSelect.available'),

@@ -166,7 +166,7 @@ it('should use custom filter adding logic from input components', () => {
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
-  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter);
+  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, 'variable', selectedVariable, filter);
 });
 
 it('should load available variables', () => {

@@ -135,11 +135,12 @@ export default class VariableFilter extends React.Component {
     const variable = this.state.selectedVariable;
     const InputComponent = this.getInputComponentForVariable(variable);
     const {filter} = this.state;
+    const {addFilter, filterType} = this.props;
 
     InputComponent.addFilter
-      ? InputComponent.addFilter(this.props.addFilter, variable, filter)
-      : this.props.addFilter({
-          type: this.props.filterType,
+      ? InputComponent.addFilter(addFilter, filterType, variable, filter)
+      : addFilter({
+          type: filterType,
           data: {
             name: variable.id || variable.name,
             type: variable.type,
