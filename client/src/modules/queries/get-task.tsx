@@ -5,24 +5,18 @@
  */
 
 import {gql} from 'apollo-boost';
-
 import {Task} from 'modules/types';
 
-const GET_TASK = gql`
-  query GetTask($key: ID!) {
-    task(key: $key) @client {
-      key
-      name
-      assignee
-    }
-  }
-`;
+import {completedTask, unclaimedTask} from 'modules/mock-schema/mocks/task';
 
 interface GetTask {
   task: {
     key: Task['key'];
     name: Task['name'];
     assignee: Task['assignee'];
+    workflowName: Task['workflowName'];
+    creationTime: Task['creationTime'];
+    completionTime: Task['completionTime'];
   };
 }
 
@@ -30,5 +24,56 @@ interface GetTaskVariables {
   key: Task['key'];
 }
 
+const GET_TASK =
+  process.env.NODE_ENV === 'test'
+    ? gql`
+        query GetTask($key: ID!) {
+          task(key: $key) {
+            key
+            name
+            workflowName
+            assignee
+            creationTime
+            completionTime
+          }
+        }
+      `
+    : gql`
+        query GetTask($key: ID!) {
+          task(key: $key) @client {
+            key
+            name
+            workflowName
+            assignee
+            creationTime
+            completionTime
+          }
+        }
+      `;
+
+const mockGetTaskUnclaimed = {
+  request: {
+    query: GET_TASK,
+    variables: {key: '1'},
+  },
+  result: {
+    data: {
+      task: unclaimedTask,
+    },
+  },
+};
+
+const mockGetTaskCompleted = {
+  request: {
+    query: GET_TASK,
+    variables: {key: '0'},
+  },
+  result: {
+    data: {
+      task: completedTask,
+    },
+  },
+};
+
 export type {GetTask, GetTaskVariables};
-export {GET_TASK};
+export {GET_TASK, mockGetTaskUnclaimed, mockGetTaskCompleted};

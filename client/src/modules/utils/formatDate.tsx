@@ -1,0 +1,18 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+import {format, parseISO} from 'date-fns';
+
+const formatDate = (dateString: string) => {
+  try {
+    return format(parseISO(dateString), 'yyyy-MM-dd HH:mm:ss');
+  } catch (error) {
+    console.error(error);
+    return '';
+  }
+};
+
+export {formatDate};
