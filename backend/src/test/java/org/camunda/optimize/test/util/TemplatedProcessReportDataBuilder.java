@@ -7,6 +7,7 @@ package org.camunda.optimize.test.util;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -34,7 +35,7 @@ public class TemplatedProcessReportDataBuilder {
   private GroupByDateUnit dateInterval;
   private String startFlowNodeId;
   private String endFlowNodeId;
-  private UserTaskDurationTime userTaskDurationTime;
+  private UserTaskDurationTime userTaskDurationTime = new SingleReportConfigurationDto().getUserTaskDurationTime();
   private ProcessVisualization visualization;
 
   private List<ProcessFilterDto<?>> filter = new ArrayList<>();
@@ -390,8 +391,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -402,9 +401,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_USER_TASK:
         reportData = new ProcessReportDataBuilderHelper()
@@ -416,9 +412,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -430,9 +423,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_CANDIDATE_GROUP:
         reportData = new ProcessReportDataBuilderHelper()
@@ -444,9 +434,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -457,9 +444,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE_BY_USER_TASK:
         reportData = new ProcessReportDataBuilderHelper()
@@ -471,9 +455,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -485,9 +466,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE_BY_CANDIDATE_GROUP:
         reportData = new ProcessReportDataBuilderHelper()
@@ -499,9 +477,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -513,9 +488,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP:
         reportData = new ProcessReportDataBuilderHelper()
@@ -527,9 +499,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -540,8 +509,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK:
         reportData = new ProcessReportDataBuilderHelper()
@@ -553,9 +520,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_CANDIDATE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -566,9 +530,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .processDefinitionKey(processDefinitionKey)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_CANDIDATE_BY_USER_TASK:
         reportData = new ProcessReportDataBuilderHelper()
@@ -580,9 +541,6 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .processDefinitionKey(processDefinitionKey)
           .build();
-
-        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       default:
         String errorMessage = String.format("Unknown ProcessReportDataType: [%s]", reportDataType.name());
@@ -591,13 +549,8 @@ public class TemplatedProcessReportDataBuilder {
     reportData.setTenantIds(tenantIds);
     reportData.setFilter(this.filter);
     reportData.setVisualization(visualization == null ? reportData.getVisualization() : visualization);
+    reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
     return reportData;
-  }
-
-  private void setUserTaskDurationTimeIfConfigured(ProcessReportDataDto reportData) {
-    if (userTaskDurationTime != null) {
-      reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
-    }
   }
 
   public TemplatedProcessReportDataBuilder setReportDataType(ProcessReportDataType reportDataType) {
