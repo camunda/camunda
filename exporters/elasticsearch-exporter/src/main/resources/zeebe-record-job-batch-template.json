@@ -53,8 +53,7 @@
                   "type": "long"
                 },
                 "customHeaders": {
-                  "dynamic": true,
-                  "type": "object"
+                  "enabled": false
                 },
                 "worker": {
                   "type": "keyword"
