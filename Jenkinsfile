@@ -351,7 +351,7 @@ pipeline {
       environment {
         CAM_REGISTRY = credentials('repository-camunda-cloud')
       }
-      failFast true
+      failFast false
       parallel {
         stage('Migration') {
           agent {
