@@ -9,6 +9,7 @@ package io.zeebe.engine.nwe.container;
 
 import io.zeebe.engine.nwe.BpmnElementContainerProcessor;
 import io.zeebe.engine.nwe.BpmnElementContext;
+import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.nwe.behavior.BpmnBehaviors;
 import io.zeebe.engine.nwe.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnIncidentBehavior;
@@ -58,10 +59,8 @@ public final class SubProcessProcessor
 
     final var noneStartEvent = element.getNoneStartEvent();
     if (noneStartEvent == null) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected to activate the none start event of the sub-process but not found. [context: %s]",
-              context));
+      throw new BpmnProcessingException(
+          context, "Expected to activate the none start event of the sub-process but not found.");
     }
 
     stateTransitionBehavior.activateChildInstance(context, noneStartEvent);
@@ -111,6 +110,7 @@ public final class SubProcessProcessor
     stateTransitionBehavior.onElementTerminated(element, context);
 
     stateBehavior.consumeToken(context);
+    stateBehavior.removeElementInstance(context);
   }
 
   @Override

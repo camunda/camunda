@@ -9,6 +9,7 @@ package io.zeebe.engine.nwe.sequenceflow;
 
 import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.nwe.BpmnElementProcessor;
+import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.nwe.behavior.BpmnBehaviors;
 import io.zeebe.engine.nwe.behavior.BpmnDeferredRecordsBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnStateBehavior;
@@ -27,6 +28,9 @@ import java.util.stream.Collectors;
  * Calling other methods causes an exception.
  */
 public final class SequenceFlowProcessor implements BpmnElementProcessor<ExecutableSequenceFlow> {
+
+  private static final String UNSUPPORTED_OPERATION_MESSAGE =
+      "This is not the method you're looking for.";
 
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnStateBehavior stateBehavior;
@@ -50,34 +54,34 @@ public final class SequenceFlowProcessor implements BpmnElementProcessor<Executa
 
   @Override
   public void onActivated(final ExecutableSequenceFlow element, final BpmnElementContext context) {
-    throw new UnsupportedSequenceFlowOperationException(context);
+    throw new BpmnProcessingException(context, UNSUPPORTED_OPERATION_MESSAGE);
   }
 
   @Override
   public void onCompleting(final ExecutableSequenceFlow element, final BpmnElementContext context) {
-    throw new UnsupportedSequenceFlowOperationException(context);
+    throw new BpmnProcessingException(context, UNSUPPORTED_OPERATION_MESSAGE);
   }
 
   @Override
   public void onCompleted(final ExecutableSequenceFlow element, final BpmnElementContext context) {
-    throw new UnsupportedSequenceFlowOperationException(context);
+    throw new BpmnProcessingException(context, UNSUPPORTED_OPERATION_MESSAGE);
   }
 
   @Override
   public void onTerminating(
       final ExecutableSequenceFlow element, final BpmnElementContext context) {
-    throw new UnsupportedSequenceFlowOperationException(context);
+    throw new BpmnProcessingException(context, UNSUPPORTED_OPERATION_MESSAGE);
   }
 
   @Override
   public void onTerminated(final ExecutableSequenceFlow element, final BpmnElementContext context) {
-    throw new UnsupportedSequenceFlowOperationException(context);
+    throw new BpmnProcessingException(context, UNSUPPORTED_OPERATION_MESSAGE);
   }
 
   @Override
   public void onEventOccurred(
       final ExecutableSequenceFlow element, final BpmnElementContext context) {
-    throw new UnsupportedSequenceFlowOperationException(context);
+    throw new BpmnProcessingException(context, UNSUPPORTED_OPERATION_MESSAGE);
   }
 
   private void onSequenceFlowTaken(
@@ -149,16 +153,5 @@ public final class SequenceFlowProcessor implements BpmnElementProcessor<Executa
       }
     }
     return false;
-  }
-
-  private static final class UnsupportedSequenceFlowOperationException
-      extends UnsupportedOperationException {
-
-    private static final String MESSAGE =
-        "This is not the method you're looking for. [context: %s]";
-
-    private UnsupportedSequenceFlowOperationException(final BpmnElementContext context) {
-      super(String.format(MESSAGE, context));
-    }
   }
 }

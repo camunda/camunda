@@ -53,9 +53,6 @@ public final class BpmnElementProcessors {
 
   public <T extends ExecutableFlowElement> BpmnElementProcessor<T> getProcessor(
       final BpmnElementType bpmnElementType) {
-    if (bpmnElementType == BpmnElementType.PROCESS) {
-      return null;
-    }
 
     final var processor = (BpmnElementProcessor<T>) processors.get(bpmnElementType);
     if (processor == null) {

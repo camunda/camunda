@@ -13,6 +13,7 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.nwe.BpmnElementProcessor;
+import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.nwe.behavior.BpmnBehaviors;
 import io.zeebe.engine.nwe.behavior.BpmnEventPublicationBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnIncidentBehavior;
@@ -100,9 +101,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
   @Override
   public void onEventOccurred(final ExecutableEndEvent element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException(
-        String.format(
-            "Expected to handle occurred event on end event element, but events should not occur on end event element. [context: %s]",
-            context.toString()));
+    throw new BpmnProcessingException(
+        context,
+        "Expected to handle occurred event on end event element, but events should not occur on end event element.");
   }
 }

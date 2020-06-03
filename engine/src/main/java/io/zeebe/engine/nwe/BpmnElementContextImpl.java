@@ -9,18 +9,17 @@ package io.zeebe.engine.nwe;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.engine.processor.SideEffectProducer;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.EventOutput;
+import io.zeebe.engine.processor.workflow.SideEffectQueue;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.WorkflowEngineState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class BpmnElementContextImpl implements BpmnElementContext {
@@ -63,6 +62,16 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   @Override
   public long getWorkflowInstanceKey() {
     return recordValue.getWorkflowInstanceKey();
+  }
+
+  @Override
+  public long getParentWorkflowInstanceKey() {
+    return recordValue.getParentWorkflowInstanceKey();
+  }
+
+  @Override
+  public long getParentElementInstanceKey() {
+    return recordValue.getParentElementInstanceKey();
   }
 
   @Override
@@ -115,7 +124,9 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
     copy.elementInstanceKey = elementInstanceKey;
     copy.recordValue = recordValue;
     copy.intent = intent;
-    // TODO (saig0): init the step context
+
+    // the step context is not initialized for the copy
+    // because it is not needed yet
     return copy;
   }
 
@@ -124,7 +135,7 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
       final WorkflowInstanceIntent intent,
       final ExecutableFlowElement element,
       final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final SideEffectQueue sideEffect) {
     elementInstanceKey = record.getKey();
     recordValue = record.getValue();
     this.intent = intent;
@@ -133,9 +144,7 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
     stepContext.setElement(element);
     stepContext.setStreamWriter(streamWriter);
     stepContext.getOutput().setStreamWriter(streamWriter);
-
-    stepContext.getSideEffect().clear();
-    sideEffect.accept(stepContext.getSideEffect());
+    stepContext.setSideEffect(sideEffect);
   }
 
   @Override
@@ -153,6 +162,10 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
         + getFlowScopeKey()
         + ", workflowInstanceKey="
         + getWorkflowInstanceKey()
+        + ", parentWorkflowInstanceKey="
+        + getParentWorkflowInstanceKey()
+        + ", parentElementInstanceKey="
+        + getParentElementInstanceKey()
         + ", bpmnProcessId="
         + bufferAsString(getBpmnProcessId())
         + ", workflowVersion="

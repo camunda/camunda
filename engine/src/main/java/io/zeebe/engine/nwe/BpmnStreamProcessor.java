@@ -9,7 +9,8 @@ package io.zeebe.engine.nwe;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.nwe.behavior.BpmnBehaviorsImpl;
-import io.zeebe.engine.nwe.behavior.TypesStreamWriterProxy;
+import io.zeebe.engine.nwe.behavior.TypedResponseWriterProxy;
+import io.zeebe.engine.nwe.behavior.TypedStreamWriterProxy;
 import io.zeebe.engine.processor.SideEffectProducer;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
@@ -18,6 +19,7 @@ import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
+import io.zeebe.engine.processor.workflow.SideEffectQueue;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.state.ZeebeState;
@@ -32,7 +34,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
 
   private static final Logger LOGGER = Loggers.WORKFLOW_PROCESSOR_LOGGER;
 
-  private final TypesStreamWriterProxy streamWriterProxy = new TypesStreamWriterProxy();
+  private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
+  private final TypedResponseWriterProxy responseWriterProxy = new TypedResponseWriterProxy();
+  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
 
   private final BpmnElementContextImpl context;
   private final WorkflowState workflowState;
@@ -53,6 +57,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
         new BpmnBehaviorsImpl(
             expressionProcessor,
             streamWriterProxy,
+            responseWriterProxy,
             zeebeState,
             catchEventBehavior,
             this::getContainerProcessor);
@@ -74,6 +79,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
+    streamWriterProxy.wrap(streamWriter);
+    responseWriterProxy.wrap(responseWriter, writer -> sideEffectQueue.add(writer::flush));
+    sideEffectQueue.clear();
+    sideEffect.accept(sideEffectQueue);
+
     final var intent = (WorkflowInstanceIntent) record.getIntent();
     final var recordValue = record.getValue();
     final var bpmnElementType = recordValue.getBpmnElementType();
@@ -89,10 +99,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
               recordValue.getWorkflowKey(),
               recordValue.getElementIdBuffer(),
               ExecutableMultiInstanceBody.class);
-      final var element = multiInstanceBody.getInnerActivity();
 
-      streamWriterProxy.wrap(streamWriter);
-      context.init(record, intent, element, streamWriterProxy, sideEffect);
+      final var element = multiInstanceBody.getInnerActivity();
+      context.init(record, intent, element, streamWriterProxy, sideEffectQueue);
 
       fallback.accept(context.toStepContext());
       return;
@@ -106,8 +115,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
     final ExecutableFlowElement element = getElement(recordValue, processor);
 
     // initialize the stuff
-    streamWriterProxy.wrap(streamWriter);
-    context.init(record, intent, element, streamWriterProxy, sideEffect);
+    context.init(record, intent, element, streamWriterProxy, sideEffectQueue);
 
     // process the event
     if (stateTransitionGuard.isValidStateTransition(context)) {
@@ -148,9 +156,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
         processor.onActivating(element, context);
         break;
       default:
-        throw new UnsupportedOperationException(
+        throw new BpmnProcessingException(
+            context,
             String.format(
-                "processor '%s' can not handle intent '%s'", processor.getClass(), intent));
+                "Expected the processor '%s' to handle the event but the intent '%s' is not supported",
+                processor.getClass(), intent));
     }
   }
 

@@ -12,6 +12,7 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.zeebe.el.Expression;
 import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.nwe.BpmnElementProcessor;
+import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.nwe.behavior.BpmnBehaviors;
 import io.zeebe.engine.nwe.behavior.BpmnDeferredRecordsBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnIncidentBehavior;
@@ -132,10 +133,9 @@ public final class ExclusiveGatewayProcessor
   @Override
   public void onEventOccurred(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException(
-        String.format(
-            "expected to handle occurred event on exclusive gateway, but events should not occur on exclusive gateway. [context: %s]",
-            context.toString()));
+    throw new BpmnProcessingException(
+        context,
+        "Expected to handle occurred event on exclusive gateway, but events should not occur on exclusive gateway.");
   }
 
   private ExecutableSequenceFlow getOutgoingSequenceFlow(

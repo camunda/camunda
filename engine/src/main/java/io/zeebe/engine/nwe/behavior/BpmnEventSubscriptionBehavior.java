@@ -8,6 +8,7 @@
 package io.zeebe.engine.nwe.behavior;
 
 import io.zeebe.engine.nwe.BpmnElementContext;
+import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.TypedStreamWriter;
@@ -158,12 +159,14 @@ public final class BpmnEventSubscriptionBehavior {
     final var workflow = workflowState.getWorkflowByKey(context.getWorkflowKey());
     if (workflow == null) {
       // this should never happen because workflows are never deleted.
-      throw new IllegalStateException(String.format(NO_WORKFLOW_FOUND_MESSAGE, workflowKey));
+      throw new BpmnProcessingException(
+          context, String.format(NO_WORKFLOW_FOUND_MESSAGE, workflowKey));
     }
 
     final var triggeredEvent = eventScopeInstanceState.peekEventTrigger(workflowKey);
     if (triggeredEvent == null) {
-      throw new IllegalStateException(String.format(NO_TRIGGERED_EVENT_MESSAGE, workflowKey));
+      throw new BpmnProcessingException(
+          context, String.format(NO_TRIGGERED_EVENT_MESSAGE, workflowKey));
     }
 
     createWorkflowInstance(workflow, workflowInstanceKey);
@@ -206,6 +209,31 @@ public final class BpmnEventSubscriptionBehavior {
 
     streamWriter.appendFollowUpEvent(
         workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, recordForWFICreation);
+  }
+
+  public boolean publishTriggeredStartEvent(final BpmnElementContext context) {
+
+    final var deferredStartEvent =
+        elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
+            .filter(record -> record.getValue().getBpmnElementType() == BpmnElementType.START_EVENT)
+            .filter(record -> record.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .findFirst();
+
+    deferredStartEvent.ifPresent(
+        deferredRecord -> {
+          final var elementInstanceKey = deferredRecord.getKey();
+
+          streamWriter.appendNewEvent(
+              elementInstanceKey,
+              WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+              deferredRecord.getValue());
+
+          stateBehavior.createChildElementInstance(
+              context, elementInstanceKey, deferredRecord.getValue());
+          stateBehavior.updateElementInstance(context, ElementInstance::spawnToken);
+        });
+
+    return deferredStartEvent.isPresent();
   }
 
   private WorkflowInstanceRecord getEventRecord(

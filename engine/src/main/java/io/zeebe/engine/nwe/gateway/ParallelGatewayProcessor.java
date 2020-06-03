@@ -9,6 +9,7 @@ package io.zeebe.engine.nwe.gateway;
 
 import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.nwe.BpmnElementProcessor;
+import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.nwe.behavior.BpmnBehaviors;
 import io.zeebe.engine.nwe.behavior.BpmnStateBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnStateTransitionBehavior;
@@ -79,9 +80,8 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
 
   @Override
   public void onEventOccurred(final ExecutableFlowNode element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException(
-        String.format(
-            "Expected to handle occurred event on a parallel gateway, but events should not occur on a parallel gateway. [context: %s]",
-            context.toString()));
+    throw new BpmnProcessingException(
+        context,
+        "Expected to handle occurred event on a parallel gateway, but events should not occur on a parallel gateway.");
   }
 }

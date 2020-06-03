@@ -22,6 +22,10 @@ public interface BpmnElementContext {
 
   long getWorkflowInstanceKey();
 
+  long getParentWorkflowInstanceKey();
+
+  long getParentElementInstanceKey();
+
   long getWorkflowKey();
 
   int getWorkflowVersion();
