@@ -7,10 +7,12 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
@@ -24,24 +26,27 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_CLASSIFICATION_ID;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDecisionDefinitionIT {
 
@@ -71,12 +76,12 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getKey(), is(expectedClassificationOutputValue));
-    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
+    assertThat(resultData.get(0).getKey()).isEqualTo(expectedClassificationOutputValue);
+    assertThat(resultData.get(0).getValue()).isEqualTo(2L);
   }
 
   @Test
@@ -112,15 +117,15 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(4L));
-    assertThat(result.getIsComplete(), is(true));
+    assertThat(result.getInstanceCount()).isEqualTo(4L);
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(2));
-    assertThat(resultData.get(0).getKey(), is("false"));
-    assertThat(resultData.get(0).getValue(), is(3L));
-    assertThat(resultData.get(1).getKey(), is("true"));
-    assertThat(resultData.get(1).getValue(), is(1L));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(2);
+    assertThat(resultData.get(0).getKey()).isEqualTo("false");
+    assertThat(resultData.get(0).getValue()).isEqualTo(3L);
+    assertThat(resultData.get(1).getKey()).isEqualTo("true");
+    assertThat(resultData.get(1).getValue()).isEqualTo(1L);
   }
 
   @Test
@@ -158,10 +163,10 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(4L));
-    assertThat(result.getIsComplete(), is(false));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getInstanceCount()).isEqualTo(4L);
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(1);
   }
 
   @Test
@@ -206,12 +211,12 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getKey(), is("true"));
-    assertThat(resultData.get(0).getValue(), is(1L));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
+    assertThat(resultData.get(0).getKey()).isEqualTo("true");
+    assertThat(resultData.get(0).getValue()).isEqualTo(1L);
   }
 
   @Test
@@ -244,12 +249,12 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(4L));
+    assertThat(result.getInstanceCount()).isEqualTo(4L);
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getKey(), is(expectedClassificationOutputValue));
-    assertThat(resultData.get(0).getValue(), is(4L));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
+    assertThat(resultData.get(0).getKey()).isEqualTo(expectedClassificationOutputValue);
+    assertThat(resultData.get(0).getValue()).isEqualTo(4L);
   }
 
   @Test
@@ -282,12 +287,12 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(4L));
+    assertThat(result.getInstanceCount()).isEqualTo(4L);
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getKey(), is(auditValue));
-    assertThat(resultData.get(0).getValue(), is(4L));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
+    assertThat(resultData.get(0).getKey()).isEqualTo(auditValue);
+    assertThat(resultData.get(0).getValue()).isEqualTo(4L);
   }
 
   @Test
@@ -320,12 +325,12 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getKey(), is(auditValue));
-    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
+    assertThat(resultData.get(0).getKey()).isEqualTo(auditValue);
+    assertThat(resultData.get(0).getValue()).isEqualTo(2L);
   }
 
   @Test
@@ -353,7 +358,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -399,13 +404,9 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
-      // expect ascending order
-      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
-    );
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
   }
 
   @Test
@@ -451,12 +452,9 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
-    assertThat(
-      bucketValues,
-      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+    assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -482,10 +480,9 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     // then
     final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
       result.getReportDefinition().getData().getGroupBy().getValue();
-    assertThat(value.getName().isPresent(), is(true));
-    assertThat(value.getName().get(), is("audit"));
+    assertThat(value.getName()).isPresent();
+    assertThat(value.getName().get()).isEqualTo("audit");
   }
-
 
   @Test
   public void dateVariableGroupByWithOneInstance() {
@@ -510,9 +507,9 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().get(0).getValue(), is(1L));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getData().get(0).getValue()).isEqualTo(1L);
   }
 
   @Test
@@ -548,10 +545,10 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultData.get(0).getValue(), is(1L));
-    assertThat(resultData.get(resultData.size() - 1).getValue(), is(2L));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1L);
+    assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(2L);
   }
 
   @Test
@@ -588,11 +585,95 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
-      // expect ascending order
-      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
+  }
+
+  @ParameterizedTest
+  @MethodSource("staticGroupByDateUnits")
+  public void dateVariableGroupByWorksWithAllStaticUnits(final GroupByDateUnit unit) {
+    // given
+    final int numberOfInstances = 3;
+    final String outputClauseId = "outputClauseId";
+    final String camInputVariable = "input";
+    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
+      outputClauseId,
+      camInputVariable,
+      DecisionTypeRef.DATE
     );
+    final ChronoUnit chronoUnit = mapToChronoUnit(unit);
+    OffsetDateTime dateVariableValue = OffsetDateTime.now();
+
+    for (int i = 0; i < numberOfInstances; i++) {
+      dateVariableValue = dateVariableValue.plus(1, chronoUnit);
+      Map<String, Object> variables = ImmutableMap.of(camInputVariable, dateVariableValue);
+      engineIntegrationExtension.startDecisionInstance(definition.getId(), variables);
+    }
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, unit
+    ).getResult().getData();
+
+    // then
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(numberOfInstances);
+    for (int i = 0; i < numberOfInstances; i++) {
+      final String expectedBucketKey = embeddedOptimizeExtension.formatToHistogramBucketKey(
+        dateVariableValue.minus(chronoUnit.getDuration().multipliedBy(i)),
+        chronoUnit
+      );
+      assertThat(resultData.get(i).getValue()).isEqualTo(1);
+      assertThat(resultData.get(i).getKey()).isEqualTo(expectedBucketKey);
+    }
+  }
+
+  @SneakyThrows
+  @Test
+  public void dateVariableGroupByWithAutomaticIntervals() {
+    // given
+    final int numberOfInstances = 3;
+    final String outputClauseId = "outputClauseId";
+    final String camInputVariable = "input";
+    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
+      outputClauseId,
+      camInputVariable,
+      DecisionTypeRef.DATE
+    );
+    OffsetDateTime dateVariableValue = OffsetDateTime.now();
+
+    for (int i = 0; i < numberOfInstances; i++) {
+      dateVariableValue = dateVariableValue.plusMinutes(1);
+      Map<String, Object> variables =
+        ImmutableMap.of(camInputVariable, dateVariableValue);
+      engineIntegrationExtension.startDecisionInstance(definition.getId(), variables);
+    }
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
+    ).getResult().getData();
+
+    // then
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+
+    // the bucket span covers the earliest and the latest date variable values
+    DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
+    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(resultData.get(0).getKey()));
+    final OffsetDateTime startOfLastBucket = OffsetDateTime
+      .from(formatter.parse(resultData.get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
+    final OffsetDateTime firstTruncatedDateVariableValue = dateVariableValue.truncatedTo(ChronoUnit.MILLIS);
+    final OffsetDateTime lastTruncatedDateVariableValue =
+      dateVariableValue.minusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
+
+    assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
+    assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
   }
 
   @Test
@@ -634,10 +715,10 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(result.getEntryForKey("testValidMatch").get().getValue(), is(1L));
-    assertThat(result.getEntryForKey("missing").get().getValue(), is(2L));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getEntryForKey("testValidMatch").get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(2L);
   }
 
   @Test
@@ -672,10 +753,10 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(result.getEntryForKey(String.valueOf(doubleVarValue)).get().getValue(), is(1L));
-    assertThat(result.getEntryForKey("missing").get().getValue(), is(1L));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getEntryForKey(String.valueOf(doubleVarValue)).get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(1L);
   }
 
   @Test
@@ -692,7 +773,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -709,7 +790,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -735,6 +816,24 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       variableName,
       variableType
     );
+    return reportClient.evaluateMapReport(reportData);
+  }
+
+  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
+    final DecisionDefinitionEngineDto decisionDefinitionDto,
+    final String decisionDefinitionVersion,
+    final String variableId,
+    final String variableName,
+    final VariableType variableType,
+    final GroupByDateUnit unit) {
+    DecisionReportDataDto reportData = createReportDataDto(
+      decisionDefinitionDto,
+      decisionDefinitionVersion,
+      variableId,
+      variableName,
+      variableType
+    );
+    reportData.getConfiguration().setGroupByDateVariableUnit(unit);
     return reportClient.evaluateMapReport(reportData);
   }
 

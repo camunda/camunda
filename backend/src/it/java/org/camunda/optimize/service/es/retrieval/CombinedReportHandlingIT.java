@@ -252,7 +252,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private static Stream<List<SingleProcessReportDefinitionDto>> getUncombinableSingleReports() {
-    //uncombinable visualization
+    // uncombinable visualization
     SingleProcessReportDefinitionDto PICount_startDateYear_bar = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto PICount_startDateYear_barData = TemplatedProcessReportDataBuilder
       .createReportData()

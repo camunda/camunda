@@ -9,6 +9,7 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
@@ -16,10 +17,12 @@ import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
@@ -159,6 +162,11 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
         entry -> entry.getValue().getValue()
       ))
     );
+  }
+
+  @SuppressWarnings("unused")
+  protected static Stream<GroupByDateUnit> staticGroupByDateUnits() {
+    return Arrays.stream(GroupByDateUnit.values()).filter(unit -> !GroupByDateUnit.AUTOMATIC.equals(unit));
   }
 
 }

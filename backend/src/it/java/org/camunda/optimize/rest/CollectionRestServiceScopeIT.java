@@ -490,7 +490,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
 
-    assertThat(scope.size()).isEqualTo(1);
+    assertThat(scope).hasSize(1);
 
     // when
     embeddedOptimizeExtension.getRequestExecutor()
@@ -500,7 +500,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     scope = collectionClient.getCollectionScope(collectionId);
 
     // then
-    assertThat(scope.size()).isEqualTo(0);
+    assertThat(scope).isEmpty();
   }
 
   @Test

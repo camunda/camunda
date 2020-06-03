@@ -18,8 +18,11 @@ import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.ArrayList;
@@ -100,13 +103,31 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     }
     ProcessReportDataDto that = (ProcessReportDataDto) o;
     return Combinable.isCombinable(view, that.view) &&
-      Combinable.isCombinable(groupBy, that.groupBy) &&
+      isGroupByCombinable(that) &&
       Combinable.isCombinable(getConfiguration(), that.getConfiguration()) &&
       Objects.equals(visualization, that.visualization);
   }
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  }
+
+  private boolean isGroupByCombinable(final ProcessReportDataDto that) {
+    if (Combinable.isCombinable(this.groupBy, that.groupBy)) {
+      if (isGroupByDateVariableReport()) {
+        return getConfiguration()
+          .getGroupByDateVariableUnit()
+          .equals(that.getConfiguration().getGroupByDateVariableUnit());
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private boolean isGroupByDateVariableReport() {
+    return groupBy != null
+      && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
+      && VariableType.DATE.equals(((VariableGroupByDto) groupBy).getValue().getType());
   }
 
 }

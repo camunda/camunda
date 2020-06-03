@@ -86,7 +86,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
-    assertThat(result.getData()).hasSize(0);
+    assertThat(result.getData()).isEmpty();
   }
 
   @Test

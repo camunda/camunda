@@ -25,7 +25,9 @@ public class DateModificationHelper {
     } else if (unit.equals(ChronoUnit.DAYS)) {
       truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).truncatedTo(unit);
     } else if (unit.equals(ChronoUnit.WEEKS)) {
-      truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
+      truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault())
+        .with(DayOfWeek.MONDAY)
+        .truncatedTo(ChronoUnit.DAYS);
     } else if (unit.equals(ChronoUnit.MONTHS)) {
       truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS);
     } else {

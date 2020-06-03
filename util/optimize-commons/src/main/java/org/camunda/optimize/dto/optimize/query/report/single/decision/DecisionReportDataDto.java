@@ -13,7 +13,10 @@ import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByType;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.ArrayList;
@@ -75,12 +78,34 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
     }
     DecisionReportDataDto that = (DecisionReportDataDto) o;
     return Combinable.isCombinable(view, that.view) &&
-      Combinable.isCombinable(groupBy, that.groupBy) &&
+      isGroupByCombinable(that) &&
       Objects.equals(visualization, that.visualization);
   }
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  }
+
+  private boolean isGroupByCombinable(final DecisionReportDataDto that) {
+    if (Combinable.isCombinable(this.groupBy, that.groupBy)) {
+      if (isGroupByDateVariableReport()) {
+        return getConfiguration()
+          .getGroupByDateVariableUnit()
+          .equals(that.getConfiguration().getGroupByDateVariableUnit());
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private boolean isGroupByDateVariableReport() {
+    if (groupBy != null
+      && (DecisionGroupByType.INPUT_VARIABLE.equals(groupBy.getType())
+      || DecisionGroupByType.OUTPUT_VARIABLE.equals(groupBy.getType()))) {
+      VariableType varType = ((DecisionGroupByDto<DecisionGroupByVariableValueDto>) groupBy).getValue().getType();
+      return VariableType.DATE.equals(varType);
+    }
+    return false;
   }
 
 }

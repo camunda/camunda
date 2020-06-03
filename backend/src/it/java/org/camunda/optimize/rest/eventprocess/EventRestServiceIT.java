@@ -133,7 +133,7 @@ public class EventRestServiceIT extends AbstractIT {
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(eventCountDtos).hasSize(0);
+    assertThat(eventCountDtos).isEmpty();
   }
 
   @Test

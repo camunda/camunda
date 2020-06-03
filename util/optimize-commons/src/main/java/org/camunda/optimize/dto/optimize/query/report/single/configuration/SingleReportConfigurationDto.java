@@ -11,12 +11,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
@@ -79,6 +81,9 @@ public class SingleReportConfigurationDto implements Combinable {
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
   @Builder.Default
   private DistributedBy distributedBy = DistributedBy.NONE;
+  @Builder.Default
+  @NonNull
+  private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
   private SortingDto sorting = null;
   private ProcessPartDto processPart = null;
 

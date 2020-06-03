@@ -106,7 +106,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final Map<String, List<AliasMetaData>> eventProcessInstanceIndicesAndAliases =
       getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
-    assertThat(eventProcessInstanceIndicesAndAliases).hasSize(0);
+    assertThat(eventProcessInstanceIndicesAndAliases).isEmpty();
   }
 
   @ParameterizedTest(name = "Only expected instance index is deleted on {0}, other is still present.")

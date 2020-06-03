@@ -87,7 +87,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     );
   }
 
-
   protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)
@@ -195,19 +194,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return processInstanceDtos;
   }
 
-  private BpmnModelInstance createSimpleServiceTaskModelInstance(final String key,
-                                                                 final String activityId) {
-    // @formatter:off
-    return Bpmn.createExecutableProcess(key)
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:on
-  }
-
   protected String createNewReport(ProcessReportDataDto processReportDataDto) {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setData(processReportDataDto);
@@ -225,6 +211,31 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
+  }
+
+  protected Map<String, VariableType> createVarNameToTypeMap() {
+    Map<String, VariableType> varToType = new HashMap<>();
+    varToType.put("dateVar", VariableType.DATE);
+    varToType.put("boolVar", VariableType.BOOLEAN);
+    varToType.put("shortVar", VariableType.SHORT);
+    varToType.put("intVar", VariableType.INTEGER);
+    varToType.put("longVar", VariableType.LONG);
+    varToType.put("doubleVar", VariableType.DOUBLE);
+    varToType.put("stringVar", VariableType.STRING);
+    return varToType;
+  }
+
+  private BpmnModelInstance createSimpleServiceTaskModelInstance(final String key,
+                                                                 final String activityId) {
+    // @formatter:off
+    return Bpmn.createExecutableProcess(key)
+      .name("aProcessName")
+      .startEvent(START_EVENT)
+      .serviceTask(activityId)
+      .camundaExpression("${true}")
+      .endEvent(END_EVENT)
+      .done();
+    // @formatter:on
   }
 
   protected void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,

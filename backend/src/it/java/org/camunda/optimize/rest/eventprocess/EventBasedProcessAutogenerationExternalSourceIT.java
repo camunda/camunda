@@ -88,7 +88,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
-    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size());
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size());
 
     // then the model elements are of the correct type and connected to expected nodes correctly
     assertNodeConnection(idOf(EVENT_A), START_EVENT, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
@@ -129,7 +129,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
     // The extra flow node is the added gateway
-    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size() + 1);
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 1);
 
     // then the model elements are of the correct type and connected to expected nodes correctly
     final String expectedGatewayId = generateGatewayIdForNode(EVENT_C, Converging);
@@ -182,7 +182,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
     // The extra flow node is the added gateway
-    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size() + 1);
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 1);
 
     // then the model elements are of the correct type and connected to sequence flows correctly
     final String expectedGatewayId = generateGatewayIdForNode(EVENT_B, Diverging);
@@ -234,7 +234,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
     // The extra flow nodes are the added gateways
-    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size() + 2);
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 2);
 
     // then the model elements are of the correct type and connected to sequence flows correctly
     final String divergingGatewayId = generateGatewayIdForNode(EVENT_A, Diverging);
@@ -291,7 +291,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
-    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size());
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size());
 
     // then the model elements are of the correct type and connected to sequence flows correctly
     assertNodeConnection(idOf(EVENT_A), START_EVENT, idOf(EVENT_B), END_EVENT, modelInstance);
@@ -369,7 +369,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
 
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Collections.singletonList(EVENT_A));
-    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size());
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size());
 
     // then the model elements are of the correct type
     assertNodeConnection(idOf(EVENT_A), START_EVENT, null, null, modelInstance);
@@ -407,7 +407,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
     // The extra flow nodes are the added gateways
-    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size() + 2);
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 2);
 
     // then the model elements are of the correct type and connected to sequence flows correctly
     final String divergingGatewayId = generateGatewayIdForNode(EVENT_C, Diverging);

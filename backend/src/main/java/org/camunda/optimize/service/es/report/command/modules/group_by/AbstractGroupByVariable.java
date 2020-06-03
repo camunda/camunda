@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -26,22 +27,21 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
-import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
@@ -66,7 +66,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
 
   private static final String STATS = "stats";
-  private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   private final ConfigurationService configurationService;
   private final IntervalAggregationService intervalAggregationService;
@@ -127,8 +126,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .field(getNestedVariableValueFieldLabel(VariableType.STRING));
 
     if (VariableType.DATE.equals(getVariableType(context))) {
-      aggregationBuilder =
-        createDateVariableAggregation(baseQuery, context);
+      aggregationBuilder = createDateVariableAggregation(baseQuery, context);
     }
 
     AggregationBuilder operationsAggregation = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
@@ -141,31 +139,44 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private AggregationBuilder createDateVariableAggregation(final QueryBuilder baseQuery,
                                                            final ExecutionContext<Data> context) {
-    Stats minMaxStats = getMinMaxStats(baseQuery, context);
-
-    Optional<AggregationBuilder> optionalAgg = intervalAggregationService
-      .createIntervalAggregationFromGivenRange(
-        getNestedVariableValueFieldLabel(VariableType.DATE),
-        OffsetDateTime.parse(minMaxStats.getMinAsString(), dateTimeFormatter),
-        OffsetDateTime.parse(minMaxStats.getMaxAsString(), dateTimeFormatter)
-      );
-    AggregationBuilder aggregationBuilder;
-    if (optionalAgg.isPresent() && !((RangeAggregationBuilder) optionalAgg.get()).ranges().isEmpty()) {
-      aggregationBuilder = optionalAgg.get();
-    } else {
-      aggregationBuilder = AggregationBuilders
-        .dateHistogram(AbstractGroupByVariable.VARIABLES_AGGREGATION)
-        .field(getNestedVariableValueFieldLabel(VariableType.DATE))
-        .interval(1)
-        .format(OPTIMIZE_DATE_FORMAT)
-        .timeZone(ZoneId.systemDefault() );
+    GroupByDateUnit unit = getGroupByDateUnit(context);
+    if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
+      Stats minMaxStats = getMinMaxStats(baseQuery, context);
+      if (minMaxStats.getCount() != 1) {
+        return createAutomaticIntervalAggregation(minMaxStats, context);
+      }
+      // if there is only one instance we always group by month
+      unit = GroupByDateUnit.MONTH;
     }
-    return aggregationBuilder;
+
+    final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
+
+    return AggregationBuilders
+      .dateHistogram(AbstractGroupByVariable.VARIABLES_AGGREGATION)
+      .field(getNestedVariableValueFieldLabel(VariableType.DATE))
+      .dateHistogramInterval(interval)
+      .format(OPTIMIZE_DATE_FORMAT)
+      .timeZone(ZoneId.systemDefault());
+  }
+
+  private AggregationBuilder createAutomaticIntervalAggregation(final Stats minMaxStats,
+                                                                final ExecutionContext<Data> context) {
+    OffsetDateTime minDateTime =
+      OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMin())), ZoneId.systemDefault());
+    OffsetDateTime maxDateTime =
+      OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMax())), ZoneId.systemDefault());
+    AggregationBuilder automaticIntervalAggregation =
+      intervalAggregationService.createIntervalAggregationFromGivenRange(
+        getNestedVariableValueFieldLabel(VariableType.DATE),
+        minDateTime,
+        maxDateTime
+      );
+
+    return automaticIntervalAggregation.subAggregation(distributedByPart.createAggregation(context));
   }
 
   private Stats getMinMaxStats(final QueryBuilder query,
                                final ExecutionContext<Data> context) {
-
     AggregationBuilder aggregationBuilder = nested(NESTED_AGGREGATION, getVariablePath()).subAggregation(filter(
       FILTERED_VARIABLES_AGGREGATION,
       boolQuery()
@@ -242,5 +253,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private boolean isResultComplete(MultiBucketsAggregation variableTerms) {
     return !(variableTerms instanceof Terms) || ((Terms) variableTerms).getSumOfOtherDocCounts() == 0L;
+  }
+
+  private GroupByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {
+    return context.getReportData().getConfiguration().getGroupByDateVariableUnit();
   }
 }

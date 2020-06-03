@@ -272,7 +272,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // then
     assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
-    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(5);
+    assertThat(ingestErrorResponse.getValidationErrors()).hasSize(5);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
@@ -323,7 +323,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // then
     assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
-    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(5);
+    assertThat(ingestErrorResponse.getValidationErrors()).hasSize(5);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
@@ -358,7 +358,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // then
     assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
-    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(1);
+    assertThat(ingestErrorResponse.getValidationErrors()).hasSize(1);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()

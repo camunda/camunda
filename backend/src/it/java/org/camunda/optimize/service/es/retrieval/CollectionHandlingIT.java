@@ -135,7 +135,7 @@ public class CollectionHandlingIT extends AbstractIT {
     // then
     assertThat(collection).isNotNull();
     assertThat(collection.getId()).isEqualTo(collectionId);
-    assertThat(collectionEntities.size()).isEqualTo(2);
+    assertThat(collectionEntities).hasSize(2);
     assertThat(collectionEntities.stream().map(EntityDto::getId).collect(Collectors.toList()))
       .containsExactlyInAnyOrder(dashboardId, reportId);
   }
@@ -157,12 +157,12 @@ public class CollectionHandlingIT extends AbstractIT {
     // then
     assertThat(collection).isNotNull();
     assertThat(collection.getId()).isEqualTo(collectionId);
-    assertThat(collectionEntities.size()).isEqualTo(3);
+    assertThat(collectionEntities).hasSize(3);
     final EntityDto combinedReportEntityDto = collectionEntities.stream()
       .filter(EntityDto::getCombined)
       .findFirst()
       .get();
-    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().size()).isEqualTo(1);
+    assertThat(combinedReportEntityDto.getData().getSubEntityCounts()).hasSize(1);
     assertThat(combinedReportEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT)).isEqualTo(2L);
   }
 
@@ -191,7 +191,7 @@ public class CollectionHandlingIT extends AbstractIT {
     assertThat(collection.getLastModifier()).isEqualTo("demo");
     assertThat(collection.getLastModified()).isEqualTo(now);
     assertThat(collection.getData().getConfiguration()).isEqualTo(configuration);
-    assertThat(collectionEntities.size()).isEqualTo(0);
+    assertThat(collectionEntities).isEmpty();
   }
 
   @Test
@@ -438,7 +438,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
     // then
     List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
-    assertThat(collectionEntities.size()).isEqualTo(0);
+    assertThat(collectionEntities).isEmpty();
   }
 
   @Test
@@ -454,7 +454,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
     // then
     List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
-    assertThat(collectionEntities.size()).isEqualTo(0);
+    assertThat(collectionEntities).isEmpty();
   }
 
   @Test
@@ -641,7 +641,7 @@ public class CollectionHandlingIT extends AbstractIT {
     assertThat(copiedDashboard.getName()).isEqualTo(dashboardDefinition.getName());
     assertThat(copiedReportDefinition.getName()).isEqualTo(originalReportDefinition.getName());
 
-    assertThat(copiedCollectionEntities.size()).isEqualTo(2);
+    assertThat(copiedCollectionEntities).hasSize(2);
     assertThat(copiedCollectionEntities.stream()
                  .anyMatch(e -> e.getId().equals(copiedReportId))).isEqualTo(true);
     assertThat(copiedCollectionEntities.stream()
@@ -685,7 +685,7 @@ public class CollectionHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionDto originalSingleReportDefinition = reportClient.getSingleProcessReportDefinitionDto(
       originalReportId);
 
-    assertThat(copiedCollectionEntities.size()).isEqualTo(3);
+    assertThat(copiedCollectionEntities).hasSize(3);
 
     List<String> copiedCollectionEntityNames = copiedCollectionEntities.stream()
       .map(EntityDto::getName)
@@ -750,9 +750,9 @@ public class CollectionHandlingIT extends AbstractIT {
     List<AlertDefinitionDto> copiedAlerts = collectionClient.getAlertsForCollection(copy.getId());
     Set<String> copiedReportIdsWithAlert = copiedAlerts.stream().map(AlertCreationDto::getReportId).collect(toSet());
 
-    assertThat(copiedReports.size()).isEqualTo(reportsToCopy.size());
-    assertThat(copiedAlerts.size()).isEqualTo(alertsToCopy.size());
-    assertThat(copiedReportIdsWithAlert.size()).isEqualTo(copiedReports.size());
+    assertThat(copiedReports).hasSize(reportsToCopy.size());
+    assertThat(copiedAlerts).hasSize(alertsToCopy.size());
+    assertThat(copiedReportIdsWithAlert).hasSize(copiedReports.size());
     assertThat(copiedReports.stream()
                  .allMatch(report -> copiedReportIdsWithAlert.contains(report.getDefinitionDto().getId()))).isTrue();
   }

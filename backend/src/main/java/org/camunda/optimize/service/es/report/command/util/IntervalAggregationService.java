@@ -103,7 +103,7 @@ public class IntervalAggregationService {
     if (rangeToUse != null) {
       OffsetDateTime min = rangeToUse.getMinimum();
       OffsetDateTime max = rangeToUse.getMaximum();
-      return createIntervalAggregationFromGivenRange(field, min, max);
+      return Optional.of(createIntervalAggregationFromGivenRange(field, min, max));
     } else {
       return createIntervalAggregation(query, indexName, field);
     }
@@ -116,7 +116,7 @@ public class IntervalAggregationService {
     if (stats.getCount() > 1) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);
-      return createIntervalAggregationFromGivenRange(field, min, max);
+      return Optional.of(createIntervalAggregationFromGivenRange(field, min, max));
     } else {
       return Optional.empty();
     }
@@ -131,18 +131,20 @@ public class IntervalAggregationService {
     return Math.max(intervalFromMinToMax, 1);
   }
 
-  public Optional<AggregationBuilder> createIntervalAggregationFromGivenRange(String field,
-                                                                              OffsetDateTime min,
-                                                                              OffsetDateTime max) {
+  public AggregationBuilder createIntervalAggregationFromGivenRange(String field,
+                                                                    OffsetDateTime min,
+                                                                    OffsetDateTime max) {
     long msAsUnit = getDateHistogramIntervalInMsFromMinMax(min, max);
     RangeAggregationBuilder rangeAgg = AggregationBuilders
       .range(RANGE_AGGREGATION)
       .field(field);
-    for (OffsetDateTime start = min; start.isBefore(max); start = start.plus(msAsUnit, ChronoUnit.MILLIS)) {
+    OffsetDateTime start = min;
+    do {
+      // this is a do while loop to ensure there's always at least one bucket, even when min and max are equal
       OffsetDateTime nextStart = start.plus(msAsUnit, ChronoUnit.MILLIS);
       boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
-      // plus 1 millisecond because the end of the range is inclusive
-      OffsetDateTime end = isLast ? max.plus(1, ChronoUnit.MILLIS) : nextStart;
+      // plus 1 ms because the end of the range is exclusive yet we want to make sure max falls into the last bucket
+      OffsetDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
 
       RangeAggregator.Range range =
         new RangeAggregator.Range(
@@ -151,8 +153,9 @@ public class IntervalAggregationService {
           dateTimeFormatter.format(end)
         );
       rangeAgg.addRange(range);
-    }
-    return Optional.of(rangeAgg);
+      start = nextStart;
+    } while (start.isBefore(max));
+    return rangeAgg;
   }
 
   public Map<String, Range.Bucket> mapIntervalAggregationsToKeyBucketMap(Aggregations aggregations) {

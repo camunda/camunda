@@ -38,7 +38,7 @@ public class UserTaskFrequencyByUserTaskEndDateByUserTaskReportEvaluationIT exte
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData().size()).isEqualTo(0L);
+    assertThat(result.getData()).isEmpty();
     assertThat(result.getIsComplete()).isTrue();
   }
 

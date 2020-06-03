@@ -468,7 +468,7 @@ public class DecisionImportIT extends AbstractImportIT {
     assertThat(dto.getActivityId()).isNull();
     assertThat(dto.getCollectResultValue()).isNull();
     assertThat(dto.getRootDecisionInstanceId()).isNull();
-    assertThat(dto.getInputs().size()).isEqualTo(2);
+    assertThat(dto.getInputs()).hasSize(2);
     dto.getInputs().forEach(inputInstanceDto -> {
       assertThat(inputInstanceDto.getId()).isNotNull();
       assertThat(inputInstanceDto.getClauseId()).isNotNull();
@@ -476,7 +476,7 @@ public class DecisionImportIT extends AbstractImportIT {
       assertThat(inputInstanceDto.getType()).isNotNull();
       assertThat(inputInstanceDto.getValue()).isNotNull();
     });
-    assertThat(dto.getOutputs().size()).isEqualTo(2);
+    assertThat(dto.getOutputs()).hasSize(2);
     dto.getOutputs().forEach(outputInstanceDto -> {
       assertThat(outputInstanceDto.getId()).isNotNull();
       assertThat(outputInstanceDto.getClauseId()).isNotNull();

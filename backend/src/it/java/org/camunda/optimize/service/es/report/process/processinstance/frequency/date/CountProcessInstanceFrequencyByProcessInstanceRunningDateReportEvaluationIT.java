@@ -36,9 +36,6 @@ import static org.hamcrest.CoreMatchers.is;
 
 public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEvaluationIT
   extends AbstractCountProcessInstanceFrequencyByProcessInstanceDateReportEvaluationIT {
-  private static Stream<GroupByDateUnit> getStaticGroupByDateUnits() {
-    return Arrays.stream(GroupByDateUnit.values()).filter(unit -> !GroupByDateUnit.AUTOMATIC.equals(unit));
-  }
 
   @Override
   protected ProcessReportDataType getTestReportDataType() {
@@ -65,7 +62,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("getStaticGroupByDateUnits")
+  @MethodSource("staticGroupByDateUnits")
   public void countRunningInstances_instancesFallIntoMultipleBuckets(final GroupByDateUnit unit) {
     // given
     // first instance starts within a bucket (as opposed to on the "edge" of a bucket)
@@ -92,7 +89,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
     final int expectedNumberOfBuckets = 3;
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
-    assertThat(resultData.size()).isEqualTo(expectedNumberOfBuckets);
+    assertThat(resultData).hasSize(expectedNumberOfBuckets);
 
     // bucket keys exist for each unit between start date of first and end date of last instance
     final ZonedDateTime lastBucketStartDate = truncateToStartOfUnit(

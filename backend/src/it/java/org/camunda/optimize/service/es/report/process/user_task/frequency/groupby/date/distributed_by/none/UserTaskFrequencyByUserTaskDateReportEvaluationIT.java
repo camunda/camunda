@@ -96,7 +96,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().size()).isEqualTo(1);
+    assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
@@ -131,7 +131,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().size()).isEqualTo(1);
+    assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
@@ -314,7 +314,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size()).isEqualTo(2);
+    assertThat(resultData).hasSize(2);
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
@@ -346,7 +346,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size()).isEqualTo(3);
+    assertThat(resultData).hasSize(3);
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));

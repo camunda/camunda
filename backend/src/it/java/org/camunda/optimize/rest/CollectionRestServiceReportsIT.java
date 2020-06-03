@@ -64,7 +64,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollection(collectionId1);
 
     // then
-    assertThat(reports).hasSize(0);
+    assertThat(reports).isEmpty();
   }
 
   @Test

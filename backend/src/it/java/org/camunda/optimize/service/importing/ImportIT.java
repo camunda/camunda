@@ -111,7 +111,7 @@ public class ImportIT extends AbstractImportIT {
         assertThat(processInstanceDto.getUserTasks())
           .flatExtracting(UserTaskInstanceDto::getCandidateGroupOperations)
           .allMatch(groupOperation -> groupOperation.getGroupId().equals(testCandidateGroup));
-        assertThat(processInstanceDto.getVariables().size()).isEqualTo(variables.size());
+        assertThat(processInstanceDto.getVariables()).hasSize(variables.size());
         assertThat(processInstanceDto.getState()).isEqualTo(SUSPENDED_STATE);
       });
   }

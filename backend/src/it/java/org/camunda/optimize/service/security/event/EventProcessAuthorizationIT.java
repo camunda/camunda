@@ -188,7 +188,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     List<EventProcessMappingDto> allMappings = eventProcessClient.getAllEventProcessMappings(KERMIT_USER, KERMIT_USER);
 
     // then only mappings where the user has authorization to see all event sources are returned
-    assertThat(allMappings.size()).isEqualTo(1);
+    assertThat(allMappings).hasSize(1);
     assertThat(allMappings.get(0).getId()).isEqualTo(expectedId);
   }
 

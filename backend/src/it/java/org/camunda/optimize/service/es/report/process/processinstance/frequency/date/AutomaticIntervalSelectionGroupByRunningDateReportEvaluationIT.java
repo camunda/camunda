@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report;
+package org.camunda.optimize.service.es.report.process.processinstance.frequency.date;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -63,7 +63,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     final int expectedNumberOfBuckets = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
-    assertThat(resultData.size()).isEqualTo(expectedNumberOfBuckets);
+    assertThat(resultData).hasSize(expectedNumberOfBuckets);
   }
 
   @SneakyThrows
@@ -90,7 +90,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size()).isEqualTo(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
     // bucket span should include the full runtime of both instances
     final Date startOfFirstInstanceAsDate = new Date(startOfFirstInstance
@@ -128,7 +128,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size()).isEqualTo(0);
+    assertThat(resultData).isEmpty();
   }
 
   @Test
@@ -147,7 +147,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
 
     // then the single data point should be grouped by month
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size()).isEqualTo(1);
+    assertThat(resultData).hasSize(1);
     final ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     final String nowStrippedToMonthAsString = zonedDateTimeToString(nowStrippedToMonth);
     assertThat(resultData.get(0).getKey()).isEqualTo(nowStrippedToMonthAsString);

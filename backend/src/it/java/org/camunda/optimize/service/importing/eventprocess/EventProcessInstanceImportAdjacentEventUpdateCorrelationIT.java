@@ -361,7 +361,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasSize(0);
+          .isEmpty();
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
@@ -796,7 +796,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasSize(0);
+          .isEmpty();
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
@@ -873,7 +873,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasSize(0);
+          .isEmpty();
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())

@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.variable;
 
+import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -25,10 +27,14 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -38,17 +44,18 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
 public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -60,7 +67,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
   @Test
   public void reportEvaluationForOneProcess() throws Exception {
-
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -69,7 +75,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
+    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      endDate
+    );
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -90,21 +99,21 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
-    assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.VARIABLE));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
-    assertThat(variableGroupByDto.getValue().getName(), is(DEFAULT_VARIABLE_NAME));
-    assertThat(variableGroupByDto.getValue().getType(), is(DEFAULT_VARIABLE_TYPE));
+    assertThat(variableGroupByDto.getValue().getName()).isEqualTo(DEFAULT_VARIABLE_NAME);
+    assertThat(variableGroupByDto.getValue().getType()).isEqualTo(DEFAULT_VARIABLE_TYPE);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getInstanceCount(), is(1L));
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getData()).hasSize(1);
     final Long calculatedResult = result.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue();
-    assertThat(calculatedResult, is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
+    assertThat(calculatedResult).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
   }
 
   @Test
@@ -117,7 +126,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
+    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      endDate
+    );
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
@@ -139,20 +151,20 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
-    assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.VARIABLE));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
-    assertThat(variableGroupByDto.getValue().getName(), is(DEFAULT_VARIABLE_NAME));
-    assertThat(variableGroupByDto.getValue().getType(), is(DEFAULT_VARIABLE_TYPE));
+    assertThat(variableGroupByDto.getValue().getName()).isEqualTo(DEFAULT_VARIABLE_NAME);
+    assertThat(variableGroupByDto.getValue().getType()).isEqualTo(DEFAULT_VARIABLE_TYPE);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData()).hasSize(1);
     final Long calculatedResult = result.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue();
-    assertThat(calculatedResult, is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
+    assertThat(calculatedResult).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
   }
 
   @Test
@@ -163,7 +175,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     startThreeProcessInstances(startDate, processEngineDto, Arrays.asList(1, 2, 9));
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processEngineDto.getId(),
+      variables
+    );
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -183,16 +198,12 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(
-      result.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 2000L, 9000L))
-    );
-    assertThat(
-      result.getEntryForKey(DEFAULT_VARIABLE_VALUE + 2).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
-    );
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 2000L, 9000L));
+    assertThat(result.getEntryForKey(DEFAULT_VARIABLE_VALUE + 2).get().getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
   }
 
   @Test
@@ -204,12 +215,18 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
-    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(
+      processEngineDto.getId(),
+      variables
+    );
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
 
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 3);
-    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(
+      processEngineDto.getId(),
+      variables
+    );
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
 
@@ -232,15 +249,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
-      // expect ascending order
-      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
-    );
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
   }
-
 
   @Test
   public void testCustomOrderOnResultValueIsApplied() throws SQLException {
@@ -251,12 +263,18 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
-    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(
+      processEngineDto.getId(),
+      variables
+    );
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
 
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 3);
-    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(
+      processEngineDto.getId(),
+      variables
+    );
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
 
@@ -280,16 +298,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      assertThat(result.getIsComplete(), is(true));
+      assertThat(result.getIsComplete()).isTrue();
       final List<MapResultEntryDto> resultData = result.getData();
-      assertThat(resultData.size(), is(3));
+      assertThat(resultData).hasSize(3);
       final List<Long> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
         .collect(Collectors.toList());
-      assertThat(
-        bucketValues,
-        contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
-      );
+      assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
     });
   }
 
@@ -302,12 +317,18 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
-    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(
+      processEngineDto.getId(),
+      variables
+    );
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
 
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 3);
-    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(
+      processEngineDto.getId(),
+      variables
+    );
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
 
@@ -334,11 +355,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // then
     aggregationTypes.forEach((AggregationType aggType) -> {
       final ReportMapResultDto resultDto = results.get(aggType).getResult();
-      assertThat(resultDto.getData().size(), is(3));
-      assertThat(
-        resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-        is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L).get(aggType))
-      );
+      assertThat(resultDto.getData()).hasSize(3);
+      assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
+        .isEqualTo(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L).get(aggType));
     });
   }
 
@@ -374,10 +393,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount(), is(2L));
-    assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(1));
-    assertThat(resultDto.getIsComplete(), is(false));
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getIsComplete()).isFalse();
   }
 
   @Test
@@ -405,11 +424,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData().size(), is(1));
-    assertThat(
-      resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(2000L))
-    );
+    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000L));
   }
 
   @Test
@@ -438,8 +455,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().isEmpty(), is(true));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData().isEmpty()).isTrue();
   }
 
   @Test
@@ -467,8 +484,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().isEmpty(), is(true));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData().isEmpty()).isTrue();
   }
 
   @Test
@@ -488,8 +505,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().isEmpty(), is(true));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData().isEmpty()).isTrue();
   }
 
   @Test
@@ -520,11 +537,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData().size(), is(1));
-    assertThat(
-      resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
-    );
+    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L));
   }
 
   @Test
@@ -556,7 +571,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -588,15 +603,16 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(1));
-    assertThat(
-      resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
-    );
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
 
     // when
-    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processInstanceDto.getDefinitionId(),
+      variables
+    );
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(4));
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -605,12 +621,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(1));
-    assertThat(
-      resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(4000L))
-    );
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(4000L));
   }
 
   @Test
@@ -647,14 +661,14 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
 
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(2));
-    assertThat(resultDto.getEntryForKey("1").get().getValue(), is(1000L));
-    assertThat(resultDto.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue(), is(2000L));
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(2);
+    assertThat(resultDto.getEntryForKey("1").get().getValue()).isEqualTo(1000L);
+    assertThat(resultDto.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(2000L);
   }
 
   @Test
@@ -692,14 +706,14 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions().contains(processInstanceDto.getProcessDefinitionVersion()));
 
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(2));
-    assertThat(resultDto.getEntryForKey("bar1").get().getValue(), is(1000L));
-    assertThat(resultDto.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue(), is(5000L));
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(2);
+    assertThat(resultDto.getEntryForKey("bar1").get().getValue()).isEqualTo(1000L);
+    assertThat(resultDto.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(5000L);
   }
 
   @Test
@@ -738,33 +752,129 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      assertThat(result.getData(), is(notNullValue()));
       final List<MapResultEntryDto> resultData = result.getData();
-      assertThat(resultData.size(), is(1));
+      assertThat(resultData).isNotNull();
+      assertThat(resultData).hasSize(1);
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
 
-        String dateAsString = embeddedOptimizeExtension.getDateTimeFormatter()
-          .format(temporal.atZoneSameInstant(ZoneId.systemDefault()));
-        assertThat(resultData.get(0).getKey(), is(dateAsString));
-        assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
+        String dateAsString = embeddedOptimizeExtension.formatToHistogramBucketKey(
+          temporal.atZoneSimilarLocal(ZoneId.systemDefault()).toOffsetDateTime(),
+          ChronoUnit.MONTHS
+        );
+        assertThat(resultData.get(0).getKey()).isEqualTo(dateAsString);
+        assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
       } else {
-        assertThat(resultData.get(0).getKey(), is(entry.getValue().toString()));
-        assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
+        assertThat(resultData.get(0).getKey()).isEqualTo(entry.getValue().toString());
+        assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
       }
     }
   }
 
-  private Map<String, VariableType> createVarNameToTypeMap() {
-    Map<String, VariableType> varToType = new HashMap<>();
-    varToType.put("dateVar", VariableType.DATE);
-    varToType.put("boolVar", VariableType.BOOLEAN);
-    varToType.put("shortVar", VariableType.SHORT);
-    varToType.put("intVar", VariableType.INTEGER);
-    varToType.put("longVar", VariableType.LONG);
-    varToType.put("doubleVar", VariableType.DOUBLE);
-    varToType.put("stringVar", VariableType.STRING);
-    return varToType;
+  @SneakyThrows
+  @ParameterizedTest
+  @MethodSource("staticGroupByDateUnits")
+  public void groupByDateVariableWorksForAllStaticUnits(final GroupByDateUnit unit) {
+    // given
+    final ChronoUnit chronoUnit = mapToChronoUnit(unit);
+    final int numberOfInstances = 3;
+    final String dateVarName = "dateVar";
+    final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    OffsetDateTime dateVariableValue = OffsetDateTime.now();
+
+    for (int i = 0; i < numberOfInstances; i++) {
+      dateVariableValue = dateVariableValue.plus(1, chronoUnit);
+      variables.put(dateVarName, dateVariableValue);
+      ProcessInstanceEngineDto instance =
+        engineIntegrationExtension.startProcessInstance(def.getId(), variables);
+      engineDatabaseExtension.changeActivityInstanceStartDate(instance.getId(), dateVariableValue);
+      engineDatabaseExtension.changeActivityInstanceEndDate(instance.getId(), dateVariableValue.plusSeconds(1));
+    }
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
+      .setProcessDefinitionKey(def.getKey())
+      .setProcessDefinitionVersion(def.getVersionAsString())
+      .setVariableName(dateVarName)
+      .setVariableType(VariableType.DATE)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+    reportData.getConfiguration().setGroupByDateVariableUnit(unit);
+    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+
+    // then
+    assertThat(resultData).isNotNull();
+    // there is one bucket per instance since the date variables are each one bucket span apart
+    assertThat(resultData).hasSize(numberOfInstances);
+    final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
+    // buckets are in descending order, so the first bucket is based on the date variable of the last instance
+    for (int i = 0; i < numberOfInstances; i++) {
+      final String expectedBucketKey = formatter.format(
+        truncateToStartOfUnit(
+          dateVariableValue.minus(i, chronoUnit),
+          chronoUnit
+        ));
+      assertThat(resultData.get(i).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+      assertThat(resultData.get(i).getKey()).isEqualTo(expectedBucketKey);
+    }
+  }
+
+  @SneakyThrows
+  @Test
+  public void groupByDateVariableWorksForAutomaticInterval() {
+    // given
+    final int numberOfInstances = 3;
+    final String dateVarName = "dateVar";
+    final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    OffsetDateTime dateVariableValue = OffsetDateTime.now();
+
+    for (int i = 0; i < numberOfInstances; i++) {
+      dateVariableValue = dateVariableValue.plusMinutes(1);
+      variables.put(dateVarName, dateVariableValue);
+      ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(def.getId(), variables);
+      engineDatabaseExtension.changeActivityInstanceStartDate(instance.getId(), dateVariableValue);
+      engineDatabaseExtension.changeActivityInstanceEndDate(instance.getId(), dateVariableValue.plusSeconds(1));
+    }
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(def.getKey())
+      .setProcessDefinitionVersion(def.getVersionAsString())
+      .setVariableName(dateVarName)
+      .setVariableType(VariableType.DATE)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+
+    // then
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    // buckets span across all variable values (buckets are in descending order, so the first bucket is based on the
+    // date variable of the last instance)
+    DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
+    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(resultData.get(0).getKey()));
+    final OffsetDateTime startOfLastBucket = OffsetDateTime
+      .from(formatter.parse(resultData.get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
+    final OffsetDateTime firstTruncatedDateVariableValue = dateVariableValue.truncatedTo(ChronoUnit.MILLIS);
+    final OffsetDateTime lastTruncatedDateVariableValue =
+      dateVariableValue.minusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
+
+    assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
+    assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
@@ -837,11 +947,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
   private void startThreeProcessInstances(OffsetDateTime activityStartDate,
                                           ProcessDefinitionEngineDto procDefDto,
-                                          List<Integer> activityDurationsInSec) throws
-                                                                                SQLException {
+                                          List<Integer> activityDurationsInSec) throws SQLException {
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE);
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(procDefDto.getId(), variables);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      procDefDto.getId(),
+      variables
+    );
     ProcessInstanceEngineDto processInstanceDto2 =
       engineIntegrationExtension.startProcessInstance(procDefDto.getId(), variables);
     ProcessInstanceEngineDto processInstanceDto3 =
@@ -861,7 +973,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
 
-  private Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  private Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>
+  evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
 
     Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultsMap =
       new HashMap<>();

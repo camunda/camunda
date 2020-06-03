@@ -38,7 +38,7 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
       .buildGetCandidateGroupsRequest(requestDto)
       .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
-    assertThat(assignees.size()).isEqualTo(2);
+    assertThat(assignees).hasSize(2);
     assertThat(assignees).containsOnly("sales", "marketing");
   }
 

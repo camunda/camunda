@@ -310,8 +310,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     Map<?, ?> mappingFields = getMappingFields();
 
     assertThat(mappingFields.containsKey("email")).isTrue();
-    assertThat(aliasMap.keySet().size()).isEqualTo(2);
-    assertThat(indicesWithWriteAlias.size()).isEqualTo(1);
+    assertThat(aliasMap.keySet()).hasSize(2);
+    assertThat(indicesWithWriteAlias).hasSize(1);
     assertThat(indicesWithWriteAlias.get(0)).contains(expectedSuffixAfterRollover);
   }
 
@@ -392,7 +392,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       new SearchRequest(TEST_INDEX_V2.getIndexName()),
       RequestOptions.DEFAULT
     );
-    assertThat(searchResponse.getHits().getHits()).hasSize(0);
+    assertThat(searchResponse.getHits().getHits()).isEmpty();
   }
 
   @Test

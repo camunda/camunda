@@ -28,7 +28,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  public class DecisionGroupByOutputVariable extends AbstractGroupByVariable<DecisionReportDataDto> {
+public class DecisionGroupByOutputVariable extends AbstractGroupByVariable<DecisionReportDataDto> {
 
   public DecisionGroupByOutputVariable(final ConfigurationService configurationService,
                                        final IntervalAggregationService intervalAggregationService,
