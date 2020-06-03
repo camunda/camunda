@@ -39,7 +39,7 @@ public class SecureClient {
     public static void main(final String[] args) {
         final ZeebeClient client = ZeebeClient.newClientBuilder().caCertificatePath("path/to/certificate").build();
 
-        // continue...
+        // ...
     }
 }
 ```
@@ -52,7 +52,7 @@ public class InsecureClient {
     public static void main(final String[] args) {
         final ZeebeClient client = ZeebeClient.newClientBuilder().usePlaintext().build();
 
-        // continue...
+        // ...
     }
 }
 ```
@@ -71,11 +71,12 @@ import (
 )
 
 
-func main(){
-	client, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
-      CaCertificatePath: "path/to/certificate"})
+func main() {
+	client, err := zbc.NewClient(&zbc.ClientConfig{
+		CaCertificatePath: "path/to/certificate",
+	})
 
-  // continue...
+	// ...
 }
 ```
 To disable TLS, you can simply do:
@@ -88,10 +89,12 @@ import (
 )
 
 
-func main(){
-	client, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{UsePlaintextConnection: true})
+func main() {
+	client, err := zbc.NewClient(&zbc.ClientConfig{
+		UsePlaintextConnection: true,
+	})
 
-  // continue...
+  // ...
 }
 ```
 
