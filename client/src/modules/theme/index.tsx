@@ -16,6 +16,7 @@ const theme = {
     ui04: '#fdfdfe',
     ui05: '#d8dce3',
     ui06: '#62626e',
+    ui07: '#45464e',
     item: {
       odd: '#fdfdfe',
       even: '#f9fafc',
@@ -29,6 +30,10 @@ const theme = {
     active: '#bcc6d2',
     focusOuter: '#8CB7FF',
     focusInner: '#2B7BFF',
+    label01: 'rgba(69, 70, 78, 0.9)', //charcoal-grey-90
+    link: {
+      active: '#eaf3ff',
+    },
   },
 } as const;
 

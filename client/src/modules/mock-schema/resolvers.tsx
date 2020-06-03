@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+/* istanbul ignore file */
+
 import {Resolvers} from 'apollo-boost';
 
 import {currentUser} from './mocks/currentUser';
@@ -64,7 +66,7 @@ const resolvers: AppResolvers = {
       };
     },
     tasks() {
-      return [...new Array(2)].map((_, index) => ({
+      return [...new Array(3)].map((_, index) => ({
         __typename: 'Task',
         index,
       }));

@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {useQuery} from '@apollo/react-hooks';
 import {useParams} from 'react-router-dom';
+import * as React from 'react';
 
 import {GET_TASK, GetTask, GetTaskVariables} from 'modules/queries/get-task';
 import {Table, TH, TD, TR} from 'modules/components/Table/styled';

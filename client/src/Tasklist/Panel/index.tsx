@@ -5,7 +5,6 @@
  */
 
 import * as React from 'react';
-
 import {Base, Header, Body, Footer} from './styled';
 
 interface Props {

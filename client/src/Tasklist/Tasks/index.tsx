@@ -5,9 +5,39 @@
  */
 
 import * as React from 'react';
+import {useQuery} from '@apollo/react-hooks';
+
+import {EmptyMessage, TaskList} from './styled';
+import {Task} from './Task';
+import {GET_TASKS, GetTasks} from 'modules/queries/get-tasks';
 
 const Tasks: React.FC = () => {
-  return <h1>Tasks</h1>;
+  const {data, loading} = useQuery<GetTasks>(GET_TASKS);
+
+  if (loading || data === undefined) {
+    return null;
+  }
+  const {tasks} = data;
+  return (
+    <TaskList>
+      {tasks.length > 0 ? (
+        tasks.map((task) => {
+          return (
+            <Task
+              key={task.key}
+              taskKey={task.key}
+              name={task.name}
+              workflowName={task.workflowName}
+              assignee={task.assignee}
+              creationTime={task.creationTime}
+            />
+          );
+        })
+      ) : (
+        <EmptyMessage>There are no tasks available.</EmptyMessage>
+      )}
+    </TaskList>
+  );
 };
 
 export {Tasks};

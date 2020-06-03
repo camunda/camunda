@@ -14,7 +14,7 @@ const Container = styled.main`
 
 const TasksPanel = styled(Panel)`
   margin-right: 1px;
-  width: 480px;
+  min-width: 478px;
 `;
 
 const DetailsPanel = styled(Panel)`

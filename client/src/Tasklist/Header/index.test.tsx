@@ -27,8 +27,6 @@ const Wrapper: React.FC = ({children}) => (
 jest.mock('modules/stores/login');
 
 describe('<Header />', () => {
-  const historyMock = createMemoryHistory();
-
   it('should render header', async () => {
     render(<Header />, {
       wrapper: Wrapper,
