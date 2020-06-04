@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing;
 
+import lombok.SneakyThrows;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -55,13 +57,15 @@ public class ImportIndexIT extends AbstractImportIT {
   }
 
   @Test
+  @SneakyThrows
   public void latestImportIndexAfterRestartOfOptimize() {
     // given
     deployAndStartUserTaskProcess();
     // we need finished ones
     engineIntegrationExtension.finishAllRunningUserTasks();
-    // as well as running
-    deployAndStartUserTaskProcess();
+    // as well as running & suspended ones
+    final ProcessInstanceEngineDto processInstanceToSuspend = deployAndStartUserTaskProcess();
+    engineIntegrationExtension.suspendProcessInstance(processInstanceToSuspend.getId());
     deployAndStartSimpleServiceTask();
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.createTenant("id", "name");
@@ -71,9 +75,12 @@ public class ImportIndexIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<Long> indexes = embeddedOptimizeExtension.getImportIndexes();
+    embeddedOptimizeExtension.stopOptimize();
+    embeddedOptimizeExtension.startOptimize();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
+    List<Long> indexes = embeddedOptimizeExtension.getImportIndexes();
     for (Long index : indexes) {
       assertThat(index, greaterThan(0L));
     }

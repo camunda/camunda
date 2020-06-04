@@ -9,6 +9,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -153,11 +154,14 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // we need finished user tasks
     deployAndStartUserTaskProcessForAllEngines();
     finishAllUserTasksForAllEngines();
-    // as well as running activities
-    deployAndStartUserTaskProcessForAllEngines();
+    // as well as running & suspended ones
+    final List<ProcessInstanceEngineDto> processInstancesToSuspend = deployAndStartUserTaskProcessForAllEngines();
+    engineIntegrationExtension.suspendProcessInstance(processInstancesToSuspend.get(0).getId());
+    secondaryEngineIntegrationExtension.suspendProcessInstance(processInstancesToSuspend.get(1).getId());
     deployAndStartDecisionDefinitionForAllEngines();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeExtension.stopOptimize();
@@ -165,7 +169,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse searchResponse = elasticSearchIntegrationTestExtension
+    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
 
     assertThat(searchResponse.getHits().getTotalHits().value).isEqualTo(24L);

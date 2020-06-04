@@ -8,6 +8,7 @@ package org.camunda.optimize.service;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
@@ -20,7 +21,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -144,21 +147,27 @@ public class AbstractMultiEngineIT extends AbstractIT {
     );
   }
 
-  protected void deployAndStartUserTaskProcessForAllEngines() {
-    engineIntegrationExtension.deployAndStartProcess(
-      Bpmn.createExecutableProcess(PROCESS_KEY_1)
-        .startEvent()
-        .userTask()
-        .endEvent()
-        .done()
+  protected List<ProcessInstanceEngineDto> deployAndStartUserTaskProcessForAllEngines() {
+    final List<ProcessInstanceEngineDto> instances = new ArrayList<>();
+    instances.add(
+      engineIntegrationExtension.deployAndStartProcess(
+        Bpmn.createExecutableProcess(PROCESS_KEY_1)
+          .startEvent()
+          .userTask()
+          .endEvent()
+          .done()
+      )
     );
-    secondaryEngineIntegrationExtension.deployAndStartProcess(
-      Bpmn.createExecutableProcess(PROCESS_KEY_2)
-        .startEvent()
-        .userTask()
-        .endEvent()
-        .done()
+    instances.add(
+      secondaryEngineIntegrationExtension.deployAndStartProcess(
+        Bpmn.createExecutableProcess(PROCESS_KEY_2)
+          .startEvent()
+          .userTask()
+          .endEvent()
+          .done()
+      )
     );
+    return instances;
   }
 
   protected void addSecondEngineToConfiguration() {
