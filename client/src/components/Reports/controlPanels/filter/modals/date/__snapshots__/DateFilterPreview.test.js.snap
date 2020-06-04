@@ -70,3 +70,45 @@ exports[`should create correct last... with custom preview 1`] = `
   </span>
 </div>
 `;
+
+exports[`should create variable preview 1`] = `
+<div
+  className="DateFilterPreview"
+>
+  <span
+    className="parameterName"
+  />
+  <span>
+     
+    is
+     
+  </span>
+  in the last
+   
+  <span
+    className="previewItemValue"
+  >
+    2 days
+  </span>
+  <span>
+     
+    or
+     
+  </span>
+  <span
+    className="previewItemValue"
+  >
+    null
+  </span>
+  <span>
+     
+    or
+     
+  </span>
+  <span
+    className="previewItemValue"
+  >
+    undefined
+  </span>
+</div>
+`;

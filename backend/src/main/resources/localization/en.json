@@ -796,7 +796,9 @@
           "selected": "Selected values",
           "search": "Search for values",
           "empty": "No values found"
-        }
+        },
+        "includeUndefined": "Include instances where the selected variable is <b>null</b> or <b>undefined</b>",
+        "excludeUndefined": "Exclude instances where the selected variable is <b>null</b> or <b>undefined</b>"
       },
       "durationModal": {
         "includeInstance": "Only include process instances that ran for...",

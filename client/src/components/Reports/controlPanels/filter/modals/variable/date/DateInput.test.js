@@ -33,6 +33,10 @@ const exampleFilter = {
   },
 };
 
+beforeEach(() => {
+  props.changeFilter.mockClear();
+});
+
 it('should use the DateRangeInput', () => {
   const node = shallow(<DateInput {...props} />);
 
@@ -70,4 +74,29 @@ it('should show a date filter preview if the filter is valid', () => {
   const node = shallow(<DateInput {...props} filter={DateInput.parseFilter(exampleFilter)} />);
 
   expect(node.find('DateFilterPreview')).toExist();
+});
+
+it('should reset the filter when enabling the exclude undefined option', () => {
+  const node = shallow(<DateInput {...props} />);
+
+  node.find('UndefinedOptions').prop('changeExcludeUndefined')(true);
+
+  expect(props.changeFilter).toHaveBeenCalledWith({
+    ...DateInput.defaultFilter,
+    excludeUndefined: true,
+  });
+});
+
+it('should reset the exclude option when enabling the include option', () => {
+  const node = shallow(
+    <DateInput {...props} filter={{...DateInput.defaultFilter, excludeUndefined: true}} />
+  );
+
+  node.find('UndefinedOptions').prop('changeIncludeUndefined')(true);
+
+  expect(props.changeFilter).toHaveBeenCalledWith({
+    ...DateInput.defaultFilter,
+    includeUndefined: true,
+    excludeUndefined: false,
+  });
 });

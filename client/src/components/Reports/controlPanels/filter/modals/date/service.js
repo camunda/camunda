@@ -8,18 +8,22 @@ import moment from 'moment';
 import {numberParser} from 'services';
 
 export function convertFilterToState(filter) {
-  const {type, start, end} = filter;
-  let state;
+  const {type, start, end, ...commonProps} = filter;
+  let state = {};
 
   if (type === 'fixed') {
-    state = {
-      type: 'fixed',
-      startDate: start ? moment(start) : null,
-      endDate: end ? moment(end) : null,
-      valid: start && end,
-    };
+    if (!start) {
+      state = {type: ''};
+    } else {
+      state = {
+        type: 'fixed',
+        startDate: start ? moment(start) : null,
+        endDate: end ? moment(end) : null,
+        valid: start && end,
+      };
+    }
   } else {
-    const {value, unit} = start;
+    const {value, unit} = start || {};
     if (type === 'relative') {
       state = {
         type: 'custom',
@@ -35,10 +39,18 @@ export function convertFilterToState(filter) {
     }
   }
 
-  return state;
+  return {...state, ...commonProps};
 }
 
-export function convertStateToFilter({type, unit, customNum, startDate, endDate}) {
+export function convertStateToFilter({
+  type,
+  unit,
+  customNum,
+  startDate,
+  endDate,
+  valid,
+  ...commonProps
+}) {
   let filter = {type: 'rolling', end: null};
   switch (type) {
     case 'today':
@@ -72,15 +84,15 @@ export function convertStateToFilter({type, unit, customNum, startDate, endDate}
       break;
     default:
       filter = {
-        type: 'fixed',
+        type: '',
         start: null,
         end: null,
       };
   }
-  return filter;
+  return {...filter, ...commonProps};
 }
 
-export function isValid({type, unit, customNum, valid}) {
+export function isValid({type, unit, customNum, valid, includeUndefined, excludeUndefined}) {
   switch (type) {
     case 'today':
     case 'yesterday':
@@ -93,6 +105,6 @@ export function isValid({type, unit, customNum, valid}) {
     case 'custom':
       return numberParser.isPostiveInt(customNum);
     default:
-      return false;
+      return includeUndefined || excludeUndefined;
   }
 }

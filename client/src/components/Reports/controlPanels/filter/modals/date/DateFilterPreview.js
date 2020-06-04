@@ -10,7 +10,15 @@ import {convertFilterToState} from './service';
 import './DateFilterPreview.scss';
 
 export default function DateFilterPreview({filter, filterType, variableName}) {
-  const {type, unit, customNum, startDate, endDate} = convertFilterToState(filter);
+  const {
+    type,
+    unit,
+    customNum,
+    startDate,
+    endDate,
+    includeUndefined,
+    excludeUndefined,
+  } = convertFilterToState(filter);
 
   const highlight = (text) => <span className="previewItemValue">{text}</span>;
 
@@ -53,10 +61,30 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
   }
 
   if (filterType === 'variable') {
+    const createOperator = (operator) => <span> {operator} </span>;
+    const operator = createOperator(
+      excludeUndefined
+        ? t('common.filter.list.operators.nor')
+        : t('common.filter.list.operators.or')
+    );
+
     return (
       <div className="DateFilterPreview">
-        <span className="parameterName">{variableName}</span> {t('common.filter.list.operators.is')}{' '}
+        <span className="parameterName">{variableName}</span>
+        {createOperator(
+          excludeUndefined
+            ? t('common.filter.list.operators.not')
+            : t('common.filter.list.operators.is')
+        )}
         {previewText}
+        {(excludeUndefined || includeUndefined) && (
+          <>
+            {previewText && operator}
+            {highlight(t('common.null'))}
+            {operator}
+            {highlight(t('common.undefined'))}
+          </>
+        )}
       </div>
     );
   } else {

@@ -49,9 +49,9 @@ it('should not crash if start or endDate is not set for fixed filter', () => {
   });
 });
 
-it('should default to an empty fixed date filter if no type is set', () => {
+it('should default to an empty date filter if no type is set', () => {
   expect(convertStateToFilter({type: ''})).toEqual({
-    type: 'fixed',
+    type: '',
     start: null,
     end: null,
   });
@@ -59,9 +59,6 @@ it('should default to an empty fixed date filter if no type is set', () => {
 
 it('should not crash when parsing a fixed date filter without values', () => {
   expect(convertFilterToState({type: 'fixed', start: null, end: null})).toEqual({
-    type: 'fixed',
-    startDate: null,
-    endDate: null,
-    valid: null,
+    type: '',
   });
 });

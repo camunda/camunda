@@ -48,3 +48,19 @@ it('should create correct fixed date preview', () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should create variable preview', () => {
+  const filter = {
+    type: 'relative',
+    start: {
+      value: 2,
+      unit: 'days',
+    },
+    includeUndefined: true,
+    excludeUndefined: false,
+  };
+
+  const node = shallow(<DateFilterPreview filterType="variable" filter={filter} />);
+
+  expect(node).toMatchSnapshot();
+});
