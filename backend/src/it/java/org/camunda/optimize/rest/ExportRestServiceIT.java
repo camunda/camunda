@@ -380,7 +380,7 @@ public class ExportRestServiceIT extends AbstractIT {
       .includedColumns(Lists.newArrayList(COLUMN_PROCESS_INSTANCE_ID))
       .filter(
         ProcessFilterBuilder.filter()
-          .relativeStartDate().start(10L, DateFilterUnit.SECONDS).add()
+          .rollingStartDate().start(10L, DateFilterUnit.SECONDS).add()
           .buildList()
       )
       .build();

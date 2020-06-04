@@ -50,16 +50,16 @@ public class ProcessFilterBuilder {
     return RunningInstancesOnlyFilterBuilder.construct(this);
   }
 
-  public RelativeDateFilterBuilder relativeEndDate() {
-    return RelativeDateFilterBuilder.endDate(this);
-  }
-
-  public RelativeDateFilterBuilder relativeStartDate() {
-    return RelativeDateFilterBuilder.startDate(this);
+  public RollingDateFilterBuilder rollingEndDate() {
+    return RollingDateFilterBuilder.endDate(this);
   }
 
   public RollingDateFilterBuilder rollingStartDate() {
     return RollingDateFilterBuilder.startDate(this);
+  }
+
+  public RelativeDateFilterBuilder relativeStartDate() {
+    return RelativeDateFilterBuilder.startDate(this);
   }
 
   public FixedDateFilterBuilder fixedEndDate() {

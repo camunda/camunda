@@ -11,10 +11,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
@@ -73,16 +73,16 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
           4L
         ),
         Arguments.of(
-          "Include value and Null/Undefined for type " + DateFilterType.RELATIVE,
-          createSupplier(() -> new RelativeDateFilterDataDto(
-            new RelativeDateFilterStartDto(0L, DateFilterUnit.MINUTES)
+          "Include value and Null/Undefined for type " + DateFilterType.ROLLING,
+          createSupplier(() -> new RollingDateFilterDataDto(
+            new RollingDateFilterStartDto(0L, DateFilterUnit.MINUTES)
           ).setIncludeUndefined(true)),
           3L
         ),
         Arguments.of(
-          "Include value and Null/Undefined for type " + DateFilterType.ROLLING,
-          createSupplier(() -> new RollingDateFilterDataDto(
-            new RollingDateFilterStartDto(0L, DateFilterUnit.MINUTES)
+          "Include value and Null/Undefined for type " + DateFilterType.RELATIVE,
+          createSupplier(() -> new RelativeDateFilterDataDto(
+            new RelativeDateFilterStartDto(0L, DateFilterUnit.MINUTES)
           ).setIncludeUndefined(true)),
           3L
         )
@@ -315,7 +315,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void relativeDateVariableFilter() {
+  public void rollingDateVariableFilter() {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -333,7 +333,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .relativeDate(1L, DateFilterUnit.DAYS)
+        .rollingDate(1L, DateFilterUnit.DAYS)
         .add()
         .buildList();
     final RawDataProcessReportResultDto result1 = evaluateReportWithFilter(
@@ -346,7 +346,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .relativeDate(3L, DateFilterUnit.DAYS)
+        .rollingDate(3L, DateFilterUnit.DAYS)
         .add()
         .buildList();
     final RawDataProcessReportResultDto result2 = evaluateReportWithFilter(
@@ -359,7 +359,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void rollingDateVariableFilter() {
+  public void relativeDateVariableFilter() {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -375,7 +375,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .rollingDate(0L, DateFilterUnit.DAYS)
+        .relativeDate(0L, DateFilterUnit.DAYS)
         .add()
         .buildList();
     final RawDataProcessReportResultDto result1 = evaluateReportWithFilter(
@@ -394,7 +394,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .rollingDate(1L, DateFilterUnit.DAYS)
+        .relativeDate(1L, DateFilterUnit.DAYS)
         .add()
         .buildList();
     final RawDataProcessReportResultDto result3 = evaluateReportWithFilter(
@@ -420,10 +420,10 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     switch (dateFilterType) {
       case FIXED:
         return new FixedDateFilterDataDto();
-      case RELATIVE:
-        return new RelativeDateFilterDataDto();
       case ROLLING:
         return new RollingDateFilterDataDto();
+      case RELATIVE:
+        return new RelativeDateFilterDataDto();
       default:
         throw new OptimizeIntegrationTestException("Unsupported dateFilter type:" + dateFilterType);
     }

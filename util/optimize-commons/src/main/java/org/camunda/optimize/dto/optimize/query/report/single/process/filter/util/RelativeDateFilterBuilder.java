@@ -20,15 +20,15 @@ public class RelativeDateFilterBuilder {
     this.filterBuilder = filterBuilder;
   }
 
-  static RelativeDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
-    RelativeDateFilterBuilder builder = new RelativeDateFilterBuilder(filterBuilder);
-    builder.type = "endDate";
-    return builder;
-  }
-
   static RelativeDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
     RelativeDateFilterBuilder builder = new RelativeDateFilterBuilder(filterBuilder);
     builder.type = "startDate";
+    return builder;
+  }
+
+  static RelativeDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
+    RelativeDateFilterBuilder builder = new RelativeDateFilterBuilder(filterBuilder);
+    builder.type = "endDate";
     return builder;
   }
 

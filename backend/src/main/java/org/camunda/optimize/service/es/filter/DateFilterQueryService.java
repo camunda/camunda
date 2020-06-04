@@ -10,10 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.DateFilterUtil;
@@ -44,12 +44,12 @@ public class DateFilterQueryService {
         if (DateFilterType.FIXED.equals(dateDto.getType())) {
           FixedDateFilterDataDto fixedDateFilterDataDto = (FixedDateFilterDataDto) dateDto;
           dateRangeQuery = createFixedDateFilter(fixedDateFilterDataDto, dateField);
-        } else if (DateFilterType.RELATIVE.equals(dateDto.getType())) {
-          RelativeDateFilterDataDto relativeDateFilterDataDto = (RelativeDateFilterDataDto) dateDto;
-          dateRangeQuery = createRelativeDateFilter(relativeDateFilterDataDto, dateField);
         } else if (DateFilterType.ROLLING.equals(dateDto.getType())) {
           RollingDateFilterDataDto rollingDateFilterDataDto = (RollingDateFilterDataDto) dateDto;
           dateRangeQuery = createRollingDateFilter(rollingDateFilterDataDto, dateField);
+        } else if (DateFilterType.RELATIVE.equals(dateDto.getType())) {
+          RelativeDateFilterDataDto relativeDateFilterDataDto = (RelativeDateFilterDataDto) dateDto;
+          dateRangeQuery = createRelativeDateFilter(relativeDateFilterDataDto, dateField);
         } else {
           dateRangeQuery = Optional.empty();
           log.warn("Cannot execute date filter. Unknown type [{}]", dateDto.getType());
@@ -78,9 +78,9 @@ public class DateFilterQueryService {
     return Optional.of(queryDate);
   }
 
-  private Optional<RangeQueryBuilder> createRelativeDateFilter(final RelativeDateFilterDataDto dateDto,
-                                                               final String dateField) {
-    final RelativeDateFilterStartDto startDto = dateDto.getStart();
+  private Optional<RangeQueryBuilder> createRollingDateFilter(final RollingDateFilterDataDto dateDto,
+                                                              final String dateField) {
+    final RollingDateFilterStartDto startDto = dateDto.getStart();
     if (startDto == null || startDto.getUnit() == null || startDto.getValue() == null) {
       return Optional.empty();
     }
@@ -103,9 +103,9 @@ public class DateFilterQueryService {
     return Optional.of(queryDate);
   }
 
-  private Optional<RangeQueryBuilder> createRollingDateFilter(final RollingDateFilterDataDto dateDto,
+  private Optional<RangeQueryBuilder> createRelativeDateFilter(final RelativeDateFilterDataDto dateDto,
                                                               final String dateField) {
-    final RollingDateFilterStartDto startDto = dateDto.getStart();
+    final RelativeDateFilterStartDto startDto = dateDto.getStart();
     if (startDto == null || startDto.getUnit() == null || startDto.getValue() == null) {
       return Optional.empty();
     }

@@ -12,8 +12,8 @@ import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -300,8 +300,8 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto(
-      new RelativeDateFilterStartDto(4L, DateFilterUnit.DAYS)
+    final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
+      new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS)
     );
 
     final EvaluationDateFilterDto dateFilterDto = new EvaluationDateFilterDto(dateFilterDataDto);

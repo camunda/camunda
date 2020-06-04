@@ -13,10 +13,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -41,8 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createDateInputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedDateInputVariableFilter;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRelativeDateInputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingDateInputVariableFilter;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRelativeDateInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
 
@@ -81,16 +81,16 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
           4L
         ),
         Arguments.of(
-          "Include value and Null/Undefined for type " + DateFilterType.RELATIVE,
-          createSupplier(() -> new RelativeDateFilterDataDto(
-            new RelativeDateFilterStartDto(0L, DateFilterUnit.MINUTES)
+          "Include value and Null/Undefined for type " + DateFilterType.ROLLING,
+          createSupplier(() -> new RollingDateFilterDataDto(
+            new RollingDateFilterStartDto(0L, DateFilterUnit.MINUTES)
           ).setIncludeUndefined(true)),
           3L
         ),
         Arguments.of(
-          "Include value and Null/Undefined for type " + DateFilterType.ROLLING,
-          createSupplier(() -> new RollingDateFilterDataDto(
-            new RollingDateFilterStartDto(0L, DateFilterUnit.MINUTES)
+          "Include value and Null/Undefined for type " + DateFilterType.RELATIVE,
+          createSupplier(() -> new RelativeDateFilterDataDto(
+            new RelativeDateFilterStartDto(0L, DateFilterUnit.MINUTES)
           ).setIncludeUndefined(true)),
           3L
         )
@@ -259,7 +259,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
   }
 
   @Test
-  public void resultFilterByRelativeDateInputVariable() {
+  public void resultFilterByRollingDateInputVariable() {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
@@ -283,12 +283,12 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRelativeDateInputVariableFilter(
+    reportData.setFilter(Lists.newArrayList(createRollingDateInputVariableFilter(
       INPUT_INVOICE_DATE_ID, 1L, DateFilterUnit.DAYS
     )));
     RawDataDecisionReportResultDto result1 = reportClient.evaluateRawReport(reportData).getResult();
 
-    reportData.setFilter(Lists.newArrayList(createRelativeDateInputVariableFilter(
+    reportData.setFilter(Lists.newArrayList(createRollingDateInputVariableFilter(
       INPUT_INVOICE_DATE_ID, 3L, DateFilterUnit.DAYS
     )));
     RawDataDecisionReportResultDto result2 = reportClient.evaluateRawReport(reportData).getResult();
@@ -299,7 +299,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
   }
 
   @Test
-  public void resultFilterByRollingDateInputVariable() {
+  public void resultFilterByRelativeDateInputVariable() {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
@@ -315,7 +315,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRollingDateInputVariableFilter(
+    reportData.setFilter(Lists.newArrayList(createRelativeDateInputVariableFilter(
       INPUT_INVOICE_DATE_ID, 0L, DateFilterUnit.DAYS
     )));
     RawDataDecisionReportResultDto result1 = reportClient.evaluateRawReport(reportData).getResult();
@@ -324,7 +324,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     LocalDateUtil.setCurrentTime(now.plusDays(1L));
     final RawDataDecisionReportResultDto result2 = reportClient.evaluateRawReport(reportData).getResult();
 
-    reportData.setFilter(Lists.newArrayList(createRollingDateInputVariableFilter(
+    reportData.setFilter(Lists.newArrayList(createRelativeDateInputVariableFilter(
       INPUT_INVOICE_DATE_ID, 1L, DateFilterUnit.DAYS
     )));
     RawDataDecisionReportResultDto result3 = reportClient.evaluateRawReport(reportData).getResult();
@@ -356,10 +356,10 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     switch (dateFilterType) {
       case FIXED:
         return new FixedDateFilterDataDto();
-      case RELATIVE:
-        return new RelativeDateFilterDataDto();
       case ROLLING:
         return new RollingDateFilterDataDto();
+      case RELATIVE:
+        return new RelativeDateFilterDataDto();
       default:
         throw new OptimizeIntegrationTestException("Unsupported dateFilter type:" + dateFilterType);
     }

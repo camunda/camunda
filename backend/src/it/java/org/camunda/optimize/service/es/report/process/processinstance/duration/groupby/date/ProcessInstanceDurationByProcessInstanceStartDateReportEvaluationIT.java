@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.process.processinstance.duration.
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -133,8 +133,8 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto(
-      new RelativeDateFilterStartDto(4L, DateFilterUnit.DAYS)
+    final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
+      new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS)
     );
     final StartDateFilterDto startDateFilterDto = new StartDateFilterDto(dateFilterDataDto);
 

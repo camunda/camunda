@@ -11,10 +11,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Out
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
@@ -36,16 +36,16 @@ public class DecisionFilterUtilHelper {
     return filter;
   }
 
-  public static EvaluationDateFilterDto createRelativeEvaluationDateFilter(Long value, DateFilterUnit unit) {
-    RelativeDateFilterDataDto filterData = new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
+  public static EvaluationDateFilterDto createRollingEvaluationDateFilter(Long value, DateFilterUnit unit) {
+    RollingDateFilterDataDto filterData = new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit));
     EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
     filter.setData(filterData);
     return filter;
   }
 
-  public static EvaluationDateFilterDto createRollingEvaluationDateFilter(Long value, DateFilterUnit unit) {
-    RollingDateFilterStartDto evaluationDate = new RollingDateFilterStartDto(value, unit);
-    RollingDateFilterDataDto filterData = new RollingDateFilterDataDto(evaluationDate);
+  public static EvaluationDateFilterDto createRelativeEvaluationDateFilter (Long value, DateFilterUnit unit) {
+    RelativeDateFilterStartDto evaluationDate = new RelativeDateFilterStartDto(value, unit);
+    RelativeDateFilterDataDto filterData = new RelativeDateFilterDataDto(evaluationDate);
     EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
     filter.setData(filterData);
     return filter;
@@ -90,19 +90,19 @@ public class DecisionFilterUtilHelper {
     return createDateInputVariableFilter(variableName, new FixedDateFilterDataDto(startDate, endDate));
   }
 
-  public static InputVariableFilterDto createRelativeDateInputVariableFilter(final String variableName,
-                                                                             final Long value,
-                                                                             final DateFilterUnit unit) {
-    return createDateInputVariableFilter(
-      variableName, new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit))
-    );
-  }
-
   public static InputVariableFilterDto createRollingDateInputVariableFilter(final String variableName,
                                                                             final Long value,
                                                                             final DateFilterUnit unit) {
     return createDateInputVariableFilter(
       variableName, new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit))
+    );
+  }
+
+  public static InputVariableFilterDto createRelativeDateInputVariableFilter(final String variableName,
+                                                                            final Long value,
+                                                                            final DateFilterUnit unit) {
+    return createDateInputVariableFilter(
+      variableName, new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit))
     );
   }
 

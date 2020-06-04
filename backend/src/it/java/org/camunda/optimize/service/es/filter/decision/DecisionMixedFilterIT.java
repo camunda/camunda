@@ -26,7 +26,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedDateInputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRelativeEvaluationDateFilter;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingEvaluationDateFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createStringInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
@@ -85,7 +85,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
     final OutputVariableFilterDto booleanOutputVariableFilter = createBooleanOutputVariableFilter(
       OUTPUT_AUDIT_ID, Collections.singletonList(expectedAuditOutput)
     );
-    final EvaluationDateFilterDto relativeEvaluationDateFilter = createRelativeEvaluationDateFilter(
+    final EvaluationDateFilterDto rollingEvaluationDateFilter = createRollingEvaluationDateFilter(
       1L, DateFilterUnit.DAYS
     );
 
@@ -94,7 +94,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       doubleInputVariableFilter,
       stringInputVariableFilter,
       booleanOutputVariableFilter,
-      relativeEvaluationDateFilter
+      rollingEvaluationDateFilter
     ));
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
