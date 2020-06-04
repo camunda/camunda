@@ -29,12 +29,12 @@
     padding: 10px 20px 0;
     margin: 0;
 
-    .DateInput {
+    .PickerDateInput {
       &::after {
         display: none;
       }
 
-      .DateInputWarning {
+      .PickerDateInputWarning {
         top: 35px;
         font-size: 10px;
       }

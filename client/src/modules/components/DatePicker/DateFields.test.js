@@ -10,8 +10,8 @@ import moment from 'moment';
 import DateFields from './DateFields';
 import {shallow} from 'enzyme';
 import DateRange from './DateRange';
+import PickerDateInput from './PickerDateInput';
 
-jest.mock('./DateInput');
 const format = 'YYYY-MM-DD';
 
 const props = {
@@ -79,7 +79,7 @@ it('should update start and end date when selecting a date', () => {
 it('should be possible to disable the date fields', () => {
   const node = shallow(<DateFields {...props} disabled />);
 
-  const dateInputs = node.find('DateInput');
+  const dateInputs = node.find(PickerDateInput);
   expect(dateInputs.at(0).props('disabled')).toBeTruthy();
   expect(dateInputs.at(1).props('disabled')).toBeTruthy();
 });

@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 import DateRange from './DateRange';
-import DateInput from './DateInput';
+import PickerDateInput from './PickerDateInput';
 import moment from 'moment';
 import {isDateValid} from './service';
 
@@ -53,7 +53,7 @@ export default class DateFields extends React.PureComponent {
     return (
       <div className="DateFields" onKeyDown={this.handleKeyPress}>
         <div className="inputContainer">
-          <DateInput
+          <PickerDateInput
             className={classnames({
               highlight: this.isFieldSelected('startDate'),
             })}
@@ -66,7 +66,7 @@ export default class DateFields extends React.PureComponent {
             value={startDate}
             isInvalid={!isDateValid(startDate)}
           />
-          <DateInput
+          <PickerDateInput
             className={classnames({
               highlight: this.isFieldSelected('endDate'),
             })}

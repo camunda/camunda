@@ -1,6 +1,6 @@
 @import 'shared-styles/shared-styles.scss';
 
-.DateInput {
+.PickerDateInput {
   position: relative;
 
   .Input {
@@ -25,7 +25,7 @@
     color: $text-disabled;
   }
 
-  .DateInputWarning {
+  .PickerDateInputWarning {
     position: absolute;
     top: 30px;
   }

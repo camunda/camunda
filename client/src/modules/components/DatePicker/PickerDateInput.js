@@ -8,12 +8,12 @@ import React from 'react';
 import {Input, Message, Icon} from 'components';
 import {t} from 'translation';
 
-import './DateInput.scss';
+import './PickerDateInput.scss';
 
-const DateInput = React.memo(({onChange, onSubmit, reference, isInvalid, ...props}) => {
+const PickerDateInput = React.memo(({onChange, onSubmit, reference, isInvalid, ...props}) => {
   const invalid = props.value && isInvalid;
   return (
-    <div className="DateInput">
+    <div className="PickerDateInput">
       <Input
         type="text"
         {...props}
@@ -25,7 +25,7 @@ const DateInput = React.memo(({onChange, onSubmit, reference, isInvalid, ...prop
       />
       <Icon type="calender" />
       {invalid && (
-        <Message error className="DateInputWarning">
+        <Message error className="PickerDateInputWarning">
           {t('common.filter.dateModal.invalidDate')}
         </Message>
       )}
@@ -33,4 +33,4 @@ const DateInput = React.memo(({onChange, onSubmit, reference, isInvalid, ...prop
   );
 });
 
-export default React.forwardRef((props, ref) => <DateInput {...props} reference={ref} />);
+export default React.forwardRef((props, ref) => <PickerDateInput {...props} reference={ref} />);

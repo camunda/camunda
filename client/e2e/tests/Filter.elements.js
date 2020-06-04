@@ -17,8 +17,8 @@ export const typeaheadAddButton = Selector('.InputGroup > .Button').withText('Ad
 export const dateFilterTypeSelect = Selector('.DateRangeInput .Dropdown');
 export const dateFilterTypeOption = (text) =>
   Selector('.DateRangeInput .DropdownOption').withText(text);
-export const dateFilterStartInput = Selector('.DateFields .DateInput:first-child input');
-export const dateFilterEndInput = Selector('.DateFields .DateInput:last-child input');
+export const dateFilterStartInput = Selector('.DateFields .PickerDateInput:first-child input');
+export const dateFilterEndInput = Selector('.DateFields .PickerDateInput:last-child input');
 export const pickerDate = (number) =>
   Selector('.DateFields .rdrMonths .rdrMonth:first-child .rdrDay').withText(number);
 export const infoText = Selector('.Modal__content .tip');
