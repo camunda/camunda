@@ -8,6 +8,7 @@
 package io.zeebe.engine.nwe;
 
 import io.zeebe.engine.nwe.behavior.BpmnBehaviors;
+import io.zeebe.engine.nwe.container.CallActivityProcessor;
 import io.zeebe.engine.nwe.container.MultiInstanceBodyProcessor;
 import io.zeebe.engine.nwe.container.ProcessProcessor;
 import io.zeebe.engine.nwe.container.SubProcessProcessor;
@@ -44,6 +45,7 @@ public final class BpmnElementProcessors {
     processors.put(BpmnElementType.SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));
     processors.put(
         BpmnElementType.MULTI_INSTANCE_BODY, new MultiInstanceBodyProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.CALL_ACTIVITY, new CallActivityProcessor(bpmnBehaviors));
     // events
     processors.put(BpmnElementType.START_EVENT, new StartEventProcessor(bpmnBehaviors));
     processors.put(
@@ -67,15 +69,11 @@ public final class BpmnElementProcessors {
 
   public <T extends ExecutableFlowElement> BpmnElementContainerProcessor<T> getContainerProcessor(
       final BpmnElementType bpmnElementType) {
-    switch (bpmnElementType) {
-      case PROCESS:
-      case SUB_PROCESS:
-      case MULTI_INSTANCE_BODY:
-        return (BpmnElementContainerProcessor<T>) processors.get(bpmnElementType);
-      default:
-        throw new UnsupportedOperationException(
-            String.format(
-                "no container processor found for BPMN element type '%s'", bpmnElementType));
+    final var processor = processors.get(bpmnElementType);
+    if (processor instanceof BpmnElementContainerProcessor) {
+      return (BpmnElementContainerProcessor<T>) processor;
     }
+    throw new UnsupportedOperationException(
+        String.format("no container processor found for BPMN element type '%s'", bpmnElementType));
   }
 }

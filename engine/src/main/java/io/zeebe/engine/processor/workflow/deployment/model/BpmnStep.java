@@ -32,9 +32,6 @@ public enum BpmnStep {
 
   EVENT_SUBPROC_EVENT_OCCURRED,
 
-  CALL_ACTIVITY_ACTIVATING,
-  CALL_ACTIVITY_TERMINATING,
-
   // ---- delegate to the new BPMN lifecycle processor  ----
   BPMN_ELEMENT_PROCESSOR
 }

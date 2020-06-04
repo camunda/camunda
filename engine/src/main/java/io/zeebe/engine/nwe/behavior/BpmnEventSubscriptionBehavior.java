@@ -33,6 +33,7 @@ import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.EventScopeInstanceState;
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
+import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -58,6 +59,7 @@ public final class BpmnEventSubscriptionBehavior {
   private final TypedStreamWriter streamWriter;
   private final KeyGenerator keyGenerator;
   private final WorkflowState workflowState;
+  private final VariablesState variablesState;
 
   public BpmnEventSubscriptionBehavior(
       final BpmnStateBehavior stateBehavior,
@@ -74,6 +76,7 @@ public final class BpmnEventSubscriptionBehavior {
     eventScopeInstanceState = workflowState.getEventScopeInstanceState();
     elementInstanceState = workflowState.getElementInstanceState();
     keyGenerator = zeebeState.getKeyGenerator();
+    variablesState = elementInstanceState.getVariablesState();
   }
 
   public void triggerBoundaryOrIntermediateEvent(
@@ -257,9 +260,7 @@ public final class BpmnEventSubscriptionBehavior {
 
     final var eventElementInstanceKey = eventHandler.applyAsLong(eventTrigger);
 
-    stateBehavior
-        .getVariablesState()
-        .setTemporaryVariables(eventElementInstanceKey, eventTrigger.getVariables());
+    variablesState.setTemporaryVariables(eventElementInstanceKey, eventTrigger.getVariables());
 
     eventScopeInstanceState.deleteTrigger(
         context.getElementInstanceKey(), eventTrigger.getEventKey());
@@ -303,9 +304,7 @@ public final class BpmnEventSubscriptionBehavior {
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         Purpose.DEFERRED);
 
-    elementInstanceState
-        .getVariablesState()
-        .setTemporaryVariables(newEventInstanceKey, triggeredEvent.getVariables());
+    variablesState.setTemporaryVariables(newEventInstanceKey, triggeredEvent.getVariables());
 
     eventScopeInstanceState.deleteTrigger(workflowKey, triggeredEvent.getEventKey());
   }
