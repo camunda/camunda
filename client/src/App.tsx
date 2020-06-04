@@ -19,10 +19,22 @@ import {Pages} from 'modules/constants/pages';
 import {theme} from 'modules/theme';
 import {GlobalStyle} from './GlobalStyle';
 import {resolvers} from 'modules/mock-schema/resolvers';
+import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 
 const client = new ApolloClient({
   uri: '/graphql',
   resolvers,
+  request(operation) {
+    const token = getCsrfToken(document.cookie);
+
+    if (token !== null) {
+      operation.setContext({
+        headers: {
+          [CsrfKeyName]: token,
+        },
+      });
+    }
+  },
 });
 
 const App: React.FC = () => {

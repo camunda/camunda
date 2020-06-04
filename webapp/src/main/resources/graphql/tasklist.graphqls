@@ -4,7 +4,14 @@ type Task {
     key: ID!
 }
 
+type User {
+    username: ID!
+    firstname: String
+    lastname: String
+}
+
 type Query {
     # find all tasks
     tasks: [Task!]!
+    currentUser: User!
 }

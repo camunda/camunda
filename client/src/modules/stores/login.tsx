@@ -6,12 +6,13 @@
 
 import {decorate, observable, action} from 'mobx';
 
+import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
+
 const Endpoints = {
   Login: '/api/login',
   Logout: '/api/logout',
   ExistingSessionCheck: '/api/authentications/user',
 } as const;
-const CsrfKeyName = 'X-CSRF-TOKEN';
 
 class Login {
   isLoggedIn: boolean = false;
@@ -82,22 +83,6 @@ class Login {
     this.isLoggedIn = false;
     this.isCheckingExistingSession = false;
   };
-}
-
-/* istanbul ignore next */
-function getCsrfToken(cookies: string) {
-  return cookies
-    .replace(/ /g, '')
-    .split(';')
-    .reduce<string | null>((token, cookie) => {
-      const [cookieKey, value] = cookie.split('=');
-
-      if (cookieKey === CsrfKeyName) {
-        return value;
-      }
-
-      return token;
-    }, null);
 }
 
 /* istanbul ignore next */

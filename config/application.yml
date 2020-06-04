@@ -1,14 +1,8 @@
 zeebe.tasklist:
   elasticsearch:
     clusterName: docker-cluster
-    host: localhost
-    port: 9200
-  zeebe:
-    brokerContactPoint: localhost:26500
   zeebeElasticsearch:
     clusterName: docker-cluster
-    host: localhost
-    port: 9200
     prefix: zeebe-record
 management:
   endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,env

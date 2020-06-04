@@ -51,13 +51,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
   private static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
   private static final String[] AUTH_WHITELIST = {
-    // -- swagger ui
-    "/swagger-resources",
-    "/swagger-resources/**",
-    "/swagger-ui.html",
-    "/documentation",
     "/webjars/**",
-    "/graphql",
     HealthCheckRestService.HEALTH_CHECK_URL,
     ACTUATOR_ENDPOINTS,
     CLIENT_CONFIG_RESOURCE
@@ -79,7 +73,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       cookieCSRFTokenRepository.setCookieName(X_CSRF_TOKEN);
       http.csrf()
           .ignoringAntMatchers(LOGIN_RESOURCE)
-          .ignoringAntMatchers(AUTH_WHITELIST)
           .and()
           .addFilterAfter(getCSRFHeaderFilter(), CsrfFilter.class);
     } else {
@@ -88,7 +81,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     http.authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
-        .antMatchers("/api/**")
+        .antMatchers("/graphql", "/api/**")
         .authenticated()
         .and()
         .formLogin()

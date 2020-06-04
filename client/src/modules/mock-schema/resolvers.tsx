@@ -8,7 +8,6 @@
 
 import {Resolvers} from 'apollo-boost';
 
-import {currentUser} from './mocks/currentUser';
 import {tasks} from './mocks/tasks';
 
 interface ResolverMap {
@@ -17,7 +16,6 @@ interface ResolverMap {
 
 interface AppResolvers extends Resolvers {
   Query: ResolverMap;
-  User: ResolverMap;
   Task: ResolverMap;
 }
 
@@ -48,23 +46,7 @@ const resolvers: AppResolvers = {
       return tasks[index].taskState;
     },
   },
-  User: {
-    username() {
-      return currentUser.username;
-    },
-    firstname() {
-      return currentUser.firstname;
-    },
-    lastname() {
-      return currentUser.lastname;
-    },
-  },
   Query: {
-    currentUser() {
-      return {
-        __typename: 'User',
-      };
-    },
     tasks() {
       return [...new Array(3)].map((_, index) => ({
         __typename: 'Task',

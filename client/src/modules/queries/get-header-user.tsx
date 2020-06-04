@@ -8,24 +8,14 @@ import {gql} from 'apollo-boost';
 
 import {User} from 'modules/types';
 
-const GET_HEADER_USER =
-  process.env.NODE_ENV === 'test'
-    ? gql`
-        query GetHeaderUser {
-          currentUser {
-            firstname
-            lastname
-          }
-        }
-      `
-    : gql`
-        query GetHeaderUser {
-          currentUser @client {
-            firstname
-            lastname
-          }
-        }
-      `;
+const GET_HEADER_USER = gql`
+  query GetHeaderUser {
+    currentUser {
+      firstname
+      lastname
+    }
+  }
+`;
 
 const mockGetHeaderUser = {
   request: {
