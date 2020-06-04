@@ -92,8 +92,10 @@ public class DecisionVariableReader {
         decisionDefinitionVersions,
         tenantIds
       );
-      return decisionDefinition.orElseThrow(() -> new OptimizeRuntimeException(
-        "Could not extract output variables. Requested decision definition not found!")).getOutputVariableNames();
+      return decisionDefinition.orElseThrow(
+        () -> new OptimizeRuntimeException(
+          "Could not extract output variables. Requested decision definition not found!"))
+        .getOutputVariableNames();
     }
   }
 

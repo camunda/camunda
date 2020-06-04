@@ -134,10 +134,10 @@ public class DefinitionReader {
     return getDefinitions(type, true, withXml);
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getDefinitionFromFirstTenantIfAvailable(final DefinitionType type,
-                                                                                               final String definitionKey,
-                                                                                               final List<String> definitionVersions,
-                                                                                               final List<String> tenantIds) {
+  public <T extends DefinitionOptimizeDto> Optional<T> getFirstDefinitionFromTenantsIfAvailable(final DefinitionType type,
+                                                                                                final String definitionKey,
+                                                                                                final List<String> definitionVersions,
+                                                                                                final List<String> tenantIds) {
 
     if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
       return Optional.empty();
@@ -146,15 +146,21 @@ public class DefinitionReader {
     final String mostRecentValidVersion = convertToValidDefinitionVersion(
       definitionVersions, () -> getLatestVersionToKey(type, definitionKey)
     );
-    return this.getFullyImportedDefinition(
-      type,
-      definitionKey,
-      mostRecentValidVersion,
-      tenantIds.stream()
-        // to get a null value if the first element is either absent or null
-        .map(Optional::ofNullable).findFirst().flatMap(Function.identity())
-        .orElse(null)
-    );
+
+    Optional<T> definition = Optional.empty();
+    for (String tenantId : tenantIds) {
+      definition = getFullyImportedDefinition(
+        type,
+        definitionKey,
+        mostRecentValidVersion,
+        tenantId
+      );
+      if (definition.isPresent()) {
+        // return the first found definition
+        break;
+      }
+    }
+    return definition;
   }
 
   public <T extends DefinitionOptimizeDto> Optional<T> getFullyImportedDefinition(

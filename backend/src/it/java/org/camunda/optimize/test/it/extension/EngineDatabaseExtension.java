@@ -537,6 +537,18 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
+  public void changeProcessInstanceTenantId(final String processInstanceId,
+                                            final String newTenantId) throws SQLException {
+    String sql = "UPDATE ACT_HI_PROCINST " +
+      "SET TENANT_ID_ = ? WHERE " +
+      "PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setString(1, newTenantId);
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
   public List<String> getDecisionInstanceIdsWithEvaluationDateEqualTo(OffsetDateTime evaluationDateTime)
     throws SQLException {
     final List<String> result = new ArrayList<>();

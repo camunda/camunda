@@ -6,10 +6,11 @@
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -39,7 +40,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
 
   private final ConfigurationService configurationService;
   private final LocalizationService localizationService;
-  private final ProcessDefinitionReader processDefinitionReader;
+  private final DefinitionService definitionService;
 
   private static final String DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION = "identity";
   // temporary GROUP_BY_IDENTITY_MISSING_KEY to ensure no overlap between this label and userTask names
@@ -62,11 +63,14 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
   }
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return processDefinitionReader
-      .getLatestProcessDefinition(
-        reportData.getDefinitionKey(), reportData.getDefinitionVersions(), reportData.getTenantIds()
+    return definitionService
+      .getLatestDefinition(
+        DefinitionType.PROCESS,
+        reportData.getDefinitionKey(),
+        reportData.getDefinitionVersions(),
+        reportData.getTenantIds()
       )
-      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
+      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
       .map(Map::keySet)
       .orElse(Collections.emptySet());
   }
@@ -80,7 +84,8 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
     final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
       aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byIdentityAggregations =
-      onlyIdentitiesRelatedToTheLatestDefinitionVersion.getAggregations().get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
+      onlyIdentitiesRelatedToTheLatestDefinitionVersion.getAggregations()
+        .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
     List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
 
     for (Terms.Bucket identityBucket : byIdentityAggregations.getBuckets()) {
@@ -117,7 +122,8 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
     final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
       aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms allIdentityAggregation =
-      onlyIdentitiesRelatedToTheLatestDefinitionVersion.getAggregations().get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
+      onlyIdentitiesRelatedToTheLatestDefinitionVersion.getAggregations()
+        .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
     final Set<String> allDistributedByIdentityKeys = allIdentityAggregation.getBuckets()
       .stream()
       .map(identityBucket -> identityBucket.getKeyAsString().equals(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)

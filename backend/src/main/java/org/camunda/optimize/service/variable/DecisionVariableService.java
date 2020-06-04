@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.ForbiddenException;
 import java.util.List;
 
+import static org.camunda.optimize.service.DefinitionService.prepareTenantListForDefinitionSearch;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 
 @RequiredArgsConstructor
@@ -43,7 +44,7 @@ public class DecisionVariableService {
     return decisionVariableReader.getInputVariableNames(
       variableRequestDto.getDecisionDefinitionKey(),
       variableRequestDto.getDecisionDefinitionVersions(),
-      variableRequestDto.getTenantIds()
+      prepareTenantListForDefinitionSearch(variableRequestDto.getTenantIds())
     );
   }
 
@@ -61,7 +62,7 @@ public class DecisionVariableService {
     return decisionVariableReader.getOutputVariableNames(
       variableRequestDto.getDecisionDefinitionKey(),
       variableRequestDto.getDecisionDefinitionVersions(),
-      variableRequestDto.getTenantIds()
+      prepareTenantListForDefinitionSearch(variableRequestDto.getTenantIds())
     );
   }
 

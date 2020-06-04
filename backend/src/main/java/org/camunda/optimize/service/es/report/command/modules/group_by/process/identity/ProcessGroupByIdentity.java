@@ -6,12 +6,13 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.identity;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -51,7 +52,7 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
 
   protected final ConfigurationService configurationService;
   protected final LocalizationService localizationService;
-  protected final ProcessDefinitionReader processDefinitionReader;
+  protected final DefinitionService definitionService;
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
@@ -75,11 +76,14 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
   }
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return processDefinitionReader
-      .getLatestProcessDefinition(
-        reportData.getDefinitionKey(), reportData.getDefinitionVersions(), reportData.getTenantIds()
+    return definitionService
+      .getLatestDefinition(
+        DefinitionType.PROCESS,
+        reportData.getDefinitionKey(),
+        reportData.getDefinitionVersions(),
+        reportData.getTenantIds()
       )
-      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
+      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
       .map(Map::keySet)
       .orElse(Collections.emptySet());
   }

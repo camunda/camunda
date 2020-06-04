@@ -875,7 +875,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return getEngineUrl() + "/decision-definition";
   }
 
-
   private String getStartDecisionInstanceUri(final String decisionDefinitionId) {
     return getEngineUrl() + "/decision-definition/" + decisionDefinitionId + "/evaluate";
   }
@@ -981,8 +980,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String procDefId,
-                                                        Map<String, Object> variables,
-                                                        String businessKey) {
+                                                       Map<String, Object> variables,
+                                                       String businessKey) {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
     post.addHeader("Content-Type", "application/json");
     Map<String, Object> requestBodyAsMap = convertVariableMap(variables);
@@ -998,7 +997,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
             body = EntityUtils.toString(response.getEntity());
           }
           throw new RuntimeException(
-            "Could not start the process definition. " +
+            "Could not start the process instance. " +
               "Request: [" + post.toString() + "]. " +
               "Response: [" + body + "]"
           );
@@ -1012,7 +1011,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       throw new RuntimeException(message, e);
     }
   }
-
 
   private Map<String, Object> convertVariableMap(Map<String, Object> plainVariables) {
     Map<String, Object> variables = createConvertedVariableMap(plainVariables);

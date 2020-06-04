@@ -74,6 +74,18 @@ public class DefinitionService {
       .collect(toList());
   }
 
+  public <T extends DefinitionOptimizeDto> Optional<T> getLatestDefinition(final DefinitionType type,
+                                                                           final String definitionKey,
+                                                                           final List<String> definitionVersions,
+                                                                           final List<String> tenantIds) {
+    return definitionReader.getFirstDefinitionFromTenantsIfAvailable(
+      type,
+      definitionKey,
+      definitionVersions,
+      prepareTenantListForDefinitionSearch(tenantIds)
+    );
+  }
+
   public <T extends DefinitionOptimizeDto> List<T> getFullyImportedProcessDefinitions(final DefinitionType type,
                                                                                       final String userId,
                                                                                       final boolean withXml) {
@@ -255,26 +267,26 @@ public class DefinitionService {
       return Optional.empty();
     }
 
-    // first try to load tenant specific definition
-    Optional<T> fullyImportedDefinition =
-      definitionReader.getDefinitionFromFirstTenantIfAvailable(
-        type,
-        definitionKey,
-        definitionVersions,
-        tenantIds
-      );
+    return definitionReader.getFirstDefinitionFromTenantsIfAvailable(
+      type,
+      definitionKey,
+      definitionVersions,
+      prepareTenantListForDefinitionSearch(tenantIds)
+    );
+  }
 
-    // if not available try to get shared definition
-    if (!fullyImportedDefinition.isPresent()) {
-      fullyImportedDefinition =
-        definitionReader.getDefinitionFromFirstTenantIfAvailable(
-          type,
-          definitionKey,
-          definitionVersions,
-          Collections.emptyList()
-        );
-    }
-    return fullyImportedDefinition;
+  public static List<String> prepareTenantListForDefinitionSearch(final List<String> selectedTenantIds) {
+    // Prepare list of tenants to check for the requested definition:
+    // If only one tenant is listed, first look for the definition on that tenant, then on null tenant
+    // If > one tenant is in the list, first look on the null tenant, then on other tenants in the sorted list
+    List<String> tenantIdsForDefinitionSearch = new ArrayList<>(selectedTenantIds);
+    tenantIdsForDefinitionSearch.add(null);
+    return tenantIdsForDefinitionSearch.stream()
+      .distinct()
+      .sorted(selectedTenantIds.size() == 1
+                ? Comparator.nullsLast(Comparator.naturalOrder())
+                : Comparator.nullsFirst(Comparator.naturalOrder()))
+      .collect(toList());
   }
 
   private DefinitionVersionsWithTenantsDto filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(

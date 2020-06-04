@@ -44,17 +44,6 @@ public class ProcessDefinitionReader {
     );
   }
 
-  public Optional<ProcessDefinitionOptimizeDto> getLatestProcessDefinition(final String definitionKey,
-                                                                           final List<String> definitionVersions,
-                                                                           final List<String> tenantIds) {
-    return definitionReader.getDefinitionFromFirstTenantIfAvailable(
-      DefinitionType.PROCESS,
-      definitionKey,
-      definitionVersions,
-      tenantIds
-    );
-  }
-
   public String getLatestVersionToKey(String key) {
     return definitionReader.getLatestVersionToKey(DefinitionType.PROCESS, key);
   }
