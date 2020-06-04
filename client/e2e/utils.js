@@ -115,5 +115,6 @@ export async function addReportToDashboard(t, name) {
     .click('.AddButton')
     .click('.ReportModal .optionsButton')
     .click(Selector('.ReportModal .DropdownOption').withText(name))
-    .click(Selector('.ReportModal button').withText('Add Report'));
+    .click(Selector('.ReportModal button').withText('Add Report'))
+    .click('.DashboardRenderer');
 }

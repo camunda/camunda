@@ -9,6 +9,7 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './Dashboard.elements.js';
+import * as Filter from './Filter.elements.js';
 
 fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
@@ -128,4 +129,55 @@ test('deleting', async (t) => {
   await t.click(e.modalConfirmbutton);
 
   await t.expect(e.dashboard.exists).notOk();
+});
+
+test('filters', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Raw Data');
+  await u.save(t);
+  await u.gotoOverview(t);
+
+  await u.createNewDashboard(t);
+  await u.addReportToDashboard(t, 'New Report');
+
+  await t.click(e.filtersButton);
+  await t.click(e.addFilterButton);
+  await t.click(e.option('Instance State'));
+  await t.click(e.addFilterButton);
+  await t.click(e.option('Start Date'));
+  await t.click(e.addFilterButton);
+  await t.click(e.option('Variable'));
+
+  await t.typeText(Filter.typeaheadInput, 'invoiceCategory', {replace: true});
+  await t.click(Filter.typeaheadOption('invoiceCategory'));
+  await t.click(Filter.multiSelectValue('Software License Costs'));
+  await t.click(Filter.multiSelectValue('Travel Expenses'));
+  await t.click(Filter.multiSelectValue('Misc'));
+
+  await t.click(Filter.confirmButton);
+
+  await t.resizeWindow(1200, 550);
+  await t.takeElementScreenshot(e.dashboardContainer, 'dashboard/filter-editMode.png', {
+    crop: {bottom: 250},
+  });
+
+  await u.save(t);
+
+  await t.expect(e.report.visible).ok();
+
+  await t.click(e.filtersButton);
+  await t.click(e.instanceStateFilter);
+  await t.click(e.switchElement('Running'));
+
+  await t.click(e.selectionFilter);
+  await t.click(e.switchElement('Software License Costs'));
+  await t.click(e.switchElement('Misc'));
+
+  await t.takeElementScreenshot(e.dashboardContainer, 'dashboard/filter-viewMode.png', {
+    crop: {bottom: 450},
+  });
+  await t.maximizeWindow();
+
+  await t.expect(e.report.visible).ok();
 });

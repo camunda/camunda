@@ -33,3 +33,5 @@ export const stringValues = Selector('.TypeaheadMultipleSelection__valueList');
 export const firstMultiSelectValue = Selector(
   '.TypeaheadMultipleSelection__valueList .LabeledInput'
 );
+export const multiSelectValue = (text) => firstMultiSelectValue.withText(text);
+export const confirmButton = Selector('.Modal .Modal__actions .primary');
