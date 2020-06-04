@@ -89,8 +89,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
     streamWriter.reset();
     streamWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
-
-    return streamWriter.flush() > 0;
+    return streamWriter.flush().isPresent();
   }
 
   @Override

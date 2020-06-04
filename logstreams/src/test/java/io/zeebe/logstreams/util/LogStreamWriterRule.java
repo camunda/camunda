@@ -9,6 +9,10 @@ package io.zeebe.logstreams.util;
 
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.sched.future.ActorFuture;
+import java.util.Optional;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
@@ -43,7 +47,11 @@ public final class LogStreamWriterRule extends ExternalResource {
     long lastPosition = -1;
     for (int i = 1; i <= count; i++) {
       final long key = i;
-      lastPosition = writeEventInternal(w -> w.key(key).value(event));
+      try {
+        lastPosition = writeEventInternal(w -> w.key(key).value(event)).get(5, TimeUnit.SECONDS);
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
     }
 
     waitForPositionToBeAppended(lastPosition);
@@ -56,23 +64,25 @@ public final class LogStreamWriterRule extends ExternalResource {
   }
 
   public long writeEvent(final Consumer<LogStreamRecordWriter> writer) {
-    final long position = writeEventInternal(writer);
-
-    waitForPositionToBeAppended(position);
-
-    return position;
+    try {
+      final long position = writeEventInternal(writer).get(5, TimeUnit.SECONDS);
+      waitForPositionToBeAppended(position);
+      return position;
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  private long writeEventInternal(final Consumer<LogStreamRecordWriter> writer) {
-    long position;
+  private Future<Long> writeEventInternal(final Consumer<LogStreamRecordWriter> writer) {
+    Optional<ActorFuture<Long>> optFuture;
     do {
-      position = tryWrite(writer);
-    } while (position == -1);
+      optFuture = tryWrite(writer);
+    } while (optFuture.isEmpty());
 
-    return position;
+    return optFuture.get();
   }
 
-  public long tryWrite(final Consumer<LogStreamRecordWriter> writer) {
+  public Optional<ActorFuture<Long>> tryWrite(final Consumer<LogStreamRecordWriter> writer) {
     writer.accept(logStreamWriter);
 
     return logStreamWriter.tryWrite();
@@ -81,7 +91,8 @@ public final class LogStreamWriterRule extends ExternalResource {
   public void waitForPositionToBeAppended(final long position) {
     TestUtil.waitUntil(
         () -> logStream.getCommitPosition() >= position, // Now only committed events are appended.
-        "Failed to wait for position {} to be appended",
-        position);
+        "Failed to wait for position %d to be appended. Commit position is at %d",
+        position,
+        logStream.getCommitPosition());
   }
 }

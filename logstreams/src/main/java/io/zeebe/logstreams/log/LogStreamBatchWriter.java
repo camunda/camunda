@@ -36,13 +36,6 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
     /** Set the log entry key. */
     LogEntryBuilder key(long key);
 
-    /**
-     * Can be used if command and event, which is caused by this command is written in batch.
-     *
-     * @param index the index in this batch
-     */
-    LogEntryBuilder sourceIndex(int index);
-
     /** Set the log entry metadata. */
     LogEntryBuilder metadata(DirectBuffer buffer, int offset, int length);
 

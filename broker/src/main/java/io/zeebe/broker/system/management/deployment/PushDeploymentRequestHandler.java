@@ -186,9 +186,11 @@ public final class PushDeploymentRequestHandler
     logStreamWriter.reset();
     recordMetadata.reset().recordType(recordType).valueType(valueType).intent(intent);
 
-    final long position =
-        logStreamWriter.key(key).metadataWriter(recordMetadata).valueWriter(event).tryWrite();
-
-    return position > 0;
+    return logStreamWriter
+        .key(key)
+        .metadataWriter(recordMetadata)
+        .valueWriter(event)
+        .tryWrite()
+        .isPresent();
   }
 }

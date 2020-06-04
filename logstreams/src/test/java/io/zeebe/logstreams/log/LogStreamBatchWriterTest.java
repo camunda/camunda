@@ -23,7 +23,9 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -112,7 +114,33 @@ public final class LogStreamBatchWriterTest {
 
   private long write(final Consumer<LogStreamBatchWriter> consumer) {
     consumer.accept(writer);
-    return TestUtil.doRepeatedly(() -> writer.tryWrite()).until(pos -> pos > 0);
+    final Optional<ActorFuture<Long>> optionalFuture =
+        TestUtil.doRepeatedly(() -> writer.tryWrite()).until(Optional::isPresent);
+
+    try {
+      return optionalFuture.get().join(5, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private long write(
+      final Consumer<LogStreamBatchWriter> consumer, final CompletableFuture<Long> future) {
+    consumer.accept(writer);
+    final Optional<ActorFuture<Long>> optionalFuture =
+        TestUtil.doRepeatedly(() -> writer.tryWrite()).until(Optional::isPresent);
+
+    optionalFuture
+        .get()
+        .onComplete(
+            (pos, t) -> {
+              if (t == null) {
+                future.complete(pos);
+              } else {
+                future.completeExceptionally(t);
+              }
+            });
+    return -1L;
   }
 
   @Test
@@ -351,31 +379,36 @@ public final class LogStreamBatchWriterTest {
   }
 
   @Test
-  public void shouldWriteEventWithTimestamp() throws InterruptedException, ExecutionException {
+  public void shouldWriteEventWithTimestamp() {
     // given
     final long timestamp = System.currentTimeMillis() + 10;
     writerScheduler.getClock().setCurrentTime(timestamp);
+    final CompletableFuture<Long> future = new CompletableFuture<>();
 
     // when
-    final ActorFuture<Long> position =
-        writerScheduler.call(
-            () ->
-                write(
-                    w ->
-                        w.event()
-                            .key(1)
-                            .value(EVENT_VALUE_1)
-                            .done()
-                            .event()
-                            .key(2)
-                            .value(EVENT_VALUE_2)
-                            .done()));
+    writerScheduler.call(
+        () ->
+            write(
+                w ->
+                    w.event()
+                        .key(1)
+                        .value(EVENT_VALUE_1)
+                        .done()
+                        .event()
+                        .key(2)
+                        .value(EVENT_VALUE_2)
+                        .done(),
+                future));
     writerScheduler.workUntilDone();
 
     // then
-    assertThat(getWrittenEvents(position.get()))
-        .extracting(LoggedEvent::getTimestamp)
-        .containsExactly(timestamp, timestamp);
+    future.whenComplete(
+        (pos, t) -> {
+          assertThat(t).isNull();
+          assertThat(getWrittenEvents(pos))
+              .extracting(LoggedEvent::getTimestamp)
+              .containsExactly(timestamp, timestamp);
+        });
   }
 
   @Test
@@ -409,10 +442,11 @@ public final class LogStreamBatchWriterTest {
   @Test
   public void shouldNotFailToWriteBatchWithoutEvents() {
     // when
-    final long pos = writer.tryWrite();
+    final Optional<ActorFuture<Long>> optFuture = writer.tryWrite();
 
     // then
-    assertThat(pos).isEqualTo(0);
+    assertThat(optFuture).isPresent();
+    assertThat(optFuture.get().join()).isEqualTo(0);
   }
 
   @Test
@@ -421,9 +455,10 @@ public final class LogStreamBatchWriterTest {
     logStreamRule.getLogStream().close();
 
     // when
-    final long pos = writer.event().key(1).value(EVENT_VALUE_1).done().tryWrite();
+    final Optional<ActorFuture<Long>> optFuture =
+        writer.event().key(1).value(EVENT_VALUE_1).done().tryWrite();
 
     // then
-    assertThat(pos).isEqualTo(-1);
+    assertThat(optFuture).isEmpty();
   }
 }

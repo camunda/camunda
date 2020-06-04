@@ -56,7 +56,7 @@ public final class AppendEntryLimiter extends AbstractLimiter<Long> implements A
     } else {
       Loggers.LOGSTREAMS_LOGGER.warn(
           "We encountered an problem on releasing the acquired in flight append."
-              + " There was no listener registered for the given position {}, this should not happen.",
+              + " There was no listener registered for the given number {}, this should not happen.",
           position);
     }
   }

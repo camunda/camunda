@@ -19,6 +19,8 @@ import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,7 +66,9 @@ public final class JobTimeoutTriggerTest {
   @Test
   public void shouldNotWriteAgainAfterFlushFailed() {
     // given
-    when(typedStreamWriter.flush()).thenReturn(1L, -1L);
+    final CompletableActorFuture<Long> future = new CompletableActorFuture<>();
+    future.complete(1L);
+    when(typedStreamWriter.flush()).thenReturn(Optional.of(future), Optional.empty());
 
     // when
     jobTimeoutTrigger.deactivateTimedOutJobs();

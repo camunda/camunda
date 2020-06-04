@@ -35,6 +35,7 @@ import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import io.zeebe.util.sched.ActorCondition;
+import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,7 +75,8 @@ public final class SubscriptionPollFragmentsTest {
             0,
             "0",
             onConsumed,
-            mock(LogBuffer.class));
+            mock(LogBuffer.class),
+            Map.of());
   }
 
   @Test

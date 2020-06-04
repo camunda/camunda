@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.util;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.io.IOException;
@@ -15,18 +16,24 @@ import java.util.List;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.LongConsumer;
 import org.agrona.DirectBuffer;
 
 public class ListLogStorage implements LogStorage {
 
   private final ConcurrentNavigableMap<Long, Integer> positionIndexMapping;
-  private final List<Entry> entries;
+  private final List<ZeebeEntry> entries;
   private LongConsumer positionListener;
+  private LinkedBlockingQueue<Integer> indexQueue;
 
   public ListLogStorage() {
     this.entries = new CopyOnWriteArrayList<>();
     this.positionIndexMapping = new ConcurrentSkipListMap<>();
+  }
+
+  public void setIndexQueue(final LinkedBlockingQueue<Integer> indexQueue) {
+    this.indexQueue = indexQueue;
   }
 
   public void setPositionListener(final LongConsumer positionListener) {
@@ -50,7 +57,7 @@ public class ListLogStorage implements LogStorage {
         }
 
         final var entry = entries.get(index);
-        final var data = entry.getData();
+        final var data = entry.data();
         readBuffer.wrap(data, data.position(), data.remaining());
 
         return address + 1;
@@ -82,20 +89,21 @@ public class ListLogStorage implements LogStorage {
   }
 
   @Override
-  public void append(
-      final long lowestPosition,
-      final long highestPosition,
-      final ByteBuffer blockBuffer,
-      final AppendListener listener) {
+  public void append(final ByteBuffer blockBuffer, final AppendListener listener) {
     try {
-      final var entry = new Entry(lowestPosition, highestPosition, blockBuffer);
+      final var entry = new ZeebeEntry(0, 0, blockBuffer);
       entries.add(entry);
-      final var index = entries.size();
-      positionIndexMapping.put(lowestPosition, index);
+      var index = entries.size();
+
+      if (indexQueue != null && !indexQueue.isEmpty()) {
+        index = indexQueue.poll();
+      }
+      listener.updateRecords(entry, index);
+      positionIndexMapping.put((long) (index << 8), index);
       listener.onWrite(index);
 
       if (positionListener != null) {
-        positionListener.accept(entry.getHighestPosition());
+        positionListener.accept(entry.highestPosition());
       }
       listener.onCommit(index);
     } catch (final Exception e) {
@@ -123,28 +131,4 @@ public class ListLogStorage implements LogStorage {
 
   @Override
   public void flush() throws Exception {}
-
-  private static final class Entry {
-    private final long lowestPosition;
-    private final long highestPosition;
-    private final ByteBuffer data;
-
-    public Entry(final long lowestPosition, final long highestPosition, final ByteBuffer data) {
-      this.lowestPosition = lowestPosition;
-      this.highestPosition = highestPosition;
-      this.data = data;
-    }
-
-    public long getLowestPosition() {
-      return lowestPosition;
-    }
-
-    public long getHighestPosition() {
-      return highestPosition;
-    }
-
-    public ByteBuffer getData() {
-      return data;
-    }
-  }
 }

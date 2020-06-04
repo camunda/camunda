@@ -13,7 +13,11 @@ public class AtomicPosition {
   private final AtomicLong position;
 
   public AtomicPosition() {
-    this.position = new AtomicLong(0);
+    this(0);
+  }
+
+  public AtomicPosition(final long position) {
+    this.position = new AtomicLong(position);
   }
 
   public void reset() {
@@ -40,6 +44,6 @@ public class AtomicPosition {
       }
     }
 
-    return updated;
+    return true;
   }
 }

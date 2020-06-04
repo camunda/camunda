@@ -50,6 +50,8 @@ public interface JournalWriter<E> extends AutoCloseable {
    * @param entry The entry to append.
    * @return The appended indexed entry.
    */
+  <T extends E> Indexed<T> append(T entry, long index);
+
   <T extends E> Indexed<T> append(T entry);
 
   /**

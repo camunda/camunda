@@ -13,11 +13,11 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import org.agrona.DirectBuffer;
 import org.junit.Rule;
@@ -129,9 +129,7 @@ public final class ActorFrameworkIntegrationTest {
     }
 
     void processPeek() {
-      final Iterator<DirectBuffer> iterator = peek.iterator();
-      while (iterator.hasNext()) {
-        final DirectBuffer directBuffer = iterator.next();
+      for (DirectBuffer directBuffer : peek) {
         final int newCounter = directBuffer.getInt(0);
         if (newCounter - 1 != counter) {
           throw new RuntimeException(newCounter + " " + counter);
@@ -178,9 +176,11 @@ public final class ActorFrameworkIntegrationTest {
     }
 
     void produce() {
-      if (dispatcher.claim(claim, 4534) >= 0) {
-        claim.getBuffer().putInt(claim.getOffset(), counter++);
-        claim.commit();
+      final long position =
+          dispatcher.claim(this.claim, 4534) - DataFrameDescriptor.alignedFramedLength(4534);
+      if (position >= 0) {
+        this.claim.getBuffer().putInt(this.claim.getOffset(), counter++);
+        this.claim.commit(position, (a, b, c) -> {});
       }
 
       if (counter < totalWork) {

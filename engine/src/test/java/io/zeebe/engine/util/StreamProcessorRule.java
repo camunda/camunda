@@ -192,8 +192,8 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.writeEvent(intent, value);
   }
 
-  public long writeBatch(final RecordToWrite... recordToWrites) {
-    return streamProcessingComposite.writeBatch(recordToWrites);
+  public long writeBatch(final RecordToWrite... recordsToWrite) {
+    return streamProcessingComposite.writeBatch(recordsToWrite);
   }
 
   public long writeCommandOnPartition(

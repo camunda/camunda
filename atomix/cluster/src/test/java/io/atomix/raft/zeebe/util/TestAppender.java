@@ -47,6 +47,9 @@ public class TestAppender implements AppendListener {
   }
 
   @Override
+  public void updateRecords(final ZeebeEntry entry, final long index) {}
+
+  @Override
   public void onCommit(final Indexed<ZeebeEntry> indexed) {
     committed.offer(indexed);
   }
@@ -56,12 +59,8 @@ public class TestAppender implements AppendListener {
     errors.offer(error);
   }
 
-  public Indexed<ZeebeEntry> append(
-      final ZeebeLogAppender appender,
-      final long lowest,
-      final long highest,
-      final ByteBuffer data) {
-    appender.appendEntry(lowest, highest, data, this);
+  public Indexed<ZeebeEntry> append(final ZeebeLogAppender appender, final ByteBuffer data) {
+    appender.appendEntry(data, this);
     return pollWritten();
   }
 

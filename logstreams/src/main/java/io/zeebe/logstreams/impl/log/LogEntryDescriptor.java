@@ -98,6 +98,8 @@ public final class LogEntryDescriptor {
     METADATA_OFFSET = offset;
   }
 
+  private LogEntryDescriptor() {}
+
   public static int getFragmentLength(final DirectBuffer buffer, final int offset) {
     return alignedLength(buffer.getInt(lengthOffset(offset), Protocol.ENDIANNESS));
   }

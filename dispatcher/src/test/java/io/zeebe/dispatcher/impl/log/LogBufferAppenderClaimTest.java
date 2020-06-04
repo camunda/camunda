@@ -26,8 +26,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.dispatcher.ClaimedFragment;
-import java.nio.charset.Charset;
+import io.zeebe.util.TriConsumer;
+import java.nio.charset.StandardCharsets;
+import java.util.function.BiConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,13 +38,15 @@ import org.mockito.InOrder;
 
 public final class LogBufferAppenderClaimTest {
   static final int A_PARTITION_LENGTH = 1024;
-  static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
+  static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(StandardCharsets.UTF_8);
   static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
   static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
-  static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
   static final int A_PARTITION_ID = 10;
   static final int A_STREAM_ID = 20;
   private static final Runnable DO_NOTHING = () -> {};
+  private static final BiConsumer<Long, TriConsumer<ZeebeEntry, Long, Integer>> ADD_NOTHING =
+      (a, b) -> {};
+
   UnsafeBuffer metadataBufferMock;
   UnsafeBuffer dataBufferMock;
   LogBufferAppender logBufferAppender;
@@ -79,7 +84,8 @@ public final class LogBufferAppenderClaimTest {
             claimedFragmentMock,
             A_MSG_PAYLOAD_LENGTH,
             A_STREAM_ID,
-            DO_NOTHING);
+            DO_NOTHING,
+            ADD_NOTHING);
 
     // then
     assertThat(newTail).isEqualTo(currentTail + A_FRAGMENT_LENGTH);
@@ -97,11 +103,16 @@ public final class LogBufferAppenderClaimTest {
     inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
     inOrder
         .verify(claimedFragmentMock)
-        .wrap(dataBufferMock, currentTail, A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, DO_NOTHING);
+        .wrap(
+            dataBufferMock,
+            currentTail,
+            A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH,
+            DO_NOTHING,
+            ADD_NOTHING);
   }
 
   @Test
-  public void shouldClaimIfRemaingCapacityIsEqualHeaderSize() {
+  public void shouldClaimIfRemainingCapacityIsEqualHeaderSize() {
     // given
     // that the message + next message header EXACTLY fit into the buffer
     final int currentTail = A_PARTITION_LENGTH - HEADER_LENGTH - A_FRAGMENT_LENGTH;
@@ -117,7 +128,8 @@ public final class LogBufferAppenderClaimTest {
             claimedFragmentMock,
             A_MSG_PAYLOAD_LENGTH,
             A_STREAM_ID,
-            DO_NOTHING);
+            DO_NOTHING,
+            ADD_NOTHING);
 
     // then
     assertThat(newTail).isEqualTo(currentTail + A_FRAGMENT_LENGTH);
@@ -135,7 +147,12 @@ public final class LogBufferAppenderClaimTest {
     inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
     inOrder
         .verify(claimedFragmentMock)
-        .wrap(dataBufferMock, currentTail, A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, DO_NOTHING);
+        .wrap(
+            dataBufferMock,
+            currentTail,
+            A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH,
+            DO_NOTHING,
+            ADD_NOTHING);
   }
 
   @Test
@@ -156,7 +173,8 @@ public final class LogBufferAppenderClaimTest {
             claimedFragmentMock,
             A_MSG_PAYLOAD_LENGTH,
             A_STREAM_ID,
-            DO_NOTHING);
+            DO_NOTHING,
+            ADD_NOTHING);
 
     // then
     assertThat(newTail).isEqualTo(-2);
@@ -195,7 +213,8 @@ public final class LogBufferAppenderClaimTest {
             claimedFragmentMock,
             A_MSG_PAYLOAD_LENGTH,
             A_STREAM_ID,
-            DO_NOTHING);
+            DO_NOTHING,
+            ADD_NOTHING);
 
     // then
     assertThat(newTail).isEqualTo(-2);
@@ -233,7 +252,8 @@ public final class LogBufferAppenderClaimTest {
             claimedFragmentMock,
             A_MSG_PAYLOAD_LENGTH,
             A_STREAM_ID,
-            DO_NOTHING);
+            DO_NOTHING,
+            ADD_NOTHING);
 
     // then
     assertThat(newTail).isEqualTo(-1);

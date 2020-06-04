@@ -284,13 +284,11 @@ public final class SubscriptionCommandMessageHandler
     logStreamRecordWriter.reset();
     recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
 
-    final long position =
-        logStreamRecordWriter
-            .key(-1)
-            .metadataWriter(recordMetadata)
-            .valueWriter(command)
-            .tryWrite();
-
-    return position > 0;
+    return logStreamRecordWriter
+        .key(-1)
+        .metadataWriter(recordMetadata)
+        .valueWriter(command)
+        .tryWrite()
+        .isPresent();
   }
 }

@@ -16,6 +16,11 @@ import static org.junit.Assert.assertNotNull;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.sched.future.ActorFuture;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -94,20 +99,27 @@ public final class LogStreamTest {
   }
 
   @Test
-  public void shouldIncreasePositionOnRestart() {
+  public void shouldIncreasePositionOnRestart()
+      throws InterruptedException, ExecutionException, TimeoutException {
     // given
     final LogStreamRecordWriter writer = logStream.newLogStreamRecordWriter();
     writer.value(wrapString("value")).tryWrite();
     writer.value(wrapString("value")).tryWrite();
     writer.value(wrapString("value")).tryWrite();
-    final long positionBeforeClose = writer.value(wrapString("value")).tryWrite();
+
+    Optional<ActorFuture<Long>> optFuture = writer.value(wrapString("value")).tryWrite();
+    assertThat(optFuture).isPresent();
+    final long positionBeforeClose = optFuture.get().get(5, TimeUnit.SECONDS);
     TestUtil.waitUntil(() -> logStream.getCommitPosition() >= positionBeforeClose);
 
     // when
     logStream.close();
     logStreamRule.createLogStream();
     final LogStreamRecordWriter newWriter = logStreamRule.getLogStream().newLogStreamRecordWriter();
-    final long positionAfterReOpen = newWriter.value(wrapString("value")).tryWrite();
+
+    optFuture = newWriter.value(wrapString("value")).tryWrite();
+    assertThat(optFuture).isPresent();
+    final long positionAfterReOpen = optFuture.get().get(5, TimeUnit.SECONDS);
 
     // then
     assertThat(positionAfterReOpen).isGreaterThan(positionBeforeClose);
@@ -123,7 +135,14 @@ public final class LogStreamTest {
     long position = -1L;
 
     while (position < 0) {
-      position = writer.value(value).tryWrite();
+      final Optional<ActorFuture<Long>> optFuture = writer.value(value).tryWrite();
+      if (optFuture.isPresent()) {
+        try {
+          position = optFuture.get().get(5, TimeUnit.SECONDS);
+        } catch (final Exception e) {
+          e.printStackTrace();
+        }
+      }
     }
 
     final long writtenEventPosition = position;

@@ -41,17 +41,13 @@ public class AtomixLogStorage implements LogStorage {
   }
 
   @Override
-  public void append(
-      final long lowestPosition,
-      final long highestPosition,
-      final ByteBuffer buffer,
-      final AppendListener listener) {
+  public void append(final ByteBuffer buffer, final AppendListener listener) {
     final var optionalAppender = appenderSupplier.getAppender();
 
     if (optionalAppender.isPresent()) {
       final var appender = optionalAppender.get();
       final var adapter = new AtomixAppendListenerAdapter(listener);
-      appender.appendEntry(lowestPosition, highestPosition, buffer, adapter);
+      appender.appendEntry(buffer, adapter);
     } else {
       // todo: better error message
       listener.onWriteError(

@@ -25,6 +25,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.agrona.CloseHelper;
 import org.junit.After;
 import org.junit.Before;
@@ -54,6 +55,12 @@ public final class StreamProcessorInconsistentPositionTest {
     testStreams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
 
     final var listLogStorage = new ListLogStorage();
+    final LinkedBlockingQueue<Integer> queue = new LinkedBlockingQueue<>();
+    queue.add(1);
+    queue.add(2);
+    queue.add(1);
+    queue.add(2);
+    listLogStorage.setIndexQueue(queue);
     testStreams.createLogStream(getLogName(1), 1, listLogStorage);
     testStreams.createLogStream(getLogName(2), 2, listLogStorage);
 

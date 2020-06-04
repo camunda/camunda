@@ -14,16 +14,17 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static org.agrona.BitUtil.align;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.zeebe.dispatcher.Loggers;
-import org.agrona.DirectBuffer;
+import io.zeebe.util.TriConsumer;
+import java.util.function.BiConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -33,48 +34,14 @@ public class LogBufferAppender {
 
   private static final Logger LOG = Loggers.DISPATCHER_LOGGER;
 
-  public int appendFrame(
-      final LogBufferPartition partition,
-      final int activePartitionId,
-      final DirectBuffer msg,
-      final int start,
-      final int length,
-      final int streamId) {
-    final int partitionSize = partition.getPartitionSize();
-    final int framedLength = framedLength(length);
-    final int alignedFrameLength = alignedLength(framedLength);
-
-    // move the tail of the partition
-    final int frameOffset = partition.getAndAddTail(alignedFrameLength);
-
-    int newTail = frameOffset + alignedFrameLength;
-
-    if (newTail <= (partitionSize - HEADER_LENGTH)) {
-      final UnsafeBuffer buffer = partition.getDataBuffer();
-
-      // write negative length field
-      buffer.putIntOrdered(lengthOffset(frameOffset), -framedLength);
-      UNSAFE.storeFence();
-      buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
-      buffer.putInt(streamIdOffset(frameOffset), streamId);
-      buffer.putBytes(messageOffset(frameOffset), msg, start, length);
-
-      // commit the message
-      buffer.putIntOrdered(lengthOffset(frameOffset), framedLength);
-    } else {
-      newTail = onEndOfPartition(partition, frameOffset, activePartitionId);
-    }
-
-    return newTail;
-  }
-
   public int claim(
       final LogBufferPartition partition,
       final int activePartitionId,
       final ClaimedFragment claim,
       final int length,
       final int streamId,
-      final Runnable onComplete) {
+      final Runnable onComplete,
+      final BiConsumer<Long, TriConsumer<ZeebeEntry, Long, Integer>> addHandler) {
     final int partitionSize = partition.getPartitionSize();
     final int framedMessageLength = framedLength(length);
     final int alignedFrameLength = alignedLength(framedMessageLength);
@@ -93,7 +60,7 @@ public class LogBufferAppender {
       buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
       buffer.putInt(streamIdOffset(frameOffset), streamId);
 
-      claim.wrap(buffer, frameOffset, framedMessageLength, onComplete);
+      claim.wrap(buffer, frameOffset, framedMessageLength, onComplete, addHandler);
       // Do not commit the message
     } else {
       newTail = onEndOfPartition(partition, frameOffset, activePartitionId);
@@ -108,7 +75,8 @@ public class LogBufferAppender {
       final ClaimedFragmentBatch batch,
       final int fragmentCount,
       final int batchLength,
-      final Runnable onComplete) {
+      final Runnable onComplete,
+      final BiConsumer<Long, TriConsumer<ZeebeEntry, Long, Integer>> addHandler) {
     final int partitionSize = partition.getPartitionSize();
     // reserve enough space for frame alignment because each batch fragment must start on an aligned
     // position
@@ -124,7 +92,8 @@ public class LogBufferAppender {
     if (newTail <= (partitionSize - HEADER_LENGTH)) {
       final UnsafeBuffer buffer = partition.getDataBuffer();
       // all fragment data are written using the claimed batch
-      batch.wrap(buffer, activePartitionId, frameOffset, alignedFrameLength, onComplete);
+      batch.wrap(
+          buffer, activePartitionId, frameOffset, alignedFrameLength, onComplete, addHandler);
 
     } else {
       newTail = onEndOfPartition(partition, frameOffset, activePartitionId);

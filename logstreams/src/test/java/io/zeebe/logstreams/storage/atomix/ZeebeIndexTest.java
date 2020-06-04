@@ -221,9 +221,9 @@ public class ZeebeIndexTest {
   }
 
   private static Indexed asZeebeEntry(final long index, final long lowestPos) {
-    return new Indexed(
-        index,
-        new ZeebeEntry(0, System.currentTimeMillis(), lowestPos, lowestPos, ByteBuffer.allocate(0)),
-        0);
+    final ZeebeEntry zeebeEntry =
+        new ZeebeEntry(0, System.currentTimeMillis(), ByteBuffer.allocate(0));
+    zeebeEntry.setLowestPosition(lowestPos);
+    return new Indexed(index, zeebeEntry, 0);
   }
 }

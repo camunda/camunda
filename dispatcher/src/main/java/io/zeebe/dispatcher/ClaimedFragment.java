@@ -12,6 +12,9 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
+import io.zeebe.util.TriConsumer;
+import java.util.function.BiConsumer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -24,18 +27,21 @@ public class ClaimedFragment {
   protected final UnsafeBuffer buffer;
 
   private Runnable onCompleteHandler;
+  private BiConsumer<Long, TriConsumer<ZeebeEntry, Long, Integer>> addHandler;
 
   public ClaimedFragment() {
     buffer = new UnsafeBuffer(0, 0);
   }
 
   public void wrap(
-      final UnsafeBuffer underlyingbuffer,
+      final UnsafeBuffer underlyingBuffer,
       final int fragmentOffset,
       final int fragmentLength,
-      final Runnable onCompleteHandler) {
+      final Runnable onCompleteHandler,
+      final BiConsumer<Long, TriConsumer<ZeebeEntry, Long, Integer>> addHandler) {
     this.onCompleteHandler = onCompleteHandler;
-    buffer.wrap(underlyingbuffer, fragmentOffset, fragmentLength);
+    this.addHandler = addHandler;
+    buffer.wrap(underlyingBuffer, fragmentOffset, fragmentLength);
   }
 
   public int getOffset() {
@@ -56,8 +62,10 @@ public class ClaimedFragment {
   }
 
   /** Commit the fragment so that it can be read by subscriptions. */
-  public void commit() {
+  public void commit(
+      final long claimedPosition, final TriConsumer<ZeebeEntry, Long, Integer> handler) {
     // commit the message by writing the positive framed length
+    addHandler.accept(claimedPosition, handler);
     buffer.putIntOrdered(lengthOffset(0), buffer.capacity());
     onCompleteHandler.run();
     reset();

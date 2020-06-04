@@ -22,7 +22,6 @@ import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.TypedEventRegistry;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -39,6 +38,7 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -47,6 +47,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -56,6 +58,7 @@ import org.junit.rules.TemporaryFolder;
 public final class TestStreams {
   static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
   private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
+  private static final int MAX_WRITE_RETRIES = 10;
 
   static {
     TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
@@ -238,18 +241,41 @@ public final class TestStreams {
 
   public long writeBatch(final String logName, final RecordToWrite[] recordToWrites) {
     final SynchronousLogStream logStream = getLogStream(logName);
-    final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
+    final LogStreamRecordWriter logStreamWriter = logStream.newLogStreamRecordWriter();
+    final long[] positions = new long[recordToWrites.length];
+    int retries = 0;
 
-    for (final RecordToWrite recordToWrite : recordToWrites) {
-      logStreamBatchWriter
-          .event()
-          .key(recordToWrite.getKey())
-          .sourceIndex(recordToWrite.getSourceIndex())
-          .metadataWriter(recordToWrite.getRecordMetadata())
-          .valueWriter(recordToWrite.getUnifiedRecordValue())
-          .done();
+    for (int i = 0; i < recordToWrites.length && retries <= MAX_WRITE_RETRIES; ++i) {
+      final RecordToWrite recordToWrite = recordToWrites[i];
+      if (recordToWrite.getSourceIndex() >= 0) {
+        logStreamWriter.sourceRecordPosition(positions[recordToWrite.getSourceIndex()]);
+      }
+      final Optional<ActorFuture<Long>> optFuture =
+          logStreamWriter
+              .key(recordToWrite.getKey())
+              .metadataWriter(recordToWrite.getRecordMetadata())
+              .valueWriter(recordToWrite.getUnifiedRecordValue())
+              .tryWrite();
+
+      if (optFuture.isEmpty()) {
+        // retry
+        --i;
+        retries++;
+        continue;
+      } else {
+        retries = 0;
+      }
+
+      try {
+        positions[i] = optFuture.get().get(15, TimeUnit.SECONDS);
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+
+      logStreamWriter.reset();
     }
-    return logStreamBatchWriter.tryWrite();
+
+    return positions[positions.length - 1];
   }
 
   public static class FluentLogWriter {
@@ -328,7 +354,15 @@ public final class TestStreams {
       writer.metadataWriter(metadata);
       writer.valueWriter(value);
 
-      return doRepeatedly(writer::tryWrite).until(p -> p >= 0);
+      final Future<Long> posFuture =
+          doRepeatedly(writer::tryWrite).until(Optional::isPresent).get();
+
+      try {
+        return posFuture.get();
+      } catch (Exception e) {
+        e.printStackTrace();
+        return -1;
+      }
     }
   }
 

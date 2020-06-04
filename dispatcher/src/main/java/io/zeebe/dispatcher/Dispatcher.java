@@ -12,14 +12,18 @@ import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.TriConsumer;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;
 
@@ -39,8 +43,10 @@ public class Dispatcher extends Actor {
   private final int maxFragmentLength;
   private final String name;
   private final int logWindowLength;
+  private final Map<Long, TriConsumer<ZeebeEntry, Long, Integer>> handlers =
+      new ConcurrentHashMap<>();
   private Subscription[] subscriptions;
-  private final Runnable onClaimComplete = this::signalSubsciptions;
+  private final Runnable onClaimComplete = this::signalSubscriptions;
   private volatile boolean isClosed = false;
   private final Runnable backgroundTask = this::runBackgroundTask;
   private ActorCondition dataConsumed;
@@ -59,7 +65,6 @@ public class Dispatcher extends Actor {
     this.publisherLimit = publisherLimit;
     this.publisherPosition = publisherPosition;
     this.name = name;
-
     this.logWindowLength = logWindowLength;
     this.maxFragmentLength = maxFragmentLength;
 
@@ -108,7 +113,12 @@ public class Dispatcher extends Actor {
     }
   }
 
-  private void signalSubsciptions() {
+  private void addHandler(
+      final Long position, final TriConsumer<ZeebeEntry, Long, Integer> handler) {
+    handlers.put(position, handler);
+  }
+
+  private void signalSubscriptions() {
     final Subscription[] subscriptions = this.subscriptions;
     for (int i = 0; i < subscriptions.length; i++) {
       subscriptions[i].getActorConditions().signalConsumers();
@@ -117,9 +127,9 @@ public class Dispatcher extends Actor {
 
   /**
    * Claim a fragment of the buffer with the given length. Use {@link ClaimedFragment#getBuffer()}
-   * to write the message and finish the operation using {@link ClaimedFragment#commit()} or {@link
-   * ClaimedFragment#abort()}. Note that the claim operation can fail if the publisher limit or the
-   * buffer partition size is reached.
+   * to write the message and finish the operation using {@link ClaimedFragment#commit(long,
+   * TriConsumer)} or {@link ClaimedFragment#abort()}. Note that the claim operation can fail if the
+   * publisher limit or the buffer partition size is reached.
    *
    * @return the new publisher position if the fragment was claimed successfully. Otherwise, the
    *     return value is negative.
@@ -131,8 +141,8 @@ public class Dispatcher extends Actor {
   /**
    * Claim a fragment of the buffer with the given length and stream id. Use {@link
    * ClaimedFragment#getBuffer()} to write the message and finish the operation using {@link
-   * ClaimedFragment#commit()} or {@link ClaimedFragment#abort()}. Note that the claim operation can
-   * fail if the publisher limit or the buffer partition size is reached.
+   * ClaimedFragment#commit(long, TriConsumer)} or {@link ClaimedFragment#abort()}. Note that the
+   * claim operation can fail if the publisher limit or the buffer partition size is reached.
    *
    * @return the new publisher position if the fragment was claimed successfully. Otherwise, the
    *     return value is negative.
@@ -141,7 +151,13 @@ public class Dispatcher extends Actor {
     return offer(
         (partition, activePartitionId) ->
             logAppender.claim(
-                partition, activePartitionId, claim, length, streamId, onClaimComplete),
+                partition,
+                activePartitionId,
+                claim,
+                length,
+                streamId,
+                onClaimComplete,
+                this::addHandler),
         length);
   }
 
@@ -150,9 +166,9 @@ public class Dispatcher extends Actor {
    * ClaimedFragmentBatch#nextFragment(int, int)} to add a new fragment to the batch. Write the
    * fragment message using {@link ClaimedFragmentBatch#getBuffer()} and {@link
    * ClaimedFragmentBatch#getFragmentOffset()} to get the buffer offset of this fragment. Complete
-   * the whole batch operation by calling either {@link ClaimedFragmentBatch#commit()} or {@link
-   * ClaimedFragmentBatch#abort()}. Note that the claim operation can fail if the publisher limit or
-   * the buffer partition size is reached.
+   * the whole batch operation by calling either {@link ClaimedFragmentBatch#commit(TriConsumer)} or
+   * {@link ClaimedFragmentBatch#abort()}. Note that the claim operation can fail if the publisher
+   * limit or the buffer partition size is reached.
    *
    * @return the new publisher position if the batch was claimed successfully. Otherwise, the return
    *     value is negative.
@@ -162,7 +178,13 @@ public class Dispatcher extends Actor {
     return offer(
         (partition, activePartitionId) ->
             logAppender.claim(
-                partition, activePartitionId, batch, fragmentCount, batchLength, onClaimComplete),
+                partition,
+                activePartitionId,
+                batch,
+                fragmentCount,
+                batchLength,
+                onClaimComplete,
+                this::addHandler),
         batchLength);
   }
 
@@ -194,7 +216,6 @@ public class Dispatcher extends Actor {
         if (publisherPosition.proposeMaxOrdered(newPosition)) {
           LOG.trace("Updated publisher position to {}", newPosition);
         }
-        signalSubsciptions();
       }
     }
 
@@ -214,11 +235,9 @@ public class Dispatcher extends Actor {
     return newPosition;
   }
 
-  public int updatePublisherLimit() {
-    int isUpdated = 0;
-
+  public void updatePublisherLimit() {
     if (!isClosed) {
-      long lastSubscriberPosition = -1;
+      long lastSubscriberPosition;
 
       if (subscriptions.length > 0) {
         lastSubscriberPosition = subscriptions[subscriptions.length - 1].getPosition();
@@ -243,12 +262,8 @@ public class Dispatcher extends Actor {
 
       if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit)) {
         LOG.trace("Updated publisher limit to {}", proposedPublisherLimit);
-
-        isUpdated = 1;
       }
     }
-
-    return isUpdated;
   }
 
   /**
@@ -304,13 +319,13 @@ public class Dispatcher extends Actor {
       final int subscriptionId, final String subscriptionName, final ActorCondition onConsumption) {
     final AtomicPosition position = new AtomicPosition();
     position.set(position(logBuffer.getActivePartitionIdVolatile(), 0));
-    final AtomicPosition limit = determineLimit(subscriptionId);
+    final AtomicPosition limit = determineLimit();
 
     return new Subscription(
-        position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer);
+        position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer, handlers);
   }
 
-  protected AtomicPosition determineLimit(final int subscriptionId) {
+  protected AtomicPosition determineLimit() {
     return publisherPosition;
   }
 
@@ -334,7 +349,7 @@ public class Dispatcher extends Actor {
       }
     }
 
-    Subscription[] newSubscriptions = null;
+    final Subscription[] newSubscriptions;
 
     final int numMoved = len - index - 1;
 

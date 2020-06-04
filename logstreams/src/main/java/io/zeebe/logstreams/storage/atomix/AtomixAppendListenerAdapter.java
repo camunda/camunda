@@ -25,6 +25,11 @@ public final class AtomixAppendListenerAdapter implements AppendListener {
   }
 
   @Override
+  public void updateRecords(ZeebeEntry entry, long index) {
+    delegate.updateRecords(entry, index);
+  }
+
+  @Override
   public void onWriteError(final Throwable error) {
     delegate.onWriteError(error);
   }

@@ -11,6 +11,9 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 final class NoopTypedStreamWriter implements TypedStreamWriter {
@@ -82,7 +85,9 @@ final class NoopTypedStreamWriter implements TypedStreamWriter {
   }
 
   @Override
-  public long flush() {
-    return 0;
+  public Optional<ActorFuture<Long>> flush() {
+    final CompletableActorFuture<Long> future = new CompletableActorFuture<>();
+    future.complete(0L);
+    return Optional.of(future);
   }
 }

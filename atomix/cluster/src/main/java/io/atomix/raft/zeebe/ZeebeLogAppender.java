@@ -29,12 +29,9 @@ public interface ZeebeLogAppender {
   /**
    * Appends an entry to the local Raft log and schedules replication to each follower.
    *
-   * @param lowestPosition lowest record position in the data buffer
-   * @param highestPosition highest record position in the data buffer
    * @param data data to store in the entry
    */
-  void appendEntry(
-      long lowestPosition, long highestPosition, ByteBuffer data, AppendListener appendListener);
+  void appendEntry(ByteBuffer data, AppendListener appendListener);
 
   /**
    * An append listener can observe and be notified of different events related to the append
@@ -55,6 +52,8 @@ public interface ZeebeLogAppender {
      * @param error the error that occurred
      */
     void onWriteError(Throwable error);
+
+    void updateRecords(ZeebeEntry entry, long index) throws IllegalStateException;
 
     /**
      * Called when the entry has been committed.

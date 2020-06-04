@@ -134,8 +134,8 @@ public class StreamProcessingComposite {
         .write();
   }
 
-  public long writeBatch(final RecordToWrite... recordToWrites) {
-    return streams.writeBatch(getLogName(partitionId), recordToWrites);
+  public long writeBatch(final RecordToWrite... recordsToWrite) {
+    return streams.writeBatch(getLogName(partitionId), recordsToWrite);
   }
 
   public long writeCommandOnPartition(

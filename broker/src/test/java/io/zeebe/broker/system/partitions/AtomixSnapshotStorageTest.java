@@ -73,7 +73,7 @@ public final class AtomixSnapshotStorageTest {
   public void shouldNotGetPendingSnapshotForNegativePosition() {
     // given
     final var storage = newStorage();
-    logStorageRule.appendEntry(1, 1, ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(ByteBuffer.allocate(1));
 
     // when
     final var snapshot = storage.getPendingSnapshotFor(-1);
@@ -85,9 +85,9 @@ public final class AtomixSnapshotStorageTest {
   public void shouldGetPendingSnapshotForPositions() {
     // given
     final var storage = newStorage();
-    logStorageRule.appendEntry(1, 1, ByteBuffer.allocate(1));
-    logStorageRule.appendEntry(2, 2, ByteBuffer.allocate(1));
-    logStorageRule.appendEntry(3, 3, ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(ByteBuffer.allocate(1));
 
     // when
     final var first = storage.getPendingSnapshotFor(2).orElseThrow();
@@ -103,7 +103,7 @@ public final class AtomixSnapshotStorageTest {
   public void shouldReturnNullIfNoEntryForPosition() {
     // given
     final var storage = newStorage();
-    logStorageRule.appendEntry(3, 3, ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(ByteBuffer.allocate(1));
 
     // when
     final var snapshot = storage.getPendingSnapshotFor(1);
@@ -232,8 +232,8 @@ public final class AtomixSnapshotStorageTest {
   public void shouldNotCreatePendingSnapshotIfSnapshotExistsForIndex() throws IOException {
     // given
     final var storage = newStorage();
-    logStorageRule.appendEntry(2, 2, ByteBuffer.allocate(1));
-    logStorageRule.appendEntry(3, 3, ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(ByteBuffer.allocate(1));
     final var snapshot = storage.getPendingSnapshotFor(3).orElseThrow();
     Files.createDirectories(snapshot.getPath());
     storage.commitSnapshot(snapshot.getPath()).orElseThrow();
@@ -246,8 +246,8 @@ public final class AtomixSnapshotStorageTest {
   }
 
   private Snapshot newPendingSnapshot(final long position) {
-    logStorageRule.appendEntry(position - 1, position - 1, ByteBuffer.allocate(1));
-    logStorageRule.appendEntry(position, position, ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(ByteBuffer.allocate(1));
+    logStorageRule.appendEntry(ByteBuffer.allocate(1));
     return snapshotStorage.getPendingSnapshotFor(position).orElseThrow();
   }
 

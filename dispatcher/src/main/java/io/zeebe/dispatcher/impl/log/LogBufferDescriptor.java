@@ -121,6 +121,8 @@ public final class LogBufferDescriptor {
     LOG_META_DATA_LENGTH = offset;
   }
 
+  private LogBufferDescriptor() {}
+
   /**
    * Calculates the required capacity for a log buffer which can hold up to the provided bytes of
    * data.

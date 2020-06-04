@@ -32,19 +32,12 @@ import java.util.Objects;
  */
 public class ZeebeEntry extends TimestampedEntry {
 
-  private final long lowestPosition;
-  private final long highestPosition;
+  private long lowestPosition = -1;
+  private long highestPosition = -1;
   private final ByteBuffer data;
 
-  public ZeebeEntry(
-      final long term,
-      final long timestamp,
-      final long lowestPosition,
-      final long highestPosition,
-      final ByteBuffer data) {
+  public ZeebeEntry(final long term, final long timestamp, final ByteBuffer data) {
     super(term, timestamp);
-    this.lowestPosition = lowestPosition;
-    this.highestPosition = highestPosition;
     this.data = data;
   }
 
@@ -71,8 +64,16 @@ public class ZeebeEntry extends TimestampedEntry {
     return lowestPosition;
   }
 
+  public void setLowestPosition(final long position) {
+    lowestPosition = position;
+  }
+
   public long highestPosition() {
     return highestPosition;
+  }
+
+  public void setHighestPosition(final long position) {
+    highestPosition = position;
   }
 
   public ByteBuffer data() {

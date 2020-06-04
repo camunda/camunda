@@ -173,13 +173,11 @@ final class CommandApiRequestHandler implements RequestHandler {
       logStreamWriter.keyNull();
     }
 
-    final long eventPosition =
-        logStreamWriter
-            .metadataWriter(eventMetadata)
-            .value(buffer, eventOffset, eventLength)
-            .tryWrite();
-
-    return eventPosition >= 0;
+    return logStreamWriter
+        .metadataWriter(eventMetadata)
+        .value(buffer, eventOffset, eventLength)
+        .tryWrite()
+        .isPresent();
   }
 
   void addPartition(

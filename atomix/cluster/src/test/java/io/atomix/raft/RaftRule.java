@@ -61,6 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -88,7 +89,7 @@ public final class RaftRule extends ExternalResource {
   private volatile long highestCommit;
   private final AtomicReference<CommitAwaiter> commitAwaiterRef = new AtomicReference<>();
   private final Map<String, AtomicReference<CountDownLatch>> compactAwaiters = new HashMap<>();
-  private long position;
+  private final AtomicLong position = new AtomicLong();
 
   private RaftRule(final int nodeCount) {
     this.nodeCount = nodeCount;
@@ -115,7 +116,7 @@ public final class RaftRule extends ExternalResource {
   protected void before() throws Throwable {
     directory = temporaryFolder.newFolder().toPath();
 
-    position = 0;
+    position.set(0);
     members = new ArrayList<>();
     memberLog = new ConcurrentHashMap<>();
     nextId = 0;
@@ -148,7 +149,7 @@ public final class RaftRule extends ExternalResource {
     commitAwaiterRef.set(null);
     memberLog.clear();
     memberLog = null;
-    position = 0;
+    position.set(0);
     directory = null;
   }
 
@@ -504,14 +505,9 @@ public final class RaftRule extends ExternalResource {
   }
 
   private TestAppendListener appendEntry(final int entrySize, final LeaderRole leaderRole) {
-    final var appendListener = new TestAppendListener();
-    position += 1;
+    final var appendListener = new TestAppendListener(position);
     leaderRole.appendEntry(
-        position,
-        position + 10,
-        ByteBuffer.wrap(RandomStringUtils.random(entrySize).getBytes()),
-        appendListener);
-    position += 10;
+        ByteBuffer.wrap(RandomStringUtils.random(entrySize).getBytes()), appendListener);
     return appendListener;
   }
 
@@ -590,6 +586,11 @@ public final class RaftRule extends ExternalResource {
   private static final class TestAppendListener implements ZeebeLogAppender.AppendListener {
 
     private final CompletableFuture<Long> commitFuture = new CompletableFuture<>();
+    private final AtomicLong position;
+
+    public TestAppendListener(final AtomicLong position) {
+      this.position = position;
+    }
 
     @Override
     public void onWrite(final Indexed<ZeebeEntry> indexed) {}
@@ -597,6 +598,14 @@ public final class RaftRule extends ExternalResource {
     @Override
     public void onWriteError(final Throwable error) {
       fail("Unexpected write error: " + error.getMessage());
+    }
+
+    @Override
+    public void updateRecords(final ZeebeEntry entry, final long index)
+        throws IllegalStateException {
+      final long position = this.position.incrementAndGet();
+      entry.setLowestPosition(position);
+      entry.setHighestPosition(position);
     }
 
     @Override

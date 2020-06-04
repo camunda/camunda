@@ -7,14 +7,12 @@
  */
 package io.zeebe.logstreams.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
@@ -22,20 +20,32 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.zip.CRC32C;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
+
   private static final int INITIAL_BUFFER_CAPACITY = 1024 * 32;
 
   private final ClaimedFragmentBatch claimedBatch = new ClaimedFragmentBatch();
@@ -56,10 +66,15 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
   private long key;
 
   private long sourceEventPosition;
-  private int sourceIndex;
 
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
+  private final Queue<Long> eventChecksums = new LinkedBlockingQueue<>();
+  private final Map<Long, CompletableActorFuture<Long>> eventFutures = new ConcurrentHashMap<>();
+
+  private CRC32C checksum = new CRC32C();
+  private final LoggedEventImpl reader = new LoggedEventImpl();
+  private final UnsafeBuffer view = new UnsafeBuffer(0, 0);
 
   LogStreamBatchWriterImpl(final int partitionId, final Dispatcher dispatcher) {
     this.logWriteBuffer = dispatcher;
@@ -78,6 +93,7 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
   public LogEntryBuilder event() {
     copyExistingEventToBuffer();
     resetEvent();
+
     return this;
   }
 
@@ -103,11 +119,6 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
   @Override
   public LogEntryBuilder key(final long key) {
     this.key = key;
-    return this;
-  }
-
-  public LogEntryBuilder sourceIndex(final int index) {
-    sourceIndex = index;
     return this;
   }
 
@@ -166,9 +177,6 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
     eventBuffer.putLong(eventBufferOffset, key, Protocol.ENDIANNESS);
     eventBufferOffset += SIZE_OF_LONG;
 
-    eventBuffer.putInt(eventBufferOffset, sourceIndex, Protocol.ENDIANNESS);
-    eventBufferOffset += SIZE_OF_INT;
-
     eventBuffer.putInt(eventBufferOffset, metadataLength, Protocol.ENDIANNESS);
     eventBufferOffset += SIZE_OF_INT;
 
@@ -188,22 +196,22 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
   }
 
   @Override
-  public long tryWrite() {
+  public Optional<ActorFuture<Long>> tryWrite() {
+    CompletableActorFuture<Long> future = null;
     if (eventCount == 0) {
       if (valueWriter == null) {
-        return 0;
+        future = new CompletableActorFuture<>();
+        future.complete(0L);
+        return Optional.of(future);
       }
 
       copyExistingEventToBuffer();
     }
 
-    long result = claimBatchForEvents();
-    if (result >= 0) {
+    if (claimBatchForEvents() >= 0) {
       try {
-        // return position of last event
-        result = writeEventsToBuffer(claimedBatch.getBuffer());
-
-        claimedBatch.commit();
+        future = writeEventsToBuffer(claimedBatch.getBuffer());
+        claimedBatch.commit(this::updateRecord);
       } catch (final Exception e) {
         claimedBatch.abort();
         LangUtil.rethrowUnchecked(e);
@@ -211,13 +219,60 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
         reset();
       }
     }
-    return result;
+
+    return Optional.ofNullable(future);
+  }
+
+  private void updateRecord(
+      final ZeebeEntry entry, final Long position, final Integer fragmentOffset) {
+    updateRecord(view, reader, eventChecksums, eventFutures, entry, position, fragmentOffset);
+  }
+
+  static void updateRecord(
+      final UnsafeBuffer view,
+      final LoggedEventImpl reader,
+      final Queue<Long> eventChecksums,
+      final Map<Long, CompletableActorFuture<Long>> eventFutures,
+      final ZeebeEntry entry,
+      final Long position,
+      final Integer fragmentOffset) {
+    view.wrap(entry.data());
+    reader.wrap(view, fragmentOffset);
+
+    final CRC32C checksum = new CRC32C();
+    checksum.reset();
+    checksum.update(
+        reader.getValueBuffer().byteArray(), reader.getMessageOffset(), reader.getMessageLength());
+
+    final Long storedChecksum = eventChecksums.poll();
+    if (storedChecksum == null || checksum.getValue() != storedChecksum) {
+      final IllegalStateException exception =
+          new IllegalStateException(
+              String.format(
+                  "Record %d in entry with index %d is not in expected order.",
+                  position & 0xFF, position >> 8));
+
+      eventFutures.entrySet().stream()
+          .sorted(Map.Entry.comparingByKey())
+          .forEachOrdered(e -> e.getValue().completeExceptionally(exception));
+      eventFutures.clear();
+      eventChecksums.clear();
+
+      throw exception;
+    }
+
+    LogEntryDescriptor.setPosition(
+        view, DataFrameDescriptor.messageOffset(fragmentOffset), position);
+    final CompletableActorFuture<Long> future = eventFutures.remove(storedChecksum);
+    if (future != null) {
+      future.complete(position);
+    }
   }
 
   private long claimBatchForEvents() {
     final int batchLength = eventLength + (eventCount * HEADER_BLOCK_LENGTH);
 
-    long claimedPosition = -1;
+    long claimedPosition;
     do {
       claimedPosition = logWriteBuffer.claim(claimedBatch, eventCount, batchLength);
     } while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
@@ -225,17 +280,13 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
     return claimedPosition;
   }
 
-  private long writeEventsToBuffer(final MutableDirectBuffer writeBuffer) {
-    long lastEventPosition = -1L;
+  private CompletableActorFuture<Long> writeEventsToBuffer(final MutableDirectBuffer writeBuffer) {
+    long lastChecksum = -1L;
     eventBufferOffset = 0;
 
-    final long[] positions = new long[eventCount];
     for (int i = 0; i < eventCount; i++) {
       final long key = eventBuffer.getLong(eventBufferOffset, Protocol.ENDIANNESS);
       eventBufferOffset += SIZE_OF_LONG;
-
-      final int sourceIndex = eventBuffer.getInt(eventBufferOffset, Protocol.ENDIANNESS);
-      eventBufferOffset += SIZE_OF_INT;
 
       final int metadataLength = eventBuffer.getInt(eventBufferOffset, Protocol.ENDIANNESS);
       eventBufferOffset += SIZE_OF_INT;
@@ -246,21 +297,10 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
       final int fragmentLength = headerLength(metadataLength) + valueLength;
 
       // allocate fragment for log entry
-      final long nextFragmentPosition = claimedBatch.nextFragment(fragmentLength, logId);
+      claimedBatch.nextFragment(fragmentLength, logId);
       final int bufferOffset = claimedBatch.getFragmentOffset();
 
-      final long position = nextFragmentPosition - alignedFramedLength(fragmentLength);
-      positions[i] = position;
-
-      // write log entry header
-      setPosition(writeBuffer, bufferOffset, position);
-
-      if (sourceIndex >= 0 && sourceIndex < i) {
-        setSourceEventPosition(writeBuffer, bufferOffset, positions[sourceIndex]);
-      } else {
-        setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
-      }
-
+      setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
       setKey(writeBuffer, bufferOffset, key);
       setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
       setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
@@ -276,14 +316,28 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
           valueOffset(bufferOffset, metadataLength), eventBuffer, eventBufferOffset, valueLength);
       eventBufferOffset += valueLength;
 
-      lastEventPosition = position;
+      lastChecksum = storeChecksum(writeBuffer, bufferOffset, fragmentLength);
     }
-    return lastEventPosition;
+
+    final CompletableActorFuture<Long> future = new CompletableActorFuture<>();
+    eventFutures.put(lastChecksum, future);
+    return future;
+  }
+
+  private long storeChecksum(
+      final MutableDirectBuffer writeBuffer, final int bufferOffset, final int fragmentLength) {
+    final byte[] buff = new byte[fragmentLength];
+    writeBuffer.getBytes(bufferOffset, buff);
+
+    checksum.reset();
+    checksum.update(buff);
+    eventChecksums.offer(checksum.getValue());
+
+    return checksum.getValue();
   }
 
   private void resetEvent() {
     key = LogEntryDescriptor.KEY_NULL_VALUE;
-    sourceIndex = -1;
 
     metadataWriter = metadataWriterInstance;
     valueWriter = null;

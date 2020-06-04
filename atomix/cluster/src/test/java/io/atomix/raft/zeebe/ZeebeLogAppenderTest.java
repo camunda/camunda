@@ -103,30 +103,12 @@ public class ZeebeLogAppenderTest {
     assertEquals(0L, appenderListener.getCommitted().size());
   }
 
-  @Test(timeout = 5000)
-  public void shouldNotAppendInconsistent() {
-    // given
-    final ZeebeLogAppender appender = helper.awaitLeaderAppender(1);
-    final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
-    final Indexed<ZeebeEntry> first = appenderListener.append(appender, 4, 5, data);
-
-    // when
-    appender.appendEntry(5, 5, data, appenderListener);
-    final Throwable error = appenderListener.pollError();
-
-    // then
-    assertEquals(4, (first.entry().lowestPosition()));
-    assertEquals(5, (first.entry().highestPosition()));
-    assertNotNull(error);
-    assertEquals(IllegalStateException.class, error.getClass());
-  }
-
   private void append() {
     append(ByteBuffer.allocate(Integer.BYTES).putInt(0, 1));
   }
 
   private void append(final ByteBuffer data) {
     final ZeebeLogAppender appender = helper.awaitLeaderAppender(1);
-    appender.appendEntry(0, 0, data, appenderListener);
+    appender.appendEntry(data, appenderListener);
   }
 }

@@ -94,9 +94,12 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
   @Override
   @SuppressWarnings("unchecked")
   public <T extends E> Indexed<T> append(final T entry) {
-    // Store the entry index.
-    final long index = getNextIndex();
+    return append(entry, getNextIndex());
+  }
 
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T extends E> Indexed<T> append(final T entry, long index) {
     try {
       // Serialize the entry.
       memory.clear();
@@ -162,7 +165,8 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
     if (entry.index() < nextIndex) {
       truncate(entry.index() - 1);
     }
-    append(entry.entry());
+
+    append(entry.entry(), getNextIndex());
   }
 
   @Override

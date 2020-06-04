@@ -19,6 +19,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -30,8 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class DispatcherIntegrationTest {
-  public static final FragmentHandler CONSUME =
-      (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
+
   @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
 
   @Test
@@ -215,7 +215,7 @@ public final class DispatcherIntegrationTest {
             .maxFragmentLength(frameLength)
             .bufferSize(frameLength);
 
-    assertThatThrownBy(() -> builder.build())
+    assertThatThrownBy(builder::build)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected the buffer size to be greater than %s, but was %s. The max fragment length is set to %s.",
@@ -240,30 +240,34 @@ public final class DispatcherIntegrationTest {
   protected void claimFragment(
       final Dispatcher dispatcher, final ClaimedFragment claimedFragment, final int totalWork) {
     for (int i = 1; i <= totalWork; i++) {
-      while (dispatcher.claim(claimedFragment, 59) <= 0) {
-        // spin
-      }
+      long position;
+      do {
+        position =
+            dispatcher.claim(claimedFragment, 59) - DataFrameDescriptor.alignedFramedLength(59);
+      } while (position < 0);
+
       final MutableDirectBuffer buffer = claimedFragment.getBuffer();
       buffer.putInt(claimedFragment.getOffset(), i);
-      claimedFragment.commit();
+
+      claimedFragment.commit(position, (a, b, c) -> {});
     }
   }
 
   protected void claimFragmentOnDifferentThreads(final Dispatcher dispatcher, final int totalWork) {
     for (int i = 1; i <= totalWork; i++) {
       final int runCount = i;
-      new Thread() {
-        @Override
-        public void run() {
-          final ClaimedFragment claimedFragment = new ClaimedFragment();
-          while (dispatcher.claim(claimedFragment, 59) <= 0) {
-            // spin
-          }
-          final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-          buffer.putInt(claimedFragment.getOffset(), runCount);
-          claimedFragment.commit();
-        }
-      }.start();
+      new Thread(
+              () -> {
+                final ClaimedFragment claimedFragment = new ClaimedFragment();
+                long position;
+                do {
+                  position = dispatcher.claim(claimedFragment, 59);
+                } while (position <= 0);
+                final MutableDirectBuffer buffer = claimedFragment.getBuffer();
+                buffer.putInt(claimedFragment.getOffset(), runCount);
+                claimedFragment.commit(position, (a, b, c) -> {});
+              })
+          .start();
     }
   }
 

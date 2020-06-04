@@ -572,20 +572,25 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     }
   }
 
+  private <E extends RaftLogEntry> CompletableFuture<Indexed<E>> append(final E entry) {
+    return append(entry, raft.getLogWriter().getNextIndex());
+  }
+
   /**
    * Appends an entry to the Raft log.
    *
-   * @param entry the entry to append
    * @param <E> the entry type
+   * @param entry the entry to append
    * @return a completable future to be completed once the entry has been appended
    */
-  private <E extends RaftLogEntry> CompletableFuture<Indexed<E>> append(final E entry) {
+  private <E extends RaftLogEntry> CompletableFuture<Indexed<E>> append(
+      final E entry, final long index) {
     CompletableFuture<Indexed<E>> resultingFuture = null;
     int retries = 0;
 
     do {
       try {
-        resultingFuture = tryToAppend(entry);
+        resultingFuture = tryToAppend(entry, index);
       } catch (final StorageException storageException) {
 
         // storage exception wraps IOException's
@@ -609,11 +614,12 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return resultingFuture;
   }
 
-  private <E extends RaftLogEntry> CompletableFuture<Indexed<E>> tryToAppend(final E entry) {
-    CompletableFuture<Indexed<E>> resultingFuture = null;
+  private <E extends RaftLogEntry> CompletableFuture<Indexed<E>> tryToAppend(
+      final E entry, final long index) {
+    CompletableFuture<Indexed<E>> resultingFuture;
 
     try {
-      final Indexed<E> indexedEntry = raft.getLogWriter().append(entry);
+      final Indexed<E> indexedEntry = raft.getLogWriter().append(entry, index);
       log.trace("Appended {}", indexedEntry);
       resultingFuture = CompletableFuture.completedFuture(indexedEntry);
     } catch (final StorageException.TooLarge e) {
@@ -638,25 +644,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   @Override
-  public void appendEntry(
-      final long lowestPosition,
-      final long highestPosition,
-      final ByteBuffer data,
-      final AppendListener appendListener) {
-    raft.getThreadContext()
-        .execute(() -> safeAppendEntry(lowestPosition, highestPosition, data, appendListener));
+  public void appendEntry(final ByteBuffer data, final AppendListener appendListener) {
+    raft.getThreadContext().execute(() -> safeAppendEntry(data, appendListener));
   }
 
-  private void safeAppendEntry(
-      final long lowestPosition,
-      final long highestPosition,
-      final ByteBuffer data,
-      final AppendListener appendListener) {
+  private void safeAppendEntry(final ByteBuffer data, final AppendListener appendListener) {
     raft.checkThread();
 
-    final ZeebeEntry entry =
-        new ZeebeEntry(
-            raft.getTerm(), System.currentTimeMillis(), lowestPosition, highestPosition, data);
+    final ZeebeEntry entry = new ZeebeEntry(raft.getTerm(), System.currentTimeMillis(), data);
 
     if (!isRunning()) {
       appendListener.onWriteError(
@@ -664,14 +659,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       return;
     }
 
-    if (!isEntryConsistent(lowestPosition)) {
-      appendListener.onWriteError(
-          new IllegalStateException("New entry has lower Zeebe log position than last entry."));
+    final long index = raft.getLogWriter().getNextIndex();
+
+    try {
+      appendListener.updateRecords(entry, index);
+    } catch (final IllegalStateException e) {
       raft.transition(Role.FOLLOWER);
+      appendListener.onWriteError(e);
       return;
     }
 
-    append(entry)
+    append(entry, index)
         .whenComplete(
             (indexed, error) -> {
               if (error != null) {
@@ -686,33 +684,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 replicate(indexed, appendListener);
               }
             });
-  }
-
-  /**
-   * Returns true if the supplied position is higher than the last ZeebeEntry in the log or if no
-   * ZeebeEntry was found at all.
-   */
-  private boolean isEntryConsistent(long newEntryPosition) {
-    Indexed<RaftLogEntry> lastEntry = raft.getLogWriter().getLastEntry();
-
-    if (lastEntry == null || lastEntry.type() != ZeebeEntry.class) {
-      long index = raft.getLogWriter().getLastIndex();
-      // if the last index doesn't exist, getLastIndex() will already return the index before
-      // the current segment
-      if (lastEntry != null) {
-        index--;
-      }
-
-      do {
-        raft.getLogReader().reset(index);
-        lastEntry = raft.getLogReader().next();
-        --index;
-      } while (index > 0 && lastEntry != null && lastEntry.type() != ZeebeEntry.class);
-    }
-
-    return lastEntry == null
-        || lastEntry.type() != ZeebeEntry.class
-        || newEntryPosition > ((ZeebeEntry) lastEntry.entry()).highestPosition();
   }
 
   private void replicate(final Indexed<ZeebeEntry> indexed, final AppendListener appendListener) {

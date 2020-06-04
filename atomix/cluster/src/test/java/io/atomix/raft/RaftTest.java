@@ -87,7 +87,8 @@ public class RaftTest extends ConcurrentTestCase {
   private volatile List<RaftServer> servers = new ArrayList<>();
   private volatile TestRaftProtocolFactory protocolFactory;
   private volatile ThreadContext context;
-  private volatile long position = 0;
+  private final AtomicLong position = new AtomicLong();
+
   private Path directory;
   private final Map<MemberId, TestRaftServerProtocol> serverProtocols = Maps.newConcurrentMap();
 
@@ -737,15 +738,10 @@ public class RaftTest extends ConcurrentTestCase {
   }
 
   private TestAppendListener appendEntry(final int entrySize, final LeaderRole leaderRole) {
-    final var appendListener = new TestAppendListener();
+    final var appendListener = new TestAppendListener(position);
 
-    position += 1;
     leaderRole.appendEntry(
-        position,
-        position + 10,
-        ByteBuffer.wrap(RandomStringUtils.random(entrySize).getBytes()),
-        appendListener);
-    position += 10;
+        ByteBuffer.wrap(RandomStringUtils.random(entrySize).getBytes()), appendListener);
     return appendListener;
   }
 
@@ -760,6 +756,11 @@ public class RaftTest extends ConcurrentTestCase {
   private static final class TestAppendListener implements ZeebeLogAppender.AppendListener {
 
     private final CompletableFuture<Long> commitFuture = new CompletableFuture<>();
+    private final AtomicLong position;
+
+    public TestAppendListener(final AtomicLong position) {
+      this.position = position;
+    }
 
     @Override
     public void onWrite(final Indexed<ZeebeEntry> indexed) {}
@@ -767,6 +768,13 @@ public class RaftTest extends ConcurrentTestCase {
     @Override
     public void onWriteError(final Throwable error) {
       fail("Unexpected write error: " + error.getMessage());
+    }
+
+    @Override
+    public void updateRecords(final ZeebeEntry entry, final long index) {
+      final long pos = position.getAndAdd(10);
+      entry.setLowestPosition(pos);
+      entry.setHighestPosition(pos + 9);
     }
 
     @Override

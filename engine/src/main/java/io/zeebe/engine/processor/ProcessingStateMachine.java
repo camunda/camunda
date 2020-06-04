@@ -29,6 +29,8 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -126,7 +128,7 @@ public final class ProcessingStateMachine {
   private LoggedEvent currentEvent;
   private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private long writtenEventPosition = StreamProcessor.UNSET_POSITION;
+  private ActorFuture<Long> writtenEventPosition;
   private long lastSuccessfulProcessedEventPosition = StreamProcessor.UNSET_POSITION;
   private long lastWrittenEventPosition = StreamProcessor.UNSET_POSITION;
   private boolean onErrorHandling;
@@ -344,11 +346,18 @@ public final class ProcessingStateMachine {
   }
 
   private void writeEvent() {
+    final AtomicReference<ActorFuture<Long>> future = new AtomicReference<>();
+
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              writtenEventPosition = logStreamWriter.flush();
-              return writtenEventPosition >= 0;
+              final Optional<ActorFuture<Long>> optFuture = logStreamWriter.flush();
+              if (optFuture.isEmpty()) {
+                return false;
+              }
+
+              future.set(optFuture.get());
+              return true;
             },
             abortCondition);
 
@@ -359,6 +368,7 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_WRITE_EVENT_ABORTED, currentEvent, t);
             onError(t, this::writeEvent);
           } else {
+            writtenEventPosition = future.get();
             updateState();
             metrics.eventWritten();
           }
@@ -371,21 +381,38 @@ public final class ProcessingStateMachine {
             () -> {
               zeebeDbTransaction.commit();
 
-              // needs to be directly after commit
-              // so no other ActorJob can interfere between commit and update the positions
               if (onErrorHandling) {
-                errorRecordPosition = writtenEventPosition;
-                logStream
-                    .getCommitPositionAsync()
-                    .onComplete(
-                        (commitPosition, error) -> {
-                          if (error == null) {
-                            LOG.info(LOG_ERROR_EVENT_WRITTEN, errorRecordPosition, commitPosition);
-                          }
-                        });
+                writtenEventPosition.onComplete(
+                    (pos, err) -> {
+                      if (err != null) {
+                        LOG.error(
+                            "Expected to write event to Raft log but got unexpected error:", err);
+                      } else {
+                        errorRecordPosition = pos;
+                        logStream
+                            .getCommitPositionAsync()
+                            .onComplete(
+                                (commitPosition, error) -> {
+                                  if (error == null) {
+                                    LOG.info(
+                                        LOG_ERROR_EVENT_WRITTEN,
+                                        errorRecordPosition,
+                                        commitPosition);
+                                  }
+                                });
+                      }
+                    });
               }
               lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
-              lastWrittenEventPosition = writtenEventPosition;
+              writtenEventPosition.onComplete(
+                  (pos, err) -> {
+                    if (err != null) {
+                      LOG.error(
+                          "Expected to write event to Raft log but got unexpected error:", err);
+                    } else if (pos > lastWrittenEventPosition) {
+                      lastWrittenEventPosition = pos;
+                    }
+                  });
               return true;
             },
             abortCondition);

@@ -21,21 +21,27 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static org.agrona.BitUtil.align;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.TriConsumer;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.sched.ActorCondition;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public final class SubscriptionPeekBlockTest {
   static final int A_PARTITION_LENGTH = 1024;
@@ -54,6 +60,7 @@ public final class SubscriptionPeekBlockTest {
   ByteBuffer rawBuffer;
   ByteBuffer rawBufferView;
   BlockPeek blockPeekSpy;
+  Map<Long, TriConsumer<ZeebeEntry, Long, Integer>> handlers;
 
   Subscription subscription;
   private ActorCondition dataConsumed;
@@ -65,12 +72,14 @@ public final class SubscriptionPeekBlockTest {
     rawBuffer = ByteBuffer.allocate(A_PARTITION_LENGTH * 3);
     rawBufferView = rawBuffer.duplicate();
     allocatedBufferMock = mock(AllocatedBuffer.class);
+    handlers = mock(Map.class);
 
     when(dataBufferMock.capacity()).thenReturn(A_PARTITION_LENGTH);
     when(allocatedBufferMock.getRawBuffer()).thenReturn(rawBuffer);
     logBufferPartition =
         new LogBufferPartition(dataBufferMock, metadataBufferMock, A_PARTITION_DATA_SECTION_OFFSET);
 
+    when(handlers.remove(anyLong())).thenReturn((a, b, c) -> {});
     subscriberPositionMock = mock(AtomicPosition.class);
 
     blockPeekSpy = spy(new BlockPeek());
@@ -81,7 +90,13 @@ public final class SubscriptionPeekBlockTest {
     dataConsumed = mock(ActorCondition.class);
     subscription =
         new Subscription(
-            subscriberPositionMock, mock(AtomicPosition.class), 0, "0", dataConsumed, logBuffer);
+            subscriberPositionMock,
+            mock(AtomicPosition.class),
+            0,
+            "0",
+            dataConsumed,
+            logBuffer,
+            handlers);
   }
 
   @Test
@@ -118,8 +133,11 @@ public final class SubscriptionPeekBlockTest {
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             nextFragmentOffset(fragOffset));
+    verify(handlers, Mockito.times(1)).remove(anyLong());
+
     // and the position was not increased
     verifyNoMoreInteractions(subscriberPositionMock);
+    verify(handlers, Mockito.times(1)).remove(anyLong());
   }
 
   @Test
@@ -233,6 +251,7 @@ public final class SubscriptionPeekBlockTest {
             nextFragOffset);
     // and the position was increased by the fragment length of the two fragments
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset));
+    verify(handlers, Mockito.times(2)).remove(anyLong());
   }
 
   @Test
@@ -367,7 +386,7 @@ public final class SubscriptionPeekBlockTest {
   }
 
   @Test
-  public void shouldRollOverPartitionOnPaddingIfEndOfPArtition() {
+  public void shouldRollOverPartitionOnPaddingIfEndOfPartition() {
     final int fragOffset = A_PARTITION_LENGTH - A_FRAGMENT_LENGTH;
 
     when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset)))
@@ -398,7 +417,7 @@ public final class SubscriptionPeekBlockTest {
     final int firstFragOffset = A_PARTITION_LENGTH - (2 * A_FRAGMENT_LENGTH);
     final int secondFragOffset = nextFragmentOffset(firstFragOffset);
 
-    final int nextPartionId = A_PARTITION_ID + 1;
+    final int nextPartitionId = A_PARTITION_ID + 1;
     final int nextFragOffset = 0;
 
     when(dataBufferMock.getIntVolatile(lengthOffset(firstFragOffset)))
@@ -418,7 +437,7 @@ public final class SubscriptionPeekBlockTest {
             A_PARTITION_ID,
             firstFragOffset,
             2 * A_FRAGMENT_LENGTH,
-            position(nextPartionId, nextFragOffset),
+            position(nextPartitionId, nextFragOffset),
             false);
 
     blockPeekSpy.markCompleted();
@@ -434,11 +453,12 @@ public final class SubscriptionPeekBlockTest {
             -1,
             firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             A_FRAGMENT_LENGTH,
-            nextPartionId,
+            nextPartitionId,
             nextFragOffset);
     // and the position was rolled over to the next partition
     verify(subscriberPositionMock)
-        .proposeMaxOrdered(position(nextPartionId, nextFragOffset)); // is secondFragOffset somehow
+        .proposeMaxOrdered(
+            position(nextPartitionId, nextFragOffset)); // is secondFragOffset somehow
   }
 
   @Test
@@ -464,13 +484,13 @@ public final class SubscriptionPeekBlockTest {
     assertThat(bytesAvailable).isEqualTo(0);
     // no fragment was peeked
     verifyNoMoreInteractions(blockPeekSpy);
-    // and the position was rolled over to the next fragement after the padding
+    // and the position was rolled over to the next fragment after the padding
     verify(subscriberPositionMock)
         .proposeMaxOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
   }
 
   @Test
-  public void shouldNotRollOverIfHitsPaddingNotAtAndOfPartition() {
+  public void shouldNotRollOverIfHitsPaddingNotAtEndOfPartition() {
     final int firstFragOffset = 0;
     final int secondFragOffset = nextFragmentOffset(firstFragOffset);
     final int nextFragOffset = nextFragmentOffset(secondFragOffset);
@@ -510,7 +530,7 @@ public final class SubscriptionPeekBlockTest {
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             nextFragOffset);
-    // and the position was rolled over to the next fragement after the padding
+    // and the position was rolled over to the next fragment after the padding
     verify(subscriberPositionMock)
         .proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset)); // is secondFragOffset somehow
   }
@@ -538,6 +558,7 @@ public final class SubscriptionPeekBlockTest {
     assertThat(bytesAvailable).isEqualTo(0);
     // no fragment was peeked
     verifyNoMoreInteractions(blockPeekSpy);
+    verifyNoMoreInteractions(handlers);
   }
 
   @Test
@@ -588,10 +609,11 @@ public final class SubscriptionPeekBlockTest {
             nextFragOffset);
     // and the position was increased by the fragment length of the two fragments
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset));
+    verify(handlers, Mockito.times(1)).remove(anyLong());
   }
 
   @Test
-  public void shouldNotReadFragmentBatchPartitial() {
+  public void shouldNotReadFragmentBatchPartial() {
     final int firstFragOffset = 0;
     final int secondFragOffset = nextFragmentOffset(firstFragOffset);
     final int nextFragOffset = nextFragmentOffset(secondFragOffset);
@@ -625,10 +647,11 @@ public final class SubscriptionPeekBlockTest {
     assertThat(bytesAvailable).isEqualTo(0);
     // no fragment was peeked
     verifyNoMoreInteractions(blockPeekSpy);
+    verifyNoMoreInteractions(handlers); // verify(handlers, Mockito.times(1)).remove(anyLong());
   }
 
   @Test
-  public void shouldDiscardPartitialFragmentBatch() {
+  public void shouldDiscardPartialFragmentBatch() {
     final int firstFragOffset = 0;
     final int secondFragOffset = nextFragmentOffset(firstFragOffset);
     final int nextFragOffset = nextFragmentOffset(secondFragOffset);
@@ -674,6 +697,7 @@ public final class SubscriptionPeekBlockTest {
             secondFragOffset);
     // and the position was increased by the fragment length of the two fragments
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, secondFragOffset));
+    verify(handlers, times(1)).remove(anyLong());
   }
 
   private int nextFragmentOffset(final int currentOffset) {

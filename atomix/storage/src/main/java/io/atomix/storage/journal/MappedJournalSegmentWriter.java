@@ -102,9 +102,12 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   @Override
   @SuppressWarnings("unchecked")
   public <T extends E> Indexed<T> append(final T entry) {
-    // Store the entry index.
-    final long index = getNextIndex();
+    return append(entry, getNextIndex());
+  }
 
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T extends E> Indexed<T> append(final T entry, long index) {
     // Serialize the entry.
     final int position = buffer.position();
     if (position + Integer.BYTES + Integer.BYTES > buffer.limit()) {
@@ -166,7 +169,8 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
     if (entry.index() < nextIndex) {
       truncate(entry.index() - 1);
     }
-    append(entry.entry());
+
+    append(entry.entry(), entry.index());
   }
 
   @Override

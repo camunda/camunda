@@ -22,7 +22,10 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.util.TriConsumer;
+import java.util.function.BiConsumer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -30,7 +33,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * A claimed batch of fragments in the buffer. Use {@link #nextFragment(int, int)} to add a new
  * fragment to the batch. Write the fragment message using {@link #getBuffer()} and {@link
  * #getFragmentOffset()} to get the buffer offset of this fragment. Complete the whole batch
- * operation by calling either {@link #commit()} or {@link #abort()}.
+ * operation by calling either {@link #commit(TriConsumer)} or {@link #abort()}.
  *
  * <p><b>The claimed batch is reusable but not thread-safe.</b>
  */
@@ -49,18 +52,20 @@ public class ClaimedFragmentBatch {
   private int nextOffset;
 
   private Runnable onCompleteHandler;
+  private BiConsumer<Long, TriConsumer<ZeebeEntry, Long, Integer>> addHandler;
 
   public ClaimedFragmentBatch() {
     buffer = new UnsafeBuffer(0, 0);
   }
 
   public void wrap(
-      final UnsafeBuffer underlyingbuffer,
+      final UnsafeBuffer underlyingBuffer,
       final int partitionId,
       final int fragmentOffset,
       final int fragmentLength,
-      final Runnable onCompleteHandler) {
-    buffer.wrap(underlyingbuffer, fragmentOffset, fragmentLength);
+      final Runnable onCompleteHandler,
+      final BiConsumer<Long, TriConsumer<ZeebeEntry, Long, Integer>> addHandler) {
+    buffer.wrap(underlyingBuffer, fragmentOffset, fragmentLength);
 
     this.partitionId = partitionId;
     this.partitionOffset = fragmentOffset;
@@ -69,6 +74,7 @@ public class ClaimedFragmentBatch {
     nextOffset = 0;
 
     this.onCompleteHandler = onCompleteHandler;
+    this.addHandler = addHandler;
   }
 
   /** @return the claimed batch buffer to write in. */
@@ -115,8 +121,12 @@ public class ClaimedFragmentBatch {
     return position(partitionId, partitionOffset + nextOffset);
   }
 
-  /** Commit all fragments of the batch so that it can be read by subscriptions. */
-  public void commit() {
+  /**
+   * Commit all fragments of the batch so that it can be read by subscriptions.
+   *
+   * @param handler handler that updates the fragments positions
+   */
+  public void commit(final TriConsumer<ZeebeEntry, Long, Integer> handler) {
     final int firstFragmentFramedLength = -buffer.getInt(lengthOffset(FIRST_FRAGMENT_OFFSET));
 
     // do not set batch flags if only one fragment in the batch
@@ -141,8 +151,8 @@ public class ClaimedFragmentBatch {
 
     fillRemainingBatchSize();
 
-    // commit the first fragment at the end so that the batch can be read at
-    // once
+    // commit the first fragment at the end so that the batch can be read at once
+    addHandler.accept(position(partitionId, partitionOffset), handler);
     buffer.putIntOrdered(lengthOffset(FIRST_FRAGMENT_OFFSET), firstFragmentFramedLength);
     onCompleteHandler.run();
 

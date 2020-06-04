@@ -7,6 +7,7 @@
  */
 package io.zeebe.logstreams.util;
 
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static org.mockito.Mockito.spy;
 
 import io.atomix.raft.partition.impl.RaftNamespaces;
@@ -20,7 +21,7 @@ import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
-import io.zeebe.logstreams.impl.log.LoggedEventImpl;
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
@@ -35,12 +36,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
 public final class AtomixLogStorageRule extends ExternalResource
     implements AtomixReaderFactory, AtomixAppenderSupplier, ZeebeLogAppender, Supplier<LogStorage> {
-  private final LoggedEventImpl event = new LoggedEventImpl();
+
   private final TemporaryFolder temporaryFolder;
   private final int partitionId;
   private final UnaryOperator<RaftStorage.Builder> builder;
@@ -72,7 +74,7 @@ public final class AtomixLogStorageRule extends ExternalResource
   }
 
   @Override
-  public void before() throws Throwable {
+  public void before() {
     open();
   }
 
@@ -82,30 +84,41 @@ public final class AtomixLogStorageRule extends ExternalResource
   }
 
   @Override
-  public void appendEntry(
-      final long lowestPosition,
-      final long highestPosition,
-      final ByteBuffer data,
-      final AppendListener listener) {
-    final Indexed<ZeebeEntry> entry =
-        raftLog
-            .writer()
-            .append(
-                new ZeebeEntry(
-                    0, System.currentTimeMillis(), lowestPosition, highestPosition, data));
+  public void appendEntry(final ByteBuffer data, final AppendListener listener) {
+    final ZeebeEntry zbEntry = new ZeebeEntry(0, System.currentTimeMillis(), data);
+    final long index = raftLog.writer().getNextIndex();
+
+    listener.updateRecords(zbEntry, index);
+    final Indexed<ZeebeEntry> entry = raftLog.writer().append(zbEntry, index);
+
+    final UnsafeBuffer block = new UnsafeBuffer(data);
+    int fragOffset = 0;
+    int recordIndex = 0;
+
+    while (fragOffset < data.limit()) {
+      try {
+        fragOffset += DataFrameDescriptor.alignedLength(block.getInt(lengthOffset(fragOffset)));
+        recordIndex++;
+      } catch (IndexOutOfBoundsException e) {
+        break;
+      }
+    }
+
+    zbEntry.setLowestPosition(index << 8);
+    zbEntry.setHighestPosition((index << 8) + (recordIndex - 1));
+
     listener.onWrite(entry);
-    raftLog.writer().commit(entry.index());
+    raftLog.writer().commit(index);
 
     listener.onCommit(entry);
     if (positionListener != null) {
-      positionListener.accept(highestPosition);
+      positionListener.accept(zbEntry.highestPosition());
     }
   }
 
-  public Indexed<ZeebeEntry> appendEntry(
-      final long lowestPosition, final long highestPosition, final ByteBuffer data) {
+  public Indexed<ZeebeEntry> appendEntry(final ByteBuffer data) {
     final var listener = new NoopListener();
-    appendEntry(lowestPosition, highestPosition, data, listener);
+    appendEntry(data, listener);
 
     return listener.lastWrittenEntry;
   }
@@ -222,6 +235,9 @@ public final class AtomixLogStorageRule extends ExternalResource
 
     @Override
     public void onWriteError(final Throwable throwable) {}
+
+    @Override
+    public void updateRecords(ZeebeEntry entry, long index) {}
 
     @Override
     public void onCommit(final Indexed<ZeebeEntry> indexed) {}

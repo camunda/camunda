@@ -47,6 +47,11 @@ public class DelegatingJournalWriter<E> implements JournalWriter<E> {
   }
 
   @Override
+  public <T extends E> Indexed<T> append(final T entry, long index) {
+    return delegate.append(entry, index);
+  }
+
+  @Override
   public void append(final Indexed<E> entry) {
     delegate.append(entry);
   }

@@ -18,8 +18,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 public final class ClaimedFragmentTest {
-  private static final Runnable DO_NOTHING = () -> {};
-
   private static final int A_FRAGMENT_LENGTH = 1024;
   UnsafeBuffer underlyingBuffer;
   ClaimedFragment claimedFragment;
@@ -34,10 +32,11 @@ public final class ClaimedFragmentTest {
   public void shouldCommit() {
     // given
     final AtomicBoolean isSet = new AtomicBoolean(false);
-    claimedFragment.wrap(underlyingBuffer, 0, A_FRAGMENT_LENGTH, () -> isSet.set(true));
+    claimedFragment.wrap(
+        underlyingBuffer, 0, A_FRAGMENT_LENGTH, () -> isSet.set(true), (a, b) -> {});
 
     // if
-    claimedFragment.commit();
+    claimedFragment.commit(0, (a, b, c) -> {});
 
     // then
     assertThat(underlyingBuffer.getInt(lengthOffset(0))).isEqualTo(A_FRAGMENT_LENGTH);
@@ -49,7 +48,7 @@ public final class ClaimedFragmentTest {
   @Test
   public void shouldReturnOffsetAndLength() {
     // if
-    claimedFragment.wrap(underlyingBuffer, 0, A_FRAGMENT_LENGTH, DO_NOTHING);
+    claimedFragment.wrap(underlyingBuffer, 0, A_FRAGMENT_LENGTH, () -> {}, (a, b) -> {});
 
     // then
     assertThat(claimedFragment.getOffset()).isEqualTo(HEADER_LENGTH);

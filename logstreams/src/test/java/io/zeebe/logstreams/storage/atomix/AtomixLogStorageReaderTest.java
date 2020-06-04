@@ -194,8 +194,8 @@ public final class AtomixLogStorageReaderTest {
   private Indexed<ZeebeEntry> append(
       final long lowestPosition, final long highestPosition, final ByteBuffer data) {
     final var future = new CompletableFuture<Indexed<ZeebeEntry>>();
-    final var listener = new Listener(future);
-    storageRule.appendEntry(lowestPosition, highestPosition, data, listener);
+    final var listener = new Listener(future, lowestPosition, highestPosition);
+    storageRule.appendEntry(data, listener);
     return future.join();
   }
 
@@ -210,9 +210,16 @@ public final class AtomixLogStorageReaderTest {
 
   private static final class Listener implements AppendListener {
     private final CompletableFuture<Indexed<ZeebeEntry>> future;
+    private final long lowestPosition;
+    private final long highestPosition;
 
-    private Listener(final CompletableFuture<Indexed<ZeebeEntry>> future) {
+    private Listener(
+        final CompletableFuture<Indexed<ZeebeEntry>> future,
+        long lowestPosition,
+        long highestPosition) {
       this.future = future;
+      this.lowestPosition = lowestPosition;
+      this.highestPosition = highestPosition;
     }
 
     @Override
@@ -223,6 +230,12 @@ public final class AtomixLogStorageReaderTest {
     @Override
     public void onWriteError(final Throwable throwable) {
       future.completeExceptionally(throwable);
+    }
+
+    @Override
+    public void updateRecords(ZeebeEntry entry, long index) throws IllegalStateException {
+      entry.setLowestPosition(lowestPosition);
+      entry.setHighestPosition(highestPosition);
     }
 
     @Override

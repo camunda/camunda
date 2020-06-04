@@ -9,7 +9,6 @@ package io.zeebe.logstreams.impl.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -27,8 +26,11 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.After;
@@ -55,7 +57,7 @@ public final class LogStorageAppenderTest {
   private LogStreamReaderImpl reader;
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     logStorageRule.open(
         b -> b.withMaxSegmentSize(MAX_FRAGMENT_SIZE * 100).withMaxEntrySize(MAX_FRAGMENT_SIZE));
     logStorage = spy(logStorageRule.get());
@@ -84,15 +86,19 @@ public final class LogStorageAppenderTest {
   }
 
   @Test
-  public void shouldAppendSingleEvent() throws InterruptedException {
+  public void shouldAppendSingleEvent()
+      throws InterruptedException, TimeoutException, ExecutionException {
     // given
     final var value = new Value(1);
     final var latch = new CountDownLatch(1);
 
-    // when
-    final var position = writer.valueWriter(value).tryWrite();
     logStorageRule.setPositionListener(i -> latch.countDown());
     schedulerRule.submitActor(appender).join();
+
+    // when
+    final var optionalFuture = writer.valueWriter(value).tryWrite();
+    assertThat(optionalFuture.isPresent()).isTrue();
+    final long position = optionalFuture.get().get(15, TimeUnit.SECONDS);
 
     // then
     final Value expected = new Value();
@@ -104,28 +110,38 @@ public final class LogStorageAppenderTest {
   }
 
   @Test
-  public void shouldAppendMultipleEvents() throws InterruptedException {
+  public void shouldAppendMultipleEvents() throws InterruptedException, ExecutionException {
     // given
     final var values = List.of(new Value(1), new Value(2));
-    final var latch = new CountDownLatch(1);
+    final var latch = new CountDownLatch(2);
+    final var appendedPositions = new ConcurrentLinkedQueue<>();
+
+    logStorageRule.setPositionListener(
+        i -> {
+          latch.countDown();
+          appendedPositions.add(i);
+        });
+    schedulerRule.submitActor(appender).join();
 
     // when
-    final var lowestPosition = writer.valueWriter(values.get(0)).tryWrite();
-    final var highestPosition = writer.valueWriter(values.get(1)).tryWrite();
-    logStorageRule.setPositionListener(i -> latch.countDown());
-    schedulerRule.submitActor(appender).join();
+    var optionalFuture = writer.valueWriter(values.get(0)).tryWrite();
+    assertThat(optionalFuture.isPresent()).isTrue();
+    final long lowestPosition = optionalFuture.get().get();
+
+    optionalFuture = writer.valueWriter(values.get(1)).tryWrite();
+    assertThat(optionalFuture.isPresent()).isTrue();
+    final long highestPosition = optionalFuture.get().get();
 
     // then
     final Value expected = new Value();
     latch.await(5, TimeUnit.SECONDS);
 
     // make sure we read the correct lowest/highest positions
-    verify(logStorage, timeout(1000).times(1))
-        .append(
-            eq(lowestPosition),
-            eq(highestPosition),
-            any(ByteBuffer.class),
-            any(AppendListener.class));
+    verify(logStorage, timeout(1000).times(2))
+        .append(any(ByteBuffer.class), any(AppendListener.class));
+
+    assertThat(appendedPositions.poll()).isEqualTo(lowestPosition);
+    assertThat(appendedPositions.poll()).isEqualTo(highestPosition);
 
     // ensure events were written properly
     assertThat(reader.seek(lowestPosition)).isTrue();

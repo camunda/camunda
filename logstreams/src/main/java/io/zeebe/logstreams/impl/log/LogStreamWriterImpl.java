@@ -12,11 +12,11 @@ import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
@@ -24,9 +24,18 @@ import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.zip.CRC32C;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class LogStreamWriterImpl implements LogStreamRecordWriter {
   private final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
@@ -39,6 +48,11 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
   private long sourceRecordPosition = -1L;
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
+  private CRC32C checksum = new CRC32C();
+  private final LoggedEventImpl reader = new LoggedEventImpl();
+  private final UnsafeBuffer view = new UnsafeBuffer(0, 0);
+  private final Queue<Long> eventChecksums = new LinkedBlockingQueue<>();
+  private final Map<Long, CompletableActorFuture<Long>> eventFutures = new ConcurrentHashMap<>();
 
   LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
     this.logWriteBuffer = logWriteBuffer;
@@ -111,12 +125,13 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
   }
 
   @Override
-  public long tryWrite() {
+  public Optional<ActorFuture<Long>> tryWrite() {
+    CompletableActorFuture<Long> future = null;
     if (valueWriter == null) {
-      return 0;
+      future = new CompletableActorFuture<>();
+      future.complete(0L);
+      return Optional.of(future);
     }
-
-    long result = -1;
 
     final int valueLength = valueWriter.getLength();
     final int metadataLength = metadataWriter.getLength();
@@ -130,7 +145,6 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
         final int bufferOffset = claimedFragment.getOffset();
 
         // write log entry header
-        setPosition(writeBuffer, bufferOffset, claimedPosition);
         setSourceEventPosition(writeBuffer, bufferOffset, sourceRecordPosition);
         setKey(writeBuffer, bufferOffset, key);
         setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
@@ -143,8 +157,8 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
         // write log entry
         valueWriter.write(writeBuffer, valueOffset(bufferOffset, metadataLength));
 
-        result = claimedPosition;
-        claimedFragment.commit();
+        future = storeChecksum(writeBuffer, bufferOffset);
+        claimedFragment.commit(claimedPosition, this::updateRecord);
       } catch (final Exception e) {
         claimedFragment.abort();
         LangUtil.rethrowUnchecked(e);
@@ -153,13 +167,34 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
       }
     }
 
-    return result;
+    return Optional.ofNullable(future);
+  }
+
+  private CompletableActorFuture<Long> storeChecksum(
+      final MutableDirectBuffer writeBuffer, final int bufferOffset) {
+    final int length = valueWriter.getLength() + headerLength(metadataWriter.getLength());
+    final byte[] buff = new byte[length];
+
+    writeBuffer.getBytes(bufferOffset, buff);
+    checksum.reset();
+    checksum.update(buff);
+    eventChecksums.offer(checksum.getValue());
+
+    final CompletableActorFuture<Long> future = new CompletableActorFuture<>();
+    eventFutures.put(checksum.getValue(), future);
+    return future;
+  }
+
+  private void updateRecord(
+      final ZeebeEntry entry, final Long position, final Integer fragmentOffset) {
+    LogStreamBatchWriterImpl.updateRecord(
+        view, reader, eventChecksums, eventFutures, entry, position, fragmentOffset);
   }
 
   private long claimLogEntry(final int valueLength, final int metadataLength) {
     final int framedLength = valueLength + headerLength(metadataLength);
 
-    long claimedPosition = -1;
+    long claimedPosition;
 
     do {
 

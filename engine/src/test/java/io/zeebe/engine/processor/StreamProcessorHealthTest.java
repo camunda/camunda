@@ -25,6 +25,8 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -290,7 +292,7 @@ public class StreamProcessorHealthTest {
     }
 
     @Override
-    public long flush() {
+    public Optional<ActorFuture<Long>> flush() {
       if (shouldFlushThrowException.get()) {
         throw new RuntimeException("flush failed");
       }

@@ -21,7 +21,6 @@ import io.zeebe.logstreams.impl.backpressure.AppenderVegasCfg;
 import io.zeebe.logstreams.impl.backpressure.BackpressureConstants;
 import io.zeebe.logstreams.impl.backpressure.NoopAppendLimiter;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.LogStorage.AppendListener;
 import io.zeebe.util.Environment;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitorable;
@@ -31,8 +30,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import org.agrona.concurrent.UnsafeBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 /** Consume the write buffer and append the blocks to the distributedlog. */
@@ -49,9 +47,9 @@ public final class LogStorageAppender extends Actor implements HealthMonitorable
   private final AppendLimiter appendEntryLimiter;
   private final AppendBackpressureMetrics appendBackpressureMetrics;
   private final Environment env;
-  private final LoggedEventImpl positionReader = new LoggedEventImpl();
   private FailureListener failureListener;
   private final ActorFuture<Void> closeFuture;
+  private final AtomicLong counter = new AtomicLong();
 
   public LogStorageAppender(
       final String name,
@@ -106,13 +104,14 @@ public final class LogStorageAppender extends Actor implements HealthMonitorable
     final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
     final int bytes = rawBuffer.remaining();
     final ByteBuffer copiedBuffer = ByteBuffer.allocate(bytes).put(rawBuffer).flip();
-    final Positions positions = readPositions(copiedBuffer);
 
     // Commit position is the position of the last event.
     appendBackpressureMetrics.newEntryToAppend();
-    if (appendEntryLimiter.tryAcquire(positions.highest)) {
-      final var listener = new Listener(positions);
-      appendToStorage(copiedBuffer, positions, listener);
+    final long entryNum = counter.incrementAndGet();
+    if (appendEntryLimiter.tryAcquire(entryNum)) {
+      final var listener =
+          new Listener(this, blockPeek.getHandlers(), blockPeek.getBlockLength(), entryNum);
+      appendToStorage(copiedBuffer, listener);
       blockPeek.markCompleted();
     } else {
       appendBackpressureMetrics.deferred();
@@ -124,9 +123,8 @@ public final class LogStorageAppender extends Actor implements HealthMonitorable
     }
   }
 
-  private void appendToStorage(
-      final ByteBuffer buffer, final Positions positions, final Listener listener) {
-    logStorage.append(positions.lowest, positions.highest, buffer, listener);
+  private void appendToStorage(final ByteBuffer buffer, final Listener listener) {
+    logStorage.append(buffer, listener);
   }
 
   @Override
@@ -172,19 +170,6 @@ public final class LogStorageAppender extends Actor implements HealthMonitorable
     }
   }
 
-  private Positions readPositions(final ByteBuffer buffer) {
-    final var view = new UnsafeBuffer(buffer);
-    final var positions = new Positions();
-    var offset = 0;
-    do {
-      positionReader.wrap(view, offset);
-      positions.accept(positionReader.getPosition());
-      offset += positionReader.getLength();
-    } while (offset < view.capacity());
-
-    return positions;
-  }
-
   @Override
   public HealthStatus getHealthStatus() {
     return actor.isClosed() ? HealthStatus.UNHEALTHY : HealthStatus.HEALTHY;
@@ -195,7 +180,7 @@ public final class LogStorageAppender extends Actor implements HealthMonitorable
     actor.run(() -> this.failureListener = failureListener);
   }
 
-  private void onFailure(final Throwable error) {
+  void onFailure(final Throwable error) {
     LOG.error("Actor {} failed in phase {}.", name, actor.getLifecyclePhase(), error);
     actor.fail();
     if (failureListener != null) {
@@ -203,50 +188,11 @@ public final class LogStorageAppender extends Actor implements HealthMonitorable
     }
   }
 
-  private static final class Positions {
-    private long lowest = Long.MAX_VALUE;
-    private long highest = Long.MIN_VALUE;
-
-    private void accept(final long position) {
-      lowest = Math.min(lowest, position);
-      highest = Math.max(highest, position);
-    }
+  void runInActor(final Runnable runnable) {
+    actor.run(runnable);
   }
 
-  private final class Listener implements AppendListener {
-    private final Positions positions;
-
-    private Listener(final Positions positions) {
-      this.positions = positions;
-    }
-
-    @Override
-    public void onWrite(final long address) {}
-
-    @Override
-    public void onWriteError(final Throwable error) {
-      LOG.error("Failed to append block with last event position {}.", positions.highest, error);
-      if (error instanceof NoSuchElementException) {
-        // Not a failure. It is probably during transition to follower.
-        return;
-      }
-      actor.run(() -> onFailure(error));
-    }
-
-    @Override
-    public void onCommit(final long address) {
-      releaseBackPressure();
-    }
-
-    @Override
-    public void onCommitError(final long address, final Throwable error) {
-      LOG.error("Failed to commit block with last event position {}.", positions.highest, error);
-      releaseBackPressure();
-      actor.run(() -> onFailure(error));
-    }
-
-    private void releaseBackPressure() {
-      actor.run(() -> appendEntryLimiter.onCommit(positions.highest));
-    }
+  AppendLimiter getAppendLimiter() {
+    return appendEntryLimiter;
   }
 }

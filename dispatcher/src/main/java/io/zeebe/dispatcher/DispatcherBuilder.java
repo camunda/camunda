@@ -94,20 +94,12 @@ public final class DispatcherBuilder {
     final AllocatedBuffer allocatedBuffer = initAllocatedBuffer(bufferSize);
 
     // allocate the counters
-
-    AtomicPosition publisherLimit = null;
-    AtomicPosition publisherPosition = null;
-
     final long initialPosition = position(initialPartitionId, 0);
 
-    publisherLimit = new AtomicPosition();
-    publisherLimit.set(initialPosition);
-
-    publisherPosition = new AtomicPosition();
-    publisherPosition.set(initialPosition);
+    final AtomicPosition publisherLimit = new AtomicPosition(initialPosition);
+    final AtomicPosition publisherPosition = new AtomicPosition(initialPosition);
 
     // create dispatcher
-
     final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize, initialPartitionId);
     final LogBufferAppender logAppender = new LogBufferAppender();
 

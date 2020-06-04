@@ -667,7 +667,8 @@ public class PassiveRole extends InactiveRole {
       final RaftLogWriter writer,
       final CompletableFuture<AppendResponse> future) {
     try {
-      final Indexed<RaftLogEntry> indexed = writer.append(entry);
+      final Indexed<RaftLogEntry> indexed =
+          writer.append(entry, raft.getLogWriter().getNextIndex());
       log.trace("Appended {}", indexed);
     } catch (final StorageException.TooLarge e) {
       log.warn(

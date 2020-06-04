@@ -23,7 +23,10 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
+import io.zeebe.util.TriConsumer;
+import java.util.function.BiConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,6 +35,8 @@ import org.junit.rules.ExpectedException;
 
 public final class ClaimedFragmentBatchTest {
   private static final Runnable DO_NOTHING = () -> {};
+  private static final BiConsumer<Long, TriConsumer<ZeebeEntry, Long, Integer>> ADD_NOTHING =
+      (a, b) -> {};
 
   private static final int PARTITION_ID = 1;
   private static final int PARTITION_OFFSET = 16;
@@ -53,7 +58,7 @@ public final class ClaimedFragmentBatchTest {
   public void shouldAddFragment() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     // when
     final long position = claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
@@ -80,7 +85,7 @@ public final class ClaimedFragmentBatchTest {
   public void shouldAddMultipleFragments() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
 
@@ -105,13 +110,13 @@ public final class ClaimedFragmentBatchTest {
   public void shouldCommitBatch() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
     claimedBatch.nextFragment(MESSAGE_LENGTH, 2);
 
     // when
-    claimedBatch.commit();
+    claimedBatch.commit((a, b, c) -> {});
 
     // then
     int bufferOffset = PARTITION_OFFSET;
@@ -133,7 +138,7 @@ public final class ClaimedFragmentBatchTest {
   public void shouldAbortBatch() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
     claimedBatch.nextFragment(MESSAGE_LENGTH, 2);
@@ -159,13 +164,13 @@ public final class ClaimedFragmentBatchTest {
   public void shouldFillRemainingBatchLengthOnCommit() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
     claimedBatch.nextFragment(MESSAGE_LENGTH, 2);
 
     // when
-    claimedBatch.commit();
+    claimedBatch.commit((a, b, c) -> {});
 
     // then
     final int bufferOffset = PARTITION_OFFSET + 2 * alignedFramedLength(MESSAGE_LENGTH);
@@ -178,7 +183,7 @@ public final class ClaimedFragmentBatchTest {
   public void shouldFillRemainingBatchLengthOnAbort() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
     claimedBatch.nextFragment(MESSAGE_LENGTH, 2);
@@ -197,12 +202,12 @@ public final class ClaimedFragmentBatchTest {
   public void shouldCommitSingleFragmentBatch() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
 
     // when
-    claimedBatch.commit();
+    claimedBatch.commit((a, b, c) -> {});
 
     // then
     int bufferOffset = PARTITION_OFFSET;
@@ -222,7 +227,7 @@ public final class ClaimedFragmentBatchTest {
   public void shouldFillBatchCompletely() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
 
@@ -231,7 +236,7 @@ public final class ClaimedFragmentBatchTest {
     final int fragmentLength = remainingCapacity - HEADER_LENGTH;
 
     claimedBatch.nextFragment(fragmentLength, 2);
-    claimedBatch.commit();
+    claimedBatch.commit((a, b, c) -> {});
 
     // then
     final int bufferOffset = PARTITION_OFFSET + alignedFramedLength(MESSAGE_LENGTH);
@@ -243,7 +248,7 @@ public final class ClaimedFragmentBatchTest {
   public void shouldAddFragmentIfRemainingCapacityIsLessThanAlignment() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
 
@@ -252,7 +257,7 @@ public final class ClaimedFragmentBatchTest {
     final int fragmentLength = remainingCapacity - HEADER_LENGTH - FRAME_ALIGNMENT + 1;
 
     claimedBatch.nextFragment(fragmentLength, 2);
-    claimedBatch.commit();
+    claimedBatch.commit((a, b, c) -> {});
 
     // then
     final int bufferOffset = PARTITION_OFFSET + alignedFramedLength(MESSAGE_LENGTH);
@@ -264,7 +269,7 @@ public final class ClaimedFragmentBatchTest {
   public void shouldFailToAddFragmentIfGreaterThanRemainingCapacity() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
 
@@ -282,7 +287,7 @@ public final class ClaimedFragmentBatchTest {
   public void shouldFailToAddFragmentIfRemainingCapacityIsLessThanPaddingMessage() {
     // given
     claimedBatch.wrap(
-        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING);
+        underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH, DO_NOTHING, ADD_NOTHING);
 
     claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
 

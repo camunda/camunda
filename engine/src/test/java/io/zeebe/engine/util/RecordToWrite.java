@@ -51,14 +51,12 @@ public final class RecordToWrite {
   public RecordToWrite jobBatch(final JobBatchIntent intent) {
     recordMetadata.valueType(ValueType.JOB_BATCH).intent(intent);
 
-    final JobBatchRecord jobBatchRecord =
+    unifiedRecordValue =
         new JobBatchRecord()
             .setWorker("worker")
             .setTimeout(10_000L)
             .setType("type")
             .setMaxJobsToActivate(1);
-
-    unifiedRecordValue = jobBatchRecord;
     return this;
   }
 

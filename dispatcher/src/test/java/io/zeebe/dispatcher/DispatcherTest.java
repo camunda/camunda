@@ -21,28 +21,28 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.TriConsumer;
 import io.zeebe.util.sched.ActorCondition;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import org.agrona.concurrent.UnsafeBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
 
 public final class DispatcherTest {
 
-  static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
+  static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(StandardCharsets.UTF_8);
   static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
   static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
-  static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
   static final int AN_INITIAL_PARTITION_ID = 0;
   static final int A_LOG_WINDOW_LENGTH = 128;
-  static final int A_PARITION_SIZE = 1024;
+  static final int A_PARTITION_SIZE = 1024;
   static final int A_STREAM_ID = 20;
   @Rule public final ExpectedException thrown = ExpectedException.none();
   Dispatcher dispatcher;
@@ -57,6 +57,7 @@ public final class DispatcherTest {
   FragmentHandler fragmentHandler;
   ClaimedFragment claimedFragment;
   AtomicPosition subscriberPosition;
+  Map<Long, TriConsumer<ZeebeEntry, Long, Integer>> handlers;
 
   @Before
   public void setup() {
@@ -64,10 +65,11 @@ public final class DispatcherTest {
     logBufferPartition0 = mock(LogBufferPartition.class);
     logBufferPartition1 = mock(LogBufferPartition.class);
     logBufferPartition2 = mock(LogBufferPartition.class);
+    handlers = mock(Map.class);
 
     when(logBuffer.getInitialPartitionId()).thenReturn(AN_INITIAL_PARTITION_ID);
     when(logBuffer.getPartitionCount()).thenReturn(3);
-    when(logBuffer.getPartitionSize()).thenReturn(A_PARITION_SIZE);
+    when(logBuffer.getPartitionSize()).thenReturn(A_PARTITION_SIZE);
     when(logBuffer.getPartition(0)).thenReturn(logBufferPartition0);
     when(logBuffer.getPartition(1)).thenReturn(logBufferPartition1);
     when(logBuffer.getPartition(2)).thenReturn(logBufferPartition2);
@@ -99,11 +101,12 @@ public final class DispatcherTest {
                 spy(
                     new Subscription(
                         subscriberPosition,
-                        determineLimit(subscriberId),
+                        determineLimit(),
                         subscriberId,
                         subscriberName,
                         onConsumption,
-                        logBuffer));
+                        logBuffer,
+                        handlers));
             return subscriptionSpy;
           }
         };
@@ -147,6 +150,7 @@ public final class DispatcherTest {
             eq(claimedFragment),
             eq(A_MSG_PAYLOAD_LENGTH),
             eq(A_STREAM_ID),
+            any(),
             any()))
         .thenReturn(A_FRAGMENT_LENGTH);
 
@@ -163,7 +167,8 @@ public final class DispatcherTest {
             eq(claimedFragment),
             eq(A_MSG_PAYLOAD_LENGTH),
             eq(A_STREAM_ID),
-            Mockito.any());
+            any(),
+            any());
 
     verify(publisherLimit).get();
     verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
@@ -222,7 +227,7 @@ public final class DispatcherTest {
 
   @Test
   public void shouldUpdatePublisherLimitToNextPartition() {
-    when(subscriberPosition.get()).thenReturn(position(10, A_PARITION_SIZE - A_LOG_WINDOW_LENGTH));
+    when(subscriberPosition.get()).thenReturn(position(10, A_PARTITION_SIZE - A_LOG_WINDOW_LENGTH));
 
     dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
     dispatcher.updatePublisherLimit();

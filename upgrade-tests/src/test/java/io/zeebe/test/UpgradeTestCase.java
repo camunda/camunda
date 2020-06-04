@@ -9,6 +9,7 @@ package io.zeebe.test;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.util.TriConsumer;
 import io.zeebe.util.collection.Tuple;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -103,10 +104,5 @@ public final class UpgradeTestCase {
     UpgradeTestCase done() {
       return new UpgradeTestCase(this);
     }
-  }
-
-  @FunctionalInterface
-  interface TriConsumer<A, B, C> {
-    void accept(A a, B b, C c);
   }
 }

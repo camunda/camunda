@@ -128,7 +128,12 @@ class MappableJournalSegmentWriter<E> implements JournalWriter<E> {
 
   @Override
   public <T extends E> Indexed<T> append(final T entry) {
-    return writer.append(entry);
+    return append(entry, getNextIndex());
+  }
+
+  @Override
+  public <T extends E> Indexed<T> append(final T entry, long index) {
+    return writer.append(entry, index);
   }
 
   @Override

@@ -56,7 +56,7 @@ public final class FragmentBatchIntegrationTest {
   }
 
   @After
-  public void cleanUp() throws Exception {
+  public void cleanUp() {
     dispatcher.close();
   }
 
@@ -67,7 +67,7 @@ public final class FragmentBatchIntegrationTest {
     int readBytes = subscription.peekBlock(blockPeek, 1024, false);
     assertThat(readBytes).isEqualTo(0);
 
-    batch.commit();
+    batch.commit((a, b, c) -> {});
 
     readBytes = subscription.peekBlock(blockPeek, 1024, false);
     assertThat(readBytes).isGreaterThan(0);
@@ -89,7 +89,7 @@ public final class FragmentBatchIntegrationTest {
   @Test
   public void shouldReadFragmentAfterCommittedBatch() {
     claimAndWriteFragments();
-    batch.commit();
+    batch.commit((a, b, c) -> {});
 
     // read batch fragments
     final int readBytes = subscription.peekBlock(blockPeek, 1024, false);
@@ -123,7 +123,7 @@ public final class FragmentBatchIntegrationTest {
     final int batchSize = alignedFramedLength(MSG1.length) + alignedFramedLength(MSG2.length);
 
     claimAndWriteFragments();
-    batch.commit();
+    batch.commit((a, b, c) -> {});
 
     int readBytes = subscription.peekBlock(blockPeek, batchSize - 1, false);
     assertThat(readBytes).isEqualTo(0);
@@ -156,7 +156,7 @@ public final class FragmentBatchIntegrationTest {
     batch.nextFragment(MSG3.length, 3);
     writeBuffer.putBytes(batch.getFragmentOffset(), MSG3);
 
-    batch.commit();
+    batch.commit((a, b, c) -> {});
   }
 
   private int assertThatBufferContains(

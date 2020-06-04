@@ -60,9 +60,9 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
         now,
         (key, record) -> {
           writer.appendFollowUpCommand(
-              key, JobIntent.TIME_OUT, record, (m) -> m.valueType(ValueType.JOB));
+              key, JobIntent.TIME_OUT, record, m -> m.valueType(ValueType.JOB));
 
-          final boolean flushed = writer.flush() >= 0;
+          final boolean flushed = writer.flush().isPresent();
           if (!flushed) {
             writer.reset();
           }

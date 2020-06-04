@@ -7,12 +7,17 @@
  */
 package io.zeebe.logstreams.log;
 
+import io.zeebe.util.sched.future.ActorFuture;
+import java.util.Optional;
+
 public interface LogStreamWriter {
 
   /**
-   * Attempts to write the event to the underlying stream.
+   * Attempts to write the event to the underlying stream. If the writer failed to write to the
+   * Dispatcher, the Optional will be empty. Otherwise, it will contain a future that will be
+   * completed when the event's position is generated.
    *
-   * @return the event position or a negative value if fails to write the event
+   * @return an optional with a future to be completed with the position after it's written
    */
-  long tryWrite();
+  Optional<ActorFuture<Long>> tryWrite();
 }

@@ -21,6 +21,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -113,11 +114,11 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
           logStreamWriter.appendFollowUpEvent(
               deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentRecord);
 
-          final long position = logStreamWriter.flush();
-          if (position < 0) {
-            actor.yield();
-          } else {
+          final Optional<ActorFuture<Long>> optPosition = logStreamWriter.flush();
+          if (optPosition.isPresent()) {
             actor.done();
+          } else {
+            actor.yield();
           }
         });
   }
