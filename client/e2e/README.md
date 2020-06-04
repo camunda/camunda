@@ -9,11 +9,11 @@ cd client/e2e
 yarn install
 ```
 
-## Run Operate backend
+## Run Zeebe Tasklist backend
 
 Prerequisite: Elasticsearch is running on port 9200 (e.g. with `make env-up` command).
 
-To run E2E dedicated backend (Zeebe on port 26503 + Operate on port 8081):
+To run E2E dedicated backend (Zeebe on port 26503 + Zeebe Tasklist on port 8081):
 
 ```sh
 make start-e2e

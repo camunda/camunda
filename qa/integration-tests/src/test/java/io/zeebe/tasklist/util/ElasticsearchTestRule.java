@@ -195,7 +195,6 @@ public class ElasticsearchTestRule extends TestWatcher {
     if(found) {
       logger.debug("Conditions met in round {} ({} ms).", waitingRound,finishedTime );
     }else {
-      //throw new OperateRuntimeException(String.format("Conditions not met after %s rounds (%s ms).", waitingRound, finishedTime));
       logger.debug("Conditions not met after %s rounds (%s ms).", waitingRound, finishedTime);
     }
   }

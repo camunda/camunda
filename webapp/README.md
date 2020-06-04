@@ -1,4 +1,4 @@
-# Operate Backend
+# Zeebe Tasklist Backend
 
 > **Notice:** Make sure to have [docker](https://docs.docker.com/install/)
 > and [docker-compose](https://docs.docker.com/compose/install/) installed
@@ -21,12 +21,12 @@ In case of high load you may need to scale importing of data from Zeebe and arch
 In order to achieve this you can run any of the modules separately: Webapp, Importer and Archiver.
 
 For this you can use following configuration parameters:
-* `camunda.operate.importerEnabled`: when `true` will include the Importer in current run, default: true
-* `camunda.operate.webappEnabled`: when `true` will include the Webapp in current run, default: true
-* `camunda.operate.archiverEnabled`: when `true` will include the Archiver in current run, default: true
-* `camunda.operate.clusterNode.partitionIds`: array of Zeebe partition ids, this Importer (or Archiver) node must be responsible for, default: empty array, meaning all partitions data is loaded
-* `camunda.operate.clusterNode.nodeCount`: total amount of Importer (or Archiver) nodes in cluster
-* `camunda.operate.clusterNode.currentNodeId`: id of current Importer (or Archiver) node, starting from 0
+* `zeebe.tasklist.importerEnabled`: when `true` will include the Importer in current run, default: true
+* `zeebe.tasklist.webappEnabled`: when `true` will include the Webapp in current run, default: true
+* `zeebe.tasklist.archiverEnabled`: when `true` will include the Archiver in current run, default: true
+* `zeebe.tasklist.clusterNode.partitionIds`: array of Zeebe partition ids, this Importer (or Archiver) node must be responsible for, default: empty array, meaning all partitions data is loaded
+* `zeebe.tasklist.clusterNode.nodeCount`: total amount of Importer (or Archiver) nodes in cluster
+* `zeebe.tasklist.clusterNode.currentNodeId`: id of current Importer (or Archiver) node, starting from 0
 
 It's enough to configure either `partitionIds` or pair of `nodeCount` and `currentNodeId`.
 
@@ -43,15 +43,15 @@ There are two sets of data, defined in two different Spring profiles:
 
 Ways to activated profiles:
 
-- when running via `make env-up` or `docker-compose`: edit `docker-compose.yml`, section `services.operate.environment` (always leave `dev` profile active)
+- when running via `make env-up` or `docker-compose`: edit `docker-compose.yml`, section `services.zeebe-tasklist.environment` (always leave `dev` profile active)
 ```text
 - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
 ```
-- when running from distribution via `operate` shell script or `operate.bat`:
+- when running from distribution via `tasklist` shell script or `tasklist.bat`:
 ```text
-JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate
+JAVA_OPTS=-Dspring.profiles.active=dev-data ./tasklist
 or 
-JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate.bat
+JAVA_OPTS=-Dspring.profiles.active=dev-data ./tasklist.bat
 ```
 
 ## GraphQL
