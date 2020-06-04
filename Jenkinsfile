@@ -267,5 +267,5 @@ pipeline {
 }
 
 boolean connectionProblem() {
-  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|Connection reset|ProtocolException|java\.net\.ProtocolException: Expected HTTP 101 response but was '500 Internal Server Error').*/
+  return currentBuild.rawBuild.getLog(50000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|Connection reset|ProtocolException|java\.net\.ProtocolException: Expected HTTP 101 response but was '500 Internal Server Error').*/
 }
