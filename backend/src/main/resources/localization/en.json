@@ -460,6 +460,9 @@
       "varAbbreviation": "Var",
       "label": "Filters",
       "notice": "Filters apply to all compatible Reports on this Dashboard.",
+      "resetAll": "Reset all",
+      "operatorLink": "Values linked by {operator} logic",
+      "multiple": "multiple",
       "modal": {
         "pretext": {
           "Date": "Date selection will be available in the resulting filter.",

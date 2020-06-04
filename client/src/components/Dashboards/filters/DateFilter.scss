@@ -1,6 +1,7 @@
 @import 'shared-styles/shared-styles.scss';
 
 .DateFilter__Dashboard {
+  width: 190px;
   &.fixed {
     width: max-content;
   }
@@ -15,14 +16,6 @@
 
   .Popover__dialog {
     padding: 0;
-  }
-
-  .indicator {
-    vertical-align: middle;
-    color: $silver-darken-80;
-    &.active {
-      color: $blue-darken-55;
-    }
   }
 
   .DateFields {

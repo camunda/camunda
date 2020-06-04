@@ -6,4 +6,4 @@
 
 export {default as Filter} from './Filter';
 export {default as DecisionFilter} from './DecisionFilter';
-export {VariableFilter} from './modals';
+export {VariableFilter, VariablePreview} from './modals';

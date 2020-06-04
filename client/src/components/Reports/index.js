@@ -5,4 +5,4 @@
  */
 
 export {default as Report} from './Report';
-export {Filter, VariableFilter} from './controlPanels/filter';
+export {Filter, VariableFilter, VariablePreview} from './controlPanels/filter';

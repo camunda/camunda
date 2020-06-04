@@ -7,7 +7,20 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Button} from 'components';
+
+import VariableFilter from './VariableFilter';
+
 import FiltersView from './FiltersView';
+
+const props = {
+  availableFilters: [],
+  setFilter: jest.fn(),
+};
+
+beforeEach(() => {
+  props.setFilter.mockClear();
+});
 
 it('should render a filter input based on the availableFilters', () => {
   const node = shallow(<FiltersView availableFilters={[{type: 'state'}]} />);
@@ -29,4 +42,55 @@ it('should pass a single filter to the date filter component', () => {
   );
 
   expect(node.find('DateFilter')).toHaveProp('filter', dateFilter);
+});
+
+it('should have a button to reset all filters', () => {
+  const node = shallow(<FiltersView {...props} />);
+
+  node.find(Button).simulate('click');
+
+  expect(props.setFilter).toHaveBeenCalledWith([]);
+});
+
+it('should add a variable filter', () => {
+  const node = shallow(
+    <FiltersView
+      {...props}
+      availableFilters={[{type: 'variable', data: {name: 'boolVar', type: 'Boolean'}}]}
+    />
+  );
+
+  const variableFilter = node.find(VariableFilter);
+  expect(variableFilter).toExist();
+  expect(variableFilter.prop('filter')).toBe(undefined);
+  expect(variableFilter.prop('config')).toEqual({name: 'boolVar', type: 'Boolean'});
+
+  variableFilter.prop('setFilter')({values: [true]});
+  const expectedResult = [
+    {type: 'variable', data: {name: 'boolVar', type: 'Boolean', data: {values: [true]}}},
+  ];
+  expect(props.setFilter).toHaveBeenCalledWith(expectedResult);
+
+  node.setProps({filter: expectedResult});
+  expect(node.find(VariableFilter).prop('filter')).toEqual({values: [true]});
+});
+
+it('should remove a variable filter', () => {
+  const node = shallow(
+    <FiltersView
+      {...props}
+      availableFilters={[
+        {type: 'runningInstancesOnly'},
+        {type: 'variable', data: {name: 'boolVar', type: 'Boolean'}},
+      ]}
+      filter={[
+        {type: 'runningInstancesOnly'},
+        {type: 'variable', data: {name: 'boolVar', type: 'Boolean', data: {values: [true]}}},
+      ]}
+    />
+  );
+
+  node.find(VariableFilter).prop('setFilter')();
+
+  expect(props.setFilter).toHaveBeenCalledWith([{type: 'runningInstancesOnly'}]);
 });

@@ -65,3 +65,19 @@ it('should disable the reset button if no filter is set', () => {
 
   expect(node.find(Dropdown.Option).last()).toHaveProp('disabled', true);
 });
+
+it('should allow providing a custom icon and empty text', () => {
+  const node = shallow(<DateFilter {...props} icon="customIcon" emptyText="customText" />);
+
+  expect(node.find(Dropdown).prop('label')).toMatchSnapshot();
+});
+
+it('should render children', () => {
+  const node = shallow(
+    <DateFilter {...props}>
+      <div className="childContent" />
+    </DateFilter>
+  );
+
+  expect(node.find('.childContent')).toExist();
+});

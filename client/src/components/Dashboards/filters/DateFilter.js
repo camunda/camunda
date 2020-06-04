@@ -13,7 +13,13 @@ import {t} from 'translation';
 
 import './DateFilter.scss';
 
-export default function DateFilter({filter, setFilter, type}) {
+export default function DateFilter({
+  filter,
+  setFilter,
+  icon = 'filter',
+  children,
+  emptyText = t('common.select'),
+}) {
   const [showDatePicker, setShowDatePicker] = useState(filter?.type === 'fixed');
 
   function setRollingFilter(unit, past) {
@@ -26,7 +32,7 @@ export default function DateFilter({filter, setFilter, type}) {
 
   function getFilterName(filter) {
     if (!filter) {
-      return t('common.off');
+      return emptyText;
     }
 
     if (isFilter('days')) {
@@ -60,12 +66,12 @@ export default function DateFilter({filter, setFilter, type}) {
 
   return (
     <div className={classnames('DateFilter__Dashboard', {fixed: filter?.type === 'fixed'})}>
-      <div className="title">{t('dashboard.filter.types.' + type)}</div>
+      {children}
       {showDatePicker ? (
         <Popover
           title={
             <>
-              <Icon type="calender" className={classnames('indicator', {active: filter})} />{' '}
+              <Icon type={icon} className={classnames('indicator', {active: filter})} />{' '}
               {getFixedDateFilterName(filter)}
             </>
           }
@@ -99,7 +105,7 @@ export default function DateFilter({filter, setFilter, type}) {
         <Dropdown
           label={
             <>
-              <Icon type="calender" className={classnames('indicator', {active: filter})} />
+              <Icon type={icon} className={classnames('indicator', {active: filter})} />
               {getFilterName(filter)}
             </>
           }
