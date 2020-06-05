@@ -20,7 +20,7 @@ export async function createEntity(type, initialValues = {}) {
 }
 
 export async function copyReport(id) {
-  const response = await post(`/api/report/${id}/copy`);
+  const response = await post(`api/report/${id}/copy`);
   const json = await response.json();
   return json.id;
 }

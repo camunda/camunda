@@ -7,13 +7,13 @@
 import {post} from 'request';
 
 export async function getVariableNames(reportIds) {
-  const response = await post('/api/variables/reports', {reportIds});
+  const response = await post('api/variables/reports', {reportIds});
 
   return await response.json();
 }
 
 export async function getVariableValues(reportIds, name, type, numResults, valueFilter) {
-  const response = await post('/api/variables/values/reports', {
+  const response = await post('api/variables/values/reports', {
     reportIds,
     name,
     type,

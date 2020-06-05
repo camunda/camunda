@@ -51,7 +51,7 @@ export async function removeSource(collection, scopeId) {
 }
 
 export async function checkDeleteSourceConflicts(collection, scopeId) {
-  const response = await get(`/api/collection/${collection}/scope/${scopeId}/delete-conflicts`);
+  const response = await get(`api/collection/${collection}/scope/${scopeId}/delete-conflicts`);
   return await response.json();
 }
 
