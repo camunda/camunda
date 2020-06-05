@@ -27,19 +27,21 @@ import {loadEvents} from './service';
 
 import './EventsSourceModal.scss';
 import {getOptimizeVersion} from 'config';
-
+const defaultSource = {
+  processDefinitionKey: '',
+  processDefinitionName: '',
+  versions: [],
+  tenants: [],
+  eventScope: ['process_instance'],
+  tracedByBusinessKey: false,
+  traceVariable: null,
+};
 export default withErrorHandling(
   class EventsSourceModal extends React.Component {
     state = {
-      source: {
-        processDefinitionKey: '',
-        processDefinitionName: '',
-        versions: [],
-        tenants: [],
-        eventScope: ['process_instance'],
-        tracedByBusinessKey: false,
-        traceVariable: null,
-      },
+      source: this.props.initialSource?.processDefinitionKey
+        ? this.props.initialSource
+        : defaultSource,
       variables: null,
       type: 'camunda',
       externalExist: false,
@@ -47,7 +49,6 @@ export default withErrorHandling(
 
     componentDidMount = async () => {
       if (this.isEditing()) {
-        this.setState({source: this.props.initialSource});
         const {processDefinitionKey, versions, tenants} = this.props.initialSource;
         this.loadVariables(processDefinitionKey, versions, tenants);
       }
