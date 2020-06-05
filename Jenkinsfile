@@ -1,5 +1,6 @@
 // vim: set filetype=groovy:
 
+@Library(["camunda-ci", "zeebe-jenkins-shared-library"]) _
 
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
@@ -246,7 +247,7 @@ pipeline {
         always {
             // Retrigger the build if there were connection issues
             script {
-                if (connectionProblem()) {
+                if (agentDisconnected()) {
                     currentBuild.result = 'ABORTED'
                     currentBuild.description = "Aborted due to connection error"
 
@@ -264,8 +265,4 @@ pipeline {
             }
         }
     }
-}
-
-boolean connectionProblem() {
-  return currentBuild.rawBuild.getLog(50000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|Connection reset|ProtocolException|java\.net\.ProtocolException: Expected HTTP 101 response but was '500 Internal Server Error').*/
 }
