@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.nwe.behavior;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.processor.Failure;
@@ -17,7 +19,10 @@ import io.zeebe.engine.processor.workflow.ExpressionProcessor.EvaluationExceptio
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableBoundaryEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEventBasedGateway;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableReceiveTask;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.engine.processor.workflow.message.MessageNameException;
 import io.zeebe.engine.state.ZeebeState;
@@ -33,7 +38,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.Either;
-import io.zeebe.util.buffer.BufferUtil;
+import java.util.function.ToLongFunction;
 
 public final class BpmnEventSubscriptionBehavior {
 
@@ -73,60 +78,45 @@ public final class BpmnEventSubscriptionBehavior {
 
   public void triggerBoundaryOrIntermediateEvent(
       final ExecutableReceiveTask element, final BpmnElementContext context) {
-    final var eventTrigger =
-        eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
-    if (eventTrigger == null) {
-      // no event trigger found, there is nothing to act on
-      return;
-    }
-    final boolean hasEventTriggeredForBoundaryEvent =
-        element.getBoundaryEvents().stream()
-            .anyMatch(boundaryEvent -> boundaryEvent.getId().equals(eventTrigger.getElementId()));
-    if (hasEventTriggeredForBoundaryEvent) {
-      triggerBoundaryEvent(element, context, eventTrigger);
-    } else {
-      triggerIntermediateEvent(context, eventTrigger);
-    }
+
+    triggerEvent(
+        context,
+        eventTrigger -> {
+          final boolean hasEventTriggeredForBoundaryEvent =
+              element.getBoundaryEvents().stream()
+                  .anyMatch(
+                      boundaryEvent -> boundaryEvent.getId().equals(eventTrigger.getElementId()));
+
+          if (hasEventTriggeredForBoundaryEvent) {
+            return triggerBoundaryEvent(element, context, eventTrigger);
+
+          } else {
+            stateTransitionBehavior.transitionToCompleting(context);
+            return context.getElementInstanceKey();
+          }
+        });
   }
 
   public void triggerIntermediateEvent(final BpmnElementContext context) {
-    final var eventTrigger =
-        eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
-    triggerIntermediateEvent(context, eventTrigger);
-  }
 
-  private void triggerIntermediateEvent(
-      final BpmnElementContext context, final EventTrigger eventTrigger) {
-    if (eventTrigger == null) {
-      // the activity (i.e. its event scope) is left - discard the event
-      return;
-    }
-
-    stateTransitionBehavior.transitionToCompleting(context);
-
-    stateBehavior
-        .getVariablesState()
-        .setTemporaryVariables(context.getElementInstanceKey(), eventTrigger.getVariables());
-
-    eventScopeInstanceState.deleteTrigger(
-        context.getElementInstanceKey(), eventTrigger.getEventKey());
+    triggerEvent(
+        context,
+        eventTrigger -> {
+          stateTransitionBehavior.transitionToCompleting(context);
+          return context.getElementInstanceKey();
+        });
   }
 
   public void triggerBoundaryEvent(
       final ExecutableActivity element, final BpmnElementContext context) {
-    final var eventTrigger =
-        eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
-    triggerBoundaryEvent(element, context, eventTrigger);
+
+    triggerEvent(context, eventTrigger -> triggerBoundaryEvent(element, context, eventTrigger));
   }
 
-  private void triggerBoundaryEvent(
+  private long triggerBoundaryEvent(
       final ExecutableActivity element,
       final BpmnElementContext context,
       final EventTrigger eventTrigger) {
-    if (eventTrigger == null) {
-      // the activity (i.e. its event scope) is left - discard the event
-      return;
-    }
 
     final var record =
         getEventRecord(context.getRecordValue(), eventTrigger, BpmnElementType.BOUNDARY_EVENT);
@@ -136,20 +126,147 @@ public final class BpmnEventSubscriptionBehavior {
     final long boundaryElementInstanceKey = keyGenerator.nextKey();
     if (boundaryEvent.interrupting()) {
 
-      deferBoundaryEvent(context, boundaryElementInstanceKey, record);
+      deferActivatingEvent(context, boundaryElementInstanceKey, record);
 
       stateTransitionBehavior.transitionToTerminating(context);
 
     } else {
-      activateBoundaryEvent(context, boundaryElementInstanceKey, record);
+      publishActivatingEvent(context, boundaryElementInstanceKey, record);
     }
+
+    return boundaryElementInstanceKey;
+  }
+
+  private WorkflowInstanceRecord getEventRecord(
+      final WorkflowInstanceRecord value,
+      final EventTrigger event,
+      final BpmnElementType elementType) {
+    eventRecord.reset();
+    eventRecord.wrap(value);
+    eventRecord.setElementId(event.getElementId());
+    eventRecord.setBpmnElementType(elementType);
+
+    return eventRecord;
+  }
+
+  private <T extends ExecutableActivity> ExecutableBoundaryEvent getBoundaryEvent(
+      final T element, final BpmnElementContext context, final EventTrigger eventTrigger) {
+
+    return element.getBoundaryEvents().stream()
+        .filter(boundaryEvent -> boundaryEvent.getId().equals(eventTrigger.getElementId()))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new BpmnProcessingException(
+                    context,
+                    String.format(
+                        "Expected boundary event with id '%s' but not found.",
+                        bufferAsString(eventTrigger.getElementId()))));
+  }
+
+  private void deferActivatingEvent(
+      final BpmnElementContext context,
+      final long eventElementInstanceKey,
+      final WorkflowInstanceRecord record) {
+
+    elementInstanceState.storeRecord(
+        eventElementInstanceKey,
+        context.getElementInstanceKey(),
+        record,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+        Purpose.DEFERRED);
+  }
+
+  public void publishTriggeredBoundaryEvent(final BpmnElementContext context) {
+    publishTriggeredEvent(context, BpmnElementType.BOUNDARY_EVENT);
+  }
+
+  private void publishTriggeredEvent(
+      final BpmnElementContext context, final BpmnElementType elementType) {
+    elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
+        .filter(record -> record.getValue().getBpmnElementType() == elementType)
+        .filter(record -> record.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+        .findFirst()
+        .ifPresent(
+            deferredRecord ->
+                publishActivatingEvent(
+                    context, deferredRecord.getKey(), deferredRecord.getValue()));
+  }
+
+  private void publishActivatingEvent(
+      final BpmnElementContext context,
+      final long elementInstanceKey,
+      final WorkflowInstanceRecord eventRecord) {
+
+    streamWriter.appendNewEvent(
+        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
+
+    stateBehavior.createElementInstanceInFlowScope(context, elementInstanceKey, eventRecord);
+    stateBehavior.spawnToken(context);
+  }
+
+  public void triggerEventBasedGateway(
+      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
+
+    triggerEvent(
+        context,
+        eventTrigger -> {
+          final var triggeredEvent = getTriggeredEvent(element, context, eventTrigger);
+
+          final var record =
+              getEventRecord(
+                  context.getRecordValue(), eventTrigger, triggeredEvent.getElementType());
+
+          final var eventElementInstanceKey = keyGenerator.nextKey();
+          deferActivatingEvent(context, eventElementInstanceKey, record);
+
+          stateTransitionBehavior.transitionToCompleting(context);
+
+          return eventElementInstanceKey;
+        });
+  }
+
+  private ExecutableFlowNode getTriggeredEvent(
+      final ExecutableEventBasedGateway element,
+      final BpmnElementContext context,
+      final EventTrigger eventTrigger) {
+
+    return element.getOutgoing().stream()
+        .map(ExecutableSequenceFlow::getTarget)
+        .filter(target -> target.getId().equals(eventTrigger.getElementId()))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new BpmnProcessingException(
+                    context,
+                    String.format(
+                        "Expected an event attached to the event-based gateway with id '%s' but not found.",
+                        bufferAsString(eventTrigger.getElementId()))));
+  }
+
+  private void triggerEvent(
+      final BpmnElementContext context, final ToLongFunction<EventTrigger> eventHandler) {
+
+    final var eventTrigger =
+        eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
+
+    if (eventTrigger == null) {
+      // the activity (i.e. its event scope) is left - discard the event
+      return;
+    }
+
+    final var eventElementInstanceKey = eventHandler.applyAsLong(eventTrigger);
 
     stateBehavior
         .getVariablesState()
-        .setTemporaryVariables(boundaryElementInstanceKey, eventTrigger.getVariables());
+        .setTemporaryVariables(eventElementInstanceKey, eventTrigger.getVariables());
 
     eventScopeInstanceState.deleteTrigger(
         context.getElementInstanceKey(), eventTrigger.getEventKey());
+  }
+
+  public void publishTriggeredEventBasedGateway(final BpmnElementContext context) {
+    publishTriggeredEvent(context, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
   }
 
   public void triggerStartEvent(final BpmnElementContext context) {
@@ -234,67 +351,6 @@ public final class BpmnEventSubscriptionBehavior {
         });
 
     return deferredStartEvent.isPresent();
-  }
-
-  private WorkflowInstanceRecord getEventRecord(
-      final WorkflowInstanceRecord value,
-      final EventTrigger event,
-      final BpmnElementType elementType) {
-    eventRecord.reset();
-    eventRecord.wrap(value);
-    eventRecord.setElementId(event.getElementId());
-    eventRecord.setBpmnElementType(elementType);
-
-    return eventRecord;
-  }
-
-  private <T extends ExecutableActivity> ExecutableBoundaryEvent getBoundaryEvent(
-      final T element, final BpmnElementContext context, final EventTrigger eventTrigger) {
-
-    return element.getBoundaryEvents().stream()
-        .filter(boundaryEvent -> boundaryEvent.getId().equals(eventTrigger.getElementId()))
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new IllegalStateException(
-                    String.format(
-                        "Expected boundary event with id '%s' but not found. [context: %s]",
-                        BufferUtil.bufferAsString(eventTrigger.getElementId()), context)));
-  }
-
-  private void deferBoundaryEvent(
-      final BpmnElementContext context,
-      final long boundaryElementInstanceKey,
-      final WorkflowInstanceRecord record) {
-
-    elementInstanceState.storeRecord(
-        boundaryElementInstanceKey,
-        context.getElementInstanceKey(),
-        record,
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-        Purpose.DEFERRED);
-  }
-
-  public void publishTriggeredBoundaryEvent(final BpmnElementContext context) {
-
-    elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
-        .filter(record -> record.getValue().getBpmnElementType() == BpmnElementType.BOUNDARY_EVENT)
-        .findFirst()
-        .ifPresent(
-            deferredRecord ->
-                activateBoundaryEvent(context, deferredRecord.getKey(), deferredRecord.getValue()));
-  }
-
-  private void activateBoundaryEvent(
-      final BpmnElementContext context,
-      final long elementInstanceKey,
-      final WorkflowInstanceRecord eventRecord) {
-
-    streamWriter.appendNewEvent(
-        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
-
-    stateBehavior.createElementInstanceInFlowScope(context, elementInstanceKey, eventRecord);
-    stateBehavior.spawnToken(context);
   }
 
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(

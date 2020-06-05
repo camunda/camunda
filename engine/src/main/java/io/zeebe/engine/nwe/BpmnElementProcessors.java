@@ -14,6 +14,7 @@ import io.zeebe.engine.nwe.container.SubProcessProcessor;
 import io.zeebe.engine.nwe.event.EndEventProcessor;
 import io.zeebe.engine.nwe.event.IntermediateCatchEventProcessor;
 import io.zeebe.engine.nwe.event.StartEventProcessor;
+import io.zeebe.engine.nwe.gateway.EventBasedGatewayProcessor;
 import io.zeebe.engine.nwe.gateway.ExclusiveGatewayProcessor;
 import io.zeebe.engine.nwe.gateway.ParallelGatewayProcessor;
 import io.zeebe.engine.nwe.sequenceflow.SequenceFlowProcessor;
@@ -36,6 +37,8 @@ public final class BpmnElementProcessors {
     // gateways
     processors.put(BpmnElementType.EXCLUSIVE_GATEWAY, new ExclusiveGatewayProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.PARALLEL_GATEWAY, new ParallelGatewayProcessor(bpmnBehaviors));
+    processors.put(
+        BpmnElementType.EVENT_BASED_GATEWAY, new EventBasedGatewayProcessor(bpmnBehaviors));
     // containers
     processors.put(BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));

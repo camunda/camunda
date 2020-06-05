@@ -29,11 +29,6 @@ import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatedHand
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.eventsubproc.EventSubProcessEventOccurredHandler;
-import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementActivatingHandler;
-import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementCompletedHandler;
-import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementCompletingHandler;
-import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementTerminatingHandler;
-import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.FlowOutElementCompletedHandler;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -83,23 +78,6 @@ public final class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.CONTAINER_ELEMENT_TERMINATING,
         new ContainerElementTerminatingHandler<>(catchEventSubscriber));
-
-    stepHandlers.put(
-        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATING,
-        new EventBasedGatewayElementActivatingHandler<>(catchEventSubscriber, expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATED, new ElementActivatedHandler<>(null));
-    stepHandlers.put(
-        BpmnStep.EVENT_BASED_GATEWAY_EVENT_OCCURRED, new EventBasedGatewayEventOccurredHandler<>());
-    stepHandlers.put(
-        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETING,
-        new EventBasedGatewayElementCompletingHandler<>(catchEventSubscriber, expressionProcessor));
-    stepHandlers.put(
-        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_TERMINATING,
-        new EventBasedGatewayElementTerminatingHandler<>(catchEventSubscriber));
-    stepHandlers.put(
-        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETED,
-        new EventBasedGatewayElementCompletedHandler<>());
 
     stepHandlers.put(
         BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED,
