@@ -106,8 +106,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
     // given
     deploySimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(
@@ -120,7 +119,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
 
     deploySimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     customPrefixElasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)).isEqualTo(1);

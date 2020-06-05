@@ -178,8 +178,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     //when
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     greenMail.purgeEmailFromAllMailboxes();
     clearWebhookRequestsFromClient(client);
 
@@ -216,8 +215,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     //when
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     greenMail.purgeEmailFromAllMailboxes();
     clearWebhookRequestsFromClient(client);
@@ -312,8 +310,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     // when
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     greenMail.purgeEmailFromAllMailboxes();
     triggerAndCompleteReminderJob(id);

@@ -52,8 +52,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
@@ -70,8 +69,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition, Collections.singletonList(null));
@@ -85,8 +83,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     startSimpleProcess(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response variableNameResponse = embeddedOptimizeExtension
@@ -119,8 +116,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
     startSimpleProcess(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
@@ -138,8 +134,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     startSimpleProcess(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
@@ -161,8 +156,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     startSimpleProcess(processDefinition1);
     startSimpleProcess(processDefinition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(
@@ -352,8 +346,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
   private void startInstanceAndImportEngineEntities(final ProcessDefinitionEngineDto processDefinition,
                                                     final Map<String, Object> variables) {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   private void startSimpleProcess(ProcessDefinitionEngineDto processDefinition) {

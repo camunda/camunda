@@ -67,8 +67,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluati
     final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto2.getId(), endDate.minusDays(2));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
@@ -128,8 +127,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluati
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoRunningAndOneCompletedUserTaskProcesses(now);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()

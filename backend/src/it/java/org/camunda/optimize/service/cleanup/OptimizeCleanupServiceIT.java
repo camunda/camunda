@@ -81,8 +81,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
     deployTwoProcessInstancesWithEndTimeLessThanTtl();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
@@ -99,8 +98,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
     deployTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
@@ -116,8 +114,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
@@ -136,8 +133,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
@@ -161,8 +157,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
     final List<String> processDefinitionsWithEndTimeLessThanTtl = deployTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
@@ -179,8 +174,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
     // given
     deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
@@ -198,8 +192,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
       OffsetDateTime.now()
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
@@ -224,8 +217,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
     final List<String> unaffectedDecisionDefinitionsIds =
       deployTwoDecisionInstancesWithEvaluationTime(OffsetDateTime.now());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();

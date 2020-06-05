@@ -117,8 +117,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     adjustProcessInstanceDates(processInstance.getId(), startDate, daysToShift, durationInSec);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     return processInstance;
   }
 
@@ -270,14 +269,12 @@ public abstract class AbstractAlertIT extends AbstractIT {
     switch (definitionType) {
       case PROCESS:
         ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(definitionKey);
-        embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-        elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+        importAllEngineEntitiesFromScratch();
         return createNewProcessReportAsUser(user, password, collectionId, processDefinition);
 
       case DECISION:
         DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition(definitionKey);
-        embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-        elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+        importAllEngineEntitiesFromScratch();
         return createNewDecisionReportAsUser(user, password, collectionId, decisionDefinitionDto);
 
       default:

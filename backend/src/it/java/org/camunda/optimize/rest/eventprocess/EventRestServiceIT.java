@@ -178,8 +178,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -199,8 +198,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -222,8 +220,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -246,8 +243,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -273,8 +269,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -302,8 +297,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -329,8 +323,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -361,8 +354,7 @@ public class EventRestServiceIT extends AbstractIT {
     // V2 with serviceTask
     deployAndStartServiceTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -390,8 +382,7 @@ public class EventRestServiceIT extends AbstractIT {
     // V2 with serviceTask
     deployAndStartServiceTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -420,8 +411,7 @@ public class EventRestServiceIT extends AbstractIT {
     // V1 for tenant2
     deployAndStartServiceTaskProcess(definitionKey, tenantId2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -454,8 +444,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey1);
     deployAndStartServiceTaskProcess(definitionKey2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -494,8 +483,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -532,8 +520,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcessEtch";
     deployAndStartUserTaskProcess(definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final EventCountSearchRequestDto eventSearchRequestDto = EventCountSearchRequestDto.builder()

@@ -56,8 +56,7 @@ public class EngineRestFilterPluginIT extends AbstractIT {
     deployAndStartSimpleServiceTask();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest(

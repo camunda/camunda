@@ -78,8 +78,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -118,8 +117,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -164,8 +162,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -201,8 +198,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       processDefinition.getId());
     finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -239,8 +235,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
@@ -269,8 +264,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       processDefinition.getId());
     finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -304,8 +298,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       processDefinition.getId());
     finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -339,8 +332,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       processDefinition.getId());
     finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -369,8 +361,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       processDefinition2.getId());
     finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto3);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
@@ -412,8 +403,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
@@ -469,8 +459,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -516,8 +505,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -575,8 +563,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -620,8 +607,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -648,8 +634,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -676,8 +661,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
                                                                                                     .getId())
       .getStartTime();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);

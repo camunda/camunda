@@ -46,8 +46,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     String singleReportId1 = createNewSingleMapReport(processInstance1);
     String singleReportId2 = createNewSingleMapReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -73,8 +72,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     String singleReportId1 = createNewSingleDurationMapReport(processInstance1);
     String singleReportId2 = createNewSingleDurationMapReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -99,8 +97,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     String singleReportId1 = createNewSingleMapReport(processInstance1);
     String singleReportId2 = createNewSingleMapReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId2, singleReportId1);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -125,8 +122,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     String singleReportId1 = createNewSingleNumberReport(processInstance1);
     String singleReportId2 = createNewSingleNumberReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -157,8 +153,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     String singleReportId1 = createNewSingleDurationNumberReport(processInstance1);
     String singleReportId2 = createNewSingleDurationNumberReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -180,8 +175,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     //given
     String singleReportId1 = reportClient.createEmptySingleProcessReportInCollection(null);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -202,8 +196,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   public void combinedReportWithoutReportsProducesEmptyResult() throws IOException {
     //given
     String combinedReportId = reportClient.createEmptyCombinedReport(null);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");

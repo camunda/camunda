@@ -81,8 +81,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -133,8 +132,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
@@ -178,8 +176,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createInputs(3000.0, "Travel Expenses")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -229,8 +226,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createInputs(3000.0, "Travel Expenses")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -289,8 +285,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto2.getId(), createInputs(200.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -324,8 +319,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto.getId(), createInputs(300.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -364,8 +358,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createDishInputs("Winter", 8, false)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -397,8 +390,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto2.getId(), createDishInputs("Winter", 8, true)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -423,8 +415,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

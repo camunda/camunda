@@ -67,8 +67,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -108,8 +107,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -152,8 +150,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
@@ -194,8 +191,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -240,8 +236,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -278,8 +273,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -316,8 +310,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       otherDecisionDefinition.getId(), createInputs(100.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -343,8 +336,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -388,8 +380,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       decisionDefinitionDto1.getId(), createInputs(25000.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -436,8 +427,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       decisionDefinitionDto1.getId(), createInputs(25000.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -468,8 +458,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> result =
@@ -498,8 +487,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -535,8 +523,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       ImmutableMap.of(camInputVariable, now.minusDays(1L))
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -573,8 +560,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       ImmutableMap.of(camInputVariable, now.minusSeconds(6L))
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -609,8 +595,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       engineIntegrationExtension.startDecisionInstance(definition.getId(), variables);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -651,8 +636,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       engineIntegrationExtension.startDecisionInstance(definition.getId(), variables);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -705,8 +689,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       Collections.singletonMap(camInputVariable, null)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -744,8 +727,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       Collections.singletonMap(inputVarName, doubleVarValue)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(

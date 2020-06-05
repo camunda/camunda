@@ -51,8 +51,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
@@ -88,8 +87,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
@@ -119,8 +117,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
@@ -153,8 +150,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
@@ -186,8 +182,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     final ProcessInstanceEngineDto unassignedProcessInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
@@ -224,8 +219,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     final ProcessInstanceEngineDto unassignedProcessInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
@@ -262,8 +256,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     final ProcessInstanceEngineDto unassignedProcessInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
@@ -300,8 +293,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP3);
     engineIntegrationExtension.finishAllRunningUserTasks(expectedProcessInstance.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
@@ -341,8 +333,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP3);
     engineIntegrationExtension.finishAllRunningUserTasks(unexpectedProcessInstance.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder

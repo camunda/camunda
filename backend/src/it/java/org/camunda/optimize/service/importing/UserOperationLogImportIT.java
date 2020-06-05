@@ -152,7 +152,6 @@ public class UserOperationLogImportIT extends AbstractImportIT {
   }
 
   private void importAndRefresh() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 }

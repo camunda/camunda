@@ -174,8 +174,7 @@ public class ExportRestServiceIT extends AbstractIT {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = embeddedOptimizeExtension
@@ -244,8 +243,7 @@ public class ExportRestServiceIT extends AbstractIT {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstance.getProcessDefinitionKey())
@@ -272,8 +270,7 @@ public class ExportRestServiceIT extends AbstractIT {
     ProcessInstanceEngineDto processInstanceVersion1 = deployAndStartSimpleProcess();
     ProcessInstanceEngineDto processInstanceVersion2 = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstanceVersion2.getProcessDefinitionKey())
@@ -300,8 +297,7 @@ public class ExportRestServiceIT extends AbstractIT {
     ProcessInstanceEngineDto processInstanceVersion1 = deployAndStartSimpleProcess();
     ProcessInstanceEngineDto processInstanceVersion2 = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstanceVersion2.getProcessDefinitionKey())
@@ -336,8 +332,7 @@ public class ExportRestServiceIT extends AbstractIT {
     engineIntegrationExtension.createTenant(tenantId2);
     ProcessInstanceEngineDto processInstanceTenant2 = deployAndStartSimpleProcess(tenantId2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstanceTenant2.getProcessDefinitionKey())
@@ -371,8 +366,7 @@ public class ExportRestServiceIT extends AbstractIT {
     final OffsetDateTime modifiedStartDate = LocalDateUtil.getCurrentDateTime().minusSeconds(20);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance1.getId(), modifiedStartDate);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
       .processDefinitionKey(processInstance1.getProcessDefinitionKey())

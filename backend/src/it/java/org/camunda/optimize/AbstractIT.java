@@ -68,6 +68,16 @@ public abstract class AbstractIT {
     return engineIntegrationExtension.useEngineMockServer();
   }
 
+  protected void importAllEngineEntitiesFromScratch() {
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  protected void importAllEngineEntitiesFromLastIndex() {
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
   // engine test helpers
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 

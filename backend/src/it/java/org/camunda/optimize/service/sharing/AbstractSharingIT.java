@@ -44,8 +44,7 @@ public abstract class AbstractSharingIT extends AbstractIT {
 
   protected String createReport(String definitionKey) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess(definitionKey);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()

@@ -68,8 +68,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     updateProcessInstanceDates(updates);
 
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = getGroupByDateReportData(
@@ -100,8 +99,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     updates.put(processInstanceDto3.getId(), startOfToday.plusDays(5));
     updateProcessInstanceDates(updates);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = getGroupByDateReportData(
@@ -122,8 +120,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
   public void automaticIntervalSelectionForNoData() {
     // given
     ProcessDefinitionEngineDto engineDto = deploySimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = getGroupByDateReportData(engineDto.getKey(), engineDto.getVersionAsString());
@@ -138,8 +135,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
   public void automaticIntervalSelectionForOneDataPoint() {
     // given there is only one data point
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = getGroupByDateReportData(
@@ -163,8 +159,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ZonedDateTime now = ZonedDateTime.now();
     ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(3));
     ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(4), now.plusDays(6));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     String singleReportId = createNewSingleReport(procDefFirstRange);
     String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
@@ -183,8 +178,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ZonedDateTime now = ZonedDateTime.now();
     ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(6));
     ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(3), now.plusDays(5));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     String singleReportId = createNewSingleReport(procDefFirstRange);
     String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
@@ -206,8 +200,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     String singleReportId = createNewSingleReport(procDefFirstRange);
     String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
 
     // when
@@ -248,8 +241,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
       .build();
     String singleReportId2 = createNewSingleReport(reportDataDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =

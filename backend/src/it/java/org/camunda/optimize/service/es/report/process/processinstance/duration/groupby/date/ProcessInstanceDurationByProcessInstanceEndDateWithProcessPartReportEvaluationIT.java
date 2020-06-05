@@ -70,8 +70,7 @@ public class ProcessInstanceDurationByProcessInstanceEndDateWithProcessPartRepor
     startThreeProcessInstances(startDate, 0, procDefDto, Arrays.asList(1, 1, 1));
     startThreeProcessInstances(startDate, -2, procDefDto, Arrays.asList(2, 2, 2));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(

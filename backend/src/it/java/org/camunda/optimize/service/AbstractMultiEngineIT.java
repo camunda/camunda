@@ -88,8 +88,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
         throw new OptimizeIntegrationTestException("Unsupported resourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   protected void deployAndStartDecisionDefinitionForAllEngines() {

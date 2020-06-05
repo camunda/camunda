@@ -50,8 +50,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
       createInputs(2000.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -114,8 +113,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
       decisionDefinitionDto.getId(), ImmutableMap.of(booleanVarName, false)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);

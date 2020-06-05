@@ -47,8 +47,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = variablesClient.getDecisionInputVariableNames(decisionDefinitionDto);
@@ -70,8 +69,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = variablesClient.getDecisionOutputVariableNames(
@@ -97,8 +95,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     startDecisionInstanceWithInputs(decisionDefinitionDto, "silver",300.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> customerStatusVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -130,8 +127,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     startDecisionInstanceWithInputs(decisionDefinitionDto, "silver",300.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> output1 = variablesClient.getDecisionOutputVariableValues(
@@ -166,8 +162,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -192,8 +187,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -216,8 +210,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension

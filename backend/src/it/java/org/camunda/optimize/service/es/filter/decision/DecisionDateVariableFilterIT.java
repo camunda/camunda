@@ -133,8 +133,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       Collections.singletonMap(dateVarName, toDateString(now.plusMinutes(1)))
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -163,8 +162,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(200.0, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -199,8 +197,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(200.0, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -240,8 +237,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(300.0, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -278,8 +274,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(100.0, toDateString(now.minusDays(3)))
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -310,8 +305,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(100.0, toDateString(now))
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);

@@ -50,8 +50,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   public void reportUpdateToNotNumberRemovesAlert() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
@@ -198,8 +197,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     //given
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
@@ -233,8 +231,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
 
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
@@ -265,8 +262,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   private String startProcessAndCreateReport() {
     ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     return createNewProcessReportAsUser(collectionId, processDefinition);

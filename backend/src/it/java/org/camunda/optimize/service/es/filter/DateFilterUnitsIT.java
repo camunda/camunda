@@ -32,8 +32,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
       engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // the clock of the engine and the clock of the computer running
     // the tests might not be aligned. Therefore we want to simulate
@@ -59,8 +58,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
   public void rollingDateFilterInReport_unsupportedUnitQuarters() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance.getProcessDefinitionKey(),
@@ -80,8 +78,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
       engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
@@ -106,8 +103,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
       engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when

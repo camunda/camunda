@@ -79,8 +79,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(definitionKey);
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScope(collectionId);
@@ -114,8 +113,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       collectionId, asList(decisionScope1, processScope1, decisionScope2, processScope2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
@@ -137,8 +135,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     collectionClient.addScopeEntryToCollection(collectionId, entry);
@@ -158,8 +155,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -182,8 +178,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry(anotherDefinitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -207,8 +202,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     addTenantToElasticsearch("newTenant");
     entry.getTenants().add("newTenant");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -236,8 +230,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     addTenantToElasticsearch("newTenant");
     entry.getTenants().add("newTenant");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -263,8 +256,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     addTenantToElasticsearch("newTenant");
     entry.setTenants(Collections.singletonList("newTenant"));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -286,8 +278,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -327,8 +318,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final CollectionScopeEntryDto entry1 = createSimpleScopeEntry(definitionKey1);
     final CollectionScopeEntryDto entry2 = createSimpleScopeEntry(definitionKey2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Lists.newArrayList(entry1, entry2));
@@ -349,8 +339,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final String tenant1 = "tenant1";
@@ -382,8 +371,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     entry.getTenants().add(tenant);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
@@ -429,8 +417,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final String tenant1 = "tenant1";
@@ -483,8 +470,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     String collectionId = collectionClient.createNewCollection();
     CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 

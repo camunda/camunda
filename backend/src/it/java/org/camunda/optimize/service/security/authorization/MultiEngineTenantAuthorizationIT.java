@@ -51,8 +51,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenantsForUser(KERMIT_USER);
@@ -79,8 +78,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenantsForUser(KERMIT_USER);
@@ -107,8 +105,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenantsForUser(KERMIT_USER);
@@ -135,8 +132,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     secondaryEngineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenantsForUser(KERMIT_USER);
@@ -234,8 +230,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
       default:
         throw new OptimizeIntegrationTestException("Unsupported resource type: " + definitionResourceType);
     }
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   private List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsKermit(

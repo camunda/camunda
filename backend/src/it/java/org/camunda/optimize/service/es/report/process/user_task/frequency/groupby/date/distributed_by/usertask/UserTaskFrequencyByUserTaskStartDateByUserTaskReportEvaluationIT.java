@@ -37,8 +37,7 @@ public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT ex
 
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.DAY);

@@ -1090,8 +1090,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     changeDuration(processInstanceDto, USER_TASK_1, 10L);
     changeDuration(processInstanceDto, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -1172,8 +1171,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     changeDuration(processInstanceDto, USER_TASK_1, 10L);
     changeDuration(processInstanceDto, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -1337,7 +1335,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
   }
 
   private void importAndRefresh() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 }

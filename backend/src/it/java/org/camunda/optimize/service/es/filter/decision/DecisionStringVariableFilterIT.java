@@ -53,8 +53,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(200.0, categoryInputValueToFilterFor)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -92,8 +91,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(300.0, "Software License Costs")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -154,8 +152,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       ImmutableMap.of(camInputVariable, "noMatch")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -185,8 +182,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(200.0, categoryInputValueToExclude)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -231,8 +227,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       Collections.singletonMap(camInputVariable, new EngineVariableValue(null, "String"))
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -282,8 +277,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       ImmutableMap.of(camInputVariable, "testValidMatch")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);

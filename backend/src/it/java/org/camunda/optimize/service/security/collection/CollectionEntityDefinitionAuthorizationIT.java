@@ -43,7 +43,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     );
     ProcessDefinitionEngineDto unauthorizedProcessDefinition = deploySimpleServiceTaskProcess("unauthorized");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollectionWithProcessScope(authorizedProcessDefinition);
     collectionClient.createScopeForCollection(collectionId, "unauthorized", DefinitionType.PROCESS);

@@ -303,8 +303,7 @@ public class IndexRolloverIT extends AbstractIT {
 
   private void importNextCamundaEventsForProcessInstance(final ProcessInstanceEngineDto processInstanceEngineDto) {
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
   }
 
   private void importVariableUpdateInstances(final int count) {
@@ -335,8 +334,7 @@ public class IndexRolloverIT extends AbstractIT {
       .done();
     final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
       modelInstance);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     return processInstanceEngineDto;
   }
 

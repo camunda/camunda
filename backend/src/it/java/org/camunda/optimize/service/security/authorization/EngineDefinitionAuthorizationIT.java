@@ -875,8 +875,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
         throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   private String getDefinitionKey(final int definitionResourceType) {
@@ -928,8 +927,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       default:
         throw new OptimizeIntegrationTestException("Unsupported type: " + type);
     }
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     return definitionId;
   }
 

@@ -486,8 +486,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
   }
 
   private void runEngineImportAndEventProcessing() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.processEvents();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }

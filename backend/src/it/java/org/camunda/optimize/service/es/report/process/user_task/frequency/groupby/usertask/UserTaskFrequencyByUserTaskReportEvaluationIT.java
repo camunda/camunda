@@ -76,8 +76,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishAllUserTasks(processInstanceDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -120,8 +119,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       processDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -154,8 +152,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       processDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
@@ -184,8 +181,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       processDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -217,8 +213,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       processDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -252,8 +247,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -281,8 +275,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       latestDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
@@ -317,8 +310,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       latestDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final ProcessReportDataDto reportData =
@@ -356,8 +348,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       latestDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
@@ -388,8 +379,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       latestDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final ProcessReportDataDto reportData =
@@ -424,8 +414,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       processDefinition2.getId());
     finishAllUserTasks(processInstanceDto3);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
@@ -459,8 +448,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
@@ -520,8 +508,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // claim first running task
     engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -561,8 +548,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -588,8 +574,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -616,8 +601,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto.getId())
         .getStartTime();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
@@ -652,8 +636,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishAllUserTasks(processInstanceDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -743,8 +726,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -788,8 +770,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);

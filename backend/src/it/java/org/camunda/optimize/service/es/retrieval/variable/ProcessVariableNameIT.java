@@ -64,8 +64,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
       "someVariableName",
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableNameRequestDto variableNameRequestDto = new ProcessVariableNameRequestDto();
@@ -279,7 +278,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.resetImportStartIndexes();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 

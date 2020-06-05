@@ -55,8 +55,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(categoryInputValueToFilterFor), "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -95,8 +94,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(secondCategoryInputValueToFilterFor), "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -154,8 +152,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       decisionDefinitionDto.getId(), ImmutableMap.of(camInputVariable, "200")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -185,8 +182,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(categoryInputValueToExclude), "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -218,8 +214,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(categoryInputValueToFilterFor), "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -249,8 +244,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(200.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -277,8 +271,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       inputClauseId, camInputVariable, DecisionTypeRef.DOUBLE
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);

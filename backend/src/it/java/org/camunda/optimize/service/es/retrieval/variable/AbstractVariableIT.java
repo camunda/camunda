@@ -60,16 +60,14 @@ public abstract class AbstractVariableIT extends AbstractIT {
   protected void startInstanceAndImportEngineEntities(final ProcessDefinitionEngineDto processDefinition,
                                                     final Map<String, Object> variables) {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   protected DecisionDefinitionEngineDto startDecisionInstanceAndImportEngineEntities(Map<String, Object> variables) {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(
       DmnHelper.createSimpleDmnModel("someKey"));
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     return decisionDefinitionEngineDto;
   }
 

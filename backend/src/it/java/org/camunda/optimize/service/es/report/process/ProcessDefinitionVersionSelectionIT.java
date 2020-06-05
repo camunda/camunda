@@ -53,8 +53,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     // given
     ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
     deployProcessAndStartInstances(1);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -77,8 +76,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     deployProcessAndStartInstances(1);
     ProcessDefinitionEngineDto definition3 = deployProcessAndStartInstances(3);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -101,8 +99,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
     deployProcessAndStartInstances(1);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -120,8 +117,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     // when
     deployProcessAndStartInstances(4);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
@@ -138,8 +134,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     // given
     ProcessDefinitionEngineDto definition = deployProcessAndStartInstances(1);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition.getKey(),

@@ -33,8 +33,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       deployAndStartSimpleDecisionDefinition(DECISION_DEFINITION_KEY + i);
     }
     embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(11);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions = definitionClient.getAllDecisionDefinitions();
@@ -49,8 +48,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
@@ -74,8 +72,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(modelInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
@@ -99,7 +96,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     addDecisionDefinitionWithoutXmlToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -124,8 +121,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(modelInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String actualXml = definitionClient.getDecisionDefinitionXml(decisionDefinitionEngineDto.getKey(),
@@ -149,8 +145,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       .ifPresent(drgElement -> drgElement.setName("Add name to ensure that this is the latest version!"));
     engineIntegrationExtension.deployDecisionDefinition(modelInstance2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final String actualXml = definitionClient.getDecisionDefinitionXml(decisionDefinitionEngineDto1.getKey(), ALL_VERSIONS);
@@ -175,8 +170,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     engineIntegrationExtension.deployDecisionDefinition(latestModelInstance);
 
     embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(12);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String actualXml = definitionClient.getDecisionDefinitionXml(decisionDefinitionKey, ALL_VERSIONS);

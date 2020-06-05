@@ -67,8 +67,7 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
 
     //then

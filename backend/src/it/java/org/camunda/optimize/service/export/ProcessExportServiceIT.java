@@ -49,8 +49,7 @@ public class ProcessExportServiceIT extends AbstractIT {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     currentReport.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
     currentReport.setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion());

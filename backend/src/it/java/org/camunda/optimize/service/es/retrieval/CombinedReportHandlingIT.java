@@ -333,8 +333,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   public void updateCombinedReport() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final String shouldNotBeUpdatedString = "shouldNotBeUpdated";
     String id = createNewCombinedReport();
@@ -476,8 +475,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String numberReportId = createNewSingleNumberReport(engineDto);
     String rawReportId = createNewSingleRawReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String combinedReportId = createNewCombinedReport();
@@ -543,8 +541,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleMapReport(engineDto);
     String singleReportId2 = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String reportId = createNewCombinedReport(singleReportId, singleReportId2);
@@ -570,8 +567,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     engineIntegrationExtension.finishAllRunningUserTasks(completedInstanceEngineDto.getId());
     String runningInstanceReportId = createNewSingleMapReport(runningInstanceEngineDto);
     String completedInstanceReportId = createNewSingleMapReport(completedInstanceEngineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when no filters are applied
     String combinedReportId = createNewCombinedReport(runningInstanceReportId, completedInstanceReportId);
@@ -619,8 +615,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
                                       .buildList());
     String singleReportIdA = createNewSingleMapReportWithFilter(engineDto, singleReportFilterDto);
     String singleReportIdB = createNewSingleMapReportWithFilter(engineDto, singleReportFilterDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when no additional filters are applied
     String combinedReportId = createNewCombinedReport(singleReportIdA, singleReportIdB);
@@ -662,8 +657,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportIdA = createNewSingleMapReport(engineDto);
     String singleReportIdB = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when no filters are applied
     String combinedReportId = createNewCombinedReport(singleReportIdA, singleReportIdB);
@@ -706,8 +700,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartSimpleUserTaskProcess();
     String report1 = createNewSingleMapReport(processInstanceEngineDto);
     String report2 = createNewSingleMapReport(processInstanceEngineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when no filters are applied
     String combinedReportId = createNewCombinedReport(report1, report2);
@@ -751,8 +744,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto noVariableInstance = deployAndStartSimpleUserTaskProcess();
     String variableReport = createNewSingleMapReport(variableInstance);
     String noVariableReport = createNewSingleMapReport(noVariableInstance);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when no filters are applied
     String combinedReportId = createNewCombinedReport(variableReport, noVariableReport);
@@ -798,8 +790,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ));
     String report1 = createNewSingleMapReport(instance1);
     String report2 = createNewSingleMapReport(instance2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when no filters are applied
     String combinedReportId = createNewCombinedReport(report1, report2);
@@ -855,8 +846,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     String totalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
     String idleDurationReportId = createNewSingleUserTaskIdleDurationMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String reportId = createNewCombinedReport(totalDurationReportId, idleDurationReportId);
@@ -885,8 +875,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     String userTaskTotalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
     String flowNodeDurationReportId = createNewSingleDurationMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String reportId = createNewCombinedReport(userTaskTotalDurationReportId, flowNodeDurationReportId);
@@ -921,8 +910,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     String singleReportId1 = createNewSingleReportGroupByEndDate(engineDto, GroupByDateUnit.DAY);
     String singleReportId2 = createNewSingleReportGroupByStartDate(engineDto, GroupByDateUnit.DAY);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
@@ -954,8 +942,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // given
     deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleReport(new SingleProcessReportDefinitionDto());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String reportId = createNewCombinedReport(singleReportId);
@@ -975,8 +962,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportIdToDelete = createNewSingleMapReport(engineDto);
     String remainingSingleReportId = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToDelete, remainingSingleReportId);
@@ -1012,8 +998,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
     String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
     String remainingSingleReportId = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
@@ -1051,8 +1036,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
     String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
     String remainingSingleReportId = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
@@ -1090,8 +1074,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
     String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
     String remainingSingleReportId = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
@@ -1123,8 +1106,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleMapReport(engineDto);
     String singleReportId2 = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
@@ -1146,8 +1128,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
@@ -1168,8 +1149,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId1 = createNewSingleNumberReport(engineDto);
     String singleReportId2 = createNewSingleNumberReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
@@ -1188,8 +1168,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId1 = createNewSingleMapReport(engineDto);
     String singleReportId2 = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result = reportClient.evaluateUnsavedCombined(
@@ -1208,8 +1187,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleDurationNumberReport(engineDto);
     String singleReportId2 = createNewSingleDurationNumberReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
@@ -1228,8 +1206,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleDurationMapReport(engineDto);
     String singleReportId2 = createNewSingleDurationMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
@@ -1249,8 +1226,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     String totalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
     String totalDurationReportId2 = createNewSingleUserTaskTotalDurationMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
@@ -1270,8 +1246,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     String totalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
     String idleDurationReportId = createNewSingleUserTaskIdleDurationMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
@@ -1291,8 +1266,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     String totalDurationReportId = createNewSingleDurationMapReport(engineDto);
     String idleDurationReportId = createNewSingleUserTaskIdleDurationMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
@@ -1318,8 +1292,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     String singleReportId1 = createNewSingleReportGroupByEndDate(engineDto, GroupByDateUnit.DAY);
     String singleReportId2 = createNewSingleReportGroupByStartDate(engineDto, GroupByDateUnit.DAY);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final CombinedProcessReportResultDataDto<ReportMapResultDto> result = reportClient.evaluateUnsavedCombined(
@@ -1353,8 +1326,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto groupedByEndDateReportData = TemplatedProcessReportDataBuilder
       .createReportData()
@@ -1401,8 +1373,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleNumberReport(engineDto);
     String singleReportId2 = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
@@ -1421,8 +1392,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleRawReport(engineDto);
     String singleReportId2 = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
@@ -1441,8 +1411,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String combinedReportId = createNewCombinedReport();
     String singleReportId2 = createNewSingleMapReport(engineDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response =
@@ -1464,8 +1433,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE_BY_USER_TASK)
       .build();
     String singleReportId = createNewSingleMapReport(reportData);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =

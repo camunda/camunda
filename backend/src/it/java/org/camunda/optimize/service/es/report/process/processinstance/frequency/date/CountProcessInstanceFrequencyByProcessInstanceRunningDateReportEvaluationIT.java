@@ -73,8 +73,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
     final List<ProcessInstanceEngineDto> processInstanceDtos =
       startAndEndProcessInstancesWithGivenRuntime(2, bucketWidth, startOfFirstInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessInstanceEngineDto instance = processInstanceDtos.get(0);

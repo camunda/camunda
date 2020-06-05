@@ -50,8 +50,7 @@ public class DecisionExportServiceIT extends AbstractIT {
     String decisionInstanceId =
       engineDatabaseExtension.getDecisionInstanceIdsWithEvaluationDateEqualTo(
         lastEvaluationDateFilter).get(0);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");

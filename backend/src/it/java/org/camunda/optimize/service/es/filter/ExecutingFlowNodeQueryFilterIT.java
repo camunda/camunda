@@ -29,8 +29,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executingFlowNodes = ProcessFilterBuilder
@@ -58,8 +57,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     ProcessInstanceEngineDto thirdInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(thirdInstanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
@@ -88,8 +86,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     ProcessInstanceEngineDto thirdInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(thirdInstanceEngineDto.getId());
     ProcessInstanceEngineDto fourthInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executingFlowNodes = ProcessFilterBuilder.filter()

@@ -44,8 +44,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -61,8 +60,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
   public void skipInvalidAdaptedInputs() {
     addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn2.ReturnInvalidInputs");
     engineIntegrationExtension.deployAndStartDecisionDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -75,8 +73,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
   public void pluginReturnsMoreInputVariables() {
     addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn3.ReturnMoreInputVariables");
     engineIntegrationExtension.deployAndStartDecisionDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -94,8 +91,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       put("invoiceCategory", "Misc");
     }});
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -130,8 +126,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       put("invoiceCategory", "notFoo");
     }});
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -156,8 +151,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -173,8 +167,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 

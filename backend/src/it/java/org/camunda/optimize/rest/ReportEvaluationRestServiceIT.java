@@ -155,8 +155,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when the instance gets completed and a running instance filter applied
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     filteredResponse = evaluateSavedReport(
       reportId,
       new AdditionalProcessReportEvaluationFilterDto(runningInstancesOnlyFilter())
@@ -601,8 +600,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       engineIntegrationExtension.deployAndStartDecisionDefinition(
         decisionModel);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     return decisionDefinitionEngineDto;
   }
 
@@ -681,8 +679,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
       processModel,
       variables
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     return instance;
   }
 

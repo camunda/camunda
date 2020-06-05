@@ -280,8 +280,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       RESOURCE_TYPE_PROCESS_DEFINITION
     );
     deployAndStartSimpleProcessDefinition(notAuthorizedProcessDefinitionKey);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     String authorizedReportId = createNewSingleMapReportAsUser(
       authorizedProcessDefinitionKey, KERMIT_USER, KERMIT_USER
@@ -562,8 +561,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
         throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   private void deployAndStartSimpleProcessDefinition(String processKey) {

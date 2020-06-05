@@ -46,8 +46,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     Response response = executeBranchAnalysisAsKermit(processDefinition);
@@ -64,8 +63,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when + then
     executeBranchAnalysisAsKermit(processDefinition, Collections.singletonList(null));
@@ -76,8 +74,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     BranchAnalysisQueryDto analysisDto = analysisClient.createAnalysisDto(
@@ -104,8 +101,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
 
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     Response response = executeBranchAnalysisAsKermit(processDefinition);
@@ -124,8 +120,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     Response response = executeBranchAnalysisAsKermit(processDefinition);
@@ -149,8 +144,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     Response response = executeBranchAnalysisAsKermit(processDefinition1, Lists.newArrayList(tenantId1, tenantId2));
@@ -169,8 +163,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final Response response = executeBranchAnalysisAsKermit(processDefinition, Lists.newArrayList(tenantId));

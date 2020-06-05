@@ -233,7 +233,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   protected void importEngineEntities() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    importAllEngineEntitiesFromLastIndex();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }

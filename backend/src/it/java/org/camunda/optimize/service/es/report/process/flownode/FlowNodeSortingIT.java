@@ -42,8 +42,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployProcessWithTwoTasksAndLabels();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
@@ -78,8 +77,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // given
     final ProcessInstanceEngineDto processDefinition = deployProcessWithTwoTasksAndLabels();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);
@@ -120,8 +118,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // @formatter:on
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.deployAndStartProcess(modelInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
@@ -162,8 +159,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // @formatter:on
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.deployAndStartProcess(modelInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
@@ -200,8 +196,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // @formatter:on
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.deployAndStartProcess(modelInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
@@ -236,8 +231,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // given
     final ProcessInstanceEngineDto processDefinition = deployProcessWithServiceAndUserTask();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);

@@ -54,8 +54,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     variables.put("differentStringValue", "test");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filters =
@@ -124,8 +123,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
 
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
@@ -175,8 +173,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     variables.put("differentStringValue", "test");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filters =
@@ -237,8 +234,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
 
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {

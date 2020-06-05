@@ -52,8 +52,7 @@ public class ExportLimitsIT extends AbstractIT {
 
     embeddedOptimizeExtension.getConfigurationService().setExportCsvLimit(1);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");

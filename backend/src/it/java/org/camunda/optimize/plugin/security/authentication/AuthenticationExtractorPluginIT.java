@@ -225,8 +225,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
 
   private void deployAndImportTestDefinition() {
     deploySimpleProcessDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   private void createKermitUserAndGrantOptimizeAccess() {

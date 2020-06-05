@@ -44,8 +44,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -90,8 +89,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     changeUserTaskStartDate(processInstance2, now, USER_TASK_1, 700L);
     changeUserTaskClaimDate(processInstance2, now, USER_TASK_1, 500L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.DAY);

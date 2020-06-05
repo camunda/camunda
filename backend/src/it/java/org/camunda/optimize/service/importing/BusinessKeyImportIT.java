@@ -41,8 +41,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto runningProcess = deployAndStartUserTaskProcess();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(getAllStoredBusinessKeys())
@@ -53,8 +52,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
 
     // when running process is completed and import run again
     engineIntegrationExtension.finishAllRunningUserTasks(completedProcess.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then keys are still correct
     assertThat(getAllStoredBusinessKeys())
@@ -67,8 +65,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   @Test
   public void importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws JsonProcessingException {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(getAllStoredBusinessKeys()).isEmpty();
@@ -85,8 +82,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     esMockServer
       .when(businessKeyImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then the key gets stored after successful write
     assertThat(getAllStoredBusinessKeys())
@@ -97,8 +93,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   @Test
   public void importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws JsonProcessingException {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(getAllStoredBusinessKeys()).isEmpty();
@@ -117,8 +112,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     esMockServer
       .when(businessKeyImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then the key gets stored after successful write
     assertThat(getAllStoredBusinessKeys())
@@ -136,8 +130,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks(completedProcess.getId());
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     List<BusinessKeyDto> storedBusinessKeys = getAllStoredBusinessKeys();

@@ -48,8 +48,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = deployDecisionsWithStringVarNames(of("var1", "var2"));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinitionDto);
@@ -86,8 +85,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
       engineIntegrationExtension.deployDecisionDefinition(modelInstance);
 
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames("decision2", "1");
@@ -108,8 +106,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     deployAndStartMultiTenantDecision(
       newArrayList(null, tenantId1, tenantId2)
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionVariableNameRequestDto variableNameRequestDto = new DecisionVariableNameRequestDto();
@@ -130,8 +127,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     DecisionDefinitionEngineDto decisionDefinitionDto3 =
       deployDecisionsWithStringVarNames(of("var1", "var2", "var3"));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse =
@@ -153,8 +149,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<String> varListWithMoreThan10Entries =
       IntStream.range(0, 11).boxed().map(Objects::toString).collect(Collectors.toList());
     DecisionDefinitionEngineDto decisionDefinition = deployDecisionsWithStringVarNames(varListWithMoreThan10Entries);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
@@ -170,8 +165,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployDecisionsWithStringVarNames(of("foo1", "foo2"));
     DecisionDefinitionEngineDto decisionDefinitionDto3 =
       deployDecisionsWithStringVarNames(of("var1", "var2", "var3"));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition.getKey(), ALL_VERSIONS);
@@ -190,8 +184,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployDecisionsWithStringVarNames(of("foo1", "foo2"));
     DecisionDefinitionEngineDto decisionDefinitionDto3 =
       deployDecisionsWithStringVarNames(of("var1", "var2", "var3"));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition.getKey(), LATEST_VERSION);
@@ -208,8 +201,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     // given
     DecisionDefinitionEngineDto decisionDefinition = deployDecisionsWithStringVarNames(of("expectedVar"));
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployDecisionsWithStringVarNames(of("notExpectedVar"));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
@@ -225,8 +217,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     ImmutableList<String> expectedVars = of("var4", "var1", "var134124", "bar", "aaa");
     DecisionDefinitionEngineDto decisionDefinition =
       deployDecisionsWithStringVarNames(expectedVars);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
@@ -243,8 +234,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     // given
     DecisionDefinitionEngineDto definitionEngine =
       deployDecisionsWithVarNames(nCopies(values().length, "var"), asList(values()));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(definitionEngine);
@@ -265,8 +255,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
   public void variableWithSameNameAndDifferentType() {
     // given
     DecisionDefinitionEngineDto decisionDefinition = deployDecisionsWithVarNames(of("var", "var"), of(STRING, BOOLEAN));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);

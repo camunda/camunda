@@ -41,7 +41,7 @@ public class StatusRestServiceIT extends AbstractIT {
   @Test
   public void importStatusIsTrueWhenImporting() {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final StatusWithProgressDto status = statusClient.getImportStatus();

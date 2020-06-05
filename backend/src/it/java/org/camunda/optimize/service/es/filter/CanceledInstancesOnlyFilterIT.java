@@ -37,8 +37,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     );
 
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
@@ -73,8 +72,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
       INTERNALLY_TERMINATED_STATE
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
@@ -103,8 +101,7 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.externallyTerminateProcessInstance(firstProcInst.getId());
     engineIntegrationExtension.externallyTerminateProcessInstance(secondProcInst.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);

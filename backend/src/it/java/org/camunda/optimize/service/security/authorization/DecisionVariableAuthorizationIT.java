@@ -46,8 +46,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
@@ -65,8 +64,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition, Collections.singletonList(null));
@@ -81,8 +79,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     // given
     final DecisionDefinitionEngineDto decisionDefinition = deploySimpleDecisionDefinition();
     evaluateSimpleDecision(decisionDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response inputVariableNameResponse = embeddedOptimizeExtension
@@ -138,8 +135,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
     evaluateSimpleDecision(decisionDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
@@ -158,8 +154,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
     evaluateSimpleDecision(decisionDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
@@ -182,8 +177,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     evaluateSimpleDecision(decisionDefinition1);
     evaluateSimpleDecision(decisionDefinition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(

@@ -58,8 +58,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -94,8 +93,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -128,8 +126,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleUserTaskProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -162,8 +159,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     String reportId = createAndStoreDefaultReportDefinition(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
@@ -201,8 +197,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -244,8 +239,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -281,8 +275,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()
@@ -317,8 +310,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       processInstanceDto3.getId(),
       OffsetDateTime.now().minusDays(1)
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -361,8 +353,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessInstanceEngineDto processInstanceDto3 =
       engineIntegrationExtension.startProcessInstance(processInstanceDto1.getDefinitionId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     final Object[] processInstanceIdsOrderedAsc = newArrayList(
       processInstanceDto1.getId(), processInstanceDto2.getId(), processInstanceDto3.getId()
     ).stream().sorted(Collections.reverseOrder()).toArray();
@@ -387,8 +378,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
@@ -421,8 +411,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       processInstanceDto1.getDefinitionId(), ImmutableMap.of("otherVar", 0)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     final Object[] processInstanceIdsOrderedAsc = newArrayList(
       processInstanceDto1.getId(), processInstanceDto2.getId(), processInstanceDto3.getId(), processInstanceDto4.getId()
     ).toArray();
@@ -447,8 +436,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
@@ -473,8 +461,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     variables.clear();
     variables.put("varName2", "value2");
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -507,8 +494,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -531,8 +517,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -589,8 +574,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime past = engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -640,8 +624,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
 
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
@@ -679,8 +662,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     );
     variables.put("goToTask1", false);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()

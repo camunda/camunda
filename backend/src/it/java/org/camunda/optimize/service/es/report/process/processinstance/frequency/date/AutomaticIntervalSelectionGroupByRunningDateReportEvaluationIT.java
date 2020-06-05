@@ -48,8 +48,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     final List<ProcessInstanceEngineDto> processInstanceDtos =
       startAndEndProcessInstancesWithGivenRuntime(2, instanceRuntime, startOfFirstInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessInstanceEngineDto instance = processInstanceDtos.get(0);
@@ -78,8 +77,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
 
     final ProcessInstanceEngineDto instance = processInstanceDtos.get(0);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = getGroupByRunningDateReportData(
@@ -116,8 +114,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
   public void automaticIntervalSelectionForNoData() {
     // given
     ProcessDefinitionEngineDto engineDto = deploySimpleServiceTaskProcessAndGetDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = getGroupByRunningDateReportData(
@@ -135,8 +132,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
   public void automaticIntervalSelectionForOneDataPoint() {
     // given there is only one data point
     final ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = getGroupByRunningDateReportData(
@@ -167,8 +163,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
       now.plusDays(4),
       now.plusDays(6)
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     final String singleReportId1 = createNewSingleReport(procDefFirstRange);
     final String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
@@ -198,8 +193,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
       now.plusDays(3),
       now.plusDays(5)
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     final String singleReportId = createNewSingleReport(procDefFirstRange);
     final String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
@@ -226,8 +220,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     final String singleReportId1 = createNewSingleReport(definition1);
     final String singleReportId2 = createNewSingleReport(definition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
 
     // when

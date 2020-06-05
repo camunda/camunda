@@ -83,8 +83,7 @@ public abstract class UserTaskDurationByUserTaskStartDateReportEvaluationIT
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700L);
     changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.DAY);

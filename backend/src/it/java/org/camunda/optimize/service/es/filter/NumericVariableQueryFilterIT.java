@@ -57,8 +57,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(10, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -109,8 +108,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
       processDefinition.getId(), ImmutableMap.of(VARIABLE_NAME, changeNumericValueToType(200, variableType))
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -142,8 +140,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(10, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -175,8 +172,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(3, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> values = new ArrayList<>();
@@ -213,8 +209,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(3, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> values = new ArrayList<>();
@@ -251,8 +246,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(10, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter =
@@ -285,8 +279,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(10, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter =
@@ -319,8 +312,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(10, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -352,8 +344,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(10, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -385,8 +376,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(10, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filters = ProcessFilterBuilder
@@ -426,8 +416,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(VARIABLE_NAME, changeNumericValueToType(10, variableType));
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filters = ProcessFilterBuilder
@@ -458,8 +447,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
   public void resultFilterByNumericVariableValueNullFailsForRelativeOperators(final String operator) {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder

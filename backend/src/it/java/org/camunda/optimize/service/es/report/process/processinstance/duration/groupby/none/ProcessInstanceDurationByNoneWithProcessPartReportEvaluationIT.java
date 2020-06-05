@@ -74,8 +74,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       startDate
     );
     engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -118,8 +117,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       startDate
     );
     engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -159,8 +157,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       startDate
     );
     engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     ProcessReportDataDto reportDataDto =
       createReport(
         processInstanceDto.getProcessDefinitionKey(),
@@ -208,8 +205,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     endDatesToUpdate.put(processInstanceDto2.getId(), startDate.plusSeconds(2));
     endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(9));
     engineDatabaseExtension.updateActivityInstanceEndDates(endDatesToUpdate);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -234,8 +230,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessInstanceEngineDto processInstanceDto = deployAndStartLoopingProcess();
     engineDatabaseExtension.changeFirstActivityInstanceStartDate(START_LOOP, startDate);
     engineDatabaseExtension.changeFirstActivityInstanceEndDate(END_LOOP, startDate.plusSeconds(2));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -262,8 +257,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   public void activityHasNullDates() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     setActivityStartDatesToNull();
 
     // when
@@ -310,8 +304,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     engineDatabaseExtension.changeFirstActivityInstanceStartDate(START_EVENT, startDate);
     engineDatabaseExtension.changeFirstActivityInstanceEndDate(END_EVENT, startDate.minusSeconds(2));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -337,8 +330,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       processInstanceDto.getDefinitionId(),
       OffsetDateTime.now().plusHours(1)
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -364,8 +356,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       processInstanceDto.getDefinitionId(),
       OffsetDateTime.now().minusHours(1)
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -419,8 +410,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
     deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -448,8 +438,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -472,8 +461,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =

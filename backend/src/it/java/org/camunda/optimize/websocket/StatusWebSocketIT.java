@@ -115,8 +115,7 @@ public class StatusWebSocketIT extends AbstractIT {
       .endEvent()
       .done();
     engineIntegrationExtension.deployAndStartProcess(processModel);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
 }

@@ -35,8 +35,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 300.0, "Travel Expenses");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 500.0, "somethingElse");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -74,8 +73,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 3000.0, "Misc");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 4000.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
 
@@ -100,8 +98,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
       }
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -123,8 +120,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 200.0, "Misc");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 200.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -154,11 +150,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployDecisionDefinitionWithDifferentKey("otherKey");
     startDecisionInstanceWithInputs(decisionDefinitionDto2, 300.0, "Travel Expenses");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -180,11 +174,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto1, 200.0, "Misc");
     startDecisionInstanceWithInputs(decisionDefinitionDto2, 300.0, "Travel Expenses");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -206,11 +198,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto1, 200.0, "Misc");
     startDecisionInstanceWithInputs(decisionDefinitionDto2, 300.0, "Travel Expenses");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
 
@@ -235,8 +225,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 300.0, "Misc");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -262,8 +251,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 300.0, "Misc");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -289,8 +277,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 300.0, "Misc");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -316,8 +303,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Travel Expenses");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Travel");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -342,8 +328,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Travel Expenses");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Travel");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -372,8 +357,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 3000.0, "Misc");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 4000.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> classificationOutputVariableValues = variablesClient
@@ -394,8 +378,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "TrAVel Expenses");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Travel");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -420,8 +403,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Travelbarbarbarbar Expenses");
     startDecisionInstanceWithInputs(decisionDefinitionDto, 400.0, "Travel");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -443,8 +425,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputs(decisionDefinitionDto, 200.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -464,8 +445,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputs(decisionDefinitionDto, 200.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -485,8 +465,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputs(decisionDefinitionDto, 200.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -506,8 +485,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputs(decisionDefinitionDto, 200.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -527,8 +505,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputs(decisionDefinitionDto, 200.0, "Misc");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(

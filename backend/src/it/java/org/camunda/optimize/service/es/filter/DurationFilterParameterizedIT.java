@@ -37,8 +37,7 @@ public class DurationFilterParameterizedIT extends AbstractDurationFilterIT {
       processInstance = deployAndStartSimpleProcess();
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder

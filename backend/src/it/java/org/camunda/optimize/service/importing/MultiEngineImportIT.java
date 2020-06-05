@@ -32,7 +32,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     List<ProcessDefinitionOptimizeDto> definitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
@@ -72,7 +72,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     List<ProcessInstanceDto> processInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
@@ -111,7 +111,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     List<ProcessInstanceDto> processInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
@@ -132,7 +132,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     secondaryEngineIntegrationExtension.createTenant(secondTenantId, tenantName);
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -159,7 +159,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     engineIntegrationExtension.suspendProcessInstance(processInstancesToSuspend.get(0).getId());
     secondaryEngineIntegrationExtension.suspendProcessInstance(processInstancesToSuspend.get(1).getId());
     deployAndStartDecisionDefinitionForAllEngines();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 

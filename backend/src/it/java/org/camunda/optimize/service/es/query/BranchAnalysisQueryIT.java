@@ -67,8 +67,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result =
@@ -96,8 +95,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinitionWithLoop();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(
@@ -127,8 +125,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deployGatewayProcessWithSubprocess();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = analysisClient.performBranchAnalysis(
@@ -163,8 +160,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), ALL_VERSIONS);
@@ -197,8 +193,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     ArrayList<String> versions = Lists.newArrayList(
@@ -236,8 +231,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
@@ -259,8 +253,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
 
@@ -281,8 +274,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(
@@ -319,8 +311,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = analysisClient.performBranchAnalysis(
@@ -360,8 +351,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = analysisClient.performBranchAnalysis(
@@ -396,8 +386,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask2(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
@@ -425,8 +414,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessWithUserTask();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask2(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
@@ -456,8 +444,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask2(processDefinition2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
@@ -486,8 +473,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
       engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
@@ -532,8 +518,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
       engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
@@ -569,8 +554,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
@@ -629,8 +613,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     startBypassProcessAndTakeLongWayWithoutTask(processDefinition);
     startBypassProcessAndTakeShortcut(processDefinition);
     startBypassProcessAndTakeLongWayWithTask(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
@@ -665,8 +648,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
@@ -708,8 +690,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
       processDefinition.getKey(),
@@ -772,8 +753,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
     variables.put("takeShortcut", false);
     engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
@@ -822,8 +802,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
     variables.put("takeShortcut", false);
     engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
@@ -885,8 +864,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
     variables.put("anotherRound", false);
     engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);

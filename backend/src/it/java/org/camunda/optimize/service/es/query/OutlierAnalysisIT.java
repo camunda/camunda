@@ -76,8 +76,7 @@ public class OutlierAnalysisIT extends AbstractIT {
       testActivity2
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
@@ -138,8 +137,7 @@ public class OutlierAnalysisIT extends AbstractIT {
       FLOW_NODE_ID_TEST
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
@@ -166,8 +164,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
@@ -202,8 +199,7 @@ public class OutlierAnalysisIT extends AbstractIT {
       processDefinition, new Gaussian(10 / 2, 15), 5, "testActivity1"
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
@@ -231,8 +227,7 @@ public class OutlierAnalysisIT extends AbstractIT {
       FLOW_NODE_ID_TEST
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
@@ -264,8 +259,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 1L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
@@ -291,8 +285,7 @@ public class OutlierAnalysisIT extends AbstractIT {
       FLOW_NODE_ID_TEST
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
@@ -326,8 +319,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     final long lowerOutlierBound = 513L;
     final long higherOutlierBound = 39486L;
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
@@ -359,8 +351,7 @@ public class OutlierAnalysisIT extends AbstractIT {
       engineDatabaseExtension.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, i * 1000);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
@@ -384,8 +375,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     // a couple of normally distributed instances
     createNormalDistributionAnd3Outliers(processDefinition, VARIABLE_VALUE_OUTLIER);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtosActivity(
@@ -414,8 +404,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     // this particular value is obtained from precalculation, given the distribution and outlier setup
     final long activityHigherOutlierBound = SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND;
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtosActivity(
@@ -447,8 +436,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     // high duration for which there are no instances
     final long activityHigherOutlierBound = 100_000L;
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = analysisClient.getVariableTermDtosActivityRawResponse(
@@ -474,8 +462,7 @@ public class OutlierAnalysisIT extends AbstractIT {
       processDefinition, VARIABLE_VALUE_OUTLIER
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = embeddedOptimizeExtension

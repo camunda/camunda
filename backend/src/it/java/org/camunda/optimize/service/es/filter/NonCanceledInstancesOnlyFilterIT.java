@@ -42,8 +42,7 @@ public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
       INTERNALLY_TERMINATED_STATE
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);

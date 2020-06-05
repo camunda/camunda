@@ -60,8 +60,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartProcess(exampleProcess);
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
@@ -73,8 +72,7 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void importOfDecisionDefinition_dataIsImportedOnNextSuccessfulAttemptAfterEsFailures() {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
@@ -93,8 +91,7 @@ public class DecisionImportIT extends AbstractImportIT {
       .error(HttpError.error().withDropConnection(true));
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then the definition will be stored when update next works
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 1L);
@@ -104,8 +101,7 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void importOfDecisionDInstance_dataIsImportedOnNextSuccessfulAttemptAfterEsFailures() {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
@@ -124,8 +120,7 @@ public class DecisionImportIT extends AbstractImportIT {
       .error(HttpError.error().withDropConnection(true));
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then the instance will be stored when update next works
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 1L);
@@ -139,8 +134,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinition();
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     allEntriesInElasticsearchHaveAllDataWithCount(
@@ -159,16 +153,14 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinition();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromLastIndex();
 
     // then
     assertThat(getDecisionDefinitionCount()).isEqualTo(2L);
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then
     assertThat(getDecisionDefinitionCount()).isEqualTo(3L);
@@ -181,8 +173,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinitionWithTenant(tenantId);
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -200,8 +191,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinition();
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -220,8 +210,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinitionWithTenant(expectedTenantId);
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -237,8 +226,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -259,8 +247,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -278,8 +265,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -301,8 +287,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -320,8 +305,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId());
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
@@ -335,7 +319,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -366,9 +350,8 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromLastIndex();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
@@ -388,8 +371,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // when
     engineIntegrationExtension.deployAndStartDecisionDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));

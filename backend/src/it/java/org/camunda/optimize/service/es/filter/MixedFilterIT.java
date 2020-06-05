@@ -54,8 +54,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
     OffsetDateTime end = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
@@ -108,8 +107,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder

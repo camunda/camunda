@@ -44,8 +44,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
 
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -76,8 +75,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -94,8 +92,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
     deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(engineDto.getProcessDefinitionKey(),
@@ -116,8 +113,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
@@ -133,8 +129,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
     OffsetDateTime past = engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstance.getProcessDefinitionKey(),
@@ -170,8 +165,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("goToTask1", false);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
@@ -223,8 +217,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
 
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto.getProcessDefinitionKey(),

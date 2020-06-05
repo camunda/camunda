@@ -32,8 +32,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
@@ -56,8 +55,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
@@ -85,8 +83,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
@@ -114,8 +111,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
@@ -144,8 +140,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     // when
 
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder.filter()
@@ -177,8 +172,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder.filter().executedFlowNodes()
@@ -226,8 +220,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder.filter()
@@ -263,8 +256,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), takePathA);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), takePathB);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
@@ -306,8 +298,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), takePathA);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), takePathB);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes =
@@ -348,8 +339,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), takePathA);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), takePathB);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes =
@@ -399,8 +389,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder

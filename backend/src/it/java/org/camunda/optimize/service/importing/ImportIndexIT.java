@@ -40,14 +40,12 @@ public class ImportIndexIT extends AbstractImportIT {
     // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp stored
     Thread.sleep(currentTimeBackOff);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> firstRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // then
     embeddedOptimizeExtension.resetImportStartIndexes();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> secondsRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // then
@@ -70,7 +68,7 @@ public class ImportIndexIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.createTenant("id", "name");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -92,14 +90,13 @@ public class ImportIndexIT extends AbstractImportIT {
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     List<Long> firstRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> secondsRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // then
@@ -112,16 +109,14 @@ public class ImportIndexIT extends AbstractImportIT {
   public void afterRestartOfOptimizeAlsoNewDataIsImported() {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> firstRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // and
     deployAndStartSimpleServiceTask();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> secondsRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // then
@@ -134,7 +129,7 @@ public class ImportIndexIT extends AbstractImportIT {
   public void itIsPossibleToResetTheImportIndex() {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     // when
     embeddedOptimizeExtension.resetImportStartIndexes();

@@ -49,8 +49,7 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstance2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
@@ -82,8 +81,7 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstance2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
@@ -118,8 +116,7 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
     final ProcessInstanceEngineDto unassignedProcessInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
@@ -158,8 +155,7 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
     final ProcessInstanceEngineDto unassignedProcessInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
@@ -202,8 +198,7 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
     final ProcessInstanceEngineDto unassignedProcessInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
@@ -248,8 +243,7 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
       expectedProcessInstance.getId()
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder

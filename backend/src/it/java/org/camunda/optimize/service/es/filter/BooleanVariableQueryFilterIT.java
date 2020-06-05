@@ -41,8 +41,7 @@ public class BooleanVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(BOOLEAN_VARIABLE_NAME, false);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -70,8 +69,7 @@ public class BooleanVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(BOOLEAN_VARIABLE_NAME, false);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -120,8 +118,7 @@ public class BooleanVariableQueryFilterIT extends AbstractFilterIT {
       processDefinition.getId(), ImmutableMap.of(BOOLEAN_VARIABLE_NAME, false)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filter = ProcessFilterBuilder

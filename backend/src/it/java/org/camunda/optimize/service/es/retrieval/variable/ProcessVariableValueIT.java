@@ -49,8 +49,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value3");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
@@ -73,8 +72,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
       variableName,
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto valueRequestDto = new ProcessVariableValueRequestDto();
@@ -104,8 +102,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     variables.clear();
     variables.put("var", "value3");
     engineIntegrationExtension.startProcessInstance(processDefinition3.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto valueRequestDto = new ProcessVariableValueRequestDto();
@@ -134,8 +131,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     processDefinition = deploySimpleProcessDefinition();
     variables.put("var", "value2");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto valueRequestDto = new ProcessVariableValueRequestDto();
@@ -162,8 +158,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     variables.clear();
     variables.put("var", "latest");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto valueRequestDto = new ProcessVariableValueRequestDto();
@@ -189,8 +184,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
         engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       }
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
@@ -208,8 +202,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     variables.put("var2", "value2");
     variables.put("var3", "value3");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var1");
@@ -229,8 +222,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value2");
     engineIntegrationExtension.startProcessInstance(processDefinition2.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
@@ -249,8 +241,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", true);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
@@ -269,8 +260,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value1");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
@@ -294,8 +284,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     variables.put("doubleVar", 5.5);
     variables.put("stringVar", "aString");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     for (String name : variables.keySet()) {
       // when
@@ -344,8 +333,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value3");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -373,8 +361,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value3");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -402,8 +389,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value3");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -431,8 +417,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "ball");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -459,8 +444,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     variables.put("var", "doSomething");
     variables.put("foo", "oooo");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -486,8 +470,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "oooo");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -517,8 +500,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "tsoi-zhiv");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -547,8 +529,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "oobaro");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -572,8 +553,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "fooo");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -595,8 +575,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 2);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -618,8 +597,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "foo");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -641,8 +619,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "foo");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();

@@ -59,7 +59,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final String authorizedTenant = "authorizedTenant";
     final List<String> tenants = singletonList(authorizedTenant);
     engineIntegrationExtension.createTenant(authorizedTenant);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
@@ -91,7 +91,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final String authorizedTenant2 = "authorizedTenant2";
     engineIntegrationExtension.createTenant(authorizedTenant2);
     final List<String> tenants = newArrayList(null, authorizedTenant1, authorizedTenant2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
@@ -176,7 +176,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final String unauthorizedTenant = "unauthorizedTenant";
     engineIntegrationExtension.createTenant(unauthorizedTenant);
     // import tenant so he's available in the tenant cache
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     final List<String> tenants = newArrayList(null, unauthorizedTenant);
 
     // the collection is created to make sure that there are no side effects
@@ -257,7 +257,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final String unauthorizedTenant = "unauthorizedTenant";
     engineIntegrationExtension.createTenant(unauthorizedTenant);
     final List<String> tenants = newArrayList(authorizedTenant);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
@@ -281,7 +281,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
                                                    final String parameterizedTestInfo) {
     // given
     final List<String> tenants = singletonList(null);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     DefinitionType otherType = definitionType == PROCESS ? DECISION : PROCESS;

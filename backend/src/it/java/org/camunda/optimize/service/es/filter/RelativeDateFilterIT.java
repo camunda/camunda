@@ -31,8 +31,7 @@ public class RelativeDateFilterIT extends AbstractDateFilterIT {
 
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 

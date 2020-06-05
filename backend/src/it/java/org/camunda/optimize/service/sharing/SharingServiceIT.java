@@ -686,8 +686,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   public void errorMessageIsWellStructured () {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess("aProcess");
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()

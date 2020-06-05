@@ -93,8 +93,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     final long setDuration = 20L;
     changeDuration(processInstanceDto, setDuration);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -140,8 +139,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final long setDuration = 20L;
     changeDuration(processInstanceDto, USER_TASK_1, setDuration);
     changeUserTaskStartDate(processInstanceDto, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -196,8 +194,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[1]);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -246,8 +243,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[1]);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -291,8 +287,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[0]);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -339,8 +334,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[0]);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -381,8 +375,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto2, USER_TASK_1, 10L);
     changeDuration(processInstanceDto2, USER_TASK_2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
@@ -414,8 +407,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto2, USER_TASK_1, 10L);
     changeDuration(processInstanceDto2, USER_TASK_2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -454,8 +446,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto2, USER_TASK_1, 10L);
     changeDuration(processInstanceDto2, USER_TASK_2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -495,8 +486,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto2, USER_TASK_1, 100L);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
@@ -541,8 +531,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       processDefinition2.getId());
     changeUserTaskStartDate(processInstanceDto4, now, USER_TASK_1, UNASSIGNED_TASK_DURATION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
@@ -586,8 +575,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
@@ -613,8 +601,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
     changeDuration(processInstanceDto, 600L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -717,8 +704,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700L);
     changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -753,8 +739,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -780,8 +765,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       changeDuration(processInstanceDto, 10L);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -808,8 +792,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto.getId())
         .getStartTime();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
@@ -871,8 +854,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto, USER_TASK_1, 10L);
     changeDuration(processInstanceDto, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -928,8 +910,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     changeDuration(processInstanceDto, USER_TASK_1, 10L);
     changeDuration(processInstanceDto, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);

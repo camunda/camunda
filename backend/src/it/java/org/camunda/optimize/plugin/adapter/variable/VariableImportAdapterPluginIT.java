@@ -46,8 +46,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var3", 1);
     variables.put("var4", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -69,8 +68,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var3", "bar");
     variables.put("var4", "bar");
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -87,8 +85,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -105,8 +102,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -122,8 +118,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -156,8 +151,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("person", complexVariableDto);
     ProcessInstanceEngineDto instanceDto = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
@@ -178,8 +172,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);

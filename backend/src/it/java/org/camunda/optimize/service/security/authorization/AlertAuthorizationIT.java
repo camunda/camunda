@@ -99,8 +99,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, definitionKey);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final String alertId = createAlertInCollectionAsDefaultUser(processDefinition);
 
@@ -125,8 +124,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     final String definitionKey2 = "processDefinition2";
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcess(definitionKey2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final String authorizedAlertId = createAlertInCollectionAsDefaultUser(processDefinition1);
     createAlertInCollectionAsDefaultUser(processDefinition2);

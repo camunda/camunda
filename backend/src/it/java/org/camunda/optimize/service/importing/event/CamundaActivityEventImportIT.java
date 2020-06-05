@@ -54,8 +54,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     List<CamundaActivityEventDto> storedEvents =
@@ -112,8 +111,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("runningActivities");
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     List<CamundaActivityEventDto> storedEvents =
@@ -158,8 +156,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     secondInstance.setProcessDefinitionVersion(firstInstance.getProcessDefinitionVersion());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     List<CamundaActivityEventDto> storedEvents =
@@ -218,8 +215,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     List<CamundaActivityEventDto> storedEvents =
@@ -284,8 +280,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     // given the index has been created, the process start, the start Event, and start of user task has been saved
     // already
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("noEventsDef");
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<CamundaActivityEventDto> initialStoredEvents =
       getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
     assertThat(initialStoredEvents)
@@ -302,8 +297,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // when engine events happen and import triggered
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then no additional events are stored
     List<CamundaActivityEventDto> storedEvents =
@@ -321,8 +315,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
@@ -345,16 +338,14 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto firstProcessInstanceEngineDto =
       deployAndStartUserTaskProcessWithName("aProcessFirstBatch");
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     ProcessInstanceEngineDto secondProcessInstanceEngineDto =
       deployAndStartUserTaskProcessWithName("aProcessSecondBatch");
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
@@ -384,8 +375,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();

@@ -36,8 +36,7 @@ public class FlowNodeMappingIT extends AbstractIT {
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
     ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
@@ -75,8 +74,7 @@ public class FlowNodeMappingIT extends AbstractIT {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
     ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     StartEvent start = modelInstance.getModelElementsByType(StartEvent.class).iterator().next();
 
 

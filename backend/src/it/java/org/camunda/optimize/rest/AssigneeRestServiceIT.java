@@ -25,10 +25,9 @@ public class AssigneeRestServiceIT extends AbstractIT {
   public void getAssignees() {
     ProcessInstanceEngineDto processInstanceEngineDto = startSimpleUserTaskProcessWithAssignee();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceEngineDto.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     AssigneeRequestDto requestDto = new AssigneeRequestDto(
       PROC_DEF_KEY,

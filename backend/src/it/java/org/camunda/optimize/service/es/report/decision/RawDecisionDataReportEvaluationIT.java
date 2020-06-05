@@ -58,8 +58,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     );
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), inputs);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), decisionDefinitionVersion);
@@ -100,8 +99,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     final HashMap<String, InputVariableEntry> inputs = createInputs(200.0, "Misc");
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), inputs);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -150,8 +148,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionKey, ALL_VERSIONS);
@@ -182,8 +179,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       );
     }};
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -213,8 +209,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -248,8 +243,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -283,8 +277,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -319,8 +312,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(400.0, "Misc"));
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(1000.0, "Misc"));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -368,8 +360,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // results in audit false
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(200.0, "Misc"));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);

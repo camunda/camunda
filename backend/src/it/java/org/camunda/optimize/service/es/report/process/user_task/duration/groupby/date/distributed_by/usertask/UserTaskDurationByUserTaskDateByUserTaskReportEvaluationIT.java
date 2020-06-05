@@ -88,8 +88,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     final long expectedDuration = 20L;
     changeDuration(processInstance, expectedDuration);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
 
@@ -134,8 +133,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     final long expectedDuration = 20L;
     changeDuration(processInstance, expectedDuration);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
@@ -182,8 +180,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstance2, USER_TASK_1, 20L);
     changeDuration(processInstance2, USER_TASK_2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -231,8 +228,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstance2, USER_TASK_1, 10L);
     changeDuration(processInstance2, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -281,8 +277,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstance2, USER_TASK_1, 10L);
     changeDuration(processInstance2, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -341,8 +336,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstance3, USER_TASK_1, 30L);
     changeDuration(processInstance3, USER_TASK_2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -389,8 +383,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstance2, USER_TASK_1, 10L);
     changeDuration(processInstance2, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
@@ -436,8 +429,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstance2, USER_TASK_1, 20L);
     changeDuration(processInstance2, USER_TASK_2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -471,8 +463,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstance1, USER_TASK_1, 10L);
     changeDuration(processInstance1, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -517,8 +508,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     updateUserTaskTime(processInstanceDtos, referenceDate, groupByUnitAsChrono);
     processInstanceDtos.forEach(procInst -> changeDuration(procInst, 10L));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, groupByDateUnit);
@@ -557,8 +547,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstance2, USER_TASK_1, 50L);
 
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
@@ -584,8 +573,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processKey, "1", GroupByDateUnit.DAY);
@@ -607,8 +595,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstance1, USER_TASK_1, 10L);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -668,8 +655,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstanceDto, USER_TASK_1, 10L);
     changeDuration(processInstanceDto, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -726,8 +712,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstanceDto, USER_TASK_1, 10L);
     changeDuration(processInstanceDto, USER_TASK_2, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
@@ -764,8 +749,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstanceDto2, 10L);
     changeDuration(processInstanceDto3, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
@@ -799,8 +783,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstanceDto2, 20L);
     changeDuration(processInstanceDto3, 50L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
@@ -825,8 +808,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   public void automaticIntervalSelection_forNoData() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
@@ -843,8 +825,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
@@ -874,8 +855,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeDuration(processInstance2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
@@ -909,8 +889,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeDuration(processInstance2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
@@ -947,8 +926,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeDuration(processInstance2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
@@ -981,8 +959,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeDuration(processInstance2, 20L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);

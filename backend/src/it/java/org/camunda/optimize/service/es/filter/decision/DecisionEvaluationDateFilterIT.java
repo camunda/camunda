@@ -60,8 +60,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -93,8 +92,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -126,8 +124,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -171,8 +168,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
@@ -202,8 +198,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -234,8 +229,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -278,8 +272,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
@@ -320,8 +313,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -343,8 +335,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);

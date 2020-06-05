@@ -38,8 +38,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultGreaterZero =
@@ -83,8 +82,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     final OffsetDateTime now = OffsetDateTime.now();
     engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     LocalDateUtil.setCurrentTime(now.plusSeconds(10));
@@ -123,8 +121,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultBothTasksDurationGreaterZero =
@@ -181,8 +178,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultBothTasksDurationGreaterZero =
@@ -272,8 +268,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       ChronoUnit.valueOf(unit.name()).getDuration().toMillis() * actualUserTaskDuration
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> resultGreaterActualDuration =

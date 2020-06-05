@@ -41,8 +41,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "anotherValue");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -69,8 +68,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     variables.put("anotherStringVar", "anotherValue");
     variables.put("boolVar", true);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -97,8 +95,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     variables.put(STRING_VARIABLE_NAME, "value");
     variables.put("anotherStringVar", "value");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -125,8 +122,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", 1);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -153,8 +149,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     variables.put("anotherStringVar", "anotherValue");
     variables.put("boolVar", true);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -184,8 +179,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("anotherStringVar", "aStringValue");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -214,8 +208,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(STRING_VARIABLE_NAME, "anotherValue");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> values = new ArrayList<>();
@@ -267,8 +260,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
       processDefinition.getId(), ImmutableMap.of(STRING_VARIABLE_NAME, "noMatch")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -298,8 +290,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "aThirdValue");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
@@ -329,8 +320,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "3");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> values = new ArrayList<>();

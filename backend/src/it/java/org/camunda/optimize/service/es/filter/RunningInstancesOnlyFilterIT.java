@@ -29,8 +29,7 @@ public class RunningInstancesOnlyFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(firstProcInst.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(secondProcInst.getId());
     
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder

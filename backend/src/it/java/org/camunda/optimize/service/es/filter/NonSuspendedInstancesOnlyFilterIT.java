@@ -34,8 +34,7 @@ public class NonSuspendedInstancesOnlyFilterIT extends AbstractFilterIT {
       SUSPENDED_STATE
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);

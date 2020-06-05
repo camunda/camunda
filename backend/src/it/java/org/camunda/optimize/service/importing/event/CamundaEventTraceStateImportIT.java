@@ -63,8 +63,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
     final String definitionKey = "myCamundaProcess";
     deployAndStartUserTaskProcessWithName(definitionKey);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     processEventCountAndTraces();
@@ -90,8 +89,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
     final ProcessInstanceEngineDto processInstanceEngineDto1 = deployAndStartUserTaskProcessWithName(definitionKey1);
     final ProcessInstanceEngineDto processInstanceEngineDto2 = deployAndStartUserTaskProcessWithName(definitionKey2);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     processEventCountAndTraces();
@@ -125,8 +123,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
       eventTimestamp
     ));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     processEventCountAndTraces();
@@ -163,8 +160,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
       eventTimestamp
     ));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     removeStoredOrderCountersForDefinitionKey(definitionKey);
 
     // when
@@ -183,7 +179,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
     final String definitionKey = "myCamundaProcess";
     final ProcessInstanceEngineDto processInstanceEngineDto1 = deployAndStartUserTaskProcessWithName(definitionKey);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     // when
     processEventCountAndTraces();
@@ -195,7 +191,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
 
     // when import index reset and traces reprocessed after event reimport
     deleteTraceStateImportIndexForDefinitionKey(definitionKey);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     processEventCountAndTraces();
 
     // then traces are the same as after first process

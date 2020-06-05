@@ -109,8 +109,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusMinutes(1));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filter =
@@ -138,8 +137,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusSeconds(10));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filter =
@@ -167,8 +165,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusSeconds(10));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filter =
@@ -196,8 +193,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusSeconds(10));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filter =
@@ -224,8 +220,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusSeconds(2));
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filter =
@@ -253,8 +248,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusSeconds(10));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filters =
@@ -288,8 +282,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusSeconds(10));
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filters =
@@ -323,8 +316,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusDays(3));
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filters1 =
@@ -365,8 +357,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<ProcessFilterDto<?>> filterToday =

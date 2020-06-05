@@ -30,8 +30,7 @@ public class ProcessEngineImportRestServiceIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(processModel);
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension

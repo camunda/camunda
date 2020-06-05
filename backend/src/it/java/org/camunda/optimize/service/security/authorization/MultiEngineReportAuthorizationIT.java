@@ -210,8 +210,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -248,8 +247,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondaryEngineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -286,8 +284,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -326,8 +323,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
@@ -378,8 +374,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
@@ -418,8 +413,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.grantSingleResourceAuthorizationForKermit(tenantId2, RESOURCE_TYPE_TENANT);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 

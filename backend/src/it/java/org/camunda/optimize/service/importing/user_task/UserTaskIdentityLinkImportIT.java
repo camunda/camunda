@@ -47,8 +47,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -77,8 +76,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -129,8 +127,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineDatabaseExtension.changeLinkLogTimestampForLastTwoAssigneeOperations(timestamp);
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -155,8 +152,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks("secondUser", "fooPassword");
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -188,8 +184,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -223,8 +218,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks("secondUser", "secondPassword");
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -251,8 +245,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.completeUserTaskWithoutClaim(engineDto.getId());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -275,8 +268,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.claimAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -304,8 +296,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -337,8 +328,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.completeUserTaskWithoutClaim(engineDto.getId());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -360,16 +350,14 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
     engineIntegrationExtension.claimAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     engineIntegrationExtension.unclaimAllRunningUserTasks();
     engineIntegrationExtension.addUser("secondUser", "aPassword");
     engineIntegrationExtension.grantAllAuthorizations("secondUser");
     engineIntegrationExtension.finishAllRunningUserTasks("secondUser", "aPassword");
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -393,8 +381,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension

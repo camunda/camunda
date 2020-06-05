@@ -60,8 +60,7 @@ public class ForceReimportIT extends AbstractIT {
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<AuthorizedReportDefinitionDto> reports = getAllReportsInCollection(collectionId);
@@ -124,8 +123,7 @@ public class ForceReimportIT extends AbstractIT {
   }
 
   private AlertCreationDto setupBasicAlert(String reportId) {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     return createSimpleAlert(reportId);
   }
