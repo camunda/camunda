@@ -162,7 +162,10 @@ public class EventSequenceCountReader {
     try {
       scrollResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      final String errorMessage = String.format("Was not able to retrieve event sequence counts for index key %s!", indexKey);
+      final String errorMessage = String.format(
+        "Was not able to retrieve event sequence counts for index key %s!",
+        indexKey
+      );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -175,14 +178,11 @@ public class EventSequenceCountReader {
     );
   }
 
-  private QueryBuilder buildSequencedEventsQuery(
-    final List<EventTypeDto> incomingEvents,
-    final List<EventTypeDto> outgoingEvents) {
+  private QueryBuilder buildSequencedEventsQuery(final List<EventTypeDto> incomingEvents,
+                                                 final List<EventTypeDto> outgoingEvents) {
     final BoolQueryBuilder query = boolQuery();
-    incomingEvents
-      .forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, SOURCE_EVENT)));
-    outgoingEvents
-      .forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, TARGET_EVENT)));
+    incomingEvents.forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, SOURCE_EVENT)));
+    outgoingEvents.forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, TARGET_EVENT)));
     return query;
   }
 

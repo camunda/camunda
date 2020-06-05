@@ -3,14 +3,17 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest.eventprocess;
+package org.camunda.optimize.rest.eventprocess.autogeneration;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
+import org.camunda.bpm.model.bpmn.instance.ExclusiveGateway;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Gateway;
+import org.camunda.bpm.model.bpmn.instance.InclusiveGateway;
 import org.camunda.bpm.model.bpmn.instance.IntermediateCatchEvent;
+import org.camunda.bpm.model.bpmn.instance.ParallelGateway;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -49,12 +52,15 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
   private static final Class<StartEvent> START_EVENT = StartEvent.class;
   private static final Class<IntermediateCatchEvent> INTERMEDIATE_EVENT = IntermediateCatchEvent.class;
   private static final Class<EndEvent> END_EVENT = EndEvent.class;
-  private static final Class<Gateway> GATEWAY = Gateway.class;
+  private static final Class<ExclusiveGateway> EXCLUSIVE_GATEWAY = ExclusiveGateway.class;
+  private static final Class<ParallelGateway> PARALLEL_GATEWAY = ParallelGateway.class;
+  private static final Class<InclusiveGateway> INCLUSIVE_GATEWAY = InclusiveGateway.class;
 
   private static final EventTypeDto EVENT_A = createMappedEventDto();
   private static final EventTypeDto EVENT_B = createMappedEventDto();
   private static final EventTypeDto EVENT_C = createMappedEventDto();
   private static final EventTypeDto EVENT_D = createMappedEventDto();
+  private static final EventTypeDto EVENT_E = createMappedEventDto();
 
   @BeforeEach
   public void init() {
@@ -187,9 +193,9 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
 
     // then the model elements are of the correct type and connected to expected nodes correctly
     final String expectedGatewayId = generateGatewayIdForNode(EVENT_C, Converging);
-    assertNodeConnection(idOf(EVENT_A), START_EVENT, expectedGatewayId, GATEWAY, modelInstance);
-    assertNodeConnection(idOf(EVENT_B), START_EVENT, expectedGatewayId, GATEWAY, modelInstance);
-    assertNodeConnection(expectedGatewayId, GATEWAY, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_A), START_EVENT, expectedGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(idOf(EVENT_B), START_EVENT, expectedGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(expectedGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
     assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, idOf(EVENT_D), END_EVENT, modelInstance);
     assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
 
@@ -197,7 +203,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(4);
 
     // and the gateways have the expected source and target events
-    final Collection<Gateway> gatewaysInModel = modelInstance.getModelElementsByType(GATEWAY);
+    final Collection<Gateway> gatewaysInModel = modelInstance.getModelElementsByType(Gateway.class);
     assertThat(gatewaysInModel).hasSize(1);
     assertGatewayWithSourcesAndTargets(
       Arrays.asList(idOf(EVENT_A), idOf(EVENT_B)),
@@ -241,9 +247,9 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the model elements are of the correct type and connected to sequence flows correctly
     final String expectedGatewayId = generateGatewayIdForNode(EVENT_B, Diverging);
     assertNodeConnection(idOf(EVENT_A), START_EVENT, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
-    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, expectedGatewayId, GATEWAY, modelInstance);
-    assertNodeConnection(expectedGatewayId, GATEWAY, idOf(EVENT_C), END_EVENT, modelInstance);
-    assertNodeConnection(expectedGatewayId, GATEWAY, idOf(EVENT_D), END_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, expectedGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(expectedGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_C), END_EVENT, modelInstance);
+    assertNodeConnection(expectedGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_D), END_EVENT, modelInstance);
     assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
     // and the expected number of sequence flows exists
     assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(4);
@@ -293,12 +299,12 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the model elements are of the correct type and connected to sequence flows correctly
     final String divergingGatewayId = generateGatewayIdForNode(EVENT_A, Diverging);
     final String convergingGatewayId = generateGatewayIdForNode(EVENT_D, Converging);
-    assertNodeConnection(idOf(EVENT_A), START_EVENT, divergingGatewayId, GATEWAY, modelInstance);
-    assertNodeConnection(divergingGatewayId, GATEWAY, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
-    assertNodeConnection(divergingGatewayId, GATEWAY, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
-    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, convergingGatewayId, GATEWAY, modelInstance);
-    assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, convergingGatewayId, GATEWAY, modelInstance);
-    assertNodeConnection(convergingGatewayId, GATEWAY, idOf(EVENT_D), END_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_A), START_EVENT, divergingGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(divergingGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(divergingGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, convergingGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, convergingGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(convergingGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_D), END_EVENT, modelInstance);
     assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
     // and the expected number of sequence flows exists
     assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(6);
@@ -440,12 +446,78 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_A, firstTraceId, now),
       createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(10)),
       createCloudEventOfType(EVENT_C, firstTraceId, now.plusSeconds(20)),
+      createCloudEventOfType(EVENT_D, firstTraceId, now.plusSeconds(30)),
+      createCloudEventOfType(EVENT_E, firstTraceId, now.plusSeconds(40))
+    ));
+    final String secondTraceId = "secondTraceTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_D, secondTraceId, now),
+      createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(10))
+    ));
+    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
+
+    // when
+    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then the created process is configured correctly
+    final Map<String, EventMappingDto> mappings = processMapping.getMappings();
+    final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
+
+    // then the mappings contain the correct events and are all in the model
+    assertCorrectMappingsAndContainsEvents(
+      mappings,
+      modelInstance,
+      Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D, EVENT_E)
+    );
+    // The extra flow nodes are the added gateways
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 2);
+
+    // then the model elements are of the correct type and connected to sequence flows correctly
+    final String divergingGatewayId = generateGatewayIdForNode(EVENT_D, Diverging);
+    final String convergingGatewayId = generateGatewayIdForNode(EVENT_B, Converging);
+    assertNodeConnection(idOf(EVENT_A), START_EVENT, convergingGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(convergingGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, idOf(EVENT_D), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_D), INTERMEDIATE_EVENT, divergingGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(divergingGatewayId, EXCLUSIVE_GATEWAY, convergingGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(divergingGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_E), END_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_E), END_EVENT, null, null, modelInstance);
+    // and the expected number of sequence flows exists
+    assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(7);
+
+    // and the gateways have the expected source and target events
+    final Collection<Gateway> gateways = modelInstance.getModelElementsByType(Gateway.class);
+    assertThat(gateways).hasSize(2);
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(idOf(EVENT_A), divergingGatewayId),
+      Arrays.asList(idOf(EVENT_B)),
+      getGatewayWithId(gateways, convergingGatewayId)
+    );
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(idOf(EVENT_D)),
+      Arrays.asList(convergingGatewayId, idOf(EVENT_E)),
+      getGatewayWithId(gateways, divergingGatewayId)
+    );
+  }
+
+  @Test
+  public void createFromExternalSource_exclusiveGatewaysAdded() {
+    // given
+    final Instant now = Instant.now();
+    final String firstTraceId = "firstTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, firstTraceId, now),
+      createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(20)),
       createCloudEventOfType(EVENT_D, firstTraceId, now.plusSeconds(30))
     ));
     final String secondTraceId = "secondTraceTraceId";
     ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_C, secondTraceId, now),
-      createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(10))
+      createCloudEventOfType(EVENT_A, secondTraceId, now),
+      createCloudEventOfType(EVENT_C, secondTraceId, now.plusSeconds(20)),
+      createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(30))
     ));
     final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
@@ -461,33 +533,163 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     // then the mappings contain the correct events and are all in the model
     assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
     // The extra flow nodes are the added gateways
-    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 2);
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size() + 2);
 
     // then the model elements are of the correct type and connected to sequence flows correctly
-    final String divergingGatewayId = generateGatewayIdForNode(EVENT_C, Diverging);
-    final String convergingGatewayId = generateGatewayIdForNode(EVENT_B, Converging);
-    assertNodeConnection(idOf(EVENT_A), START_EVENT, convergingGatewayId, GATEWAY, modelInstance);
-    assertNodeConnection(convergingGatewayId, GATEWAY, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
-    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
-    assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, divergingGatewayId, GATEWAY, modelInstance);
-    assertNodeConnection(divergingGatewayId, GATEWAY, convergingGatewayId, GATEWAY, modelInstance);
-    assertNodeConnection(divergingGatewayId, GATEWAY, idOf(EVENT_D), END_EVENT, modelInstance);
+    final String divergingGatewayId = generateGatewayIdForNode(EVENT_A, Diverging);
+    final String convergingGatewayId = generateGatewayIdForNode(EVENT_D, Converging);
+    assertNodeConnection(idOf(EVENT_A), START_EVENT, divergingGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(divergingGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(divergingGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, convergingGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, convergingGatewayId, EXCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(convergingGatewayId, EXCLUSIVE_GATEWAY, idOf(EVENT_D), END_EVENT, modelInstance);
     assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
     // and the expected number of sequence flows exists
     assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(6);
 
     // and the gateways have the expected source and target events
-    final Collection<Gateway> gateways = modelInstance.getModelElementsByType(Gateway.class);
-    assertThat(gateways).hasSize(2);
+    final Collection<Gateway> gatewaysInModel = modelInstance.getModelElementsByType(Gateway.class);
+    assertThat(gatewaysInModel).hasSize(2);
     assertGatewayWithSourcesAndTargets(
-      Arrays.asList(idOf(EVENT_A), divergingGatewayId),
-      Arrays.asList(idOf(EVENT_B)),
-      getGatewayWithId(gateways, convergingGatewayId)
+      Arrays.asList(idOf(EVENT_A)),
+      Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
+      getGatewayWithId(gatewaysInModel, divergingGatewayId)
     );
     assertGatewayWithSourcesAndTargets(
-      Arrays.asList(idOf(EVENT_C)),
-      Arrays.asList(convergingGatewayId, idOf(EVENT_D)),
-      getGatewayWithId(gateways, divergingGatewayId)
+      Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
+      Arrays.asList(idOf(EVENT_D)),
+      getGatewayWithId(gatewaysInModel, convergingGatewayId)
+    );
+  }
+
+  @Test
+  public void createFromExternalSource_parallelGatewaysAdded() {
+    // given
+    final Instant now = Instant.now();
+    final String firstTraceId = "firstTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, firstTraceId, now),
+      createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(20)),
+      createCloudEventOfType(EVENT_C, firstTraceId, now.plusSeconds(30)),
+      createCloudEventOfType(EVENT_D, firstTraceId, now.plusSeconds(40))
+    ));
+    final String secondTraceId = "secondTraceTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, secondTraceId, now),
+      createCloudEventOfType(EVENT_C, secondTraceId, now.plusSeconds(20)),
+      createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(30)),
+      createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(40))
+    ));
+    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
+
+    // when
+    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then the created process is configured correctly
+    final Map<String, EventMappingDto> mappings = processMapping.getMappings();
+    final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
+
+    // then the mappings contain the correct events and are all in the model
+    assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
+    // The extra flow nodes are the added gateways
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size() + 2);
+
+    // then the model elements are of the correct type and connected to sequence flows correctly
+    final String divergingGatewayId = generateGatewayIdForNode(EVENT_A, Diverging);
+    final String convergingGatewayId = generateGatewayIdForNode(EVENT_D, Converging);
+    assertNodeConnection(idOf(EVENT_A), START_EVENT, divergingGatewayId, PARALLEL_GATEWAY, modelInstance);
+    assertNodeConnection(divergingGatewayId, PARALLEL_GATEWAY, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(divergingGatewayId, PARALLEL_GATEWAY, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, convergingGatewayId, PARALLEL_GATEWAY, modelInstance);
+    assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, convergingGatewayId, PARALLEL_GATEWAY, modelInstance);
+    assertNodeConnection(convergingGatewayId, PARALLEL_GATEWAY, idOf(EVENT_D), END_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
+    // and the expected number of sequence flows exists
+    assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(6);
+
+    // and the gateways have the expected source and target events
+    final Collection<Gateway> gatewaysInModel = modelInstance.getModelElementsByType(Gateway.class);
+    assertThat(gatewaysInModel).hasSize(2);
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(idOf(EVENT_A)),
+      Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
+      getGatewayWithId(gatewaysInModel, divergingGatewayId)
+    );
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
+      Arrays.asList(idOf(EVENT_D)),
+      getGatewayWithId(gatewaysInModel, convergingGatewayId)
+    );
+  }
+
+  @Test
+  public void createFromExternalSource_inclusiveGatewaysAdded() {
+    // given
+    final Instant now = Instant.now();
+    final String firstTraceId = "firstTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, firstTraceId, now),
+      createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(20)),
+      createCloudEventOfType(EVENT_C, firstTraceId, now.plusSeconds(30)),
+      createCloudEventOfType(EVENT_D, firstTraceId, now.plusSeconds(40))
+    ));
+    final String secondTraceId = "secondTraceTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, secondTraceId, now),
+      createCloudEventOfType(EVENT_C, secondTraceId, now.plusSeconds(20)),
+      createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(30)),
+      createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(40))
+    ));
+    final String thirdTraceId = "thirdTraceTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, thirdTraceId, now),
+      createCloudEventOfType(EVENT_B, thirdTraceId, now.plusSeconds(30)),
+      createCloudEventOfType(EVENT_D, thirdTraceId, now.plusSeconds(40))
+    ));
+    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
+
+    // when
+    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then the created process is configured correctly
+    final Map<String, EventMappingDto> mappings = processMapping.getMappings();
+    final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
+
+    // then the mappings contain the correct events and are all in the model
+    assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D));
+    // The extra flow nodes are the added gateways
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size() + 2);
+
+    // then the model elements are of the correct type and connected to sequence flows correctly
+    final String divergingGatewayId = generateGatewayIdForNode(EVENT_A, Diverging);
+    final String convergingGatewayId = generateGatewayIdForNode(EVENT_D, Converging);
+    assertNodeConnection(idOf(EVENT_A), START_EVENT, divergingGatewayId, INCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(divergingGatewayId, INCLUSIVE_GATEWAY, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(divergingGatewayId, INCLUSIVE_GATEWAY, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, convergingGatewayId, INCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, convergingGatewayId, INCLUSIVE_GATEWAY, modelInstance);
+    assertNodeConnection(convergingGatewayId, INCLUSIVE_GATEWAY, idOf(EVENT_D), END_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
+    // and the expected number of sequence flows exists
+    assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(6);
+
+    // and the gateways have the expected source and target events
+    final Collection<Gateway> gatewaysInModel = modelInstance.getModelElementsByType(Gateway.class);
+    assertThat(gatewaysInModel).hasSize(2);
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(idOf(EVENT_A)),
+      Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
+      getGatewayWithId(gatewaysInModel, divergingGatewayId)
+    );
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
+      Arrays.asList(idOf(EVENT_D)),
+      getGatewayWithId(gatewaysInModel, convergingGatewayId)
     );
   }
 

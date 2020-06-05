@@ -35,6 +35,14 @@ public class EventTraceStateService {
   private final EventSequenceCountWriter eventSequenceCountWriter;
   private final EventSequenceCountReader eventSequenceCountReader;
 
+  public List<EventSequenceCountDto> getAllSequenceCounts() {
+    return eventSequenceCountReader.getAllSequenceCounts();
+  }
+
+  public List<EventTraceStateDto> getTracesWithMaxResultSize(final int maxResultsSize) {
+    return eventTraceStateReader.getTracesWithMaxResultSize(maxResultsSize);
+  }
+
   public void updateTracesAndCountsForEvents(final List<EventDto> eventsToProcess) {
     Map<String, EventTraceStateDto> eventTraceStatesForUpdate = getEventTraceStatesForIds(
       eventsToProcess.stream().map(EventDto::getTraceId).distinct().collect(Collectors.toList())

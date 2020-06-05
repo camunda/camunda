@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest.eventprocess;
+package org.camunda.optimize.rest.eventprocess.autogeneration;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.query.IdDto;

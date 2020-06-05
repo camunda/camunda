@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
@@ -52,7 +53,25 @@ public class EventTraceStateReader {
 
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
   }
-  
+
+  public List<EventTraceStateDto> getTracesWithMaxResultSize(final int maxResultsSize) {
+    log.debug("Fetching up to {} event trace states", maxResultsSize);
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .size(maxResultsSize);
+    SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = "Was not able to fetch event trace states";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
+  }
+
   private String getIndexName() {
     return new EventTraceStateIndex(indexKey).getIndexName();
   }
