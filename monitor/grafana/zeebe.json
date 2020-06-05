@@ -50,6 +50,7 @@
   "annotations": {
     "list": [
       {
+        "$$hashKey": "object:126",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -64,7 +65,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1589286022858,
+  "iteration": 1591339890640,
   "links": [],
   "panels": [
     {
@@ -848,10 +849,12 @@
           "hiddenSeries": false,
           "id": 135,
           "legend": {
+            "alignAsTable": false,
             "avg": false,
             "current": false,
             "max": false,
             "min": false,
+            "rightSide": false,
             "show": true,
             "total": false,
             "values": false
@@ -873,22 +876,6 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(zeebe_gateway_dropped_request_count_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition)",
-              "format": "time_series",
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "dropped-{{partition}}",
-              "refId": "A"
-            },
-            {
-              "expr": "sum(rate(zeebe_gateway_received_request_count_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition)",
-              "format": "time_series",
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "received-{{partition}}",
-              "refId": "B"
-            },
-            {
               "expr": "sum(zeebe_gateway_backpressure_requests_limit{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}) by (partition)",
               "format": "time_series",
               "interval": "",
@@ -897,12 +884,28 @@
               "refId": "C"
             },
             {
-              "expr": "zeebe_gateway_backpressure_inflight_requests_count{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}",
+              "expr": "sum(rate(zeebe_gateway_dropped_request_count_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "dropped-{{partition}}",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(zeebe_gateway_backpressure_inflight_requests_count{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}) by (partition)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "inflight-{{partition}}",
               "refId": "D"
+            },
+            {
+              "expr": "sum(rate(zeebe_gateway_received_request_count_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "received-{{partition}}",
+              "refId": "B"
             }
           ],
           "thresholds": [],
@@ -925,6 +928,7 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:32423",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -933,6 +937,127 @@
               "show": true
             },
             {
+              "$$hashKey": "object:32424",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows various metrics related to backpressure applied on a broker, split per partition. \n\n- inflight counts the current in-flight requests for a given partition\n- dropped counts the total number of requests dropped (i.e. the queue was full)  on a partition\n- received counts the total number of requests (successfully queued AND dropped) that were attempted on a partition\n- queue-limit is the maximum number of in-flight requests at a given point in time for a partition",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 34
+          },
+          "hiddenSeries": false,
+          "id": 136,
+          "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(zeebe_backpressure_requests_limit{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}) by (partition)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "queue-limit-{{partition}}",
+              "refId": "C"
+            },
+            {
+              "expr": "sum(rate(zeebe_dropped_request_count_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "dropped-{{partition}}",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(zeebe_backpressure_inflight_requests_count{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}) by (partition)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "inflight-{{partition}}",
+              "refId": "D"
+            },
+            {
+              "expr": "sum(rate(zeebe_received_request_count_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "received-{{partition}}",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Broker Backpressure",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:32423",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:32424",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2679,7 +2804,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\", recordType=\"COMMAND\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\", pod=~\"$pod\", recordType=\"COMMAND\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -2807,7 +2932,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -3200,7 +3325,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{grpc_method=\"CreateWorkflowInstance\"}[30s])) by (le)",
+              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{namespace=~\"$namespace\", grpc_method=\"CreateWorkflowInstance\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -3371,7 +3496,7 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -3493,5 +3618,5 @@
   "variables": {
     "list": []
   },
-  "version": 10
+  "version": 13
 }
