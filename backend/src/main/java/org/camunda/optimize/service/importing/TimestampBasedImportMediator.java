@@ -5,11 +5,7 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
-import org.camunda.optimize.service.util.BackoffCalculator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

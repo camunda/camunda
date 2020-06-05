@@ -9,17 +9,25 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.instance.EndEvent;
+import org.camunda.bpm.model.bpmn.instance.Event;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Process;
+import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.bpmn.instance.UserTask;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
 
 @Slf4j
 @UtilityClass
@@ -58,6 +66,33 @@ public class BpmnModelUtility {
       log.warn("Failed parsing the BPMN xml.", exc);
       return Optional.empty();
     }
+  }
+
+  public static List<EventTypeDto> getStartEventsFromInstance(final BpmnModelInstance modelInstance,
+                                                              final String definitionKey) {
+    return getEventsFromInstance(modelInstance, StartEvent.class, definitionKey);
+  }
+
+  public static List<EventTypeDto> getEndEventsFromInstance(final BpmnModelInstance modelInstance,
+                                                            final String definitionKey) {
+    return getEventsFromInstance(modelInstance, EndEvent.class, definitionKey);
+  }
+
+  private static List<EventTypeDto> getEventsFromInstance(final BpmnModelInstance modelInstance,
+                                                          final Class<? extends Event> eventClass,
+                                                          final String definitionKey) {
+    return modelInstance.getModelElementsByType(eventClass)
+      .stream()
+      .map(event -> {
+        final String elementId = event.getAttributeValue("id");
+        final String elementName = Optional.ofNullable(event.getAttributeValue("name")).orElse(elementId);
+        return createCamundaEventTypeDto(
+          definitionKey,
+          elementName,
+          Optional.ofNullable(event.getAttributeValue("name")).orElse(elementId)
+        );
+      })
+      .collect(Collectors.toList());
   }
 
   private static <T extends FlowNode> Map<String, String> extractFlowNodeNames(final BpmnModelInstance model,

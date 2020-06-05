@@ -18,8 +18,8 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
-import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -36,8 +36,8 @@ import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_EN
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_START_TYPE;
 import static org.camunda.optimize.service.events.CamundaEventService.SINGLE_MAPPED_TYPES;
 import static org.camunda.optimize.service.events.CamundaEventService.SPLIT_START_END_MAPPED_TYPES;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskEndEventSuffix;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 
 @AllArgsConstructor
 @Component
@@ -214,7 +214,7 @@ public class CamundaEventImportService {
       processInstanceDto,
       processDefinitionName,
       PROCESS_START_TYPE,
-      CamundaEventService::applyCamundaProcessInstanceStartEventSuffix,
+      EventDtoBuilderUtil::applyCamundaProcessInstanceStartEventSuffix,
       startDate
     );
   }
@@ -226,7 +226,7 @@ public class CamundaEventImportService {
       processInstanceDto,
       processDefinitionName,
       PROCESS_END_TYPE,
-      CamundaEventService::applyCamundaProcessInstanceEndEventSuffix,
+      EventDtoBuilderUtil::applyCamundaProcessInstanceEndEventSuffix,
       startDate
     );
   }

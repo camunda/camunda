@@ -49,10 +49,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_END_TYPE;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_START_TYPE;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceEndEventSuffix;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceStartEventSuffix;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskEndEventSuffix;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
 
 public class EventRestServiceIT extends AbstractIT {
@@ -1341,7 +1341,7 @@ public class EventRestServiceIT extends AbstractIT {
       .endEvent(CAMUNDA_END_EVENT)
       .done();
     // @formatter:on
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(processModel, tenantId);
   }
 
   private static Stream<List<String>> multipleVersionCases() {

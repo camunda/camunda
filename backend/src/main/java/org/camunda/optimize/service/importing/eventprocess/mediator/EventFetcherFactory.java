@@ -13,7 +13,6 @@ import org.camunda.optimize.service.events.CamundaActivityEventFetcherService;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor

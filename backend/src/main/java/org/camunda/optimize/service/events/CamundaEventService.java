@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.event.OrderedEventDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -79,15 +80,18 @@ import static org.camunda.bpm.engine.ActivityTypes.TASK_SERVICE;
 import static org.camunda.bpm.engine.ActivityTypes.TASK_USER_TASK;
 import static org.camunda.bpm.engine.ActivityTypes.TRANSACTION;
 import static org.camunda.optimize.service.util.BpmnModelUtility.parseBpmnModel;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
 
 @AllArgsConstructor
 @Component
 public class CamundaEventService {
   public static final String EVENT_SOURCE_CAMUNDA = "camunda";
-  public static final String START_MAPPED_SUFFIX = "start";
-  public static final String END_MAPPED_SUFFIX = "end";
-  public static final String PROCESS_START_TYPE = "processInstanceStart";
-  public static final String PROCESS_END_TYPE = "processInstanceEnd";
+  public static final String PROCESS_START_TYPE = EventDtoBuilderUtil.PROCESS_START_TYPE;
+  public static final String PROCESS_END_TYPE = EventDtoBuilderUtil.PROCESS_END_TYPE;
 
   public static final Set<String> START_EVENT_TYPES = ImmutableSet.of(
     START_EVENT, START_EVENT_TIMER, START_EVENT_MESSAGE, START_EVENT_SIGNAL,
@@ -186,18 +190,16 @@ public class CamundaEventService {
 
   private List<EventTypeDto> createLabeledProcessInstanceStartEndEventTypeDtos(final String definitionKey) {
     return ImmutableList.of(
-      EventTypeDto.builder()
-        .source(EVENT_SOURCE_CAMUNDA)
-        .group(definitionKey)
-        .eventName(applyCamundaProcessInstanceStartEventSuffix(definitionKey))
-        .eventLabel(PROCESS_START_TYPE)
-        .build(),
-      EventTypeDto.builder()
-        .source(EVENT_SOURCE_CAMUNDA)
-        .group(definitionKey)
-        .eventName(applyCamundaProcessInstanceEndEventSuffix(definitionKey))
-        .eventLabel(PROCESS_END_TYPE)
-        .build()
+      createCamundaEventTypeDto(
+        definitionKey,
+        applyCamundaProcessInstanceStartEventSuffix(definitionKey),
+        PROCESS_START_TYPE
+      ),
+      createCamundaEventTypeDto(
+        definitionKey,
+        applyCamundaProcessInstanceEndEventSuffix(definitionKey),
+        PROCESS_END_TYPE
+      )
     );
   }
 
@@ -217,30 +219,21 @@ public class CamundaEventService {
           .orElse(elementId);
         if (SPLIT_START_END_MAPPED_TYPES.contains(modelElementInstance.getElementType().getTypeName())) {
           eventDtos.add(
-            EventTypeDto.builder()
-              .source(EVENT_SOURCE_CAMUNDA)
-              .group(definitionKey)
-              .eventName(applyCamundaTaskStartEventSuffix(elementId))
-              .eventLabel(applyCamundaTaskStartEventSuffix(elementName))
-              .build()
+            createCamundaEventTypeDto(
+              definitionKey,
+              applyCamundaTaskStartEventSuffix(elementId),
+              applyCamundaTaskStartEventSuffix(elementName)
+            )
           );
           eventDtos.add(
-            EventTypeDto.builder()
-              .source(EVENT_SOURCE_CAMUNDA)
-              .group(definitionKey)
-              .eventName(applyCamundaTaskEndEventSuffix(elementId))
-              .eventLabel(applyCamundaTaskEndEventSuffix(elementName))
-              .build()
+            createCamundaEventTypeDto(
+              definitionKey,
+              applyCamundaTaskEndEventSuffix(elementId),
+              applyCamundaTaskEndEventSuffix(elementName)
+            )
           );
         } else {
-          eventDtos.add(
-            EventTypeDto.builder()
-              .source(EVENT_SOURCE_CAMUNDA)
-              .group(definitionKey)
-              .eventName(elementId)
-              .eventLabel(elementName)
-              .build()
-          );
+          eventDtos.add(createCamundaEventTypeDto(definitionKey, elementId, elementName));
         }
         return eventDtos.stream();
       })
@@ -271,26 +264,6 @@ public class CamundaEventService {
       .source(EVENT_SOURCE_CAMUNDA)
       .orderCounter(camundaActivityEventDto.getOrderCounter())
       .build();
-  }
-
-  public static String applyCamundaProcessInstanceStartEventSuffix(final String identifier) {
-    return addDelimiterForStrings(identifier, PROCESS_START_TYPE);
-  }
-
-  public static String applyCamundaProcessInstanceEndEventSuffix(final String identifier) {
-    return addDelimiterForStrings(identifier, PROCESS_END_TYPE);
-  }
-
-  public static String applyCamundaTaskStartEventSuffix(final String identifier) {
-    return addDelimiterForStrings(identifier, START_MAPPED_SUFFIX);
-  }
-
-  public static String applyCamundaTaskEndEventSuffix(final String identifier) {
-    return addDelimiterForStrings(identifier, END_MAPPED_SUFFIX);
-  }
-
-  private static String addDelimiterForStrings(final String... strings) {
-    return String.join("_", strings);
   }
 
 }

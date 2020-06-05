@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.BpmnModelUtility.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.fromEventCountDto;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Component
@@ -144,7 +145,7 @@ public class EventCountService {
 
     eventCountDtos
       .stream()
-      .filter(eventCountDto -> eventCountIsPresentInEventTypes(eventCountDto, suggestedEvents))
+      .filter(eventCountDto -> suggestedEvents.contains(fromEventCountDto(eventCountDto)))
       .forEach(eventCountDto -> eventCountDto.setSuggested(true));
   }
 
@@ -190,17 +191,6 @@ public class EventCountService {
     if (currentMappings != null && !xmlFlowNodeIds.keySet().containsAll(currentMappings.keySet())) {
       throw new BadRequestException("All Flow Node IDs for event mappings must exist within the provided XML");
     }
-  }
-
-  private boolean eventCountIsPresentInEventTypes(final EventCountDto eventCountDto,
-                                                  final Set<EventTypeDto> eventTypes) {
-    return eventTypes.contains(
-      EventTypeDto.builder()
-        .eventName(eventCountDto.getEventName())
-        .group(eventCountDto.getGroup())
-        .source(eventCountDto.getSource())
-        .build()
-    );
   }
 
   private List<EventTypeDto> getNearestIncomingMappedEvents(final Map<String, EventMappingDto> currentMappings,

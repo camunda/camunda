@@ -179,7 +179,7 @@ public class DefinitionService {
           .collect(toList());
         return new TenantWithDefinitionsDto(tenantDto.getId(), tenantDto.getName(), authorizedDefinitions);
       })
-      .filter(tenantWithDefinitionsDto -> tenantWithDefinitionsDto.getDefinitions().size() > 0)
+      .filter(tenantWithDefinitionsDto -> !tenantWithDefinitionsDto.getDefinitions().isEmpty())
       .sorted(Comparator.comparing(TenantWithDefinitionsDto::getId, Comparator.nullsFirst(naturalOrder())))
       .collect(toList());
   }
@@ -352,7 +352,7 @@ public class DefinitionService {
           userId, definitionWithTenantIdsDto, definitionWithTenantIdsDto.getTenantIds()
         )
       ))
-      .filter(definitionWithTenantsDto -> definitionWithTenantsDto.getTenants().size() > 0);
+      .filter(definitionWithTenantsDto -> !definitionWithTenantsDto.getTenants().isEmpty());
   }
 
   private DefinitionWithTenantsDto mapToDefinitionWithTenantsDto(

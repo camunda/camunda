@@ -14,7 +14,6 @@ import org.camunda.optimize.service.importing.eventprocess.service.EventProcessD
 import org.camunda.optimize.service.importing.eventprocess.service.PublishStateUpdateService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
-import org.camunda.optimize.service.util.configuration.EventImportConfiguration;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
