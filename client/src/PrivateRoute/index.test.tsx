@@ -59,6 +59,8 @@ describe('<PrivateRoute />', () => {
   });
 
   it('should redirect when not authenticated', async () => {
+    login.disableSession();
+
     render(
       <PrivateRoute
         exact

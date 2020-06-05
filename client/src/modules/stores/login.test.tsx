@@ -18,16 +18,20 @@ describe('login store', () => {
     fetchMock.mockRestore();
   });
 
+  it('should assume that there is an existing session', () => {
+    expect(login.isLoggedIn).toBe(true);
+  });
+
   it('should login', async () => {
     fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 204}));
 
+    login.disableSession();
+
     expect(login.isLoggedIn).toBe(false);
-    expect(login.isCheckingExistingSession).toBe(false);
 
     await login.handleLogin('demo', 'demo');
 
     expect(login.isLoggedIn).toBe(true);
-    expect(login.isCheckingExistingSession).toBe(false);
   });
 
   it('should throw an error on login failure', async () => {
@@ -44,12 +48,10 @@ describe('login store', () => {
     await login.handleLogin('demo', 'demo');
 
     expect(login.isLoggedIn).toBe(true);
-    expect(login.isCheckingExistingSession).toBe(false);
 
     await login.handleLogout();
 
     expect(login.isLoggedIn).toBe(false);
-    expect(login.isCheckingExistingSession).toBe(false);
   });
 
   it('should throw an error on logout failure', async () => {

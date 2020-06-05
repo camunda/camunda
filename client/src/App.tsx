@@ -20,6 +20,7 @@ import {theme} from 'modules/theme';
 import {GlobalStyle} from './GlobalStyle';
 import {resolvers} from 'modules/mock-schema/resolvers';
 import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
+import {login} from 'modules/stores/login';
 
 const client = new ApolloClient({
   uri: '/graphql',
@@ -34,6 +35,18 @@ const client = new ApolloClient({
         },
       });
     }
+  },
+  onError(error) {
+    const {networkError} = error;
+
+    // @ts-ignore - TODO[Vinicius]: check why type defs are wrong here - Issue #68
+    if ([401, 403].includes(networkError.statusCode)) {
+      client.clearStore();
+      client.stop();
+      login.disableSession();
+    }
+
+    console.error(error);
   },
 });
 

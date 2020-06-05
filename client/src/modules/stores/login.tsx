@@ -11,19 +11,10 @@ import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 const Endpoints = {
   Login: '/api/login',
   Logout: '/api/logout',
-  ExistingSessionCheck: '/api/authentications/user',
 } as const;
 
 class Login {
-  isLoggedIn: boolean = false;
-  isCheckingExistingSession: boolean = false;
-
-  constructor() {
-    /* istanbul ignore if */
-    if (document.cookie.includes(CsrfKeyName)) {
-      this.checkExistingSession();
-    }
-  }
+  isLoggedIn: boolean = true;
 
   handleLogin = async (username: string, password: string) => {
     const response = await request(Endpoints.Login, {
@@ -56,32 +47,12 @@ class Login {
     this.isLoggedIn = false;
   };
 
-  /* istanbul ignore next */
-  private checkExistingSession = async () => {
-    this.isCheckingExistingSession = true;
-
-    if (this.isLoggedIn) {
-      this.isCheckingExistingSession = false;
-
-      return;
-    }
-
-    const response = await request(Endpoints.ExistingSessionCheck, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      this.isLoggedIn = true;
-    }
-
-    this.isCheckingExistingSession = false;
+  disableSession = () => {
+    this.isLoggedIn = false;
   };
 
   reset = () => {
-    this.isLoggedIn = false;
-    this.isCheckingExistingSession = false;
+    this.isLoggedIn = true;
   };
 }
 
@@ -105,7 +76,7 @@ function request(input: string, init?: RequestInit) {
 
 decorate(Login, {
   isLoggedIn: observable,
-  isCheckingExistingSession: observable,
+  disableSession: action,
   handleLogin: action,
   handleLogout: action,
   reset: action,
