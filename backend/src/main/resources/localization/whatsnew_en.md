@@ -8,3 +8,7 @@ In addition to the instance duration filter, a new duration filter is added to b
 ## Assignee and Candidate Group filters
 
 A new filter is added that allows you to include/exclude process instances where any of the user tasks has a specific Assignee or Candidate group. 
+
+## Include undefined/null values when filtering by variable
+
+When filtering by variables, there is a new option in each variable type that allows you to exclude or include `null` or `undefined` values in the result for the selected filter.

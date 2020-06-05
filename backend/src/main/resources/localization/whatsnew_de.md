@@ -9,3 +9,7 @@ Zusätzlich zum Filter für die Dauer der Prozessinstanz gibt es einen neuen Fil
 ## Assignee and Candidate Group filters
 
 Es wurde ein neuer Filter hinzugefügt, um Prozessinstanzen ein- oder auszuschließen, bei denen eine der Benutzeraufgaben einen bestimmten Bearbeiter oder Potenzielle Gruppe hat. 
+
+## Null oder nicht definierte Werte beim Filtern nach Variablen einschließen
+
+Wenn nach Variablen gefiltert wird, gibt es in jedem Variablentyp eine neue Option, die es Ihnen erlaubt, `null` oder `nicht definierte` Werte im Ergebnis für den gewählten Filter auszuschließen oder einzuschließen.
