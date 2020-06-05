@@ -58,7 +58,7 @@ const Style = createGlobalStyle`
     font-family: IBMPlexSans;
     margin: 0;
     padding: 0;
-    background-color: ${({theme}) => theme.colors.ui02};
+    background-color: ${({theme}) => theme.colors.ui01};
   }
 
   a {

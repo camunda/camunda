@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+/* istanbul ignore file */
+
 import styled from 'styled-components';
 
 interface BaseProps {
@@ -11,18 +13,6 @@ interface BaseProps {
   hasRoundTopRightCorner?: boolean;
   hasFooter?: boolean;
 }
-
-const Base = styled.div<BaseProps>`
-  border: 1px solid ${({theme}) => theme.colors.ui05};
-  display: grid;
-  grid-template-columns: 100%;
-  grid-template-rows: ${({hasFooter}) =>
-    hasFooter ? '38px 1fr 38px' : '38px 1fr'};
-  ${({hasRoundTopLeftCorner}) =>
-    hasRoundTopLeftCorner ? 'border-top-left-radius: 3px;' : ''}
-  ${({hasRoundTopRightCorner}) =>
-    hasRoundTopRightCorner ? 'border-top-right-radius: 3px;' : ''};
-`;
 
 const Header = styled.div`
   height: 31px;
@@ -35,6 +25,22 @@ const Header = styled.div`
   border-bottom: 1px solid ${({theme}) => theme.colors.ui05};
   display: flex;
   justify-content: space-between;
+`;
+
+const Base = styled.div<BaseProps>`
+  border: 1px solid ${({theme}) => theme.colors.ui05};
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: ${({hasFooter}) =>
+    hasFooter ? '38px 1fr 38px' : '38px 1fr'};
+
+  &,
+  & ${Header} {
+    ${({hasRoundTopLeftCorner}) =>
+      hasRoundTopLeftCorner ? 'border-top-left-radius: 3px;' : ''}
+    ${({hasRoundTopRightCorner}) =>
+      hasRoundTopRightCorner ? 'border-top-right-radius: 3px;' : ''};
+  }
 `;
 
 interface BodyProps {

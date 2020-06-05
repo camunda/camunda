@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+/* istanbul ignore file */
+
 import styled from 'styled-components';
 import {Panel} from './Panel';
 
@@ -15,6 +17,7 @@ const Container = styled.main`
 const TasksPanel = styled(Panel)`
   margin-right: 1px;
   min-width: 478px;
+  background-color: ${({theme}) => theme.colors.ui02};
 `;
 
 const DetailsPanel = styled(Panel)`
