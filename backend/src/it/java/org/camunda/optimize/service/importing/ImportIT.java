@@ -84,7 +84,7 @@ public class ImportIT extends AbstractImportIT {
 
     // make sure fetching endpoint is called during import
     embeddedOptimizeExtension.startContinuousImportScheduling();
-    Thread.sleep(500);
+    Thread.sleep(1000);
     esMockServer.verify(importFetcherEndpointMatcher);
 
     // endpoint no longer fails
