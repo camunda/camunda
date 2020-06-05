@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import classnames from 'classnames';
 import {Select, Icon, Button} from 'components';
 import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
@@ -98,10 +98,18 @@ export default function Table({
     };
   }
 
+  const thead = useRef();
+  const tr = useRef();
+  useEffect(() => {
+    if (tr.current && thead.current) {
+      thead.current.style.width = tr.current.clientWidth + 'px';
+    }
+  }, []);
+
   return (
     <div className={classnames('Table', className, {highlight: !noHighlight})}>
       <table {...getTableProps()}>
-        <thead>
+        <thead ref={thead}>
           {headerGroups.map((headerGroup, i) => (
             <tr
               {...headerGroup.getHeaderGroupProps()}
@@ -128,7 +136,7 @@ export default function Table({
           {page.map((row) => {
             prepareRow(row);
             return (
-              <tr {...row.getRowProps(row.original.__props)}>
+              <tr {...row.getRowProps(row.original.__props)} ref={tr}>
                 {row.cells.map((cell) => (
                   <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
                 ))}
