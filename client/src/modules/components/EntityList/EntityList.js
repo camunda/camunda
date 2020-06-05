@@ -48,7 +48,7 @@ export default function EntityList({
       <div className="header">
         <div className="titleBar">
           <h1>{name}</h1>
-          <SearchField value={searchQuery} onChange={setSearchQuery} />
+          {!embedded && <SearchField value={searchQuery} onChange={setSearchQuery} />}
           <div className="action">{action}</div>
         </div>
         {columns && hasResults && (

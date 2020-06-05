@@ -26,6 +26,14 @@
       margin: 0;
       padding: 18px 0;
       width: 100%;
+
+      .titleBar h1 {
+        font-weight: bold;
+        font-size: 16px;
+        color: initial;
+        line-height: normal;
+        align-self: flex-end;
+      }
     }
   }
 
@@ -53,6 +61,7 @@
         font-weight: normal;
         color: $grey-darken-23;
         margin: 0;
+        flex-grow: 1;
       }
 
       > .action:not(:empty) {

@@ -85,3 +85,9 @@ it('should show a column header if specified', () => {
 
   expect(node.find('.columnHeaders')).toMatchSnapshot();
 });
+
+it('should hide search for embedded entitylist', () => {
+  const node = shallow(<EntityList {...props} embedded />);
+
+  expect(node.find('SearchField')).not.toExist();
+});
