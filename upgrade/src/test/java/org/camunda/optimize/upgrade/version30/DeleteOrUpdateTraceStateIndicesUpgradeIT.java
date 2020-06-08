@@ -22,7 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class DeleteCamundaTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
+public class DeleteOrUpdateTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
 
   private static final String FROM_VERSION = "3.0.0";
 
@@ -74,6 +74,21 @@ public class DeleteCamundaTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
     assertThat(getAllDocumentsForKey(EXTERNAL_EVENTS_INDEX_SUFFIX)).hasSize(1);
   }
 
+  @SneakyThrows
+  @Test
+  public void externalTraceStateIndexGetsUpdatedCorrectlyAndDataMigrated() {
+    // given
+    final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
+    final List<EventTraceStateDto> externalTraceStates = getAllDocumentsForKey(EXTERNAL_EVENTS_INDEX_SUFFIX);
+
+    // when
+    upgradePlan.execute();
+    final List<EventTraceStateDto> migratedTraces = getAllDocumentsForKey(EXTERNAL_EVENTS_INDEX_SUFFIX);
+
+    // then
+    assertThat(migratedTraces).containsExactlyElementsOf(externalTraceStates);
+  }
+
   private List<EventTraceStateDto> getAllDocumentsForKey(String definitionKey) {
     return getAllDocumentsOfIndex(
       new EventTraceStateIndex(definitionKey).getIndexName(),
@@ -83,7 +98,7 @@ public class DeleteCamundaTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
 
   @SneakyThrows
   private void createTraceStateIndexForDefinitionKey(final String definitionKey) {
-    createOptimizeIndexWithTypeAndVersion(new EventTraceStateIndex(definitionKey), EventTraceStateIndex.VERSION);
+    createOptimizeIndexWithTypeAndVersion(new EventTraceStateIndexV1(definitionKey), EventTraceStateIndexV1.VERSION);
   }
 
 }

@@ -8,21 +8,32 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.EVENT_NAME;
+import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.EVENT_TRACE;
+import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.GROUP;
+import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.SOURCE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.functionScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
@@ -54,11 +65,20 @@ public class EventTraceStateReader {
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
   }
 
-  public List<EventTraceStateDto> getTracesWithMaxResultSize(final int maxResultsSize) {
-    log.debug("Fetching up to {} event trace states", maxResultsSize);
+  public List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(final List<EventTypeDto> startEvents,
+                                                                             final List<EventTypeDto> endEvents,
+                                                                             final int maxResultsSize) {
+    log.debug("Fetching up to {} random event trace states containing given events", maxResultsSize);
 
+    final BoolQueryBuilder containsStartEventQuery = createContainsAtLeastOneEventFromQuery(startEvents);
+    final BoolQueryBuilder containsEndEventQuery = createContainsAtLeastOneEventFromQuery(endEvents);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
+      .query(functionScoreQuery(
+        boolQuery()
+          .must(containsStartEventQuery)
+          .must(containsEndEventQuery),
+        ScoreFunctionBuilders.randomFunction()
+      ))
       .size(maxResultsSize);
     SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
     SearchResponse searchResponse;
@@ -72,7 +92,27 @@ public class EventTraceStateReader {
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
   }
 
+  private BoolQueryBuilder createContainsAtLeastOneEventFromQuery(final List<EventTypeDto> startEvents) {
+    final BoolQueryBuilder containStartEventQuery = boolQuery();
+    startEvents.forEach(startEvent -> containStartEventQuery.should(
+      nestedQuery(
+        EVENT_TRACE,
+        boolQuery()
+          .must(termQuery(getEventTraceNestedField(GROUP), startEvent.getGroup()))
+          .must(termQuery(getEventTraceNestedField(SOURCE), startEvent.getSource()))
+          .must(termQuery(getEventTraceNestedField(EVENT_NAME), startEvent.getEventName())),
+        ScoreMode.None
+      )
+    ));
+    return containStartEventQuery;
+  }
+
+  private String getEventTraceNestedField(final String searchFieldName) {
+    return EVENT_TRACE + "." + searchFieldName;
+  }
+
   private String getIndexName() {
     return new EventTraceStateIndex(indexKey).getIndexName();
   }
+
 }

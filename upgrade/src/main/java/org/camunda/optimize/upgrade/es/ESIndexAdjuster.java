@@ -204,12 +204,6 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void addAlias(final IndexMappingCreator mapping) {
-    final String indexAlias = getIndexNameService().getOptimizeIndexAliasForIndex(mapping.getIndexName());
-    final String indexName = getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(mapping);
-    addAlias(indexAlias, indexName, true);
-  }
-
   public void addAlias(final String indexAlias, final String indexName, final boolean isWriteAlias) {
     logger.debug("Adding alias [{}] to index [{}].", indexAlias, indexName);
 
@@ -260,7 +254,7 @@ public class ESIndexAdjuster {
                                     final Map<String, Object> parameters) {
     String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexName);
     logger.debug(
-      "Updating data for indexAlias [{}] using script [{}] and query [{}].", aliasName, updateScript, query.toString()
+      "Updating data for indexAlias [{}] using script [{}] and query [{}].", aliasName, updateScript, query
     );
 
     try {
@@ -293,7 +287,7 @@ public class ESIndexAdjuster {
                                     final QueryBuilder query) {
     String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexName);
     logger.debug(
-      "Deleting data for indexAlias [{}] with query [{}].", aliasName, query.toString()
+      "Deleting data for indexAlias [{}] with query [{}].", aliasName, query
     );
 
     try {
@@ -356,14 +350,14 @@ public class ESIndexAdjuster {
           if (taskResponse.getError() != null) {
             logger.error(
               "A reindex batch that is part of the upgrade failed. Elasticsearch reported the following error: {}.",
-              taskResponse.getError().toString()
+              taskResponse.getError()
             );
             throw new UpgradeRuntimeException(taskResponse.getError().toString());
           }
 
           if (taskResponse.getResponseDetails() != null) {
             List<Object> failures = taskResponse.getResponseDetails().getFailures();
-            if (failures != null && failures.size() != 0) {
+            if (failures != null && !failures.isEmpty()) {
               String errorMessage = "A reindex batch that is part of the upgrade failed.";
               logger.error(failures.toString());
               logger.error(errorMessage);

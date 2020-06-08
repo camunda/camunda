@@ -43,7 +43,7 @@ public class EventIndex extends DefaultIndexMappingCreator {
   }
 
   @Override
-  public Boolean getCreateFromTemplate() {
+  public boolean getCreateFromTemplate() {
     return true;
   }
 

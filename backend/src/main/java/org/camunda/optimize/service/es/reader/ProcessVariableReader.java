@@ -248,7 +248,7 @@ public class ProcessVariableReader {
                                                                      final VariableType type,
                                                                      final String valueFilter) {
     final BoolQueryBuilder filterQuery = boolQuery()
-      .must(termQuery(ProcessVariableHelper.getNestedVariableNameField(), variableName))
+      .must(termQuery(getNestedVariableNameField(), variableName))
       .must(termQuery(getNestedVariableTypeField(), type.getId()));
 
     addValueFilter(type, valueFilter, filterQuery);
@@ -259,7 +259,7 @@ public class ProcessVariableReader {
   private void addValueFilter(final VariableType variableType,
                               final String valueFilter, final BoolQueryBuilder filterQuery) {
     boolean isStringVariable = VariableType.STRING.equals(variableType);
-    boolean valueFilterIsConfigured = !(valueFilter == null) && !valueFilter.isEmpty();
+    boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
     if (isStringVariable && valueFilterIsConfigured) {
       final String lowerCaseValue = valueFilter.toLowerCase();
       QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilder.MAX_GRAM)

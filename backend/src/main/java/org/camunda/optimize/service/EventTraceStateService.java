@@ -41,8 +41,10 @@ public class EventTraceStateService {
     return eventSequenceCountReader.getAllSequenceCounts();
   }
 
-  public List<EventTraceStateDto> getTracesWithMaxResultSize(final int maxResultsSize) {
-    return eventTraceStateReader.getTracesWithMaxResultSize(maxResultsSize);
+  public List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(final List<EventTypeDto> startEvents,
+                                                                             final List<EventTypeDto> endEvents,
+                                                                             final int maxResultsSize) {
+    return eventTraceStateReader.getTracesContainingAtLeastOneEventFromEach(startEvents, endEvents, maxResultsSize);
   }
 
   public void updateTracesAndCountsForEvents(final List<EventDto> eventsToProcess) {

@@ -82,7 +82,7 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateDecisionReportBooleanVariableFilter())
       .addUpgradeStep(resetRunningProcessInstanceImport());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
-    deleteCamundaTraceStateIndices(upgradeBuilder);
+    deleteOrUpdateTraceStateIndices(upgradeBuilder);
     deleteCamundaSequenceCountIndices(upgradeBuilder);
     upgradeBuilder.addUpgradeStep(deleteCamundaTraceStateImportIndexData());
     return upgradeBuilder.build();
@@ -268,7 +268,7 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
   }
 
   @SneakyThrows
-  private void deleteCamundaTraceStateIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
+  private void deleteOrUpdateTraceStateIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
     final GetAliasesResponse aliases = upgradeDependencies.getEsClient().getAlias(
       new GetAliasesRequest(EVENT_TRACE_STATE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
     );
@@ -278,9 +278,16 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
       .map(fullAliasName -> fullAliasName.substring(fullAliasName.lastIndexOf(EVENT_TRACE_STATE_INDEX_PREFIX) + EVENT_TRACE_STATE_INDEX_PREFIX
         .length()))
-      .filter(indexSuffix -> !indexSuffix.equalsIgnoreCase(EXTERNAL_EVENTS_INDEX_SUFFIX))
-      .forEach(indexSuffix -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(new EventTraceStateIndex(
-        indexSuffix))));
+      .forEach(indexSuffix -> {
+        if (indexSuffix.equalsIgnoreCase(EXTERNAL_EVENTS_INDEX_SUFFIX)) {
+          upgradeBuilder.addUpgradeStep(new UpdateIndexStep(
+            new EventTraceStateIndex(indexSuffix),
+            null
+          ));
+        } else {
+          upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(new EventTraceStateIndex(indexSuffix)));
+        }
+      });
   }
 
   @SneakyThrows

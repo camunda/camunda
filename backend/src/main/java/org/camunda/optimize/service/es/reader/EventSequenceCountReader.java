@@ -58,7 +58,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 public class EventSequenceCountReader {
 
   private static final String GROUP_AGG = EventCountDto.Fields.group;
-  private static final String SOURCE__AGG = EventCountDto.Fields.source;
+  private static final String SOURCE_AGG = EventCountDto.Fields.source;
   private static final String EVENT_NAME_AGG = EventCountDto.Fields.eventName;
   private static final String COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION =
     "compositeEventNameSourceAndGroupAggregation";
@@ -230,7 +230,7 @@ public class EventSequenceCountReader {
     List<CompositeValuesSourceBuilder<?>> eventAndSourceAndGroupTerms = new ArrayList<>();
     eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(EVENT_NAME_AGG)
                                       .field(SOURCE_EVENT + "." + EVENT_NAME));
-    eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(SOURCE__AGG)
+    eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(SOURCE_AGG)
                                       .field(SOURCE_EVENT + "." + SOURCE)
                                       .missingBucket(true));
     eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(GROUP_AGG)
@@ -247,7 +247,7 @@ public class EventSequenceCountReader {
 
   private EventCountDto extractEventCounts(final ParsedComposite.ParsedBucket bucket) {
     final String eventName = (String) (bucket.getKey()).get(EVENT_NAME_AGG);
-    final String source = (String) (bucket.getKey().get(SOURCE__AGG));
+    final String source = (String) (bucket.getKey().get(SOURCE_AGG));
     final String group = (String) (bucket.getKey().get(GROUP_AGG));
 
     final long count = (long) ((Sum) bucket.getAggregations().get(COUNT_AGG)).getValue();

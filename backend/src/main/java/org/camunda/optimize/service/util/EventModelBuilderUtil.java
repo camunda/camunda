@@ -19,6 +19,7 @@ public class EventModelBuilderUtil {
 
   private static final String EVENT = "event";
   public static final String DIVERGING_GATEWAY = "Diverging gateway";
+  public static final String CONVERGING_GATEWAY = "Converging gateway";
 
   public static String generateNodeId(final EventTypeDto eventTypeDto) {
     return generateId(EVENT, eventTypeDto);

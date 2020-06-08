@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.CONVERGING_GATEWAY;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.DIVERGING_GATEWAY;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateGatewayIdForNode;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateNodeId;
@@ -207,25 +208,24 @@ public class ExternalEventModelBuilderService {
     }
     final Map<Integer, Long> traceCountsByAdjacentEventOccurrence =
       extractEventTraceCountByAdjacentEventOccurrence(nodeToAdd, gatewayDirection, adjacentEventsToLookup, graphDto);
-    final String gatewayId = generateGatewayIdForNode(nodeToAdd, gatewayDirection);
 
     final boolean isParallelGateway = traceCountsByAdjacentEventOccurrence.get(adjacentEventsToLookup.size()) != null
       && traceCountsByAdjacentEventOccurrence.size() == 1;
     final boolean isExclusiveGateway = traceCountsByAdjacentEventOccurrence.get(1) != null
       && traceCountsByAdjacentEventOccurrence.size() == 1;
+    final String gatewayId = generateGatewayIdForNode(nodeToAdd, gatewayDirection);
     if (isParallelGateway) {
       log.debug("Adding {} parallel gateway with id {} to model", gatewayDirection.toString(), gatewayId);
-      currentNodeBuilder = currentNodeBuilder.parallelGateway(gatewayId);
+      currentNodeBuilder = currentNodeBuilder.parallelGateway(gatewayId)
+        .name(Diverging.equals(gatewayDirection) ? DIVERGING_GATEWAY : CONVERGING_GATEWAY);
     } else if (isExclusiveGateway) {
       log.debug("Adding {} exclusive gateway with id {} to model", gatewayDirection.toString(), gatewayId);
-      currentNodeBuilder = Diverging.equals(gatewayDirection) ?
-        currentNodeBuilder.exclusiveGateway(gatewayId).name(DIVERGING_GATEWAY) :
-        currentNodeBuilder.exclusiveGateway(gatewayId);
+      currentNodeBuilder = currentNodeBuilder.exclusiveGateway(gatewayId)
+        .name(Diverging.equals(gatewayDirection) ? DIVERGING_GATEWAY : CONVERGING_GATEWAY);
     } else {
       log.debug("Could not determine a gateway type for gateway with id {}, default to inclusive", gatewayId);
-      currentNodeBuilder = Diverging.equals(gatewayDirection) ?
-        currentNodeBuilder.inclusiveGateway(gatewayId).name(DIVERGING_GATEWAY) :
-        currentNodeBuilder.inclusiveGateway(gatewayId);
+      currentNodeBuilder = currentNodeBuilder.inclusiveGateway(gatewayId)
+        .name(Diverging.equals(gatewayDirection) ? DIVERGING_GATEWAY : CONVERGING_GATEWAY);
     }
     return currentNodeBuilder;
   }

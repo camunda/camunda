@@ -673,6 +673,83 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     );
   }
 
+  @Test
+  public void createFromExternalSource_onlyCompletedTracesConsideredForGatewaySelection() {
+    // given
+    final Instant now = Instant.now();
+    final String firstTraceId = "firstTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, firstTraceId, now),
+      createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(20)),
+      createCloudEventOfType(EVENT_C, firstTraceId, now.plusSeconds(30)),
+      createCloudEventOfType(EVENT_D, firstTraceId, now.plusSeconds(40)),
+      createCloudEventOfType(EVENT_E, firstTraceId, now.plusSeconds(50))
+    ));
+    final String secondTraceId = "secondTraceTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, secondTraceId, now),
+      createCloudEventOfType(EVENT_C, secondTraceId, now.plusSeconds(20)),
+      createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(30)),
+      createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(40)),
+      createCloudEventOfType(EVENT_E, secondTraceId, now.plusSeconds(50))
+    ));
+    // If this trace was considered in the gateway selection, we would expect inclusive gateways as it has no EVENT_C
+    final String thirdTraceId = "thirdTraceTraceId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, thirdTraceId, now),
+      createCloudEventOfType(EVENT_B, thirdTraceId, now.plusSeconds(30)),
+      createCloudEventOfType(EVENT_D, thirdTraceId, now.plusSeconds(40))
+    ));
+    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
+
+    // when
+    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then the created process is configured correctly
+    final Map<String, EventMappingDto> mappings = processMapping.getMappings();
+    final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
+
+    // then the mappings contain the correct events and are all in the model
+    assertCorrectMappingsAndContainsEvents(
+      mappings,
+      modelInstance,
+      Arrays.asList(EVENT_A, EVENT_B, EVENT_C, EVENT_D, EVENT_E)
+    );
+    // The extra flow nodes are the added gateways
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class).size()).isEqualTo(mappings.size() + 2);
+
+    // then the model elements are of the correct type and connected to sequence flows correctly
+    // The gateways being Parallel shows that the third event trace isn't considered for gateway selection
+    final String divergingGatewayId = generateGatewayIdForNode(EVENT_A, Diverging);
+    final String convergingGatewayId = generateGatewayIdForNode(EVENT_D, Converging);
+    assertNodeConnection(idOf(EVENT_A), START_EVENT, divergingGatewayId, PARALLEL_GATEWAY, modelInstance);
+    assertNodeConnection(divergingGatewayId, PARALLEL_GATEWAY, idOf(EVENT_B), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(divergingGatewayId, PARALLEL_GATEWAY, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, convergingGatewayId, PARALLEL_GATEWAY, modelInstance);
+    assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, convergingGatewayId, PARALLEL_GATEWAY, modelInstance);
+    assertNodeConnection(convergingGatewayId, PARALLEL_GATEWAY, idOf(EVENT_D), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_D), INTERMEDIATE_EVENT, idOf(EVENT_E), END_EVENT, modelInstance);
+    assertNodeConnection(idOf(EVENT_E), END_EVENT, null, null, modelInstance);
+    // and the expected number of sequence flows exists
+    assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(7);
+
+    // and the gateways have the expected source and target events
+    final Collection<Gateway> gatewaysInModel = modelInstance.getModelElementsByType(Gateway.class);
+    assertThat(gatewaysInModel).hasSize(2);
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(idOf(EVENT_A)),
+      Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
+      getGatewayWithId(gatewaysInModel, divergingGatewayId)
+    );
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
+      Arrays.asList(idOf(EVENT_D)),
+      getGatewayWithId(gatewaysInModel, convergingGatewayId)
+    );
+  }
+
   private CloudEventDto createCloudEventOfType(final EventTypeDto eventType,
                                                final String traceId,
                                                final Instant now) {
