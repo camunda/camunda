@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.TenantService;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -75,7 +77,8 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
 
     // then
-    assertThat(definitionKeys.stream().map(DefinitionKeyDto::getKey))
+    assertThat(definitionKeys)
+      .extracting(DefinitionKeyDto::getKey)
       .containsExactlyInAnyOrder(definitionKey1, definitionKey2);
   }
 
@@ -103,7 +106,8 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
 
     // then the definition key is still returned although the definition only exists for the not defined tenant
-    assertThat(definitionKeys.stream().map(DefinitionKeyDto::getKey))
+    assertThat(definitionKeys)
+      .extracting(DefinitionKeyDto::getKey)
       .containsExactlyInAnyOrder(definitionKey);
   }
 
@@ -148,7 +152,217 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
 
     // then
-    assertThat(definitionKeys.stream().map(DefinitionKeyDto::getKey)).isEmpty();
+    assertThat(definitionKeys).isEmpty();
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionKeysByType_typesAreIsolated(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "process");
+    // also create a definition of another type
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !type.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinition(otherDefinitionType, definitionKey1, "1", null, "other");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
+    );
+
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when definition keys of the other type are requested
+    final List<DefinitionKeyDto> definitionKeys = definitionClient
+      .getDefinitionKeysByType(otherDefinitionType, collectionId);
+
+    // then none are returned
+    assertThat(definitionKeys).isEmpty();
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByKeyAndType_invalidCollectionId(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name");
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(type.getId(), definitionKey1, "invalid")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByKeyAndType_multipleInScope(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name");
+    createDefinition(type, definitionKey1, "2", null, "the name");
+    createDefinition(type, "otherKey", "1", null, "the name");
+    // create more versions of other type, should not affect result
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !type.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinition(otherDefinitionType, definitionKey1, "1", null, "other");
+    createDefinition(otherDefinitionType, definitionKey1, "2", null, "other");
+    createDefinition(otherDefinitionType, definitionKey1, "3", null, "other");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient
+      .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
+
+    // then
+    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("2", "1");
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByKeyAndType_multiTenant_specificDefinitions(final DefinitionType type) {
+    // given
+    final String tenant1 = "tenant1";
+    createTenant(tenant1);
+    final String tenant2 = "tenant2";
+    createTenant(tenant2);
+    final String tenant3 = "tenant3";
+    createTenant(tenant3);
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", tenant1, "the name");
+    createDefinition(type, definitionKey1, "1", tenant2, "the name");
+    createDefinition(type, definitionKey1, "2", tenant2, "the name");
+    createDefinition(type, definitionKey1, "3", tenant3, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Lists.newArrayList(tenant1, tenant2);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient
+      .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
+
+    // then
+    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("2", "1");
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByKeyAndType_multiTenant_sharedDefinition(final DefinitionType type) {
+    // given
+    final String tenant1 = "tenant1";
+    createTenant(tenant1);
+    final String tenant2 = "tenant2";
+    createTenant(tenant2);
+    final String tenant3 = "tenant3";
+    createTenant(tenant3);
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name");
+    createDefinition(type, definitionKey1, "2", null, "the name");
+    createDefinition(type, definitionKey1, "3", null, "the name");
+    createDefinition(type, definitionKey1, "4", null, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Lists.newArrayList(tenant1, tenant2);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient
+      .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
+
+    // then
+    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("4", "3", "2", "1");
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByKeyAndType_multiTenant_sharedAndSpecificDefinitions(final DefinitionType type) {
+    // given
+    final String tenant1 = "tenant1";
+    createTenant(tenant1);
+    final String tenant2 = "tenant2";
+    createTenant(tenant2);
+    final String tenant3 = "tenant3";
+    createTenant(tenant3);
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name");
+    createDefinition(type, definitionKey1, "1", tenant1, "the name");
+    createDefinition(type, definitionKey1, "1", tenant2, "the name");
+    createDefinition(type, definitionKey1, "2", null, "the name");
+    createDefinition(type, definitionKey1, "2", tenant1, "the name");
+    createDefinition(type, definitionKey1, "2", tenant2, "the name");
+    createDefinition(type, definitionKey1, "3", tenant1, "the name");
+    createDefinition(type, definitionKey1, "4", tenant3, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Lists.newArrayList(tenant1, tenant2);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient
+      .getDefinitionVersionsByTypeAndKey(type, definitionKey1, collectionId);
+
+    // then
+    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("3", "2", "1");
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByKeyAndType_keyNotInScope(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name");
+    final String definitionKey2 = "definitionKey2";
+    createDefinition(type, definitionKey2, "1", null, "the name");
+    // create definitionKey2 of other type, should not affect result
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !type.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinition(otherDefinitionType, definitionKey2, "1", null, "other");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey2, scopeTenantIds)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when trying to get versions for a definition key that is not in the scope
+    final Response responseForWrongKey = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(type.getId(), definitionKey1, collectionId)
+      .execute();
+
+    // then a 404 is returned
+    assertThat(responseForWrongKey.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+
+    // when trying to get versions for a definition type that is not in the scope but key that is in the scope
+    final Response responseForWrongType = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(otherDefinitionType.getId(), definitionKey2, collectionId)
+      .execute();
+
+    // then a 404 is returned
+    assertThat(responseForWrongType.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @ParameterizedTest

@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -817,6 +818,88 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
 
     // then the key is still available as there is access to at least one tenant
     assertThat(definitionKeys).extracting(DefinitionKeyDto::getKey).containsExactly(definitionKey);
+  }
+
+  @ParameterizedTest(name = "Unauthorized definition of type {0} is not accessible")
+  @EnumSource(DefinitionType.class)
+  public void revokeDefinitionAuthorizationsUser_getDefinitionVersionsByKeyByType(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, engineResourceType);
+
+    deployAndImportDefinition(definitionType, definitionKey, null);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(definitionType.getId(), definitionKey)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not accessible")
+  @EnumSource(DefinitionType.class)
+  public void revokeTenantAuthorizationsUser_getDefinitionVersionsByKeyByType(final DefinitionType definitionType) {
+    //given
+    final String definitionKey = "key";
+    final String tenant1 = "tenant1";
+    engineIntegrationExtension.createTenant(tenant1);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(tenant1, RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionType, definitionKey, tenant1);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(definitionType.getId(), definitionKey)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void revokeJustOneTenantAuthorizationsUser_getDefinitionVersionsByKeyByType(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    final String tenant1 = "tenant1";
+    engineIntegrationExtension.createTenant(tenant1);
+    final String tenant2 = "tenant2";
+    engineIntegrationExtension.createTenant(tenant2);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    // access to tenant1 is revoked
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(tenant1, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationForKermit(tenant2, RESOURCE_TYPE_TENANT);
+
+    // definition exists for both tenants but only on tenant 1 there is a version 2
+    deployAndImportDefinition(definitionType, definitionKey, tenant1);
+    deployAndImportDefinition(definitionType, definitionKey, tenant1);
+    deployAndImportDefinition(definitionType, definitionKey, tenant2);
+
+    // when I get the definition keys
+    final List<DefinitionVersionDto> definitionKeys = definitionClient.getDefinitionVersionsByTypeAndKeyAsUser(
+      definitionType, definitionKey, null, KERMIT_USER, KERMIT_USER
+    );
+
+    // then only version 1 as available on the authorized tenant is returned
+    assertThat(definitionKeys).extracting(DefinitionVersionDto::getVersion).containsExactly("1");
   }
 
   @ParameterizedTest(name = "Unauthorized definition of type {0} is not in definitions grouped by tenant result")

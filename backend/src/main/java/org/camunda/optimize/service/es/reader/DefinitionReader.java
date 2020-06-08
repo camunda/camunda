@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithT
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
@@ -146,20 +147,7 @@ public class DefinitionReader {
       filterQuery.filter(termsQuery(DEFINITION_KEY, keys));
     }
 
-    if (!CollectionUtils.isEmpty(tenantIds)) {
-      final BoolQueryBuilder tenantFilterQuery = boolQuery().minimumShouldMatch(1);
-
-      if (tenantIds.contains(null)) {
-        tenantFilterQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
-      }
-
-      final Set<String> nonNullValues = tenantIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
-      if (!nonNullValues.isEmpty()) {
-        tenantFilterQuery.should(termsQuery(TENANT_ID, nonNullValues));
-      }
-
-      filterQuery.filter(tenantFilterQuery);
-    }
+    addTenantIdFilter(tenantIds, filterQuery);
 
     return getDefinitionWithTenantIdsDtos(filterQuery, resolveIndexNameForType(type, excludeEventProcesses));
   }
@@ -466,6 +454,73 @@ public class DefinitionReader {
       }
     }
     throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
+  }
+
+  public List<DefinitionVersionDto> getDefinitionVersions(final DefinitionType type,
+                                                          final String key,
+                                                          final Set<String> tenantIds) {
+    final BoolQueryBuilder filterQuery = boolQuery();
+
+    filterQuery.filter(termQuery(DEFINITION_KEY, key));
+
+    addTenantIdFilter(tenantIds, filterQuery);
+
+    final TermsAggregationBuilder versionTagAggregation = terms(VERSION_TAG_AGGREGATION)
+      .field(DEFINITION_VERSION_TAG)
+      // there should be only one tag, and for duplicate entries we accept that just one wins
+      .size(1);
+    final TermsAggregationBuilder versionAggregation = terms(VERSION_AGGREGATION)
+      .field(DEFINITION_VERSION)
+      .size(configurationService.getEsAggregationBucketLimit())
+      .subAggregation(versionTagAggregation);
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(filterQuery)
+      .aggregation(versionAggregation)
+      .size(0);
+    final SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
+      .source(searchSourceBuilder);
+    final SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      final String reason = String.format(
+        "Was not able to fetch [%s] definition versions with key [%s], tenantIds [%s]", type, key, tenantIds
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return searchResponse.getAggregations().<Terms>get(VERSION_AGGREGATION).getBuckets().stream()
+      .map(versionBucket -> {
+        final String version = versionBucket.getKeyAsString();
+        final Terms versionTags = versionBucket.getAggregations().get(VERSION_TAG_AGGREGATION);
+        final String versionTag = versionTags.getBuckets()
+          .stream()
+          .findFirst()
+          .map(MultiBucketsAggregation.Bucket::getKeyAsString)
+          .orElse(null);
+        return new DefinitionVersionDto(version, versionTag);
+      })
+      .sorted(Comparator.comparing(DefinitionVersionDto::getVersion).reversed())
+      .collect(Collectors.toList());
+  }
+
+  private void addTenantIdFilter(final Set<String> tenantIds, final BoolQueryBuilder query) {
+    if (!CollectionUtils.isEmpty(tenantIds)) {
+      final BoolQueryBuilder tenantFilterQuery = boolQuery().minimumShouldMatch(1);
+
+      if (tenantIds.contains(null)) {
+        tenantFilterQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
+      }
+
+      final Set<String> nonNullValues = tenantIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+      if (!nonNullValues.isEmpty()) {
+        tenantFilterQuery.should(termsQuery(TENANT_ID, nonNullValues));
+      }
+
+      query.filter(tenantFilterQuery);
+    }
   }
 
   private <T extends DefinitionOptimizeDto> List<T> fetchDefinitions(final DefinitionType type,

@@ -17,12 +17,14 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -544,6 +546,12 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final DefinitionOptimizeDto definition3 = createDefinitionAndAddToElasticsearch(
       definitionType, "3", "1", null, "a"
     );
+    // also create a definition of another type, should not be returned
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !definitionType.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "1", null, "other");
 
     // when I get process definition keys
     final List<DefinitionKeyDto> definitions = definitionClient.getDefinitionKeysByType(definitionType);
@@ -607,8 +615,140 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .buildGetDefinitionKeysByType(PROCESS.getId())
       .execute();
 
+    // then
     assertThat(response).isNotNull();
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByTypeAndKey(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
+    // also create a definition of another type, should not be returned
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !definitionType.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "1", null, "other");
+    createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "2", null, "other");
+    createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "3", null, "other");
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+      definitionType, definitionKey
+    );
+
+    // then
+    assertThat(versions)
+      .containsExactly(
+        new DefinitionVersionDto("2", VERSION_TAG),
+        new DefinitionVersionDto("1", VERSION_TAG)
+      );
+  }
+
+  @Test
+  public void getDefinitionVersionsByTypeAndKey_eventBasedProcess() {
+    // given
+    final DefinitionOptimizeDto eventProcessDefinition1 = createEventBasedDefinition(
+      "eventProcess1", "Event process Definition1"
+    );
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+      PROCESS, eventProcessDefinition1.getKey()
+    );
+
+    // then
+    assertThat(versions).containsExactly(new DefinitionVersionDto("1", null));
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByTypeAndKey_multiTenant_specificDefinition(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_3.getId(), "the name");
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+      definitionType, definitionKey
+    );
+
+    // then
+    assertThat(versions)
+      .containsExactly(
+        new DefinitionVersionDto("3", VERSION_TAG),
+        new DefinitionVersionDto("2", VERSION_TAG),
+        new DefinitionVersionDto("1", VERSION_TAG)
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByTypeAndKey_multiTenant_sharedDefinition(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "4", null, "the name");
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+      definitionType, definitionKey
+    );
+
+    // then
+    assertThat(versions)
+      .containsExactly(
+        new DefinitionVersionDto("4", VERSION_TAG),
+        new DefinitionVersionDto("3", VERSION_TAG),
+        new DefinitionVersionDto("2", VERSION_TAG),
+        new DefinitionVersionDto("1", VERSION_TAG)
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsByTypeAndKey_multiTenant_sharedAndSpecificDefinitions(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "4", TENANT_3.getId(), "the name");
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+      definitionType, definitionKey
+    );
+
+    // then
+    assertThat(versions)
+      .containsExactly(
+        new DefinitionVersionDto("4", VERSION_TAG),
+        new DefinitionVersionDto("3", VERSION_TAG),
+        new DefinitionVersionDto("2", VERSION_TAG),
+        new DefinitionVersionDto("1", VERSION_TAG)
+      );
   }
 
   @Test

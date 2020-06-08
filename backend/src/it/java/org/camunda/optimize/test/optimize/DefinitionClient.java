@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -78,6 +79,30 @@ public class DefinitionClient {
       .buildGetDefinitionKeysByType(definitionType.getId(), filterByCollectionScope, excludeEventProcesses)
       .withUserAuthentication(username, password)
       .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public List<DefinitionVersionDto> getDefinitionVersionsByTypeAndKey(final DefinitionType type,
+                                                                      final String key) {
+    return getDefinitionVersionsByTypeAndKey(type, key, null);
+  }
+
+  public List<DefinitionVersionDto> getDefinitionVersionsByTypeAndKey(final DefinitionType type,
+                                                                      final String key,
+                                                                      final String filterByCollectionScope) {
+    return getDefinitionVersionsByTypeAndKeyAsUser(
+      type, key, filterByCollectionScope, DEFAULT_USERNAME, DEFAULT_PASSWORD
+    );
+  }
+
+  public List<DefinitionVersionDto> getDefinitionVersionsByTypeAndKeyAsUser(final DefinitionType type,
+                                                                            final String key,
+                                                                            final String filterByCollectionScope,
+                                                                            final String username,
+                                                                            final String password) {
+    return getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(type.getId(), key, filterByCollectionScope)
+      .withUserAuthentication(username, password)
+      .executeAndReturnList(DefinitionVersionDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenant() {

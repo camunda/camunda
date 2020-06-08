@@ -849,6 +849,21 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+
+  public OptimizeRequestExecutor buildGetDefinitionVersionsByTypeAndKeyRequest(final String type,
+                                                                               final String key) {
+    return buildGetDefinitionVersionsByTypeAndKeyRequest(type, key, null);
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionVersionsByTypeAndKeyRequest(final String type,
+                                                                               final String key,
+                                                                               final String filterByCollectionScope) {
+    this.path = "/definition/" + type + "/" + key + "/versions";
+    this.method = GET;
+    addSingleQueryParam("filterByCollectionScope", filterByCollectionScope);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetDefinitions() {
     this.path = "/definition";
     this.method = GET;

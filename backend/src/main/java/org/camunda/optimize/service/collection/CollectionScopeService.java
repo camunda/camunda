@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.TenantService;
@@ -42,6 +43,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -109,7 +111,7 @@ public class CollectionScopeService {
                                                                  final String userId,
                                                                  final String collectionId) {
     final Map<String, List<String>> keysAndTenants =
-      getAvailableKeysAndTenantsFromCollectionScope(userId, collectionId);
+      getAvailableKeysAndTenantsFromCollectionScope(userId, definitionType, collectionId);
 
     if (keysAndTenants.isEmpty()) {
       return Collections.emptyList();
@@ -124,13 +126,28 @@ public class CollectionScopeService {
     );
   }
 
+  public List<DefinitionVersionDto> getCollectionDefinitionVersionsByKeyAndType(final DefinitionType type,
+                                                                                final String key,
+                                                                                final String userId,
+                                                                                final String collectionId) {
+    final Optional<CollectionScopeEntryDto> optionalScopeEntry = getCollectionScopeEntryDtoStream(userId, collectionId)
+      .filter(entry -> entry.getDefinitionType().equals(type) && entry.getDefinitionKey().equals(key))
+      .findFirst();
+
+    if (!optionalScopeEntry.isPresent()) {
+      return Collections.emptyList();
+    }
+
+    return definitionService.getDefinitionVersions(type, key, userId, optionalScopeEntry.get().getTenants());
+  }
+
   public List<DefinitionVersionsWithTenantsDto> getCollectionDefinitionsGroupedByVersionAndTenantForType(
     final DefinitionType type,
     final boolean excludeEventProcesses,
     final String userId,
     final String collectionId) {
     final Map<String, List<String>> keysAndTenants = getAvailableKeysAndTenantsFromCollectionScope(
-      userId, collectionId
+      userId, type, collectionId
     );
 
     return definitionService.getDefinitionsGroupedByVersionAndTenantForType(
@@ -347,18 +364,19 @@ public class CollectionScopeService {
   }
 
   public Map<String, List<String>> getAvailableKeysAndTenantsFromCollectionScope(final String userId,
+                                                                                 final DefinitionType definitionType,
                                                                                  final String collectionId) {
     if (collectionId == null) {
       return Collections.emptyMap();
     }
-    return getAuthorizedCollectionScopeEntries(userId, collectionId)
-      .stream()
+    return getCollectionScopeEntryDtoStream(userId, collectionId)
+      .filter(scopeEntryDto -> definitionType.equals(scopeEntryDto.getDefinitionType()))
       .map(scopeEntryDto -> new AbstractMap.SimpleEntry<>(scopeEntryDto.getDefinitionKey(), scopeEntryDto.getTenants()))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private List<CollectionScopeEntryDto> getAuthorizedCollectionScopeEntries(final String userId,
-                                                                            final String collectionId) {
+  private Stream<CollectionScopeEntryDto> getCollectionScopeEntryDtoStream(final String userId,
+                                                                           final String collectionId) {
     return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId)
       .getDefinitionDto()
       .getData()
@@ -368,8 +386,7 @@ public class CollectionScopeService {
         resolveAuthorizedTenantsForScopeEntry(userId, scope).stream().map(TenantDto::getId).collect(Collectors.toList())
       ))
       // at least one authorized tenant is required for an entry to be included in the result
-      .filter(scopeEntryDto -> scopeEntryDto.getTenants().size() > 0)
-      .collect(Collectors.toList());
+      .filter(scopeEntryDto -> !scopeEntryDto.getTenants().isEmpty());
   }
 
   private List<TenantDto> resolveAuthorizedTenantsForScopeEntry(final String userId,

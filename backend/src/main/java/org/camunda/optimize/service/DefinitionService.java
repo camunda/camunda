@@ -9,6 +9,7 @@ import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
@@ -22,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantId
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,6 +72,36 @@ public class DefinitionService {
       });
   }
 
+  public List<DefinitionVersionDto> getDefinitionVersions(final DefinitionType type,
+                                                          final String key,
+                                                          final String userId) {
+    return getDefinitionVersions(type, key, userId, null);
+  }
+
+  public List<DefinitionVersionDto> getDefinitionVersions(final DefinitionType type,
+                                                          final String key,
+                                                          final String userId,
+                                                          final List<String> tenantIds) {
+    final List<DefinitionVersionDto> definitionVersions = new ArrayList<>();
+
+    final Optional<DefinitionWithTenantsDto> optionalDefinition = getDefinition(type, key, userId);
+    if (optionalDefinition.isPresent()) {
+      final List<String> availableTenants = optionalDefinition.get().getTenants().stream()
+        .map(TenantDto::getId)
+        .collect(toList());
+      final Set<String> tenantsToFilterFor = resolveTenantsToFilterFor(
+       CollectionUtils.isEmpty(tenantIds)
+        ? availableTenants
+        : availableTenants.stream().filter(tenantIds::contains).collect(toList()),
+       userId
+      );
+
+      definitionVersions.addAll(definitionReader.getDefinitionVersions(type, key, tenantsToFilterFor));
+    }
+
+    return definitionVersions;
+  }
+
   public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(@NonNull final String userId) {
     return getFullyImportedDefinitions(null, false, userId);
   }
@@ -84,12 +117,7 @@ public class DefinitionService {
                                                                     final Set<String> keys,
                                                                     final List<String> tenantIds,
                                                                     @NonNull final String userId) {
-    final Set<String> tenantsToFilterFor = Sets.newHashSet(
-      Optional.ofNullable(tenantIds)
-        .map(DefinitionService::prepareTenantListForDefinitionSearch)
-        // if none provided load just the authorized ones to not fetch more than accessible anyway
-        .orElseGet(() -> tenantService.getTenantIdsForUser(userId))
-    );
+    final Set<String> tenantsToFilterFor = resolveTenantsToFilterFor(tenantIds, userId);
     final List<DefinitionWithTenantIdsDto> fullyImportedDefinitions = definitionReader
       .getFullyImportedDefinitions(definitionType, excludeEventProcesses, keys, tenantsToFilterFor);
     return filterAndMapDefinitionsWithTenantIdsByAuthorizations(userId, fullyImportedDefinitions)
@@ -310,6 +338,22 @@ public class DefinitionService {
       .sorted(selectedTenantIds.size() == 1
                 ? Comparator.nullsLast(Comparator.naturalOrder())
                 : Comparator.nullsFirst(Comparator.naturalOrder()))
+      .collect(toList());
+  }
+
+  private HashSet<String> resolveTenantsToFilterFor(final List<String> tenantIds, final @NonNull String userId) {
+    return Sets.newHashSet(
+      Optional.ofNullable(tenantIds)
+        .map(ids -> filterAuthorizedTenants(userId, ids))
+        .map(DefinitionService::prepareTenantListForDefinitionSearch)
+        // if none provided load just the authorized ones to not fetch more than accessible anyway
+        .orElseGet(() -> tenantService.getTenantIdsForUser(userId))
+    );
+  }
+
+  private List<String> filterAuthorizedTenants(final String userId, final List<String> tenantIds) {
+    return tenantIds.stream()
+      .filter(tenantId -> tenantService.isAuthorizedToSeeTenant(userId, tenantId))
       .collect(toList());
   }
 

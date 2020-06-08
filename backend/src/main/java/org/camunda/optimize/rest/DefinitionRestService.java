@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
@@ -83,9 +84,34 @@ public class DefinitionRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
+  @Path("/{type}/{key}/versions")
+  public List<DefinitionVersionDto> getDefinitionVersions(@Context final ContainerRequestContext requestContext,
+                                                          @PathParam("type") final DefinitionType type,
+                                                          @PathParam("key") final String key,
+                                                          @QueryParam("filterByCollectionScope") final String collectionId) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
+
+    final List<DefinitionVersionDto> definitionVersions = optionalCollectionId
+      .map(id -> collectionScopeService.getCollectionDefinitionVersionsByKeyAndType(type, key, userId, id))
+      .orElseGet(() -> definitionService.getDefinitionVersions(type, key, userId));
+
+    if (definitionVersions.isEmpty()) {
+      final String reason = String.format(
+        "Was not able to find definition version for type [%s] and key [%s] in scope of collectionId [%s].",
+        type, key, collectionId
+      );
+      log.error(reason);
+      throw new NotFoundException(reason);
+    }
+    return definitionVersions;
+  }
+
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
   @Path("/{type}/keys")
   public List<DefinitionKeyDto> getDefinitionKeys(@Context final ContainerRequestContext requestContext,
-                                                  @PathParam("type") DefinitionType type,
+                                                  @PathParam("type") final DefinitionType type,
                                                   @QueryParam("filterByCollectionScope") final String collectionId,
                                                   @QueryParam("excludeEventProcesses") final boolean excludeEventProcesses) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);

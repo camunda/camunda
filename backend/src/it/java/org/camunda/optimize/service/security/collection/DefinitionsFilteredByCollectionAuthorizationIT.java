@@ -10,6 +10,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,7 +29,7 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
 
   @ParameterizedTest
   @MethodSource(ACCESS_IDENTITY_ROLES)
-  public void identityIsGrantedDefinitionKeyFilterAccessByCollectionRole(final AbstractCollectionRoleIT.IdentityAndRole accessIdentityRolePairs) {
+  public void getDefinitionKeys_FilterByCollectionId_ForAuthorizedCollection(final AbstractCollectionRoleIT.IdentityAndRole accessIdentityRolePairs) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -51,7 +52,7 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
   }
 
   @Test
-  public void userIsNotGrantedDefinitionKeyFilterAccessDueMissingRole() {
+  public void getDefinitionKeys_FilterByCollectionId_ForUnauthorizedCollection() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
@@ -63,6 +64,51 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitionKeysByType(DefinitionType.PROCESS.getId(), collectionId)
+      .execute();
+
+    // then
+    MatcherAssert.assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+  }
+
+  @ParameterizedTest
+  @MethodSource(ACCESS_IDENTITY_ROLES)
+  public void getDefinitionVersionByKey_FilterByCollectionId_ForAuthorizedCollection(final AbstractCollectionRoleIT.IdentityAndRole accessIdentityRolePairs) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
+
+    deployAndImportSimpleProcess(DEFAULT_DEFINITION_KEY);
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
+    addRoleToCollectionAsDefaultUser(
+      accessIdentityRolePairs.roleType, accessIdentityRolePairs.identityDto, collectionId
+    );
+
+    // when
+    List<DefinitionVersionDto> definitionVersions = definitionClient.getDefinitionVersionsByTypeAndKeyAsUser(
+      DefinitionType.PROCESS, DEFAULT_DEFINITION_KEY, collectionId, KERMIT_USER, KERMIT_USER
+    );
+
+    // then
+    assertThat(definitionVersions).extracting(DefinitionVersionDto::getVersion).containsExactly("1");
+  }
+
+  @Test
+  public void getDefinitionVersionByKey_FilterByCollectionId_ForUnauthorizedCollection() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    deployAndImportSimpleProcess(DEFAULT_DEFINITION_KEY);
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(
+        DefinitionType.PROCESS.getId(), DEFAULT_DEFINITION_KEY, collectionId
+      )
       .execute();
 
     // then
