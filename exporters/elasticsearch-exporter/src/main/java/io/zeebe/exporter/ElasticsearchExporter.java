@@ -44,15 +44,6 @@ public class ElasticsearchExporter implements Exporter {
     context.setFilter(new ElasticsearchRecordFilter(configuration));
   }
 
-  private void validate(final ElasticsearchExporterConfiguration configuration) {
-    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
-      throw new ExporterException(
-          String.format(
-              "Elasticsearch prefix must not contain underscore. Current value: %s",
-              configuration.index.prefix));
-    }
-  }
-
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
@@ -91,6 +82,15 @@ public class ElasticsearchExporter implements Exporter {
 
     if (client.shouldFlush()) {
       flush();
+    }
+  }
+
+  private void validate(final ElasticsearchExporterConfiguration configuration) {
+    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch prefix must not contain underscore. Current value: %s",
+              configuration.index.prefix));
     }
   }
 

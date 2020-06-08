@@ -27,7 +27,7 @@ import org.mockito.ArgumentMatchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ElasticsearchClientTest {
+public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegrationTestCase {
 
   private static final long RECORD_KEY = 1234L;
   private ElasticsearchExporterConfiguration configuration;
@@ -35,8 +35,10 @@ public class ElasticsearchClientTest {
   private ElasticsearchClient client;
 
   @Before
-  public void setUp() {
-    configuration = new ElasticsearchExporterConfiguration();
+  public void init() {
+    elastic.start();
+
+    configuration = getDefaultConfiguration();
     logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientTest.class));
     client = new ElasticsearchClient(configuration, logSpy);
   }
@@ -102,5 +104,28 @@ public class ElasticsearchClientTest {
             variableValue.getBytes().length,
             scopeKey,
             workflowInstanceKey);
+  }
+
+  @Test
+  public void shouldLogWarnIfFailToFlushBulk() {
+    // given
+    final Record<VariableRecordValue> recordMock = mock(Record.class);
+    when(recordMock.getPartitionId()).thenReturn(1);
+    when(recordMock.getKey()).thenReturn(RECORD_KEY);
+    when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
+    when(recordMock.toJson()).thenReturn("invalid-json");
+
+    // when
+    client.index(recordMock);
+    final var success = client.flush();
+
+    // then
+    assertThat(success).describedAs("Expected flush to be not successful").isFalse();
+
+    verify(logSpy)
+        .warn(
+            "Failed to flush item of bulk request [type: {}, reason: {}]",
+            "mapper_parsing_exception",
+            "failed to parse");
   }
 }
