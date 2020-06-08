@@ -7,7 +7,7 @@
 import * as React from 'react';
 import {useQuery} from '@apollo/react-hooks';
 
-import {EmptyMessage, TaskList} from './styled';
+import {EmptyMessage} from './styled';
 import {Task} from './Task';
 import {GET_TASKS, GetTasks} from 'modules/queries/get-tasks';
 
@@ -19,7 +19,7 @@ const Tasks: React.FC = () => {
   }
   const {tasks} = data;
   return (
-    <TaskList>
+    <ul>
       {tasks.length > 0 ? (
         tasks.map((task) => {
           return (
@@ -36,7 +36,7 @@ const Tasks: React.FC = () => {
       ) : (
         <EmptyMessage>There are no tasks available.</EmptyMessage>
       )}
-    </TaskList>
+    </ul>
   );
 };
 

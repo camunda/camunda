@@ -91,9 +91,7 @@ const Style = createGlobalStyle`
   body.${USING_KEYBOARD_CLASS_NAME} button:focus,
   body.${USING_KEYBOARD_CLASS_NAME} code:focus,
   body.${USING_KEYBOARD_CLASS_NAME} a:focus {
-    box-shadow: 0 0 0 1px ${({theme}) =>
-      theme.colors.focusInner}, 0 0 0 4px ${({theme}) =>
-  theme.colors.focusOuter};
+    box-shadow: ${({theme}) => theme.shadows.fakeOutline};
     transition: box-shadow 0.05s ease-out;
   }
 `;

@@ -37,7 +37,7 @@ const Menu = styled.ul`
   min-width: 186px;
   margin-top: 5px;
   padding-left: 0px;
-  box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: ${({theme}) => theme.shadows.dropdownMenu};
   border: 1px solid ${({theme}) => theme.colors.ui05};
   border-radius: 3px;
 

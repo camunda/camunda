@@ -6,10 +6,6 @@
 
 import styled from 'styled-components';
 
-const TaskList = styled.ul`
-  margin-top: 20px;
-`;
-
 const EmptyMessage = styled.div`
   border: 1px solid ${({theme}) => theme.colors.ui05};
   border-radius: 3px;
@@ -22,4 +18,4 @@ const EmptyMessage = styled.div`
   background-color: ${({theme}) => theme.colors.ui04};
 `;
 
-export {EmptyMessage, TaskList};
+export {EmptyMessage};
