@@ -10,26 +10,41 @@ package io.zeebe.gateway.api.job;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import io.zeebe.gateway.EndpointManager;
 import io.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
+import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.zeebe.gateway.impl.broker.response.BrokerError;
+import io.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
+import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 public final class LongPollingActivateJobsTest {
 
@@ -123,15 +138,25 @@ public final class LongPollingActivateJobsTest {
     // given
     final int amount = 3;
     activateJobsAndWaitUntilBlocked(amount);
+    final int firstRound = amount * partitionsCount;
 
-    verify(stub, times(amount * partitionsCount)).handle(any());
+    verify(stub, times(firstRound)).handle(any());
 
     // when
     stub.addAvailableJobs(TYPE, 1);
     brokerClient.notifyJobsAvailable(TYPE);
 
     // then
-    verify(stub, timeout(2000).times(2 * amount * partitionsCount)).handle(any());
+
+    // the job available notification triggers all three requests again
+    final int invTriggeredByNotification = amount * partitionsCount;
+    // the one request which has a result, re-triggers the remaining requests
+    final int invTriggeredBySuccessfulRequest = (amount - 1) * partitionsCount;
+    verify(
+            stub,
+            timeout(2000)
+                .times(firstRound + invTriggeredByNotification + invTriggeredBySuccessfulRequest))
+        .handle(any());
   }
 
   @Test
@@ -321,6 +346,169 @@ public final class LongPollingActivateJobsTest {
     // then
     assertThat(request.hasScheduledTimer()).isFalse();
     assertThat(request.isTimedOut()).isFalse();
+  }
+
+  @Test
+  public void
+      shouldRepeatActivateJobsRequestAgainstBrokersIfNewJobsArriveWhileIteratingThroughBrokersTheFirstTime() {
+    // given
+
+    // a request with timeout
+    final LongPollingActivateJobsRequest request =
+        new LongPollingActivateJobsRequest(
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(15)
+                .setRequestTimeout(500)
+                .build(),
+            spy(StreamObserver.class));
+
+    /* and a request handler that simulates the following:
+        - on the first round no broker has any jobs
+        - about midway through iterating the brokers one of the brokers that has already been visited reports new jobs being available
+        - these jobs are available, when the brokers are asked a second time
+    */
+    brokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        new RequestHandler<BrokerActivateJobsRequest, BrokerResponse<JobBatchRecord>>() {
+          private final ActivateJobsStub noJobsAvailableStub = new ActivateJobsStub();
+          private final ActivateJobsStub jobsAvailableStub = new ActivateJobsStub();
+          private final Map<Integer, Integer> requestsPerPartitionCount = new HashMap<>();
+
+          {
+            jobsAvailableStub.addAvailableJobs(TYPE, 10);
+          }
+
+          @Override
+          public BrokerResponse<JobBatchRecord> handle(final BrokerActivateJobsRequest request)
+              throws Exception {
+            final int partitionId = request.getPartitionId();
+
+            final int requestsPerPartition =
+                requestsPerPartitionCount.computeIfAbsent(partitionId, key -> 0);
+
+            if (requestsPerPartition == 0) {
+              requestsPerPartitionCount.put(partitionId, requestsPerPartition + 1);
+
+              if (partitionId == 3) {
+                brokerClient.notifyJobsAvailable(TYPE);
+              }
+              return noJobsAvailableStub.handle(request);
+            } else {
+              return jobsAvailableStub.handle(request);
+            }
+          }
+        });
+    // when
+    handler.activateJobs(request);
+    waitUntil(() -> request.isCompleted());
+
+    // then
+    assertThat(request.isTimedOut()).isFalse();
+    final ArgumentCaptor<ActivateJobsResponse> responseArgumentCaptor =
+        ArgumentCaptor.forClass(ActivateJobsResponse.class);
+    verify(request.getResponseObserver()).onNext(responseArgumentCaptor.capture());
+
+    final ActivateJobsResponse response = responseArgumentCaptor.getValue();
+
+    assertThat(response.getJobsList()).hasSize(10);
+  }
+
+  @Test
+  public void
+      shouldReturnResourceExhaustedErrorIfNoJobsAvailableAndSomeBrokersReturnResourceExhaustionResponse() {
+    // given
+    final LongPollingActivateJobsRequest request =
+        new LongPollingActivateJobsRequest(
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(15)
+                .setRequestTimeout(500)
+                .build(),
+            spy(StreamObserver.class));
+
+    brokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        new RequestHandler<BrokerActivateJobsRequest, BrokerResponse<?>>() {
+          private final ActivateJobsStub noJobsAvailableStub = new ActivateJobsStub();
+
+          @Override
+          public BrokerResponse<?> handle(final BrokerActivateJobsRequest request)
+              throws Exception {
+            final int partitionId = request.getPartitionId();
+
+            if (partitionId == 4) {
+              return new BrokerErrorResponse(
+                  new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
+            } else {
+              return noJobsAvailableStub.handle(request);
+            }
+          }
+        });
+    // when
+    handler.activateJobs(request);
+
+    // then
+    final ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
+    verify(request.getResponseObserver(), timeout(1000).times(1))
+        .onError(throwableCaptor.capture());
+    verify(request.getResponseObserver(), never()).onNext(Mockito.any());
+    verify(request.getResponseObserver(), never()).onCompleted();
+
+    final StatusRuntimeException statusRuntimeException =
+        EndpointManager.convertThrowable(throwableCaptor.getValue());
+
+    assertThat(statusRuntimeException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
+  }
+
+  @Test
+  public void shouldReturnJobsIfSomeBrokersHaveJobsWhileOthersReturnResourceExhaustionResponse() {
+    // given
+    final LongPollingActivateJobsRequest request =
+        new LongPollingActivateJobsRequest(
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(15)
+                .setRequestTimeout(500)
+                .build(),
+            spy(StreamObserver.class));
+
+    brokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        new RequestHandler<BrokerActivateJobsRequest, BrokerResponse<?>>() {
+          private final ActivateJobsStub jobsAvailableStub = new ActivateJobsStub();
+
+          {
+            jobsAvailableStub.addAvailableJobs(TYPE, 10);
+          }
+
+          @Override
+          public BrokerResponse<?> handle(final BrokerActivateJobsRequest request)
+              throws Exception {
+            final int partitionId = request.getPartitionId();
+
+            if (partitionId == 4) {
+              return new BrokerErrorResponse(
+                  new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
+            } else {
+              return jobsAvailableStub.handle(request);
+            }
+          }
+        });
+    // when
+    handler.activateJobs(request);
+
+    waitUntil(() -> request.isCompleted());
+
+    // then
+    assertThat(request.isTimedOut()).isFalse();
+    final ArgumentCaptor<ActivateJobsResponse> responseArgumentCaptor =
+        ArgumentCaptor.forClass(ActivateJobsResponse.class);
+    verify(request.getResponseObserver()).onNext(responseArgumentCaptor.capture());
+
+    final ActivateJobsResponse response = responseArgumentCaptor.getValue();
+
+    assertThat(response.getJobsList()).hasSize(10);
   }
 
   private List<LongPollingActivateJobsRequest> activateJobsAndWaitUntilBlocked(final int amount) {
