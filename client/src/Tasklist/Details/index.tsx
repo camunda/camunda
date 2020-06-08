@@ -9,7 +9,7 @@ import {useParams} from 'react-router-dom';
 import * as React from 'react';
 
 import {GET_TASK, GetTask, GetTaskVariables} from 'modules/queries/get-task';
-import {Table, TH, TD, TR} from 'modules/components/Table/styled';
+import {Table, RowTH, TD, TR} from 'modules/components/Table/styled';
 import {formatDate} from 'modules/utils/formatDate';
 import {Container} from './styled';
 
@@ -32,25 +32,25 @@ const Details: React.FC = () => {
       <Table>
         <tbody>
           <TR>
-            <TH>Name</TH>
+            <RowTH>Name</RowTH>
             <TD>{name}</TD>
           </TR>
           <TR>
-            <TH>Workflow</TH>
+            <RowTH>Workflow</RowTH>
             <TD>{workflowName}</TD>
           </TR>
           <TR>
-            <TH>Creation Time</TH>
+            <RowTH>Creation Time</RowTH>
             <TD>{formatDate(creationTime)}</TD>
           </TR>
           {completionTime && (
             <TR>
-              <TH>Completion Time</TH>
+              <RowTH>Completion Time</RowTH>
               <TD>{formatDate(completionTime)}</TD>
             </TR>
           )}
           <TR>
-            <TH>Assignee</TH>
+            <RowTH>Assignee</RowTH>
             <TD data-testid="assignee">
               {assignee ? `${assignee.firstname} ${assignee.lastname}` : '--'}
             </TD>
