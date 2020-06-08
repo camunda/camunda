@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -26,6 +27,7 @@ import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -56,7 +58,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -86,6 +90,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @AllArgsConstructor
@@ -119,14 +124,44 @@ public class DefinitionReader {
     return getDefinitionWithTenantIdsDtos(query, resolveIndexNameForType(type)).stream().findFirst();
   }
 
-  public List<DefinitionWithTenantIdsDto> getDefinitionsOfAllTypes() {
-    return getDefinitionWithTenantIdsDtos(QueryBuilders.matchAllQuery(), ALL_DEFINITION_INDEXES);
-  }
-
   public <T extends DefinitionOptimizeDto> List<T> getDefinitions(final DefinitionType type,
                                                                   final boolean fullyImported,
                                                                   final boolean withXml) {
     return fetchDefinitions(type, fullyImported, withXml, matchAllQuery());
+  }
+
+  public List<DefinitionWithTenantIdsDto> getFullyImportedDefinitions(final DefinitionType type,
+                                                                      final boolean excludeEventProcesses,
+                                                                      final Set<String> keys,
+                                                                      final Set<String> tenantIds) {
+    final BoolQueryBuilder filterQuery = boolQuery();
+
+    filterQuery.filter(
+      boolQuery().minimumShouldMatch(1)
+        .should(existsQuery(PROCESS_DEFINITION_XML))
+        .should(existsQuery(DECISION_DEFINITION_XML))
+    );
+
+    if (!CollectionUtils.isEmpty(keys)) {
+      filterQuery.filter(termsQuery(DEFINITION_KEY, keys));
+    }
+
+    if (!CollectionUtils.isEmpty(tenantIds)) {
+      final BoolQueryBuilder tenantFilterQuery = boolQuery().minimumShouldMatch(1);
+
+      if (tenantIds.contains(null)) {
+        tenantFilterQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
+      }
+
+      final Set<String> nonNullValues = tenantIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+      if (!nonNullValues.isEmpty()) {
+        tenantFilterQuery.should(termsQuery(TENANT_ID, nonNullValues));
+      }
+
+      filterQuery.filter(tenantFilterQuery);
+    }
+
+    return getDefinitionWithTenantIdsDtos(filterQuery, resolveIndexNameForType(type, excludeEventProcesses));
   }
 
   public <T extends DefinitionOptimizeDto> List<T> getFullyImportedDefinitions(final DefinitionType type,
@@ -209,11 +244,8 @@ public class DefinitionReader {
 
     if (searchResponse.getHits().getTotalHits().value == 0L) {
       log.debug(
-        "Could not find [%s] definition with type[{}], key [{}], version [{}] and tenantId [{}]",
-        definitionKey,
-        type,
-        validVersion,
-        tenantId
+        "Could not find [{}] definition with key [{}], version [{}] and tenantId [{}]",
+        type, definitionKey, validVersion, tenantId
       );
       return Optional.empty();
     }
@@ -244,7 +276,8 @@ public class DefinitionReader {
                                      .missingBucket(true)
                                      .order(SortOrder.ASC));
     keyAndTypeAndTenantSources.add(new TermsValuesSourceBuilder(DEFINITION_KEY_AGGREGATION).field(DEFINITION_KEY));
-    keyAndTypeAndTenantSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field("_index"));
+    keyAndTypeAndTenantSources
+      .add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field(ElasticsearchConstants.INDEX));
 
     CompositeAggregationBuilder keyAndTypeAndTenantAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, keyAndTypeAndTenantSources)
@@ -338,7 +371,7 @@ public class DefinitionReader {
     // 1. group by key and type (_index)
     List<CompositeValuesSourceBuilder<?>> keyAndTypeSources = new ArrayList<>();
     keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_KEY_AGGREGATION).field(DEFINITION_KEY));
-    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field("_index"));
+    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field(ElasticsearchConstants.INDEX));
 
     CompositeAggregationBuilder keyAndTypeAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyAndTypeSources)
@@ -546,12 +579,11 @@ public class DefinitionReader {
     final TermsAggregationBuilder nameAggregation =
       terms(NAME_AGGREGATION)
         .field(DEFINITION_NAME)
-        .size(MAX_RESPONSE_SIZE_LIMIT)
         .size(1);
     // 1. group by key and type
     List<CompositeValuesSourceBuilder<?>> keyAndTypeSources = new ArrayList<>();
     keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_KEY_AGGREGATION).field(DEFINITION_KEY));
-    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field("_index"));
+    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field(ElasticsearchConstants.INDEX));
 
     CompositeAggregationBuilder keyAndTypeAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyAndTypeSources)
@@ -677,6 +709,10 @@ public class DefinitionReader {
   }
 
   private String[] resolveIndexNameForType(final DefinitionType type, final boolean excludeEventProcesses) {
+    if (type == null) {
+      return ALL_DEFINITION_INDEXES;
+    }
+
     switch (type) {
       case PROCESS:
         if (excludeEventProcesses) {

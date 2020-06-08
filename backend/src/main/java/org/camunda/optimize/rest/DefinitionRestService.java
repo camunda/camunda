@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
@@ -35,6 +36,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Slf4j
@@ -51,7 +53,7 @@ public class DefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public List<DefinitionWithTenantsDto> getDefinitions(@Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return definitionService.getDefinitions(userId);
+    return definitionService.getFullyImportedDefinitions(userId);
   }
 
   @GET
@@ -77,6 +79,25 @@ public class DefinitionRestService {
         log.error(reason);
         return new NotFoundException(reason);
       });
+  }
+
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/{type}/keys")
+  public List<DefinitionKeyDto> getDefinitionKeys(@Context final ContainerRequestContext requestContext,
+                                                  @PathParam("type") DefinitionType type,
+                                                  @QueryParam("filterByCollectionScope") final String collectionId,
+                                                  @QueryParam("excludeEventProcesses") final boolean excludeEventProcesses) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
+
+    final List<DefinitionWithTenantsDto> definitions = optionalCollectionId
+      .map(id -> collectionScopeService.getCollectionDefinitions(type, excludeEventProcesses, userId, id))
+      .orElseGet(() -> definitionService.getFullyImportedDefinitions(type, excludeEventProcesses, userId));
+
+    return definitions.stream()
+      .map(definition -> new DefinitionKeyDto(definition.getKey(), definition.getName()))
+      .collect(Collectors.toList());
   }
 
   @GET

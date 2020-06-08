@@ -72,4 +72,5 @@ public class ElasticsearchConstants {
   public static final String EVENT_PROCESSING_ENGINE_REFERENCE = "optimize";
 
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";
+  public static final String INDEX = "_index";
 }

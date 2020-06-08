@@ -855,6 +855,30 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type) {
+    return buildGetDefinitionKeysByType(type, (Boolean) null);
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type,
+                                                              final Boolean excludeEventProcesses) {
+    return buildGetDefinitionKeysByType(type, null, excludeEventProcesses);
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type,
+                                                              final String filterByCollectionScope) {
+    return buildGetDefinitionKeysByType(type, filterByCollectionScope, null);
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type,
+                                                              final String filterByCollectionScope,
+                                                              final Boolean excludeEventProcesses) {
+    this.path = "/definition/" + type + "/keys";
+    this.method = GET;
+    addSingleQueryParam("filterByCollectionScope", filterByCollectionScope);
+    addSingleQueryParam("excludeEventProcesses", excludeEventProcesses);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetDefinitionsGroupedByTenant() {
     this.path = "/definition/_groupByTenant";
     this.method = GET;

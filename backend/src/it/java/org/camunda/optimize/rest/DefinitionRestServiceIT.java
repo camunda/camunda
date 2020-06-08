@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
@@ -517,6 +518,93 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetDefinitions()
+      .execute();
+
+    assertThat(response).isNotNull();
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionKeysByType(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    final DefinitionOptimizeDto definition1 = createDefinitionAndAddToElasticsearch(
+      definitionType, "1", "1", null, "D1"
+    );
+    // another version of definition1 to ensure no duplicates are caused
+    createDefinitionAndAddToElasticsearch(definitionType, "1", "2", null, "D1");
+    final DefinitionOptimizeDto definition2_tenant1 = createDefinitionAndAddToElasticsearch(
+      definitionType, "2", "1", TENANT_1.getId(), "d2"
+    );
+    // another definition with same key but different tenant to ensure this causes no duplicate key entries
+    final DefinitionOptimizeDto definition2_tenant2 = createDefinitionAndAddToElasticsearch(
+      definitionType, "2", "1", TENANT_2.getId(), "d2"
+    );
+    final DefinitionOptimizeDto definition3 = createDefinitionAndAddToElasticsearch(
+      definitionType, "3", "1", null, "a"
+    );
+
+    // when I get process definition keys
+    final List<DefinitionKeyDto> definitions = definitionClient.getDefinitionKeysByType(definitionType);
+
+    // then
+    assertThat(definitions)
+      .isNotEmpty()
+      .hasSize(3)
+      .containsSequence(
+        // names of definitions #3 start with an `a` and are expected first
+        new DefinitionKeyDto(definition3.getKey(), definition3.getName()),
+        // and last the process definitions as they start with `D/d`
+        new DefinitionKeyDto(definition1.getKey(), definition1.getName()),
+        new DefinitionKeyDto(definition2_tenant1.getKey(), definition2_tenant1.getName())
+      );
+  }
+
+  @Test
+  public void getDefinitionKeysByType_eventBasedProcesses() {
+    // given
+    final DefinitionOptimizeDto eventProcessDefinition1 = createEventBasedDefinition(
+      "eventProcess1", "Event process Definition1"
+    );
+    final DefinitionOptimizeDto eventProcessDefinition2 = createEventBasedDefinition(
+      "eventProcess2", "event process Definition2"
+    );
+    final DefinitionOptimizeDto eventProcessDefinition3 = createEventBasedDefinition(
+      "eventProcess3", "an event process Definition3"
+    );
+
+    // when I get process definition keys
+    final List<DefinitionKeyDto> definitions = definitionClient.getDefinitionKeysByType(PROCESS);
+
+    // then
+    assertThat(definitions)
+      .hasSize(3)
+      .containsExactly(
+        // names of definitions #3 start with an `a` and are expected first
+        new DefinitionKeyDto(eventProcessDefinition3.getKey(), eventProcessDefinition3.getName()),
+        // and last the process definitions as they start with `D/d`
+        new DefinitionKeyDto(eventProcessDefinition1.getKey(), eventProcessDefinition1.getName()),
+        new DefinitionKeyDto(eventProcessDefinition2.getKey(), eventProcessDefinition2.getName())
+      );
+
+    // when I get process definitions but exclude event processes
+    final List<DefinitionKeyDto> definitionsWithoutEventProcesses = definitionClient
+      .getDefinitionKeysByType(PROCESS, true);
+
+    // then
+    assertThat(definitionsWithoutEventProcesses).isEmpty();
+  }
+
+  @Test
+  public void getDefinitionKeysByType_unauthenticated() {
+    //given
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildGetDefinitionKeysByType(PROCESS.getId())
       .execute();
 
     assertThat(response).isNotNull();

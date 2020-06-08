@@ -20,8 +20,9 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 @Component
 public class TenantService implements ConfigurationReloadable {
@@ -59,6 +60,10 @@ public class TenantService implements ConfigurationReloadable {
     return tenantAuthorizationService.isAuthorizedToSeeTenant(userId, IdentityType.USER, tenantId);
   }
 
+  public List<String> getTenantIdsForUser(final String userId) {
+    return getTenantsForUser(userId).stream().map(TenantDto::getId).collect(toList());
+  }
+
   public List<TenantDto> getTenantsForUser(final String userId) {
     return getTenants().stream()
       .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(
@@ -66,7 +71,7 @@ public class TenantService implements ConfigurationReloadable {
         IdentityType.USER,
         tenantDto.getId()
       ))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   public List<TenantDto> getTenantsForUserByEngine(final String userId, final String engineAlias) {
@@ -77,13 +82,13 @@ public class TenantService implements ConfigurationReloadable {
         tenantDto.getId(),
         engineAlias
       ))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   public List<TenantDto> getTenantsByEngine(final String engineAlias) {
     return getTenants().stream()
       .filter(tenantDto -> tenantDto.equals(TENANT_NOT_DEFINED) || tenantDto.getEngine().equals(engineAlias))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   public List<TenantDto> getTenants() {

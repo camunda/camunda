@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 
@@ -44,6 +45,39 @@ public class DefinitionClient {
       .buildGetDefinitions()
       .withUserAuthentication(username, password)
       .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType) {
+    return getDefinitionKeysByType(definitionType, (Boolean) null);
+  }
+
+  public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType,
+                                                        final Boolean excludeEventProcesses) {
+    return getDefinitionKeysByType(definitionType, null, excludeEventProcesses);
+  }
+
+  public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType,
+                                                        final String filterByCollectionScope) {
+    return getDefinitionKeysByType(definitionType, filterByCollectionScope, null);
+  }
+
+  public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType,
+                                                        final String filterByCollectionScope,
+                                                        final Boolean excludeEventProcesses) {
+    return getDefinitionKeysByTypeAsUser(
+      definitionType, filterByCollectionScope, excludeEventProcesses, DEFAULT_USERNAME, DEFAULT_PASSWORD
+    );
+  }
+
+  public List<DefinitionKeyDto> getDefinitionKeysByTypeAsUser(final DefinitionType definitionType,
+                                                              final String filterByCollectionScope,
+                                                              final Boolean excludeEventProcesses,
+                                                              final String username,
+                                                              final String password) {
+    return getRequestExecutor()
+      .buildGetDefinitionKeysByType(definitionType.getId(), filterByCollectionScope, excludeEventProcesses)
+      .withUserAuthentication(username, password)
+      .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenant() {

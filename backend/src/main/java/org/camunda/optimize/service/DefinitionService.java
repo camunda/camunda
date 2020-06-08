@@ -5,7 +5,9 @@
  */
 package org.camunda.optimize.service;
 
+import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -67,8 +69,30 @@ public class DefinitionService {
       });
   }
 
-  public List<DefinitionWithTenantsDto> getDefinitions(final String userId) {
-    return filterAndMapDefinitionsWithTenantIdsByAuthorizations(userId, definitionReader.getDefinitionsOfAllTypes())
+  public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(@NonNull final String userId) {
+    return getFullyImportedDefinitions(null, false, userId);
+  }
+
+  public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(final DefinitionType definitionType,
+                                                                    final boolean excludeEventProcesses,
+                                                                    @NonNull final String userId) {
+    return getFullyImportedDefinitions(definitionType, excludeEventProcesses, null, null, userId);
+  }
+
+  public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(final DefinitionType definitionType,
+                                                                    final boolean excludeEventProcesses,
+                                                                    final Set<String> keys,
+                                                                    final List<String> tenantIds,
+                                                                    @NonNull final String userId) {
+    final Set<String> tenantsToFilterFor = Sets.newHashSet(
+      Optional.ofNullable(tenantIds)
+        .map(DefinitionService::prepareTenantListForDefinitionSearch)
+        // if none provided load just the authorized ones to not fetch more than accessible anyway
+        .orElseGet(() -> tenantService.getTenantIdsForUser(userId))
+    );
+    final List<DefinitionWithTenantIdsDto> fullyImportedDefinitions = definitionReader
+      .getFullyImportedDefinitions(definitionType, excludeEventProcesses, keys, tenantsToFilterFor);
+    return filterAndMapDefinitionsWithTenantIdsByAuthorizations(userId, fullyImportedDefinitions)
       // sort by name case insensitive
       .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
       .collect(toList());

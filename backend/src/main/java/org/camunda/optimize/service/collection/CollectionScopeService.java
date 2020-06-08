@@ -104,6 +104,26 @@ public class CollectionScopeService {
       .collect(Collectors.toList());
   }
 
+  public List<DefinitionWithTenantsDto> getCollectionDefinitions(final DefinitionType definitionType,
+                                                                 final boolean excludeEventProcesses,
+                                                                 final String userId,
+                                                                 final String collectionId) {
+    final Map<String, List<String>> keysAndTenants =
+      getAvailableKeysAndTenantsFromCollectionScope(userId, collectionId);
+
+    if (keysAndTenants.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    return definitionService.getFullyImportedDefinitions(
+      definitionType,
+      excludeEventProcesses,
+      keysAndTenants.keySet(),
+      keysAndTenants.values().stream().flatMap(List::stream).collect(Collectors.toList()),
+      userId
+    );
+  }
+
   public List<DefinitionVersionsWithTenantsDto> getCollectionDefinitionsGroupedByVersionAndTenantForType(
     final DefinitionType type,
     final boolean excludeEventProcesses,
@@ -142,7 +162,7 @@ public class CollectionScopeService {
     });
   }
 
-  public void deleteScopeEntry(String userId, String collectionId, String scopeEntryId, boolean force) throws NotFoundException {
+  public void deleteScopeEntry(String userId, String collectionId, String scopeEntryId, boolean force) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
     final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
