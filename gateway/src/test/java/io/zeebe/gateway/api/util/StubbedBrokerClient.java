@@ -56,9 +56,26 @@ public final class StubbedBrokerClient implements BrokerClient {
       final BrokerRequest<T> request) {
     brokerRequests.add(request);
     try {
+
       final RequestHandler requestHandler = requestHandlers.get(request.getClass());
       final BrokerResponse<T> response = requestHandler.handle(request);
-      return CompletableFuture.completedFuture(response);
+
+      try {
+        if (response.isResponse()) {
+          return CompletableFuture.completedFuture(response);
+        } else if (response.isRejection()) {
+          return CompletableFuture.failedFuture(
+              new BrokerRejectionException(response.getRejection()));
+        } else if (response.isError()) {
+          return CompletableFuture.failedFuture(new BrokerErrorException(response.getError()));
+        } else {
+          return CompletableFuture.failedFuture(
+              new IllegalBrokerResponseException(
+                  "Expected broker response to be either response, rejection, or error, but is neither of them"));
+        }
+      } catch (final RuntimeException e) {
+        return CompletableFuture.failedFuture(new BrokerResponseException(e));
+      }
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
@@ -127,7 +144,8 @@ public final class StubbedBrokerClient implements BrokerClient {
   }
 
   @FunctionalInterface
-  interface RequestHandler<RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>> {
+  public interface RequestHandler<
+      RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>> {
     ResponseT handle(RequestT request) throws Exception;
   }
 }
