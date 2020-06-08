@@ -33,7 +33,7 @@ import {
   isVariableValueValid,
   isIdComplete,
   isIdValid,
-  sortAndModify,
+  getFlowNodeOptions,
   sanitizeFilter,
   isBatchOperationIdComplete,
   isBatchOperationIdValid,
@@ -351,7 +351,7 @@ class Filters extends React.Component {
               }
               name="activityId"
               placeholder={'Flow Node'}
-              options={sortAndModify(this.props.selectableFlowNodes)}
+              options={getFlowNodeOptions(this.props.selectableFlowNodes)}
               onChange={(event) =>
                 this.handleControlledInputChange(event, this.propagateFilter)
               }

@@ -198,8 +198,6 @@ export const EXPAND_STATE = {
   COLLAPSED: 'COLLAPSED',
 };
 
-export const UNNAMED_ACTIVITY = 'Unnamed Activity';
-
 export const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
 export const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
 

@@ -948,16 +948,16 @@ describe('Filters', () => {
         mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].name
       );
 
-      // Use a fall-back name for the label if it the flowNode doesn't have one
-      expect(field.props().options[1].label).toEqual('Unnamed End Event');
+      // Use id for label if flowNode is unnamed
+      expect(field.props().options[1].label).toEqual('TaskB');
     });
 
-    it('should split the selectable flowNode options by named/unnamed & sort alphabetically', () => {
+    it('should sort selectable flowNode options alphabetically by name and id', () => {
       const unsortedSelectableFlowNodes = [
-        {id: 'TaskC', $type: 'bpmn:StartEvent', name: 'task C'},
-        {id: 'TaskA', $type: 'bpmn:StartEvent', name: 'task A'},
-        {id: 'TaskD', $type: 'bpmn:AEndEvent'},
-        {id: 'TaskE', $type: 'bpmn:CEndEvent'},
+        {id: 'Event_C', $type: 'bpmn:StartEvent', name: 'Z Event'},
+        {id: 'Event_A', $type: 'bpmn:StartEvent', name: 'A Event'},
+        {id: 'Activity_D', $type: 'bpmn:EndEvent'},
+        {id: 'Activity_B', $type: 'bpmn:EndEvent'},
       ];
 
       const node = mount(
@@ -977,14 +977,10 @@ describe('Filters', () => {
         .find(Styled.Select)
         .filterWhere((n) => n.props().name === 'activityId');
 
-      expect(field.props().options[0].label).toEqual(
-        unsortedSelectableFlowNodes[1].name
-      );
-      expect(field.props().options[1].label).toEqual(
-        unsortedSelectableFlowNodes[0].name
-      );
-      expect(field.props().options[2].label).toEqual('Unnamed A End Event');
-      expect(field.props().options[3].label).toEqual('Unnamed C End Event');
+      expect(field.props().options[0].label).toEqual('A Event');
+      expect(field.props().options[1].label).toEqual('Activity_B');
+      expect(field.props().options[2].label).toEqual('Activity_D');
+      expect(field.props().options[3].label).toEqual('Z Event');
     });
 
     it('should be disabled after the workflow name is reseted', async () => {

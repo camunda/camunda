@@ -12,7 +12,6 @@ import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 
 import {
   PAGE_TITLE,
-  UNNAMED_ACTIVITY,
   SUBSCRIPTION_TOPIC,
   STATE,
   TYPE,
@@ -434,25 +433,13 @@ const Instance = observer(
       const nodeName =
         node.id === currentInstance.state.instance.id
           ? getWorkflowName(currentInstance.state.instance)
-          : (metaData && metaData.name) || UNNAMED_ACTIVITY;
+          : (metaData && metaData.name) || node.activityId;
 
       return {
         ...node,
         typeDetails,
         name: nodeName,
       };
-    };
-
-    addFlowNodeName = (object) => {
-      const modifiedObject = {...object};
-
-      const nodeMetaData = this.state.nodeMetaDataMap.get(
-        modifiedObject.flowNodeId
-      );
-
-      modifiedObject.flowNodeName =
-        (nodeMetaData && nodeMetaData.name) || UNNAMED_ACTIVITY;
-      return modifiedObject;
     };
 
     handleVariableUpdate = async (key, value) => {

@@ -207,39 +207,15 @@ export function sanitizeFilter(filter) {
   });
 }
 
-const sortByFlowNodeLabel = (flowNodes) => {
-  return sortBy(flowNodes, (flowNode) => flowNode.label.toLowerCase());
-};
-
-const addValueAndLabel = (bpmnElement) => {
-  return {
-    ...bpmnElement,
-    value: bpmnElement.id,
-    label: bpmnElement.name
-      ? bpmnElement.name
-      : 'Unnamed' + bpmnElement.$type.split(':')[1].replace(/([A-Z])/g, ' $1'),
-  };
-};
-
-/** Needs comment  + tests */
-
-export const sortAndModify = (bpmnElements) => {
-  if (bpmnElements.length < 1) {
+export const getFlowNodeOptions = (flowNodes) => {
+  if (flowNodes.length < 1) {
     return [];
   }
 
-  const named = [];
-  const unnamed = [];
+  const options = flowNodes.map((flowNode) => ({
+    value: flowNode.id,
+    label: flowNode.name || flowNode.id,
+  }));
 
-  bpmnElements.forEach((bpmnElement) => {
-    const enhancedElement = addValueAndLabel(bpmnElement);
-
-    if (enhancedElement.name) {
-      named.push(enhancedElement);
-    } else {
-      unnamed.push(enhancedElement);
-    }
-  });
-
-  return [...sortByFlowNodeLabel(named), ...sortByFlowNodeLabel(unnamed)];
+  return sortBy(options, (flowNode) => flowNode.label.toLowerCase());
 };

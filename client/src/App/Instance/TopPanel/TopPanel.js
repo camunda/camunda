@@ -17,7 +17,7 @@ import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 
 import Diagram from 'modules/components/Diagram';
 import IncidentsWrapper from '../IncidentsWrapper';
-import {EXPAND_STATE, LOADING_STATE, UNNAMED_ACTIVITY} from 'modules/constants';
+import {EXPAND_STATE, LOADING_STATE} from 'modules/constants';
 
 import InstanceHeader from './InstanceHeader';
 import * as Styled from './styled';
@@ -74,7 +74,7 @@ const TopPanel = observer(
       );
 
       modifiedObject.flowNodeName =
-        (nodeMetaData && nodeMetaData.name) || UNNAMED_ACTIVITY;
+        (nodeMetaData && nodeMetaData.name) || object.flowNodeId;
       return modifiedObject;
     };
 
