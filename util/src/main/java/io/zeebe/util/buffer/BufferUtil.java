@@ -10,7 +10,6 @@ package io.zeebe.util.buffer;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static io.zeebe.util.StringUtil.getBytes;
 
-import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -254,52 +253,5 @@ public final class BufferUtil {
     }
 
     return result;
-  }
-
-  public static int readIntoBuffer(
-      final DirectBuffer buffer, int offset, final DirectBuffer valueBuffer) {
-    final int length = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
-    final byte[] bytes = new byte[length];
-    valueBuffer.wrap(bytes);
-    buffer.getBytes(offset, bytes, 0, length);
-    offset += length;
-    return offset;
-  }
-
-  public static int writeIntoBuffer(
-      final MutableDirectBuffer writeBuffer, int offset, final DirectBuffer valueBuffer) {
-    final int valueLength = valueBuffer.capacity();
-    writeBuffer.putInt(offset, valueLength, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
-    writeBuffer.putBytes(offset, valueBuffer, 0, valueLength);
-    offset += valueLength;
-    return offset;
-  }
-
-  public static int writeIntoBuffer(
-      final MutableDirectBuffer writeBuffer, int offset, final BufferWriter value) {
-    final int valueLength = value.getLength();
-    writeBuffer.putInt(offset, valueLength, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
-    value.write(writeBuffer, offset);
-    return offset + valueLength;
-  }
-
-  /**
-   * NOTE: as opposed to readIntoBuffer above, this does not clone the buffer to be read, just wraps
-   * it.
-   */
-  public static int readIntoBuffer(
-      final DirectBuffer readBuffer, int offset, final BufferReader reader) {
-    final int valueLength = readBuffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
-    reader.wrap(readBuffer, offset, valueLength);
-
-    return offset + valueLength;
   }
 }

@@ -22,7 +22,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
-import io.atomix.raft.impl.zeebe.snapshot.DbSnapshotMetadata;
+import io.atomix.raft.snapshot.impl.FileBasedSnapshotMetadata;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.PartitionListener;
@@ -611,7 +611,7 @@ public final class ClusteringRule extends ExternalResource {
     return new File(dataDir, RAFT_PARTITION_PATH + "/snapshots");
   }
 
-  public DbSnapshotMetadata waitForSnapshotAtBroker(final Broker broker) {
+  public FileBasedSnapshotMetadata waitForSnapshotAtBroker(final Broker broker) {
     return waitForNewSnapshotAtBroker(broker, null);
   }
 
@@ -628,9 +628,10 @@ public final class ClusteringRule extends ExternalResource {
    * @throws IllegalStateException if no new snapshot has been found but {@link
    *     io.zeebe.test.util.TestUtil#waitUntil(BooleanSupplier)} did not fail
    */
-  DbSnapshotMetadata waitForNewSnapshotAtBroker(
-      final Broker broker, final DbSnapshotMetadata previousSnapshot) {
-    final var referenceToResult = new AtomicReference<>(Optional.<DbSnapshotMetadata>empty());
+  FileBasedSnapshotMetadata waitForNewSnapshotAtBroker(
+      final Broker broker, final FileBasedSnapshotMetadata previousSnapshot) {
+    final var referenceToResult =
+        new AtomicReference<>(Optional.<FileBasedSnapshotMetadata>empty());
     final File snapshotsDir = getSnapshotsDirectory(broker);
     waitUntil(
         () -> {
@@ -640,7 +641,7 @@ public final class ClusteringRule extends ExternalResource {
           }
 
           final var snapshotPath = files[0].toPath();
-          final var latestSnapshot = DbSnapshotMetadata.ofPath(snapshotPath);
+          final var latestSnapshot = FileBasedSnapshotMetadata.ofPath(snapshotPath);
           if (latestSnapshot.isPresent()
               && (previousSnapshot == null
                   || latestSnapshot.get().compareTo(previousSnapshot) > 0)) {

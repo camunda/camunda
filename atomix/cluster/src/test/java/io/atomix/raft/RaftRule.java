@@ -30,11 +30,12 @@ import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
+import io.atomix.raft.snapshot.PersistedSnapshot;
+import io.atomix.raft.snapshot.PersistedSnapshotListener;
+import io.atomix.raft.snapshot.PersistedSnapshotStore;
+import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.snapshot.Snapshot;
-import io.atomix.raft.storage.snapshot.SnapshotListener;
-import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageLevel;
@@ -67,6 +68,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.agrona.IoUtil;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -259,7 +261,7 @@ public final class RaftRule extends ExternalResource {
     for (final RaftServer raftServer : servers.values()) {
       if (raftServer.isRunning()) {
         final var raftContext = raftServer.getContext();
-        final var snapshotStore = raftContext.getSnapshotStore();
+        final var snapshotStore = raftContext.getPersistedSnapshotStore();
 
         compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
         writeSnapshot(index, raftContext.getTerm(), snapshotStore);
@@ -280,43 +282,50 @@ public final class RaftRule extends ExternalResource {
   public boolean allNodesHaveSnapshotWithIndex(final long index) {
     return servers.values().stream()
             .map(RaftServer::getContext)
-            .map(RaftContext::getSnapshotStore)
-            .map(SnapshotStore::getCurrentSnapshotIndex)
+            .map(RaftContext::getPersistedSnapshotStore)
+            .map(PersistedSnapshotStore::getCurrentSnapshotIndex)
             .filter(idx -> idx == index)
             .count()
         == servers.values().size();
   }
 
-  public Snapshot getSnapshotFromLeader() {
+  public PersistedSnapshot getSnapshotFromLeader() {
     final var leader = getLeader().orElseThrow();
     final var context = leader.getContext();
-    final var snapshotStore = context.getSnapshotStore();
-    return snapshotStore.getCurrentSnapshot();
+    final var snapshotStore = context.getPersistedSnapshotStore();
+    return snapshotStore.getLatestSnapshot().orElseThrow();
   }
 
-  public Snapshot getSnapshotOnNode(final String nodeId) {
+  public PersistedSnapshot getSnapshotOnNode(final String nodeId) {
     final var raftServer = servers.get(nodeId);
     final var context = raftServer.getContext();
-    final var snapshotStore = context.getSnapshotStore();
-    return snapshotStore.getCurrentSnapshot();
+    final var snapshotStore = context.getPersistedSnapshotStore();
+    return snapshotStore.getLatestSnapshot().orElseThrow();
   }
 
-  private void writeSnapshot(final long index, final long term, final SnapshotStore snapshotStore)
-      throws IOException {
-    final var dirName = index + "-snapshot";
-    final var snapshotDir = new File(snapshotStore.getPath().toFile(), dirName);
-    if (!snapshotDir.mkdirs()) {
-      throw new IllegalStateException("Was not able to create directory: " + snapshotDir.getName());
-    }
+  private void writeSnapshot(
+      final long index, final long term, final PersistedSnapshotStore persistedSnapshotStore) {
 
-    final var snapshotFile = new File(snapshotDir, "snapshot.file");
-    Files.write(
-        snapshotFile.toPath(),
-        RandomStringUtils.random(128).getBytes(),
-        StandardOpenOption.CREATE_NEW,
-        StandardOpenOption.WRITE);
-
-    snapshotStore.newSnapshot(index, term, new WallClockTimestamp(), snapshotDir.toPath());
+    final var transientSnapshot =
+        persistedSnapshotStore.newTransientSnapshot(index, term, new WallClockTimestamp());
+    transientSnapshot.take(
+        path -> {
+          IoUtil.ensureDirectoryExists(path.toFile(), "snapshot dir should exist");
+          final var snapshotFile = path.resolve("snapshot.file");
+          try {
+            Files.write(
+                snapshotFile,
+                RandomStringUtils.random(128).getBytes(),
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.WRITE);
+          } catch (final IOException e) {
+            e.printStackTrace();
+            return false;
+          }
+          // do something
+          return true;
+        });
+    transientSnapshot.persist();
   }
 
   public void awaitNewLeader() {
@@ -413,7 +422,9 @@ public final class RaftRule extends ExternalResource {
         memberId,
         b -> {
           final var storage = createStorage(memberId);
-          storage.getSnapshotStore().addListener(new RaftSnapshotListener(memberId));
+          storage
+              .getPersistedSnapshotStore()
+              .addSnapshotListener(new RaftSnapshotListener(memberId));
           return b.withStorage(storage);
         });
   }
@@ -439,12 +450,16 @@ public final class RaftRule extends ExternalResource {
       final MemberId memberId,
       final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
 
+    final var memberDirectory = getMemberDirectory(directory, memberId.toString());
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
             .withStorageLevel(StorageLevel.DISK)
-            .withDirectory(getMemberDirectory(directory, memberId.toString()))
+            .withDirectory(memberDirectory)
             .withMaxEntriesPerSegment(10)
             .withMaxSegmentSize(1024 * 10)
+            .withSnapshotStore(
+                new FileBasedSnapshotStoreFactory()
+                    .createSnapshotStore(memberDirectory.toPath(), "1"))
             .withNamespace(RaftNamespaces.RAFT_STORAGE);
     return configurator.apply(defaults).build();
   }
@@ -533,7 +548,7 @@ public final class RaftRule extends ExternalResource {
     FileUtil.deleteFolder(memberDirectory.toPath());
   }
 
-  private final class RaftSnapshotListener implements SnapshotListener {
+  private final class RaftSnapshotListener implements PersistedSnapshotListener {
 
     private final MemberId memberId;
 
@@ -542,11 +557,11 @@ public final class RaftRule extends ExternalResource {
     }
 
     @Override
-    public void onNewSnapshot(final Snapshot snapshot, final SnapshotStore store) {
+    public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
       final var raftServer = servers.get(memberId.id());
       final var raftContext = raftServer.getContext();
       final var serviceManager = raftContext.getServiceManager();
-      serviceManager.setCompactableIndex(snapshot.index());
+      serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
 
       raftServer
           .compact()
@@ -557,11 +572,6 @@ public final class RaftRule extends ExternalResource {
                   latch.countDown();
                 }
               });
-    }
-
-    @Override
-    public void onSnapshotDeletion(final Snapshot snapshot, final SnapshotStore store) {
-      // what should I do
     }
   }
 

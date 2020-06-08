@@ -40,6 +40,7 @@ import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
+import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
@@ -79,8 +80,6 @@ import org.mockito.Mockito;
 /** Raft test. */
 public class RaftTest extends ConcurrentTestCase {
 
-  public static AtomicLong snapshots = new AtomicLong(0);
-
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private volatile int nextId;
   private volatile List<RaftMember> members;
@@ -94,7 +93,6 @@ public class RaftTest extends ConcurrentTestCase {
   @Before
   @After
   public void clearTests() throws Exception {
-    snapshots = new AtomicLong(0);
     servers.forEach(
         s -> {
           try {
@@ -194,11 +192,14 @@ public class RaftTest extends ConcurrentTestCase {
   private RaftStorage createStorage(
       final MemberId memberId,
       final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
+    final var directory = new File(this.directory.toFile(), memberId.toString());
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
             .withStorageLevel(StorageLevel.DISK)
-            .withDirectory(new File(directory.toFile(), memberId.toString()))
+            .withDirectory(directory)
             .withMaxEntriesPerSegment(10)
+            .withSnapshotStore(
+                new FileBasedSnapshotStoreFactory().createSnapshotStore(directory.toPath(), "1"))
             .withMaxSegmentSize(1024 * 10)
             .withNamespace(RaftNamespaces.RAFT_STORAGE);
     return configurator.apply(defaults).build();

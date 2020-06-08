@@ -33,7 +33,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftStateMachineFactory;
-import io.atomix.raft.storage.snapshot.SnapshotStoreFactory;
+import io.atomix.raft.snapshot.PersistedSnapshotStoreFactory;
 import io.atomix.storage.StorageLevel;
 import io.atomix.utils.concurrent.BlockingAwareThreadPoolContextFactory;
 import io.atomix.utils.concurrent.Futures;
@@ -474,11 +474,12 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     /**
      * Sets the Raft snapshot store factory to use.
      *
-     * @param snapshotStoreFactory the new snapshot store factory to use
+     * @param persistedSnapshotStoreFactory the new snapshot store factory to use
      * @return the Raft partition group builder
      */
-    public Builder withSnapshotStoreFactory(final SnapshotStoreFactory snapshotStoreFactory) {
-      config.getStorageConfig().setSnapshotStoreFactory(snapshotStoreFactory);
+    public Builder withSnapshotStoreFactory(
+        final PersistedSnapshotStoreFactory persistedSnapshotStoreFactory) {
+      config.getStorageConfig().setPersistedSnapshotStoreFactory(persistedSnapshotStoreFactory);
       return this;
     }
 

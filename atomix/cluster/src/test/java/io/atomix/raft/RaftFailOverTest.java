@@ -166,8 +166,8 @@ public class RaftFailOverTest {
     assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
     final var snapshot = raftRule.getSnapshotOnNode(follower);
 
-    assertThat(snapshot.index()).isEqualTo(leaderSnapshot.index()).isEqualTo(100);
-    assertThat(snapshot.term()).isEqualTo(snapshot.term());
+    assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(100);
+    assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
   }
 
   @Test
@@ -227,8 +227,8 @@ public class RaftFailOverTest {
     assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
     final var snapshot = raftRule.getSnapshotOnNode(follower);
 
-    assertThat(snapshot.index()).isEqualTo(leaderSnapshot.index()).isEqualTo(100);
-    assertThat(snapshot.term()).isEqualTo(snapshot.term());
+    assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(100);
+    assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
   }
 
   @Test
@@ -276,8 +276,8 @@ public class RaftFailOverTest {
     assertThat(raftRule.allNodesHaveSnapshotWithIndex(300)).isTrue();
     final var snapshot = raftRule.getSnapshotOnNode(follower);
 
-    assertThat(snapshot.index()).isEqualTo(leaderSnapshot.index()).isEqualTo(300);
-    assertThat(snapshot.term()).isEqualTo(snapshot.term());
+    assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(300);
+    assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
   }
 
   @Test
@@ -298,8 +298,8 @@ public class RaftFailOverTest {
     assertThat(raftRule.allNodesHaveSnapshotWithIndex(200)).isTrue();
     final var snapshot = raftRule.getSnapshotOnNode(leader);
 
-    assertThat(snapshot.index()).isEqualTo(leaderSnapshot.index()).isEqualTo(200);
-    assertThat(snapshot.term()).isEqualTo(snapshot.term());
+    assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(200);
+    assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
   }
 
   @Test

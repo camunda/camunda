@@ -27,10 +27,10 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.storage.StorageException;
@@ -76,8 +76,8 @@ public class LeaderRoleTest {
             });
     when(context.getLogWriter()).thenReturn(writer);
 
-    final SnapshotStore snapshotStore = mock(SnapshotStore.class);
-    when(context.getSnapshotStore()).thenReturn(snapshotStore);
+    final PersistedSnapshotStore persistedSnapshotStore = mock(PersistedSnapshotStore.class);
+    when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
 
     leaderRole = new LeaderRole(context);
     // since we mock RaftContext we should simulate leader close on transition

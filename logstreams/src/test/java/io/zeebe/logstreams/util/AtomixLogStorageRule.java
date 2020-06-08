@@ -10,10 +10,10 @@ package io.zeebe.logstreams.util;
 import static org.mockito.Mockito.spy;
 
 import io.atomix.raft.partition.impl.RaftNamespaces;
+import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
@@ -48,7 +48,7 @@ public final class AtomixLogStorageRule extends ExternalResource
   private ZeebeIndexAdapter indexMapping;
   private RaftStorage raftStorage;
   private RaftLog raftLog;
-  private SnapshotStore snapshotStore;
+  private PersistedSnapshotStore persistedSnapshotStore;
   private MetaStore metaStore;
 
   private AtomixLogStorage storage;
@@ -156,7 +156,7 @@ public final class AtomixLogStorageRule extends ExternalResource
             .withJournalIndexFactory(() -> indexMapping)
             .build();
     raftLog = raftStorage.openLog();
-    snapshotStore = raftStorage.getSnapshotStore();
+    persistedSnapshotStore = raftStorage.getPersistedSnapshotStore();
     metaStore = raftStorage.openMetaStore();
 
     storage = spy(new AtomixLogStorage(indexMapping, this, this));
@@ -165,8 +165,8 @@ public final class AtomixLogStorageRule extends ExternalResource
   public void close() {
     Optional.ofNullable(raftLog).ifPresent(RaftLog::close);
     raftLog = null;
-    Optional.ofNullable(snapshotStore).ifPresent(SnapshotStore::close);
-    snapshotStore = null;
+    Optional.ofNullable(persistedSnapshotStore).ifPresent(PersistedSnapshotStore::close);
+    persistedSnapshotStore = null;
     Optional.ofNullable(metaStore).ifPresent(MetaStore::close);
     metaStore = null;
     Optional.ofNullable(storage).ifPresent(AtomixLogStorage::close);
@@ -192,8 +192,8 @@ public final class AtomixLogStorageRule extends ExternalResource
     return raftLog;
   }
 
-  public SnapshotStore getSnapshotStore() {
-    return snapshotStore;
+  public PersistedSnapshotStore getPersistedSnapshotStore() {
+    return persistedSnapshotStore;
   }
 
   public MetaStore getMetaStore() {

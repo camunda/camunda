@@ -16,9 +16,9 @@ import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
 import io.atomix.core.AtomixBuilder;
 import io.atomix.core.AtomixConfig;
-import io.atomix.raft.impl.zeebe.snapshot.DbSnapshotStoreFactory;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroup.Builder;
+import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -92,7 +92,7 @@ public final class AtomixFactory {
             .withPartitionSize(clusterCfg.getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
-            .withSnapshotStoreFactory(new DbSnapshotStoreFactory())
+            .withSnapshotStoreFactory(new FileBasedSnapshotStoreFactory())
             .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withFlushOnCommit();
 

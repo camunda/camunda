@@ -7,8 +7,8 @@
  */
 package io.zeebe.engine.util;
 
-import io.zeebe.engine.processor.workflow.message.command.MessageHeaderDecoder;
-import io.zeebe.engine.processor.workflow.message.command.MessageHeaderEncoder;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
+import io.zeebe.protocol.record.MessageHeaderEncoder;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;

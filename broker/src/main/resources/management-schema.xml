@@ -37,46 +37,4 @@
     <field name="partitionId" id="0" type="uint16"/>
     <field name="deploymentKey" id="1" type="uint64"/>
   </sbe:message>
-
-  <sbe:message name="SnapshotChunk" id="4">
-    <field name="totalCount" id="0" type="int32"/>
-    <field name="checksum" id="1" type="uint64"/>
-    <field name="snapshotChecksum" id="5" type="uint64" sinceVersion="2"/>
-    <data name="snapshotId" id="2" type="varDataEncoding"/>
-    <data name="chunkName" id="3" type="varDataEncoding"/>
-    <data name="content" id="4" type="blob"/>
-  </sbe:message>
-
-  <sbe:message name="LogReplicationRequest" id="5">
-    <field name="fromPosition" id="0" type="uint64"/>
-    <field name="toPosition" id="1" type="uint64"/>
-    <field name="includeFromPosition" id="2" type="BooleanType"/>
-  </sbe:message>
-
-  <sbe:message name="LogReplicationResponse" id="6">
-    <field name="toPosition" id="0" type="uint64"/>
-    <field name="moreAvailable" id="1" type="BooleanType"/>
-    <data name="serializedEvents" id="2" type="blob"/>
-  </sbe:message>
-
-  <sbe:message name="RestoreInfoRequest" id="7">
-    <field name="latestLocalPosition" id="0" type="uint64"/>
-    <field name="backupPosition" id="1" type="uint64"/>
-  </sbe:message>
-
-  <sbe:message name="RestoreInfoResponse" id="8">
-    <field name="replicationTarget" id="0" type="uint8"/>
-    <field name="snapshotId" id="1" type="uint64"/>
-    <field name="numChunks" id="2" type="uint16"/>
-  </sbe:message>
-
-  <sbe:message name="SnapshotRestoreRequest" id="9">
-    <field name="snapshotId" id="0" type="uint64"/>
-    <field name="chunkIdx" id="1" type="uint16"/>
-  </sbe:message>
-
-  <sbe:message name="SnapshotRestoreResponse" id="10">
-    <field name="success" id="0" type="BooleanType"/>
-    <data name="snapshotChunk" id="1" type="blob"/>
-  </sbe:message>
 </sbe:messageSchema>

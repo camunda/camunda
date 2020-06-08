@@ -10,19 +10,14 @@ package io.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.impl.zeebe.snapshot.AtomixSnapshotStorage;
-import io.atomix.raft.impl.zeebe.snapshot.NoneSnapshotReplication;
-import io.atomix.raft.impl.zeebe.snapshot.SnapshotMetrics;
-import io.atomix.raft.impl.zeebe.snapshot.SnapshotReplication;
-import io.atomix.raft.impl.zeebe.snapshot.SnapshotStorage;
 import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.engine.impl.StateReplication;
 import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.zeebe.broker.exporter.repo.ExporterRepository;
@@ -35,7 +30,11 @@ import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
-import io.zeebe.broker.system.partitions.impl.StateSnapshotController;
+import io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
+import io.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
+import io.zeebe.broker.system.partitions.impl.StateControllerImpl;
+import io.zeebe.broker.system.partitions.impl.StateReplication;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processor.StreamProcessor;
@@ -43,7 +42,6 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
-import io.zeebe.logstreams.storage.atomix.AtomixRecordEntrySupplierImpl;
 import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.FileUtil;
@@ -58,7 +56,6 @@ import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -92,8 +89,8 @@ public final class ZeebePartition extends Actor
   private LogStream logStream;
   private Role raftRole;
   private SnapshotReplication stateReplication;
-  private SnapshotStorage snapshotStorage;
-  private StateSnapshotController snapshotController;
+  private PersistedSnapshotStore persistedSnapshotStore;
+  private StateControllerImpl snapshotController;
   private ZeebeDb zeebeDb;
   private final String actorName;
   private FailureListener failureListener;
@@ -406,43 +403,34 @@ public final class ZeebePartition extends Actor
       return CompletableActorFuture.completedExceptionally(e);
     }
 
-    snapshotStorage = createSnapshotStorage(pendingDirectory);
+    persistedSnapshotStore = atomixRaftPartition.getServer().getPersistedSnapshotStore();
     snapshotController = createSnapshotController();
 
     final LogCompactor logCompactor = new AtomixLogCompactor(atomixRaftPartition.getServer());
     final LogDeletionService deletionService =
-        new LogDeletionService(localBroker.getNodeId(), partitionId, logCompactor, snapshotStorage);
+        new LogDeletionService(
+            localBroker.getNodeId(), partitionId, logCompactor, persistedSnapshotStore);
     closeables.add(deletionService);
 
     return scheduler.submitActor(deletionService);
   }
 
-  private StateSnapshotController createSnapshotController() {
+  private StateControllerImpl createSnapshotController() {
+    final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
+    final var reader = atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS);
     stateReplication =
         shouldReplicateSnapshots()
             ? new StateReplication(messagingService, partitionId, localBroker.getNodeId())
             : new NoneSnapshotReplication();
 
-    return new StateSnapshotController(
+    return new StateControllerImpl(
+        partitionId,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-        snapshotStorage,
-        stateReplication,
-        StatePositionSupplier::getHighestExportedPosition);
-  }
-
-  // sonar warns that we should use AtomixRecordEntrySupplierImpl in a try-with-resources, which is
-  // not applicable here; it is safe to ignore as we will close the object once we close the storage
-  @SuppressWarnings("squid:S2095")
-  private SnapshotStorage createSnapshotStorage(final Path pendingDirectory) {
-    final var reader = atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS);
-    final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
-
-    return new AtomixSnapshotStorage(
+        persistedSnapshotStore,
         runtimeDirectory,
-        pendingDirectory,
-        atomixRaftPartition.getServer().getSnapshotStore(),
+        stateReplication,
         new AtomixRecordEntrySupplierImpl(zeebeIndexMapping, reader),
-        new SnapshotMetrics(partitionId));
+        StatePositionSupplier::getHighestExportedPosition);
   }
 
   private boolean shouldReplicateSnapshots() {
@@ -581,17 +569,17 @@ public final class ZeebePartition extends Actor
   }
 
   private void closeSnapshotStorage() {
-    if (snapshotStorage == null) {
+    if (persistedSnapshotStore == null) {
       return;
     }
 
     try {
-      snapshotStorage.close();
+      persistedSnapshotStore.close();
     } catch (final Exception e) {
       LOG.error(
           "Unexpected error occurred closing snapshot storage for partition {}", partitionId, e);
     } finally {
-      snapshotStorage = null;
+      persistedSnapshotStore = null;
     }
   }
 

@@ -31,9 +31,9 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.roles.RaftRole;
+import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.JournalReader.Mode;
@@ -72,7 +72,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   private final Set<Runnable> deferredFailureListeners = new CopyOnWriteArraySet<>();
 
   private RaftServer server;
-  private SnapshotStore snapshotStore;
+  private PersistedSnapshotStore persistedSnapshotStore;
   private final Supplier<JournalIndex> journalIndexFactory;
 
   public RaftPartitionServer(
@@ -147,10 +147,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   }
 
   private RaftServer buildServer() {
-    snapshotStore =
+    persistedSnapshotStore =
         config
             .getStorageConfig()
-            .getSnapshotStoreFactory()
+            .getPersistedSnapshotStoreFactory()
             .createSnapshotStore(partition.dataDirectory().toPath(), partition.name());
 
     return RaftServer.builder(localMemberId)
@@ -227,8 +227,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     server.getContext().removeCommitListener(commitListener);
   }
 
-  public SnapshotStore getSnapshotStore() {
-    return snapshotStore;
+  public PersistedSnapshotStore getPersistedSnapshotStore() {
+    return persistedSnapshotStore;
   }
 
   /** Deletes the server. */
@@ -304,7 +304,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withFreeDiskBuffer(compactionConfig.getFreeDiskBuffer())
         .withFreeMemoryBuffer(compactionConfig.getFreeMemoryBuffer())
         .withNamespace(RaftNamespaces.RAFT_STORAGE)
-        .withSnapshotStore(snapshotStore)
+        .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexFactory(journalIndexFactory)
         .build();
   }
