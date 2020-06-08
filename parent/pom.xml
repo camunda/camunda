@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -43,7 +45,7 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.14</version.commons-codec>
-    <version.elasticsearch>6.8.8</version.elasticsearch>
+    <version.elasticsearch>6.8.9</version.elasticsearch>
     <version.error-prone>2.3.4</version.error-prone>
     <version.grpc>1.28.1</version.grpc>
     <version.gson>2.8.6</version.gson>
@@ -56,7 +58,7 @@
     <version.jackson>2.10.3</version.jackson>
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.junit>4.13</version.junit>
-    <version.log4j>2.13.0</version.log4j>
+    <version.log4j>2.13.3</version.log4j>
     <version.mockito>3.3.3</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.20</version.msgpack>
@@ -188,7 +190,6 @@
         <artifactId>jackson-dataformat-msgpack</artifactId>
         <version>${version.msgpack}</version>
       </dependency>
-
 
 
       <dependency>
@@ -886,7 +887,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -979,7 +980,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
                 </rules>
               </configuration>
             </execution>

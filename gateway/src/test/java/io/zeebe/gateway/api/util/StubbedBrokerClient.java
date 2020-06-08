@@ -117,7 +117,8 @@ public final class StubbedBrokerClient implements BrokerClient {
   }
 
   @FunctionalInterface
-  interface RequestHandler<RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>> {
+  public interface RequestHandler<
+      RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>> {
     ResponseT handle(RequestT request) throws Exception;
   }
 }
