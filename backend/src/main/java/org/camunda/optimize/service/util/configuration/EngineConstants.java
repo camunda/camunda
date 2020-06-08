@@ -87,4 +87,13 @@ public class EngineConstants {
   public static final String IDENTITY_LINK_TYPE_ASSIGNEE = "assignee";
   public static final String IDENTITY_LINK_TYPE_CANDIDATE = "candidate";
 
+  public static final String SUSPEND_PROCESS_INSTANCE_OPERATION = "Suspend";
+  public static final String ACTIVATE_PROCESS_INSTANCE_OPERATION = "Activate";
+  public static final String PROCESS_INSTANCE_ENTITY_TYPE = "ProcessInstance";
+  public static final String SUSPEND_PROCESS_DEFINITION_OPERATION = "SuspendProcessDefinition";
+  public static final String ACTIVATE_PROCESS_DEFINITION_OPERATION = "ActivateProcessDefinition";
+  public static final String INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD = "includeProcessInstances";
+  public static final String SUSPEND_VIA_BATCH_OPERATION_TYPE = "SuspendJob";
+  public static final String ACTIVATE_VIA_BATCH_OPERATION_TYPE = "ActivateJob";
+
 }

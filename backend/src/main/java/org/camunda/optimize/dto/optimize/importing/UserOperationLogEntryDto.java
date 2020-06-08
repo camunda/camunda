@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.importing;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
@@ -15,18 +16,19 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import java.time.OffsetDateTime;
 
 @Accessors(chain = true)
-@AllArgsConstructor
+@Builder
 @Data
 @FieldNameConstants(asEnum = true)
 public class UserOperationLogEntryDto implements OptimizeDto {
   private String id;
 
   @JsonIgnore
-  private String processInstanceId;
+  private String processDefinitionId;
   @JsonIgnore
-  private String engine;
+  private String processDefinitionKey;
+  @JsonIgnore
+  private String processInstanceId;
 
-  private String property;
-  private String newValue;
+  private UserOperationType operationType;
   private OffsetDateTime timestamp;
 }

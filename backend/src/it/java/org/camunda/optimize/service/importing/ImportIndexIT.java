@@ -63,7 +63,7 @@ public class ImportIndexIT extends AbstractImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     // as well as running & suspended ones
     final ProcessInstanceEngineDto processInstanceToSuspend = deployAndStartUserTaskProcess();
-    engineIntegrationExtension.suspendProcessInstance(processInstanceToSuspend.getId());
+    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstanceToSuspend.getId());
     deployAndStartSimpleServiceTask();
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.createTenant("id", "name");

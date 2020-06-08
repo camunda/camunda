@@ -156,8 +156,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     finishAllUserTasksForAllEngines();
     // as well as running & suspended ones
     final List<ProcessInstanceEngineDto> processInstancesToSuspend = deployAndStartUserTaskProcessForAllEngines();
-    engineIntegrationExtension.suspendProcessInstance(processInstancesToSuspend.get(0).getId());
-    secondaryEngineIntegrationExtension.suspendProcessInstance(processInstancesToSuspend.get(1).getId());
+    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstancesToSuspend.get(0).getId());
+    secondaryEngineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstancesToSuspend.get(1).getId());
     deployAndStartDecisionDefinitionForAllEngines();
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();

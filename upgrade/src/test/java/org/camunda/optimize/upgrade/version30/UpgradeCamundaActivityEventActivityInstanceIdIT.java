@@ -105,24 +105,26 @@ public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpg
       CamundaActivityEventDto.class
     )).hasSize(5)
       .extracting(CamundaActivityEventDto::getActivityInstanceId)
-      .contains(FIRST_INSTANCE_ID + PROCESS_START_SUFFIX,
-                FIRST_INSTANCE_ID + PROCESS_END_SUFFIX,
-                OTHER_INSTANCE_ID,
-                // These are the IDs of the original documents
-                "c5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_START_SUFFIX,
-                "d5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_END_SUFFIX
+      .contains(
+        FIRST_INSTANCE_ID + PROCESS_START_SUFFIX,
+        FIRST_INSTANCE_ID + PROCESS_END_SUFFIX,
+        OTHER_INSTANCE_ID,
+        // These are the IDs of the original documents
+        "c5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_START_SUFFIX,
+        "d5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_END_SUFFIX
       );
     assertThat(getAllDocumentsOfIndex(
       new CamundaActivityEventIndex(SECOND_DEFINITION_KEY).getIndexName(),
       CamundaActivityEventDto.class
     )).hasSize(5)
       .extracting(CamundaActivityEventDto::getActivityInstanceId)
-      .contains(SECOND_INSTANCE_ID + PROCESS_START_SUFFIX,
-                SECOND_INSTANCE_ID + PROCESS_END_SUFFIX,
-                OTHER_INSTANCE_ID,
-                // These are the IDs of the original documents
-                "x5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_START_SUFFIX,
-                "y5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_END_SUFFIX
+      .contains(
+        SECOND_INSTANCE_ID + PROCESS_START_SUFFIX,
+        SECOND_INSTANCE_ID + PROCESS_END_SUFFIX,
+        OTHER_INSTANCE_ID,
+        // These are the IDs of the original documents
+        "x5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_START_SUFFIX,
+        "y5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_END_SUFFIX
       );
   }
 

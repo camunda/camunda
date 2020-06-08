@@ -71,7 +71,7 @@ public class ImportIT extends AbstractImportIT {
     engineIntegrationExtension.createGroup(testCandidateGroup);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(testCandidateGroup);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.suspendProcessInstance(processInstance.getId());
+    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstance.getId());
 
     // when fetching endpoint temporarily fails
     final HttpRequest importFetcherEndpointMatcher = request()

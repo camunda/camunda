@@ -27,10 +27,10 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.US
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class UserOperationLogInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricUserOperationLogDto> {
+public class UserOperationLogFetcher extends RetryBackoffEngineEntityFetcher<HistoricUserOperationLogDto> {
   private DateTimeFormatter dateTimeFormatter;
 
-  public UserOperationLogInstanceFetcher(final EngineContext engineContext) {
+  public UserOperationLogFetcher(final EngineContext engineContext) {
     super(engineContext);
   }
 

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
-import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogInstanceFetcher;
+import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.UserOperationLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.UserOperationLogImportService;
@@ -36,10 +36,11 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractImportM
 
     return new UserOperationLogEngineImportMediator(
       importIndexHandlerRegistry.getUserOperationsLogImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(UserOperationLogInstanceFetcher.class, engineContext),
+      beanFactory.getBean(UserOperationLogFetcher.class, engineContext),
       new UserOperationLogImportService(
         elasticsearchImportJobExecutor,
-        runningProcessInstanceWriter
+        runningProcessInstanceWriter,
+        importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias())
       ),
       configurationService,
       elasticsearchImportJobExecutor,

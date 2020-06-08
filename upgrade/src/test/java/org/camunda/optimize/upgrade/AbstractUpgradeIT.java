@@ -11,7 +11,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
@@ -61,11 +60,6 @@ public abstract class AbstractUpgradeIT {
   protected static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
   protected static final TimestampBasedImportIndex TIMESTAMP_BASED_IMPORT_INDEX = new TimestampBasedImportIndex();
   protected static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
-
-  protected static final List<IndexMappingCreator> ALL_INDEXES =
-    Lists.newArrayList(
-      METADATA_INDEX
-    );
 
   private ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;

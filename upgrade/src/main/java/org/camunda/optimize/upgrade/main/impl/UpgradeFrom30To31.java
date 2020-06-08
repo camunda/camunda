@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -45,6 +46,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEF
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class UpgradeFrom30To31 extends UpgradeProcedure {
   public static final String FROM_VERSION = "3.0.0";
@@ -76,7 +79,8 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateExcludedColumnsToNewVersionForProcessReports())
       .addUpgradeStep(migrateExcludedColumnsToNewVersionForDecisionReports())
       .addUpgradeStep(migrateProcessReportBooleanVariableFilter())
-      .addUpgradeStep(migrateDecisionReportBooleanVariableFilter());
+      .addUpgradeStep(migrateDecisionReportBooleanVariableFilter())
+      .addUpgradeStep(resetRunningProcessInstanceImport());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteCamundaTraceStateIndices(upgradeBuilder);
     deleteCamundaSequenceCountIndices(upgradeBuilder);
@@ -339,6 +343,20 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
           TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo,
           EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX
         ))
+    );
+  }
+
+  private UpgradeStep resetRunningProcessInstanceImport() {
+    final String runningProcessInstanceImportIndexName = "runningProcessInstanceImportIndex";
+    final String script =
+      "ctx._source.timestampOfLastEntity = \"1970-01-01T01:00:00.000+0100\"";
+    return new UpdateDataStep(
+      TIMESTAMP_BASED_IMPORT_INDEX_NAME,
+      boolQuery().must(termsQuery(
+        TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO,
+        runningProcessInstanceImportIndexName
+      )),
+      script
     );
   }
 
