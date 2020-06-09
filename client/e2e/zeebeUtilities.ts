@@ -14,7 +14,7 @@ const deploy: typeof zbc.deployWorkflow = (processNames) => {
   return zbc.deployWorkflow(processNames);
 };
 
-const createInstances = <Variables = ZB.GenericWorkflowVariables>(
+const createInstances = <Variables = ZB.WorkflowVariables>(
   bpmnProcessId: string,
   version: number,
   numberOfInstances: number,
