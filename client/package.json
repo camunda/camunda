@@ -65,7 +65,7 @@
     ]
   },
   "devDependencies": {
-    "@types/history": "^4.7.5",
+    "@types/history": "^4.7.6",
     "eslint-plugin-camunda-licensed": "^0.4.3",
     "history": "^4.10.1",
     "http-proxy-middleware": "^1.0.4",
