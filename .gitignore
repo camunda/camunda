@@ -24,6 +24,7 @@ faces-config.NavData
 .cache-tests
 
 *.DS_Store
+.java-version
 .gradle
 work/
 public/
