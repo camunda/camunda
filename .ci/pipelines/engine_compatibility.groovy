@@ -231,7 +231,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.11.12', env.ES_VERSION)
+              yaml integrationTestPodSpec('7.11.13', env.ES_VERSION)
             }
           }
           steps {
@@ -249,7 +249,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.12_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.12.5', env.ES_VERSION)
+              yaml integrationTestPodSpec('7.12.6', env.ES_VERSION)
             }
           }
           steps {

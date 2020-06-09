@@ -113,7 +113,7 @@
     <profile>
       <id>engine-7.12</id>
       <properties>
-        <camunda.engine.version>7.12.5</camunda.engine.version>
+        <camunda.engine.version>7.12.6</camunda.engine.version>
         <engine.profile.id>engine-7.12</engine.profile.id>
       </properties>
     </profile>
@@ -121,7 +121,7 @@
     <profile>
       <id>engine-7.11</id>
       <properties>
-        <camunda.engine.version>7.11.12</camunda.engine.version>
+        <camunda.engine.version>7.11.13</camunda.engine.version>
         <engine.profile.id>engine-7.11</engine.profile.id>
       </properties>
     </profile>
