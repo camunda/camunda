@@ -10,7 +10,7 @@
   "devDependencies": {
     "lodash.memoize": "^4.1.2",
     "node-fetch": "^2.6.0",
-    "testcafe": "^1.7.1",
+    "testcafe": "^1.8.6",
     "zeebe-node": "^0.22.1"
   }
 }
