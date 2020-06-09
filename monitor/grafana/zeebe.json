@@ -14,7 +14,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "6.3.5"
+      "version": "6.7.1"
     },
     {
       "type": "panel",
@@ -50,6 +50,7 @@
   "annotations": {
     "list": [
       {
+        "$$hashKey": "object:45",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -64,7 +65,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1587026668314,
+  "iteration": 1591678737501,
   "links": [],
   "panels": [
     {
@@ -95,7 +96,6 @@
           },
           "id": 68,
           "links": [],
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -216,6 +216,7 @@
             "x": 5,
             "y": 1
           },
+          "hiddenSeries": false,
           "id": 116,
           "legend": {
             "avg": false,
@@ -314,6 +315,7 @@
               "value": "current"
             }
           ],
+          "datasource": "${DS_PROMETHEUS}",
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
@@ -322,7 +324,6 @@
             "y": 1
           },
           "id": 129,
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -429,7 +430,6 @@
             "y": 1
           },
           "id": 54,
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -518,6 +518,7 @@
             "x": 0,
             "y": 10
           },
+          "hiddenSeries": false,
           "id": 58,
           "legend": {
             "alignAsTable": false,
@@ -647,7 +648,6 @@
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
-          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -706,6 +706,7 @@
             "x": 15,
             "y": 10
           },
+          "hiddenSeries": false,
           "id": 74,
           "legend": {
             "avg": false,
@@ -823,7 +824,6 @@
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
-          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -882,6 +882,7 @@
             "x": 0,
             "y": 18
           },
+          "hiddenSeries": false,
           "id": 87,
           "legend": {
             "avg": false,
@@ -992,6 +993,7 @@
             "x": 12,
             "y": 18
           },
+          "hiddenSeries": false,
           "id": 31,
           "legend": {
             "avg": false,
@@ -1102,6 +1104,7 @@
             "x": 0,
             "y": 26
           },
+          "hiddenSeries": false,
           "id": 62,
           "legend": {
             "avg": false,
@@ -1190,6 +1193,7 @@
             "x": 12,
             "y": 26
           },
+          "hiddenSeries": false,
           "id": 93,
           "legend": {
             "avg": false,
@@ -2014,8 +2018,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2
+            "y": 3
           },
+          "hiddenSeries": false,
           "id": 102,
           "legend": {
             "avg": false,
@@ -2091,91 +2096,68 @@
           }
         },
         {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateOranges",
+            "exponent": 0.5,
+            "mode": "opacity"
+          },
+          "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
           "description": "Approximate duration of taking a single snapshot from the processor point-of-view (without replication or committing).",
-          "fill": 1,
-          "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2
+            "y": 3
           },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
           "id": 112,
           "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
+            "show": false
           },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "dataLinks": []
-          },
-          "percentage": false,
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
+          "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "zeebe_snapshot_duration_milliseconds{namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
-              "legendFormat": "{{pod}} p{{partition}}",
+              "expr": "sum(increase(zeebe_snapshot_duration_bucket{namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "",
+              "legendFormat": "{{le}}",
               "refId": "A"
             }
           ],
-          "thresholds": [],
           "timeFrom": null,
-          "timeRegions": [],
           "timeShift": null,
           "title": "Snapshot Operation Duration",
           "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
             "show": true,
-            "values": []
+            "showHistogram": false
           },
-          "yaxes": [
-            {
-              "format": "ms",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
         },
         {
           "aliasColors": {},
@@ -2190,8 +2172,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 11
           },
+          "hiddenSeries": false,
           "id": 105,
           "legend": {
             "avg": false,
@@ -2283,7 +2266,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 11
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -2292,7 +2275,6 @@
           "legend": {
             "show": false
           },
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -2341,8 +2323,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 18
+            "y": 19
           },
+          "hiddenSeries": false,
           "id": 108,
           "legend": {
             "avg": false,
@@ -2428,8 +2411,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 19
           },
+          "hiddenSeries": false,
           "id": 110,
           "legend": {
             "avg": false,
@@ -2531,6 +2515,7 @@
             "x": 0,
             "y": 38
           },
+          "hiddenSeries": false,
           "id": 33,
           "legend": {
             "avg": false,
@@ -2632,6 +2617,7 @@
             "x": 12,
             "y": 38
           },
+          "hiddenSeries": false,
           "id": 98,
           "legend": {
             "avg": false,
@@ -2743,6 +2729,7 @@
             "x": 0,
             "y": 46
           },
+          "hiddenSeries": false,
           "id": 64,
           "legend": {
             "avg": false,
@@ -2838,6 +2825,7 @@
             "x": 12,
             "y": 46
           },
+          "hiddenSeries": false,
           "id": 35,
           "legend": {
             "avg": false,
@@ -2927,6 +2915,7 @@
             "x": 0,
             "y": 54
           },
+          "hiddenSeries": false,
           "id": 37,
           "legend": {
             "avg": false,
@@ -3022,6 +3011,7 @@
             "x": 12,
             "y": 54
           },
+          "hiddenSeries": false,
           "id": 40,
           "legend": {
             "avg": false,
@@ -3111,6 +3101,7 @@
             "x": 0,
             "y": 62
           },
+          "hiddenSeries": false,
           "id": 39,
           "legend": {
             "avg": false,
@@ -3221,8 +3212,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 70
           },
+          "hiddenSeries": false,
           "id": 122,
           "legend": {
             "avg": false,
@@ -3308,8 +3300,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 70
           },
+          "hiddenSeries": false,
           "id": 124,
           "legend": {
             "avg": false,
@@ -3395,8 +3388,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 78
           },
+          "hiddenSeries": false,
           "id": 126,
           "legend": {
             "avg": false,
@@ -3482,8 +3476,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 78
           },
+          "hiddenSeries": false,
           "id": 127,
           "legend": {
             "avg": false,
@@ -3600,7 +3595,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -3665,7 +3659,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -3730,7 +3723,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -3795,7 +3787,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -3860,7 +3851,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4321,7 +4311,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 82
+            "y": 73
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4331,7 +4321,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4386,7 +4375,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 82
+            "y": 73
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4396,7 +4385,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4446,8 +4434,9 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 88
+            "y": 79
           },
+          "hiddenSeries": false,
           "id": 79,
           "legend": {
             "avg": false,
@@ -4537,8 +4526,9 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 88
+            "y": 79
           },
+          "hiddenSeries": false,
           "id": 114,
           "legend": {
             "avg": false,
@@ -4629,7 +4619,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 95
+            "y": 86
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4639,7 +4629,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4694,7 +4683,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 95
+            "y": 86
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4704,7 +4693,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4760,7 +4748,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 102
+            "y": 93
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4770,7 +4758,6 @@
             "show": true
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4821,8 +4808,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 102
+            "y": 93
           },
+          "hiddenSeries": false,
           "id": 72,
           "legend": {
             "avg": false,
@@ -4914,8 +4902,9 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 110
+            "y": 101
           },
+          "hiddenSeries": false,
           "id": 95,
           "legend": {
             "alignAsTable": true,
@@ -5270,7 +5259,7 @@
     "list": [
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "Prometheus",
           "value": "Prometheus"
         },
