@@ -41,7 +41,7 @@ const singleReportData = {
     type: 'flowNodes',
     value: null,
   },
-  configuration: {},
+  configuration: {groupByDateVariableUnit: 'day'},
   visualization: 'bar',
 };
 
@@ -78,7 +78,15 @@ const reportsList = [
     combined: false,
     collectionId: null,
     reportType: 'process',
-    data: singleReportData,
+    data: {
+      ...singleReportData,
+      groupBy: {
+        type: 'variable',
+        value: {
+          type: 'Date',
+        },
+      },
+    },
   },
   {
     id: 'reportInAnotherCollection',
@@ -203,6 +211,20 @@ describe('isCompatible', () => {
     };
 
     expect(node.instance().isCompatible(reportSameProperty)).toBeFalsy();
+  });
+
+  it('should only allow to combine if both reports have the same variable grouping', async () => {
+    const reportWithDifferentDateConfiguration = {
+      ...reportsList[2],
+      data: {
+        ...reportsList[2].data,
+        configuration: {
+          groupByDateVariableUnit: 'month',
+        },
+      },
+    };
+
+    expect(node.instance().isCompatible(reportWithDifferentDateConfiguration)).toBeFalsy();
   });
 
   it('should allow to combined a userTask duration report with a flowNode duration report', async () => {

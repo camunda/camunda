@@ -174,7 +174,7 @@ export function formatReportResult(data, result) {
   if (groupBy.value && groupBy.type.includes('Date')) {
     unit = determineUnit(groupBy.value.unit, result);
   } else if (groupBy.value && groupBy.type === 'variable' && groupBy.value.type === 'Date') {
-    unit = 'second';
+    unit = determineUnit(data.configuration.groupByDateVariableUnit, result);
   }
 
   if (!unit || !result) {

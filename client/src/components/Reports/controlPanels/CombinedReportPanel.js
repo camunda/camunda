@@ -123,6 +123,7 @@ export default withRouter(
         !referenceReportData ||
         (this.checkSameGroupBy(referenceReportData, report.data) &&
           this.checkSameView(referenceReportData, report.data) &&
+          this.checkSameConfiguration(referenceReportData, report.data) &&
           report.data.visualization === referenceReportData.visualization)
       );
     };
@@ -152,6 +153,15 @@ export default withRouter(
         convertGroupByType(data.groupBy.type) ===
           convertGroupByType(referenceReport.groupBy.type) && isSameValue
       );
+    };
+
+    checkSameConfiguration = ({groupBy, configuration}, data) => {
+      if (groupBy?.type === 'variable' && groupBy.value?.type === 'Date') {
+        return (
+          configuration?.groupByDateVariableUnit === data.configuration.groupByDateVariableUnit
+        );
+      }
+      return true;
     };
 
     updateColor = (idx) => (color) => {

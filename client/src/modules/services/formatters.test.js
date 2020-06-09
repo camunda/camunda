@@ -244,6 +244,9 @@ it('should adjust groupby Variable Date option to unit', () => {
         type: 'variable',
         value: {type: 'Date'},
       },
+      configuration: {
+        groupByDateVariableUnit: 'day',
+      },
     },
   };
   const formatedResult = formatReportResult(
@@ -252,7 +255,7 @@ it('should adjust groupby Variable Date option to unit', () => {
   );
 
   expect(formatedResult[0].label).not.toContain('2015-03-25T');
-  expect(formatedResult[0].label).toContain('2015-03-25 ');
+  expect(formatedResult[0].label).toContain('2015-03-25');
 });
 
 describe('automatic interval selection', () => {

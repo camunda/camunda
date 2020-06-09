@@ -14,9 +14,10 @@ import AggregationType from './AggregationType';
 import VisibleNodesFilter from './VisibleNodesFilter';
 import NodeStatus from './NodeStatus';
 import DistributedBy from './DistributedBy';
+import DateVariableUnit from './DateVariableUnit';
+import {t} from 'translation';
 
 import './Configuration.scss';
-import {t} from 'translation';
 
 function convertToChangeset(config) {
   return Object.keys(config).reduce(
@@ -78,6 +79,7 @@ export default class Configuration extends React.Component {
           active: false,
           keys: [],
         },
+        groupByDateVariableUnit: 'automatic',
       }),
       true
     );
@@ -115,6 +117,7 @@ export default class Configuration extends React.Component {
                 label={report.reportType === 'decision' ? 'evaluation' : 'instance'}
               />
             )}
+            <DateVariableUnit report={report} onChange={this.updateConfiguration} />
             <AggregationType report={report} onChange={this.updateConfiguration} />
             <UserTaskDurationTime report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}

@@ -430,7 +430,8 @@
         }
       },
       "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
-      "showGradientBars": "Verlaufsbalken anzeigen"
+      "showGradientBars": "Verlaufsbalken anzeigen",
+      "DateGrouping": "Datumsgruppierung"
     },
     "missingVariableValue": "nicht definiert",
     "missingAssignee": "Nicht zugewiesen",

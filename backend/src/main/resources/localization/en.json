@@ -430,7 +430,8 @@
         }
       },
       "includeTableColumn": "Table columns to include",
-      "showGradientBars": "Show Gradient Bars"
+      "showGradientBars": "Show Gradient Bars",
+      "DateGrouping": "Date Grouping"
     },
     "missingVariableValue": "null / undefined",
     "missingAssignee": "Unassigned",
