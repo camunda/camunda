@@ -67,7 +67,7 @@ export default class StringInput extends React.Component {
           this.state.valuesLoaded + valuesToLoad + this.availableSelectedValues(values).length + 1;
 
         this.setState({
-          availableValues,
+          availableValues: [null, ...availableValues],
           valuesLoaded: availableValues.length,
           numberOfUnselectedValuesToDisplay,
           valuesAreComplete,
@@ -139,7 +139,7 @@ export default class StringInput extends React.Component {
         <div className="valueFields">
           <div className="StringInput__selection">
             <TypeaheadMultipleSelection
-              availableValues={[null, ...this.state.availableValues]}
+              availableValues={this.state.availableValues}
               selectedValues={this.props.filter.values}
               setFilter={this.setValueFilter}
               toggleValue={this.toggleValue}
