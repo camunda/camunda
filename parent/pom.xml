@@ -83,7 +83,7 @@
     <version.restassert>4.3.0</version.restassert>
     <version.spring-framework>5.2.6.RELEASE</version.spring-framework>
     <version.spring-boot>2.3.0.RELEASE</version.spring-boot>
-    <version.classgraph>4.8.83</version.classgraph>
+    <version.classgraph>4.8.84</version.classgraph>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.0</version.config>
     <version.kryo>4.0.2</version.kryo>
