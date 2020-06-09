@@ -68,13 +68,25 @@ public class Starter extends App {
     executorService.scheduleAtFixedRate(
         () -> {
           try {
-            requestFutures.put(
-                client
-                    .newCreateInstanceCommand()
-                    .bpmnProcessId(processId)
-                    .latestVersion()
-                    .variables(variables)
-                    .send());
+            if (starterCfg.isWithResults()) {
+              requestFutures.put(
+                  client
+                      .newCreateInstanceCommand()
+                      .bpmnProcessId(processId)
+                      .latestVersion()
+                      .variables(variables)
+                      .withResult()
+                      .requestTimeout(starterCfg.getWithResultsTimeout())
+                      .send());
+            } else {
+              requestFutures.put(
+                  client
+                      .newCreateInstanceCommand()
+                      .bpmnProcessId(processId)
+                      .latestVersion()
+                      .variables(variables)
+                      .send());
+            }
           } catch (Exception e) {
             LOG.error("Error on creating new workflow instance", e);
           }

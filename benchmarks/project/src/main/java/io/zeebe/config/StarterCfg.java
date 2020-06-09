@@ -15,6 +15,8 @@
  */
 package io.zeebe.config;
 
+import java.time.Duration;
+
 public class StarterCfg {
 
   private String processId;
@@ -25,6 +27,8 @@ public class StarterCfg {
   private String bpmnXmlPath;
 
   private String payloadPath;
+  private boolean withResults;
+  private Duration withResultsTimeout;
 
   public String getProcessId() {
     return processId;
@@ -64,5 +68,21 @@ public class StarterCfg {
 
   public void setPayloadPath(String payloadPath) {
     this.payloadPath = payloadPath;
+  }
+
+  public boolean isWithResults() {
+    return this.withResults;
+  }
+
+  public void setWithResults(boolean withResults) {
+    this.withResults = withResults;
+  }
+
+  public Duration getWithResultsTimeout() {
+    return withResultsTimeout;
+  }
+
+  public void setWithResultsTimeout(Duration withResultsTimeout) {
+    this.withResultsTimeout = withResultsTimeout;
   }
 }
