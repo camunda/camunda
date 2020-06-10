@@ -13,14 +13,18 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 @UtilityClass
 public class DefinitionVersionHandlingUtil {
 
-  public static String convertToValidDefinitionVersion(@NonNull List<String> definitionVersions,
-                                                       @NonNull Supplier<String> latestVersionSupplier) {
+  public static String convertToLatestParticularVersion(final String processDefinitionVersion,
+                                                        final Supplier<String> latestVersionSupplier) {
+    return convertToLatestParticularVersion(ImmutableList.of(processDefinitionVersion), latestVersionSupplier);
+  }
+
+  public static String convertToLatestParticularVersion(@NonNull final List<String> definitionVersions,
+                                                        @NonNull final Supplier<String> latestVersionSupplier) {
     Optional<String> isDefinitionVersionSetToAllOrLatest = definitionVersions.stream()
       .filter(
         version -> ReportConstants.ALL_VERSIONS.equalsIgnoreCase(version) ||
@@ -37,47 +41,6 @@ public class DefinitionVersionHandlingUtil {
         .map(Object::toString)
         .orElse(getLastEntryInList(definitionVersions));
     }
-  }
-
-  public static String convertToValidVersion(final String processDefinitionVersion,
-                                             final Supplier<String> latestVersionSupplier) {
-    return convertToValidDefinitionVersion(
-      ImmutableList.of(processDefinitionVersion),
-      latestVersionSupplier
-    );
-  }
-
-  @Deprecated
-  public static String convertToValidDefinitionVersion(@NonNull String processDefinitionKey,
-                                                       @NonNull List<String> processDefinitionVersions,
-                                                       @NonNull Function<String, String> getLatestVersionToKey) {
-    Optional<String> isDefinitionVersionSetToAllOrLatest = processDefinitionVersions.stream()
-      .filter(
-        version -> ReportConstants.ALL_VERSIONS.equalsIgnoreCase(version) ||
-          ReportConstants.LATEST_VERSION.equalsIgnoreCase(version)
-      )
-      .findFirst();
-    if (isDefinitionVersionSetToAllOrLatest.isPresent()) {
-      return getLatestVersionToKey.apply(processDefinitionKey);
-    } else {
-      return processDefinitionVersions.stream()
-        .filter(StringUtils::isNumeric)
-        .map(Integer::parseInt)
-        .max(Integer::compareTo)
-        .map(Object::toString)
-        .orElse(getLastEntryInList(processDefinitionVersions));
-    }
-  }
-
-  @Deprecated
-  public static String convertToValidVersion(String processDefinitionKey,
-                                             String processDefinitionVersion,
-                                             Function<String, String> getLatestVersionToKey) {
-    return convertToValidDefinitionVersion(
-      processDefinitionKey,
-      ImmutableList.of(processDefinitionVersion),
-      getLatestVersionToKey
-    );
   }
 
   private static String getLastEntryInList(@NonNull List<String> processDefinitionVersions) {

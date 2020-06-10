@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.collection;
 
+import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -28,6 +29,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -139,6 +142,33 @@ public class CollectionScopeService {
     }
 
     return definitionService.getDefinitionVersions(type, key, userId, optionalScopeEntry.get().getTenants());
+  }
+
+  public List<TenantDto> getCollectionDefinitionTenantsByKeyAndType(final DefinitionType type,
+                                                                    final String key,
+                                                                    final String userId,
+                                                                    final List<String> versions,
+                                                                    final String collectionId) {
+    final Optional<CollectionScopeEntryDto> optionalScopeEntry = getCollectionScopeEntryDtoStream(userId, collectionId)
+      .filter(entry -> entry.getDefinitionType().equals(type) && entry.getDefinitionKey().equals(key))
+      .findFirst();
+
+    if (!optionalScopeEntry.isPresent()) {
+      return Collections.emptyList();
+    }
+
+    final Set<String> scopeTenantIds = Sets.newHashSet(optionalScopeEntry.get().getTenants());
+    final Supplier<String> latestVersionAvailableInScopeSupplier = () ->
+      definitionService.getDefinitionVersions(type, key, userId, optionalScopeEntry.get().getTenants())
+        .stream()
+        .findFirst()
+        .map(DefinitionVersionDto::getVersion)
+        .orElseThrow(() -> new OptimizeValidationException("Could not resolve latest version."));
+
+    return definitionService.getDefinitionTenants(type, key, userId, versions, latestVersionAvailableInScopeSupplier)
+      .stream()
+      .filter(tenantDto -> scopeTenantIds.contains(tenantDto.getId()))
+      .collect(Collectors.toList());
   }
 
   public List<DefinitionVersionsWithTenantsDto> getCollectionDefinitionsGroupedByVersionAndTenantForType(
@@ -393,7 +423,7 @@ public class CollectionScopeService {
                                                                 final CollectionScopeEntryDto scope) {
     try {
       return definitionService
-        .getDefinition(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
+        .getDefinitionWithAvailableTenants(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
         .map(DefinitionWithTenantsDto::getTenants)
         .orElseGet(ArrayList::new)
         .stream()
@@ -405,7 +435,7 @@ public class CollectionScopeService {
   }
 
   private String getDefinitionName(final String userId, final CollectionScopeEntryRestDto scope) {
-    return definitionService.getDefinition(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
+    return definitionService.getDefinitionWithAvailableTenants(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
       .map(DefinitionWithTenantsDto::getName)
       .orElse(scope.getDefinitionKey());
   }

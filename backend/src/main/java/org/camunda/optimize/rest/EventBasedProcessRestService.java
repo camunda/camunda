@@ -281,7 +281,7 @@ public class EventBasedProcessRestService {
   }
 
   private String getDefinitionName(final String userId, final EventSourceEntryDto eventSource) {
-    return definitionService.getDefinition(DefinitionType.PROCESS, eventSource.getProcessDefinitionKey(), userId)
+    return definitionService.getDefinitionWithAvailableTenants(DefinitionType.PROCESS, eventSource.getProcessDefinitionKey(), userId)
       .map(DefinitionWithTenantsDto::getName)
       .orElse(eventSource.getProcessDefinitionKey());
   }

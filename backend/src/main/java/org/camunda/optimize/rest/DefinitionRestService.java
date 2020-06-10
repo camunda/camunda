@@ -11,21 +11,26 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequest;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -74,7 +79,7 @@ public class DefinitionRestService {
                                                 @PathParam("type") DefinitionType type,
                                                 @PathParam("key") String key) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return definitionService.getDefinition(type, key, userId)
+    return definitionService.getDefinitionWithAvailableTenants(type, key, userId)
       .orElseThrow(() -> {
         final String reason = String.format("Was not able to find definition for type [%s] and key [%s].", type, key);
         log.error(reason);
@@ -98,13 +103,41 @@ public class DefinitionRestService {
 
     if (definitionVersions.isEmpty()) {
       final String reason = String.format(
-        "Was not able to find definition version for type [%s] and key [%s] in scope of collectionId [%s].",
+        "Was not able to find definition version for type [%s] and key [%s] in scope of collection [%s].",
         type, key, collectionId
       );
       log.error(reason);
       throw new NotFoundException(reason);
     }
     return definitionVersions;
+  }
+
+  @POST
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/{type}/{key}/_resolveTenantsForVersions")
+  public List<TenantResponseDto> getDefinitionTenants(@Context final ContainerRequestContext requestContext,
+                                                      @PathParam("type") final DefinitionType type,
+                                                      @PathParam("key") final String key,
+                                                      @RequestBody final DefinitionTenantsRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    final List<TenantDto> tenants = request.getFilterByCollectionScope()
+      .map(collectionId -> collectionScopeService.getCollectionDefinitionTenantsByKeyAndType(
+        type, key, userId, request.getVersions(), collectionId
+      ))
+      .orElseGet(() -> definitionService.getDefinitionTenants(type, key, userId, request.getVersions()));
+
+    if (tenants.isEmpty()) {
+      final String reason = String.format(
+        "Was not able to find definition tenants for type [%s], key [%s], versions [%s] in scope of collection [%s].",
+        type, key, request.getVersions(), request.getFilterByCollectionScope()
+      );
+      log.error(reason);
+      throw new NotFoundException(reason);
+    }
+    return tenants.stream()
+      .map(tenantDto -> new TenantResponseDto(tenantDto.getId(), tenantDto.getName()))
+      .collect(Collectors.toList());
   }
 
   @GET
@@ -174,7 +207,7 @@ public class DefinitionRestService {
                                    @QueryParam("tenantId") String tenantId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final Optional<DefinitionOptimizeDto> definitionDto =
-      definitionService.getDefinition(type, userId, key, version, tenantId);
+      definitionService.getDefinitionWithXml(type, userId, key, version, tenantId);
 
     if (!definitionDto.isPresent()) {
       logAndThrowNotFoundException(type, key, version);

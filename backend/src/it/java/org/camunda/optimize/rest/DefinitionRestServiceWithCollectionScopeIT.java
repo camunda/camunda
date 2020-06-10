@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.TenantService;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDE
 public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
 
   private static final String TENANT_NOT_DEFINED_ID = TenantService.TENANT_NOT_DEFINED.getId();
+  private static final String TENANT_ID_1 = "tenant1";
+  private static final String TENANT_ID_2 = "tenant2";
+  private static final String TENANT_ID_3 = "tenant3";
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
@@ -86,14 +90,13 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitionKeysByType_sharedDefinitionOnlySpecificTenantInScope(final DefinitionType type) {
     // given
-    final String tenant1 = "tenant1";
-    createTenant(tenant1);
+    createTenant(TENANT_ID_1);
 
     final String definitionKey = "definitionKey1";
     createDefinition(type, definitionKey, "1", null, "the name");
 
     // we have a collection for which only a specific tenant is in the scope
-    final List<String> scopeTenantIds = Lists.newArrayList(tenant1);
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1);
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(
       collectionId,
@@ -221,6 +224,9 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(otherDefinitionType, definitionKey1, scopeTenantIds)
+    );
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
@@ -235,19 +241,16 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitionVersionsByKeyAndType_multiTenant_specificDefinitions(final DefinitionType type) {
     // given
-    final String tenant1 = "tenant1";
-    createTenant(tenant1);
-    final String tenant2 = "tenant2";
-    createTenant(tenant2);
-    final String tenant3 = "tenant3";
-    createTenant(tenant3);
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
     final String definitionKey1 = "definitionKey1";
-    createDefinition(type, definitionKey1, "1", tenant1, "the name");
-    createDefinition(type, definitionKey1, "1", tenant2, "the name");
-    createDefinition(type, definitionKey1, "2", tenant2, "the name");
-    createDefinition(type, definitionKey1, "3", tenant3, "the name");
+    createDefinition(type, definitionKey1, "1", TENANT_ID_1, "the name");
+    createDefinition(type, definitionKey1, "1", TENANT_ID_2, "the name");
+    createDefinition(type, definitionKey1, "2", TENANT_ID_2, "the name");
+    createDefinition(type, definitionKey1, "3", TENANT_ID_3, "the name");
     final String collectionId = collectionClient.createNewCollection();
-    final List<String> scopeTenantIds = Lists.newArrayList(tenant1, tenant2);
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1, TENANT_ID_2);
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
@@ -265,19 +268,16 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitionVersionsByKeyAndType_multiTenant_sharedDefinition(final DefinitionType type) {
     // given
-    final String tenant1 = "tenant1";
-    createTenant(tenant1);
-    final String tenant2 = "tenant2";
-    createTenant(tenant2);
-    final String tenant3 = "tenant3";
-    createTenant(tenant3);
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
     final String definitionKey1 = "definitionKey1";
     createDefinition(type, definitionKey1, "1", null, "the name");
     createDefinition(type, definitionKey1, "2", null, "the name");
     createDefinition(type, definitionKey1, "3", null, "the name");
     createDefinition(type, definitionKey1, "4", null, "the name");
     final String collectionId = collectionClient.createNewCollection();
-    final List<String> scopeTenantIds = Lists.newArrayList(tenant1, tenant2);
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1, TENANT_ID_2);
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
@@ -295,23 +295,20 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitionVersionsByKeyAndType_multiTenant_sharedAndSpecificDefinitions(final DefinitionType type) {
     // given
-    final String tenant1 = "tenant1";
-    createTenant(tenant1);
-    final String tenant2 = "tenant2";
-    createTenant(tenant2);
-    final String tenant3 = "tenant3";
-    createTenant(tenant3);
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
     final String definitionKey1 = "definitionKey1";
     createDefinition(type, definitionKey1, "1", null, "the name");
-    createDefinition(type, definitionKey1, "1", tenant1, "the name");
-    createDefinition(type, definitionKey1, "1", tenant2, "the name");
+    createDefinition(type, definitionKey1, "1", TENANT_ID_1, "the name");
+    createDefinition(type, definitionKey1, "1", TENANT_ID_2, "the name");
     createDefinition(type, definitionKey1, "2", null, "the name");
-    createDefinition(type, definitionKey1, "2", tenant1, "the name");
-    createDefinition(type, definitionKey1, "2", tenant2, "the name");
-    createDefinition(type, definitionKey1, "3", tenant1, "the name");
-    createDefinition(type, definitionKey1, "4", tenant3, "the name");
+    createDefinition(type, definitionKey1, "2", TENANT_ID_1, "the name");
+    createDefinition(type, definitionKey1, "2", TENANT_ID_2, "the name");
+    createDefinition(type, definitionKey1, "3", TENANT_ID_1, "the name");
+    createDefinition(type, definitionKey1, "4", TENANT_ID_3, "the name");
     final String collectionId = collectionClient.createNewCollection();
-    final List<String> scopeTenantIds = Lists.newArrayList(tenant1, tenant2);
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1, TENANT_ID_2);
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
@@ -363,6 +360,338 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
 
     // then a 404 is returned
     assertThat(responseForWrongType.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_invalidCollectionId(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name");
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(
+        type.getId(), definitionKey1, Lists.newArrayList("1"), "invalid"
+      )
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_tenantSpecificDefinitions_specificVersions_fullScope(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(definitionType, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(definitionType, definitionKey, "2", TENANT_ID_2, "the name");
+    // also create a definition of another type, should not affect result
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !definitionType.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinition(otherDefinitionType, definitionKey, "1", TENANT_ID_3, "other");
+    createDefinition(otherDefinitionType, definitionKey, "2", TENANT_ID_3, "other");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1, TENANT_ID_2);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
+    );
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(otherDefinitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2"), collectionId
+      );
+
+    // then all tenants are returned
+    assertThat(tenantsForAllVersions)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_ID_1, TENANT_ID_2);
+
+    // when only some versions are included
+    final List<TenantResponseDto> tenantsForVersion1 =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1"), collectionId
+      );
+
+    // then only the tenants belonging to those versions are included
+    assertThat(tenantsForVersion1)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_ID_1);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_tenantSpecificDefinitions_specificVersions_reducedScope(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(definitionType, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(definitionType, definitionKey, "2", TENANT_ID_2, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only tenant1 is in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    // (this is an artificial case as usually no more versions are provided than within the scope, still it ensures
+    // the scope cannot be breached by the versions provided by the user)
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2"), collectionId
+      );
+
+    // then still only the tenant within the scope is returned
+    assertThat(tenantsForAllVersions)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_ID_1);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_tenantSpecificDefinitions_allVersion_reducedScope(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(definitionType, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(definitionType, definitionKey, "2", TENANT_ID_2, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only tenant2 is in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_2);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when the "all" version is included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("all"), collectionId
+      );
+
+    // then still only the tenant within the scope is returned
+    assertThat(tenantsForAllVersions)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_ID_2);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_tenantSpecificDefinitions_latestVersion_reducedScope(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(definitionType, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(definitionType, definitionKey, "2", TENANT_ID_2, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only tenant1 is in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when the "latest" version is included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("latest"), collectionId
+      );
+
+    // then still only the tenant within the scope is returned, latest version is now 1
+    assertThat(tenantsForAllVersions)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_ID_1);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_sharedDefinition_specificVersions_fullScope(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(definitionType, definitionKey, "1", null, "the name");
+    createDefinition(definitionType, definitionKey, "2", null, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // all tenants are in scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID, TENANT_ID_1, TENANT_ID_2, TENANT_ID_3);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2"), collectionId
+      );
+
+    // then all tenants are returned
+    assertThat(tenantsForAllVersions)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_NOT_DEFINED_ID, TENANT_ID_1, TENANT_ID_2, TENANT_ID_3);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_sharedDefinition_specificVersions_reducedScope(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(definitionType, definitionKey, "1", null, "the name");
+    createDefinition(definitionType, definitionKey, "2", null, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only some tenants are in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID, TENANT_ID_1);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2"), collectionId
+      );
+
+    // then only the scope tenants are returned
+    assertThat(tenantsForAllVersions)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_NOT_DEFINED_ID, TENANT_ID_1);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_sharedDefinition_specificVersions_notDefinedNotInScope(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(definitionType, definitionKey, "1", null, "the name");
+    createDefinition(definitionType, definitionKey, "2", null, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only tenant1 is in scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2"), collectionId
+      );
+
+    // then only the scope tenants are returned
+    assertThat(tenantsForAllVersions)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_ID_1);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_sharedAndTenantSpecificDefinitions_specificVersions_reducedScope(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(definitionType, definitionKey, "1", null, "the name");
+    createDefinition(definitionType, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(definitionType, definitionKey, "1", TENANT_ID_3, "the name");
+    createDefinition(definitionType, definitionKey, "2", TENANT_ID_2, "the name");
+    createDefinition(definitionType, definitionKey, "2", null, "the name");
+    createDefinition(definitionType, definitionKey, "3", TENANT_ID_3, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only some tenants are in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID, TENANT_ID_1, TENANT_ID_2);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2", "3"), collectionId
+      );
+
+    // then only the scope tenants are returned
+    assertThat(tenantsForAllVersions)
+      .extracting(TenantResponseDto::getId)
+      .containsExactly(TENANT_NOT_DEFINED_ID, TENANT_ID_1, TENANT_ID_2);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_definitionNotInScope(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name");
+    final String definitionKey2 = "definitionKey2";
+    createDefinition(type, definitionKey2, "1", null, "the name");
+    // create definitionKey2 of other type, should not affect result
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !type.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinition(otherDefinitionType, definitionKey2, "1", null, "other");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey2, scopeTenantIds)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when trying to get tenants for a definition key that is not in the scope
+    final Response responseForWrongKey = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(
+        type.getId(), definitionKey1, Lists.newArrayList("1"), "invalid"
+      )
+      .execute();
+
+    // then a 404 is returned
+    assertThat(responseForWrongKey.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+
+    // when trying to get tenants for a definition type that is not in the scope but key that is in the scope
+    final Response responseForWrongType = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(
+        otherDefinitionType.getId(), definitionKey2, Lists.newArrayList("1"), "invalid"
+      )
+      .execute();
+
+    // then a 404 is returned
+    assertThat(responseForWrongType.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+
+    // when trying to get tenants for a definition version that is not in the scope but key that is in the scope
+    final Response responseForWrongVersion = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(
+        type.getId(), definitionKey2, Lists.newArrayList("99"), "invalid"
+      )
+      .execute();
+
+    // then a 404 is returned
+    assertThat(responseForWrongVersion.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @ParameterizedTest
@@ -472,9 +801,9 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   @EnumSource(DefinitionType.class)
   public void testGetDefinitionVersionsWithTenants_twoTenantsOneInScope(final DefinitionType type) {
     //given
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     createTenant(tenant1);
-    final String tenant2 = "tenant2";
+    final String tenant2 = TENANT_ID_2;
     createTenant(tenant2);
 
     final String definitionKey = "definitionKey1";
@@ -511,9 +840,9 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   @EnumSource(DefinitionType.class)
   public void testGetDefinitionVersionsWithTenants_sharedDefinitionOnlySpecificTenantInScope(final DefinitionType type) {
     // given
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     createTenant(tenant1);
-    final String tenant2 = "tenant2";
+    final String tenant2 = TENANT_ID_2;
     createTenant(tenant2);
 
     final String definitionKey = "definitionKey1";
@@ -548,9 +877,9 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   @EnumSource(DefinitionType.class)
   public void testGetDefinitionVersionsWithTenants_sharedDefinitionNoneAndTenantInScope(final DefinitionType type) {
     //given
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     createTenant(tenant1);
-    final String tenant2 = "tenant2";
+    final String tenant2 = TENANT_ID_2;
     createTenant(tenant2);
 
     final String definitionKey = "definitionKey1";

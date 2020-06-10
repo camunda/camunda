@@ -5,15 +5,21 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
+import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 
@@ -41,18 +47,15 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey1,
-      new GroupDto(GROUP_ID)
+      definitionKey1, new GroupDto(GROUP_ID)
     );
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey2,
-      new GroupDto("otherGroup")
+      definitionKey2, new GroupDto("otherGroup")
     );
 
     // when
     final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
-      KERMIT_USER,
-      KERMIT_USER
+      KERMIT_USER, KERMIT_USER
     );
 
     // then
@@ -68,18 +71,15 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey1,
-      new UserDto(KERMIT_USER)
+      definitionKey1, new UserDto(KERMIT_USER)
     );
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey2,
-      new UserDto(DEFAULT_USERNAME)
+      definitionKey2, new UserDto(DEFAULT_USERNAME)
     );
 
     // when
     final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
-      KERMIT_USER,
-      KERMIT_USER
+      KERMIT_USER, KERMIT_USER
     );
 
     // then
@@ -120,14 +120,12 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationForKermitGroup(definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
 
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey,
-      new UserDto(DEFAULT_USERNAME)
+      definitionKey, new UserDto(DEFAULT_USERNAME)
     );
 
     // when
     final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
-      KERMIT_USER,
-      KERMIT_USER
+      KERMIT_USER, KERMIT_USER
     );
 
     // then
@@ -144,14 +142,12 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
 
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey,
-      new UserDto(KERMIT_USER)
+      definitionKey, new UserDto(KERMIT_USER)
     );
 
     // when
     final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
-      KERMIT_USER,
-      KERMIT_USER
+      KERMIT_USER, KERMIT_USER
     );
 
     // then
@@ -166,19 +162,16 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
-      definitionKey,
-      RESOURCE_TYPE_PROCESS_DEFINITION
+      definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION
     );
 
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey,
-      new UserDto(KERMIT_USER)
+      definitionKey, new UserDto(KERMIT_USER)
     );
 
     // when
     final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitionsAsUser(
-      KERMIT_USER,
-      KERMIT_USER
+      KERMIT_USER, KERMIT_USER
     );
 
     // then
@@ -194,12 +187,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey1,
-      new GroupDto(GROUP_ID)
+      definitionKey1, new GroupDto(GROUP_ID)
     );
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey2,
-      new GroupDto("otherGroup")
+      definitionKey2, new GroupDto("otherGroup")
     );
 
     // when
@@ -221,18 +212,15 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey1,
-      new UserDto(KERMIT_USER)
+      definitionKey1, new UserDto(KERMIT_USER)
     );
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey2,
-      new UserDto(DEFAULT_USERNAME)
+      definitionKey2, new UserDto(DEFAULT_USERNAME)
     );
 
     // when
     final List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitionsAsUser(
-      KERMIT_USER,
-      KERMIT_USER
+      KERMIT_USER, KERMIT_USER
     );
 
     // then
@@ -248,12 +236,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey1,
-      new GroupDto(GROUP_ID)
+      definitionKey1, new GroupDto(GROUP_ID)
     );
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey2,
-      new GroupDto("otherGroup")
+      definitionKey2, new GroupDto("otherGroup")
     );
 
     // when
@@ -275,12 +261,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey1,
-      new UserDto(KERMIT_USER)
+      definitionKey1, new UserDto(KERMIT_USER)
     );
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey2,
-      new UserDto(DEFAULT_USERNAME)
+      definitionKey2, new UserDto(DEFAULT_USERNAME)
     );
 
     // when
@@ -291,6 +275,190 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     assertThat(definition).extracting(ProcessDefinitionOptimizeDto::getKey).isEqualTo(definitionKey1);
 
     assertThat(definition2Response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void getDefinitionKeysByType_groupRole() {
+    // given
+    final String definitionKey1 = "eventProcessKey1";
+    final String definitionKey2 = "eventProcessKey2";
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey1, new GroupDto(GROUP_ID)
+    );
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey2, new GroupDto("otherGroup")
+    );
+
+    // when
+    final List<DefinitionKeyDto> keys = definitionClient.getDefinitionKeysByTypeAsUser(
+      DefinitionType.PROCESS, KERMIT_USER, KERMIT_USER
+    );
+
+    // then
+    assertThat(keys).extracting(DefinitionKeyDto::getKey).containsExactly(definitionKey1);
+  }
+
+  @Test
+  public void getDefinitionKeysByType_userRole() {
+    // given
+    final String definitionKey1 = "eventProcessKey1";
+    final String definitionKey2 = "eventProcessKey2";
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey1, new UserDto(KERMIT_USER)
+    );
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey2, new UserDto(DEFAULT_USERNAME)
+    );
+
+    // when
+    final List<DefinitionKeyDto> keys = definitionClient.getDefinitionKeysByTypeAsUser(
+      DefinitionType.PROCESS, KERMIT_USER, KERMIT_USER
+    );
+
+    // then
+    assertThat(keys).extracting(DefinitionKeyDto::getKey).containsExactly(definitionKey1);
+  }
+
+  @Test
+  public void getDefinitionVersionsByKeyByType_groupRole() {
+    // given
+    final String definitionKey1 = "eventProcessKey1";
+    final String definitionKey2 = "eventProcessKey2";
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey1, new GroupDto(GROUP_ID)
+    );
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey2, new GroupDto("otherGroup")
+    );
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKeyAsUser(
+      DefinitionType.PROCESS, definitionKey1, KERMIT_USER, KERMIT_USER
+    );
+
+    final Response unauthorizedKeyResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(DefinitionType.PROCESS.getId(), definitionKey2)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+
+    // then
+    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("1");
+
+    assertThat(unauthorizedKeyResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void getDefinitionVersionsByKeyByType_userRole() {
+    // given
+    final String definitionKey1 = "eventProcessKey1";
+    final String definitionKey2 = "eventProcessKey2";
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey1, new UserDto(KERMIT_USER)
+    );
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey2, new UserDto(DEFAULT_USERNAME)
+    );
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKeyAsUser(
+      DefinitionType.PROCESS, definitionKey1, KERMIT_USER, KERMIT_USER
+    );
+
+    final Response unauthorizedKeyResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(DefinitionType.PROCESS.getId(), definitionKey2)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+
+    // then
+    assertThat(versions).extracting(DefinitionVersionDto::getVersion).containsExactly("1");
+
+    assertThat(unauthorizedKeyResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void getDefinitionTenantsByTypeKeyAndVersions_groupRole() {
+    // given
+    final String definitionKey1 = "eventProcessKey1";
+    final String definitionKey2 = "eventProcessKey2";
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey1, new GroupDto(GROUP_ID)
+    );
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey2, new GroupDto("otherGroup")
+    );
+
+    // when
+    final List<TenantResponseDto> tenants = definitionClient.resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(
+      DefinitionType.PROCESS, definitionKey1, Lists.newArrayList("1"), KERMIT_USER, KERMIT_USER
+    );
+
+    final Response unauthorizedKeyResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(
+        DefinitionType.PROCESS.getId(), definitionKey2, Lists.newArrayList("1")
+      )
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+
+    // then
+    assertThat(tenants).extracting(TenantResponseDto::getId)
+      .containsExactly(TenantService.TENANT_NOT_DEFINED.getId());
+
+    assertThat(unauthorizedKeyResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void getDefinitionTenantsByTypeKeyAndVersions_userRole() {
+    // given
+    final String definitionKey1 = "eventProcessKey1";
+    final String definitionKey2 = "eventProcessKey2";
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey1,
+      new UserDto(KERMIT_USER)
+    );
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      definitionKey2,
+      new UserDto(DEFAULT_USERNAME)
+    );
+
+    // when
+    final List<TenantResponseDto> tenants = definitionClient.resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(
+      DefinitionType.PROCESS, definitionKey1, Lists.newArrayList("1"), KERMIT_USER, KERMIT_USER
+    );
+
+    final Response unauthorizedKeyResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(
+        DefinitionType.PROCESS.getId(), definitionKey2, Lists.newArrayList("1")
+      )
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+
+    // then
+    assertThat(tenants).extracting(TenantResponseDto::getId)
+      .containsExactly(TenantService.TENANT_NOT_DEFINED.getId());
+
+    assertThat(unauthorizedKeyResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test

@@ -41,8 +41,7 @@ public class DefinitionAuthorizationService {
   public List<TenantDto> resolveAuthorizedTenantsForProcess(final String userId,
                                                             final SimpleDefinitionDto definitionDto,
                                                             final List<String> tenantIds) {
-
-    if (definitionDto.getIsEventProcess()) {
+    if (Boolean.TRUE.equals(definitionDto.getIsEventProcess())) {
       return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, definitionDto.getKey()).orElse(false)
         ? Collections.singletonList(TENANT_NOT_DEFINED)
         : Collections.emptyList();
@@ -97,7 +96,7 @@ public class DefinitionAuthorizationService {
   public boolean isAuthorizedToAccessDefinition(final String userId,
                                                 final String tenantId,
                                                 final SimpleDefinitionDto definition) {
-    if (definition.getIsEventProcess()) {
+    if (Boolean.TRUE.equals(definition.getIsEventProcess())) {
       return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, definition.getKey()).orElse(false);
     } else {
       return engineDefinitionAuthorizationService.isAuthorizedToSeeDefinition(
@@ -120,7 +119,7 @@ public class DefinitionAuthorizationService {
 
   public boolean isAuthorizedToAccessProcessDefinition(final String userId,
                                                        final ProcessDefinitionOptimizeDto processDefinition) {
-    if (processDefinition.getIsEventBased()) {
+    if (Boolean.TRUE.equals(processDefinition.getIsEventBased())) {
       return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey()).orElse(false);
     } else {
       return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(

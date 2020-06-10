@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,10 +57,10 @@ public class DefinitionService {
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
 
-  public Optional<DefinitionWithTenantsDto> getDefinition(final DefinitionType type,
-                                                          final String key,
-                                                          final String userId) {
-    return definitionReader.getDefinition(type, key)
+  public Optional<DefinitionWithTenantsDto> getDefinitionWithAvailableTenants(final DefinitionType type,
+                                                                              final String key,
+                                                                              final String userId) {
+    return definitionReader.getDefinitionWithAvailableTenants(type, key)
       .map(definitionWithTenantIdsDto -> {
         final Optional<DefinitionWithTenantsDto> authorizedDefinition =
           filterAndMapDefinitionsWithTenantIdsByAuthorizations(
@@ -84,22 +85,73 @@ public class DefinitionService {
                                                           final List<String> tenantIds) {
     final List<DefinitionVersionDto> definitionVersions = new ArrayList<>();
 
-    final Optional<DefinitionWithTenantsDto> optionalDefinition = getDefinition(type, key, userId);
+    final Optional<DefinitionWithTenantsDto> optionalDefinition = getDefinitionWithAvailableTenants(type, key, userId);
     if (optionalDefinition.isPresent()) {
       final List<String> availableTenants = optionalDefinition.get().getTenants().stream()
         .map(TenantDto::getId)
         .collect(toList());
       final Set<String> tenantsToFilterFor = resolveTenantsToFilterFor(
-       CollectionUtils.isEmpty(tenantIds)
-        ? availableTenants
-        : availableTenants.stream().filter(tenantIds::contains).collect(toList()),
-       userId
+        CollectionUtils.isEmpty(tenantIds)
+          ? availableTenants
+          : availableTenants.stream().filter(tenantIds::contains).collect(toList()),
+        userId
       );
 
       definitionVersions.addAll(definitionReader.getDefinitionVersions(type, key, tenantsToFilterFor));
     }
 
     return definitionVersions;
+  }
+
+  public List<TenantDto> getDefinitionTenants(final DefinitionType type,
+                                              final String key,
+                                              final String userId,
+                                              final List<String> versions) {
+    return getDefinitionTenants(type, key, userId, versions, () -> definitionReader.getLatestVersionToKey(type, key));
+  }
+
+  public List<TenantDto> getDefinitionTenants(final DefinitionType type,
+                                              final String key,
+                                              final String userId,
+                                              final List<String> versions,
+                                              final Supplier<String> latestVersionSupplier) {
+    final List<String> tenantIdsFromDefinition = definitionReader.getDefinitionTenantIds(
+      type, key, versions, latestVersionSupplier
+    );
+    final Map<String, TenantDto> tenantAvailableToUser = tenantService.getTenantsForUser(userId).stream()
+      .collect(toMap(TenantDto::getId, Function.identity()));
+    final List<TenantDto> result = new ArrayList<>();
+    if (tenantIdsFromDefinition.contains(TENANT_NOT_DEFINED.getId())) {
+      // enrich all available tenants if the not defined tenants is among the results
+      result.addAll(tenantAvailableToUser.values());
+    } else {
+      tenantIdsFromDefinition.forEach(tenantId -> {
+        final TenantDto authorizedTenant = tenantAvailableToUser.get(tenantId);
+        if (authorizedTenant != null) {
+          result.add(authorizedTenant);
+        } else {
+          log.debug(
+            "Current user is not authorized to access tenant with id [{}], will not include it in the result.", tenantId
+          );
+        }
+      });
+    }
+
+    if (result.isEmpty() ||
+      !definitionAuthorizationService.isAuthorizedToAccessDefinition(
+        userId, type, key, result.stream().map(TenantDto::getId).collect(Collectors.toList())
+      )
+    ) {
+      throw new ForbiddenException(String.format(
+        "User [%s] is either not authorized to the definition with type [%s] and key [%s] or lacks authorization to " +
+          "every tenant this definition belongs to.",
+        userId, type, key
+      ));
+    }
+
+    return result.stream()
+      .sorted(Comparator.comparing(a -> a.getName() == null ? a.getId().toLowerCase() : a.getName().toLowerCase()))
+      .collect(Collectors.toList());
   }
 
   public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(@NonNull final String userId) {
@@ -243,11 +295,11 @@ public class DefinitionService {
     return getDefinitionXml(type, userId, definitionKey, versions, (String) null);
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getDefinition(final DefinitionType type,
-                                                                     final String userId,
-                                                                     final String definitionKey,
-                                                                     final String version,
-                                                                     final String tenantId) {
+  public <T extends DefinitionOptimizeDto> Optional<T> getDefinitionWithXml(final DefinitionType type,
+                                                                            final String userId,
+                                                                            final String definitionKey,
+                                                                            final String version,
+                                                                            final String tenantId) {
     return getDefinitionWithXml(
       type,
       userId,

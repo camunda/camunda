@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWith
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -748,6 +749,265 @@ public class DefinitionRestServiceIT extends AbstractIT {
         new DefinitionVersionDto("3", VERSION_TAG),
         new DefinitionVersionDto("2", VERSION_TAG),
         new DefinitionVersionDto("1", VERSION_TAG)
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_tenantSpecificDefinitions_specificVersions(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    // also create a definition of another type, should not affect result
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !definitionType.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinitionAndAddToElasticsearch(otherDefinitionType, definitionKey, "1", TENANT_3.getId(), "other");
+    createDefinitionAndAddToElasticsearch(otherDefinitionType, definitionKey, "2", TENANT_3.getId(), "other");
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+      definitionType, definitionKey, Lists.newArrayList("1", "2")
+    );
+
+    // then all tenants are returned
+    assertThat(tenantsForAllVersions)
+      .containsExactly(
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName())
+      );
+
+    // when only some versions are included
+    final List<TenantResponseDto> tenantsForVersion1 =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+      definitionType, definitionKey, Lists.newArrayList("1")
+    );
+
+    // then only the tenants belonging to those versions are included
+    assertThat(tenantsForVersion1)
+      .containsExactly(
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName())
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_tenantSpecificDefinitions_allVersions(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_3.getId(), "the name");
+
+    // when the "all" version is included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+      definitionType, definitionKey, Lists.newArrayList("all")
+    );
+
+    // then all tenants are returned
+    assertThat(tenantsForAllVersions)
+      .containsExactly(
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName()),
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+
+    // when "all" version is included among specific versions
+    final List<TenantResponseDto> tenantsForSpecificAndAllVersion =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+      definitionType, definitionKey, Lists.newArrayList("all", "2")
+    );
+
+    // then all tenants are returned
+    assertThat(tenantsForSpecificAndAllVersion)
+      .containsExactly(
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName()),
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+
+    // when no version list is provided
+    final List<TenantResponseDto> tenantsNoVersionsProvided =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, null
+      );
+
+    // then all tenants are returned
+    assertThat(tenantsNoVersionsProvided)
+      .containsExactly(
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName()),
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_tenantSpecificDefinitions_latestVersion(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_3.getId(), "the name");
+
+    // when latest version is requested
+    final List<TenantResponseDto> tenantsForLatestVersion =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+      definitionType, definitionKey, Lists.newArrayList("latest")
+    );
+
+    // then only the available tenant for the latest version are returned
+    assertThat(tenantsForLatestVersion)
+      .containsExactly(
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+
+    // when latest version is requested along with other specific versions
+    final List<TenantResponseDto> tenantsForLatestAndOtherVersion =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+      definitionType, definitionKey, Lists.newArrayList("latest", "1")
+    );
+
+    // then the available tenants for the latest version as well as the other version are returned
+    assertThat(tenantsForLatestAndOtherVersion)
+      .containsExactly(
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_sharedDefinition(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", null, "the name");
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2", "3")
+      );
+
+    // then all tenants are returned
+    assertThat(tenantsForAllVersions)
+      .containsExactly(
+        new TenantResponseDto(TENANT_NOT_DEFINED.getId(), TENANT_NOT_DEFINED.getName()),
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName()),
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+
+    // when only some shared versions are included
+    final List<TenantResponseDto> tenantsForVersion1And2 =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2")
+      );
+
+    // then still all tenants are available
+    assertThat(tenantsForVersion1And2)
+      .containsExactly(
+        new TenantResponseDto(TENANT_NOT_DEFINED.getId(), TENANT_NOT_DEFINED.getName()),
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName()),
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_sharedAndTenantSpecificDefinitions(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    createTenant(TENANT_2);
+    createTenant(TENANT_3);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_3.getId(), "the name");
+
+    // when all versions are included
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1", "2", "3")
+      );
+
+    // then all tenants are returned
+    assertThat(tenantsForAllVersions)
+      .containsExactly(
+        new TenantResponseDto(TENANT_NOT_DEFINED.getId(), TENANT_NOT_DEFINED.getName()),
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName()),
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+
+    // when only a shared version is included
+    final List<TenantResponseDto> tenantsForVersion1 =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("1")
+      );
+
+    // then still all tenants are returned
+    assertThat(tenantsForVersion1)
+      .containsExactly(
+        new TenantResponseDto(TENANT_NOT_DEFINED.getId(), TENANT_NOT_DEFINED.getName()),
+        new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName()),
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+
+    // when only a specific version is included
+    final List<TenantResponseDto> tenantsForVersion3 =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Lists.newArrayList("3")
+      );
+
+    // then only the specific tenant is returned
+    assertThat(tenantsForVersion3)
+      .containsExactly(
+        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+      );
+  }
+
+  @Test
+  public void getDefinitionTenantsByTypeKeyAndVersions_eventBasedProcess() {
+    // given
+    final DefinitionOptimizeDto eventProcessDefinition1 = createEventBasedDefinition(
+      "eventProcess1", "Event process Definition1"
+    );
+
+    // when
+    final List<TenantResponseDto> tenants =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        eventProcessDefinition1.getType(), eventProcessDefinition1.getKey(), Lists.newArrayList("1")
+      );
+
+    // then
+    assertThat(tenants)
+      .containsExactly(
+        new TenantResponseDto(TENANT_NOT_DEFINED.getId(), TENANT_NOT_DEFINED.getName())
       );
   }
 

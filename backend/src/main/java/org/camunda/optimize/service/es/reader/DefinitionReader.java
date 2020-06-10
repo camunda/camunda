@@ -27,6 +27,7 @@ import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
@@ -63,9 +64,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
@@ -80,8 +83,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
-import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
-import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidVersion;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToLatestParticularVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
@@ -114,7 +116,8 @@ public class DefinitionReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
-  public Optional<DefinitionWithTenantIdsDto> getDefinition(final DefinitionType type, final String key) {
+  public Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(final DefinitionType type,
+                                                                                final String key) {
     if (type == null || key == null) {
       return Optional.empty();
     }
@@ -166,7 +169,7 @@ public class DefinitionReader {
       return Optional.empty();
     }
 
-    final String mostRecentValidVersion = convertToValidDefinitionVersion(
+    final String mostRecentValidVersion = DefinitionVersionHandlingUtil.convertToLatestParticularVersion(
       definitionVersions, () -> getLatestVersionToKey(type, definitionKey)
     );
 
@@ -197,7 +200,7 @@ public class DefinitionReader {
     }
 
     final String validVersion =
-      convertToValidVersion(definitionVersion, () -> getLatestVersionToKey(type, definitionKey));
+      convertToLatestParticularVersion(definitionVersion, () -> getLatestVersionToKey(type, definitionKey));
     final BoolQueryBuilder query = boolQuery()
       .must(termQuery(resolveDefinitionKeyFieldFromType(type), definitionKey))
       .must(termQuery(resolveVersionFieldFromType(type), validVersion))
@@ -503,6 +506,56 @@ public class DefinitionReader {
         return new DefinitionVersionDto(version, versionTag);
       })
       .sorted(Comparator.comparing(DefinitionVersionDto::getVersion).reversed())
+      .collect(Collectors.toList());
+  }
+
+  public List<String> getDefinitionTenantIds(final DefinitionType type,
+                                             final String key,
+                                             final List<String> versions,
+                                             final Supplier<String> latestVersionSupplier) {
+    final BoolQueryBuilder filterQuery = boolQuery();
+
+    filterQuery.filter(termQuery(DEFINITION_KEY, key));
+
+    if (versions != null
+      // if all is among the versions, no filtering needed
+      && versions.stream().noneMatch(ALL_VERSIONS::equalsIgnoreCase)) {
+      filterQuery.filter(termsQuery(
+        DEFINITION_VERSION,
+        versions.stream()
+          .filter(version -> !ALL_VERSIONS.equalsIgnoreCase(version))
+          .map(version -> convertToLatestParticularVersion(version, latestVersionSupplier))
+          .collect(Collectors.toSet())
+      ));
+    }
+
+    final TermsAggregationBuilder versionAggregation = terms(TENANT_AGGREGATION)
+      .field(DEFINITION_TENANT_ID)
+      // put `null` values (default tenant) into a dedicated bucket
+      .missing(TENANT_NOT_DEFINED_VALUE)
+      .size(configurationService.getEsAggregationBucketLimit());
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(filterQuery)
+      .aggregation(versionAggregation)
+      .size(0);
+    final SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
+      .source(searchSourceBuilder);
+    final SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      final String reason = String.format(
+        "Was not able to fetch [%s] definition tenants with key [%s] and versions [%s].", type, key, versions
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return searchResponse.getAggregations().<Terms>get(TENANT_AGGREGATION).getBuckets().stream()
+      .map(Terms.Bucket::getKeyAsString)
+      // convert null bucket back to a `null` id
+      .map(tenantId -> TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(tenantId) ? null : tenantId)
       .collect(Collectors.toList());
   }
 
