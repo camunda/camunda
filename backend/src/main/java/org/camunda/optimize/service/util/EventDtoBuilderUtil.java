@@ -47,7 +47,7 @@ public class EventDtoBuilderUtil {
       .source(EVENT_SOURCE_CAMUNDA)
       .group(processId)
       .eventName(applyCamundaProcessInstanceEndEventSuffix(processId))
-      .eventLabel(PROCESS_START_TYPE)
+      .eventLabel(PROCESS_END_TYPE)
       .build();
   }
 

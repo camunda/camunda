@@ -3,11 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest.eventprocess;
+package org.camunda.optimize.rest.eventprocess.autogeneration;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.builder.ProcessBuilder;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Gateway;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
@@ -18,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
-import org.camunda.optimize.rest.eventprocess.autogeneration.AbstractEventProcessAutogenerationIT;
 import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,18 +32,12 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
-import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateGatewayIdForSource;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessEndEventTypeDto;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessStartEventTypeDto;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateModelGatewayIdForSource;
 
 public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEventProcessAutogenerationIT {
-
-  private static final String PROCESS_ID = "someProcessId";
-  private static final String START_EVENT_ID_1 = "startEvent1";
-  private static final String START_EVENT_ID_2 = "startEvent2";
-  private static final String END_EVENT_ID_1 = "endEvent1";
-  private static final String END_EVENT_ID_2 = "endEvent2";
 
   @BeforeEach
   public void init() {
@@ -64,8 +55,8 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto expectedStartEvent = createCamundaEventTypeDto(PROCESS_ID, START_EVENT_ID_1, START_EVENT_ID_1);
-    final EventTypeDto expectedEndEvent = createCamundaEventTypeDto(PROCESS_ID, END_EVENT_ID_1, END_EVENT_ID_1);
+    final EventTypeDto expectedStartEvent = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
+    final EventTypeDto expectedEndEvent = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
@@ -102,9 +93,9 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(PROCESS_ID, START_EVENT_ID_1, START_EVENT_ID_1);
-    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(PROCESS_ID, START_EVENT_ID_2, START_EVENT_ID_2);
-    final EventTypeDto expectedEndEvent = createCamundaEventTypeDto(PROCESS_ID, END_EVENT_ID_1, END_EVENT_ID_1);
+    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
+    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_2, START_EVENT_ID_2);
+    final EventTypeDto expectedEndEvent = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
@@ -127,7 +118,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
     assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 1);
 
     // then the model elements are of the correct type and connected to expected nodes correctly
-    final String gatewayId = generateGatewayIdForSource(eventSource, Converging);
+    final String gatewayId = generateModelGatewayIdForSource(eventSource, Converging);
     assertNodeConnection(idOf(expectedStartEvent1), START_EVENT, gatewayId, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(idOf(expectedStartEvent2), START_EVENT, gatewayId, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(gatewayId, EXCLUSIVE_GATEWAY, idOf(expectedEndEvent), END_EVENT, generatedInstance);
@@ -154,9 +145,9 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto expectedStartEvent = createCamundaEventTypeDto(PROCESS_ID, START_EVENT_ID_1, START_EVENT_ID_1);
-    final EventTypeDto expectedEndEvent1 = createCamundaEventTypeDto(PROCESS_ID, END_EVENT_ID_1, END_EVENT_ID_1);
-    final EventTypeDto expectedEndEvent2 = createCamundaEventTypeDto(PROCESS_ID, END_EVENT_ID_2, END_EVENT_ID_2);
+    final EventTypeDto expectedStartEvent = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
+    final EventTypeDto expectedEndEvent1 = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
+    final EventTypeDto expectedEndEvent2 = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_2, END_EVENT_ID_2);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
@@ -179,7 +170,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
     assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 1);
 
     // then the model elements are of the correct type and connected to expected nodes correctly
-    final String gatewayId = generateGatewayIdForSource(eventSource, Diverging);
+    final String gatewayId = generateModelGatewayIdForSource(eventSource, Diverging);
     assertNodeConnection(idOf(expectedStartEvent), START_EVENT, gatewayId, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(gatewayId, EXCLUSIVE_GATEWAY, idOf(expectedEndEvent1), END_EVENT, generatedInstance);
     assertNodeConnection(gatewayId, EXCLUSIVE_GATEWAY, idOf(expectedEndEvent2), END_EVENT, generatedInstance);
@@ -207,7 +198,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto expectedStartEvent = createCamundaEventTypeDto(PROCESS_ID, START_EVENT_ID_1, START_EVENT_ID_1);
+    final EventTypeDto expectedStartEvent = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
@@ -244,10 +235,10 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(PROCESS_ID, START_EVENT_ID_1, START_EVENT_ID_1);
-    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(PROCESS_ID, START_EVENT_ID_2, START_EVENT_ID_2);
-    final EventTypeDto expectedEndEvent1 = createCamundaEventTypeDto(PROCESS_ID, END_EVENT_ID_1, END_EVENT_ID_1);
-    final EventTypeDto expectedEndEvent2 = createCamundaEventTypeDto(PROCESS_ID, END_EVENT_ID_2, END_EVENT_ID_2);
+    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
+    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_2, START_EVENT_ID_2);
+    final EventTypeDto expectedEndEvent1 = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
+    final EventTypeDto expectedEndEvent2 = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_2, END_EVENT_ID_2);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
@@ -270,8 +261,8 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
     assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 2);
 
     // then the model elements are of the correct type and connected to expected nodes correctly
-    final String convergingId = generateGatewayIdForSource(eventSource, Converging);
-    final String divergingId = generateGatewayIdForSource(eventSource, Diverging);
+    final String convergingId = generateModelGatewayIdForSource(eventSource, Converging);
+    final String divergingId = generateModelGatewayIdForSource(eventSource, Diverging);
     assertNodeConnection(idOf(expectedStartEvent1), START_EVENT, convergingId, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(idOf(expectedStartEvent2), START_EVENT, convergingId, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(convergingId, EXCLUSIVE_GATEWAY, divergingId, EXCLUSIVE_GATEWAY, generatedInstance);
@@ -306,8 +297,8 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(PROCESS_ID, START_EVENT_ID_1, START_EVENT_ID_1);
-    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(PROCESS_ID, START_EVENT_ID_2, START_EVENT_ID_2);
+    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
+    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_2, START_EVENT_ID_2);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
@@ -330,7 +321,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
     assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 1);
 
     // then the model elements are of the correct type and connected to expected nodes correctly
-    final String gatewayId = generateGatewayIdForSource(eventSource, Converging);
+    final String gatewayId = generateModelGatewayIdForSource(eventSource, Converging);
     assertNodeConnection(idOf(expectedStartEvent1), START_EVENT, gatewayId, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(idOf(expectedStartEvent2), START_EVENT, gatewayId, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(gatewayId, EXCLUSIVE_GATEWAY, null, null, generatedInstance);
@@ -347,8 +338,8 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.PROCESS_INSTANCE
     );
-    final EventTypeDto expectedStartEvent = createCamundaProcessStartEventTypeDto(PROCESS_ID);
-    final EventTypeDto expectedEndEvent = createCamundaProcessEndEventTypeDto(PROCESS_ID);
+    final EventTypeDto expectedStartEvent = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
+    final EventTypeDto expectedEndEvent = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
@@ -386,86 +377,6 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       multipleStartMultipleEndModel(),
       multipleStartNoEndModel()
     );
-  }
-
-  private static BpmnModelInstance singleStartSingleEndModel() {
-    return Bpmn.createExecutableProcess(PROCESS_ID)
-      .startEvent(START_EVENT_ID_1)
-      .userTask(BPMN_INTERMEDIATE_EVENT_ID)
-      .endEvent(END_EVENT_ID_1)
-      .done();
-  }
-
-  private static BpmnModelInstance multipleStartSingleEndModel() {
-    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(PROCESS_ID);
-    final String gateway = "someGatewayId";
-    processBuilder
-      .startEvent(START_EVENT_ID_1).message(START_EVENT_ID_1)
-      .exclusiveGateway(gateway)
-      .userTask(BPMN_INTERMEDIATE_EVENT_ID)
-      .endEvent(END_EVENT_ID_1);
-    processBuilder.startEvent(START_EVENT_ID_2).message(START_EVENT_ID_2)
-      .connectTo(gateway);
-    return processBuilder.done();
-  }
-
-  private static BpmnModelInstance singleStartMultipleEndModel() {
-    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(PROCESS_ID);
-    final String gateway = "someGatewayId";
-    processBuilder
-      .startEvent(START_EVENT_ID_1)
-      .exclusiveGateway(gateway)
-      .condition("no", "${!goToEndEvent2}")
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT_ID_1)
-      .moveToNode(gateway)
-      .condition("yes", "${goToEndEvent2}")
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT_ID_2)
-      .done();
-    return processBuilder.done();
-  }
-
-  private static BpmnModelInstance singleStartNoEndModel() {
-    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(PROCESS_ID);
-    processBuilder
-      .startEvent(START_EVENT_ID_1)
-      .done();
-    return processBuilder.done();
-  }
-
-  private static BpmnModelInstance multipleStartMultipleEndModel() {
-    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(PROCESS_ID);
-    final String convergingGateway = "convergingGatewayId";
-    final String divergingGateway = "divergingGatewayId";
-    processBuilder
-      .startEvent(START_EVENT_ID_1).message(START_EVENT_ID_1)
-      .exclusiveGateway(convergingGateway)
-      .exclusiveGateway(divergingGateway)
-      .condition("no", "${!goToEndEvent2}")
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT_ID_1)
-      .moveToNode(divergingGateway)
-      .condition("yes", "${goToEndEvent2}")
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT_ID_2);
-    processBuilder.startEvent(START_EVENT_ID_2).message(START_EVENT_ID_2)
-      .connectTo(convergingGateway)
-      .done();
-    return processBuilder.done();
-  }
-
-  private static BpmnModelInstance multipleStartNoEndModel() {
-    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(PROCESS_ID);
-    processBuilder
-      .startEvent(START_EVENT_ID_1).message(START_EVENT_ID_1);
-    processBuilder.startEvent(START_EVENT_ID_2).message(START_EVENT_ID_2)
-      .done();
-    return processBuilder.done();
   }
 
 }

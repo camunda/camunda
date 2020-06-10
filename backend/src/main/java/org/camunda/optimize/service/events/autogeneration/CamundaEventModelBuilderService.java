@@ -1,0 +1,210 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+package org.camunda.optimize.service.events.autogeneration;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.GatewayDirection;
+import org.camunda.bpm.model.bpmn.builder.AbstractFlowNodeBuilder;
+import org.camunda.bpm.model.bpmn.builder.ProcessBuilder;
+import org.camunda.bpm.model.bpmn.builder.StartEventBuilder;
+import org.camunda.bpm.model.bpmn.instance.StartEvent;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.service.DefinitionService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
+import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
+import static org.camunda.optimize.service.util.BpmnModelUtility.getEndEventsFromInstance;
+import static org.camunda.optimize.service.util.BpmnModelUtility.getStartEventsFromInstance;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessEndEventTypeDto;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessStartEventTypeDto;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.addEndEvent;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.addExclusiveGateway;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.addIntermediateEvent;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.addStartEvent;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateModelGatewayIdForSource;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateNodeId;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateTaskIdForDefinitionKey;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.prepareModelBuilderForNextSource;
+
+@RequiredArgsConstructor
+@Component
+@Slf4j
+public class CamundaEventModelBuilderService {
+
+  private final DefinitionService definitionService;
+
+  public AbstractFlowNodeBuilder<?, ?> createOrExtendModelWithEventSource(final ProcessBuilder processBuilder,
+                                                                          final AbstractFlowNodeBuilder<?, ?> generatedModelBuilder,
+                                                                          final Map<String, EventMappingDto> mappings,
+                                                                          final EventSourceEntryDto sourceEntryDto,
+                                                                          final boolean isFinalSourceInSeries) {
+    if (EventScopeType.PROCESS_INSTANCE.equals(sourceEntryDto.getEventScope().get(0))) {
+      return createProcessStartEndModel(
+        processBuilder,
+        generatedModelBuilder,
+        mappings,
+        sourceEntryDto,
+        isFinalSourceInSeries
+      );
+    } else {
+      return createStartEndEventModel(
+        processBuilder,
+        generatedModelBuilder,
+        mappings,
+        sourceEntryDto,
+        isFinalSourceInSeries
+      );
+    }
+  }
+
+  private AbstractFlowNodeBuilder<?, ?> createStartEndEventModel(final ProcessBuilder processBuilder,
+                                                                 final AbstractFlowNodeBuilder<?, ?> generatedModelBuilder,
+                                                                 final Map<String, EventMappingDto> mappings,
+                                                                 final EventSourceEntryDto sourceEntryDto,
+                                                                 final boolean isFinalSourceInSeries) {
+    final BpmnModelInstance modelInstance = getModelInstanceForSourceEntryDefinition(sourceEntryDto);
+    final String processDefinitionKey = sourceEntryDto.getProcessDefinitionKey();
+    final List<EventTypeDto> startEvents = getStartEventsFromInstance(modelInstance, processDefinitionKey);
+    final List<EventTypeDto> endEvents = getEndEventsFromInstance(modelInstance, processDefinitionKey);
+
+    AbstractFlowNodeBuilder<?, ?> nextBuilder = null;
+    for (EventTypeDto startEvent : startEvents) {
+      if (generatedModelBuilder == null) {
+        nextBuilder = addStartEvent(startEvent, generateNodeId(startEvent), processBuilder);
+      } else {
+        nextBuilder = addIntermediateEvent(startEvent, generateNodeId(startEvent), generatedModelBuilder);
+      }
+      if (startEvents.size() > 1) {
+        nextBuilder = addOrConnectToGateway(nextBuilder, sourceEntryDto, Converging);
+      }
+      mappings.put(generateNodeId(startEvent), EventMappingDto.builder().start(startEvent).build());
+    }
+    if (nextBuilder == null) {
+      // If there are no start events in the source model, we create an unmapped one - should never be the case
+      nextBuilder = processBuilder.startEvent();
+    }
+    for (EventTypeDto endEvent : endEvents) {
+      if (endEvents.size() > 1) {
+        nextBuilder = addOrConnectToGateway(nextBuilder, sourceEntryDto, Diverging);
+      }
+      final String nodeId = generateNodeId(endEvent);
+      if (isFinalSourceInSeries) {
+        nextBuilder = addEndEvent(endEvent, generateNodeId(endEvent), nextBuilder);
+      } else {
+        nextBuilder = addIntermediateEvent(endEvent, generateNodeId(endEvent), nextBuilder);
+      }
+      mappings.put(nodeId, EventMappingDto.builder().start(endEvent).build());
+    }
+
+    // if this is false, we expect there to be sources to add to the model after this one, so we need to return the
+    // builder in a state where it can be extended
+    if (!isFinalSourceInSeries) {
+      nextBuilder = prepareModelBuilderForNextSource(nextBuilder, endEvents, sourceEntryDto.getProcessDefinitionKey());
+    }
+    return nextBuilder;
+  }
+
+  private AbstractFlowNodeBuilder<?, ?> createProcessStartEndModel(final ProcessBuilder processBuilder,
+                                                                   final AbstractFlowNodeBuilder<?, ?> generatedModelBuilder,
+                                                                   final Map<String, EventMappingDto> mappings,
+                                                                   final EventSourceEntryDto sourceEntryDto,
+                                                                   final boolean isFinalSourceInSeries) {
+    final EventTypeDto processInstanceStartProcessEvent =
+      createCamundaProcessStartEventTypeDto(sourceEntryDto.getProcessDefinitionKey());
+    final EventTypeDto processInstanceEndProcessEvent =
+      createCamundaProcessEndEventTypeDto(sourceEntryDto.getProcessDefinitionKey());
+    final String processStartEventId = generateNodeId(processInstanceStartProcessEvent);
+    final String processEndEventId = generateNodeId(processInstanceEndProcessEvent);
+
+    AbstractFlowNodeBuilder<?, ?> builderToReturn;
+    // If this is true, this source isn't continuing the build from a previous source so should start the process
+    if (generatedModelBuilder == null) {
+      final AbstractFlowNodeBuilder<StartEventBuilder, StartEvent> currentBuilder = addStartEvent(
+        processInstanceStartProcessEvent,
+        processStartEventId,
+        processBuilder
+      );
+      if (isFinalSourceInSeries) {
+        builderToReturn = addEndEvent(processInstanceEndProcessEvent, processEndEventId, currentBuilder);
+      } else {
+        builderToReturn = addIntermediateEvent(processInstanceEndProcessEvent, processEndEventId, currentBuilder);
+      }
+      mappings.put(processStartEventId, EventMappingDto.builder().start(processInstanceStartProcessEvent).build());
+      mappings.put(processEndEventId, EventMappingDto.builder().start(processInstanceEndProcessEvent).build());
+    } else {
+      // If this source isn't the start or end source in the overall model, it gets added as a call activity
+      if (!isFinalSourceInSeries) {
+        final String nodeId = generateTaskIdForDefinitionKey(sourceEntryDto.getProcessDefinitionKey());
+        final String activityName = getDefinition(sourceEntryDto).map(DefinitionOptimizeDto::getName)
+          .orElse(sourceEntryDto.getProcessDefinitionKey());
+        builderToReturn = generatedModelBuilder.callActivity(nodeId).name(activityName);
+        mappings.put(nodeId, EventMappingDto.builder()
+          .start(processInstanceStartProcessEvent)
+          .end(processInstanceEndProcessEvent)
+          .build());
+      } else {
+        builderToReturn = addIntermediateEvent(
+          processInstanceStartProcessEvent,
+          processStartEventId,
+          generatedModelBuilder
+        );
+        builderToReturn = addEndEvent(processInstanceEndProcessEvent, processEndEventId, builderToReturn);
+        mappings.put(processStartEventId, EventMappingDto.builder().start(processInstanceStartProcessEvent).build());
+        mappings.put(processEndEventId, EventMappingDto.builder().start(processInstanceEndProcessEvent).build());
+      }
+    }
+    // we don't need to add connections here because it will always be in the correct position at the end element
+    // of the process
+    return builderToReturn;
+  }
+
+  private AbstractFlowNodeBuilder<?, ?> addOrConnectToGateway(final AbstractFlowNodeBuilder<?, ?> nextBuilder,
+                                                              final EventSourceEntryDto source,
+                                                              final GatewayDirection direction) {
+    final BpmnModelInstance bpmnModelInstance = nextBuilder.done();
+    final String gatewayId = generateModelGatewayIdForSource(source, direction);
+    if (bpmnModelInstance.getModelElementById(gatewayId) == null) {
+      return addExclusiveGateway(direction, gatewayId, nextBuilder);
+    } else {
+      log.debug("Connecting to {} gateway with id {}", direction.toString().toLowerCase(), gatewayId);
+      return Diverging.equals(direction) ? nextBuilder.moveToNode(gatewayId) : nextBuilder.connectTo(gatewayId);
+    }
+  }
+
+  private BpmnModelInstance getModelInstanceForSourceEntryDefinition(final EventSourceEntryDto sourceEntryDto) {
+    final String definitionXml = getDefinition(sourceEntryDto)
+      .map(def -> ((ProcessDefinitionOptimizeDto) def).getBpmn20Xml())
+      .orElseThrow(() -> new OptimizeRuntimeException(String.format(
+        "Process definition with definition key %s could not be loaded", sourceEntryDto.getProcessDefinitionKey())));
+    return BpmnModelUtility.parseBpmnModel(definitionXml);
+  }
+
+  private Optional<DefinitionOptimizeDto> getDefinition(final EventSourceEntryDto sourceEntryDto) {
+    return definitionService.getDefinitionWithXmlAsService(
+      DefinitionType.PROCESS,
+      sourceEntryDto.getProcessDefinitionKey(),
+      sourceEntryDto.getVersions(),
+      sourceEntryDto.getTenants()
+    );
+  }
+
+}

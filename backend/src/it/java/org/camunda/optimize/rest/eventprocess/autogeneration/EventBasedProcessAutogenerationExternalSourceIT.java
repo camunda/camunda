@@ -33,15 +33,8 @@ import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateGatewayIdForNode;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 
 public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEventProcessAutogenerationIT {
-
-  private static final EventTypeDto EVENT_A = createMappedEventDto();
-  private static final EventTypeDto EVENT_B = createMappedEventDto();
-  private static final EventTypeDto EVENT_C = createMappedEventDto();
-  private static final EventTypeDto EVENT_D = createMappedEventDto();
-  private static final EventTypeDto EVENT_E = createMappedEventDto();
 
   @BeforeEach
   public void init() {
@@ -792,22 +785,6 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
       Arrays.asList(idOf(EVENT_D)),
       getGatewayWithId(gatewaysInModel, convergingGatewayId)
     );
-  }
-
-  private CloudEventDto createCloudEventOfType(final EventTypeDto eventType,
-                                               final String traceId,
-                                               final Instant now) {
-    return eventClient.createCloudEventDto().toBuilder()
-      .group(eventType.getGroup())
-      .source(eventType.getSource())
-      .type(eventType.getEventName())
-      .traceid(traceId)
-      .time(now).build();
-  }
-
-  private void ingestEventAndProcessTraces(List<CloudEventDto> eventsToIngest) {
-    eventClient.ingestEventBatch(eventsToIngest);
-    processEventCountAndTraces();
   }
 
 }

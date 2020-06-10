@@ -176,7 +176,7 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
       .done();
     final ProcessDefinitionEngineDto processDefinitionEngineDto = engineIntegrationExtension
       .deployProcessAndGetProcessDefinition(processModel);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     return processDefinitionEngineDto;
   }
