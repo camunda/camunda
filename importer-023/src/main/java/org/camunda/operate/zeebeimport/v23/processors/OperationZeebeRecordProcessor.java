@@ -8,7 +8,7 @@ package org.camunda.operate.zeebeimport.v23.processors;
 import java.util.HashSet;
 import java.util.Set;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.es.schema.templates.OperationTemplate;
+import org.camunda.operate.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.zeebeimport.ElasticsearchManager;
 import org.elasticsearch.action.bulk.BulkRequest;

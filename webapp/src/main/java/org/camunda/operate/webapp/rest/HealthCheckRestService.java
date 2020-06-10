@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.webapp.rest;
 
-import org.camunda.operate.Probes;
+import org.camunda.operate.webapp.es.reader.Probes;
 import org.camunda.operate.webapp.rest.dto.HealthStateDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

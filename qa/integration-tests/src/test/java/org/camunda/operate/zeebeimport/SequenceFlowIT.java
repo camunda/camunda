@@ -12,9 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
-
-import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.webapp.rest.dto.SequenceFlowDto;
+import org.camunda.operate.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Test;

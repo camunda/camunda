@@ -19,7 +19,7 @@ import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;

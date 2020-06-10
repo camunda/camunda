@@ -8,10 +8,11 @@ package org.camunda.operate.es;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import org.camunda.operate.es.schema.indices.IndexDescriptor;
-import org.camunda.operate.es.schema.templates.EventTemplate;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
-import org.camunda.operate.es.schema.templates.TemplateDescriptor;
+import org.camunda.operate.schema.ElasticsearchSchemaManager;
+import org.camunda.operate.schema.indices.IndexDescriptor;
+import org.camunda.operate.schema.templates.EventTemplate;
+import org.camunda.operate.schema.templates.IncidentTemplate;
+import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -31,7 +32,7 @@ public class SchemaCreationIT extends OperateIntegrationTest {
   private RestHighLevelClient esClient;
 
   @Autowired
-  private ElasticsearchSchemaManager elasticsearchSchemaManager;
+  private ElasticsearchSchemaManager schemaManager;
 
   @Autowired
   private IncidentTemplate workflowInstanceTemplate;
@@ -62,7 +63,7 @@ public class SchemaCreationIT extends OperateIntegrationTest {
     assertTemplateOrder(eventTemplate.getTemplateName(), 30);
 
     //assert schema creation won't be performed for the second time
-    assertThat(elasticsearchSchemaManager.schemaAlreadyExists()).isTrue();
+    assertThat(schemaManager.schemaAlreadyExists()).isTrue();
   }
 
   private void assertTemplateOrder(String templateName, int templateOrder) throws IOException {

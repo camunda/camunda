@@ -5,9 +5,9 @@
  */
 package org.camunda.operate.webapp.es.reader;
 
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
@@ -15,14 +15,14 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.io.IOException;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.webapp.rest.dto.WorkflowInstanceCoreStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;

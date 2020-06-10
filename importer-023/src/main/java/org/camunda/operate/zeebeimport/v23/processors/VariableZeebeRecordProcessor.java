@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
-import org.camunda.operate.es.schema.templates.VariableTemplate;
+import org.camunda.operate.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.v23.record.value.VariableRecordValueImpl;

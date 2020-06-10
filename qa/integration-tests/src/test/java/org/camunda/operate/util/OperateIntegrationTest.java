@@ -18,6 +18,7 @@ import java.util.List;
 import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
 import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import org.camunda.operate.webapp.security.UserService;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;

@@ -5,10 +5,10 @@
  */
 package org.camunda.operate.webapp.es.reader;
 
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
-import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
+import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
@@ -21,17 +21,17 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
-import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.schema.templates.IncidentTemplate;
+import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentsByWorkflowGroupStatisticsDto;
 import org.camunda.operate.util.ConversionUtils;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;

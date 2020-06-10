@@ -11,6 +11,7 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import org.camunda.operate.util.TestApplication;
 import org.camunda.operate.util.TestUtil;
+import org.camunda.operate.webapp.es.reader.Probes;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,9 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = { TestApplication.class, OperateProperties.class, TestElasticsearchSchemaManager.class, Probes.class },    properties = {
-      OperateProperties.PREFIX + ".elasticsearch.createSchema = false"
-    }
+    classes = { TestApplication.class, OperateProperties.class, TestElasticsearchSchemaManager.class, Probes.class }
 )
 public class ProbesTestIT{
 
@@ -31,7 +30,7 @@ public class ProbesTestIT{
   private OperateProperties operateProperties;
   
   @Autowired
-  private TestElasticsearchSchemaManager elasticsearchSchemaManager;
+  private TestElasticsearchSchemaManager schemaManager;
   
   @Autowired
   private Probes probes;
@@ -43,30 +42,37 @@ public class ProbesTestIT{
   
   @After
   public void after() {
-    elasticsearchSchemaManager.deleteSchemaQuietly();
+    schemaManager.deleteSchemaQuietly();
     operateProperties.getElasticsearch().setDefaultIndexPrefix();
   }
   
   @Test
   public void testIsReady() {
-    elasticsearchSchemaManager.createSchema();
+    enableCreateSchema(true);
+    schemaManager.createSchema();
     assertThat(probes.isReady()).isTrue();
   }
   
   @Test
   public void testIsNotReady() {
+    enableCreateSchema(false);
     assertThat(probes.isReady()).isFalse();
   }
 
   @Test
   public void testIsLive() {
-    elasticsearchSchemaManager.createSchema();
+    enableCreateSchema(true);
+    schemaManager.createSchema();
     assertThat(probes.isLive()).isTrue();
   }
   
   @Test
   public void testIsNotLive() {
+    enableCreateSchema(false);
     assertThat(probes.isLive()).isFalse();
   }
   
+  protected void enableCreateSchema(boolean createSchema) {
+    operateProperties.getElasticsearch().setCreateSchema(createSchema);
+  }
 }

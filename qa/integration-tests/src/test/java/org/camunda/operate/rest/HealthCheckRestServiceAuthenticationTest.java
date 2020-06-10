@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import org.camunda.operate.Probes;
+import org.camunda.operate.webapp.es.reader.Probes;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.camunda.operate.webapp.security.WebSecurityConfig;

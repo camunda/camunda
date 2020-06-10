@@ -124,14 +124,12 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${zeebe-test-container.version}</version>
-        <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>elasticsearch</artifactId>
         <version>${elasticsearch-test-container.version}</version>
-        <scope>test</scope>
       </dependency>
 
       <dependency>

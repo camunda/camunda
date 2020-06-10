@@ -27,7 +27,7 @@ public class OperateProperties {
   private boolean importerEnabled = true;
   private boolean archiverEnabled = true;
   private boolean webappEnabled = true;
-
+  
   /**
    * Indicates, whether CSRF prevention is enabled.
    */
@@ -48,9 +48,6 @@ public class OperateProperties {
 
   @Value("${camunda.operate.internal.schema.version}")
   private String schemaVersion;
-  
-  @Value("${camunda.operate.internal.schema.previous_version}")
-  private String previousSchemaVersion;
 
   @NestedConfigurationProperty
   private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
@@ -198,14 +195,6 @@ public class OperateProperties {
 
   public void setSchemaVersion(String schemaVersion) {
     this.schemaVersion = schemaVersion;
-  }
-  
-  public String getPreviousSchemaVersion() {
-    return previousSchemaVersion.toLowerCase();
-  }
-
-  public void setPreviousSchemaVersion(String previousSchemaVersion) {
-    this.previousSchemaVersion = previousSchemaVersion;
   }
 
 }

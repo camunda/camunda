@@ -5,11 +5,11 @@
  */
 package org.camunda.operate.webapp.es.reader;
 
-import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.exceptions.OperateRuntimeException;
-import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.entities.WorkflowEntity;
+import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import static org.camunda.operate.es.schema.indices.WorkflowIndex.BPMN_XML;
+import static org.camunda.operate.schema.indices.WorkflowIndex.BPMN_XML;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;

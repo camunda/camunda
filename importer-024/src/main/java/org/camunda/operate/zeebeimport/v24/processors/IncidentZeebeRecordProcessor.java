@@ -11,7 +11,7 @@ import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
+import org.camunda.operate.schema.templates.IncidentTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;

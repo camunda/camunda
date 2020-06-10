@@ -6,6 +6,7 @@
 package org.camunda.operate.zeebeimport.v24.processors;
 
 import javax.xml.parsers.SAXParserFactory;
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -17,8 +18,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -40,7 +41,6 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
-import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 @Component
 public class WorkflowZeebeRecordProcessor {

@@ -16,7 +16,7 @@ import java.util.Set;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
-import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
+import org.camunda.operate.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;

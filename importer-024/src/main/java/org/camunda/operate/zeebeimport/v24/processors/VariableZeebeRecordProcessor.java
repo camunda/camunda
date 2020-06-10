@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.v24.processors;
 
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
-import org.camunda.operate.es.schema.templates.VariableTemplate;
+import org.camunda.operate.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.v24.record.value.VariableRecordValueImpl;
@@ -26,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
-import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 @Component
 public class VariableZeebeRecordProcessor {

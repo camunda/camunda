@@ -6,7 +6,7 @@
 package org.camunda.operate.rest;
 
 import org.camunda.operate.webapp.rest.dto.HealthStateDto;
-import org.camunda.operate.Probes;
+import org.camunda.operate.webapp.es.reader.Probes;
 import org.camunda.operate.util.WebSecurityDisabledConfig;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.rest.HealthCheckRestService;

@@ -7,10 +7,10 @@ package org.camunda.operate.webapp.es.reader;
 
 import java.io.IOException;
 import java.util.List;
-import org.camunda.operate.entities.SequenceFlowEntity;
-import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
-import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.entities.SequenceFlowEntity;
+import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.schema.templates.SequenceFlowTemplate;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;

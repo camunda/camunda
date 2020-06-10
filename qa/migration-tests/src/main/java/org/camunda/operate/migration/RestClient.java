@@ -17,7 +17,7 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
+import org.camunda.operate.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

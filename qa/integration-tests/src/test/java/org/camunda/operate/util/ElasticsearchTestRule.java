@@ -25,16 +25,16 @@ import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.ElasticsearchConnector;
-import org.camunda.operate.es.ElasticsearchSchemaManager;
-import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
-import org.camunda.operate.es.schema.templates.ListViewTemplate;
-import org.camunda.operate.es.schema.templates.OperationTemplate;
-import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.schema.ElasticsearchSchemaManager;
+import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.schema.templates.BatchOperationTemplate;
+import org.camunda.operate.schema.templates.IncidentTemplate;
+import org.camunda.operate.schema.templates.ListViewTemplate;
+import org.camunda.operate.schema.templates.OperationTemplate;
+import org.camunda.operate.schema.templates.VariableTemplate;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
 import org.camunda.operate.zeebeimport.RecordsReaderHolder;
@@ -99,7 +99,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   protected OperateProperties operateProperties;
 
   @Autowired
-  private ElasticsearchSchemaManager elasticsearchSchemaManager;
+  private ElasticsearchSchemaManager schemaManager;
 
   @Autowired
   protected ZeebeImporter zeebeImporter;
@@ -142,7 +142,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     if (operateProperties.getElasticsearch().isCreateSchema()) {
-      elasticsearchSchemaManager.createSchema();
+      schemaManager.createSchema();
       assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
           .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
           .isTrue();

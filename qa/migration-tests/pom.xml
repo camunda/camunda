@@ -21,6 +21,12 @@
 		
 		<dependency>
 			<groupId>org.camunda.operate</groupId>
+			<artifactId>camunda-operate-els-schema</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.camunda.operate</groupId>
 			<artifactId>camunda-operate-webapp</artifactId>
 			<version>${project.version}</version>
 		</dependency>

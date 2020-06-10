@@ -27,7 +27,7 @@ import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
-import org.camunda.operate.es.schema.templates.EventTemplate;
+import org.camunda.operate.schema.templates.EventTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;

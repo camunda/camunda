@@ -8,7 +8,7 @@ package org.camunda.operate.archiver;
 import java.io.IOException;
 import java.util.Arrays;
 import org.camunda.operate.Metrics;
-import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
+import org.camunda.operate.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;

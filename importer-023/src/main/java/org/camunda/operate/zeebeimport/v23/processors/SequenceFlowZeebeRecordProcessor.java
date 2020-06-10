@@ -7,9 +7,8 @@ package org.camunda.operate.zeebeimport.v23.processors;
 
 import java.io.IOException;
 import org.camunda.operate.entities.SequenceFlowEntity;
-import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
+import org.camunda.operate.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.v23.record.Intent;
 import org.camunda.operate.zeebeimport.v23.record.value.WorkflowInstanceRecordValueImpl;

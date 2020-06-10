@@ -6,11 +6,11 @@
 package org.camunda.operate.zeebeimport.severalversions;
 
 import java.io.IOException;
-import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
-import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
+import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.schema.templates.IncidentTemplate;
+import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.zeebeimport.ImportBatch;
@@ -26,8 +26,8 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;

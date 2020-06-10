@@ -5,8 +5,8 @@
  */
 package org.camunda.operate.migration;
 
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.io.IOException;
@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import javax.annotation.PostConstruct;
@@ -24,9 +25,10 @@ import javax.annotation.PreDestroy;
 
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.es.schema.templates.ListViewTemplate;
-import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.qa.util.ZeebeTestUtil;
+import org.camunda.operate.schema.migration.Migrator;
+import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -53,9 +55,6 @@ public class DataGenerator {
 
   @Autowired
   private MigrationProperties migrationProperties;
-  
-  @Autowired
-  private OperateProperties operateProperties;
 
   @Autowired
   private ZeebeClient zeebeClient;
@@ -76,11 +75,16 @@ public class DataGenerator {
   private DateTimeFormatter archiverDateTimeFormatter;
 
   private EntityReader entityReader;
+  
+  @Autowired
+  private Migrator migrator;
 
   @PostConstruct
   public void init() {  
+    Optional<String> previousVersion = migrator.detectPreviousSchemaVersion();
+    if(previousVersion.isEmpty()) throw new OperateRuntimeException("No previous schema found");
     archiverDateTimeFormatter = DateTimeFormatter.ofPattern(migrationProperties.getArchiverDateFormat()).withZone(ZoneId.systemDefault());
-    entityReader = beanFactory.getBean(EntityReader.class,operateProperties.getPreviousSchemaVersion());
+    entityReader = beanFactory.getBean(EntityReader.class,previousVersion.get());
   }
 
   public void createData() throws Exception {

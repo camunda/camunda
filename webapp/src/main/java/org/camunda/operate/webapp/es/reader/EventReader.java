@@ -7,11 +7,11 @@ package org.camunda.operate.webapp.es.reader;
 
 import java.io.IOException;
 import java.util.List;
-import org.camunda.operate.entities.EventEntity;
-import org.camunda.operate.es.schema.templates.EventTemplate;
-import org.camunda.operate.exceptions.OperateRuntimeException;
-import org.camunda.operate.webapp.rest.dto.EventQueryDto;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.entities.EventEntity;
+import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.schema.templates.EventTemplate;
+import org.camunda.operate.webapp.rest.dto.EventQueryDto;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;

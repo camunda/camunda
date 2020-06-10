@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
-import org.camunda.operate.es.schema.indices.ImportPositionIndex;
+import org.camunda.operate.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;

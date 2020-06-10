@@ -6,13 +6,12 @@
 package org.camunda.operate.webapp.security.es;
 
 import java.io.IOException;
-
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.webapp.es.reader.AbstractReader;
-import org.camunda.operate.es.schema.indices.UserIndex;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.schema.indices.UserIndex;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.security.sso.SSOWebSecurityConfig;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;

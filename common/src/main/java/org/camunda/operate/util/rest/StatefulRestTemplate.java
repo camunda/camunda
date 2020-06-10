@@ -21,7 +21,9 @@ import org.apache.http.protocol.HttpContext;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -40,6 +42,9 @@ public class StatefulRestTemplate extends RestTemplate {
 
   private static final String LOGIN_URL_PATTERN = "/api/login?username=%s&password=%s";
   private static final String CSRF_TOKEN_HEADER_NAME = "X-CSRF-TOKEN";
+
+  private static final String USERNAME_DEFAULT = "demo";
+  private static final String PASSWORD_DEFAULT = "demo";
 
   private final String host;
   private final Integer port;
@@ -80,8 +85,22 @@ public class StatefulRestTemplate extends RestTemplate {
     return responseEntity;
   }
 
+  @Override
+  public <T> ResponseEntity<T> postForEntity(URI url, Object request, Class<T> responseType) throws RestClientException {
+    RequestEntity<Object> requestEntity = RequestEntity.method(HttpMethod.POST, url)
+        .headers(getCsrfHeader())
+        .contentType(MediaType.APPLICATION_JSON).body(request);
+    final ResponseEntity<T> tResponseEntity = exchange(requestEntity, responseType);
+    saveCSRFTokenWhenAvailable(tResponseEntity);
+    return tResponseEntity;
+  }
+
   public StatefulHttpComponentsClientHttpRequestFactory getStatefulHttpClientRequestFactory() {
     return statefulHttpComponentsClientHttpRequestFactory;
+  }
+
+  public void loginWhenNeeded() {
+    loginWhenNeeded(USERNAME_DEFAULT, PASSWORD_DEFAULT);
   }
 
   public void loginWhenNeeded(String username, String password){
