@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.DateSerializer;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
@@ -26,6 +28,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 @Configuration
 public class ObjectMapperFactory {
@@ -54,6 +57,7 @@ public class ObjectMapperFactory {
   private ObjectMapper buildObjectMapper(DateTimeFormatter deserializationDateTimeFormatter) {
     JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(this.optimizeDateTimeFormatter));
+    javaTimeModule.addSerializer(Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
     javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(deserializationDateTimeFormatter));
 
     ObjectMapper mapper = Jackson2ObjectMapperBuilder
@@ -78,7 +82,8 @@ public class ObjectMapperFactory {
     module.addDeserializer(DefinitionOptimizeDto.class, new CustomDefinitionDeserializer(mapper));
     module.addDeserializer(ReportDefinitionDto.class, new CustomReportDefinitionDeserializer(mapper));
     module.addDeserializer(
-      AuthorizedReportDefinitionDto.class, new CustomAuthorizedReportDefinitionDeserializer(mapper)
+      AuthorizedReportDefinitionDto.class,
+      new CustomAuthorizedReportDefinitionDeserializer(mapper)
     );
     module.addDeserializer(CollectionEntity.class, new CustomCollectionEntityDeserializer(mapper));
     mapper.registerModule(module);

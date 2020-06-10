@@ -10,6 +10,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.ser.std.DateSerializer;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -44,7 +46,6 @@ import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.engine.TenantEngineDto;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -176,6 +177,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       DateTimeFormatter.ofPattern(IntegrationTestConfigurationUtil.getEngineDateFormat());
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(formatter));
+    javaTimeModule.addSerializer(Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
     javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(formatter));
 
     return Jackson2ObjectMapperBuilder
