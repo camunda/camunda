@@ -639,6 +639,28 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
   }
 
+  @SneakyThrows
+  @Test
+  public void dateVariableGroupByWithAutomaticIntervals_MissingInstancesReturnsEmptyResult() {
+    // given
+    final String inputClauseId = "inputClauseId";
+    final String camInputVariable = "input";
+    final DecisionDefinitionEngineDto definition = deploySimpleInputDecisionDefinition(
+      inputClauseId,
+      camInputVariable,
+      DecisionTypeRef.DATE
+    );
+
+    // when
+    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByInputVariable(
+      definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
+    ).getResult().getData();
+
+    // then
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).isEmpty();
+  }
+
   @Test
   public void dateVariableGroupByWithSeveralInstances() {
     // given

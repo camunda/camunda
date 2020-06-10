@@ -858,6 +858,31 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
   }
 
+  @SneakyThrows
+  @Test
+  public void groupByDateVariableForAutomaticInterval_MissingInstancesReturnsEmptyResult() {
+    // given
+    final String dateVarName = "dateVar";
+    final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcess();
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(def.getKey())
+      .setProcessDefinitionVersion(def.getVersionAsString())
+      .setVariableName(dateVarName)
+      .setVariableType(VariableType.DATE)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+
+    // then
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).isEmpty();
+  }
+
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")

@@ -786,6 +786,27 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
   }
 
+  @SneakyThrows
+  @Test
+  public void groupByDateVariableForAutomaticInterval_MissingInstancesReturnsEmptyResult() {
+    // given
+    final String dateVarName = "dateVar";
+    final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcessAndGetDefinition();
+
+    // when
+    ProcessReportDataDto reportData = createReport(
+      def.getKey(),
+      def.getVersionAsString(),
+      dateVarName,
+      VariableType.DATE
+    );
+    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+
+    // then
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).isEmpty();
+  }
+
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
     return deployAndStartSimpleProcesses(1, variables).get(0);
   }

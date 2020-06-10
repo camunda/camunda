@@ -660,6 +660,28 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
   }
 
+  @SneakyThrows
+  @Test
+  public void dateVariableGroupByWithAutomaticIntervals_MissingInstancesReturnsEmptyResult() {
+    // given
+    final String outputClauseId = "outputClauseId";
+    final String camInputVariable = "input";
+    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
+      outputClauseId,
+      camInputVariable,
+      DecisionTypeRef.DATE
+    );
+
+    // when
+    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
+    ).getResult().getData();
+
+    // then
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).isEmpty();
+  }
+
   @Test
   public void missingVariablesAggregationForUndefinedAndNullOutputVariables() {
     // given

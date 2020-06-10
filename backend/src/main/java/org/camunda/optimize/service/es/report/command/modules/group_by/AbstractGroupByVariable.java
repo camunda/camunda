@@ -41,7 +41,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
@@ -90,8 +92,14 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<Data> context) {
-    AggregationBuilder variableSubAggregation =
+    Optional<AggregationBuilder> variableSubAggregation =
       createVariableSubAggregation(context, searchSourceBuilder.query());
+
+    if (!variableSubAggregation.isPresent()) {
+      // if the report contains no instances and is grouped by date variable, this agg will not be present
+      // as it is based on instance data
+      return Collections.emptyList();
+    }
 
     final NestedAggregationBuilder variableAggregation = nested(NESTED_AGGREGATION, getVariablePath())
       .subAggregation(
@@ -102,7 +110,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
             .must(termQuery(getNestedVariableTypeField(), getVariableType(context).getId()))
             .must(existsQuery(getNestedVariableValueFieldLabel(VariableType.STRING)))
         )
-          .subAggregation(variableSubAggregation)
+          .subAggregation(variableSubAggregation.get())
           .subAggregation(reverseNested(FILTERED_INSTANCE_COUNT_AGGREGATION))
       );
     final AggregationBuilder undefinedOrNullVariableAggregation =
@@ -118,15 +126,19 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .subAggregation(distributedByPart.createAggregation(context));
   }
 
-  private AggregationBuilder createVariableSubAggregation(final ExecutionContext<Data> context,
-                                                          final QueryBuilder baseQuery) {
+  private Optional<AggregationBuilder> createVariableSubAggregation(final ExecutionContext<Data> context,
+                                                                    final QueryBuilder baseQuery) {
     AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .field(getNestedVariableValueFieldLabel(VariableType.STRING));
 
     if (VariableType.DATE.equals(getVariableType(context))) {
-      aggregationBuilder = createDateVariableAggregation(baseQuery, context);
+      Optional<AggregationBuilder> dateVariableAggregation = createDateVariableAggregation(baseQuery, context);
+      if (!dateVariableAggregation.isPresent()) {
+        return Optional.empty();
+      }
+      aggregationBuilder = dateVariableAggregation.get();
     }
 
     AggregationBuilder operationsAggregation = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
@@ -134,16 +146,19 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
 
     aggregationBuilder.subAggregation(operationsAggregation);
-    return aggregationBuilder;
+    return Optional.of(aggregationBuilder);
   }
 
-  private AggregationBuilder createDateVariableAggregation(final QueryBuilder baseQuery,
-                                                           final ExecutionContext<Data> context) {
+  private Optional<AggregationBuilder> createDateVariableAggregation(final QueryBuilder baseQuery,
+                                                                     final ExecutionContext<Data> context) {
     GroupByDateUnit unit = getGroupByDateUnit(context);
     if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
       Stats minMaxStats = getMinMaxStats(baseQuery, context);
+      if (minMaxStats.getCount() == 0) {
+        return Optional.empty();
+      }
       if (minMaxStats.getCount() != 1) {
-        return createAutomaticIntervalAggregation(minMaxStats, context);
+        return Optional.of(createAutomaticIntervalAggregation(minMaxStats, context));
       }
       // if there is only one instance we always group by month
       unit = GroupByDateUnit.MONTH;
@@ -151,12 +166,13 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
     final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
 
-    return AggregationBuilders
-      .dateHistogram(AbstractGroupByVariable.VARIABLES_AGGREGATION)
-      .field(getNestedVariableValueFieldLabel(VariableType.DATE))
-      .dateHistogramInterval(interval)
-      .format(OPTIMIZE_DATE_FORMAT)
-      .timeZone(ZoneId.systemDefault());
+    return Optional.of(
+      AggregationBuilders
+        .dateHistogram(AbstractGroupByVariable.VARIABLES_AGGREGATION)
+        .field(getNestedVariableValueFieldLabel(VariableType.DATE))
+        .dateHistogramInterval(interval)
+        .format(OPTIMIZE_DATE_FORMAT)
+        .timeZone(ZoneId.systemDefault()));
   }
 
   private AggregationBuilder createAutomaticIntervalAggregation(final Stats minMaxStats,
@@ -212,6 +228,10 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<Data> context) {
+    if (response.getAggregations() == null) {
+      // aggregations are null if there are no instances in the report and it is grouped by date variable
+      return;
+    }
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
