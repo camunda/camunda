@@ -407,6 +407,11 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   /** Recursively attempts to join the cluster. */
   private void join(final Iterator<RaftMemberContext> iterator) {
+    if (joinFuture.isDone()) {
+      // nothing to do here
+      return;
+    }
+
     if (iterator.hasNext()) {
       cancelJoinTimer();
       joinTimeout =
@@ -483,11 +488,12 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     }
   }
 
-  private void completeJoinFuture() {
+  public void completeJoinFuture() {
     // If the local member is not present in the configuration, fail the future.
     if (!members.contains(this.member)) {
       joinFuture.completeExceptionally(new IllegalStateException("not a member of the cluster"));
     } else if (joinFuture != null) {
+      cancelJoinTimer();
       joinFuture.complete(null);
     }
   }
