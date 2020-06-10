@@ -19,10 +19,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class DeleteCamundaEventStateProcessingTimestampImportIndexDocumentsUpgradeIT extends AbstractUpgradeIT {
+public class DeleteEventStateProcessingTimestampImportIndexDocumentsUpgradeIT extends AbstractUpgradeIT {
 
   private static final String FROM_VERSION = "3.0.0";
   // This import is included in the bulk
@@ -62,15 +60,11 @@ public class DeleteCamundaEventStateProcessingTimestampImportIndexDocumentsUpgra
     // when
     upgradePlan.execute();
 
-    // then
+    // then the timestamp import index docs are deleted
     assertThat(getAllStoredTimestampImportDocs())
+      .hasSize(1)
       .extracting(TimestampBasedImportIndexDto::getEsTypeIndexRefersTo)
-      .containsExactlyInAnyOrder(
-        // The external events import document should still exist
-        EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX,
-        // Non trace state related import should also remain
-        ACTIVITY_IMPORT_INDEX_DOC_ID
-      );
+      .containsExactlyInAnyOrder(ACTIVITY_IMPORT_INDEX_DOC_ID);
   }
 
   private List<TimestampBasedImportIndexDto> getAllStoredTimestampImportDocs() {

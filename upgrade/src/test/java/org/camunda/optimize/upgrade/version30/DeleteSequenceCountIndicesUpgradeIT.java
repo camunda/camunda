@@ -7,8 +7,8 @@ package org.camunda.optimize.upgrade.version30;
 
 import lombok.SneakyThrows;
 import org.assertj.core.util.Lists;
-import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -22,7 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class DeleteOrUpdateTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
+public class DeleteSequenceCountIndicesUpgradeIT extends AbstractUpgradeIT {
 
   private static final String FROM_VERSION = "3.0.0";
 
@@ -44,21 +44,21 @@ public class DeleteOrUpdateTraceStateIndicesUpgradeIT extends AbstractUpgradeIT 
     ));
     setMetadataIndexVersion(FROM_VERSION);
 
-    createTraceStateIndexForDefinitionKey(CAMUNDA_DEFINITION_KEY_ONE);
-    createTraceStateIndexForDefinitionKey(CAMUNDA_DEFINITION_KEY_TWO);
-    createTraceStateIndexForDefinitionKey(EXTERNAL_EVENTS_INDEX_SUFFIX);
+    createSequenceCountIndexForDefinitionKey(CAMUNDA_DEFINITION_KEY_ONE);
+    createSequenceCountIndexForDefinitionKey(CAMUNDA_DEFINITION_KEY_TWO);
+    createSequenceCountIndexForDefinitionKey(EXTERNAL_EVENTS_INDEX_SUFFIX);
 
     upgradeDependencies.getEsClient()
       .getHighLevelClient()
       .indices()
       .refresh(new RefreshRequest(), RequestOptions.DEFAULT);
 
-    executeBulk("steps/3.0/trace_states/30-trace-state-bulk");
+    executeBulk("steps/3.0/sequence_counts/30-sequence_counts-bulk");
   }
 
   @SneakyThrows
   @Test
-  public void allCamundaTraceStateIndicesGetDeleted() {
+  public void onlyCamundaSequenceCountIndicesGetDeleted() {
     // given
     final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
     assertThat(getAllDocumentsForKey(CAMUNDA_DEFINITION_KEY_ONE)).hasSize(1);
@@ -69,36 +69,21 @@ public class DeleteOrUpdateTraceStateIndicesUpgradeIT extends AbstractUpgradeIT 
     upgradePlan.execute();
 
     // then
-    assertThat(indexExists(new EventTraceStateIndex(CAMUNDA_DEFINITION_KEY_ONE).getIndexName())).isFalse();
-    assertThat(indexExists(new EventTraceStateIndex(CAMUNDA_DEFINITION_KEY_TWO).getIndexName())).isFalse();
-    assertThat(getAllDocumentsForKey(EXTERNAL_EVENTS_INDEX_SUFFIX)).hasSize(1);
+    assertThat(indexExists(new EventSequenceCountIndex(CAMUNDA_DEFINITION_KEY_ONE).getIndexName())).isFalse();
+    assertThat(indexExists(new EventSequenceCountIndex(CAMUNDA_DEFINITION_KEY_TWO).getIndexName())).isFalse();
+    assertThat(indexExists(new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName())).isFalse();
   }
 
-  @SneakyThrows
-  @Test
-  public void externalTraceStateIndexGetsUpdatedCorrectlyAndDataMigrated() {
-    // given
-    final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
-    final List<EventTraceStateDto> externalTraceStates = getAllDocumentsForKey(EXTERNAL_EVENTS_INDEX_SUFFIX);
-
-    // when
-    upgradePlan.execute();
-    final List<EventTraceStateDto> migratedTraces = getAllDocumentsForKey(EXTERNAL_EVENTS_INDEX_SUFFIX);
-
-    // then
-    assertThat(migratedTraces).containsExactlyElementsOf(externalTraceStates);
-  }
-
-  private List<EventTraceStateDto> getAllDocumentsForKey(String definitionKey) {
+  private List<EventSequenceCountDto> getAllDocumentsForKey(String definitionKey) {
     return getAllDocumentsOfIndex(
-      new EventTraceStateIndex(definitionKey).getIndexName(),
-      EventTraceStateDto.class
+      new EventSequenceCountIndex(definitionKey).getIndexName(),
+      EventSequenceCountDto.class
     );
   }
 
   @SneakyThrows
-  private void createTraceStateIndexForDefinitionKey(final String definitionKey) {
-    createOptimizeIndexWithTypeAndVersion(new EventTraceStateIndexV1(definitionKey), EventTraceStateIndexV1.VERSION);
+  private void createSequenceCountIndexForDefinitionKey(final String definitionKey) {
+    createOptimizeIndexWithTypeAndVersion(new EventSequenceCountIndex(definitionKey), EventSequenceCountIndex.VERSION);
   }
 
 }

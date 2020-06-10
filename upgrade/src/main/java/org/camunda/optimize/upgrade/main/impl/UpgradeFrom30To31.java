@@ -40,7 +40,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
@@ -82,9 +81,9 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateDecisionReportBooleanVariableFilter())
       .addUpgradeStep(resetRunningProcessInstanceImport());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
-    deleteOrUpdateTraceStateIndices(upgradeBuilder);
-    deleteCamundaSequenceCountIndices(upgradeBuilder);
-    upgradeBuilder.addUpgradeStep(deleteCamundaTraceStateImportIndexData());
+    deleteTraceStateIndices(upgradeBuilder);
+    deleteSequenceCountIndices(upgradeBuilder);
+    upgradeBuilder.addUpgradeStep(deleteTraceStateImportIndexData());
     return upgradeBuilder.build();
   }
 
@@ -268,7 +267,7 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
   }
 
   @SneakyThrows
-  private void deleteOrUpdateTraceStateIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
+  private void deleteTraceStateIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
     final GetAliasesResponse aliases = upgradeDependencies.getEsClient().getAlias(
       new GetAliasesRequest(EVENT_TRACE_STATE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
     );
@@ -278,20 +277,12 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
       .map(fullAliasName -> fullAliasName.substring(fullAliasName.lastIndexOf(EVENT_TRACE_STATE_INDEX_PREFIX) + EVENT_TRACE_STATE_INDEX_PREFIX
         .length()))
-      .forEach(indexSuffix -> {
-        if (indexSuffix.equalsIgnoreCase(EXTERNAL_EVENTS_INDEX_SUFFIX)) {
-          upgradeBuilder.addUpgradeStep(new UpdateIndexStep(
-            new EventTraceStateIndex(indexSuffix),
-            null
-          ));
-        } else {
-          upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(new EventTraceStateIndex(indexSuffix)));
-        }
-      });
+      .forEach(indexSuffix -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(new EventTraceStateIndex(
+        indexSuffix))));
   }
 
   @SneakyThrows
-  private void deleteCamundaSequenceCountIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
+  private void deleteSequenceCountIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
     final GetAliasesResponse aliases = upgradeDependencies.getEsClient().getAlias(
       new GetAliasesRequest(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
     );
@@ -301,7 +292,6 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
       .map(fullAliasName -> fullAliasName.substring(fullAliasName.lastIndexOf(EVENT_SEQUENCE_COUNT_INDEX_PREFIX) + EVENT_SEQUENCE_COUNT_INDEX_PREFIX
         .length()))
-      .filter(indexSuffix -> !indexSuffix.equalsIgnoreCase(EXTERNAL_EVENTS_INDEX_SUFFIX))
       .forEach(indexSuffix -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(new EventSequenceCountIndex(
         indexSuffix))));
   }
@@ -338,17 +328,13 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
   }
 
   @SneakyThrows
-  private UpgradeStep deleteCamundaTraceStateImportIndexData() {
+  private UpgradeStep deleteTraceStateImportIndexData() {
     return new DeleteDataStep(
       TIMESTAMP_BASED_IMPORT_INDEX_NAME,
       QueryBuilders.boolQuery()
         .must(QueryBuilders.prefixQuery(
           TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo,
           EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX
-        ))
-        .mustNot(QueryBuilders.termQuery(
-          TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo,
-          EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX
         ))
     );
   }
