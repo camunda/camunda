@@ -14,17 +14,10 @@ import bpmnJs from 'bpmn-js';
 export function parseDiagramXML(xml) {
   bpmnJs.prototype.options = {};
   const moddle = bpmnJs.prototype._createModdle({});
-
-  return new Promise((resolve, reject) => {
-    moddle.fromXML(xml, 'bpmn:Definitions', function (
-      err,
-      definitions,
-      context
-    ) {
-      if (err) {
-        reject(err);
-      }
-      resolve({definitions, bpmnElements: context.elementsById});
-    });
+  return moddle.fromXML(xml, 'bpmn:Definitions').then((bpmn) => {
+    return {
+      definitions: bpmn.rootElement,
+      bpmnElements: bpmn.elementsById,
+    };
   });
 }

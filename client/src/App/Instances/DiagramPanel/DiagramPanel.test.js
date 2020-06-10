@@ -8,7 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
-
+import {flushPromises} from 'modules/testUtils';
 import {LOADING_STATE} from 'modules/constants';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
@@ -130,7 +130,7 @@ describe('DiagramPanel', () => {
         expect(node.find(Diagram)).not.toExist();
       });
 
-      it('should render a navigated viewer', () => {
+      it('should render a navigated viewer', async () => {
         node = mount(
           <ThemeProvider>
             <CollapsablePanelProvider>
@@ -139,6 +139,7 @@ describe('DiagramPanel', () => {
           </ThemeProvider>
         );
 
+        await flushPromises();
         expect(mockedImportDefinitions).toHaveBeenCalled();
         expect(mockedModules.canvas.zoom).toHaveBeenCalled();
       });

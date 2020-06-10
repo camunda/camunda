@@ -10,7 +10,7 @@ import bpmnJs from 'bpmn-js';
 jest.mock('bpmn-js', () => {
   const createModdleMock = jest
     .fn()
-    .mockImplementation(() => ({fromXML: jest.fn()}));
+    .mockImplementation(() => ({fromXML: jest.fn(() => Promise.resolve({}))}));
 
   class bpmnJs {
     constructor(options) {

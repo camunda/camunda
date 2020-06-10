@@ -120,11 +120,7 @@ class Diagram extends React.PureComponent {
 
   // 1- state.isViewerLoaded => true
   // 2- canvas.resized() && canvas.zoom('fit-viewport', 'auto')
-  handleDiagramLoad = (e) => {
-    if (e) {
-      return console.log('Error rendering diagram:', e);
-    }
-
+  handleDiagramLoad = () => {
     this.setState({
       isViewerLoaded: true,
     });
@@ -163,10 +159,11 @@ class Diagram extends React.PureComponent {
       bpmnRenderer: getDiagramColors(this.props.theme),
     });
 
-    this.Viewer.importDefinitions(
-      this.props.definitions,
-      this.handleDiagramLoad
-    );
+    this.Viewer.importDefinitions(this.props.definitions)
+      .then(this.handleDiagramLoad)
+      .catch((e) => {
+        return console.log('Error rendering diagram:', e);
+      });
   };
 
   resetViewer = () => {

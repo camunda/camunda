@@ -34,9 +34,7 @@ export const mockedModules = {
   overlays: {add: jest.fn(), remove: jest.fn()},
 };
 
-export const mockedImportDefinitions = jest.fn((_, callback) => {
-  callback();
-});
+export const mockedImportDefinitions = jest.fn(() => Promise.resolve({}));
 
 class Viewer {
   constructor({container, bpmnRenderer} = {}) {

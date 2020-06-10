@@ -20,6 +20,7 @@ import {ReactComponent as CanceledLightIcon} from 'modules/components/Icon/diagr
 import Diagram from './Diagram';
 import DiagramControls from './DiagramControls';
 import * as Styled from './styled';
+import {flushPromises} from 'modules/testUtils';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -159,12 +160,13 @@ describe('Diagram', () => {
   });
 
   describe('selected flownode marker', () => {
-    it('should remove marker when an already selected node gets selected', () => {
+    it('should remove marker when an already selected node gets selected', async () => {
       // given
       const node = shallowRenderNode({selectedFlowNodeId: 'nodeA'});
       const canvas = node.instance().Viewer.get('canvas');
 
       // when
+      await flushPromises();
       node.setProps({selectedFlowNodeId: 'nodeB'});
 
       // then
@@ -172,12 +174,13 @@ describe('Diagram', () => {
       expect(canvas.removeMarker).toHaveBeenCalledWith('nodeA', 'op-selected');
     });
 
-    it('should remove marker when an already selected node gets selected', () => {
+    it('should remove marker when an already selected node gets selected', async () => {
       // given
       const node = shallowRenderNode({selectedFlowNodeId: null});
       const canvas = node.instance().Viewer.get('canvas');
 
       // when
+      await flushPromises();
       node.setProps({selectedFlowNodeId: 'nodeA'});
 
       // then
@@ -186,12 +189,13 @@ describe('Diagram', () => {
   });
 
   describe('selectable flownodes markers', () => {
-    it('should add a marker for each selectable flownode', () => {
+    it('should add a marker for each selectable flownode', async () => {
       // given
       const node = shallowRenderNode({selectableFlowNodes: ['nodeA', 'nodeB']});
       const canvas = node.instance().Viewer.get('canvas');
 
       // when
+      await flushPromises();
       node.setProps({selectedFlowNodeId: 'nodeA'});
 
       // then
@@ -401,13 +405,15 @@ describe('Diagram', () => {
       endDate: mockMetadata.data['endDate'],
     };
 
-    it('should render a popover containing the summary of the metadata', () => {
+    it('should render a popover containing the summary of the metadata', async () => {
       // given
       const node = mountNode({
         metadata: mockMetadata,
         selectedFlowNodeId: activityId,
         selectedFlowNodeName: activityId,
       });
+      await flushPromises();
+      node.update();
 
       // then
       const overlayNode = node.find('Overlay');
@@ -419,7 +425,7 @@ describe('Diagram', () => {
       });
     });
 
-    it('should render a modal with the detailed metadata and a button to select the flownode', () => {
+    it('should render a modal with the detailed metadata and a button to select the flownode', async () => {
       // given
       let node;
 
@@ -428,6 +434,8 @@ describe('Diagram', () => {
         selectedFlowNodeName: activityId,
         metadata: {...mockMetadata, isSingleRowPeterCase: true},
       });
+      await flushPromises();
+      node.update();
 
       const overlayNode = node.find('Overlay');
       const moreButton = overlayNode.find('button[data-test="more-metadata"]');
@@ -443,13 +451,15 @@ describe('Diagram', () => {
       expect(mockProps.onFlowNodeSelection.mock.calls[0][0]).toBe(activityId);
     });
 
-    it('should not render metadata in case of peter case with multiple selected rows', () => {
+    it('should not render metadata in case of peter case with multiple selected rows', async () => {
       // given
       const node = mountNode({
         selectedFlowNodeId: activityId,
         selectedFlowNodeName: activityId,
         metadata: {isMultiRowPeterCase: true, instancesCount: 2},
       });
+      await flushPromises();
+      node.update();
 
       // then
       const overlayNode = node.find('Overlay');
@@ -460,13 +470,14 @@ describe('Diagram', () => {
   });
 
   describe('processed sequence flow colors', () => {
-    it('should initially set color for each processed sequence flows', () => {
+    it('should initially set color for each processed sequence flows', async () => {
       // given
       const node = shallowRenderNode({
         processedSequenceFlows: ['sequence-flow-1', 'sequence-flow-2'],
       });
 
       // when
+      await flushPromises();
       const elementRegistry = node.instance().Viewer.get('elementRegistry');
       const firstElement = elementRegistry.get('sequence-flow-1');
       const secondElement = elementRegistry.get('sequence-flow-2');
@@ -493,13 +504,14 @@ describe('Diagram', () => {
       );
     });
 
-    it('should remove previous colors for sequence flows and update color for each new processed sequence flows', () => {
+    it('should remove previous colors for sequence flows and update color for each new processed sequence flows', async () => {
       // given
       const node = shallowRenderNode({
         processedSequenceFlows: ['sequence-flow-1'],
       });
 
       // when
+      await flushPromises();
       node.setProps({
         processedSequenceFlows: ['sequence-flow-1', 'sequence-flow-2'],
       });

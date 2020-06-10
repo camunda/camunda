@@ -33,6 +33,7 @@ import {ThemeProvider} from 'modules/theme';
 
 import TopPanel from './TopPanel';
 import {currentInstance} from 'modules/stores/currentInstance';
+import {flushPromises} from 'modules/testUtils';
 
 jest.mock('modules/utils/bpmn');
 
@@ -100,6 +101,7 @@ describe('DiagramPanel', () => {
       state: LOADING_STATE.LOADED,
     });
 
+    await flushPromises();
     node.update();
     // then
     expect(node.find(SpinnerSkeleton)).not.toHaveLength(1);
