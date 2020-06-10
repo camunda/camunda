@@ -18,7 +18,7 @@ const props = {
 };
 
 const todayFilter = {
-  type: 'rolling',
+  type: 'relative',
   start: {value: 0, unit: 'days'},
   end: null,
 };

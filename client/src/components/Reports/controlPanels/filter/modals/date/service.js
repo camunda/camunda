@@ -24,7 +24,7 @@ export function convertFilterToState(filter) {
     }
   } else {
     const {value, unit} = start || {};
-    if (type === 'relative') {
+    if (type === 'rolling') {
       state = {
         type: 'custom',
         unit: unit,
@@ -51,7 +51,7 @@ export function convertStateToFilter({
   valid,
   ...commonProps
 }) {
-  let filter = {type: 'rolling', end: null};
+  let filter = {type: 'relative', end: null};
   switch (type) {
     case 'today':
       filter.start = {value: 0, unit: 'days'};
@@ -77,7 +77,7 @@ export function convertStateToFilter({
       break;
     case 'custom':
       filter = {
-        type: 'relative',
+        type: 'rolling',
         start: {value: customNum, unit},
         end: null,
       };

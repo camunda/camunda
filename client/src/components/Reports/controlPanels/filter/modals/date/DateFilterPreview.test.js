@@ -11,7 +11,7 @@ import {shallow} from 'enzyme';
 
 it('should create Today/Yesterday preview', () => {
   const filter = {
-    type: 'rolling',
+    type: 'relative',
     start: {
       value: 0,
       unit: 'days',
@@ -25,7 +25,7 @@ it('should create Today/Yesterday preview', () => {
 
 it('should create correct last... with custom preview', () => {
   const filter = {
-    type: 'relative',
+    type: 'rolling',
     start: {
       value: 5,
       unit: 'months',
@@ -51,7 +51,7 @@ it('should create correct fixed date preview', () => {
 
 it('should create variable preview', () => {
   const filter = {
-    type: 'relative',
+    type: 'rolling',
     start: {
       value: 2,
       unit: 'days',

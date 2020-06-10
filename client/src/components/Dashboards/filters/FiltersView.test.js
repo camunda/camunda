@@ -30,7 +30,7 @@ it('should render a filter input based on the availableFilters', () => {
 
 it('should pass a single filter to the date filter component', () => {
   const dateFilter = {
-    type: 'rolling',
+    type: 'relative',
     start: {value: 0, unit: 'days'},
     end: null,
   };

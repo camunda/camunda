@@ -22,8 +22,8 @@ export default function DateFilter({
 }) {
   const [showDatePicker, setShowDatePicker] = useState(filter?.type === 'fixed');
 
-  function setRollingFilter(unit, past) {
-    setFilter({type: 'rolling', start: {value: past ? 1 : 0, unit}, end: null});
+  function setRelativeFilter(unit, past) {
+    setFilter({type: 'relative', start: {value: past ? 1 : 0, unit}, end: null});
   }
 
   function isFilter(unit, past) {
@@ -118,12 +118,12 @@ export default function DateFilter({
           >
             {t('common.filter.dateModal.unit.fixed')}
           </Dropdown.Option>
-          <Dropdown.Option checked={isFilter('days')} onClick={() => setRollingFilter('days')}>
+          <Dropdown.Option checked={isFilter('days')} onClick={() => setRelativeFilter('days')}>
             {t('common.filter.dateModal.unit.today')}
           </Dropdown.Option>
           <Dropdown.Option
             checked={isFilter('days', true)}
-            onClick={() => setRollingFilter('days', true)}
+            onClick={() => setRelativeFilter('days', true)}
           >
             {t('common.filter.dateModal.unit.yesterday')}
           </Dropdown.Option>
@@ -135,7 +135,7 @@ export default function DateFilter({
               <Dropdown.Option
                 key={unit}
                 checked={isFilter(unit, true)}
-                onClick={() => setRollingFilter(unit, true)}
+                onClick={() => setRelativeFilter(unit, true)}
               >
                 {t('dashboard.filter.date.units.' + unit)}
               </Dropdown.Option>
@@ -149,7 +149,7 @@ export default function DateFilter({
               <Dropdown.Option
                 key={unit}
                 checked={isFilter(unit)}
-                onClick={() => setRollingFilter(unit)}
+                onClick={() => setRelativeFilter(unit)}
               >
                 {t('dashboard.filter.date.units.' + unit)}
               </Dropdown.Option>

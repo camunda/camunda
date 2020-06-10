@@ -134,7 +134,7 @@ it('should not include a data field for boolean and date variables', () => {
     data: {
       type: 'Date',
       name: 'newVar',
-      data: {type: 'rolling', start: {value: 1, unit: 'years'}, end: null},
+      data: {type: 'relative', start: {value: 1, unit: 'years'}, end: null},
     },
   });
   expect(props.setAvailableFilters).toHaveBeenCalledWith([
