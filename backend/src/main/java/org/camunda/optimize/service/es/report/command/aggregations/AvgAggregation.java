@@ -14,17 +14,17 @@ import static org.camunda.optimize.service.es.report.command.util.ElasticsearchA
 import static org.elasticsearch.search.aggregations.AggregationBuilders.avg;
 
 public class AvgAggregation implements AggregationStrategy {
-  private static final String AVG_DURATION_AGGREGATION = "avgAggregatedDuration";
+  private static final String AVG_AGGREGATION = "avgAggregation";
 
   @Override
   public Long getValue(final Aggregations aggs) {
-    final Avg aggregation = aggs.get(AVG_DURATION_AGGREGATION);
+    final Avg aggregation = aggs.get(AVG_AGGREGATION);
     return mapToLongOrNull(aggregation.getValue());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder getAggregationBuilder() {
-    return avg(AVG_DURATION_AGGREGATION);
+  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+    return avg(AVG_AGGREGATION);
   }
 
   @Override

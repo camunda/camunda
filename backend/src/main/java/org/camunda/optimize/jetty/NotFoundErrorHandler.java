@@ -43,8 +43,6 @@ public class NotFoundErrorHandler extends ErrorHandler {
       } catch (ServletException e) {
         logger.debug(e);
       }
-    } else {
-      return;
     }
   }
 }

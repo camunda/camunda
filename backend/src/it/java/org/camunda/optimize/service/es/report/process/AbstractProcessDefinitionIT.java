@@ -54,6 +54,18 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String SECOND_USER = "secondUser";
   protected static final String SECOND_USERS_PASSWORD = "secondUserPW";
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
+  protected static final String TEST_PROCESS = "aProcess";
+
+  protected static final Map<String, VariableType> varNameToTypeMap = new HashMap<>(VariableType.values().length);
+  static {
+    varNameToTypeMap.put("dateVar", VariableType.DATE);
+    varNameToTypeMap.put("boolVar", VariableType.BOOLEAN);
+    varNameToTypeMap.put("shortVar", VariableType.SHORT);
+    varNameToTypeMap.put("intVar", VariableType.INTEGER);
+    varNameToTypeMap.put("longVar", VariableType.LONG);
+    varNameToTypeMap.put("doubleVar", VariableType.DOUBLE);
+    varNameToTypeMap.put("stringVar", VariableType.STRING);
+  }
 
   @RegisterExtension
   @Order(4)
@@ -74,7 +86,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables,
                                                                             String tenantId) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess(TEST_PROCESS)
       .name("aProcessName")
       .startEvent()
       .endEvent()
@@ -211,18 +223,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
-  }
-
-  protected Map<String, VariableType> createVarNameToTypeMap() {
-    Map<String, VariableType> varToType = new HashMap<>();
-    varToType.put("dateVar", VariableType.DATE);
-    varToType.put("boolVar", VariableType.BOOLEAN);
-    varToType.put("shortVar", VariableType.SHORT);
-    varToType.put("intVar", VariableType.INTEGER);
-    varToType.put("longVar", VariableType.LONG);
-    varToType.put("doubleVar", VariableType.DOUBLE);
-    varToType.put("stringVar", VariableType.STRING);
-    return varToType;
   }
 
   private BpmnModelInstance createSimpleServiceTaskModelInstance(final String key,

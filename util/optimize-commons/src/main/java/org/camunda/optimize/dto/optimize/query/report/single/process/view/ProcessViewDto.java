@@ -57,8 +57,7 @@ public class ProcessViewDto implements Combinable {
   }
 
   private boolean isPropertyCombinable(final ProcessViewDto viewDto) {
-    // note: different duration properties are combinable
-    return Objects.equals(property, viewDto.property);
+    return Combinable.isCombinable(property, viewDto.property);
   }
 
   @JsonIgnore

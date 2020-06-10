@@ -14,17 +14,17 @@ import static org.camunda.optimize.service.es.report.command.util.ElasticsearchA
 import static org.elasticsearch.search.aggregations.AggregationBuilders.max;
 
 public class MaxAggregation implements AggregationStrategy {
-  private static final String MAX_DURATION_AGGREGATION = "maxAggregatedDuration";
+  private static final String MAX_AGGREGATION = "maxAggregation";
 
   @Override
   public Long getValue(final Aggregations aggs) {
-    final Max aggregation = aggs.get(MAX_DURATION_AGGREGATION);
+    final Max aggregation = aggs.get(MAX_AGGREGATION);
     return mapToLongOrNull(aggregation.getValue());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder getAggregationBuilder() {
-    return max(MAX_DURATION_AGGREGATION);
+  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+    return max(MAX_AGGREGATION);
   }
 
   @Override

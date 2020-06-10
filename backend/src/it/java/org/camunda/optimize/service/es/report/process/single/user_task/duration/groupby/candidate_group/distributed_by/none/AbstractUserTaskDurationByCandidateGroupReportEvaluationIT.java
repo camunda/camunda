@@ -1,0 +1,1123 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.candidate_group.distributed_by.none;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import lombok.Data;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.groups.Tuple;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.hamcrest.CoreMatchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.google.common.collect.Lists.newArrayList;
+import static java.util.Objects.nonNull;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_LABEL;
+import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.notNullValue;
+
+public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT extends AbstractProcessDefinitionIT {
+
+  private static final String START_EVENT = "startEvent";
+  private static final String END_EVENT = "endEvent";
+  private static final String PROCESS_DEFINITION_KEY = "123";
+  private static final String USER_TASK_1 = "userTask1";
+  private static final String USER_TASK_2 = "userTask2";
+  private static final Long UNASSIGNED_TASK_DURATION = 500L;
+  protected static final Long[] SET_DURATIONS = new Long[]{10L, 20L};
+
+  protected static final String FIRST_CANDIDATE_GROUP = "firstGroup";
+  protected static final String SECOND_CANDIDATE_GROUP = "secondGroup";
+  private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
+
+  @BeforeEach
+  public void init() {
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
+  }
+
+  @Test
+  public void reportEvaluationForOneProcess() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
+
+    final long setDuration = 20L;
+    changeDuration(processInstanceDto, setDuration);
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
+    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
+    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
+    assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime(), is(getUserTaskDurationTime()));
+
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(
+      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
+    );
+    assertThat(
+      result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
+    );
+
+    assertThat(result.getInstanceCount(), is(1L));
+  }
+
+  @Test
+  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+    // given
+    // set current time to now for easier evaluation of duration of unassigned tasks
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    finishUserTaskOneWithFirstCandidateGroupAndLeaveOneUnassigned(processInstanceDto);
+
+    final long setDuration = 20L;
+    changeDuration(processInstanceDto, USER_TASK_1, setDuration);
+    changeUserTaskStartDate(processInstanceDto, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
+    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
+    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
+    assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime(), is(getUserTaskDurationTime()));
+
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertMap_ForOneProcessWithUnassignedTasks(setDuration, result);
+  }
+
+  protected void assertMap_ForOneProcessWithUnassignedTasks(final long setDuration, final ReportMapResultDto result) {
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(
+      getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP),
+      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
+    );
+    assertThat(
+      getIncorrectValueForKeyAssertionMsg(getLocalisedUnassignedLabel()),
+      result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
+      is(UNASSIGNED_TASK_DURATION)
+    );
+    assertThat(result.getInstanceCount(), is(1L));
+  }
+
+  @Test
+  public void reportEvaluationForMultipleCandidateGroups() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    // finish first task
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+    // finish second task with
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+
+    changeDuration(processInstanceDto, USER_TASK_1, SET_DURATIONS[0]);
+    changeDuration(processInstanceDto, USER_TASK_2, SET_DURATIONS[1]);
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(
+      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS))
+    );
+    assertThat(
+      result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
+    );
+
+    assertThat(result.getInstanceCount(), is(1L));
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcesses() {
+    // given
+    // set current time to now for easier evaluation of duration of unassigned tasks
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
+    changeDuration(processInstanceDto1, SET_DURATIONS[0]);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishUserTaskOneWithFirstCandidateGroupAndLeaveOneUnassigned(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[1]);
+    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertMap_ForSeveralProcesses(result);
+  }
+
+  protected void assertMap_ForSeveralProcesses(final ReportMapResultDto result) {
+    assertThat(result.getData().size(), is(3));
+    assertThat(
+      getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP),
+      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS))
+    );
+    assertThat(
+      getIncorrectValueForKeyAssertionMsg(SECOND_CANDIDATE_GROUP),
+      result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+    );
+    assertThat(
+      getIncorrectValueForKeyAssertionMsg(getLocalisedUnassignedLabel()),
+      result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
+      is(UNASSIGNED_TASK_DURATION)
+    );
+
+    assertThat(result.getInstanceCount(), is(2L));
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessesWithAllAggregationTypes() {
+    // given
+    // set current time to now for easier evaluation of duration of unassigned tasks
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
+    changeDuration(processInstanceDto1, SET_DURATIONS[0]);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishUserTaskOneWithFirstCandidateGroupAndLeaveOneUnassigned(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[1]);
+    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
+
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final Map<AggregationType, ReportMapResultDto> results =
+      evaluateMapReportForAllAggTypes(reportData);
+
+    // then
+    assertMap_ForSeveralProcessesWithAllAggregationTypes(results);
+  }
+
+  protected void assertMap_ForSeveralProcessesWithAllAggregationTypes(
+    final Map<AggregationType, ReportMapResultDto> results) {
+    assertDurationMapReportResults(
+      results,
+      ImmutableMap.of(
+        FIRST_CANDIDATE_GROUP, SET_DURATIONS,
+        SECOND_CANDIDATE_GROUP, new Long[]{SET_DURATIONS[0]},
+        getLocalisedUnassignedLabel(), new Long[]{UNASSIGNED_TASK_DURATION}
+      )
+    );
+    assertThat(results.get(MIN).getInstanceCount(), is(2L));
+  }
+
+  @Test
+  public void evaluateReportForMultipleEvents() {
+    // given
+    // set current time to now for easier evaluation of duration of unassigned tasks
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, SET_DURATIONS[0]);
+    changeDuration(processInstanceDto1, USER_TASK_2, SET_DURATIONS[1]);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishUserTaskOneWithFirstCandidateGroupAndLeaveOneUnassigned(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[0]);
+    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertMap_ForMultipleEvents(result);
+  }
+
+  protected void assertMap_ForMultipleEvents(final ReportMapResultDto result) {
+    assertThat(result.getIsComplete(), is(true));
+    assertThat(result.getData().size(), is(3));
+    assertThat(
+      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+    );
+    assertThat(
+      result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
+    );
+    assertThat(
+      result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
+      is(UNASSIGNED_TASK_DURATION)
+    );
+  }
+
+  @Test
+  public void evaluateReportForMultipleEventsWithAllAggregationTypes() {
+    // given
+    // set current time to now for easier evaluation of duration of unassigned tasks
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, SET_DURATIONS[0]);
+    changeDuration(processInstanceDto1, USER_TASK_2, SET_DURATIONS[1]);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishUserTaskOneWithFirstCandidateGroupAndLeaveOneUnassigned(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[0]);
+    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
+
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final Map<AggregationType, ReportMapResultDto> results =
+      evaluateMapReportForAllAggTypes(reportData);
+
+    // then
+    assertMap_ForMultipleEventsWithAllAggregationTypes(results);
+  }
+
+  protected void assertMap_ForMultipleEventsWithAllAggregationTypes(final Map<AggregationType, ReportMapResultDto> results) {
+    assertDurationMapReportResults(
+      results,
+      ImmutableMap.of(
+        FIRST_CANDIDATE_GROUP, new Long[]{SET_DURATIONS[0]},
+        SECOND_CANDIDATE_GROUP, new Long[]{SET_DURATIONS[1]},
+        getLocalisedUnassignedLabel(), new Long[]{UNASSIGNED_TASK_DURATION}
+      )
+    );
+    assertThat(results.get(MIN).getIsComplete(), is(true));
+  }
+
+  @Test
+  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
+
+    importAllEngineEntitiesFromScratch();
+
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(resultDto.getInstanceCount(), is(2L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData().size(), is(1));
+    assertThat(resultDto.getIsComplete(), is(false));
+  }
+
+  @Test
+  public void testCustomOrderOnResultKeyIsApplied() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
+
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    aggregationTypes.forEach((AggregationType aggType) -> {
+      // when
+      reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+      reportData.getConfiguration().setAggregationType(aggType);
+      final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+      // then
+      final List<MapResultEntryDto> resultData = result.getData();
+      assertThat(resultData.size(), is(2));
+      final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
+      assertThat(
+        resultKeys,
+        // expect ascending order
+        contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
+      );
+    });
+  }
+
+  @Test
+  public void testCustomOrderOnResultLabelIsApplied() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    final List<MapResultEntryDto> resultData = result.getData();
+    assertThat(resultData.size(), is(2));
+    final List<String> resultLabels = resultData.stream()
+      .map(MapResultEntryDto::getLabel)
+      .collect(Collectors.toList());
+    assertThat(
+      resultLabels,
+      // expect ascending order
+      contains(resultLabels.stream().sorted(Comparator.reverseOrder()).toArray())
+    );
+  }
+
+  @Test
+  public void testCustomOrderOnResultValueIsApplied() {
+    // given
+    // set current time to now for easier evaluation of duration of unassigned tasks
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishUserTaskOneWithFirstCandidateGroupAndLeaveOneUnassigned(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, 100L);
+    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
+
+    importAllEngineEntitiesFromScratch();
+
+    aggregationTypes.forEach((AggregationType aggType) -> {
+      // when
+      final ProcessReportDataDto reportData = createReport(processDefinition);
+      reportData.getConfiguration().setAggregationType(aggType);
+      reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+      final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+      // then
+      assertCustomOrderOnResultValueIsApplied(result);
+    });
+  }
+
+  protected void assertCustomOrderOnResultValueIsApplied(ReportMapResultDto result) {
+    assertThat(result.getData().size(), is(3));
+    assertCorrectValueOrdering(result);
+  }
+
+  @Test
+  public void otherProcessDefinitionsDoNotInfluenceResult() {
+    // given
+    // set current time to now for easier evaluation of duration of unassigned tasks
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+    final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition1.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
+    changeDuration(processInstanceDto1, SET_DURATIONS[0]);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition1.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
+    changeDuration(processInstanceDto2, SET_DURATIONS[0]);
+
+    final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(
+      processDefinition2.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto3);
+    changeDuration(processInstanceDto3, SET_DURATIONS[1]);
+    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(
+      processDefinition2.getId());
+    changeUserTaskStartDate(processInstanceDto4, now, USER_TASK_1, UNASSIGNED_TASK_DURATION);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData1 = createReport(processDefinition1);
+    final ReportMapResultDto result1 = reportClient.evaluateMapReport(reportData1).getResult();
+    final ProcessReportDataDto reportData2 = createReport(processDefinition2);
+    final ReportMapResultDto result2 = reportClient.evaluateMapReport(reportData2).getResult();
+
+    // then
+    assertMap_otherProcessDefinitionsDoNotInfluenceResult(result1, result2);
+  }
+
+  protected void assertMap_otherProcessDefinitionsDoNotInfluenceResult(final ReportMapResultDto result1,
+                                                                       final ReportMapResultDto result2) {
+    assertThat(result1.getData().size(), is(1));
+    assertThat(
+      getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 1",
+      result1.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+    );
+
+    assertThat(result2.getData().size(), is(2));
+    assertThat(
+      getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 2",
+      result2.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
+    );
+    assertThat(
+      getIncorrectValueForKeyAssertionMsg(getLocalisedUnassignedLabel()) + " in result 2",
+      result2.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
+      is(UNASSIGNED_TASK_DURATION)
+    );
+  }
+
+  @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = newArrayList(tenantId1);
+    final String processKey = deployAndStartMultiTenantUserTaskProcess(
+      newArrayList(null, tenantId1, tenantId2)
+    );
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
+    reportData.setTenantIds(selectedTenants);
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
+  }
+
+  @Test
+  public void evaluateReportWithIrrationalNumberAsResult() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
+    changeDuration(processInstanceDto, 100L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
+    changeDuration(processInstanceDto, 300L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
+    changeDuration(processInstanceDto, 600L);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final Map<AggregationType, ReportMapResultDto> results =
+      evaluateMapReportForAllAggTypes(reportData);
+
+    // then
+    assertDurationMapReportResults(results, ImmutableMap.of(FIRST_CANDIDATE_GROUP, new Long[]{100L, 300L, 600L}));
+  }
+
+  @Test
+  public void noUserTaskMatchesReturnsEmptyResult() {
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      "nonExistingProcessDefinitionId", "1"
+    );
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData().size(), is(0));
+  }
+
+  @Data
+  static class ExecutionStateTestValues {
+    FlowNodeExecutionState executionState;
+    Map<String, Long> expectedIdleDurationValues;
+    Map<String, Long> expectedWorkDurationValues;
+    Map<String, Long> expectedTotalDurationValues;
+  }
+
+  private static Map<String, Long> getExpectedResultsMap(Long candidateGroup1Results, Long candidateGroup2Results) {
+    Map<String, Long> result = new HashMap<>();
+    if (nonNull(candidateGroup1Results)) {
+      result.put(FIRST_CANDIDATE_GROUP, candidateGroup1Results);
+    }
+    if (nonNull(candidateGroup2Results)) {
+      result.put(SECOND_CANDIDATE_GROUP, candidateGroup2Results);
+    }
+    return result;
+  }
+
+  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
+    ExecutionStateTestValues runningStateValues =
+      new ExecutionStateTestValues();
+    runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
+    runningStateValues.expectedIdleDurationValues = getExpectedResultsMap(200L, 200L);
+    runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500L, 500L);
+    runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700L, 700L);
+
+    ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
+    completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
+    completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100L, null);
+    completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100L, null);
+    completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100L, null);
+
+    ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
+    allStateValues.executionState = FlowNodeExecutionState.ALL;
+    allStateValues.expectedIdleDurationValues = getExpectedResultsMap(
+      calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L, 200L),
+      200L
+    );
+    allStateValues.expectedWorkDurationValues = getExpectedResultsMap(
+      calculateExpectedValueGivenDurationsDefaultAggr(100L, 500L, 500L),
+      500L
+    );
+    allStateValues.expectedTotalDurationValues = getExpectedResultsMap(
+      calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L, 700L),
+      700L
+    );
+
+    return Stream.of(runningStateValues, completedStateValues, allStateValues);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getExecutionStateExpectedValues")
+  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    // finish first running task, second now runs but unclaimed
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+    changeDuration(processInstanceDto, USER_TASK_1, 100L);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto.getId());
+    changeUserTaskStartDate(processInstanceDto, now, USER_TASK_2, 700L);
+    changeUserTaskClaimDate(processInstanceDto, now, USER_TASK_2, 500L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    // claim first running task
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto2.getId());
+
+    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700L);
+    changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500L);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertEvaluateReportWithExecutionState(result, executionStateTestValues);
+  }
+
+  protected abstract void assertEvaluateReportWithExecutionState(ReportMapResultDto result,
+                                                                 ExecutionStateTestValues expectedValues);
+
+  @Test
+  public void processDefinitionContainsMultiInstanceBody() {
+    // given
+    BpmnModelInstance processWithMultiInstanceUserTask = Bpmn
+      // @formatter:off
+        .createExecutableProcess("processWithMultiInstanceUserTask")
+        .startEvent()
+          .userTask(USER_TASK_1).multiInstance().cardinality("2").multiInstanceDone()
+        .endEvent()
+        .done();
+    // @formatter:on
+
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        processWithMultiInstanceUserTask
+      );
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+    changeDuration(processInstanceDto, 10L);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData().size(), is(1));
+    assertThat(
+      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
+    );
+  }
+
+  @Test
+  public void evaluateReportForMoreThanTenEvents() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
+
+    for (int i = 0; i < 11; i++) {
+      final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId());
+      engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+      engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+      changeDuration(processInstanceDto, 10L);
+    }
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData().size(), is(1));
+    assertThat(
+      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
+    );
+  }
+
+  @Test
+  public void filterInReport() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+    changeDuration(processInstanceDto, 10L);
+
+    final OffsetDateTime processStartTime =
+      engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto.getId())
+        .getStartTime();
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(0));
+
+    // when
+    reportData = createReport(processDefinition);
+    reportData.setFilter(createStartDateFilter(processStartTime, null));
+    result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(
+      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
+    );
+  }
+
+  public static Stream<Arguments> assigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 10L))),
+      Arguments.of(
+        IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10L), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10L))
+      ),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10L))),
+      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("assigneeFilterScenarios")
+  public void filterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final String filterOperator,
+                                                                   final String[] filterValues,
+                                                                   final List<Tuple> expectedResult) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+    changeDuration(processInstanceDto, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto, USER_TASK_2, 10L);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    Assertions.assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
+  }
+
+  public static Stream<Arguments> candidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 10L))),
+      Arguments.of(
+        IN,
+        new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
+        Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10L), Tuple.tuple(SECOND_CANDIDATE_GROUP, 10L))
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_CANDIDATE_GROUP},
+        Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 10L))
+      ),
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("candidateGroupFilterScenarios")
+  public void filterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(
+    final String filterOperator,
+    final String[] filterValues,
+    final List<Tuple> expectedResult) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(processInstanceDto, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto, USER_TASK_2, 10L);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
+    reportData.setFilter(inclusiveAssigneeFilter);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    Assertions.assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
+  }
+
+  private List<ProcessFilterDto<?>> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
+    return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
+  }
+
+  @Test
+  public void optimizeExceptionOnViewEntityIsNull() {
+    // given
+    final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
+    dataDto.getView().setEntity(null);
+
+    //when
+    final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
+
+    // then
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+  }
+
+  @Test
+  public void optimizeExceptionOnViewPropertyIsNull() {
+    // given
+    final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
+    dataDto.getView().setProperty(null);
+
+    //when
+    final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
+
+    // then
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+  }
+
+  @Test
+  public void optimizeExceptionOnGroupByTypeIsNull() {
+    // given
+    final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
+    dataDto.getGroupBy().setType(null);
+
+    //when
+    final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
+
+    // then
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+  }
+
+  protected abstract UserTaskDurationTime getUserTaskDurationTime();
+
+  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                         final String userTaskKey,
+                                         final long duration);
+
+  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration);
+
+  protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
+
+  private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
+    return createReport(processDefinitionKey, newArrayList(version));
+  }
+
+  private ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {
+    return createReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+  }
+
+  private void finishUserTaskOneWithFirstCandidateGroupAndLeaveOneUnassigned(final ProcessInstanceEngineDto processInstanceDto) {
+    // finish first task
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+  }
+
+  private void finishTwoUserTasksOneWithFirstAndSecondGroup(final ProcessInstanceEngineDto processInstanceDto) {
+    // finish first task
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+    // finish second task with
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+  }
+
+  private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
+    final String processKey = "multiTenantProcess";
+    deployedTenants.stream()
+      .filter(Objects::nonNull)
+      .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
+    deployedTenants
+      .forEach(tenant -> {
+        final ProcessDefinitionEngineDto processDefinitionEngineDto = deployOneUserTasksDefinition(processKey, tenant);
+        engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId());
+      });
+
+    return processKey;
+  }
+
+  private ProcessDefinitionEngineDto deployOneUserTasksDefinition() {
+    return deployOneUserTasksDefinition("aProcess", null);
+  }
+
+  private ProcessDefinitionEngineDto deployOneUserTasksDefinition(String key, String tenantId) {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1)
+      .endEvent(END_EVENT)
+      .done();
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+  }
+
+  private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1)
+      .userTask(USER_TASK_2)
+      .endEvent(END_EVENT)
+      .done();
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
+  protected void assertCorrectValueOrdering(ReportMapResultDto result) {
+    List<MapResultEntryDto> resultData = result.getData();
+    final List<Long> bucketValues = resultData.stream()
+      .map(MapResultEntryDto::getValue)
+      .collect(Collectors.toList());
+    assertThat(
+      bucketValues,
+      contains(bucketValues.stream().sorted(Comparator.nullsLast(Comparator.naturalOrder())).toArray())
+    );
+  }
+
+  private Map<AggregationType, ReportMapResultDto> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+
+    Map<AggregationType, ReportMapResultDto> resultsMap = new HashMap<>();
+    aggregationTypes.forEach((AggregationType aggType) -> {
+      reportData.getConfiguration().setAggregationType(aggType);
+      final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+      resultsMap.put(aggType, result);
+    });
+    return resultsMap;
+  }
+
+  protected void assertDurationMapReportResults(Map<AggregationType, ReportMapResultDto> results,
+                                                Map<String, Long[]> expectedUserTaskValues) {
+
+    aggregationTypes.forEach((AggregationType aggType) -> {
+      ReportMapResultDto result = results.get(aggType);
+      assertThat(result.getData(), is(notNullValue()));
+
+      expectedUserTaskValues.keySet().forEach((String userTaskKey) -> assertThat(
+        result.getEntryForKey(userTaskKey).get().getValue(),
+        is(calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey)).get(aggType))
+      ));
+
+    });
+  }
+
+  private String getLocalisedUnassignedLabel() {
+    return embeddedOptimizeExtension.getLocalizationService()
+      .getDefaultLocaleMessageForMissingAssigneeLabel();
+  }
+
+  protected String getIncorrectValueForKeyAssertionMsg(final String key) {
+    return String.format("Incorrect value for key [%s]", key);
+  }
+}

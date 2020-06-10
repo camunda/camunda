@@ -15,17 +15,17 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.percenti
 
 
 public class MedianAggregation implements AggregationStrategy {
-  private static final String MEDIAN_DURATION_AGGREGATION = "medianAggregatedDuration";
+  private static final String MEDIAN_AGGREGATION = "medianAggregation";
 
   @Override
   public Long getValue(final Aggregations aggregations) {
-    final ParsedTDigestPercentiles percentiles = aggregations.get(MEDIAN_DURATION_AGGREGATION);
+    final ParsedTDigestPercentiles percentiles = aggregations.get(MEDIAN_AGGREGATION);
     return mapToLongOrNull(percentiles);
   }
 
   @Override
-  public ValuesSourceAggregationBuilder getAggregationBuilder() {
-    return percentiles(MEDIAN_DURATION_AGGREGATION)
+  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+    return percentiles(MEDIAN_AGGREGATION)
       .percentiles(50);
   }
 

@@ -18,16 +18,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.export.CSVUtils;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -136,7 +137,7 @@ public class CombinedProcessReportResultTest {
   }
 
   @ParameterizedTest(name = "Test get result as CSV for duration number result with aggregate type {0}")
-  @EnumSource(AggregationType.class)
+  @MethodSource("allAggregationTypesWithoutSum")
   public void testGetResultAsCsvForDurationNumberResult(final AggregationType aggregationType) {
     // given
 
@@ -179,7 +180,7 @@ public class CombinedProcessReportResultTest {
   }
 
   @ParameterizedTest(name = "Test get result as CSV for duration map result with aggregate type {0}")
-  @EnumSource(AggregationType.class)
+  @MethodSource("allAggregationTypesWithoutSum")
   public void testGetResultAsCsvForDurationMapResult(final AggregationType aggregationType) {
     // given
 
@@ -345,5 +346,8 @@ public class CombinedProcessReportResultTest {
     );
   }
 
+  private static Stream<AggregationType> allAggregationTypesWithoutSum() {
+    return AggregationType.getAggregationTypesAsListWithoutSum().stream();
+  }
 
 }

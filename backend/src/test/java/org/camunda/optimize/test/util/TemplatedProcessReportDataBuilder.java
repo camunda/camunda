@@ -542,6 +542,17 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionKey(processDefinitionKey)
           .build();
         break;
+      case VARIABLE_AGGREGATION_GROUP_BY_NONE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.VARIABLE)
+          .viewProperty(ProcessViewProperty.VARIABLE(variableName, variableType))
+          .groupByType(ProcessGroupByType.NONE)
+          .distributedBy(DistributedBy.NONE)
+          .visualization(ProcessVisualization.NUMBER)
+          .processDefinitionVersions(processDefinitionVersions)
+          .processDefinitionKey(processDefinitionKey)
+          .build();
+        break;
       default:
         String errorMessage = String.format("Unknown ProcessReportDataType: [%s]", reportDataType.name());
         throw new OptimizeRuntimeException(errorMessage);

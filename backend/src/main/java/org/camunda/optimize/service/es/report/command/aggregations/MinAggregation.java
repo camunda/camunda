@@ -14,17 +14,17 @@ import static org.camunda.optimize.service.es.report.command.util.ElasticsearchA
 import static org.elasticsearch.search.aggregations.AggregationBuilders.min;
 
 public class MinAggregation implements AggregationStrategy {
-  private static final String MIN_DURATION_AGGREGATION = "minAggregatedDuration";
+  private static final String MIN_AGGREGATION = "minAggregation";
 
   @Override
   public Long getValue(final Aggregations aggs) {
-    final Min aggregation = aggs.get(MIN_DURATION_AGGREGATION);
+    final Min aggregation = aggs.get(MIN_AGGREGATION);
     return mapToLongOrNull(aggregation.getValue());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder getAggregationBuilder() {
-    return min(MIN_DURATION_AGGREGATION);
+  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+    return min(MIN_AGGREGATION);
   }
 
   @Override

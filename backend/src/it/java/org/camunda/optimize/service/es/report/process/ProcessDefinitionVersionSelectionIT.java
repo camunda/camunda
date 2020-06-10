@@ -39,8 +39,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
-  private static final String VARIABLE_NAME = "StringVar";
-  private static final String VARIABLE_VALUE = "StringVal";
+  private static final String VARIABLE_NAME = "IntegerVar";
   private static final String DEFINITION_KEY = "aProcess";
 
   @RegisterExtension
@@ -158,7 +157,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
         .setProcessDefinitionKey(definitionKey)
         .setProcessDefinitionVersions(definitionVersions)
         .setVariableName(VARIABLE_NAME)
-        .setVariableType(VariableType.STRING)
+        .setVariableType(VariableType.INTEGER)
         .setDateInterval(GroupByDateUnit.DAY)
         .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
         .setStartFlowNodeId(START_EVENT)
@@ -174,7 +173,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     IntStream.range(0, nInstancesToStart).forEach(
       i -> engineIntegrationExtension.startProcessInstance(
         definition.getId(),
-        ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE)
+        ImmutableMap.of(VARIABLE_NAME, i)
       )
     );
     return definition;
