@@ -27,17 +27,6 @@ export async function getFlowNodeNames(processDefinitionKey, processDefinitionVe
   }
 }
 
-export async function loadDefinitions(type, collectionId, excludeEventProcesses = false) {
-  const params = {excludeEventProcesses};
-  if (collectionId) {
-    params.filterByCollectionScope = collectionId;
-  }
-
-  const response = await get(`api/definition/${type}/definitionVersionsWithTenants`, params);
-
-  return await response.json();
-}
-
 export async function loadProcessDefinitionXml(key, version, tenantId) {
   const payload = {key, version};
   if (tenantId) {

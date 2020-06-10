@@ -3,6 +3,7 @@
 exports[`should check the versions based on the selected specific versions 1`] = `
 <Popover
   className="VersionPopover"
+  disabled={false}
   title="Latest : 3"
 >
   <Form

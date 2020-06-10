@@ -6,281 +6,295 @@
 
 import React from 'react';
 import classnames from 'classnames';
+import {withRouter} from 'react-router-dom';
 
 import {Message, BPMNDiagram, LoadingIndicator, Popover, Typeahead, Labeled} from 'components';
-
-import {loadDefinitions, getCollection} from 'services';
-import {withRouter} from 'react-router-dom';
+import {withErrorHandling} from 'HOC';
+import {getCollection} from 'services';
+import {t} from 'translation';
+import {showError} from 'notifications';
 
 import TenantPopover from './TenantPopover';
 import VersionPopover from './VersionPopover';
+import {loadDefinitions, loadVersions, loadTenants} from './service';
 
 import './DefinitionSelection.scss';
-import {t} from 'translation';
 
-export default withRouter(
-  class DefinitionSelection extends React.Component {
-    constructor(props) {
-      super(props);
+export class DefinitionSelection extends React.Component {
+  constructor(props) {
+    super(props);
 
-      this.state = {
-        availableDefinitions: [],
-        selectedSpecificVersions: this.isSpecificVersion(props.versions) ? props.versions : [],
-        loaded: false,
-      };
+    this.state = {
+      availableDefinitions: null,
+      availableVersions: null,
+      availableTenants: null,
+      selectedSpecificVersions: this.isSpecificVersion(props.versions) ? props.versions : [],
+    };
+  }
+
+  componentDidMount = async () => {
+    const {definitionKey, versions} = this.props;
+
+    this.setState({availableDefinitions: await this.loadDefinitions()});
+
+    if (definitionKey) {
+      this.setState({availableVersions: await this.loadVersions(definitionKey)});
+    }
+    if (definitionKey && versions?.length) {
+      this.setState({availableTenants: await this.loadTenants(definitionKey, versions)});
+    }
+  };
+
+  loadDefinitions = () => {
+    return new Promise((resolve) => {
+      const {type, excludeEventProcesses, location, mightFail} = this.props;
+      const collectionId = getCollection(location.pathname);
+
+      mightFail(
+        loadDefinitions(type, collectionId, excludeEventProcesses),
+        (result) =>
+          resolve(
+            result.map((entry) => ({
+              ...entry,
+              id: entry.key,
+            }))
+          ),
+        showError
+      );
+    });
+  };
+
+  loadVersions = (key) => {
+    return new Promise((resolve) => {
+      const {type, location, mightFail} = this.props;
+      const collectionId = getCollection(location.pathname);
+
+      mightFail(loadVersions(type, collectionId, key), resolve, showError);
+    });
+  };
+
+  loadTenants = (key, versions) => {
+    return new Promise((resolve) => {
+      if (versions.length === 0) {
+        resolve([]);
+      }
+      const {type, location, mightFail} = this.props;
+      const collectionId = getCollection(location.pathname);
+
+      mightFail(loadTenants(type, collectionId, key, versions), resolve, showError);
+    });
+  };
+
+  changeDefinition = async (key) => {
+    const {definitionKey, onChange} = this.props;
+
+    if (definitionKey === key) {
+      return;
     }
 
-    componentDidMount = async () => {
-      const {type, excludeEventProcesses, location} = this.props;
-      const collectionId = getCollection(location.pathname);
-      this.setState({
-        availableDefinitions: (
-          await loadDefinitions(type, collectionId, excludeEventProcesses)
-        ).map((entry) => ({
-          ...entry,
-          id: entry.key,
-        })),
-        loaded: true,
-      });
-    };
+    const availableVersions = await this.loadVersions(key);
+    const latestVersion = [availableVersions[0].version];
 
-    hasDefinition = () => this.props.definitionKey;
+    const availableTenants = await this.loadTenants(key, latestVersion);
 
-    getName = (key) => this.getDefinitionObject(key).name;
+    this.setState({availableVersions, availableTenants, selectedSpecificVersions: latestVersion});
 
-    changeDefinition = (key) => {
-      if (this.props.definitionKey === key) {
-        return;
-      }
-      const definitionObject = this.getDefinitionObject(key);
-      const latestDefinition = definitionObject.versions[0];
-      const latestVersion = [latestDefinition.version];
-      const tenants = this.getAvailableTenants(key, latestVersion);
+    onChange({
+      key,
+      versions: latestVersion,
+      tenantIds: availableTenants.map(({id}) => id),
+      name: this.getName(key),
+    });
+  };
 
-      this.setState({selectedSpecificVersions: latestVersion});
-      this.props.onChange({
-        key,
-        versions: latestVersion,
-        tenantIds: tenants.map(({id}) => id),
-        name: this.getName(key),
-      });
-    };
+  changeVersions = async (versions) => {
+    const {definitionKey, onChange, tenants} = this.props;
 
-    getDefinitionObject = (key) => this.state.availableDefinitions.find((def) => def.key === key);
-    canRenderDiagram = () => this.props.renderDiagram && this.props.xml;
+    if (this.isSpecificVersion(versions)) {
+      this.setState({selectedSpecificVersions: versions});
+    }
 
-    getAvailableTenants = (key, versions) => {
-      const definitionObject = this.getDefinitionObject(key);
-      if (versions && versions.length === 1 && versions[0] === 'all') {
-        return definitionObject.allTenants;
-      }
-      if (definitionObject && versions) {
-        const specificVersions =
-          versions[0] === 'latest' ? [definitionObject.versions[0].version] : versions;
-        const allTenantsWithDuplicates = definitionObject.versions
-          .filter((versionEntry) => specificVersions.includes(versionEntry.version))
-          .map((versionEntry) => versionEntry.tenants)
-          .flat();
-        return this.filterDuplicateTenants(allTenantsWithDuplicates);
-      }
-      return [];
-    };
+    const availableTenants = await this.loadTenants(definitionKey, versions);
 
-    filterDuplicateTenants = (arrayOfTenantsWithDuplicates) => {
-      return arrayOfTenantsWithDuplicates.filter(
-        (object, index, self) => index === self.findIndex((o) => o.id === object.id)
-      );
-    };
+    // remove previously deselected tenants from the available tenants of the new version
+    const prevTenants = this.state.availableTenants;
+    const deselectedTenants = prevTenants
+      ?.map(({id}) => id)
+      .filter((tenant) => !tenants?.includes(tenant));
+    const tenantIds = availableTenants
+      ?.map(({id}) => id)
+      .filter((tenant) => !deselectedTenants?.includes(tenant));
 
-    hasTenants = () => {
-      if (this.props.definitionKey && this.props.versions) {
-        const tenants = this.getAvailableTenants(this.props.definitionKey, this.props.versions);
-        return tenants.length > 1;
-      }
-      return false;
-    };
+    this.setState({availableTenants});
 
-    getSelectedTenants = () => this.props.tenants;
+    onChange({
+      key: definitionKey,
+      versions,
+      tenantIds,
+      name: this.getName(definitionKey),
+    });
+  };
 
-    changeTenants = (tenantSelection) => {
-      const {definitionKey, versions} = this.props;
-      this.props.onChange({
-        key: definitionKey,
-        versions: versions,
-        tenantIds: tenantSelection,
-        name: this.getName(definitionKey),
-      });
-    };
+  changeTenants = (tenantSelection) => {
+    const {definitionKey, versions} = this.props;
+    this.props.onChange({
+      key: definitionKey,
+      versions: versions,
+      tenantIds: tenantSelection,
+      name: this.getName(definitionKey),
+    });
+  };
 
-    getAvailableVersions = (key) => {
-      const definitionObject = this.getDefinitionObject(key);
-      if (definitionObject) {
-        return definitionObject.versions.map(({version, versionTag}) => ({version, versionTag}));
-      }
-      return [];
-    };
+  hasDefinition = () => this.props.definitionKey;
+  hasTenants = () => {
+    if (this.props.definitionKey && this.props.versions) {
+      const tenants = this.getAvailableTenants();
+      return tenants?.length > 1;
+    }
+    return false;
+  };
 
-    getSelectedVersions = () => this.props.versions || [];
+  getName = (key) => this.getDefinitionObject(key).name;
+  getDefinitionObject = (key) => this.state.availableDefinitions.find((def) => def.key === key);
+  getAvailableVersions = () => this.state.availableVersions;
+  getSelectedVersions = () => this.props.versions || [];
+  getAvailableTenants = () => this.state.availableTenants;
+  getSelectedTenants = () => this.props.tenants;
 
-    changeVersions = (versions) => {
-      if (this.isSpecificVersion(versions)) {
-        this.setState({selectedSpecificVersions: versions});
+  isSpecificVersion = (versions) => versions && versions[0] !== 'latest' && versions[0] !== 'all';
+  canRenderDiagram = () => this.props.renderDiagram && this.props.xml;
+
+  createTitle = () => {
+    const {definitionKey, versions, type} = this.props;
+
+    if (definitionKey && versions && this.getAvailableTenants()) {
+      const availableTenants = this.getAvailableTenants();
+      const selectedTenants = this.getSelectedTenants();
+
+      const definition = this.getDefinitionObject(definitionKey);
+      const definitionName = definition.name || definition.key;
+
+      let versionString = t('common.none');
+      if (versions.length === 1 && versions[0] === 'all') {
+        versionString = t('common.all');
+      } else if (versions.length === 1 && versions[0] === 'latest') {
+        versionString = t('common.definitionSelection.latest');
+      } else if (versions.length === 1) {
+        versionString = versions[0];
+      } else if (versions.length > 1) {
+        versionString = t('common.definitionSelection.multiple');
       }
 
-      this.props.onChange({
-        key: this.props.definitionKey,
-        versions,
-        tenantIds: this.findTenants(versions),
-        name: this.getName(this.props.definitionKey),
-      });
-    };
+      let tenant = t('common.definitionSelection.multiple');
+      if (selectedTenants.length === 0) {
+        tenant = '-';
+      } else if (availableTenants.length === 1) {
+        tenant = null;
+      } else if (selectedTenants.length === availableTenants.length) {
+        tenant = t('common.all');
+      } else if (selectedTenants.length === 1) {
+        const tenantObj = availableTenants.find(({id}) => id === selectedTenants[0]);
+        tenant = tenantObj.name || tenantObj.id;
+      }
 
-    findTenants = (versions) => {
-      const prevTenants = this.getAvailableTenants(this.props.definitionKey, this.props.versions);
-      const deselectedTenants = prevTenants
-        .map(({id}) => id)
-        .filter((tenant) => !this.props.tenants.includes(tenant));
-
-      // remove previously deselected tenants from the available tenants of the new version
-      const newTenants = this.getAvailableTenants(this.props.definitionKey, versions)
-        .map(({id}) => id)
-        .filter((tenant) => !deselectedTenants.includes(tenant));
-
-      return newTenants;
-    };
-
-    isSpecificVersion = (versions) => versions && versions[0] !== 'latest' && versions[0] !== 'all';
-
-    createTitle = () => {
-      const {definitionKey, versions, type} = this.props;
-
-      if (definitionKey && versions) {
-        const availableTenants = this.getAvailableTenants(definitionKey, versions);
-        const selectedTenants = this.getSelectedTenants();
-
-        const definition = this.getDefinitionObject(definitionKey);
-        const definitionName = definition.name || definition.key;
-
-        let versionString = t('common.none');
-        if (versions.length === 1 && versions[0] === 'all') {
-          versionString = t('common.all');
-        } else if (versions.length === 1 && versions[0] === 'latest') {
-          versionString = t('common.definitionSelection.latest');
-        } else if (versions.length === 1) {
-          versionString = versions[0];
-        } else if (versions.length > 1) {
-          versionString = t('common.definitionSelection.multiple');
-        }
-
-        let tenant = t('common.definitionSelection.multiple');
-        if (selectedTenants.length === 0) {
-          tenant = '-';
-        } else if (availableTenants.length === 1) {
-          tenant = null;
-        } else if (selectedTenants.length === availableTenants.length) {
-          tenant = t('common.all');
-        } else if (selectedTenants.length === 1) {
-          const tenantObj = availableTenants.find(({id}) => id === selectedTenants[0]);
-          tenant = tenantObj.name || tenantObj.id;
-        }
-
-        if (tenant) {
-          return `${definitionName} : ${versionString} : ${tenant}`;
-        } else {
-          return `${definitionName} : ${versionString}`;
-        }
+      if (tenant) {
+        return `${definitionName} : ${versionString} : ${tenant}`;
       } else {
-        return t(`common.definitionSelection.select.${type}`);
+        return `${definitionName} : ${versionString}`;
       }
-    };
+    } else {
+      return t(`common.definitionSelection.select.${type}`);
+    }
+  };
 
-    render() {
-      const {loaded, availableDefinitions, selectedSpecificVersions} = this.state;
-      const {expanded, type, disableDefinition} = this.props;
-      const collectionId = getCollection(this.props.location.pathname);
-      const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
-      const selectedKey = this.props.definitionKey;
-      const versions = this.getSelectedVersions();
-      const displayVersionWarning = versions.length > 1 || versions[0] === 'all';
+  render() {
+    const {availableDefinitions, selectedSpecificVersions} = this.state;
+    const {expanded, type, disableDefinition} = this.props;
+    const collectionId = getCollection(this.props.location.pathname);
+    const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
+    const selectedKey = this.props.definitionKey;
+    const versions = this.getSelectedVersions();
+    const displayVersionWarning = versions.length > 1 || versions[0] === 'all';
 
-      if (!loaded) {
-        return (
-          <div className="DefinitionSelection">
-            <LoadingIndicator small />
-          </div>
-        );
-      }
-
-      const def = this.getDefinitionObject(selectedKey);
-      const Wrapper = expanded ? 'div' : Popover;
-      const processSelectLabel = expanded
-        ? t(`common.definitionSelection.select.${type}`)
-        : t('common.name');
-
+    if (!availableDefinitions) {
       return (
-        <Wrapper className="DefinitionSelection" title={this.createTitle()}>
-          <div
-            className={classnames('container', {
-              large: this.canRenderDiagram(),
-              withTenants: this.hasTenants(),
-            })}
-          >
-            <div className="selectionPanel">
-              <div className="dropdowns">
-                <Labeled className="entry" label={processSelectLabel}>
-                  <Typeahead
-                    className="name"
-                    initialValue={def ? def.key : null}
-                    disabled={noDefinitions || disableDefinition}
-                    placeholder={t('common.select')}
-                    onChange={this.changeDefinition}
-                    noValuesMessage={t('common.definitionSelection.noDefinition')}
-                  >
-                    {availableDefinitions.map(({name, key}) => (
-                      <Typeahead.Option key={key} value={key}>
-                        {name || key}
-                      </Typeahead.Option>
-                    ))}
-                  </Typeahead>
-                </Labeled>
-                <div className="version entry">
-                  <Labeled label={t('common.definitionSelection.version.label')} />
-                  <VersionPopover
-                    disabled={!this.hasDefinition()}
-                    versions={this.getAvailableVersions(selectedKey)}
-                    selected={this.getSelectedVersions()}
-                    selectedSpecificVersions={selectedSpecificVersions}
-                    onChange={this.changeVersions}
-                  />
-                </div>
-                <div className="tenant entry">
-                  <Labeled label={t('common.tenant.label')} />
-                  <TenantPopover
-                    tenants={this.getAvailableTenants(selectedKey, versions)}
-                    selected={this.getSelectedTenants()}
-                    onChange={this.changeTenants}
-                  />
-                </div>
+        <div className="DefinitionSelection">
+          <LoadingIndicator small />
+        </div>
+      );
+    }
+
+    const def = this.getDefinitionObject(selectedKey);
+    const Wrapper = expanded ? 'div' : Popover;
+    const processSelectLabel = expanded
+      ? t(`common.definitionSelection.select.${type}`)
+      : t('common.name');
+
+    return (
+      <Wrapper className="DefinitionSelection" title={this.createTitle()}>
+        <div
+          className={classnames('container', {
+            large: this.canRenderDiagram(),
+            withTenants: this.hasTenants(),
+          })}
+        >
+          <div className="selectionPanel">
+            <div className="dropdowns">
+              <Labeled className="entry" label={processSelectLabel}>
+                <Typeahead
+                  className="name"
+                  initialValue={def ? def.key : null}
+                  disabled={noDefinitions || disableDefinition}
+                  placeholder={t('common.select')}
+                  onChange={this.changeDefinition}
+                  noValuesMessage={t('common.definitionSelection.noDefinition')}
+                >
+                  {availableDefinitions.map(({name, key}) => (
+                    <Typeahead.Option key={key} value={key}>
+                      {name || key}
+                    </Typeahead.Option>
+                  ))}
+                </Typeahead>
+              </Labeled>
+              <div className="version entry">
+                <Labeled label={t('common.definitionSelection.version.label')} />
+                <VersionPopover
+                  disabled={!this.hasDefinition()}
+                  versions={this.getAvailableVersions()}
+                  selected={this.getSelectedVersions()}
+                  selectedSpecificVersions={selectedSpecificVersions}
+                  onChange={this.changeVersions}
+                />
               </div>
-              <div className="info">
-                {displayVersionWarning && (
-                  <Message>{t('common.definitionSelection.versionWarning')}</Message>
-                )}
-                {collectionId && noDefinitions && (
-                  <Message>{t('common.definitionSelection.noSourcesWarning')}</Message>
-                )}
-                {this.props.infoMessage && <Message>{this.props.infoMessage}</Message>}
+              <div className="tenant entry">
+                <Labeled label={t('common.tenant.label')} />
+                <TenantPopover
+                  tenants={this.getAvailableTenants()}
+                  selected={this.getSelectedTenants()}
+                  onChange={this.changeTenants}
+                />
               </div>
             </div>
-            {this.canRenderDiagram() && (
-              <div className="diagram">
-                <hr />
-                <BPMNDiagram xml={this.props.xml} disableNavigation />
-              </div>
-            )}
+            <div className="info">
+              {displayVersionWarning && (
+                <Message>{t('common.definitionSelection.versionWarning')}</Message>
+              )}
+              {collectionId && noDefinitions && (
+                <Message>{t('common.definitionSelection.noSourcesWarning')}</Message>
+              )}
+              {this.props.infoMessage && <Message>{this.props.infoMessage}</Message>}
+            </div>
           </div>
-        </Wrapper>
-      );
-    }
+          {this.canRenderDiagram() && (
+            <div className="diagram">
+              <hr />
+              <BPMNDiagram xml={this.props.xml} disableNavigation />
+            </div>
+          )}
+        </div>
+      </Wrapper>
+    );
   }
-);
+}
+
+export default withRouter(withErrorHandling(DefinitionSelection));

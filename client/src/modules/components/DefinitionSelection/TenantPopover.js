@@ -14,7 +14,7 @@ import {formatters} from 'services';
 const {formatTenantName} = formatters;
 
 export default function TenantPopover({tenants, selected, onChange}) {
-  const allSelected = tenants.length === selected.length;
+  const allSelected = tenants && tenants.length === selected.length;
   const noneSelected = selected.length === 0;
 
   let label = t('common.definitionSelection.multiple');
@@ -24,12 +24,12 @@ export default function TenantPopover({tenants, selected, onChange}) {
   if (noneSelected) {
     label = t('common.select');
   }
-  if (selected.length === 1 && tenants.length !== 0) {
-    label = tenants.find(({id}) => id === selected[0]).name;
+  if (selected?.length === 1 && tenants?.length !== 0) {
+    label = tenants?.find(({id}) => id === selected[0])?.name;
   }
 
   return (
-    <Popover className="TenantPopover" disabled={tenants.length < 2} title={label}>
+    <Popover className="TenantPopover" disabled={tenants?.length < 2 || !tenants} title={label}>
       <Form compact>
         <fieldset>
           <legend>{t('common.definitionSelection.tenant.includeData')}</legend>
@@ -39,7 +39,7 @@ export default function TenantPopover({tenants, selected, onChange}) {
             </Button>
             <Button onClick={() => onChange([])}>{t('common.disableAll')}</Button>
           </ButtonGroup>
-          {tenants.map((tenant) => {
+          {tenants?.map((tenant) => {
             return (
               <Switch
                 key={tenant.id}
