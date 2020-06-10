@@ -23,6 +23,7 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -237,6 +238,20 @@ public class AtomixTransportTest {
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
+  }
+
+  @Test
+  public void shouldNotRetryWhenNoRemoteFoundWhenSpecified() {
+    // given
+
+    // when
+    final var requestFuture =
+        clientTransport.sendRequest(() -> null, new Request("messageABC"), Duration.ofMillis(300));
+
+    // then
+    assertThatThrownBy(requestFuture::join)
+        .hasCauseInstanceOf(ConnectException.class)
+        .hasMessageContaining("no remote address found");
   }
 
   @Test

@@ -22,7 +22,6 @@ import io.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -130,35 +129,44 @@ public final class BrokerClientImpl implements BrokerClient {
     LOG.debug("Gateway broker client closed.");
   }
 
-  /* (non-Javadoc)
-   * @see io.zeebe.gateway.impl.broker.BrokerClient#sendRequest(io.zeebe.gateway.impl.broker.request.BrokerRequest)
-   */
   @Override
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
+  public <T> CompletableFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
     return requestManager.sendRequest(request);
   }
 
   @Override
-  public <T> void sendRequest(
-      final BrokerRequest<T> request,
-      final BrokerResponseConsumer<T> responseConsumer,
-      final Consumer<Throwable> throwableConsumer) {
-    requestManager.sendRequest(request, responseConsumer, throwableConsumer);
-  }
-
-  @Override
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(
+  public <T> CompletableFuture<BrokerResponse<T>> sendRequest(
       final BrokerRequest<T> request, final Duration requestTimeout) {
     return requestManager.sendRequest(request, requestTimeout);
   }
 
   @Override
-  public <T> void sendRequest(
+  public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
+      final BrokerRequest<T> request) {
+    return requestManager.sendRequestWithRetry(request);
+  }
+
+  @Override
+  public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
+      final BrokerRequest<T> request, final Duration requestTimeout) {
+    return requestManager.sendRequestWithRetry(request, requestTimeout);
+  }
+
+  @Override
+  public <T> void sendRequestWithRetry(
       final BrokerRequest<T> request,
       final BrokerResponseConsumer<T> responseConsumer,
-      final Consumer<Throwable> throwableConsumer,
-      final Duration requestTimeout) {
-    requestManager.sendRequest(request, responseConsumer, throwableConsumer, requestTimeout);
+      final Consumer<Throwable> throwableConsumer) {
+    requestManager
+        .sendRequestWithRetry(request)
+        .whenComplete(
+            (response, error) -> {
+              if (error == null) {
+                responseConsumer.accept(response.getKey(), response.getResponse());
+              } else {
+                throwableConsumer.accept(error);
+              }
+            });
   }
 
   @Override
@@ -179,6 +187,24 @@ public final class BrokerClientImpl implements BrokerClient {
                   return CompletableFuture.completedFuture(null);
                 })
             .join();
+  }
+
+  public <T> void sendRequestWithRetry(
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer,
+      final Duration requestTimeout) {
+
+    requestManager
+        .sendRequestWithRetry(request, requestTimeout)
+        .whenComplete(
+            (response, error) -> {
+              if (error == null) {
+                responseConsumer.accept(response.getKey(), response.getResponse());
+              } else {
+                throwableConsumer.accept(error);
+              }
+            });
   }
 
   private void doAndLogException(final Runnable r) {

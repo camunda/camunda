@@ -18,12 +18,12 @@ import io.zeebe.gateway.impl.broker.BrokerResponseConsumer;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public final class StubbedBrokerClient implements BrokerClient {
@@ -41,12 +41,37 @@ public final class StubbedBrokerClient implements BrokerClient {
   public void close() {}
 
   @Override
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
+  public <T> CompletableFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
+    return sendRequestWithRetry(request);
+  }
+
+  @Override
+  public <T> CompletableFuture<BrokerResponse<T>> sendRequest(
+      final BrokerRequest<T> request, final Duration requestTimeout) {
+    return sendRequestWithRetry(request);
+  }
+
+  @Override
+  public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
+      final BrokerRequest<T> request) {
+    brokerRequests.add(request);
+    try {
+      final RequestHandler requestHandler = requestHandlers.get(request.getClass());
+      final BrokerResponse<T> response = requestHandler.handle(request);
+      return CompletableFuture.completedFuture(response);
+    } catch (final Exception e) {
+      return CompletableFuture.failedFuture(e);
+    }
+  }
+
+  @Override
+  public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
+      final BrokerRequest<T> request, final Duration requestTimeout) {
     throw new UnsupportedOperationException("not implemented");
   }
 
   @Override
-  public <T> void sendRequest(
+  public <T> void sendRequestWithRetry(
       final BrokerRequest<T> request,
       final BrokerResponseConsumer<T> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
@@ -67,21 +92,6 @@ public final class StubbedBrokerClient implements BrokerClient {
     } catch (final Exception e) {
       throwableConsumer.accept(new BrokerResponseException(e));
     }
-  }
-
-  @Override
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(
-      final BrokerRequest<T> request, final Duration requestTimeout) {
-    throw new UnsupportedOperationException("not implemented");
-  }
-
-  @Override
-  public <T> void sendRequest(
-      final BrokerRequest<T> request,
-      final BrokerResponseConsumer<T> responseConsumer,
-      final Consumer<Throwable> throwableConsumer,
-      final Duration requestTimeout) {
-    throw new UnsupportedOperationException("not implemented");
   }
 
   @Override

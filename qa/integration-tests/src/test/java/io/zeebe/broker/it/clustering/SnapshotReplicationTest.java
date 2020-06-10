@@ -86,7 +86,7 @@ public final class SnapshotReplicationTest {
     final var secondFollowerId = followers.get(1);
 
     // when - snapshot
-    clusteringRule.stopBroker(firstFollowerId);
+    clusteringRule.stopBrokerAndAwaitNewLeader(firstFollowerId);
     triggerSnapshotCreation();
     final var snapshotAtSecondFollower =
         clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId));

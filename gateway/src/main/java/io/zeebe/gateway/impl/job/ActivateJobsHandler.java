@@ -13,22 +13,29 @@ import io.zeebe.gateway.EndpointManager;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.ResponseMapper;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.PartitionIdIterator;
+import io.zeebe.gateway.impl.broker.RequestDispatchStrategy;
+import io.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-public final class ActivateJobsHandler {
+final class ActivateJobsHandler {
 
-  private final Map<String, Integer> jobTypeToNextPartitionId = new HashMap<>();
+  private final Map<String, RequestDispatchStrategy> jobTypeToNextPartitionId =
+      new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
+  private final BrokerTopologyManager topologyManager;
 
-  public ActivateJobsHandler(final BrokerClient brokerClient) {
+  ActivateJobsHandler(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
+    this.topologyManager = brokerClient.getTopologyManager();
   }
 
-  public void activateJobs(
+  void activateJobs(
       final int partitionsCount,
       final BrokerActivateJobsRequest request,
       final int maxJobsToActivate,
@@ -73,33 +80,40 @@ public final class ActivateJobsHandler {
       // partitions to check and jobs to activate left
       request.setPartitionId(partitionId);
       request.setMaxJobsToActivate(remainingAmount);
-      brokerClient.sendRequest(
-          request,
-          (key, response) -> {
-            final ActivateJobsResponse grpcResponse =
-                ResponseMapper.toActivateJobsResponse(key, response);
-            final int jobsCount = grpcResponse.getJobsCount();
-            if (jobsCount > 0) {
-              onResponse.accept(grpcResponse);
-            }
+      brokerClient
+          .sendRequest(request)
+          .whenComplete(
+              (response, error) -> {
+                if (error == null) {
+                  final ActivateJobsResponse grpcResponse =
+                      ResponseMapper.toActivateJobsResponse(
+                          response.getKey(), response.getResponse());
+                  final int jobsCount = grpcResponse.getJobsCount();
+                  if (jobsCount > 0) {
+                    onResponse.accept(grpcResponse);
+                  }
 
-            activateJobs(
-                request,
-                partitionIdIterator,
-                remainingAmount - jobsCount,
-                jobType,
-                onResponse,
-                onCompleted,
-                response.getTruncated());
-          },
-          error -> {
-            logErrorResponse(partitionIdIterator, jobType, error);
-            activateJobs(
-                request, partitionIdIterator, remainingAmount, jobType, onResponse, onCompleted);
-          });
+                  activateJobs(
+                      request,
+                      partitionIdIterator,
+                      remainingAmount - jobsCount,
+                      jobType,
+                      onResponse,
+                      onCompleted,
+                      response.getResponse().getTruncated());
+                } else {
+                  logErrorResponse(partitionIdIterator, jobType, error);
+                  activateJobs(
+                      request,
+                      partitionIdIterator,
+                      remainingAmount,
+                      jobType,
+                      onResponse,
+                      onCompleted);
+                }
+              });
     } else {
       // enough jobs activated or no more partitions left to check
-      jobTypeToNextPartitionId.put(jobType, partitionIdIterator.getCurrentPartitionId());
       onCompleted.accept(remainingAmount);
     }
   }
@@ -118,7 +132,10 @@ public final class ActivateJobsHandler {
 
   private PartitionIdIterator partitionIdIteratorForType(
       final String jobType, final int partitionsCount) {
-    final Integer nextPartitionId = jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> 0);
-    return new PartitionIdIterator(nextPartitionId, partitionsCount);
+    final RequestDispatchStrategy nextPartitionSupplier =
+        jobTypeToNextPartitionId.computeIfAbsent(
+            jobType, t -> new RoundRobinDispatchStrategy(topologyManager));
+    return new PartitionIdIterator(
+        nextPartitionSupplier.determinePartition(), partitionsCount, topologyManager);
   }
 }

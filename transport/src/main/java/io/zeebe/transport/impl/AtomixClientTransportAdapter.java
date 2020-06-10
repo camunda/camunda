@@ -24,6 +24,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class AtomixClientTransportAdapter extends Actor implements ClientTransport {
 
   private static final Duration RETRY_DELAY = Duration.ofMillis(10);
+  private static final String NO_REMOTE_ADDRESS_FOUND_ERROR_MESSAGE =
+      "Failed to send request to %s, no remote address found.";
 
   private final MessagingService messagingService;
 
@@ -36,6 +38,24 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       final Supplier<String> nodeAddressSupplier,
       final Predicate<DirectBuffer> responseValidator,
       final ClientRequest clientRequest,
+      final Duration timeout) {
+    return sendRequestInternal(
+        nodeAddressSupplier, responseValidator, clientRequest, true, timeout);
+  }
+
+  @Override
+  public ActorFuture<DirectBuffer> sendRequest(
+      final Supplier<String> nodeAddressSupplier,
+      final ClientRequest clientRequest,
+      final Duration timeout) {
+    return sendRequestInternal(nodeAddressSupplier, r -> true, clientRequest, false, timeout);
+  }
+
+  private ActorFuture<DirectBuffer> sendRequestInternal(
+      final Supplier<String> nodeAddressSupplier,
+      final Predicate<DirectBuffer> responseValidator,
+      final ClientRequest clientRequest,
+      final boolean shouldRetry,
       final Duration timeout) {
 
     // copy once
@@ -54,6 +74,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
             partitionId,
             requestBytes,
             responseValidator,
+            shouldRetry,
             timeout);
     actor.call(
         () -> {
@@ -79,7 +100,14 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
     final var nodeAddress = requestContext.getNodeAddress();
     if (nodeAddress == null) {
-      actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
+      if (requestContext.shouldRetry()) {
+        actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
+      } else {
+        requestContext.completeExceptionally(
+            new ConnectException(
+                String.format(
+                    NO_REMOTE_ADDRESS_FOUND_ERROR_MESSAGE, requestContext.getTopicName())));
+      }
       return;
     }
 
@@ -109,7 +137,8 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       // normally the root exception is a completion exception
       // and the cause is either connect or non remote handler
       final var cause = errorOnRequest.getCause();
-      if (exceptionShowsConnectionIssue(errorOnRequest) || exceptionShowsConnectionIssue(cause)) {
+      if ((exceptionShowsConnectionIssue(errorOnRequest) || exceptionShowsConnectionIssue(cause))
+          && requestContext.shouldRetry()) {
         // no registered subscription yet
         actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
       } else {
@@ -118,7 +147,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     }
   }
 
-  private boolean exceptionShowsConnectionIssue(Throwable throwable) {
+  private boolean exceptionShowsConnectionIssue(final Throwable throwable) {
     return throwable instanceof ConnectException
         || throwable instanceof MessagingException.NoRemoteHandler;
   }
