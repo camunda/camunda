@@ -80,7 +80,6 @@ public class ActivityInstanceZeebeRecordProcessor {
     if (entity == null) {
       entity = new ActivityInstanceEntity();
     }
-    entity.setKey(record.getKey());
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());

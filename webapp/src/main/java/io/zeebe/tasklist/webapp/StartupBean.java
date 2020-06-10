@@ -50,7 +50,7 @@ public class StartupBean {
     }
     logger.debug("INIT: Generate demo data...");
     try {
-      dataGenerator.createZeebeDataAsync(false);
+      dataGenerator.createZeebeDataAsync();
     } catch (Exception ex) {
       logger.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
       logger.error("Error occurred when generating demo data.", ex);

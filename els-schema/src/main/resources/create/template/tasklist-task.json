@@ -1,26 +1,20 @@
 {
 	"order": 30,
 	"index_patterns": [
-		"tasklist-activity-instance-${schema.version}_*"
+		"tasklist-task-${schema.version}_*"
 	],
 	"mappings": {
 		"dynamic": "strict",
 		"properties": {
-			"activityId": {
+			"elementId": {
 				"type": "keyword"
 			},
 			"partitionId": {
 				"type": "integer"
 			},
-			"endDate": {
+			"completionTime": {
 				"format": "date_time",
 				"type": "date"
-			},
-			"incidentKey": {
-				"type": "long"
-			},
-			"scopeKey": {
-				"type": "long"
 			},
 			"workflowInstanceKey": {
 				"type": "long"
@@ -34,20 +28,24 @@
 			"state": {
 				"type": "keyword"
 			},
-			"type": {
-				"type": "keyword"
-			},
 			"key": {
 				"type": "long"
 			},
-			"startDate": {
+			"creationTime": {
 				"format": "date_time",
 				"type": "date"
+			},
+			"bpmnProcessId": {
+				"type": "keyword"
+			},
+			"assignee": {
+				"type": "keyword"
 			}
+
 		}
 	},
 	"aliases": {
-		"tasklist-activity-instance-${schema.version}_alias": {
+		"tasklist-task-${schema.version}_alias": {
 		}
 	}
 }

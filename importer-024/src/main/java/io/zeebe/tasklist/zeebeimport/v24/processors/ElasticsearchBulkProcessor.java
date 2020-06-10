@@ -41,6 +41,9 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   private VariableZeebeRecordProcessor variableZeebeRecordProcessor;
 
   @Autowired
+  private JobZeebeRecordProcessor jobZeebeRecordProcessor;
+
+  @Autowired
   private ObjectMapper objectMapper;
 
   @Override
@@ -66,7 +69,9 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       }
       break;
     case JOB:
-      // TODO
+      for (Record record : zeebeRecords) {
+        jobZeebeRecordProcessor.processJobRecord(record, bulkRequest);
+      }
       break;
     default:
       logger.debug("Default case triggered for type {}", importValueType);

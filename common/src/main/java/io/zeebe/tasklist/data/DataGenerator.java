@@ -7,8 +7,7 @@ package io.zeebe.tasklist.data;
 
 public interface DataGenerator {
 
-  void createZeebeDataAsync(boolean manuallyCalled);
+  void createZeebeDataAsync();
 
-  DataGenerator DO_NOTHING = (boolean manuallyCalled) -> {
-  };
+  DataGenerator DO_NOTHING = () -> {};
 }

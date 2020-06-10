@@ -28,6 +28,8 @@ public class ImportProperties {
    */
   private boolean startLoadingDataOnStartup = true;
 
+  private String jobType = "humanTask";
+
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
@@ -68,4 +70,11 @@ public class ImportProperties {
     this.schedulerBackoff = schedulerBackoff;
   }
 
+  public String getJobType() {
+    return jobType;
+  }
+
+  public void setJobType(String jobType) {
+    this.jobType = jobType;
+  }
 }

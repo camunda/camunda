@@ -21,6 +21,7 @@ public enum ImportValueType {
   public static final ImportValueType[] IMPORT_VALUE_TYPES = new ImportValueType[]{
       ImportValueType.WORKFLOW_INSTANCE,
       ImportValueType.VARIABLE,
+      ImportValueType.JOB,
       ImportValueType.VARIABLE_DOCUMENT};
 
   public String getAliasTemplate() {

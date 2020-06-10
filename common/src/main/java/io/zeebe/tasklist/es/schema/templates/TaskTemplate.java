@@ -8,26 +8,22 @@ package io.zeebe.tasklist.es.schema.templates;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ActivityInstanceTemplate extends AbstractTemplateDescriptor {
+public class TaskTemplate extends AbstractTemplateDescriptor {
 
-  public static final String INDEX_NAME = "activity-instance";
+  public static final String INDEX_NAME = "task";
 
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String POSITION = "position";
-  public static final String WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
   public static final String START_DATE = "startDate";
-  public static final String END_DATE = "endDate";
-  public static final String ACTIVITY_ID = "activityId";
-  public static final String INCIDENT_KEY = "incidentKey";
+  public static final String CREATION_TIME = "creationTime";
+  public static final String COMPLETION_TIME = "completionTime";
+  public static final String ELEMENT_ID = "elementId";
   public static final String STATE = "state";
-  public static final String TYPE = "type";
-  public static final String SCOPE_KEY = "scopeKey";
 
   @Override
   protected String getIndexNameFormat() {
     return INDEX_NAME;
   }
-
 
 }
