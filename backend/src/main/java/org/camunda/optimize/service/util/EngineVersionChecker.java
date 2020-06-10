@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.util;
 
 import lombok.Getter;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.EngineVersionDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -25,6 +26,7 @@ import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
 @Slf4j
+@UtilityClass
 public class EngineVersionChecker {
 
   @Getter

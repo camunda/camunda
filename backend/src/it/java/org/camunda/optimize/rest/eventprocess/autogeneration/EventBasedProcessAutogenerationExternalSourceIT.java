@@ -9,6 +9,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Gateway;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
@@ -137,6 +138,49 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
     // and the expected number of sequence flows exists
     assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(3);
+  }
+
+  @Test
+  public void createFromExternalSource_illegalCharactersUsedInEventProperties_modelCanStillBeGenerated() {
+    // given
+    final String traceId = "tracingId";
+    final Instant now = Instant.now();
+    final EventTypeDto illegalCharEventType = EventTypeDto.builder()
+      .group("illegalChars !@£$%^&*()+")
+      .source("legalChars _.-")
+      .eventName(" whitespace \t\n")
+      .build();
+    final CloudEventDto illegalCharEvent = createCloudEventOfType(
+      illegalCharEventType,
+      traceId,
+      now
+    );
+    final String expectedIllegalCharEventNodeId = "event_illegalChars------------_legalChars-_.-_-whitespace---";
+    ingestEventAndProcessTraces(Arrays.asList(
+      illegalCharEvent,
+      createCloudEventOfType(EVENT_A, traceId, now.plusSeconds(10))
+    ));
+    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
+
+    // when
+    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then the created process is configured correctly
+    final Map<String, EventMappingDto> mappings = processMapping.getMappings();
+    final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
+
+    // then a model is generated without error
+    assertThat(processMapping.getXml()).isNotNull();
+    // then the mappings contain the correct events and are all in the model
+    assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(illegalCharEventType, EVENT_A));
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size());
+
+    // the ID of the node of the illegal character event has been corrected
+    assertThat(mappings).containsKey(expectedIllegalCharEventNodeId);
+    final ModelElementInstance modelElementById = modelInstance.getModelElementById(expectedIllegalCharEventNodeId);
+    assertThat(modelElementById).isNotNull();
   }
 
   @Test

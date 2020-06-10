@@ -22,11 +22,23 @@ public class EventModelBuilderUtil {
   public static final String CONVERGING_GATEWAY = "Converging gateway";
 
   public static String generateNodeId(final EventTypeDto eventTypeDto) {
-    return generateId(EVENT, eventTypeDto);
+    return removeIllegalCharacters(generateId(EVENT, eventTypeDto));
   }
 
-  public static String generateId(String type, EventTypeDto eventTypeDto) {
-    // The type prefix is necessary and should start with lower case so that the ID passes QName validation
+  public static String generateGatewayIdForSource(final EventSourceEntryDto eventSourceEntryDto,
+                                                  final GatewayDirection gatewayDirection) {
+    return removeIllegalCharacters(String.join(
+      "_",
+      Arrays.asList(gatewayDirection.toString().toLowerCase(), eventSourceEntryDto.getProcessDefinitionKey())
+    ));
+  }
+
+  public static String generateGatewayIdForNode(final EventTypeDto eventTypeDto, GatewayDirection gatewayDirection) {
+    return removeIllegalCharacters(generateId(gatewayDirection.toString().toLowerCase(), eventTypeDto));
+  }
+
+  private static String generateId(String type, EventTypeDto eventTypeDto) {
+    // The type prefix is necessary so that the ID passes QName validation
     return String.join(
       "_",
       Arrays.asList(
@@ -38,16 +50,8 @@ public class EventModelBuilderUtil {
     );
   }
 
-  public static String generateGatewayIdForSource(final EventSourceEntryDto eventSourceEntryDto,
-                                                  final GatewayDirection gatewayDirection) {
-    return String.join(
-      "_",
-      Arrays.asList(gatewayDirection.toString().toLowerCase(), eventSourceEntryDto.getProcessDefinitionKey())
-    );
-  }
-
-  public static String generateGatewayIdForNode(final EventTypeDto eventTypeDto, GatewayDirection gatewayDirection) {
-    return generateId(gatewayDirection.toString().toLowerCase(), eventTypeDto);
+  private static String removeIllegalCharacters(String originalId) {
+    return originalId.replaceAll("\\s", "-").replaceAll("[^a-zA-Z0-9_.-]", "-");
   }
 
 }
