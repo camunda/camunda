@@ -33,6 +33,10 @@ config.process.update = (type, data, props) => {
   if (type === 'view') {
     changes.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
 
+    if (data.entity !== 'variable' && props.report.data.configuration?.aggregationType === 'sum') {
+      changes.configuration.aggregationType = {$set: 'avg'};
+    }
+
     if (data.property !== 'duration' || data.entity !== 'processInstance') {
       changes.configuration.processPart = {$set: null};
     }

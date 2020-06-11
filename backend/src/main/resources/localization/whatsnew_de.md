@@ -17,3 +17,7 @@ Es wurde ein neuer Filter hinzugefügt, um Prozessinstanzen ein- oder auszuschli
 ## Null oder nicht definierte Werte beim Filtern nach Variablen einschließen
 
 Wenn nach Variablen gefiltert wird, gibt es in jedem Variablentyp eine neue Option, die es Ihnen erlaubt, `null` oder `nicht definierte` Werte im Ergebnis für den gewählten Filter auszuschließen oder einzuschließen.
+
+## Berichte für Variablenaggregationen
+
+Es wurde eine neue Ansichtsoption für Prozessberichte hinzugefügt, die es erlaubt eine Aggregation (z.B. Summe oder Durchschnitt) der Werte einer Variablen des Prozesses darzustellen.

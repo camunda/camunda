@@ -78,7 +78,10 @@ export default function reportConfig({view, groupBy, visualization, combinations
 
   function getGroupFor(type, data) {
     // special case for variables:
-    if (data && data.type && data.type.toLowerCase().includes('variable')) {
+    if (
+      data?.type?.toLowerCase().includes('variable') ||
+      data?.entity?.toLowerCase().includes('variable')
+    ) {
       return 'variable';
     }
 

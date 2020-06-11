@@ -49,6 +49,7 @@ export const view = [
       },
     ],
   },
+  {key: 'variable', group: 'variable', options: 'variable'},
 ];
 
 export const groupBy = [
@@ -143,5 +144,8 @@ export const combinations = {
     task: ['table', 'chart', 'heat'],
     date: ['table', 'chart'],
     user: ['table', 'chart'],
+  },
+  variable: {
+    none: ['number'],
   },
 };

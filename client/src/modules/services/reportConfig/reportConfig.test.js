@@ -65,6 +65,20 @@ it('should allow only groupBy options that make sense for the selected view', ()
       {type: 'runningDate', value: {unit: 'automatic'}}
     )
   ).toBeFalsy();
+  expect(
+    isAllowed(
+      null,
+      {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
+      {type: 'flowNodes', value: null}
+    )
+  ).toBeFalsy();
+  expect(
+    isAllowed(
+      null,
+      {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
+      {type: 'none', value: null}
+    )
+  ).toBeTruthy();
 });
 
 it('should allow only visualization options that make sense for the selected view and group', () => {

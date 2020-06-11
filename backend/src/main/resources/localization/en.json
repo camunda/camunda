@@ -225,7 +225,8 @@
       "userTask": "User Task",
       "count": "Count",
       "duration": "Duration",
-      "evaluationCount": "Evaluation Count"
+      "evaluationCount": "Evaluation Count",
+      "variable": "Variable"
     },
     "groupBy": {
       "label": "Group By",
@@ -372,6 +373,7 @@
       },
       "aggregation": {
         "legend": "Aggregation",
+        "sum": "Sum",
         "minimum": "Minimum",
         "average": "Average",
         "median": "Median",

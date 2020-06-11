@@ -16,9 +16,19 @@ import {t} from 'translation';
 
 function ReportSelect({type, field, value, disabled, onChange, variables, report, previous = []}) {
   const config = reportConfig[type];
-  const optionsWithoutVariables = config.options[field];
+  let options = config.options[field];
 
-  const options = addVariables(optionsWithoutVariables, variables);
+  if (field === 'groupBy') {
+    options = addVariables(options, variables, (type, value) => ({type, value}));
+  } else if (field === 'view') {
+    options = addVariables(
+      options,
+      variables,
+      (entity, property) => ({entity, property}),
+      ({type}) => ['Float', 'Integer', 'Short', 'Long', 'Double'].includes(type)
+    );
+  }
+
   const selectedOption = findSelectedOption(options, 'data', value);
 
   return (
@@ -87,18 +97,18 @@ function excludeConfig(data) {
   });
 }
 
-function addVariables(options, variables) {
+function addVariables(options, variables, payloadFormatter, filter = () => true) {
   return options.map((option) => {
     const subOptions = option.options;
     if (subOptions && typeof subOptions === 'string') {
       return {
         ...option,
-        options: variables[subOptions].map(({id, name, type}) => {
+        options: variables[subOptions].filter(filter).map(({id, name, type}) => {
           const value = id ? {id, name, type} : {name, type};
           return {
             key: subOptions + '_' + (id || name),
             label: name,
-            data: {type: subOptions, value},
+            data: payloadFormatter(subOptions, value),
           };
         }),
       };

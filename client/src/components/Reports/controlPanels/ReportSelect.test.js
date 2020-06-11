@@ -22,12 +22,15 @@ jest.mock('services', () => {
       process: {
         getLabelFor: jest.fn().mockReturnValue('foo'),
         options: {
-          view: [{key: 'rawData', data: 'foo', label: 'viewfoo'}],
-          groupBy: [
-            {key: 'none', data: 'foo', label: 'groupbyfoo'},
-            {key: 'variable', options: 'inputVariable', label: 'Input Variable'},
+          view: [
+            {key: 'rawData', data: 'foo'},
+            {key: 'variable', options: 'variable'},
           ],
-          visualization: [{data: 'foo', label: 'visualizationfoo'}],
+          groupBy: [
+            {key: 'none', data: 'foo'},
+            {key: 'variable', options: 'inputVariable'},
+          ],
+          visualization: [{data: 'foo'}],
         },
         isAllowed: jest.fn().mockReturnValue(true),
       },
@@ -39,7 +42,7 @@ const config = {
   type: 'process',
   field: 'view',
   value: 'foo',
-  variables: {inputVariable: []},
+  variables: {inputVariable: [], variable: []},
   disabled: false,
   onChange: jest.fn(),
 };
@@ -54,6 +57,12 @@ it('should disable options which would create a wrong combination', () => {
 
 it('should disable the variable groupby submenu if there are no variables', () => {
   const node = shallow(<ReportSelect {...config} field="groupBy" />);
+
+  expect(node.find(Select.Submenu)).toBeDisabled();
+});
+
+it('should disable the variable view submenu if there are no variables', () => {
+  const node = shallow(<ReportSelect {...config} />);
 
   expect(node.find(Select.Submenu)).toBeDisabled();
 });
@@ -90,5 +99,25 @@ it('invoke onChange with the correct variable data', async () => {
   expect(config.onChange).toHaveBeenCalledWith({
     type: 'inputVariable',
     value: {id: 'test', name: 'testName', type: 'date'},
+  });
+});
+
+it('provide the correct payload for variable reports', async () => {
+  const config = {
+    type: 'process',
+    field: 'view',
+    value: 'foo',
+    variables: {variable: [{type: 'Integer', name: 'testName'}]},
+    disabled: false,
+    onChange: jest.fn(),
+  };
+
+  const node = shallow(<ReportSelect {...config} />);
+
+  node.find('Select').simulate('change', 'variable_testName');
+
+  expect(config.onChange).toHaveBeenCalledWith({
+    entity: 'variable',
+    property: {name: 'testName', type: 'Integer'},
   });
 });

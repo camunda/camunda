@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import update from 'immutability-helper';
 
 import NumberConfig from './NumberConfig';
 
@@ -62,6 +63,13 @@ it('should change the precision', () => {
 
 it('should contain a target input for count property', () => {
   const node = shallow(<NumberConfig {...props} />);
+
+  expect(node.find('CountTargetInput')).toExist();
+});
+
+it('should contain a target input for variable reports', () => {
+  const variableReportProps = update(props, {report: {data: {view: {entity: {$set: 'variable'}}}}});
+  const node = shallow(<NumberConfig {...variableReportProps} />);
 
   expect(node.find('CountTargetInput')).toExist();
 });

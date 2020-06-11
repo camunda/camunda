@@ -35,4 +35,4 @@ exports[`should render an aggregation selection for duration reports 1`] = `
 </fieldset>
 `;
 
-exports[`should render nothing if the current result does is no duration 1`] = `""`;
+exports[`should render nothing if the current result is no duration and the view is not variable 1`] = `""`;

@@ -7,10 +7,14 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Select} from 'components';
+
 import AggregationType from './AggregationType';
 
-it('should render nothing if the current result does is no duration', () => {
-  const node = shallow(<AggregationType report={{result: {type: 'rawData'}}} />);
+it('should render nothing if the current result is no duration and the view is not variable', () => {
+  const node = shallow(
+    <AggregationType report={{data: {view: {entity: null}}, result: {type: 'rawData'}}} />
+  );
 
   expect(node).toMatchSnapshot();
 });
@@ -23,6 +27,16 @@ it('should render an aggregation selection for duration reports', () => {
   );
 
   expect(node).toMatchSnapshot();
+});
+
+it('should render an additional sum field for variable reports', () => {
+  const node = shallow(
+    <AggregationType
+      report={{data: {view: {entity: 'variable'}, configuration: {aggregationType: 'sum'}}}}
+    />
+  );
+
+  expect(node.find(Select.Option).first()).toHaveProp('value', 'sum');
 });
 
 it('should not crash when no resultType is set (e.g. for combined reports)', () => {

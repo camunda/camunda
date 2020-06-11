@@ -17,3 +17,7 @@ A new filter is added that allows you to include/exclude process instances where
 ## Include undefined/null values when filtering by variable
 
 When filtering by variables, there is a new option in each variable type that allows you to exclude or include `null` or `undefined` values in the result for the selected filter.
+
+## Variable Aggregation Reports
+
+A new view option has been added for process reports. This new option allows creating reports that show an aggregation (e.g. Sum or Average) of the values of a variable for a process.

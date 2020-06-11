@@ -297,6 +297,21 @@ test('select process instance count grouped by variable', async (t) => {
   await t.expect(e.reportTable.textContent).contains('Variable: amount');
 });
 
+test('variable report', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+
+  await u.selectView(t, 'Variable', 'amount');
+
+  await t.expect(e.reportNumber.visible).ok();
+
+  await t.click(e.configurationButton);
+  await t.click(e.limitPrecisionSwitch);
+  await t.typeText(e.limitPrecisionInput, '2', {replace: true});
+
+  await t.expect(e.reportNumber.visible).ok();
+});
+
 test('should only enable valid combinations for Flow Node Count', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');

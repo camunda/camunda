@@ -225,7 +225,8 @@
       "userTask": "Benutzeraufgabe",
       "count": "Anzahl",
       "duration": "Dauer",
-      "evaluationCount": "Evaluierungsanzahl"
+      "evaluationCount": "Evaluierungsanzahl",
+      "variable": "Variable"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -372,6 +373,7 @@
       },
       "aggregation": {
         "legend": "Aggregation",
+        "sum": "Summe",
         "minimum": "Minimum",
         "average": "Durchschnitt",
         "median": "Median",

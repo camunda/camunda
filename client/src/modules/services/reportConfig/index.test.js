@@ -28,6 +28,16 @@ describe('process update', () => {
     expect(changes.configuration.hiddenNodes).not.toBeDefined();
   });
 
+  it('should reset aggregation type if its incompatible outside variable reports', () => {
+    const changes = config.process.update(
+      'view',
+      {property: 'duration', entity: 'processInstance'},
+      {report: {data: {configuration: {aggregationType: 'sum'}}}}
+    );
+
+    expect(changes.configuration.aggregationType).toEqual({$set: 'avg'});
+  });
+
   it('should keep distributed by compatible when changing group by', () => {
     let changes = config.process.update(
       'groupBy',
