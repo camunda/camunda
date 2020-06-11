@@ -163,6 +163,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withThreadContextFactory(threadContextFactory)
         .withStateMachineFactory(config.getStateMachineFactory())
         .withJournalIndexFactory(journalIndexFactory)
+        .withEntryValidator(config.getEntryValidator())
         .build();
   }
 

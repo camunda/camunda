@@ -21,6 +21,8 @@ import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.raft.RaftStateMachineFactory;
 import io.atomix.raft.impl.zeebe.ZeebeRaftStateMachine;
+import io.atomix.raft.zeebe.EntryValidator;
+import io.atomix.raft.zeebe.NoopEntryValidator;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,6 +40,9 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
   private RaftCompactionConfig compactionConfig = new RaftCompactionConfig();
+
+  @Optional("EntryValidator")
+  private EntryValidator entryValidator = new NoopEntryValidator();
 
   // IMPORTANT: do not remove the Optional annotation, as the config is serialized through Kryo and
   // definitely does NOT know how to serialize random interfaces; a serialized configuration is used
@@ -191,6 +196,26 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   public RaftPartitionGroupConfig setStorageConfig(final RaftStorageConfig storageConfig) {
     this.storageConfig = storageConfig;
     return this;
+  }
+
+  /**
+   * Sets the entry validator to be called when an entry is appended.
+   *
+   * @param entryValidator the entry validator
+   * @return the Raft Partition group builder
+   */
+  public RaftPartitionGroupConfig setEntryValidator(final EntryValidator entryValidator) {
+    this.entryValidator = entryValidator;
+    return this;
+  }
+
+  /**
+   * Returns the entry validator to be called when an entry is appended.
+   *
+   * @return the entry validator
+   */
+  public EntryValidator getEntryValidator() {
+    return this.entryValidator;
   }
 
   @Override

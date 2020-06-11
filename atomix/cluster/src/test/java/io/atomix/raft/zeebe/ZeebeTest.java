@@ -25,7 +25,6 @@ import com.google.common.base.Stopwatch;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.raft.zeebe.util.ZeebeTestHelper;
 import io.atomix.raft.zeebe.util.ZeebeTestNode;
@@ -41,7 +40,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -258,79 +256,6 @@ public class ZeebeTest {
         assertTrue(helper.isEntryEqualTo(entry, listener.lastCommitted.get()));
       }
     }
-  }
-
-  @Test
-  public void shouldBeConsistentAfterFailOver() {
-    assumeTrue(nodes.size() > 1);
-
-    // given
-    final int partitionId = 1;
-    final ZeebeTestNode oldLeader = helper.awaitLeader(partitionId);
-    final Collection<ZeebeTestNode> followers = new ArrayList<>(nodes);
-    followers.remove(oldLeader);
-
-    // when
-    final ZeebeLogAppender oldAppender =
-        oldLeader.getPartitionServer(partitionId).getAppender().orElseThrow();
-    appenderWrapper.append(oldAppender, 0, 0, ByteBuffer.allocate(Integer.BYTES).putInt(0, 1));
-
-    oldLeader.stop().join();
-    final ZeebeTestNode newLeader = helper.awaitLeader(partitionId, followers);
-    oldLeader.start(nodes).join();
-
-    // then
-    final ZeebeLogAppender newAppender =
-        newLeader.getPartitionServer(partitionId).getAppender().orElseThrow();
-    appenderWrapper.append(newAppender, 1, 1, ByteBuffer.allocate(Integer.BYTES).putInt(0, 1));
-  }
-
-  @Test
-  public void shouldDetectInconsistencyAfterFailOver() throws InterruptedException {
-    assumeTrue(nodes.size() > 1);
-
-    // given
-    final int partitionId = 1;
-    final ZeebeTestNode oldLeader = helper.awaitLeader(partitionId);
-    final Collection<ZeebeTestNode> followers = new ArrayList<>(nodes);
-    followers.remove(oldLeader);
-
-    // when
-    final ZeebeLogAppender oldAppender =
-        oldLeader.getPartitionServer(partitionId).getAppender().orElseThrow();
-    appenderWrapper.append(oldAppender, 0, 0, ByteBuffer.allocate(Integer.BYTES).putInt(0, 1));
-    appenderWrapper.pollCommitted();
-
-    oldLeader.stop().join();
-    final ZeebeTestNode newLeader = helper.awaitLeader(partitionId, followers);
-    oldLeader.start(nodes).join();
-
-    // then
-    final ZeebeLogAppender newAppender =
-        newLeader.getPartitionServer(partitionId).getAppender().orElseThrow();
-
-    final CountDownLatch latch = new CountDownLatch(1);
-    newAppender.appendEntry(
-        0,
-        0,
-        ByteBuffer.allocate(Integer.BYTES).putInt(0, 1),
-        new AppendListener() {
-          @Override
-          public void onWrite(Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onWriteError(Throwable error) {
-            latch.countDown();
-          }
-
-          @Override
-          public void onCommit(Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(Indexed<ZeebeEntry> indexed, Throwable error) {}
-        });
-
-    assertTrue(latch.await(2, TimeUnit.SECONDS));
   }
 
   private ByteBuffer getIntAsBytes(final int value) {
