@@ -40,7 +40,7 @@ const client = new ApolloClient({
     const {networkError} = error;
 
     // @ts-ignore - TODO[Vinicius]: check why type defs are wrong here - Issue #68
-    if ([401, 403].includes(networkError.statusCode)) {
+    if ([401, 403].includes(networkError?.statusCode)) {
       client.clearStore();
       client.stop();
       login.disableSession();
