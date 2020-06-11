@@ -7,7 +7,7 @@
 import React from 'react';
 import debounce from 'debounce';
 
-import {ButtonGroup, Button, TypeaheadMultipleSelection, LoadingIndicator} from 'components';
+import {ButtonGroup, Button, TypeaheadMultipleSelection} from 'components';
 
 import './StringInput.scss';
 import {t} from 'translation';
@@ -152,17 +152,13 @@ export default class StringInput extends React.Component {
                 empty: t('common.filter.variableModal.multiSelect.empty'),
               }}
             />
-            {!this.state.valuesAreComplete && (
+            {!this.state.valuesAreComplete && !this.state.loading && (
               <Button
                 className="StringInput__load-more-button"
                 onClick={this.loadMore}
                 disabled={this.state.loading && this.props.disabled}
               >
-                {this.state.loading ? (
-                  <LoadingIndicator small />
-                ) : (
-                  t('common.filter.variableModal.loadMore')
-                )}
+                {t('common.filter.variableModal.loadMore')}
               </Button>
             )}
           </div>
