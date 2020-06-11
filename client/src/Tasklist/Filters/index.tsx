@@ -11,16 +11,12 @@ import {useHistory} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
 import {Select, Container} from './styled';
 import {OPTIONS} from './constants';
+import {getSearchParam} from 'modules/utils/getSearchParam';
+import {FilterValues} from 'modules/constants/filterValues';
 
 interface FormValues {
   filter: string;
 }
-
-const getSearchParam = (param: string, params: string) => {
-  const searchParams = new URLSearchParams(params);
-
-  return searchParams.get(param);
-};
 
 const Filters: React.FC = () => {
   const history = useHistory();
@@ -37,7 +33,8 @@ const Filters: React.FC = () => {
         }}
         initialValues={{
           filter:
-            getSearchParam('filter', history.location.search) ?? 'all-open',
+            getSearchParam('filter', history.location.search) ??
+            FilterValues.AllOpen,
         }}
       >
         {({handleSubmit, form}) => (

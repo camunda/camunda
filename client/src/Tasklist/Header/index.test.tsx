@@ -13,11 +13,11 @@ import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
 import {login} from 'modules/stores/login';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
-import {mockGetHeaderUser} from 'modules/queries/get-header-user';
+import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 
 const historyMock = createMemoryHistory();
 const Wrapper: React.FC = ({children}) => (
-  <MockedApolloProvider mocks={[mockGetHeaderUser]}>
+  <MockedApolloProvider mocks={[mockGetCurrentUser]}>
     <Router history={historyMock}>
       <MockThemeProvider>{children}</MockThemeProvider>
     </Router>

@@ -11,12 +11,15 @@ import {ReactComponent as Icon} from 'modules/icons/down.svg';
 import {Option} from './Option';
 import {login} from 'modules/stores/login';
 import {Button, LabelWrapper, Menu, Container} from './styled';
-import {GET_HEADER_USER, GetHeaderUser} from 'modules/queries/get-header-user';
+import {
+  GET_CURRENT_USER,
+  GetCurrentUser,
+} from 'modules/queries/get-current-user';
 
 const Dropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const {data, loading} = useQuery<GetHeaderUser>(GET_HEADER_USER);
+  const {data, loading} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
 
   useEffect(() => {
     const onClose = (event: Event) => {

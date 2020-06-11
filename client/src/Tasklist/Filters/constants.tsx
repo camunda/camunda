@@ -4,25 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-type TaskFilter = 'all-open' | 'claimed-by-me' | 'unclaimed' | 'completed';
+import {FilterValues} from 'modules/constants/filterValues';
 
-const OPTIONS: ReadonlyArray<{value: TaskFilter; label: string}> = [
+const OPTIONS = [
   {
-    value: 'all-open',
+    value: FilterValues.AllOpen,
     label: 'All open',
   },
   {
-    value: 'claimed-by-me',
+    value: FilterValues.ClaimedByMe,
     label: 'Claimed by me',
   },
   {
-    value: 'unclaimed',
+    value: FilterValues.Unclaimed,
     label: 'Unclaimed',
   },
   {
-    value: 'completed',
+    value: FilterValues.Completed,
     label: 'Completed',
   },
-];
+] as const;
 
 export {OPTIONS};

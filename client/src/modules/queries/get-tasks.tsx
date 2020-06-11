@@ -21,11 +21,31 @@ interface GetTasks {
   }>;
 }
 
+interface GetAllOpenVariables {}
+
+interface GetClaimedByMeVariables {
+  assignee: string;
+}
+
+interface GetUnclaimedVariables {
+  assigned: false;
+}
+
+interface GetCompletedVariables {
+  state: 'COMPLETED';
+}
+
+type GetTasksVariables =
+  | GetAllOpenVariables
+  | GetClaimedByMeVariables
+  | GetUnclaimedVariables
+  | GetCompletedVariables;
+
 const GET_TASKS =
   process.env.NODE_ENV === 'test'
     ? gql`
-        query GetTasks {
-          tasks {
+        query GetTasks($assignee: ID, $assigned: Boolean, $state: String) {
+          tasks(assignee: $assignee, assigned: $assigned, state: $state) {
             key
             name
             workflowName
@@ -35,8 +55,9 @@ const GET_TASKS =
         }
       `
     : gql`
-        query GetTasks {
-          tasks @client {
+        query GetTasks($assignee: ID, $assigned: Boolean, $state: String) {
+          tasks(assignee: $assignee, assigned: $assigned, state: $state)
+            @client {
             key
             name
             workflowName
@@ -46,13 +67,13 @@ const GET_TASKS =
         }
       `;
 
-const mockGetTasks = {
+const mockGetAllOpenTasks = {
   request: {
     query: GET_TASKS,
   },
   result: {
     data: {
-      tasks: tasks,
+      tasks,
     },
   },
 } as const;
@@ -68,5 +89,54 @@ const mockGetEmptyTasks = {
   },
 } as const;
 
-export type {GetTasks};
-export {GET_TASKS, mockGetTasks, mockGetEmptyTasks};
+const mockGetClaimedByMe = {
+  request: {
+    query: GET_TASKS,
+    variables: {
+      assignee: 'demo',
+    },
+  },
+  result: {
+    data: {
+      tasks,
+    },
+  },
+} as const;
+
+const mockGetUnclaimed = {
+  request: {
+    query: GET_TASKS,
+    variables: {
+      assigned: false,
+    },
+  },
+  result: {
+    data: {
+      tasks,
+    },
+  },
+} as const;
+
+const mockGetCompleted = {
+  request: {
+    query: GET_TASKS,
+    variables: {
+      state: 'COMPLETED',
+    },
+  },
+  result: {
+    data: {
+      tasks,
+    },
+  },
+} as const;
+
+export type {GetTasks, GetTasksVariables};
+export {
+  GET_TASKS,
+  mockGetAllOpenTasks,
+  mockGetEmptyTasks,
+  mockGetClaimedByMe,
+  mockGetUnclaimed,
+  mockGetCompleted,
+};

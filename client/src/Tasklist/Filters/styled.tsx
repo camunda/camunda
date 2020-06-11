@@ -24,7 +24,7 @@ const Select = styled.select`
 `;
 
 const Container = styled.div`
-  padding: 22px 20px 16px 20px;
+  padding: 22px 20px 20px 20px;
 `;
 
 export {Select, Container};

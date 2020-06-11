@@ -8,35 +8,34 @@ import {gql} from 'apollo-boost';
 
 import {User} from 'modules/types';
 
-const GET_HEADER_USER = gql`
-  query GetHeaderUser {
+const GET_CURRENT_USER = gql`
+  query GetCurrentUser {
     currentUser {
       firstname
       lastname
+      username
     }
   }
 `;
 
-const mockGetHeaderUser = {
+const mockGetCurrentUser = {
   request: {
-    query: GET_HEADER_USER,
+    query: GET_CURRENT_USER,
   },
   result: {
     data: {
       currentUser: {
         firstname: 'Demo',
         lastname: 'user',
+        username: 'demo',
       },
     },
   },
 } as const;
 
-interface GetHeaderUser {
-  currentUser: {
-    firstname: User['firstname'];
-    lastname: User['lastname'];
-  };
+interface GetCurrentUser {
+  currentUser: User;
 }
 
-export type {GetHeaderUser};
-export {GET_HEADER_USER, mockGetHeaderUser};
+export type {GetCurrentUser};
+export {GET_CURRENT_USER, mockGetCurrentUser};

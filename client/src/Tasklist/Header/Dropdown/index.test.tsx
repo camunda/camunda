@@ -10,11 +10,11 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {Dropdown} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
-import {mockGetHeaderUser} from 'modules/queries/get-header-user';
+import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 
 const Wrapper: React.FC = ({children}) => {
   return (
-    <MockedApolloProvider mocks={[mockGetHeaderUser]}>
+    <MockedApolloProvider mocks={[mockGetCurrentUser]}>
       <MockThemeProvider>{children}</MockThemeProvider>
     </MockedApolloProvider>
   );

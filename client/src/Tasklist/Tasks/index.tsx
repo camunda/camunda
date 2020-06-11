@@ -6,18 +6,67 @@
 
 import * as React from 'react';
 import {useQuery} from '@apollo/react-hooks';
+import {useLocation} from 'react-router-dom';
 
 import {EmptyMessage} from './styled';
 import {Task} from './Task';
-import {GET_TASKS, GetTasks} from 'modules/queries/get-tasks';
+import {
+  GET_TASKS,
+  GetTasks,
+  GetTasksVariables,
+} from 'modules/queries/get-tasks';
+import {
+  GET_CURRENT_USER,
+  GetCurrentUser,
+} from 'modules/queries/get-current-user';
+import {getSearchParam} from 'modules/utils/getSearchParam';
+import {FilterValues} from 'modules/constants/filterValues';
+
+const getQueryVariables = (filter: string, {username}: {username?: string}) => {
+  switch (filter) {
+    case FilterValues.ClaimedByMe: {
+      return {
+        assignee: username,
+      };
+    }
+    case FilterValues.Unclaimed: {
+      return {
+        assigned: false,
+      };
+    }
+    case FilterValues.Completed: {
+      return {
+        state: 'COMPLETED',
+      };
+    }
+    case FilterValues.AllOpen:
+    default: {
+      return {};
+    }
+  }
+};
 
 const Tasks: React.FC = () => {
-  const {data, loading} = useQuery<GetTasks>(GET_TASKS);
+  const location = useLocation();
+  const filter =
+    getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
+  const isClaimedByMeFilter = filter === FilterValues.ClaimedByMe;
+  const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER, {
+    skip: !isClaimedByMeFilter,
+  });
+  const {data, loading} = useQuery<GetTasks, GetTasksVariables>(GET_TASKS, {
+    skip: userData === undefined && isClaimedByMeFilter,
+    variables: getQueryVariables(filter, {
+      username: userData?.currentUser.username,
+    }),
+  });
 
   if (loading || data === undefined) {
     return null;
   }
+
   const {tasks} = data;
+
   return (
     <ul>
       {tasks.length > 0 ? (
