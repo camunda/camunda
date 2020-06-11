@@ -40,6 +40,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -120,6 +121,10 @@ public class DefinitionRestService {
                                                       @PathParam("key") final String key,
                                                       @RequestBody final DefinitionTenantsRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    if (request.getVersions() != null && request.getVersions().isEmpty()) {
+      return Collections.emptyList();
+    }
 
     final List<TenantDto> tenants = request.getFilterByCollectionScope()
       .map(collectionId -> collectionScopeService.getCollectionDefinitionTenantsByKeyAndType(
@@ -219,7 +224,7 @@ public class DefinitionRestService {
           processDef.getBpmn20Xml(),
           MediaType.APPLICATION_XML
         );
-        if (processDef.getIsEventBased()) {
+        if (Boolean.TRUE.equals(processDef.getIsEventBased())) {
           addNoStoreCacheHeader(processResponse);
         }
         return processResponse.build();

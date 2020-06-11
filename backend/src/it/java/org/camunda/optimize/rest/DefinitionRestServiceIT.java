@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1009,6 +1010,25 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .containsExactly(
         new TenantResponseDto(TENANT_NOT_DEFINED.getId(), TENANT_NOT_DEFINED.getName())
       );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeKeyAndVersions_emptyVersionList(final DefinitionType definitionType) {
+    // given
+    createTenant(TENANT_1);
+    final String definitionKey = "key";
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
+
+    // when the version list is empty
+    final List<TenantResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
+        definitionType, definitionKey, Collections.emptyList()
+      );
+
+    // then
+    assertThat(tenantsForAllVersions).isEmpty();
   }
 
   @Test
