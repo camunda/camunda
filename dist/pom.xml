@@ -61,11 +61,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient_httpserver</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
@@ -78,6 +73,11 @@
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
     </dependency>
 
     <dependency>
@@ -96,7 +96,26 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <!-- Conflicts with histogram in elasticsearch exporter dependency -->
+          <groupId>org.hdrhistogram</groupId>
+          <artifactId>HdrHistogram</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- needed for the Spring actuators which enable health checks and liveness probes-->
     <dependency>
@@ -108,12 +127,22 @@
       <artifactId>spring-boot-actuator-autoconfigure</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -235,8 +264,8 @@
 
             <!-- Needed for Spring Actuators, which provide health checks and liveness/readiness probed -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
-            <dependency>org.springframework.boot:spring-boot-actuator-autoconfigure</dependency>
-
+            <dependency>io.micrometer:micrometer-core</dependency>
+            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

@@ -41,12 +41,12 @@ Global settings for all health indicators:
 
 ### Startup Probe
 Settings for started probe:
-* `management.endpoint.health.group.startup.show-details=always` - toggles whether a summary or details (default) of the startup probe will be returned
+* `management.endpoint.health.group.startup.show-details=never` - toggles whether a summary (default) or details of the startup probe will be returned
 * `management.endpoint.health.group.startup.include=gatewayStarted` - defines which health indicators are included in the startup probe
 
 ### Liveness Probe
 Settings for liveness probe:
-* `management.endpoint.health.group.liveness.show-details=always` - toggles whether a summary or details (default) of the liveness probe will be returned
+* `management.endpoint.health.group.liveness.show-details=never` - toggles whether a summary (default) or details of the liveness probe will be returned
 * `management.endpoint.health.group.liveness.include=gatewayStarted,livenessGatewayResponsive,livenessGatewayClusterAwareness,livenessGatewayPartitionLeaderAwareness,livenessDiskSpace,livenessMemory` - defines which health indicators are included in the liveness probe
 
 Note that the individual contributing health indicators of the liveness probe can be configured as well (see below).

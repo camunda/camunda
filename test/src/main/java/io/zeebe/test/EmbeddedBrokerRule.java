@@ -10,6 +10,7 @@ package io.zeebe.test;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.SpringBrokerBridge;
 import io.zeebe.broker.system.EmbeddedGatewayService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
@@ -187,7 +188,12 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void startBroker() {
-    broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+    broker =
+        new Broker(
+            brokerCfg,
+            newTemporaryFolder.getAbsolutePath(),
+            controlledActorClock,
+            new SpringBrokerBridge());
     broker.start().join();
 
     final EmbeddedGatewayService embeddedGatewayService = broker.getEmbeddedGatewayService();

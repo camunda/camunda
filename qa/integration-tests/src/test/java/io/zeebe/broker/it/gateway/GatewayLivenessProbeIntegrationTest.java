@@ -8,12 +8,16 @@
 package io.zeebe.broker.it.gateway;
 
 import static io.restassured.RestAssured.given;
+import static io.zeebe.test.util.asserts.TopologyAssert.assertThat;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
 
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeStandaloneGatewayContainer;
@@ -23,8 +27,8 @@ import org.testcontainers.lifecycle.Startable;
 
 public class GatewayLivenessProbeIntegrationTest {
 
-  public static final int ACTUATOR_PORT_IN_CONTAINER = 8080;
-  public static final String PATH_LIVENESS_PROBE = "/actuator/health/liveness";
+  public static final int MONITORING_PORT_IN_CONTAINER = 9600;
+  public static final String PATH_LIVENESS_PROBE = "/live";
 
   @Test
   public void shouldReportLivenessUpIfConnectedToBroker() throws InterruptedException {
@@ -37,7 +41,8 @@ public class GatewayLivenessProbeIntegrationTest {
         new ZeebeStandaloneGatewayContainer("current-test")
             .withNetwork(broker.getNetwork())
             .withClusterName("zeebe-cluster")
-            .withExposedPorts(8080); // make sure they are on the same network
+            .withExposedPorts(
+                MONITORING_PORT_IN_CONTAINER); // make sure they are on the same network
     // configure broker so it doesn't start an embedded gateway
     broker.withEmbeddedGateway(false).withHost("zeebe-0");
     gateway
@@ -47,7 +52,12 @@ public class GatewayLivenessProbeIntegrationTest {
     // start both containers
     Stream.of(gateway, broker).parallel().forEach(Startable::start);
 
-    final Integer actuatorPort = gateway.getMappedPort(ACTUATOR_PORT_IN_CONTAINER);
+    final ZeebeClient zeebeClient = createZeebeClient(gateway);
+
+    // wait a little while to give the broker and gateway a chance to find each other
+    await().atMost(15, SECONDS).untilAsserted(() -> assertTopologyIsComplete(zeebeClient));
+
+    final Integer actuatorPort = gateway.getMappedPort(MONITORING_PORT_IN_CONTAINER);
     final String containerIPAddress = gateway.getContainerIpAddress();
 
     final RequestSpecification gatewayServerSpec =
@@ -66,14 +76,20 @@ public class GatewayLivenessProbeIntegrationTest {
     Stream.of(gateway, broker).parallel().forEach(Startable::stop);
   }
 
+  private void assertTopologyIsComplete(final ZeebeClient zeebeClient) {
+    final var topology = zeebeClient.newTopologyRequest().send().join();
+    assertThat(topology).isComplete(1, 1);
+  }
+
   @Test
   public void shouldReportLivenessDownIfNotConnectedToBroker() throws InterruptedException {
     // --- given ---------------------------------------
     final ZeebeStandaloneGatewayContainer gateway =
-        new ZeebeStandaloneGatewayContainer("current-test").withExposedPorts(8080);
+        new ZeebeStandaloneGatewayContainer("current-test")
+            .withExposedPorts(MONITORING_PORT_IN_CONTAINER);
     gateway.start();
 
-    final Integer actuatorPort = gateway.getMappedPort(ACTUATOR_PORT_IN_CONTAINER);
+    final Integer actuatorPort = gateway.getMappedPort(MONITORING_PORT_IN_CONTAINER);
     final String containerIPAddress = gateway.getContainerIpAddress();
 
     final RequestSpecification gatewayServerSpec =
@@ -90,5 +106,12 @@ public class GatewayLivenessProbeIntegrationTest {
 
     // --- shutdown ------------------------------------------
     gateway.stop();
+  }
+
+  private static ZeebeClient createZeebeClient(final ZeebeStandaloneGatewayContainer gateway) {
+    return ZeebeClient.newClientBuilder()
+        .brokerContactPoint(gateway.getExternalAddress(ZeebePort.GATEWAY))
+        .usePlaintext()
+        .build();
   }
 }

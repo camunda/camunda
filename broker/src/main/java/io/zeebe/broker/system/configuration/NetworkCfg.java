@@ -32,6 +32,10 @@ public final class NetworkCfg implements ConfigurationEntry {
 
   @Override
   public void init(final BrokerCfg brokerCfg, final String brokerBase) {
+    applyDefaults();
+  }
+
+  public void applyDefaults() {
     commandApi.applyDefaults(this);
     internalApi.applyDefaults(this);
     monitoringApi.applyDefaults(this);
