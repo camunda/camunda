@@ -9,6 +9,7 @@ import React from 'react';
 import {ReportRenderer, LoadingIndicator, NoDataNotice} from 'components';
 import {Link, withRouter} from 'react-router-dom';
 import {withErrorHandling} from 'HOC';
+import deepEqual from 'deep-equal';
 
 import {themed} from 'theme';
 
@@ -34,7 +35,10 @@ export default themed(
         }
 
         componentDidUpdate(prevProps) {
-          if (prevProps.report !== this.props.report || prevProps.filter !== this.props.filter) {
+          if (
+            !deepEqual(prevProps.report, this.props.report) ||
+            !deepEqual(prevProps.filter, this.props.filter)
+          ) {
             this.loadReport();
           }
         }
