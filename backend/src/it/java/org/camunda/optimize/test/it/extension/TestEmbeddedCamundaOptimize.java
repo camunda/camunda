@@ -19,6 +19,7 @@ import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
+import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.glassfish.jersey.client.ClientProperties;
@@ -42,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyManagementException;
 import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
@@ -163,6 +165,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return getApplicationContext().getBean(ConfigurationService.class);
   }
 
+  public SessionService getSessionService() {
+    return getApplicationContext().getBean(SessionService.class);
+  }
+
   public OptimizeCleanupScheduler getCleanupService() {
     return getApplicationContext().getBean(OptimizeCleanupScheduler.class);
   }
@@ -195,6 +201,12 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   private void initAuthenticationToken() {
     if (authenticationToken == null) {
       refreshAuthenticationToken();
+    } else {
+      final LocalDateTime expiresAtLocalDateTime = getSessionService().getExpiresAtLocalDateTime(authenticationToken)
+        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get token expiryDate"));
+      if (LocalDateTime.now().plusMinutes(10).isAfter(expiresAtLocalDateTime)) {
+        refreshAuthenticationToken();
+      }
     }
   }
 
