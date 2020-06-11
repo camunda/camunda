@@ -3352,12 +3352,12 @@ boolbase@^1.0.0, boolbase@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/boolbase/-/boolbase-1.0.0.tgz#68dff5fbe60c51eb37725ea9e3ed310dcc1e776e"
 
-bpmn-js@^7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-7.0.0.tgz#23a21254934b7ecf2ee27a0f3ad0de7f4590a98c"
-  integrity sha512-3Rz9bz3tGwqdXjZtZRpIPLRxxAo3cQZ31z1fsiBNgb6MeAS+07glwq9kA6ROKXh6JHIcJw7OjuBaUKt4FNFQ/w==
+bpmn-js@^7.2.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-7.2.0.tgz#b4ffb1011252d1ee6df6a336e2daa83a3b1bddb4"
+  integrity sha512-AvgNvYTqJ5EfQjJNWmWkjckVlA8Oc1yX2K2XtbXEeqD4KNjBBL1/5T+qXVaLTaax71DGM7tlxoTT+WuLdTwVdA==
   dependencies:
-    bpmn-moddle "^7.0.1"
+    bpmn-moddle "^7.0.3"
     css.escape "^1.5.1"
     diagram-js "^6.6.1"
     diagram-js-direct-editing "^1.6.1"
@@ -3368,14 +3368,14 @@ bpmn-js@^7.0.0:
     object-refs "^0.3.0"
     tiny-svg "^2.2.1"
 
-bpmn-moddle@^7.0.1:
-  version "7.0.2"
-  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-7.0.2.tgz#971c6009e19e6634ff7741da466d6877ebb2958e"
-  integrity sha512-ZlvOm2brScxC4HwH1FVjftNKqga8UZxk/i4AWB5i4Pth0ihTqfE+kN338CmLl6KncQbfGZiyqFE0bPE3cVLz+Q==
+bpmn-moddle@^7.0.3:
+  version "7.0.3"
+  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-7.0.3.tgz#d6ce6045d9e4eebd0f0eaafd8f33cd42bc9c7180"
+  integrity sha512-DylEgndbBNm37v/jEdZTUD1i7XzbpCA5mIAFqkbqof3nYbIOAIycIrkhnRIaBJPvtlxTd3wDdG1ts1IzUfEduA==
   dependencies:
     min-dash "^3.0.0"
     moddle "^5.0.1"
-    moddle-xml "^9.0.2"
+    moddle-xml "^9.0.3"
 
 brace-expansion@^1.1.7:
   version "1.1.11"
@@ -8588,10 +8588,10 @@ mobx@^5.15.4:
   resolved "https://registry.yarnpkg.com/mobx/-/mobx-5.15.4.tgz#9da1a84e97ba624622f4e55a0bf3300fb931c2ab"
   integrity sha512-xRFJxSU2Im3nrGCdjSuOTFmxVDGeqOHL+TyADCGbT0k4HHqGmx5u2yaHNryvoORpI4DfbzjJ5jPmuv+d7sioFw==
 
-moddle-xml@^9.0.2:
-  version "9.0.2"
-  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-9.0.2.tgz#90b6ca69b243a02037d9f20e588665b40418d6d1"
-  integrity sha512-SRDEAoypv1lXIx2vGpbCb/HEO8fnEMFIDSCpiW4D/tlLeJbKlNGCusJkj8FSXh8+tyQS5xMKWlT6RNJda7vvsA==
+moddle-xml@^9.0.3:
+  version "9.0.3"
+  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-9.0.3.tgz#e17843bf7dc7c23c6466dbca08482546c16f52af"
+  integrity sha512-3r1c+CA7k9GLqONKtM87DltyLmeWtqz6wbw+SQWNJd66iidmYL4VudN/qpJHt6TP8qxeQrZLTpEYkDQgW6HIDQ==
   dependencies:
     min-dash "^3.0.0"
     moddle "^5.0.1"
