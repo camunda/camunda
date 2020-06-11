@@ -24,7 +24,7 @@ export default function Textarea({hasAutoSize, ...props}) {
     <Styled.TextareaAutosize
       aria-label={props.placeholder}
       {...props}
-      inputRef={textareaAutosize}
+      ref={textareaAutosize}
     />
   ) : (
     <Styled.Textarea aria-label={props.placeholder} {...props} />
