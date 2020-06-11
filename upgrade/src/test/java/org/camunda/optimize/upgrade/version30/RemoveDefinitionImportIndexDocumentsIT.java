@@ -50,7 +50,7 @@ public class RemoveDefinitionImportIndexDocumentsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final List<AllEntitiesBasedImportIndexDto> importIndexDocuments = getAllDocumentsOfIndex(
+    final List<AllEntitiesBasedImportIndexDto> importIndexDocuments = getAllDocumentsOfIndexAs(
       IMPORT_INDEX_INDEX_NAME,
       AllEntitiesBasedImportIndexDto.class
     );

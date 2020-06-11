@@ -61,7 +61,7 @@ public class AxisLabelMigrationIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final List<SingleProcessReportDefinitionDto> singleProcessReportDefinitionDtos = getAllDocumentsOfIndex(
+    final List<SingleProcessReportDefinitionDto> singleProcessReportDefinitionDtos = getAllDocumentsOfIndexAs(
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SingleProcessReportDefinitionDto.class
     );
@@ -77,7 +77,7 @@ public class AxisLabelMigrationIT extends AbstractUpgradeIT {
         Tuple.tuple("", "")
       );
 
-    assertThat(getAllDocumentsOfIndex(SINGLE_DECISION_REPORT_INDEX_NAME, SingleDecisionReportDefinitionDto.class))
+    assertThat(getAllDocumentsOfIndexAs(SINGLE_DECISION_REPORT_INDEX_NAME, SingleDecisionReportDefinitionDto.class))
       .hasSize(2)
       .extracting(ReportDefinitionDto::getData)
       .extracting(SingleReportDataDto::getConfiguration)
@@ -89,7 +89,7 @@ public class AxisLabelMigrationIT extends AbstractUpgradeIT {
         Tuple.tuple("", "")
       );
 
-    assertThat(getAllDocumentsOfIndex(COMBINED_REPORT_INDEX_NAME, CombinedReportDefinitionDto.class))
+    assertThat(getAllDocumentsOfIndexAs(COMBINED_REPORT_INDEX_NAME, CombinedReportDefinitionDto.class))
       .hasSize(2)
       .extracting(ReportDefinitionDto::getData)
       .extracting(CombinedReportDataDto::getConfiguration)

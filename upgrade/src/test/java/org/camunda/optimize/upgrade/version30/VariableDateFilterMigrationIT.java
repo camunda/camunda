@@ -64,7 +64,7 @@ public class VariableDateFilterMigrationIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final List<SingleProcessReportDefinitionDto> singleProcessReportDefinitionDtos = getAllDocumentsOfIndex(
+    final List<SingleProcessReportDefinitionDto> singleProcessReportDefinitionDtos = getAllDocumentsOfIndexAs(
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SingleProcessReportDefinitionDto.class
     );
@@ -78,9 +78,11 @@ public class VariableDateFilterMigrationIT extends AbstractUpgradeIT {
         final DateFilterDataDto<?> dateFilterDataDto = ((DateVariableFilterDataDto) filterData).getData();
         assertThat(dateFilterDataDto).isInstanceOf(FixedDateFilterDataDto.class);
         assertThat(dateFilterDataDto.getType()).isEqualTo(DateFilterType.FIXED);
+        assertThat(dateFilterDataDto.isIncludeUndefined()).isEqualTo(false);
+        assertThat(dateFilterDataDto.isExcludeUndefined()).isEqualTo(false);
       });
 
-    final List<SingleDecisionReportDefinitionDto> decisionReports = getAllDocumentsOfIndex(
+    final List<SingleDecisionReportDefinitionDto> decisionReports = getAllDocumentsOfIndexAs(
       SINGLE_DECISION_REPORT_INDEX_NAME,
       SingleDecisionReportDefinitionDto.class
     );
@@ -94,6 +96,8 @@ public class VariableDateFilterMigrationIT extends AbstractUpgradeIT {
         final DateFilterDataDto<?> dateFilterDataDto = ((DateVariableFilterDataDto) filterData).getData();
         assertThat(dateFilterDataDto).isInstanceOf(FixedDateFilterDataDto.class);
         assertThat(dateFilterDataDto.getType()).isEqualTo(DateFilterType.FIXED);
+        assertThat(dateFilterDataDto.isIncludeUndefined()).isEqualTo(false);
+        assertThat(dateFilterDataDto.isExcludeUndefined()).isEqualTo(false);
       });
     assertThat(decisionReports)
       .extracting(ReportDefinitionDto::getData)
@@ -105,6 +109,8 @@ public class VariableDateFilterMigrationIT extends AbstractUpgradeIT {
         final DateFilterDataDto<?> dateFilterDataDto = ((DateVariableFilterDataDto) filterData).getData();
         assertThat(dateFilterDataDto).isInstanceOf(FixedDateFilterDataDto.class);
         assertThat(dateFilterDataDto.getType()).isEqualTo(DateFilterType.FIXED);
+        assertThat(dateFilterDataDto.isIncludeUndefined()).isEqualTo(false);
+        assertThat(dateFilterDataDto.isExcludeUndefined()).isEqualTo(false);
       });
   }
 

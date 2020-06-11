@@ -56,11 +56,11 @@ public class ReportMigrationIT extends AbstractUpgradeIT {
   }
 
   private List<Object> getDecisionReports() {
-    return getAllDocumentsOfIndex(SINGLE_DECISION_REPORT_INDEX_NAME, Object.class);
+    return getAllDocumentsOfIndexAs(SINGLE_DECISION_REPORT_INDEX_NAME, Object.class);
   }
 
   private List<Object> getProcessReports() {
-    return getAllDocumentsOfIndex(SINGLE_PROCESS_REPORT_INDEX_NAME, Object.class);
+    return getAllDocumentsOfIndexAs(SINGLE_PROCESS_REPORT_INDEX_NAME, Object.class);
   }
 
 }

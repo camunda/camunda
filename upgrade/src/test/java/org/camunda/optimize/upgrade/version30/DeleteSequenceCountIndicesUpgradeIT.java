@@ -75,7 +75,7 @@ public class DeleteSequenceCountIndicesUpgradeIT extends AbstractUpgradeIT {
   }
 
   private List<EventSequenceCountDto> getAllDocumentsForKey(String definitionKey) {
-    return getAllDocumentsOfIndex(
+    return getAllDocumentsOfIndexAs(
       new EventSequenceCountIndex(definitionKey).getIndexName(),
       EventSequenceCountDto.class
     );

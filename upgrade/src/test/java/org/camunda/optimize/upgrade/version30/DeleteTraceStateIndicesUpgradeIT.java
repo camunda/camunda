@@ -75,7 +75,7 @@ public class DeleteTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
   }
 
   private List<EventTraceStateDto> getAllDocumentsForKey(String definitionKey) {
-    return getAllDocumentsOfIndex(
+    return getAllDocumentsOfIndexAs(
       new EventTraceStateIndex(definitionKey).getIndexName(),
       EventTraceStateDto.class
     );

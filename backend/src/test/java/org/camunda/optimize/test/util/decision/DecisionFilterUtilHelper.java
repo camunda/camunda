@@ -11,19 +11,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Out
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class DecisionFilterUtilHelper {
@@ -122,18 +120,6 @@ public class DecisionFilterUtilHelper {
     variableFilterDto.setData(data);
 
     return variableFilterDto;
-  }
-
-  public static VariableFilterDataDto createUndefinedVariableFilterData(String variableName) {
-    VariableFilterDataDto data = new StringVariableFilterDataDto(variableName, "whatever", Collections.emptyList());
-    data.setFilterForUndefined(true);
-    return data;
-  }
-
-  public static VariableFilterDataDto createExcludeUndefinedVariableFilterData(String variableName) {
-    VariableFilterDataDto data = new StringVariableFilterDataDto(variableName, "whatever", Collections.emptyList());
-    data.setExcludeUndefined(true);
-    return data;
   }
 
 }

@@ -62,7 +62,7 @@ public class VariableBooleanFilterMigrationIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final List<SingleProcessReportDefinitionDto> singleProcessReportDefinitionDtos = getAllDocumentsOfIndex(
+    final List<SingleProcessReportDefinitionDto> singleProcessReportDefinitionDtos = getAllDocumentsOfIndexAs(
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SingleProcessReportDefinitionDto.class
     );
@@ -77,7 +77,7 @@ public class VariableBooleanFilterMigrationIT extends AbstractUpgradeIT {
         assertThat(dateFilterDataDto.getValues()).containsExactly(true);
       });
 
-    final List<SingleDecisionReportDefinitionDto> decisionReports = getAllDocumentsOfIndex(
+    final List<SingleDecisionReportDefinitionDto> decisionReports = getAllDocumentsOfIndexAs(
       SINGLE_DECISION_REPORT_INDEX_NAME,
       SingleDecisionReportDefinitionDto.class
     );

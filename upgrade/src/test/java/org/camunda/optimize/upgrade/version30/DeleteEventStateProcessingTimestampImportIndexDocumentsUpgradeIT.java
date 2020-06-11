@@ -68,7 +68,7 @@ public class DeleteEventStateProcessingTimestampImportIndexDocumentsUpgradeIT ex
   }
 
   private List<TimestampBasedImportIndexDto> getAllStoredTimestampImportDocs() {
-    return getAllDocumentsOfIndex(
+    return getAllDocumentsOfIndexAs(
       TIMESTAMP_BASED_IMPORT_INDEX.getIndexName(),
       TimestampBasedImportIndexDto.class
     );

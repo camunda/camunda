@@ -58,7 +58,7 @@ public class ResetRunningProcessImportMigrationIT extends AbstractUpgradeIT {
     // when
     upgradePlan.execute();
     List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos =
-      getAllDocumentsOfIndex(TIMESTAMP_BASED_IMPORT_INDEX_NAME, TimestampBasedImportIndexDto.class);
+      getAllDocumentsOfIndexAs(TIMESTAMP_BASED_IMPORT_INDEX_NAME, TimestampBasedImportIndexDto.class);
 
     // then
     assertThat(timestampBasedImportIndexDtos.size()).isEqualTo(2);

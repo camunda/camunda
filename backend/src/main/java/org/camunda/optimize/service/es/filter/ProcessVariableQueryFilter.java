@@ -64,13 +64,8 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
 
   private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto<?> dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
-    if (dto.isFilterForUndefined()) {
-      return createFilterForUndefinedOrNullQueryBuilder(dto.getName(), dto.getType());
-    }
 
-    QueryBuilder queryBuilder = dto.isExcludeUndefined()
-      ? createExcludeUndefinedOrNullQueryBuilder(dto.getName(), dto.getType())
-      : matchAllQuery();
+    QueryBuilder queryBuilder = matchAllQuery();
 
     switch (dto.getType()) {
       case STRING:
@@ -205,7 +200,7 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
     dateFilterQueryService.addFilters(
       dateValueFilterQuery, Collections.singletonList(dto.getData()), getVariableValueFieldForType(dto.getType())
     );
-    if (dateValueFilterQuery.filter().size() > 0) {
+    if (!dateValueFilterQuery.filter().isEmpty()) {
       dateFilterBuilder.should(nestedQuery(VARIABLES, dateValueFilterQuery, ScoreMode.None));
     }
 

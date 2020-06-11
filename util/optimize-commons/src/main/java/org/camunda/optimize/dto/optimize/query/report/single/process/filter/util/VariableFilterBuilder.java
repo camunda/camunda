@@ -8,10 +8,10 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter.uti
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
@@ -35,12 +35,6 @@ public class VariableFilterBuilder {
   private String operator;
   private DateFilterDataDto<?> dateFilterDataDto;
   private String name;
-  // to be removed with OPT-3719
-  @Deprecated
-  private boolean filterForUndefined = false;
-  // to be removed with OPT-3719
-  @Deprecated
-  private boolean excludeUndefined = false;
 
   private VariableFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -116,16 +110,6 @@ public class VariableFilterBuilder {
     return this;
   }
 
-  public VariableFilterBuilder filterForUndefined() {
-    this.filterForUndefined = true;
-    return this;
-  }
-
-  public VariableFilterBuilder excludeUndefined() {
-    this.excludeUndefined = true;
-    return this;
-  }
-
   public VariableFilterBuilder booleanTrue() {
     this.type = VariableType.BOOLEAN;
     this.values.add("true");
@@ -189,7 +173,6 @@ public class VariableFilterBuilder {
           .collect(Collectors.toList()))
         .orElse(null)
     );
-    dataDto.setFilterForUndefined(filterForUndefined);
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dataDto);
     filterBuilder.addFilter(filter);
@@ -201,7 +184,6 @@ public class VariableFilterBuilder {
       name,
       dateFilterDataDto != null ? dateFilterDataDto : new FixedDateFilterDataDto(null, null)
     );
-    dateVariableFilterDataDto.setFilterForUndefined(filterForUndefined);
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dateVariableFilterDataDto);
     filterBuilder.addFilter(filter);
@@ -229,7 +211,6 @@ public class VariableFilterBuilder {
       default:
         break;
     }
-    filter.getData().setFilterForUndefined(filterForUndefined);
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }

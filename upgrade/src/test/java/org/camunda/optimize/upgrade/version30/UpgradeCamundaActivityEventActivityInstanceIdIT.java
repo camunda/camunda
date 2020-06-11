@@ -73,7 +73,7 @@ public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpg
   public void processStartAndEndActivityInstanceIdsAreMigrated() {
     // given
     final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
-    assertThat(getAllDocumentsOfIndex(
+    assertThat(getAllDocumentsOfIndexAs(
       new CamundaActivityEventIndex(FIRST_DEFINITION_KEY).getIndexName(),
       CamundaActivityEventDto.class
     )).extracting(CamundaActivityEventDto::getActivityInstanceId)
@@ -84,7 +84,7 @@ public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpg
         FIRST_INSTANCE_ID + TASK_START_SUFFIX,
         FIRST_INSTANCE_ID + TASK_END_SUFFIX
       );
-    assertThat(getAllDocumentsOfIndex(
+    assertThat(getAllDocumentsOfIndexAs(
       new CamundaActivityEventIndex(SECOND_DEFINITION_KEY).getIndexName(),
       CamundaActivityEventDto.class
     )).extracting(CamundaActivityEventDto::getActivityInstanceId)
@@ -100,7 +100,7 @@ public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpg
     upgradePlan.execute();
 
     // then
-    assertThat(getAllDocumentsOfIndex(
+    assertThat(getAllDocumentsOfIndexAs(
       new CamundaActivityEventIndex(FIRST_DEFINITION_KEY).getIndexName(),
       CamundaActivityEventDto.class
     )).hasSize(5)
@@ -113,7 +113,7 @@ public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpg
         "c5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_START_SUFFIX,
         "d5c0bad8-da85-484b-a3a9-b8ec1ecf5e49" + TASK_END_SUFFIX
       );
-    assertThat(getAllDocumentsOfIndex(
+    assertThat(getAllDocumentsOfIndexAs(
       new CamundaActivityEventIndex(SECOND_DEFINITION_KEY).getIndexName(),
       CamundaActivityEventDto.class
     )).hasSize(5)

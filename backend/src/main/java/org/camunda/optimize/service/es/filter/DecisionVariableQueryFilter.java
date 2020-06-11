@@ -63,13 +63,8 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
 
   private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto<?> dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
-    if (dto.isFilterForUndefined()) {
-      return createFilterForUndefinedOrNullQueryBuilder(getVariableId(dto));
-    }
 
-    QueryBuilder queryBuilder = dto.isExcludeUndefined()
-      ? createExcludeUndefinedOrNullQueryBuilder(getVariableId(dto))
-      : matchAllQuery();
+    QueryBuilder queryBuilder = matchAllQuery();
 
     switch (dto.getType()) {
       case BOOLEAN:
@@ -158,7 +153,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
       termQuery(getVariableIdField(), getVariableId(dto))
     );
 
-    if (data.getValues().size() < 1) {
+    if (data.getValues().isEmpty()) {
       logger.warn(
         "Could not filter for variables! No values provided for operator [{}] and type [{}]. Ignoring filter.",
         data.getOperator(),
@@ -209,7 +204,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     dateFilterQueryService.addFilters(
       dateValueFilterQuery, Collections.singletonList(dto.getData()), getVariableValueFieldForType(dto.getType())
     );
-    if (dateValueFilterQuery.filter().size() > 0) {
+    if (!dateValueFilterQuery.filter().isEmpty()) {
       dateFilterBuilder.should(nestedQuery(getVariablePath(), dateValueFilterQuery, ScoreMode.None));
     }
 

@@ -408,53 +408,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   @Test
-  public void undefinedFilterInReport() {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("testVar", "withValue");
-
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-
-    variables.put("testVar", null);
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-
-    variables.put("testVar", new EngineVariableValue(null, "String"));
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-
-    variables = new HashMap<>();
-    variables.put("differentStringValue", "test");
-    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
-      "testVar",
-      VariableType.STRING
-    );
-    reportData.setFilter(ProcessFilterBuilder.filter()
-                           .variable()
-                           .stringType()
-                           .filterForUndefined()
-                           .name("testVar")
-                           .add()
-                           .buildList());
-
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      reportClient.evaluateMapReport(reportData);
-
-    // then
-    final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(4L);
-  }
-
-  @Test
   public void multipleVariablesWithSameNameInOneProcessInstanceAreCountedOnlyOnce() throws SQLException {
     // given
     Map<String, Object> variables = ImmutableMap.of("testVar", "withValue", "testVarTemp", "withValue");

@@ -10,8 +10,6 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
@@ -32,7 +30,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createStringInputVariableFilter;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createUndefinedVariableFilterData;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
 
 public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT {
@@ -197,99 +194,6 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
 
     assertThat(result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue())
       .isEqualTo(expectedCategoryInputValue);
-  }
-
-  @Test
-  public void filterInputVariableForUndefined() {
-    // given
-    final String inputClauseId = "TestyTest";
-    final String camInputVariable = "putIn";
-
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleInputDecisionDefinition(
-      inputClauseId,
-      camInputVariable,
-      DecisionTypeRef.STRING
-    );
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      ImmutableMap.of(camInputVariable, "testValidMatch")
-    );
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      ImmutableMap.of(camInputVariable, "whateverElse")
-    );
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(camInputVariable, null)
-    );
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(camInputVariable, new EngineVariableValue(null, "String"))
-    );
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
-
-    InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
-    variableFilterDto.setData(createUndefinedVariableFilterData(inputClauseId));
-
-    reportData.setFilter(Collections.singletonList(variableFilterDto));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
-
-
-    // then
-    assertThat(result.getData()).hasSize(2);
-  }
-
-  @Test
-  public void filterOutputVariableForUndefined() {
-    // given
-    final String outputClauseId = "TestOutput";
-    final String camInputVariable = "input";
-
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
-      outputClauseId,
-      camInputVariable,
-      "testValidMatch",
-      DecisionTypeRef.STRING
-    );
-
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(camInputVariable, null)
-    );
-
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      ImmutableMap.of(camInputVariable, "testValidMatch")
-    );
-    engineDatabaseExtension.setDecisionOutputStringVariableValueToNull(outputClauseId, "testValidMatch");
-
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      ImmutableMap.of(camInputVariable, "noMatchingOutputValue")
-    );
-
-    engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      ImmutableMap.of(camInputVariable, "testValidMatch")
-    );
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
-
-    OutputVariableFilterDto variableFilterDto = new OutputVariableFilterDto();
-    variableFilterDto.setData(createUndefinedVariableFilterData(outputClauseId));
-
-    reportData.setFilter(Collections.singletonList(variableFilterDto));
-    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData()).hasSize(3);
   }
 
   private DecisionReportDataDto createReportWithAllVersionSet(DecisionDefinitionEngineDto decisionDefinitionDto) {

@@ -54,7 +54,7 @@ public class MapExcludedRawDataReportColumnsToRightFormatIT extends AbstractUpgr
     upgradePlan.execute();
 
     // then
-    final List<SingleProcessReportDefinitionDto> processReports = getAllDocumentsOfIndex(
+    final List<SingleProcessReportDefinitionDto> processReports = getAllDocumentsOfIndexAs(
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SingleProcessReportDefinitionDto.class
     );
@@ -86,7 +86,7 @@ public class MapExcludedRawDataReportColumnsToRightFormatIT extends AbstractUpgr
     upgradePlan.execute();
 
     // then
-    final List<SingleDecisionReportDefinitionDto> decisionReports = getAllDocumentsOfIndex(
+    final List<SingleDecisionReportDefinitionDto> decisionReports = getAllDocumentsOfIndexAs(
       SINGLE_DECISION_REPORT_INDEX_NAME,
       SingleDecisionReportDefinitionDto.class
     );

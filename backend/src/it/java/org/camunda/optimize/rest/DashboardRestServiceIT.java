@@ -43,8 +43,6 @@ import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createExcludeUndefinedVariableFilterData;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createUndefinedVariableFilterData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
@@ -265,7 +263,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     // then
     assertThat(dashboardId).isNotNull();
     final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(dashboardId);
-    assertThat(savedDefinition.getAvailableFilters().isEmpty());
+    assertThat(savedDefinition.getAvailableFilters()).isEmpty();
 
     // when
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
@@ -298,7 +296,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     // then
     assertThat(idDto.getId()).isNotNull();
     final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(idDto.getId());
-    assertThat(savedDefinition.getAvailableFilters().isEmpty());
+    assertThat(savedDefinition.getAvailableFilters()).isEmpty();
 
     // when
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
@@ -543,14 +541,6 @@ public class DashboardRestServiceIT extends AbstractIT {
         new DashboardFilterDto(DashboardFilterType.STATE, null),
         new DashboardFilterDto(DashboardFilterType.STATE, null)
       ),
-      Collections.singletonList(new DashboardFilterDto(
-        DashboardFilterType.VARIABLE,
-        createUndefinedVariableFilterData("varName")
-      )),
-      Collections.singletonList(new DashboardFilterDto(
-        DashboardFilterType.VARIABLE,
-        createExcludeUndefinedVariableFilterData("varName")
-      )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
         new DateVariableFilterDataDto("dateVar", new FixedDateFilterDataDto(null, OffsetDateTime.now()))

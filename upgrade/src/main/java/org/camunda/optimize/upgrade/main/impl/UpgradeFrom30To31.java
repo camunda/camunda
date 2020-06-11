@@ -79,12 +79,70 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateExcludedColumnsToNewVersionForDecisionReports())
       .addUpgradeStep(migrateProcessReportBooleanVariableFilter())
       .addUpgradeStep(migrateDecisionReportBooleanVariableFilter())
+      .addUpgradeStep(migrateProcessReportFilterForUndefined())
+      .addUpgradeStep(migrateDecisionReportFilterForUndefined())
       .addUpgradeStep(resetRunningProcessInstanceImport());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteTraceStateIndices(upgradeBuilder);
     deleteSequenceCountIndices(upgradeBuilder);
     upgradeBuilder.addUpgradeStep(deleteTraceStateImportIndexData());
     return upgradeBuilder.build();
+  }
+
+  private UpgradeStep migrateProcessReportFilterForUndefined() {
+    //@formatter:off
+    final String script =
+      "if (ctx._source.data.filter != null) {\n" +
+        "for (filter in ctx._source.data.filter) {\n" +
+        "  if (\"variable\".equalsIgnoreCase(filter.type)) {\n" +
+        "    if (\"Date\".equalsIgnoreCase(filter.data.type)) {\n" +
+        "      filter.data.data.includeUndefined = filter.data.filterForUndefined;\n" +
+        "      filter.data.data.excludeUndefined = false;\n" +
+        "    } else {\n" +
+        "      if (filter.data.filterForUndefined == true) {\n" +
+        "        filter.data.data.values = new ArrayList();\n" +
+        "        filter.data.data.values.add(null);\n" +
+        "      }\n" +
+        "    }\n" +
+        "    filter.data.remove(\"filterForUndefined\");\n" +
+        "  }\n" +
+        "}\n" +
+      "}\n"
+      ;
+    //@formatter:on
+    return new UpdateDataStep(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+  }
+
+  private UpgradeStep migrateDecisionReportFilterForUndefined() {
+    //@formatter:off
+    final String script =
+      "if (ctx._source.data.filter != null) {\n" +
+        "for (filter in ctx._source.data.filter) {\n" +
+        "  if (\"inputVariable\".equalsIgnoreCase(filter.type) || \"outputVariable\".equalsIgnoreCase(filter.type)) {\n" +
+        "    if (\"Date\".equalsIgnoreCase(filter.data.type)) {\n" +
+        "      filter.data.data.includeUndefined = filter.data.filterForUndefined;\n" +
+        "      filter.data.data.excludeUndefined = false;\n" +
+        "    } else {\n" +
+        "      if (filter.data.filterForUndefined == true) {\n" +
+        "        filter.data.data.values = new ArrayList();\n" +
+        "        filter.data.data.values.add(null);\n" +
+        "      }\n" +
+        "    }\n" +
+        "    filter.data.remove(\"filterForUndefined\");\n" +
+        "  }\n" +
+        "}\n" +
+      "}\n"
+      ;
+    //@formatter:on
+    return new UpdateDataStep(
+      SINGLE_DECISION_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
   }
 
   private UpgradeStep migrateExcludedColumnsToNewVersionForProcessReports() {
@@ -205,7 +263,7 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
         "      if (filter.data.data.value != null) {\n" +
         "        filter.data.data.values.add(filter.data.data.value);\n" +
         "      }\n" +
-        "      filter.data.data.value = null;\n" +
+        "      filter.data.data.remove(\"value\");\n" +
         "    }\n" +
         "  }\n" +
         "}\n"
@@ -223,13 +281,13 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
     final String script =
       "if (ctx._source.data.filter != null) {\n" +
         "  for (filter in ctx._source.data.filter) {\n" +
-        "    if (\"inputVariable\".equalsIgnoreCase(filter.type) || \"outputVariable\".equalsIgnoreCase(filter.type)\n" +
+        "    if ((\"inputVariable\".equalsIgnoreCase(filter.type) || \"outputVariable\".equalsIgnoreCase(filter.type))\n" +
         "         && \"Boolean\".equalsIgnoreCase(filter.data.type)) {\n" +
         "      filter.data.data.values = new ArrayList();\n" +
         "      if (filter.data.data.value != null) {\n" +
         "        filter.data.data.values.add(filter.data.data.value);\n" +
         "      }\n" +
-        "      filter.data.data.value = null;\n" +
+        "      filter.data.data.remove(\"value\");\n" +
         "    }\n" +
         "  }\n" +
         "}\n"

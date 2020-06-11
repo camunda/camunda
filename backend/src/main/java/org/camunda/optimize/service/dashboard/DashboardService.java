@@ -271,12 +271,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         if (filterData == null) {
           throw new BadRequestException("Variable dashboard filters require additional data");
         }
-        if (filterData.isExcludeUndefined()) {
-          throw new BadRequestException("Cannot exclude undefined using dashboard filters");
-        }
-        if (filterData.isFilterForUndefined()) {
-          throw new BadRequestException("Cannot filter for undefined using dashboard filters");
-        }
         final VariableType variableType = filterData.getType();
         if (variableType.equals(VariableType.DATE)) {
           if (filterData.getData() != null) {
