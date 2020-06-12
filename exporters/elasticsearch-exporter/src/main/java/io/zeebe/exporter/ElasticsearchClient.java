@@ -9,6 +9,8 @@ package io.zeebe.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.prometheus.client.Histogram;
+import io.zeebe.exporter.dto.BulkItem;
+import io.zeebe.exporter.dto.BulkItemIndex;
 import io.zeebe.exporter.dto.BulkResponse;
 import io.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.zeebe.protocol.record.Record;
@@ -65,9 +67,9 @@ public class ElasticsearchClient {
       final ElasticsearchExporterConfiguration configuration, final Logger log) {
     this.configuration = configuration;
     this.log = log;
-    this.client = createClient();
-    this.bulkRequest = new ArrayList<>();
-    this.formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
+    client = createClient();
+    bulkRequest = new ArrayList<>();
+    formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
   }
 
   public void close() throws IOException {
@@ -83,7 +85,6 @@ public class ElasticsearchClient {
     bulk(newIndexCommand(record), record);
   }
 
-  @SuppressWarnings("unchecked")
   private void checkRecord(final Record<?> record) {
     if (record.getValueType() == ValueType.VARIABLE) {
       checkVariableRecordValue((Record<VariableRecordValue>) record);
@@ -124,9 +125,12 @@ public class ElasticsearchClient {
     boolean success = true;
     final int bulkSize = bulkRequest.size();
     if (bulkSize > 0) {
+      metrics.recordBulkSize(bulkSize);
+
       try {
-        metrics.recordBulkSize(bulkSize);
-        success = exportBulk();
+        final var bulkResponse = exportBulk();
+        success = checkBulkResponse(bulkResponse);
+
       } catch (final IOException e) {
         throw new ElasticsearchExporterException("Failed to flush bulk", e);
       }
@@ -136,11 +140,27 @@ public class ElasticsearchClient {
         bulkRequest = new ArrayList<>();
       }
     }
-
     return success;
   }
 
-  private boolean exportBulk() throws IOException {
+  private boolean checkBulkResponse(final BulkResponse bulkResponse) {
+    final var hasErrors = bulkResponse.hasErrors();
+    if (hasErrors) {
+      bulkResponse.getItems().stream()
+          .map(BulkItem::getIndex)
+          .map(BulkItemIndex::getError)
+          .forEach(
+              error ->
+                  log.warn(
+                      "Failed to flush item of bulk request [type: {}, reason: {}]",
+                      error.getType(),
+                      error.getReason()));
+    }
+
+    return !hasErrors;
+  }
+
+  private BulkResponse exportBulk() throws IOException {
     try (final Histogram.Timer timer = metrics.measureFlushDuration()) {
       final var request = new Request("POST", "/_bulk");
       final var body =
@@ -148,9 +168,8 @@ public class ElasticsearchClient {
       request.setEntity(body);
 
       final var response = client.performRequest(request);
-      final var bulkResponse =
-          MAPPER.readValue(response.getEntity().getContent(), BulkResponse.class);
-      return !bulkResponse.hasErrors();
+
+      return MAPPER.readValue(response.getEntity().getContent(), BulkResponse.class);
     }
   }
 

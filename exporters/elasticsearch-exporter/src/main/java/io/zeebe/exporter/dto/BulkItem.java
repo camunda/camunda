@@ -8,27 +8,17 @@
 package io.zeebe.exporter.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final class BulkResponse {
+public final class BulkItem {
 
-  private boolean errors;
-  private List<BulkItem> items;
+  private BulkItemIndex index;
 
-  public List<BulkItem> getItems() {
-    return items;
+  public BulkItemIndex getIndex() {
+    return index;
   }
 
-  public void setItems(final List<BulkItem> items) {
-    this.items = items;
-  }
-
-  public void setErrors(final boolean errors) {
-    this.errors = errors;
-  }
-
-  public boolean hasErrors() {
-    return errors;
+  public void setIndex(final BulkItemIndex index) {
+    this.index = index;
   }
 }
