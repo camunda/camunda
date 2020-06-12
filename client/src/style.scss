@@ -3,6 +3,15 @@
 @import '~react-grid-layout/css/styles.css';
 @import '~react-resizable/css/styles.css';
 
+:root {
+  --z-notification: 1000;
+  --z-login: 900;
+  --z-modal: 800;
+  --z-popup: 500; //popovers, dropdowns, tooltips...
+  --z-above: 1;
+  --z-below: -1;
+}
+
 * {
   box-sizing: border-box;
 }

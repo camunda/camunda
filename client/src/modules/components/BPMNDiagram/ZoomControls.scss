@@ -2,7 +2,7 @@
   position: absolute;
   right: 10px;
   bottom: 10px;
-  z-index: 5;
+  z-index: var(--z-above);
 
   .Button {
     position: relative;
@@ -12,7 +12,7 @@
     }
 
     &:focus {
-      z-index: 1;
+      z-index: var(--z-above);
     }
 
     &.zoomIn {

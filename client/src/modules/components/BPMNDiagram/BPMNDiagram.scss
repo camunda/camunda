@@ -5,11 +5,11 @@
   }
 
   .djs-overlay-container {
-    z-index: 2;
+    z-index: var(--z-above);
   }
 
   .djs-palette {
-    z-index: 3;
+    z-index: calc(var(--z-above) + 1);
   }
 }
 

@@ -12,7 +12,10 @@
     border-radius: 4px;
     flex-grow: 1;
     transition: none;
-    z-index: 3;
+  }
+
+  .react-grid-placeholder {
+    z-index: var(--z-below);
   }
 
   &.isDragging .grid-entry:not(.react-draggable-dragging):not(.resizing) {

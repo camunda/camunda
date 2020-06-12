@@ -38,7 +38,7 @@
     border: 1px solid #bbb;
     padding: 0;
     border-radius: 3px;
-    z-index: 99999;
+    z-index: var(--z-popup);
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
     visibility: hidden;
     opacity: 0;

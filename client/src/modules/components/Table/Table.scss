@@ -111,7 +111,7 @@
         right: 0;
         top: 0;
         transform: translateX(50%);
-        z-index: 1;
+        z-index: var(--z-above);
         overflow: hidden;
       }
 

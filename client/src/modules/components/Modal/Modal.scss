@@ -9,7 +9,7 @@ $modal-padding-h: 40px;
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.6);
-  z-index: 100001; // react table's resize handles have 10, so we need to be above them
+  z-index: var(--z-modal);
   display: flex;
 }
 
