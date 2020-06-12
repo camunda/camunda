@@ -16,16 +16,18 @@
  */
 package io.atomix.utils.logging;
 
+import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 
 /** Contextual logger. */
-public class ContextualLogger extends DelegatingLogger {
+public class ContextualLogger extends ZbLogger {
   private static final String SEPARATOR = " - ";
+  private static final String FQCN = ContextualLogger.class.getName();
   private final LoggerContext context;
 
   public ContextualLogger(final Logger delegate, final LoggerContext context) {
-    super(delegate);
+    super(delegate, FQCN);
     this.context = context;
   }
 
