@@ -45,6 +45,7 @@ type JobWorkerBuilder struct {
 	concurrency   int
 	pollInterval  time.Duration
 	pollThreshold float64
+	metrics       JobWorkerMetrics
 }
 
 type JobWorkerBuilderStep1 interface {
@@ -76,6 +77,8 @@ type JobWorkerBuilderStep3 interface {
 	PollThreshold(float64) JobWorkerBuilderStep3
 	// Set list of variable names which should be fetched on job activation
 	FetchVariables(...string) JobWorkerBuilderStep3
+	// Set implementation for metrics reporting
+	Metrics(metrics JobWorkerMetrics) JobWorkerBuilderStep3
 	// Open the job worker and start polling and handling jobs
 	Open() JobWorker
 }
@@ -143,6 +146,11 @@ func (builder *JobWorkerBuilder) FetchVariables(fetchVariables ...string) JobWor
 	return builder
 }
 
+func (builder *JobWorkerBuilder) Metrics(metrics JobWorkerMetrics) JobWorkerBuilderStep3 {
+	builder.metrics = metrics
+	return builder
+}
+
 func (builder *JobWorkerBuilder) Open() JobWorker {
 	jobQueue := make(chan entities.Job, builder.maxJobsActive)
 	workerFinished := make(chan bool, builder.maxJobsActive)
@@ -163,6 +171,7 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 		closeSignal:    closePoller,
 		remaining:      0,
 		threshold:      int(math.Round(float64(builder.maxJobsActive) * builder.pollThreshold)),
+		metrics:        builder.metrics,
 	}
 
 	dispatcher := jobDispatcher{

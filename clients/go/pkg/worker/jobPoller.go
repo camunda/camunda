@@ -37,6 +37,7 @@ type jobPoller struct {
 	closeSignal    chan struct{}
 	remaining      int
 	threshold      int
+	metrics        JobWorkerMetrics
 }
 
 func (poller *jobPoller) poll(closeWait *sync.WaitGroup) {
@@ -50,10 +51,12 @@ func (poller *jobPoller) poll(closeWait *sync.WaitGroup) {
 		// either a job was finished
 		case <-poller.workerFinished:
 			poller.remaining--
+			poller.setJobsRemainingCountMetric(poller.remaining)
 		// or the poll interval exceeded
 		case <-time.After(poller.pollInterval):
 		// or poller should stop
 		case <-poller.closeSignal:
+			poller.setJobsRemainingCountMetric(0)
 			return
 		}
 
@@ -87,10 +90,16 @@ func (poller *jobPoller) activateJobs() {
 			log.Println("Failed to activate jobs for worker", poller.request.Worker, err)
 			break
 		}
-
 		poller.remaining += len(response.Jobs)
+		poller.setJobsRemainingCountMetric(poller.remaining)
 		for _, job := range response.Jobs {
 			poller.jobQueue <- entities.Job{ActivatedJob: *job}
 		}
+	}
+}
+
+func (poller *jobPoller) setJobsRemainingCountMetric(count int) {
+	if poller.metrics != nil {
+		poller.metrics.SetJobsRemainingCount(poller.request.GetType(), count)
 	}
 }
