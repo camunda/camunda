@@ -11,12 +11,18 @@ import {login, save, addReportToDashboard} from '../utils';
 import * as e from './Homepage.elements.js';
 import * as Report from './ProcessReport.elements.js';
 import * as Dashboard from './Dashboard.elements.js';
+import * as Collection from './Collection.elements.js';
 
 fixture('Homepage').page(config.endpoint).beforeEach(login).afterEach(cleanEntities);
 
 test('navigate to report view and edit pages', async (t) => {
   await t.click(e.createNewMenu).hover(e.newReportOption);
   await t.click(e.submenuOption('Process Report'));
+
+  await t.click(e.processTypeahead);
+  await t.click(e.firstTypeaheadOption);
+  await t.click(e.confirmButton);
+
   await save(t);
   await t.click(e.homepageLink);
 
@@ -62,12 +68,20 @@ test('complex Homepage actions', async (t) => {
   await t.expect(e.createNewMenu.textContent).contains('Decision Report');
 
   await t.click(e.submenuOption('Process Report'));
+  await t.click(e.processTypeahead);
+  await t.click(e.firstTypeaheadOption);
+  await t.click(e.confirmButton);
+
   await t.typeText(Report.nameEditField, 'Invoice Evaluation Count', {replace: true});
   await save(t);
   await t.click(e.homepageLink);
 
   await t.click(e.createNewMenu).hover(e.newReportOption);
   await t.click(e.submenuOption('Process Report'));
+  await t.click(e.processTypeahead);
+  await t.click(e.firstTypeaheadOption);
+  await t.click(e.confirmButton);
+
   await t.typeText(Report.nameEditField, 'Monthly Sales', {replace: true});
   await save(t);
   await t.click(e.homepageLink);
@@ -103,20 +117,46 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.confirmButton);
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
   await save(t);
+
+  await t.click(e.breadcrumb('Marketing'));
+  await t.click(Collection.sourcesTab);
+  await t.click(Collection.addButton);
+  await t.click(e.processTypeahead);
+  await t.click(e.firstTypeaheadOption);
+  await t.click(Collection.checkbox('Select All'));
+  await t.click(Collection.confirmModalButton);
+
   await t.click(e.homepageLink);
 
   await t.click(e.createNewMenu).click(e.option('New Collection'));
   await t.typeText(e.modalNameInput, 'Sales', {replace: true});
   await t.click(e.confirmButton);
 
+  await t.click(Collection.sourcesTab);
+  await t.click(Collection.addButton);
+  const definitionName = 'Hiring Demo 5 Tenants';
+  await t.typeText(Collection.typeaheadInput, definitionName, {replace: true});
+  await t.click(Collection.typeaheadOption(definitionName));
+  await t.click(Collection.checkbox('Select All'));
+  await t.click(Collection.confirmModalButton);
+  await t.click(Collection.entitiesTab);
+
   await t.click(e.createNewMenu).hover(e.newReportOption);
   await t.click(e.submenuOption('Process Report'));
+  await t.click(e.processTypeahead);
+  await t.click(e.firstTypeaheadOption);
+  await t.click(e.confirmButton);
+
   await t.typeText(Report.nameEditField, 'Incoming Leads', {replace: true});
   await save(t);
   await t.click(e.breadcrumb('Sales'));
 
   await t.click(e.createNewMenu).hover(e.newReportOption);
   await t.click(e.submenuOption('Process Report'));
+  await t.click(e.processTypeahead);
+  await t.click(e.firstTypeaheadOption);
+  await t.click(e.confirmButton);
+
   await t.typeText(Report.nameEditField, 'Sales Goal this Quarter', {replace: true});
   await save(t);
   await t.click(e.breadcrumb('Sales'));

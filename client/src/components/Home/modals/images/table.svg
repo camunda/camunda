@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="220" height="69" viewBox="0 0 220 69">
+    <defs>
+        <filter id="prefix__a" width="101.8%" height="102.6%" x="-.9%" y="-1.3%" filterUnits="objectBoundingBox">
+            <feOffset in="SourceAlpha" result="shadowOffsetOuter1"/>
+            <feGaussianBlur in="shadowOffsetOuter1" result="shadowBlurOuter1" stdDeviation="4"/>
+            <feColorMatrix in="shadowBlurOuter1" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.0045 0"/>
+        </filter>
+        <rect id="prefix__b" width="1342" height="921" x="47" y="47" rx="3"/>
+    </defs>
+    <g fill="none" fill-rule="evenodd" transform="translate(-1108 -577)">
+        <path fill="#434343" d="M0 0H1440V1024H0z"/>
+        <use fill="#000" filter="url(#prefix__a)" xlink:href="#prefix__b"/>
+        <use fill="#FFF" xlink:href="#prefix__b"/>
+        <g>
+            <g transform="translate(1088 128) translate(0 434)">
+                <rect width="261" height="125" x="-.5" y="-.5" fill="#FFF" stroke="#D3D3D3" rx="3"/>
+                <g>
+                    <path fill="#FFF" stroke="#E6E6E6" d="M0.5 0.5H175.5V11.5H0.5z" transform="translate(42 19)"/>
+                    <path fill="#EFEFEF" d="M9 5H28V7H9zM71 5H97V7H71z" transform="translate(42 19)"/>
+                    <path fill="#FFF" stroke="#E6E6E6" d="M.5 22.5H175.5V33.5H.5zM.5 44.5H175.5V55.5H.5z" transform="translate(42 19)"/>
+                    <path fill="#F8F8F8" stroke="#E6E6E6" d="M.5 11.5H175.5V22.5H.5zM.5 33.5H175.5V44.5H.5z" transform="translate(42 19)"/>
+                    <path fill="#EFEFEF" d="M9 16H28V18H9zM71 16H97V18H71zM9 27H28V29H9zM71 27H97V29H71zM9 38H28V40H9zM71 38H97V40H71zM9 49H28V51H9zM71 49H97V51H71zM140 5H167V7H140zM140 16H167V18H140zM140 27H167V29H140zM140 38H167V40H140zM140 49H167V51H140z" transform="translate(42 19)"/>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

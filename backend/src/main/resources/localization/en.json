@@ -204,9 +204,19 @@
   "report": {
     "label": "Report",
     "label-plural": "Reports",
+    "create": "Create Report",
+    "createNew": "Create new Report",
     "new": "New Report",
+    "addName": "Add Report Name",
     "downloadCSV": "Download CSV",
     "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your set-up above.",
+    "templates": {
+      "blank": "Blank report",
+      "heatmap": "Heatmap: Flownode count",
+      "number": "Number: Process instance duration",
+      "table": "Data Table: User task count",
+      "chart": "Bar Chart: Process Instance count"
+    },
     "instanceCount": {
       "process": {
         "label": "{count} instance in current filter",

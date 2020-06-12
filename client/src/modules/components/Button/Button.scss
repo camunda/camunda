@@ -34,7 +34,8 @@
         background-color: $grey-darken-23;
       }
 
-      &:disabled {
+      &:disabled,
+      &[disabled] {
         box-shadow: none;
         border: 1px solid $grey-darken-33;
         background-color: $grey-darken-33;
@@ -55,7 +56,8 @@
           background-color: $blue-base-65;
         }
 
-        &:disabled {
+        &:disabled,
+        &[disabled] {
           border: 1px solid $blue-darken-32;
           background-color: $blue-darken-18;
         }
@@ -76,7 +78,8 @@
           background-color: $red-base-62;
         }
 
-        &:disabled {
+        &:disabled,
+        &[disabled] {
           border: 1px solid $red-darken-26;
           background-color: $red-darken-18;
         }
@@ -98,7 +101,8 @@
         background-color: $grey-darken-33;
       }
 
-      &:disabled {
+      &:disabled,
+      &[disabled] {
         background-color: transparent;
         color: $grey-lighten-56;
       }
@@ -122,6 +126,7 @@
   &:hover {
     background-color: $silver-darken-94;
     transition: background-color 0.3s;
+    text-decoration: none;
   }
 
   &:active,
@@ -130,7 +135,8 @@
     transition: none;
   }
 
-  &:disabled {
+  &:disabled,
+  &[disabled] {
     cursor: not-allowed;
     color: $grey-lighten-56;
     border-color: $silver-darken-87;
@@ -154,7 +160,8 @@
       background-color: $blue-darken-55;
     }
 
-    &:disabled {
+    &:disabled,
+    &[disabled] {
       border: 1px solid $blue-lighten-82;
       background-color: $blue-lighten-75;
     }
@@ -176,7 +183,8 @@
       background-color: $red-darken-42;
     }
 
-    &:disabled {
+    &:disabled,
+    &[disabled] {
       border: 1px solid $red-lighten-85;
       background-color: $red-lighten-85;
     }
@@ -210,7 +218,8 @@
       background-color: $silver-darken-87;
     }
 
-    &:disabled {
+    &:disabled,
+    &[disabled] {
       box-shadow: none;
       border: 1px solid $silver-darken-87;
       color: $grey-lighten-56;
@@ -239,7 +248,8 @@
         background-color: $blue-darken-55;
       }
 
-      &:disabled {
+      &:disabled,
+      &[disabled] {
         border: 1px solid $blue-lighten-82;
         background-color: $blue-lighten-75;
         box-shadow: none;
@@ -268,7 +278,8 @@
         background-color: $red-darken-42;
       }
 
-      &:disabled {
+      &:disabled,
+      &[disabled] {
         border: 1px solid $red-lighten-85;
         background-color: $red-lighten-85;
         box-shadow: none;
@@ -311,7 +322,8 @@
       transition: box-shadow 0.05s ease-out 0s;
     }
 
-    &:disabled {
+    &:disabled,
+    &[disabled] {
       cursor: not-allowed;
       color: $grey-lighten-56;
       border-color: $silver-darken-87;

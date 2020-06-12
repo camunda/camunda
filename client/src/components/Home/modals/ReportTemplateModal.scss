@@ -1,0 +1,74 @@
+@import 'shared-styles/shared-styles.scss';
+
+.ReportTemplateModal {
+  .Modal__content {
+    display: flex;
+    padding: 0;
+  }
+
+  .definitionSelection {
+    padding: 20px 40px;
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    .Form .FormGroup {
+      padding: 0;
+    }
+
+    .formArea {
+      width: 570px;
+      margin-bottom: 40px;
+    }
+
+    .diagramArea {
+      flex: 1 0 auto;
+      display: flex;
+
+      border-radius: 3px;
+      border: solid 1px $silver-darken-87;
+    }
+  }
+
+  .configurationSelection {
+    width: 320px;
+    padding: 20px 20px;
+    border-left: 1px solid $silver-darken-87;
+    overflow-y: auto;
+
+    .templateContainer {
+      max-height: 0;
+      padding: 0;
+      margin-top: 0;
+
+      .Button {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        background-color: white;
+        text-align: left;
+
+        &.active {
+          outline: none;
+          border-radius: 3px;
+          box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+          transition: box-shadow 0.05s ease-out 0s;
+        }
+
+        img,
+        .imgPlaceholder {
+          width: 100%;
+          height: 80px;
+        }
+
+        span {
+          color: $grey-darken-23;
+          font-size: 14px;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}

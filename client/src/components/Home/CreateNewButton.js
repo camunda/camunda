@@ -9,7 +9,7 @@ import React from 'react';
 import {Dropdown} from 'components';
 import {t} from 'translation';
 
-export default function CreateNewButton({createCollection, collection}) {
+export default function CreateNewButton({createCollection, createProcessReport, collection}) {
   return (
     <Dropdown main primary label={t('home.createBtn.default')} className="CreateNewButton">
       {!collection && (
@@ -19,7 +19,7 @@ export default function CreateNewButton({createCollection, collection}) {
       )}
       <Dropdown.Option link="dashboard/new/edit">{t('home.createBtn.dashboard')}</Dropdown.Option>
       <Dropdown.Submenu label={t('home.createBtn.report.default')}>
-        <Dropdown.Option link="report/new/edit">
+        <Dropdown.Option onClick={createProcessReport}>
           {t('home.createBtn.report.process')}
         </Dropdown.Option>
         <Dropdown.Option link="report/new-combined/edit">

@@ -10,8 +10,32 @@ import * as u from '../utils';
 import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as e from './ProcessReport.elements.js';
+import * as Homepage from './Homepage.elements.js';
 
 fixture('Process Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+
+test('create a report from a template', async (t) => {
+  await t.resizeWindow(1300, 750);
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.newReportOption);
+  await t.click(Homepage.submenuOption('Process Report'));
+
+  await t.typeText(e.templateModalNameField, 'Report from Template', {replace: true});
+
+  await t.click(e.templateModalProcessField);
+  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
+
+  await t.click(e.templateOption('Heatmap: Flownode count'));
+
+  await t.takeScreenshot('process/single-report/reportTemplate.png', {fullPage: true});
+  await t.maximizeWindow();
+
+  await t.click(e.modalConfirmbutton);
+
+  await t.expect(e.nameEditField.value).eql('Report from Template');
+  await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
+  await t.expect(e.reportDiagram.visible).ok();
+});
 
 test('create and name a report', async (t) => {
   await u.createNewReport(t);

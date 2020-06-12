@@ -41,3 +41,5 @@ export const copyTargetsInput = Selector('.Modal .Typeahead .Input');
 export const copyTarget = (text) => Selector('.Modal .Typeahead .OptionsList').withText(text);
 export const entityList = Selector('.EntityList');
 export const copyModal = Selector('.CopyModal');
+export const processTypeahead = Selector('.Modal .Typeahead');
+export const firstTypeaheadOption = Selector('.Modal .DropdownOption');

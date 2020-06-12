@@ -90,6 +90,15 @@ it('should update the report', async () => {
   expect(node.state().report.data.visualization).toBe('customTestVis');
 });
 
+it('should evaluate the report on mount if the config is complete, but the result is missing', async () => {
+  evaluateReport.mockClear();
+  evaluateReport.mockReturnValue(report);
+
+  await shallow(<ReportEdit {...props} report={{...report, result: null}} />);
+
+  expect(evaluateReport).toHaveBeenCalled();
+});
+
 it('should evaluate the report after updating', async () => {
   const node = shallow(<ReportEdit {...props} />);
 

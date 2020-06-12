@@ -25,6 +25,7 @@ export const entityTab = Selector('.Collection .header .navigation a').withText(
   'Dashboards & Reports'
 );
 export const remove = (element) => element.find('.DropdownOption').withText('Remove');
+export const entitiesTab = Selector('.Collection .header .navigation a').withText('Dashboards');
 export const userTab = Selector('.Collection .header .navigation a').withText('Users');
 export const alertTab = Selector('.Collection .header .navigation a').withText('Alerts');
 export const sourcesTab = Selector('.Collection .header .navigation a').withText('Data Sources');

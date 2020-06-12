@@ -21,3 +21,7 @@ Wenn nach Variablen gefiltert wird, gibt es in jedem Variablentyp eine neue Opti
 ## Berichte für Variablenaggregationen
 
 Es wurde eine neue Ansichtsoption für Prozessberichte hinzugefügt, die es erlaubt eine Aggregation (z.B. Summe oder Durchschnitt) der Werte einer Variablen des Prozesses darzustellen.
+
+## Prozessberichte von Vorlagen Erstellen
+
+Mit diesem Release ist es jetzt möglich Prozessberichte basierend auf Vorlagen zu erstellen. Dazu gibt es beim Erstellen eines neuen Prozessberichts einen Dialog der es erlaubt die Prozessdefinition und die Vorlage für den neuen Report auszuwählen.

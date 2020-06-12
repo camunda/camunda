@@ -204,9 +204,19 @@
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
+    "create": "Bericht Erstellen",
+    "createNew": "Neuen Bericht Erstellen",
     "new": "Neuer Bericht",
+    "addName": "Berichtname hinzufügen",
     "downloadCSV": "CSV herunterladen",
     "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
+    "templates": {
+      "blank": "Leerer Bericht",
+      "heatmap": "Heatmap: Prozessknoten Anzahl",
+      "number": "Nummer: Prozessinstanz Dauer",
+      "table": "Datentabelle: Benutzeraufgaben Anzahl",
+      "chart": "Balkendiagram: Prozessinstanz Anzahl"
+    },
     "instanceCount": {
       "process": {
         "label": "{count} Instanz im aktuellen Filter",

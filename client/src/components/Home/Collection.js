@@ -23,6 +23,7 @@ import UserList from './UserList';
 import AlertList from './AlertList';
 import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
+import ReportTemplateModal from './modals/ReportTemplateModal';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
@@ -33,6 +34,7 @@ export default withErrorHandling(
     state = {
       collection: null,
       editingCollection: false,
+      creatingProcessReport: false,
       deleting: false,
       redirect: '',
       copying: null,
@@ -81,7 +83,15 @@ export default withErrorHandling(
     };
 
     render() {
-      const {collection, deleting, editingCollection, redirect, copying, entities} = this.state;
+      const {
+        collection,
+        deleting,
+        editingCollection,
+        creatingProcessReport,
+        redirect,
+        copying,
+        entities,
+      } = this.state;
 
       const homeTab = this.props.match.params.viewMode === undefined;
       const userTab = this.props.match.params.viewMode === 'users';
@@ -143,7 +153,10 @@ export default withErrorHandling(
                 action={
                   collection &&
                   collection.currentUserRole !== 'viewer' && (
-                    <CreateNewButton collection={collection.id} />
+                    <CreateNewButton
+                      collection={collection.id}
+                      createProcessReport={() => this.setState({creatingProcessReport: true})}
+                    />
                   )
                 }
                 empty={t('home.empty')}
@@ -270,6 +283,9 @@ export default withErrorHandling(
             }}
             onCancel={() => this.setState({copying: null})}
           />
+          {creatingProcessReport && (
+            <ReportTemplateModal onClose={() => this.setState({creatingProcessReport: false})} />
+          )}
         </div>
       );
     }

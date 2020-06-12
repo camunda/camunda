@@ -21,3 +21,7 @@ When filtering by variables, there is a new option in each variable type that al
 ## Variable Aggregation Reports
 
 A new view option has been added for process reports. This new option allows creating reports that show an aggregation (e.g. Sum or Average) of the values of a variable for a process.
+
+## Create Process Reports from Templates
+
+With this release it is now possible to create process reports based on predefined templates. For this there is a new dialog after clicking the New Process Report option that allows selecting the process definition and template for the new report.

@@ -46,12 +46,19 @@ export class ReportEdit extends React.Component {
   };
 
   async componentDidMount() {
+    const {report} = this.state;
+
     const version = (await getOptimizeVersion()).split('.');
     version.length = 2;
 
     this.setState({
       optimizeVersion: version.join('.'),
     });
+
+    if (this.isReportComplete(report) && !report.result) {
+      this.loadReport(report);
+      nowDirty(t('report.label'), this.save);
+    }
   }
 
   showSaveError = (error) => {
@@ -158,11 +165,13 @@ export class ReportEdit extends React.Component {
     }
   };
 
+  isReportComplete = ({data: {view, groupBy, visualization}, combined}) =>
+    (view && groupBy && visualization) || combined;
+
   loadReport = async (query) => {
     this.setState({report: query});
 
-    const {view, groupBy, visualization} = query.data;
-    if ((view && groupBy && visualization) || query.combined) {
+    if (this.isReportComplete(query)) {
       this.setState({loadingReportData: true});
       await this.props.mightFail(
         evaluateReport(query),

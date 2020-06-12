@@ -17,6 +17,7 @@ import {createEntity, updateEntity, checkDeleteConflict} from 'services';
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
+import ReportTemplateModal from './modals/ReportTemplateModal';
 import {loadEntities} from './service';
 
 import {formatLink, formatType, formatSubEntities, formatUserCount} from './formatters';
@@ -30,6 +31,7 @@ export class Home extends React.Component {
     copying: null,
     redirect: null,
     creatingCollection: false,
+    creatingProcessReport: false,
     editingCollection: null,
   };
 
@@ -73,6 +75,7 @@ export class Home extends React.Component {
       deleting,
       copying,
       creatingCollection,
+      creatingProcessReport,
       editingCollection,
       redirect,
     } = this.state;
@@ -89,7 +92,12 @@ export class Home extends React.Component {
         <div className="content">
           <EntityList
             name={t('home.title')}
-            action={<CreateNewButton createCollection={this.startCreatingCollection} />}
+            action={
+              <CreateNewButton
+                createCollection={this.startCreatingCollection}
+                createProcessReport={() => this.setState({creatingProcessReport: true})}
+              />
+            }
             empty={t('home.empty')}
             isLoading={!entities}
             columns={[
@@ -188,6 +196,9 @@ export class Home extends React.Component {
               this.loadList();
             }}
           />
+        )}
+        {creatingProcessReport && (
+          <ReportTemplateModal onClose={() => this.setState({creatingProcessReport: false})} />
         )}
       </div>
     );

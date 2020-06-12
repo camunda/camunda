@@ -14,6 +14,7 @@ import {loadEntity, updateEntity} from 'services';
 import CollectionWithErrorHandling from './Collection';
 import Copier from './Copier';
 import CollectionModal from './modals/CollectionModal';
+import ReportTemplateModal from './modals/ReportTemplateModal';
 
 jest.mock('./service', () => ({copyEntity: jest.fn()}));
 
@@ -118,6 +119,14 @@ it('should modify the collections name with the edit modal', async () => {
 
   expect(updateEntity).toHaveBeenCalledWith('collection', 'aCollectionId', {name: 'new Name'});
   expect(refreshBreadcrumbs).toHaveBeenCalled();
+});
+
+it('should show a ReportTemplateModal', () => {
+  const node = shallow(<Collection {...props} />);
+
+  node.find('EntityList').prop('action').props.createProcessReport();
+
+  expect(node.find(ReportTemplateModal)).toExist();
 });
 
 it('should hide edit/delete from context menu for collection items that does not have a "manager" role', () => {

@@ -7,6 +7,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import ReportTemplateModal from './modals/ReportTemplateModal';
+
 import {Home} from './Home';
 import {loadEntities} from './service';
 
@@ -42,4 +44,12 @@ it('should display the user name', () => {
   const node = shallow(<Home {...props} user={{name: 'John Doe'}} />);
 
   expect(node.find('.welcomeMessage')).toIncludeText('John Doe');
+});
+
+it('should show a ReportTemplateModal', () => {
+  const node = shallow(<Home {...props} />);
+
+  node.find('EntityList').prop('action').props.createProcessReport();
+
+  expect(node.find(ReportTemplateModal)).toExist();
 });
