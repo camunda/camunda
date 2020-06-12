@@ -55,6 +55,9 @@ public class SingleBrokerDataDeletionTest {
     // given
     final Broker broker = clusteringRule.getBroker(0);
 
+    final var logstream = clusteringRule.getLogStream(1);
+    final var reader = logstream.newLogStreamReader().join();
+
     while (getSegmentsCount(broker) <= 2) {
       writeToLog();
     }
@@ -74,10 +77,9 @@ public class SingleBrokerDataDeletionTest {
     final var firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
 
     // then
-    final var logstream = clusteringRule.getLogStream(1);
-    final var reader = logstream.newLogStreamReader().join();
     final var firstNonExportedPosition =
         ControllableExporter.NOT_EXPORTED_RECORDS.get(0).getPosition();
+
     reader.seek(firstNonExportedPosition);
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next().getPosition()).isEqualTo(firstNonExportedPosition);
