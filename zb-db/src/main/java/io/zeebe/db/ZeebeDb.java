@@ -8,6 +8,7 @@
 package io.zeebe.db;
 
 import java.io.File;
+import java.util.Optional;
 
 /**
  * The zeebe database, to store key value pairs in different column families. The column families
@@ -50,6 +51,8 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    * @param snapshotDir the directory where the snapshot should be stored
    */
   void createSnapshot(File snapshotDir);
+
+  Optional<String> getProperty(ColumnFamilyType columnFamilyName, String propertyName);
 
   DbContext createContext();
 }
