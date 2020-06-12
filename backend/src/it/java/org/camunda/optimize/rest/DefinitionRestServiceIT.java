@@ -935,16 +935,22 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitionTenantsByTypeKeyAndVersions_sharedAndTenantSpecificDefinitions(final DefinitionType definitionType) {
     // given
+    // a tenant starting with letter `a` to verify special ordering of notDefined tenant
+    final TenantDto aTenant = TenantDto.builder()
+      .id("atenant")
+      .name("A Tenant")
+      .engine(DEFAULT_ENGINE_ALIAS)
+      .build();
+    createTenant(aTenant);
     createTenant(TENANT_1);
     createTenant(TENANT_2);
-    createTenant(TENANT_3);
     final String definitionKey = "key";
     createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
     createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", aTenant.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", aTenant.getId(), "the name");
     createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_3.getId(), "the name");
+    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_2.getId(), "the name");
 
     // when all versions are included
     final List<TenantResponseDto> tenantsForAllVersions =
@@ -956,9 +962,9 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(tenantsForAllVersions)
       .containsExactly(
         new TenantResponseDto(TENANT_NOT_DEFINED.getId(), TENANT_NOT_DEFINED.getName()),
+        new TenantResponseDto(aTenant.getId(), aTenant.getName()),
         new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
-        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName()),
-        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName())
       );
 
     // when only a shared version is included
@@ -971,9 +977,9 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(tenantsForVersion1)
       .containsExactly(
         new TenantResponseDto(TENANT_NOT_DEFINED.getId(), TENANT_NOT_DEFINED.getName()),
+        new TenantResponseDto(aTenant.getId(), aTenant.getName()),
         new TenantResponseDto(TENANT_1.getId(), TENANT_1.getName()),
-        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName()),
-        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName())
       );
 
     // when only a specific version is included
@@ -985,7 +991,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // then only the specific tenant is returned
     assertThat(tenantsForVersion3)
       .containsExactly(
-        new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName())
+        new TenantResponseDto(TENANT_2.getId(), TENANT_2.getName())
       );
   }
 

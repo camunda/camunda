@@ -147,7 +147,7 @@ public class DefinitionService {
     }
 
     return result.stream()
-      .sorted(Comparator.comparing(a -> a.getName() == null ? a.getId().toLowerCase() : a.getName().toLowerCase()))
+      .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
       .collect(Collectors.toList());
   }
 
