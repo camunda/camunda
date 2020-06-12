@@ -153,7 +153,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 2);
 
     // then the model elements are of the correct type and connected to expected nodes correctly
-    final String connectingId = generateConnectionGatewayIdForDefinitionKey(EXTERNAL_EVENTS_INDEX_SUFFIX);
+    final String connectingId = generateConnectionGatewayIdForDefinitionKey(Converging, EXTERNAL_EVENTS_INDEX_SUFFIX);
     final String externalId = generateGatewayIdForNode(EVENT_B, Diverging);
     assertNodeConnection(idOf(EVENT_A), START_EVENT, idOf(EVENT_B), INTERMEDIATE_EVENT, generatedInstance);
     assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, externalId, EXCLUSIVE_GATEWAY, generatedInstance);
@@ -273,24 +273,34 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     );
 
     // 4 additional gateways exist in the source models, plus a single gateway to connect two source models
-    assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 5);
+    assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 6);
 
     // then the model elements are of the correct type and connected to expected nodes correctly
     final String convergingId1 = generateModelGatewayIdForSource(firstCamundaSource, Converging);
     final String divergingId1 = generateModelGatewayIdForSource(firstCamundaSource, Diverging);
     final String convergingId2 = generateModelGatewayIdForSource(secondCamundaSource, Converging);
     final String divergingId2 = generateModelGatewayIdForSource(secondCamundaSource, Diverging);
-    // The previous source is responsible for creating the connecting gateway so the ID uses its definition key
-    final String connectingId = generateConnectionGatewayIdForDefinitionKey(firstCamundaSource.getProcessDefinitionKey());
+    // The previous source is responsible for creating the converging connecting gateway so the ID uses its
+    // definition key
+    final String connectingId1 = generateConnectionGatewayIdForDefinitionKey(
+      Converging,
+      firstCamundaSource.getProcessDefinitionKey()
+    );
+    // The next source is responsible for creating the diverging connecting gateway so the ID uses its definition key
+    final String connectingId2 = generateConnectionGatewayIdForDefinitionKey(
+      Diverging,
+      secondCamundaSource.getProcessDefinitionKey()
+    );
     assertNodeConnection(idOf(firstStart1), START_EVENT, convergingId1, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(idOf(firstStart2), START_EVENT, convergingId1, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(convergingId1, EXCLUSIVE_GATEWAY, divergingId1, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(divergingId1, EXCLUSIVE_GATEWAY, idOf(firstEnd1), INTERMEDIATE_EVENT, generatedInstance);
     assertNodeConnection(divergingId1, EXCLUSIVE_GATEWAY, idOf(firstEnd2), INTERMEDIATE_EVENT, generatedInstance);
-    assertNodeConnection(idOf(firstEnd1), INTERMEDIATE_EVENT, connectingId, EXCLUSIVE_GATEWAY, generatedInstance);
-    assertNodeConnection(idOf(firstEnd2), INTERMEDIATE_EVENT, connectingId, EXCLUSIVE_GATEWAY, generatedInstance);
-    assertNodeConnection(connectingId, EXCLUSIVE_GATEWAY, idOf(secondStart1), INTERMEDIATE_EVENT, generatedInstance);
-    assertNodeConnection(connectingId, EXCLUSIVE_GATEWAY, idOf(secondStart2), INTERMEDIATE_EVENT, generatedInstance);
+    assertNodeConnection(idOf(firstEnd1), INTERMEDIATE_EVENT, connectingId1, EXCLUSIVE_GATEWAY, generatedInstance);
+    assertNodeConnection(idOf(firstEnd2), INTERMEDIATE_EVENT, connectingId1, EXCLUSIVE_GATEWAY, generatedInstance);
+    assertNodeConnection(connectingId1, EXCLUSIVE_GATEWAY, connectingId2, EXCLUSIVE_GATEWAY, generatedInstance);
+    assertNodeConnection(connectingId2, EXCLUSIVE_GATEWAY, idOf(secondStart1), INTERMEDIATE_EVENT, generatedInstance);
+    assertNodeConnection(connectingId2, EXCLUSIVE_GATEWAY, idOf(secondStart2), INTERMEDIATE_EVENT, generatedInstance);
     assertNodeConnection(idOf(secondStart1), INTERMEDIATE_EVENT, convergingId2, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(idOf(secondStart2), INTERMEDIATE_EVENT, convergingId2, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(convergingId2, EXCLUSIVE_GATEWAY, divergingId2, EXCLUSIVE_GATEWAY, generatedInstance);
@@ -300,11 +310,11 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     assertNodeConnection(idOf(secondEnd2), END_EVENT, null, null, generatedInstance);
 
     // and the expected number of sequence flows exist
-    assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(14);
+    assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(15);
 
     // and the gateways have the expected source and target events
     final Collection<Gateway> gatewaysInModel = generatedInstance.getModelElementsByType(Gateway.class);
-    assertThat(gatewaysInModel).hasSize(5);
+    assertThat(gatewaysInModel).hasSize(6);
     assertGatewayWithSourcesAndTargets(
       Arrays.asList(idOf(firstStart1), idOf(firstStart2)),
       Arrays.asList(divergingId1),
@@ -317,8 +327,13 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     );
     assertGatewayWithSourcesAndTargets(
       Arrays.asList(idOf(firstEnd1), idOf(firstEnd2)),
+      Arrays.asList(connectingId2),
+      getGatewayWithId(gatewaysInModel, connectingId1)
+    );
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(connectingId1),
       Arrays.asList(idOf(secondStart1), idOf(secondStart2)),
-      getGatewayWithId(gatewaysInModel, connectingId)
+      getGatewayWithId(gatewaysInModel, connectingId2)
     );
     assertGatewayWithSourcesAndTargets(
       Arrays.asList(idOf(secondStart1), idOf(secondStart2)),
@@ -663,13 +678,20 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
       );
 
     // The additional flow nodes are the gateways that have been added
-    assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 4);
+    assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 5);
 
     // then the model elements are of the correct type and connected to expected nodes correctly
     final String divergingId1 = generateGatewayIdForNode(EVENT_A, Diverging);
     final String convergingId1 = generateGatewayIdForNode(EVENT_D, Converging);
     final String convergingId2 = generateModelGatewayIdForSource(startEndSource, Converging);
     final String divergingId2 = generateModelGatewayIdForSource(startEndSource, Diverging);
+    // The next source is responsible for creating the diverging connecting gateway so the ID uses its definition key
+    final String connectingId = generateConnectionGatewayIdForDefinitionKey(
+      Diverging,
+      startEndSource.getProcessDefinitionKey()
+    );
+
+
     assertNodeConnection(idOf(EVENT_A), START_EVENT, divergingId1, PARALLEL_GATEWAY, generatedInstance);
     assertNodeConnection(divergingId1, PARALLEL_GATEWAY, idOf(EVENT_B), INTERMEDIATE_EVENT, generatedInstance);
     assertNodeConnection(divergingId1, PARALLEL_GATEWAY, idOf(EVENT_C), INTERMEDIATE_EVENT, generatedInstance);
@@ -677,8 +699,9 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, convergingId1, PARALLEL_GATEWAY, generatedInstance);
     assertNodeConnection(convergingId1, PARALLEL_GATEWAY, idOf(EVENT_D), INTERMEDIATE_EVENT, generatedInstance);
     assertNodeConnection(idOf(EVENT_D), INTERMEDIATE_EVENT, processNodeId, CALL_ACTIVITY, generatedInstance);
-    assertNodeConnection(processNodeId, CALL_ACTIVITY, idOf(camundaStart1), INTERMEDIATE_EVENT, generatedInstance);
-    assertNodeConnection(processNodeId, CALL_ACTIVITY, idOf(camundaStart2), INTERMEDIATE_EVENT, generatedInstance);
+    assertNodeConnection(processNodeId, CALL_ACTIVITY, connectingId, EXCLUSIVE_GATEWAY, generatedInstance);
+    assertNodeConnection(connectingId, EXCLUSIVE_GATEWAY, idOf(camundaStart1), INTERMEDIATE_EVENT, generatedInstance);
+    assertNodeConnection(connectingId, EXCLUSIVE_GATEWAY, idOf(camundaStart2), INTERMEDIATE_EVENT, generatedInstance);
     assertNodeConnection(idOf(camundaStart1), INTERMEDIATE_EVENT, convergingId2, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(idOf(camundaStart2), INTERMEDIATE_EVENT, convergingId2, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(convergingId2, EXCLUSIVE_GATEWAY, divergingId2, EXCLUSIVE_GATEWAY, generatedInstance);
@@ -688,11 +711,11 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     assertNodeConnection(idOf(camundaEnd2), END_EVENT, null, null, generatedInstance);
 
     // and the expected number of sequence flows exist
-    assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(14);
+    assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(15);
 
     // and the gateways have the expected source and target events
     final Collection<Gateway> gatewaysInModel = generatedInstance.getModelElementsByType(Gateway.class);
-    assertThat(gatewaysInModel).hasSize(4);
+    assertThat(gatewaysInModel).hasSize(5);
     assertGatewayWithSourcesAndTargets(
       Arrays.asList(idOf(EVENT_A)),
       Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
@@ -702,6 +725,11 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
       Arrays.asList(idOf(EVENT_B), idOf(EVENT_C)),
       Arrays.asList(idOf(EVENT_D)),
       getGatewayWithId(gatewaysInModel, convergingId1)
+    );
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(processNodeId),
+      Arrays.asList(idOf(camundaStart1), idOf(camundaStart2)),
+      getGatewayWithId(gatewaysInModel, connectingId)
     );
     assertGatewayWithSourcesAndTargets(
       Arrays.asList(idOf(camundaStart1), idOf(camundaStart2)),

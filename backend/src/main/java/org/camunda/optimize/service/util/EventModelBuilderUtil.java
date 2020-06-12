@@ -29,6 +29,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
 
 @Slf4j
@@ -37,10 +38,9 @@ public class EventModelBuilderUtil {
 
   private static final String EVENT = "event";
   private static final String PROCESS = "process";
-  private static final String CONNECTING = "connecting";
+  private static final String CONNECTION = "connection";
   private static final String DIVERGING_GATEWAY = "Diverging gateway";
   private static final String CONVERGING_GATEWAY = "Converging gateway";
-  private static final String CONNECTING_GATEWAY = "Connecting gateway";
 
   public static String generateNodeId(final EventTypeDto eventTypeDto) {
     return removeIllegalCharacters(generateId(EVENT, eventTypeDto));
@@ -58,10 +58,11 @@ public class EventModelBuilderUtil {
     );
   }
 
-  public static String generateConnectionGatewayIdForDefinitionKey(final String definitionKey) {
+  public static String generateConnectionGatewayIdForDefinitionKey(final GatewayDirection direction,
+                                                                   final String definitionKey) {
     return String.join(
       "_",
-      Arrays.asList(CONNECTING, definitionKey)
+      Arrays.asList(CONNECTION, direction.toString().toLowerCase(), definitionKey)
     );
   }
 
@@ -100,11 +101,12 @@ public class EventModelBuilderUtil {
       .name(event.getEventName());
   }
 
-  public static AbstractFlowNodeBuilder<ExclusiveGatewayBuilder, ExclusiveGateway> addConnectionGateway(
+  private static AbstractFlowNodeBuilder<ExclusiveGatewayBuilder, ExclusiveGateway> addConnectionGateway(
+    final GatewayDirection direction,
     final String gatewayId,
     final AbstractFlowNodeBuilder<?, ?> currentBuilder) {
     log.debug("Adding connecting exclusive gateway with id {} and to model", gatewayId);
-    return currentBuilder.exclusiveGateway(gatewayId).name(CONNECTING_GATEWAY);
+    return currentBuilder.exclusiveGateway(gatewayId).name(getGatewayName(direction));
   }
 
   public static AbstractFlowNodeBuilder<ExclusiveGatewayBuilder, ExclusiveGateway> addExclusiveGateway(
@@ -131,16 +133,26 @@ public class EventModelBuilderUtil {
     return currentBuilder.inclusiveGateway(nodeId).name(getGatewayName(gatewayDirection));
   }
 
+  public static AbstractFlowNodeBuilder<?, ?> prepareModelBuilderForCurrentSource(AbstractFlowNodeBuilder<?, ?> builderToReturn,
+                                                                                  final List<EventTypeDto> startEventsInModel,
+                                                                                  final String definitionKey) {
+    if (startEventsInModel.size() > 1) {
+      final String connectionGatewayId = generateConnectionGatewayIdForDefinitionKey(Diverging, definitionKey);
+      builderToReturn = addConnectionGateway(Diverging, connectionGatewayId, builderToReturn);
+    }
+    return builderToReturn;
+  }
+
   public static AbstractFlowNodeBuilder<?, ?> prepareModelBuilderForNextSource(AbstractFlowNodeBuilder<?, ?> builderToReturn,
                                                                                final List<EventTypeDto> endEventsInModel,
                                                                                final String definitionKey) {
     if (endEventsInModel.size() > 1) {
-      final String connectionGatewayId = generateConnectionGatewayIdForDefinitionKey(definitionKey);
+      final String connectionGatewayId = generateConnectionGatewayIdForDefinitionKey(Converging, definitionKey);
       for (EventTypeDto endEvent : endEventsInModel) {
         builderToReturn = builderToReturn.moveToNode(generateNodeId(endEvent));
         final BpmnModelInstance endEventBuilder = builderToReturn.done();
         if (endEventBuilder.getModelElementById(connectionGatewayId) == null) {
-          addConnectionGateway(connectionGatewayId, builderToReturn);
+          addConnectionGateway(Converging, connectionGatewayId, builderToReturn);
         } else {
           builderToReturn.connectTo(connectionGatewayId);
         }

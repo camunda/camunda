@@ -43,6 +43,7 @@ import static org.camunda.optimize.service.util.EventModelBuilderUtil.addStartEv
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateModelGatewayIdForSource;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateNodeId;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateTaskIdForDefinitionKey;
+import static org.camunda.optimize.service.util.EventModelBuilderUtil.prepareModelBuilderForCurrentSource;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.prepareModelBuilderForNextSource;
 
 @RequiredArgsConstructor
@@ -77,7 +78,7 @@ public class CamundaEventModelBuilderService {
   }
 
   private AbstractFlowNodeBuilder<?, ?> createStartEndEventModel(final ProcessBuilder processBuilder,
-                                                                 final AbstractFlowNodeBuilder<?, ?> generatedModelBuilder,
+                                                                 AbstractFlowNodeBuilder<?, ?> generatedModelBuilder,
                                                                  final Map<String, EventMappingDto> mappings,
                                                                  final EventSourceEntryDto sourceEntryDto,
                                                                  final boolean isFinalSourceInSeries) {
@@ -86,7 +87,17 @@ public class CamundaEventModelBuilderService {
     final List<EventTypeDto> startEvents = getStartEventsFromInstance(modelInstance, processDefinitionKey);
     final List<EventTypeDto> endEvents = getEndEventsFromInstance(modelInstance, processDefinitionKey);
 
+    // The preparation involves adding a new diverging gateway in the event that this isn't the first source and the
+    // current source has multiple start events
     AbstractFlowNodeBuilder<?, ?> nextBuilder = null;
+    if (generatedModelBuilder != null) {
+      generatedModelBuilder = prepareModelBuilderForCurrentSource(
+        generatedModelBuilder,
+        startEvents,
+        sourceEntryDto.getProcessDefinitionKey()
+      );
+    }
+
     for (EventTypeDto startEvent : startEvents) {
       if (generatedModelBuilder == null) {
         nextBuilder = addStartEvent(startEvent, generateNodeId(startEvent), processBuilder);
@@ -185,7 +196,7 @@ public class CamundaEventModelBuilderService {
     if (bpmnModelInstance.getModelElementById(gatewayId) == null) {
       return addExclusiveGateway(direction, gatewayId, nextBuilder);
     } else {
-      log.debug("Connecting to {} gateway with id {}", direction.toString().toLowerCase(), gatewayId);
+      log.debug("Connecting or moving to {} gateway with id {}", direction.toString().toLowerCase(), gatewayId);
       return Diverging.equals(direction) ? nextBuilder.moveToNode(gatewayId) : nextBuilder.connectTo(gatewayId);
     }
   }
