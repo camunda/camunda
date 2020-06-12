@@ -80,11 +80,11 @@ import static org.camunda.bpm.engine.ActivityTypes.TASK_SERVICE;
 import static org.camunda.bpm.engine.ActivityTypes.TASK_USER_TASK;
 import static org.camunda.bpm.engine.ActivityTypes.TRANSACTION;
 import static org.camunda.optimize.service.util.BpmnModelUtility.parseBpmnModel;
-import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
-import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessEndEventTypeDto;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessStartEventTypeDto;
 
 @AllArgsConstructor
 @Component
@@ -190,16 +190,8 @@ public class CamundaEventService {
 
   private List<EventTypeDto> createLabeledProcessInstanceStartEndEventTypeDtos(final String definitionKey) {
     return ImmutableList.of(
-      createCamundaEventTypeDto(
-        definitionKey,
-        applyCamundaProcessInstanceStartEventSuffix(definitionKey),
-        PROCESS_START_TYPE
-      ),
-      createCamundaEventTypeDto(
-        definitionKey,
-        applyCamundaProcessInstanceEndEventSuffix(definitionKey),
-        PROCESS_END_TYPE
-      )
+      createCamundaProcessStartEventTypeDto(definitionKey),
+      createCamundaProcessEndEventTypeDto(definitionKey)
     );
   }
 
