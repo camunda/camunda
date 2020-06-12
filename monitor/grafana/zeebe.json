@@ -50,7 +50,6 @@
   "annotations": {
     "list": [
       {
-        "$$hashKey": "object:45",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -65,7 +64,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1591678737501,
+  "iteration": 1591877809149,
   "links": [],
   "panels": [
     {
@@ -1131,8 +1130,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(grpc_server_handled_total[1m])) by (grpc_method)",
+              "expr": "sum(rate(grpc_server_handled_total{namespace=~\"$namespace\"}[1m])) by (grpc_method)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} Request",
               "refId": "A"
@@ -3913,8 +3913,9 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 63
+            "y": 7
           },
+          "hiddenSeries": false,
           "id": 26,
           "legend": {
             "avg": false,
@@ -3944,6 +3945,7 @@
             {
               "expr": "sum(grpc_server_handled_total{namespace=~\"$namespace\", pod=~\"$pod\"}) by (grpc_method, code)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} ({{code}})",
               "refId": "A"
@@ -4002,8 +4004,9 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 63
+            "y": 7
           },
+          "hiddenSeries": false,
           "id": 27,
           "legend": {
             "avg": false,
@@ -4033,6 +4036,7 @@
             {
               "expr": "sum(rate(grpc_server_handled_total{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (grpc_method, code)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} ({{code}})",
               "refId": "A"
@@ -4104,7 +4108,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 70
+            "y": 14
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4114,11 +4118,10 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{grpc_method=\"CreateWorkflowInstance\"}[30s])) by (le)",
+              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", grpc_method=\"CreateWorkflowInstance\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4168,7 +4171,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 70
+            "y": 14
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4178,11 +4181,10 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{grpc_method=\"ActivateJobs\"}[30s])) by (le)",
+              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", grpc_method=\"ActivateJobs\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4232,7 +4234,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 70
+            "y": 14
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4242,11 +4244,10 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{grpc_method=\"CompleteJob\"}[30s])) by (le)",
+              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", grpc_method=\"CompleteJob\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -5259,7 +5260,7 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -5381,5 +5382,5 @@
   "variables": {
     "list": []
   },
-  "version": 2
+  "version": 3
 }
