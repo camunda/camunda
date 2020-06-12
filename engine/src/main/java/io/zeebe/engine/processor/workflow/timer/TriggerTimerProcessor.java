@@ -114,7 +114,12 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final var elementInstance =
           workflowState.getElementInstanceState().getInstance(elementInstanceKey);
 
-      return eventHandle.triggerEvent(streamWriter, elementInstance, catchEvent, NO_VARIABLES);
+      if (elementInstance != null && elementInstance.isActive()) {
+        return eventHandle.triggerEvent(streamWriter, elementInstance, catchEvent, NO_VARIABLES);
+
+      } else {
+        return false;
+      }
 
     } else {
       final var workflowInstanceKey =

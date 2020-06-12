@@ -36,6 +36,11 @@ public final class EventHandle {
       final ExecutableFlowElement catchEvent,
       final DirectBuffer variables) {
 
+    if (eventScopeInstance == null || !eventScopeInstance.isActive()) {
+      // discard the event if the element instance is left
+      return false;
+    }
+
     final var newElementInstanceKey = keyGenerator.nextKey();
     final var triggered =
         eventScopeInstanceState.triggerEvent(

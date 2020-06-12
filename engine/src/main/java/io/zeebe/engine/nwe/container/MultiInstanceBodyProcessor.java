@@ -157,6 +157,7 @@ public final class MultiInstanceBodyProcessor
     stateTransitionBehavior.onElementTerminated(element, context);
 
     stateBehavior.consumeToken(context);
+    stateBehavior.removeElementInstance(context);
   }
 
   @Override
