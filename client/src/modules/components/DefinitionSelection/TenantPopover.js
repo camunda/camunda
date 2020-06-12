@@ -29,7 +29,11 @@ export default function TenantPopover({tenants, selected, onChange}) {
   }
 
   return (
-    <Popover className="TenantPopover" disabled={tenants?.length < 2 || !tenants} title={label}>
+    <Popover
+      className="TenantPopover"
+      disabled={tenants?.length < 2 || !tenants}
+      title={label || '-'}
+    >
       <Form compact>
         <fieldset>
           <legend>{t('common.definitionSelection.tenant.includeData')}</legend>

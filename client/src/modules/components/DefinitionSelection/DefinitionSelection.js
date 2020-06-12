@@ -32,16 +32,20 @@ export class DefinitionSelection extends React.Component {
     };
   }
 
-  componentDidMount = async () => {
+  componentDidMount = () => {
     const {definitionKey, versions} = this.props;
 
-    this.setState({availableDefinitions: await this.loadDefinitions()});
+    this.loadDefinitions().then((availableDefinitions) => this.setState({availableDefinitions}));
 
     if (definitionKey) {
-      this.setState({availableVersions: await this.loadVersions(definitionKey)});
+      this.loadVersions(definitionKey).then((availableVersions) =>
+        this.setState({availableVersions})
+      );
     }
     if (definitionKey && versions?.length) {
-      this.setState({availableTenants: await this.loadTenants(definitionKey, versions)});
+      this.loadTenants(definitionKey, versions).then((availableTenants) =>
+        this.setState({availableTenants})
+      );
     }
   };
 
@@ -194,7 +198,7 @@ export class DefinitionSelection extends React.Component {
         tenant = t('common.all');
       } else if (selectedTenants.length === 1) {
         const tenantObj = availableTenants.find(({id}) => id === selectedTenants[0]);
-        tenant = tenantObj.name || tenantObj.id;
+        tenant = tenantObj?.name || tenantObj?.id;
       }
 
       if (tenant) {
