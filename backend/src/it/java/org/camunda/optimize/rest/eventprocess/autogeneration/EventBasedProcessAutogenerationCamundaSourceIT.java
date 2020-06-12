@@ -83,6 +83,10 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
     // and the expected number of sequence flows exist
     assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(1);
+
+    // and that the mapped events all exist in the returned event counts list
+    final List<EventTypeDto> eventCounts = getEventCountsAsEventTypeDtos(sources);
+    assertThat(eventCounts).containsAll(getMappedEventTypeDtosFromMappings(mappings));
   }
 
   @Test
@@ -366,6 +370,10 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
     // and the expected number of sequence flows exist
     assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(1);
+
+    // and that the mapped events all exist in the returned event counts list
+    final List<EventTypeDto> eventCounts = getEventCountsAsEventTypeDtos(sources);
+    assertThat(eventCounts).containsAll(getMappedEventTypeDtosFromMappings(mappings));
   }
 
   private static Stream<BpmnModelInstance> camundaModels() {

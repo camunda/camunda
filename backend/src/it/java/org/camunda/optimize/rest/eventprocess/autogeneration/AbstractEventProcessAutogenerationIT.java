@@ -22,6 +22,9 @@ import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
+import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventCountSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
@@ -33,6 +36,7 @@ import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseD
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.service.EventProcessService;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
+import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 
@@ -42,8 +46,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateNodeId;
@@ -192,6 +198,25 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
   protected void ingestEventAndProcessTraces(List<CloudEventDto> eventsToIngest) {
     eventClient.ingestEventBatch(eventsToIngest);
     processEventCountAndTraces();
+  }
+
+  protected List<EventTypeDto> getMappedEventTypeDtosFromMappings(final Map<String, EventMappingDto> mappings) {
+    return mappings.values()
+      .stream()
+      .flatMap(mapping -> Stream.of(mapping.getStart(), mapping.getEnd()))
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+  }
+
+  protected List<EventTypeDto> getEventCountsAsEventTypeDtos(final List<EventSourceEntryDto> eventSourceEntryDtos) {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildPostEventCountRequest(
+        new EventCountSearchRequestDto(),
+        EventCountRequestDto.builder().eventSources(eventSourceEntryDtos).build()
+      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode())
+      .stream()
+      .map(EventDtoBuilderUtil::fromEventCountDto)
+      .collect(Collectors.toList());
   }
 
   protected String idOf(EventTypeDto eventTypeDto) {

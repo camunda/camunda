@@ -866,6 +866,10 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
       Arrays.asList(idOf(camundaEnd1), idOf(camundaEnd2)),
       getGatewayWithId(gatewaysInModel, divergingId2)
     );
+
+    // and that the mapped events all exist in the returned event counts list
+    final List<EventTypeDto> eventCounts = getEventCountsAsEventTypeDtos(sources);
+    assertThat(eventCounts).containsAll(getMappedEventTypeDtosFromMappings(mappings));
   }
 
   @Test

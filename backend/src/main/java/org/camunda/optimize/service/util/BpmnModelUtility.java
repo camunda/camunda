@@ -88,8 +88,8 @@ public class BpmnModelUtility {
         final String elementName = Optional.ofNullable(event.getAttributeValue("name")).orElse(elementId);
         return createCamundaEventTypeDto(
           definitionKey,
-          elementName,
-          Optional.ofNullable(event.getAttributeValue("name")).orElse(elementId)
+          elementId,
+          elementName
         );
       })
       .collect(Collectors.toList());

@@ -131,6 +131,9 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
     // and the expected number of sequence flows exists
     assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(3);
+
+    final List<EventTypeDto> eventCounts = getEventCountsAsEventTypeDtos(externalSource);
+    assertThat(eventCounts).containsAll(getMappedEventTypeDtosFromMappings(mappings));
   }
 
   @Test

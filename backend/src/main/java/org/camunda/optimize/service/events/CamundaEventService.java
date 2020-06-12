@@ -93,17 +93,17 @@ public class CamundaEventService {
   public static final String PROCESS_START_TYPE = EventDtoBuilderUtil.PROCESS_START_TYPE;
   public static final String PROCESS_END_TYPE = EventDtoBuilderUtil.PROCESS_END_TYPE;
 
-  public static final Set<String> START_EVENT_TYPES = ImmutableSet.of(
+  private static final Set<String> START_EVENT_TYPES = ImmutableSet.of(
     START_EVENT, START_EVENT_TIMER, START_EVENT_MESSAGE, START_EVENT_SIGNAL,
     START_EVENT_ESCALATION, START_EVENT_COMPENSATION, START_EVENT_ERROR, START_EVENT_CONDITIONAL
   );
 
-  public static final Set<String> END_EVENT_TYPES = ImmutableSet.of(
+  private static final Set<String> END_EVENT_TYPES = ImmutableSet.of(
     END_EVENT_ERROR, END_EVENT_CANCEL, END_EVENT_TERMINATE, END_EVENT_MESSAGE,
     END_EVENT_SIGNAL, END_EVENT_COMPENSATION, END_EVENT_ESCALATION, END_EVENT_NONE, "endEvent"
   );
 
-  public static final Set<String> START_AND_END_EVENT_TYPES = ImmutableSet.<String>builder()
+  private static final Set<String> START_AND_END_EVENT_TYPES = ImmutableSet.<String>builder()
     .addAll(START_EVENT_TYPES)
     .addAll(END_EVENT_TYPES)
     .build();
@@ -132,7 +132,7 @@ public class CamundaEventService {
     TASK_USER_TASK, TASK_SEND_TASK, TASK_RECEIVE_TASK
   );
 
-  public static final Set<String> ALL_MAPPED_TYPES = ImmutableSet.<String>builder()
+  private static final Set<String> ALL_MAPPED_TYPES = ImmutableSet.<String>builder()
     .addAll(SINGLE_MAPPED_TYPES)
     .addAll(SPLIT_START_END_MAPPED_TYPES)
     .build();
