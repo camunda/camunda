@@ -688,24 +688,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants() {
-    return buildGetProcessDefinitionVersionsWithTenants(null);
-  }
-
-  public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants(final String collectionId) {
-    return buildGetProcessDefinitionVersionsWithTenants(collectionId, null);
-  }
-
-  public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants(final String collectionId,
-                                                                              final Boolean excludeEventProcesses) {
-    this.path = "definition/process/definitionVersionsWithTenants";
-    this.method = GET;
-    addSingleQueryParam("filterByCollectionScope", collectionId);
-    Optional.ofNullable(excludeEventProcesses)
-      .ifPresent(aBoolean -> addSingleQueryParam("excludeEventProcesses", aBoolean));
-    return this;
-  }
-
   public OptimizeRequestExecutor buildGetProcessDefinitionXmlRequest(String key, Object version) {
     return buildGetProcessDefinitionXmlRequest(key, version, null);
   }
@@ -925,17 +907,6 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetDecisionDefinitionsRequest() {
     this.path = "definition/decision";
     this.method = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetDecisionDefinitionVersionsWithTenants() {
-    return buildGetDecisionDefinitionVersionsWithTenants(null);
-  }
-
-  public OptimizeRequestExecutor buildGetDecisionDefinitionVersionsWithTenants(final String collectionId) {
-    this.path = "definition/decision/definitionVersionsWithTenants";
-    this.method = GET;
-    addSingleQueryParam("filterByCollectionScope", collectionId);
     return this;
   }
 

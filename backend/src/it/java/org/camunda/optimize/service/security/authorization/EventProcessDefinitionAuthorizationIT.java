@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
@@ -462,60 +461,6 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
   }
 
   @Test
-  public void getProcessDefinitionsWithVersionsWithTenants_groupRole() {
-    // given
-    final String definitionKey1 = "eventProcessKey1";
-    final String definitionKey2 = "eventProcessKey2";
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey1,
-      new GroupDto(GROUP_ID)
-    );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey2,
-      new GroupDto("otherGroup")
-    );
-
-    // when
-    final List<DefinitionVersionsWithTenantsDto> definitionsWithVersionsAndTenants =
-      getProcessDefinitionVersionsWithTenantsAsUser(KERMIT_USER);
-
-    // then
-    assertThat(definitionsWithVersionsAndTenants)
-      .extracting(DefinitionVersionsWithTenantsDto::getKey)
-      .containsExactly(definitionKey1);
-  }
-
-  @Test
-  public void getProcessDefinitionsWithVersionsWithTenants_userRole() {
-    // given
-    final String definitionKey1 = "eventProcessKey1";
-    final String definitionKey2 = "eventProcessKey2";
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey1,
-      new UserDto(KERMIT_USER)
-    );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      definitionKey2,
-      new UserDto(DEFAULT_USERNAME)
-    );
-
-    // when
-    final List<DefinitionVersionsWithTenantsDto> definitionsWithVersionsAndTenants =
-      getProcessDefinitionVersionsWithTenantsAsUser(KERMIT_USER);
-
-    // then
-    assertThat(definitionsWithVersionsAndTenants)
-      .extracting(DefinitionVersionsWithTenantsDto::getKey)
-      .containsExactly(definitionKey1);
-  }
-
-  @Test
   public void getDefinitionsGroupedByTenant_groupRole() {
     // given
     final String definitionKey1 = "eventProcessKey1";
@@ -647,15 +592,6 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     assertThat(definitionXml1).isEqualTo(eventProcessDefinition1.getBpmn20Xml());
 
     assertThat(definitionXml2Response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-  }
-
-  private List<DefinitionVersionsWithTenantsDto> getProcessDefinitionVersionsWithTenantsAsUser(
-    final String user) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetProcessDefinitionVersionsWithTenants()
-      .withUserAuthentication(user, user)
-      .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
   }
 
   private ProcessDefinitionOptimizeDto getProcessDefinitionByKeyAsUser(final String key, final String user) {

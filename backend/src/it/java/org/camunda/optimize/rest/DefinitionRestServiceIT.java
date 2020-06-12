@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
@@ -37,8 +36,6 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
@@ -1297,41 +1294,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
     // when
     final List<DefinitionWithTenantsDto> definitions = definitionClient.getAllDefinitions();
-
-    // then
-    assertThat(definitions).isNotEmpty().hasSize(definitionCount);
-  }
-
-  @Test
-  public void getDefinitionVersionsWithTenants_allEntriesAreRetrievedIfMoreThanBucketLimit() {
-    // given
-    final Integer bucketLimit = 1000;
-    final Integer definitionCount = bucketLimit * 2;
-
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
-    Map<String, Object> definitionMap = new HashMap<>();
-    IntStream
-      .range(0, definitionCount)
-      .mapToObj(String::valueOf)
-      .forEach(i -> {
-        final DefinitionOptimizeDto def = createProcessDefinition(
-          "key" + i,
-          "1",
-          null,
-          "Definition " + i
-        );
-        definitionMap.put(def.getId(), def);
-      });
-
-    addProcessDefinitionsToElasticsearch(definitionMap);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    final List<DefinitionVersionsWithTenantsDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .buildGetProcessDefinitionVersionsWithTenants()
-      .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions).isNotEmpty().hasSize(definitionCount);

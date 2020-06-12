@@ -204,8 +204,7 @@ public class ElasticSearchSchemaManager {
                                                  final String defaultAliasName,
                                                  final Set<String> additionalAliases,
                                                  final Settings indexSettings) {
-    final String templateName = indexNameService.getOptimizeIndexNameForAliasAndVersion(
-      mappingCreator);
+    final String templateName = indexNameService.getOptimizeIndexNameForAliasAndVersion(mappingCreator);
     log.info("Creating or updating template with name {}", templateName);
 
     final String pattern = String.format("%s-%s", templateName, "*");

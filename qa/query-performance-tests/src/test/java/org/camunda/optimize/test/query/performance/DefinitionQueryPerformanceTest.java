@@ -77,39 +77,6 @@ public class DefinitionQueryPerformanceTest {
   }
 
   @Test
-  public void testQueryPerformance_getDefinitionVersionsWithTenants() {
-    final Integer definitionCount = 11000;
-
-    Map<String, Object> definitionMap = new HashMap<>();
-    IntStream
-      .range(0, definitionCount)
-      .mapToObj(String::valueOf)
-      .forEach(i -> {
-        final DefinitionOptimizeDto def = createProcessDefinition(
-          "key" + i,
-          "1",
-          null,
-          "Definition " + i
-        );
-        definitionMap.put(def.getId(), def);
-      });
-
-    addProcessDefinitionsToElasticsearch(DefinitionType.PROCESS, definitionMap);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    long startTimeMs = System.currentTimeMillis();
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetProcessDefinitionVersionsWithTenants()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
-
-    // then
-    assertThat(responseTimeMs).isLessThan(getMaxAllowedQueryTime());
-  }
-
-  @Test
   public void testQueryPerformance_getDefinitionsGroupedByTenant() {
     final Integer definitionCount = 11000;
 

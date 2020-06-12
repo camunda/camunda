@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -169,23 +168,6 @@ public class CollectionScopeService {
       .stream()
       .filter(tenantDto -> scopeTenantIds.contains(tenantDto.getId()))
       .collect(Collectors.toList());
-  }
-
-  public List<DefinitionVersionsWithTenantsDto> getCollectionDefinitionsGroupedByVersionAndTenantForType(
-    final DefinitionType type,
-    final boolean excludeEventProcesses,
-    final String userId,
-    final String collectionId) {
-    final Map<String, List<String>> keysAndTenants = getAvailableKeysAndTenantsFromCollectionScope(
-      userId, type, collectionId
-    );
-
-    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(
-      type,
-      excludeEventProcesses,
-      userId,
-      keysAndTenants
-    );
   }
 
   public void addScopeEntriesToCollection(final String userId,

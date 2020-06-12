@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequest;
@@ -162,26 +161,6 @@ public class DefinitionRestService {
     return definitions.stream()
       .map(definition -> new DefinitionKeyDto(definition.getKey(), definition.getName()))
       .collect(Collectors.toList());
-  }
-
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/{type}/definitionVersionsWithTenants")
-  public List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenants(
-    @Context final ContainerRequestContext requestContext,
-    @PathParam("type") DefinitionType type,
-    @QueryParam("filterByCollectionScope") final String collectionId,
-    @QueryParam("excludeEventProcesses") final boolean excludeEventProcesses) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
-
-    return optionalCollectionId
-      .map(id -> collectionScopeService.getCollectionDefinitionsGroupedByVersionAndTenantForType(
-        type, excludeEventProcesses, userId, id
-      ))
-      .orElseGet(() -> definitionService.getDefinitionsGroupedByVersionAndTenantForType(
-        type, excludeEventProcesses, userId
-      ));
   }
 
   @GET
