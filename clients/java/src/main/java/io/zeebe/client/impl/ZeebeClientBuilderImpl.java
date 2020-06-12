@@ -153,7 +153,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     }
     if (properties.containsKey(DEFAULT_REQUEST_TIMEOUT)) {
       defaultRequestTimeout(
-          Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_REQUEST_TIMEOUT))));
+          Duration.ofSeconds(Long.parseLong(properties.getProperty(DEFAULT_REQUEST_TIMEOUT))));
     }
     if (properties.containsKey(USE_PLAINTEXT_CONNECTION)) {
       /**
