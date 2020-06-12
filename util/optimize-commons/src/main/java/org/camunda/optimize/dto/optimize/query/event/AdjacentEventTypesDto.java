@@ -6,12 +6,12 @@
 package org.camunda.optimize.dto.optimize.query.event;
 
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
+@Data
 @Builder
 public class AdjacentEventTypesDto {
   @Builder.Default

@@ -16,11 +16,13 @@ import org.camunda.optimize.service.EventTraceStateServiceFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Component
@@ -75,16 +77,8 @@ public class ExternalEventGraphService {
         }
       });
 
-    List<EventTypeDto> startEvents = adjacentEventTypesDtoMap.entrySet()
-      .stream()
-      .filter(startNodeCandidate -> startNodeCandidate.getValue().getPrecedingEvents().isEmpty())
-      .map(Map.Entry::getKey)
-      .collect(Collectors.toList());
-    List<EventTypeDto> endEvents = adjacentEventTypesDtoMap.entrySet()
-      .stream()
-      .filter(endNodeCandidate -> endNodeCandidate.getValue().getSucceedingEvents().isEmpty())
-      .map(Map.Entry::getKey)
-      .collect(Collectors.toList());
+    final List<EventTypeDto> startEvents = identifyAndPromoteBestFitStartEvents(adjacentEventTypesDtoMap);
+    final List<EventTypeDto> endEvents = identifyAndPromoteBestFitEndEvents(adjacentEventTypesDtoMap, startEvents);
 
     final List<EventTraceStateDto> completedTraceSample = getRandomTraceSamplesContainingEventFromEach(
       startEvents,
@@ -96,6 +90,51 @@ public class ExternalEventGraphService {
       .adjacentEventTypesDtoMap(adjacentEventTypesDtoMap)
       .sampleAsTypeLists(getTracesAsTypeLists(completedTraceSample))
       .build();
+  }
+
+  private List<EventTypeDto> identifyAndPromoteBestFitStartEvents(final Map<EventTypeDto, AdjacentEventTypesDto> adjacentEventTypesDtoMap) {
+    final Map<Integer, List<Map.Entry<EventTypeDto, AdjacentEventTypesDto>>> adjacentEventsByPrecedingEventCount =
+      adjacentEventTypesDtoMap.entrySet()
+        .stream()
+        .collect(groupingBy(entry -> entry.getValue().getPrecedingEvents().size()));
+    List<EventTypeDto> startEvents = adjacentEventsByPrecedingEventCount.keySet()
+      .stream()
+      .min(Integer::compareTo)
+      .map(minKey -> adjacentEventsByPrecedingEventCount.get(minKey)
+        .stream()
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toList())
+      )
+      .orElse(Collections.emptyList());
+    // We make the adjacency Map consistent with the start event selection
+    startEvents.forEach(startEvent -> {
+      adjacentEventTypesDtoMap.get(startEvent).setPrecedingEvents(Collections.emptyList());
+      adjacentEventTypesDtoMap.forEach((k, v) -> v.getSucceedingEvents().remove(startEvent));
+    });
+    return startEvents;
+  }
+
+  private List<EventTypeDto> identifyAndPromoteBestFitEndEvents(final Map<EventTypeDto, AdjacentEventTypesDto> adjacentEventTypesDtoMap,
+                                                                final List<EventTypeDto> startEvents) {
+    final Map<Integer, List<Map.Entry<EventTypeDto, AdjacentEventTypesDto>>> adjacentEventsBySucceedingEventCount =
+      adjacentEventTypesDtoMap.entrySet()
+        .stream()
+        .collect(groupingBy(entry -> entry.getValue().getSucceedingEvents().size()));
+    final List<EventTypeDto> endEvents = adjacentEventsBySucceedingEventCount.keySet().stream().min(Integer::compareTo)
+      .map(minKey -> adjacentEventsBySucceedingEventCount.get(minKey)
+        .stream()
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toList())
+      ).orElse(Collections.emptyList())
+      .stream()
+      .filter(endEventCandidate -> !startEvents.contains(endEventCandidate))
+      .collect(Collectors.toList());
+    // We make the adjacency Map consistent with the end event selection
+    endEvents.forEach(endEvent -> {
+      adjacentEventTypesDtoMap.get(endEvent).setSucceedingEvents(Collections.emptyList());
+      adjacentEventTypesDtoMap.forEach((k, v) -> v.getPrecedingEvents().remove(endEvent));
+    });
+    return endEvents;
   }
 
   private List<EventTraceStateDto> getRandomTraceSamplesContainingEventFromEach(final List<EventTypeDto> startEvents,

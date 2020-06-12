@@ -107,6 +107,131 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   }
 
   @Test
+  public void createFromExternalAndCamundaSources_noExternalEndEvents_singleCamundaStartEvent() {
+    final Instant now = Instant.now();
+    final String firstTraceId = "firstTracingId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, firstTraceId, now),
+      createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(10))
+    ));
+    final String secondTraceId = "secondTracingId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_B, secondTraceId, now),
+      createCloudEventOfType(EVENT_A, secondTraceId, now.plusSeconds(10))
+    ));
+
+    BpmnModelInstance modelInstance = singleStartSingleEndModel();
+    final EventSourceEntryDto camundaSource = deployDefinitionAndCreateEventSource(
+      modelInstance,
+      EventScopeType.START_END
+    );
+    final EventTypeDto camundaStart = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
+    final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
+
+    final List<EventSourceEntryDto> sources = Arrays.asList(createExternalEventSourceEntry(), camundaSource);
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
+
+    // when
+    final EventProcessMappingResponseDto processMapping =
+      autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then
+    final Map<String, EventMappingDto> mappings = processMapping.getMappings();
+    final BpmnModelInstance generatedInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
+
+    // then the mappings contain the correct events and are all in the model
+    assertCorrectMappingsAndContainsEvents(
+      mappings,
+      generatedInstance,
+      Arrays.asList(EVENT_A, EVENT_B, camundaStart, camundaEnd)
+    );
+    assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size());
+
+    // then the model elements are of the correct type and connected to expected nodes correctly
+    // We cannot assert on the actual connection between the models as we don't know which start event will be connected
+    // to the camunda start events
+    assertNodeConnection(idOf(camundaStart), INTERMEDIATE_EVENT, idOf(camundaEnd), END_EVENT, generatedInstance);
+    assertNodeConnection(idOf(camundaEnd), END_EVENT, null, null, generatedInstance);
+
+    // and the expected number of sequence flows exist
+    assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(2);
+  }
+
+  @Test
+  public void createFromExternalAndCamundaSources_noExternalEndEvents_multipleCamundaStartEvent() {
+    final Instant now = Instant.now();
+    final String firstTraceId = "firstTracingId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, firstTraceId, now),
+      createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(10))
+    ));
+    final String secondTraceId = "secondTracingId";
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_B, secondTraceId, now),
+      createCloudEventOfType(EVENT_A, secondTraceId, now.plusSeconds(10))
+    ));
+
+    BpmnModelInstance modelInstance = multipleStartSingleEndModel();
+    final EventSourceEntryDto camundaSource = deployDefinitionAndCreateEventSource(
+      modelInstance,
+      EventScopeType.START_END
+    );
+    final EventTypeDto camundaStart1 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
+    final EventTypeDto camundaStart2 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_2, START_EVENT_ID_2);
+    final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
+
+    final List<EventSourceEntryDto> sources = Arrays.asList(createExternalEventSourceEntry(), camundaSource);
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
+
+    // when
+    final EventProcessMappingResponseDto processMapping =
+      autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then
+    final Map<String, EventMappingDto> mappings = processMapping.getMappings();
+    final BpmnModelInstance generatedInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
+
+    // then the mappings contain the correct events and are all in the model
+    assertCorrectMappingsAndContainsEvents(
+      mappings,
+      generatedInstance,
+      Arrays.asList(EVENT_A, EVENT_B, camundaStart1, camundaStart2, camundaEnd)
+    );
+    // The additional Flow nodes are the gateway from the Camunda source and the diverging connecting gateway
+    assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size() + 2);
+
+    // then the model elements are of the correct type and connected to expected nodes correctly
+    final String convergingId = generateModelGatewayIdForSource(camundaSource, Converging);
+    final String connectingId = generateConnectionGatewayIdForDefinitionKey(
+      Diverging,
+      camundaSource.getProcessDefinitionKey()
+    );
+    // We cannot assert on the actual connections between the models as we don't know which start event will be
+    // connected to the camunda start events
+    assertNodeConnection(connectingId, EXCLUSIVE_GATEWAY, idOf(camundaStart1), INTERMEDIATE_EVENT, generatedInstance);
+    assertNodeConnection(connectingId, EXCLUSIVE_GATEWAY, idOf(camundaStart2), INTERMEDIATE_EVENT, generatedInstance);
+    assertNodeConnection(idOf(camundaStart1), INTERMEDIATE_EVENT, convergingId, EXCLUSIVE_GATEWAY, generatedInstance);
+    assertNodeConnection(idOf(camundaStart2), INTERMEDIATE_EVENT, convergingId, EXCLUSIVE_GATEWAY, generatedInstance);
+    assertNodeConnection(convergingId, EXCLUSIVE_GATEWAY, idOf(camundaEnd), END_EVENT, generatedInstance);
+    assertNodeConnection(idOf(camundaEnd), END_EVENT, null, null, generatedInstance);
+
+    // and the expected number of sequence flows exist
+    assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(6);
+
+    // and the gateways have the expected source and target events
+    final Collection<Gateway> gatewaysInModel = generatedInstance.getModelElementsByType(Gateway.class);
+    // We cannot assert on the connecting gateway as we do not know what start event will be its source
+    assertThat(gatewaysInModel).hasSize(2);
+    assertGatewayWithSourcesAndTargets(
+      Arrays.asList(idOf(camundaStart1), idOf(camundaStart2)),
+      Arrays.asList(idOf(camundaEnd)),
+      getGatewayWithId(gatewaysInModel, convergingId)
+    );
+  }
+
+  @Test
   public void createFromExternalAndCamundaSources_multipleExternalStartEndEvents() {
     final Instant now = Instant.now();
     final String firstTrace = "firstTracingId";

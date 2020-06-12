@@ -45,7 +45,7 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
   }
 
   @Test
-  public void createFromExternalSource_noStartEventFound() {
+  public void createFromExternalSource_noClearStartEventFound_bestFitCanBeMapped() {
     // given
     final Instant now = Instant.now();
     final String traceIdOne = "tracingIdOne";
@@ -66,13 +66,13 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
 
     // then the created process is configured correctly
-    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.UNMAPPED);
-    assertThat(processMapping.getMappings()).isEmpty();
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
+    assertThat(processMapping.getMappings()).hasSize(3);
     assertThat(processMapping.getXml()).isNotNull();
   }
 
   @Test
-  public void createFromExternalSource_noEndEventFound() {
+  public void createFromExternalSource_noClearEndEventFound_bestFitCanBeMapped() {
     // given
     final Instant now = Instant.now();
     final String traceIdOne = "tracingIdOne";
@@ -93,8 +93,8 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
 
     // then the created process is configured correctly
-    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.UNMAPPED);
-    assertThat(processMapping.getMappings()).isEmpty();
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
+    assertThat(processMapping.getMappings()).hasSize(2);
     assertThat(processMapping.getXml()).isNotNull();
   }
 
@@ -377,54 +377,6 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
     // and the expected number of sequence flows exists
     assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(2);
-  }
-
-  @Test
-  public void createFromExternalSource_noEligibleStartEvents() {
-    // given
-    final Instant now = Instant.now();
-    final String firstTraceId = "firstTraceId";
-    ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, firstTraceId, now),
-      createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(20))
-    ));
-    final String secondTraceId = "secondTraceTraceId";
-    ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_B, secondTraceId, now),
-      createCloudEventOfType(EVENT_A, secondTraceId, now.plusSeconds(20))
-    ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
-    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
-
-    // when
-    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
-
-    // then no xml and mappings are generated
-    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.UNMAPPED);
-  }
-
-  @Test
-  public void createFromExternalSource_noEligibleEndEvents() {
-    // given
-    final Instant now = Instant.now();
-    final String firstTraceId = "firstTraceId";
-    ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, firstTraceId, now),
-      createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(20))
-    ));
-    final String secondTraceId = "secondTraceTraceId";
-    ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_B, secondTraceId, now),
-      createCloudEventOfType(EVENT_A, secondTraceId, now.plusSeconds(20))
-    ));
-    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
-    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
-
-    // when
-    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
-
-    // then no xml and mappings are generated
-    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.UNMAPPED);
   }
 
   @Test
