@@ -24,6 +24,10 @@ public class CommandContext<T extends ReportDefinitionDto> {
   // a combined report.
   private Range<OffsetDateTime> dateIntervalRange;
 
+  // only used for group by number variable commands when evaluated for a combined report
+  private Range<Double> numberVariableRange;
+
+
   public void setRecordLimit(final Integer recordLimit) {
     this.recordLimit = Optional.ofNullable(recordLimit).orElse(DEFAULT_RECORD_LIMIT);
   }

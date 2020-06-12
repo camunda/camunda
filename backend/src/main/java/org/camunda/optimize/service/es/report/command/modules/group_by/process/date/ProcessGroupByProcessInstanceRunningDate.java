@@ -130,7 +130,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       results.add(
         CompositeCommandResult.GroupByResult.createGroupByResult(key, distributions)
       );
-      if (results.size() == configurationService.getEsAggregationBucketLimit()) {
+      if (results.size() >= configurationService.getEsAggregationBucketLimit()) {
         break;
       }
     }

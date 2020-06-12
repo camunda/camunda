@@ -15,7 +15,8 @@ import org.elasticsearch.search.aggregations.metrics.Stats;
 
 import java.util.Optional;
 
-public abstract class ProcessCmd<R extends ProcessReportResultDto> implements Command<SingleProcessReportDefinitionDto> {
+public abstract class ProcessCmd<R extends ProcessReportResultDto>
+  implements Command<SingleProcessReportDefinitionDto> {
 
   protected final ProcessReportCmdExecutionPlan<R> executionPlan;
 
@@ -28,6 +29,11 @@ public abstract class ProcessCmd<R extends ProcessReportResultDto> implements Co
   public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     ExecutionContext<ProcessReportDataDto> executionContext = new ExecutionContext<>(commandContext);
     return executionPlan.calculateDateRangeForAutomaticGroupByDate(executionContext);
+  }
+
+  public Optional<Stats> calculateNumberRangeForCombinedGroupByNumberVariable(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+    ExecutionContext<ProcessReportDataDto> executionContext = new ExecutionContext<>(commandContext);
+    return executionPlan.calculateNumberRangeForGroupByNumberVariable(executionContext);
   }
 
   @Override

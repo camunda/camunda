@@ -14,7 +14,10 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
@@ -34,6 +37,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AbstractProcessDefinitionIT extends AbstractIT {
 
@@ -274,6 +279,21 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
           }
         }
       );
+  }
+
+  protected void assertCombinedNumberVariableResultsAreInCorrectRanges(
+    Double startRange,
+    Double endRange,
+    int expectedNumberOfBuckets,
+    int resultSize,
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap) {
+    assertThat(resultMap).hasSize(resultSize);
+    for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
+      final List<MapResultEntryDto> resultData = result.getResult().getData();
+      assertThat(resultData.size()).isEqualTo(expectedNumberOfBuckets);
+      assertThat(resultData.get(0).getKey()).isEqualTo(String.valueOf(startRange));
+      assertThat(resultData.get(resultData.size() - 1).getKey()).isEqualTo(String.valueOf(endRange));
+    }
   }
 
 }

@@ -84,6 +84,10 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   @NonNull
   private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
+  private Double groupByNumberVariableUnit = null;
+  // baseline = start of first bucket for number var reports. If left null, the bucket range will start at the min.
+  // variable value
+  private Double baseline = null;
   private SortingDto sorting = null;
   private ProcessPartDto processPart = null;
 

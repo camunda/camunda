@@ -10,26 +10,22 @@ import org.elasticsearch.search.aggregations.metrics.Stats;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class CombinedAutomaticIntervalSelectionCalculator {
+public class CombinedAutomaticDateIntervalSelectionCalculator
+  extends AbstractCombinedIntervalSelectionCalculator<OffsetDateTime> {
 
   private DateTimeFormatter dateTimeFormatter;
 
-  private List<Stats> minMaxCommandStats = new ArrayList<>();
-
-  public CombinedAutomaticIntervalSelectionCalculator(DateTimeFormatter dateTimeFormatter) {
+  public CombinedAutomaticDateIntervalSelectionCalculator(DateTimeFormatter dateTimeFormatter) {
+    super();
     this.dateTimeFormatter = dateTimeFormatter;
   }
 
-  public void addStat(Stats minMaxStat) {
-    minMaxCommandStats.add(minMaxStat);
-  }
-
+  @Override
   public Optional<Range<OffsetDateTime>> calculateInterval() {
     List<Stats> allStats = minMaxCommandStats.stream()
       .filter(s -> s.getCount() > 1)
@@ -47,6 +43,4 @@ public class CombinedAutomaticIntervalSelectionCalculator {
     }
     return Optional.empty();
   }
-
-
 }

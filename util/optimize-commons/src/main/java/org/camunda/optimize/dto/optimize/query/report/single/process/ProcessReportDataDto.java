@@ -115,9 +115,14 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private boolean isGroupByCombinable(final ProcessReportDataDto that) {
     if (Combinable.isCombinable(this.groupBy, that.groupBy)) {
       if (isGroupByDateVariableReport()) {
-        return getConfiguration()
+        return this.getConfiguration()
           .getGroupByDateVariableUnit()
           .equals(that.getConfiguration().getGroupByDateVariableUnit());
+      } else if (isGroupByNumberVariableReport()) {
+        return Objects.equals(
+          this.getConfiguration().getGroupByNumberVariableUnit(),
+          that.getConfiguration().getGroupByNumberVariableUnit()
+        );
       }
       return true;
     }
@@ -128,6 +133,12 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return groupBy != null
       && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
       && VariableType.DATE.equals(((VariableGroupByDto) groupBy).getValue().getType());
+  }
+
+  private boolean isGroupByNumberVariableReport() {
+    return groupBy != null
+      && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
+      && (VariableType.getNumericTypes().contains(((VariableGroupByDto) groupBy).getValue().getType()));
   }
 
 }

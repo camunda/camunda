@@ -239,12 +239,12 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   }
 
   private Optional<AggregationBuilder> createIntervalAggregation(final ExecutionContext<ProcessReportDataDto> context,
-                                                                 org.apache.commons.lang3.Range<OffsetDateTime> rangeToUse,
+                                                                 Optional<org.apache.commons.lang3.Range<OffsetDateTime>> rangeToUse,
                                                                  QueryBuilder query,
                                                                  String field) {
-    if (rangeToUse != null) {
-      OffsetDateTime min = rangeToUse.getMinimum();
-      OffsetDateTime max = rangeToUse.getMaximum();
+    if (rangeToUse.isPresent()) {
+      OffsetDateTime min = rangeToUse.get().getMinimum();
+      OffsetDateTime max = rangeToUse.get().getMaximum();
       return Optional.of(createIntervalAggregationFromGivenRange(context, field, min, max));
     } else {
       return createIntervalAggregation(context, query, field);

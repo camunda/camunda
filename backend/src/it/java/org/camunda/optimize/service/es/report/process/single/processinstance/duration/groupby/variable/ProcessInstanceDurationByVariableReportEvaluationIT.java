@@ -9,10 +9,15 @@ import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -25,6 +30,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -40,6 +46,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -51,6 +58,7 @@ import java.util.stream.IntStream;
 import static com.google.common.collect.ImmutableMap.of;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.time.temporal.ChronoUnit.MILLIS;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
@@ -387,7 +395,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_resultLimitedByConfig() throws SQLException {
+  public void multipleBuckets_resultLimitedByConfig_stringVariable() throws SQLException {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
@@ -419,6 +427,397 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData()).hasSize(1);
     assertThat(resultDto.getIsComplete()).isFalse();
+  }
+
+  @Test
+  public void multipleBuckets_resultLimitedByConfig_numberVariable() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", 10.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("foo", 20.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("foo")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
+      reportData);
+
+    // then
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getIsComplete()).isFalse();
+  }
+
+  @Test
+  public void multipleBuckets_resultLimitedByConfig_numberVariable_customBuckets() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", 10.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("foo", 20.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("foo")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData.getConfiguration().setGroupByNumberVariableUnit(1.0);
+
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
+      reportData);
+
+    // then
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getIsComplete()).isFalse();
+  }
+
+  @Test
+  public void multipleBuckets_resultLimitedByConfig_dateVariable() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", OffsetDateTime.now());
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("foo", OffsetDateTime.now().plusMinutes(1));
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("foo")
+      .setVariableType(VariableType.DATE)
+      .build();
+
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
+      reportData);
+
+    // then
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getIsComplete()).isFalse();
+  }
+
+  @Test
+  public void multipleBuckets_numberVariable_customBuckets() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", 100.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("foo", 200.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("foo", 300.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("foo")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData.getConfiguration().setBaseline(10.0);
+    reportData.getConfiguration().setGroupByNumberVariableUnit(100.0);
+
+    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(
+      reportData).getResult();
+
+    // then
+    assertThat(resultDto.getInstanceCount()).isEqualTo(3);
+    assertThat(resultDto.getIsComplete()).isTrue();
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(3);
+    assertThat(resultDto.getData().stream()
+                 .map(MapResultEntryDto::getKey)
+                 .collect(toList()))
+      .containsExactly("10.0", "110.0", "210.0");
+    assertThat(resultDto.getData().get(0).getValue()).isEqualTo(1000L);
+    assertThat(resultDto.getData().get(1).getValue()).isEqualTo(1000L);
+    assertThat(resultDto.getData().get(2).getValue()).isEqualTo(1000L);
+  }
+
+  @Test
+  public void multipleBuckets_numberVariable_invalidBaseline_doesNotFail() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", 10.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("foo", 20.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when the baseline is larger than the max. variable value
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("foo")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData.getConfiguration().setBaseline(30.0);
+    reportData.getConfiguration().setGroupByNumberVariableUnit(5.0);
+
+    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(
+      reportData).getResult();
+
+    // then the bucket range defaults to min. - max. variable value
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
+    assertThat(resultDto.getIsComplete()).isTrue();
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(3);
+    assertThat(resultDto.getData().stream()
+                 .map(MapResultEntryDto::getKey)
+                 .collect(toList()))
+      .containsExactly("10.0", "15.0", "20.0");
+  }
+
+  @SneakyThrows
+  @Test
+  public void combinedNumberVariableReport_distinctRanges() {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto1 = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("doubleVar", 10.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
+    variables.put("doubleVar", 20.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
+
+    ProcessDefinitionEngineDto processDefinitionDto2 = deploySimpleServiceTaskProcess();
+    variables.put("doubleVar", 50.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto2.getId(), 1);
+    variables.put("doubleVar", 100.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto2.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData1 = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto1.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto1.getVersion()))
+      .setVariableName("doubleVar")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData1.getConfiguration().setGroupByNumberVariableUnit(10.0);
+
+
+    ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto2.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto2.getVersion()))
+      .setVariableName("doubleVar")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData2.getConfiguration().setGroupByNumberVariableUnit(10.0);
+
+    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+
+    List<CombinedReportItemDto> reportIds = new ArrayList<>();
+    reportIds.add(
+      new CombinedReportItemDto(
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData1))
+      ));
+    reportIds.add(
+      new CombinedReportItemDto(
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData2))
+      ));
+
+    combinedReportData.setReports(reportIds);
+    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    combinedReport.setData(combinedReportData);
+
+    //when
+    final IdDto response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(combinedReport)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+
+    //then
+    final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
+      .getResult();
+    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
+  }
+
+  @SneakyThrows
+  @Test
+  public void combinedNumberVariableReport_intersectingRanges() {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto1 = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("doubleVar", 10.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
+    variables.put("doubleVar", 20.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
+
+    ProcessDefinitionEngineDto processDefinitionDto2 = deploySimpleServiceTaskProcess();
+    variables.put("doubleVar", 15.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto2.getId(), 1);
+    variables.put("doubleVar", 25.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto2.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData1 = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto1.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto1.getVersion()))
+      .setVariableName("doubleVar")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData1.getConfiguration().setGroupByNumberVariableUnit(5.0);
+
+
+    ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto2.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto2.getVersion()))
+      .setVariableName("doubleVar")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData2.getConfiguration().setGroupByNumberVariableUnit(5.0);
+
+    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+
+    List<CombinedReportItemDto> reportIds = new ArrayList<>();
+    reportIds.add(
+      new CombinedReportItemDto(
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData1))
+      ));
+    reportIds.add(
+      new CombinedReportItemDto(
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData2))
+      ));
+
+    combinedReportData.setReports(reportIds);
+    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    combinedReport.setData(combinedReportData);
+
+    //when
+    final IdDto response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(combinedReport)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+
+    //then
+    final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
+      .getResult();
+    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
+  }
+
+  @SneakyThrows
+  @Test
+  public void combinedNumberVariableReport_inclusiveRanges() {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto1 = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("doubleVar", 10.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
+    variables.put("doubleVar", 30.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
+
+    ProcessDefinitionEngineDto processDefinitionDto2 = deploySimpleServiceTaskProcess();
+    variables.put("doubleVar", 15.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto2.getId(), 1);
+    variables.put("doubleVar", 20.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto2.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData1 = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto1.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto1.getVersion()))
+      .setVariableName("doubleVar")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData1.getConfiguration().setGroupByNumberVariableUnit(5.0);
+
+
+    ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto2.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto2.getVersion()))
+      .setVariableName("doubleVar")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData2.getConfiguration().setGroupByNumberVariableUnit(5.0);
+
+    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+
+    List<CombinedReportItemDto> reportIds = new ArrayList<>();
+    reportIds.add(
+      new CombinedReportItemDto(
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData1))
+      ));
+    reportIds.add(
+      new CombinedReportItemDto(
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData2))
+      ));
+
+    combinedReportData.setReports(reportIds);
+    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    combinedReport.setData(combinedReportData);
+
+    //when
+    final IdDto response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(combinedReport)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+
+    //then
+    final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
+      .getResult();
+    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
   }
 
   @Test

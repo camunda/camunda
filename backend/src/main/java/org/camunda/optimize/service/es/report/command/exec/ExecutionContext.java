@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.service.es.report.command.CommandContext;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.Set;
 
 @Data
@@ -25,6 +26,9 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
   // a combined report.
   private Range<OffsetDateTime> dateIntervalRange;
 
+  // only used for group by number variable commands when evaluated for a combined report
+  private Range<Double> numberVariableRange;
+
   // used to ensure a complete list of distributedByResults (to include all keys, even if the result is empty)
   // e.g. used for groupBy usertask - distributedBy assignee reports, where it is possible that
   // a user has been assigned to one userTask but not another, yet we want the userId to appear
@@ -35,10 +39,19 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
     this.reportData = commandContext.getReportDefinition().getData();
     this.recordLimit = commandContext.getRecordLimit();
     this.dateIntervalRange = commandContext.getDateIntervalRange();
+    this.numberVariableRange = commandContext.getNumberVariableRange();
   }
 
   public SingleReportConfigurationDto getReportConfiguration() {
     return reportData.getConfiguration();
+  }
+
+  public Optional<Range<Double>> getNumberVariableRange() {
+    return Optional.ofNullable(numberVariableRange);
+  }
+
+  public Optional<Range<OffsetDateTime>> getDateIntervalRange() {
+    return Optional.ofNullable(dateIntervalRange);
   }
 
 }

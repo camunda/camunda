@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -49,6 +50,7 @@ public class IntervalAggregationService {
 
   private final OptimizeElasticsearchClient esClient;
   private final DateTimeFormatter dateTimeFormatter;
+  private final ConfigurationService configurationService;
 
   public DateHistogramInterval getDateHistogramInterval(GroupByDateUnit interval) {
     switch (interval) {
@@ -96,13 +98,13 @@ public class IntervalAggregationService {
     return response.getAggregations().get(STATS_AGGREGATION);
   }
 
-  public Optional<AggregationBuilder> createIntervalAggregation(org.apache.commons.lang3.Range<OffsetDateTime> rangeToUse,
+  public Optional<AggregationBuilder> createIntervalAggregation(Optional<org.apache.commons.lang3.Range<OffsetDateTime>> rangeToUse,
                                                                 QueryBuilder query,
                                                                 String indexName,
                                                                 String field) {
-    if (rangeToUse != null) {
-      OffsetDateTime min = rangeToUse.getMinimum();
-      OffsetDateTime max = rangeToUse.getMaximum();
+    if (rangeToUse.isPresent()) {
+      OffsetDateTime min = rangeToUse.get().getMinimum();
+      OffsetDateTime max = rangeToUse.get().getMaximum();
       return Optional.of(createIntervalAggregationFromGivenRange(field, min, max));
     } else {
       return createIntervalAggregation(query, indexName, field);
@@ -139,7 +141,12 @@ public class IntervalAggregationService {
       .range(RANGE_AGGREGATION)
       .field(field);
     OffsetDateTime start = min;
+    int bucketCount = 0;
+
     do {
+      if (bucketCount >= configurationService.getEsAggregationBucketLimit()) {
+        break;
+      }
       // this is a do while loop to ensure there's always at least one bucket, even when min and max are equal
       OffsetDateTime nextStart = start.plus(msAsUnit, ChronoUnit.MILLIS);
       boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
@@ -154,6 +161,7 @@ public class IntervalAggregationService {
         );
       rangeAgg.addRange(range);
       start = nextStart;
+      bucketCount++;
     } while (start.isBefore(max));
     return rangeAgg;
   }

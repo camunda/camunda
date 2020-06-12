@@ -85,4 +85,5 @@ public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessRepor
   protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setGroupBy(new VariableGroupByDto());
   }
+
 }

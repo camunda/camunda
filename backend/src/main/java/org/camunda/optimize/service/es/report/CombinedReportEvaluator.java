@@ -55,21 +55,31 @@ public class CombinedReportEvaluator {
 
   private void addIntervalToReportEvaluator(List<SingleProcessReportDefinitionDto> singleReportDefinitions,
                                             SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
-    CombinedAutomaticIntervalSelectionCalculator calculator =
-      new CombinedAutomaticIntervalSelectionCalculator(dateTimeFormatter);
+    CombinedAutomaticDateIntervalSelectionCalculator dateIntervalCalculator =
+      new CombinedAutomaticDateIntervalSelectionCalculator(dateTimeFormatter);
+    CombinedNumberIntervalSelectionCalculator numberRangeCalculator = new CombinedNumberIntervalSelectionCalculator();
+
     singleReportDefinitions
       .forEach(
         reportDefinition -> {
           Command<?> command = singleReportEvaluator.extractCommand(reportDefinition);
           CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
           commandContext.setReportDefinition(reportDefinition);
-          Optional<Stats> stat = command.calculateDateRangeForAutomaticGroupByDate(commandContext);
-          stat.ifPresent(calculator::addStat);
+
+          Optional<Stats> dateStat = command.calculateDateRangeForAutomaticGroupByDate(commandContext);
+          dateStat.ifPresent(dateIntervalCalculator::addStat);
+
+          Optional<Stats> numberStat = command.calculateNumberRangeForCombinedGroupByNumberVariable(commandContext);
+          numberStat.ifPresent(numberRangeCalculator::addStat);
         }
       );
-    Optional<Range<OffsetDateTime>> dateHistogramIntervalForCombinedReport = calculator.calculateInterval();
+    Optional<Range<OffsetDateTime>> dateHistogramIntervalForCombinedReport = dateIntervalCalculator.calculateInterval();
     dateHistogramIntervalForCombinedReport.ifPresent(
       singleReportEvaluator::setDateIntervalRange
+    );
+    Optional<Range<Double>> numberIntervalForCombinedReport = numberRangeCalculator.calculateInterval();
+    numberIntervalForCombinedReport.ifPresent(
+      singleReportEvaluator::setNumberVariableRange
     );
   }
 
@@ -96,6 +106,8 @@ public class CombinedReportEvaluator {
 
     @Setter
     private Range<OffsetDateTime> dateIntervalRange;
+    @Setter
+    private Range<Double> numberVariableRange;
 
     private SingleReportEvaluatorForCombinedReports(SingleReportEvaluator evaluator) {
       super(
@@ -106,9 +118,10 @@ public class CombinedReportEvaluator {
     }
 
     @Override
-    <T extends ReportDefinitionDto<?>> ReportEvaluationResult<?, T> evaluate(final CommandContext<T> commandContext) throws
-                                                                                                                  OptimizeException {
+    <T extends ReportDefinitionDto<?>> ReportEvaluationResult<?, T> evaluate(final CommandContext<T> commandContext)
+      throws OptimizeException {
       commandContext.setDateIntervalRange(dateIntervalRange);
+      commandContext.setNumberVariableRange(numberVariableRange);
       return super.evaluate(commandContext);
     }
   }

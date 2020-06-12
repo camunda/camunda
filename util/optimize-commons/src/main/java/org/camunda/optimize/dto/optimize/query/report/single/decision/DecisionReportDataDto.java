@@ -92,6 +92,11 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
         return getConfiguration()
           .getGroupByDateVariableUnit()
           .equals(that.getConfiguration().getGroupByDateVariableUnit());
+      } else if (isGroupByNumberVariableReport()) {
+        return Objects.equals(
+          this.getConfiguration().getGroupByNumberVariableUnit(),
+          that.getConfiguration().getGroupByNumberVariableUnit()
+        );
       }
       return true;
     }
@@ -104,6 +109,16 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
       || DecisionGroupByType.OUTPUT_VARIABLE.equals(groupBy.getType()))) {
       VariableType varType = ((DecisionGroupByDto<DecisionGroupByVariableValueDto>) groupBy).getValue().getType();
       return VariableType.DATE.equals(varType);
+    }
+    return false;
+  }
+
+  private boolean isGroupByNumberVariableReport() {
+    if (groupBy != null
+      && (DecisionGroupByType.INPUT_VARIABLE.equals(groupBy.getType())
+      || DecisionGroupByType.OUTPUT_VARIABLE.equals(groupBy.getType()))) {
+      VariableType varType = ((DecisionGroupByDto<DecisionGroupByVariableValueDto>) groupBy).getValue().getType();
+      return VariableType.getNumericTypes().contains(varType);
     }
     return false;
   }

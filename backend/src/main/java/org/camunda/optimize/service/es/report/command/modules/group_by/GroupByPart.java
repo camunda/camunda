@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.command.modules.group_by;
 
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -58,12 +57,20 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
 
   protected abstract void addGroupByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);
 
-  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
+  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<Data> context,
                                                                    final BoolQueryBuilder baseQuery) {
     // this method is only needed for group by date reports with
     // automatic unit generation since we need to calculate the
     // total range for a combined report to be able to use the same
     // interval for all reports in a combined report.
+    return Optional.empty();
+  }
+
+  public Optional<Stats> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<Data> context,
+                                                                      final BoolQueryBuilder baseQuery) {
+    // this method is only needed for group by number variable reports
+    // since we need to calculate the total range for a combined report
+    // to be able to use the same interval for all reports in a combined report.
     return Optional.empty();
   }
 

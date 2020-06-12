@@ -71,4 +71,8 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context) {
     return groupByPart.calculateDateRangeForAutomaticGroupByDate(context, setupBaseQuery(context.getReportData()));
   }
+
+  public Optional<Stats> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<ProcessReportDataDto> context) {
+    return groupByPart.calculateNumberRangeForGroupByNumberVariable(context, setupBaseQuery(context.getReportData()));
+  }
 }

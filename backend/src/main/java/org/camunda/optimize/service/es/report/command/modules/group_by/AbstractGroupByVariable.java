@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
@@ -27,11 +28,14 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
 import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -48,6 +52,7 @@ import java.util.Optional;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -88,6 +93,16 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   protected abstract String getIndexName();
 
   protected abstract BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<Data> context);
+
+  @Override
+  public Optional<Stats> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<Data> context,
+                                                                      final BoolQueryBuilder baseQuery) {
+    if (isGroupedByNumberVariable(getVariableType(context))) {
+      Stats minMaxStats = getMinMaxStats(baseQuery, context);
+      return Optional.of(minMaxStats);
+    }
+    return Optional.empty();
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
@@ -139,6 +154,12 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
         return Optional.empty();
       }
       aggregationBuilder = dateVariableAggregation.get();
+    } else if (isGroupedByNumberVariable(getVariableType(context))) {
+      Optional<AggregationBuilder> numberVariableAggregation = createNumberVariableAggregation(baseQuery, context);
+      if (!numberVariableAggregation.isPresent()) {
+        return Optional.empty();
+      }
+      aggregationBuilder = numberVariableAggregation.get();
     }
 
     AggregationBuilder operationsAggregation = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
@@ -147,6 +168,37 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
     aggregationBuilder.subAggregation(operationsAggregation);
     return Optional.of(aggregationBuilder);
+  }
+
+  private Optional<AggregationBuilder> createNumberVariableAggregation(final QueryBuilder baseQuery,
+                                                                       final ExecutionContext<Data> context) {
+    final Stats minMaxStats = getMinMaxStats(baseQuery, context);
+    if (minMaxStats.getCount() == 0) {
+      return Optional.empty();
+    }
+
+    final double unit = getGroupByNumberVariableUnit(context, minMaxStats);
+    final double min = getMinForNumberVariableAggregation(context, minMaxStats);
+    final double max = getMaxForNumberVariableAggregation(context, minMaxStats);
+    int numberOfBuckets = 0;
+
+    RangeAggregationBuilder rangeAgg = AggregationBuilders
+      .range(RANGE_AGGREGATION)
+      .field(getNestedVariableValueFieldLabel(getVariableType(context)));
+
+    for (double start = min;
+         start <= max && numberOfBuckets < configurationService.getEsAggregationBucketLimit();
+         start += unit) {
+      RangeAggregator.Range range =
+        new RangeAggregator.Range(
+          getKeyForNumberBucket(getVariableType(context), start),
+          start,
+          start + unit
+        );
+      rangeAgg.addRange(range);
+      numberOfBuckets++;
+    }
+    return Optional.of(rangeAgg);
   }
 
   private Optional<AggregationBuilder> createDateVariableAggregation(final QueryBuilder baseQuery,
@@ -191,27 +243,28 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     return automaticIntervalAggregation.subAggregation(distributedByPart.createAggregation(context));
   }
 
-  private Stats getMinMaxStats(final QueryBuilder query,
-                               final ExecutionContext<Data> context) {
-    AggregationBuilder aggregationBuilder = nested(NESTED_AGGREGATION, getVariablePath()).subAggregation(filter(
+  protected Stats getMinMaxStats(final QueryBuilder baseQuery,
+                                 final ExecutionContext<Data> context) {
+    AggregationBuilder statsAggregation = VariableType.DATE.equals(getVariableType(context))
+      ? stats(STATS).field(getNestedVariableValueFieldLabel(VariableType.DATE)).format(OPTIMIZE_DATE_FORMAT)
+      : stats(STATS).field(getNestedVariableValueFieldLabel(getVariableType(context)));
+
+    AggregationBuilder filterAggregation = filter(
       FILTERED_VARIABLES_AGGREGATION,
       boolQuery()
         .must(
           termQuery(getNestedVariableNameFieldLabel(), getVariableName(context))
         )
-    ));
+    ).subAggregation(statsAggregation);
 
-    AggregationBuilder statsAgg = aggregationBuilder
-      .subAggregation(
-        stats(STATS)
-          .field(getNestedVariableValueFieldLabel(VariableType.DATE))
-          .format(OPTIMIZE_DATE_FORMAT)
-      );
+    AggregationBuilder aggregationBuilder =
+      nested(NESTED_AGGREGATION, getVariablePath())
+        .subAggregation(filterAggregation);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
+      .query(baseQuery)
       .fetchSource(false)
-      .aggregation(statsAgg)
+      .aggregation(aggregationBuilder)
       .size(0);
     SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
 
@@ -221,7 +274,10 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not automatically determine date interval", e);
     }
-    return ((Nested) response.getAggregations().get(NESTED_AGGREGATION)).getAggregations().get(STATS);
+
+    final ParsedNested nestedAgg = response.getAggregations().get(NESTED_AGGREGATION);
+    final ParsedFilter filterAgg = nestedAgg.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
+    return filterAgg.getAggregations().get(STATS);
   }
 
   @Override
@@ -260,7 +316,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     }
 
     compositeCommandResult.setGroups(groupedData);
-    compositeCommandResult.setIsComplete(isResultComplete(variableTerms));
+    compositeCommandResult.setIsComplete(isResultComplete(filteredVariables, variableTerms));
     if (VariableType.DATE.equals(getVariableType(context))) {
       compositeCommandResult.setSorting(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC));
     }
@@ -271,11 +327,80 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     return VariableType.getNumericTypes().contains(getVariableType(context));
   }
 
-  private boolean isResultComplete(MultiBucketsAggregation variableTerms) {
-    return !(variableTerms instanceof Terms) || ((Terms) variableTerms).getSumOfOtherDocCounts() == 0L;
+  private boolean isResultComplete(final Filter filteredVariables,
+                                   final MultiBucketsAggregation variableTerms) {
+    final long resultDocCount = variableTerms.getBuckets()
+      .stream()
+      .mapToLong(MultiBucketsAggregation.Bucket::getDocCount)
+      .sum();
+    return filteredVariables.getDocCount() == resultDocCount;
+  }
+
+  private Double getMaxForNumberVariableAggregation(final ExecutionContext<Data> context,
+                                                    final Stats minMaxStats) {
+    return context.getNumberVariableRange().isPresent()
+      ? context.getNumberVariableRange().get().getMaximum()
+      : minMaxStats.getMax();
+  }
+
+  private Double getMinForNumberVariableAggregation(final ExecutionContext<Data> context,
+                                                    final Stats minMaxStats) {
+    final Optional<Range<Double>> range = context.getNumberVariableRange();
+    final Double baselineForSingleReport = context.getReportData().getConfiguration().getBaseline();
+
+    if (!range.isPresent()
+      && baselineForSingleReport != null
+      && baselineForSingleReport <= minMaxStats.getMax()) {
+      // if report is single report and a valid baseline is set, use this instead of the min. range value
+      return baselineForSingleReport;
+    }
+
+    return range.isPresent()
+      ? range.get().getMinimum()
+      : minMaxStats.getMin();
+  }
+
+  private Double getGroupByNumberVariableUnit(final ExecutionContext<Data> context,
+                                              final Stats minMaxStats) {
+    final Optional<Range<Double>> rangeForCombinedReport = context.getNumberVariableRange();
+    final double maxVariableValue = rangeForCombinedReport.isPresent()
+      ? rangeForCombinedReport.get().getMaximum()
+      : minMaxStats.getMax();
+    final double minVariableValue = rangeForCombinedReport.isPresent()
+      ? rangeForCombinedReport.get().getMinimum()
+      : minMaxStats.getMin();
+
+    Double unit = context.getReportData().getConfiguration().getGroupByNumberVariableUnit();
+    if (unit == null || unit <= 0) {
+      // if no valid unit is configured, calculate default automatic unit
+      unit =
+        (maxVariableValue - minVariableValue)
+          / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1); // -1 because the end of the loop is
+      // inclusive and would otherwise create 81 buckets
+      unit = Math.max(unit, 1);
+    }
+    if (!VariableType.DOUBLE.equals(getVariableType(context))) {
+      // round unit up if grouped by number variable without decimal point
+      unit = Math.ceil(unit);
+    }
+    return unit;
+  }
+
+  private String getKeyForNumberBucket(final VariableType varType,
+                                       final double bucketStart) {
+    if (!VariableType.DOUBLE.equals(varType)) {
+      // truncate decimal point for non-double variable aggregations
+      return String.valueOf((long) bucketStart);
+    }
+    return String.valueOf(bucketStart);
   }
 
   private GroupByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {
     return context.getReportData().getConfiguration().getGroupByDateVariableUnit();
   }
+
+  protected boolean isGroupedByNumberVariable(final VariableType varType) {
+    return VariableType.getNumericTypes().contains(varType);
+  }
+
 }

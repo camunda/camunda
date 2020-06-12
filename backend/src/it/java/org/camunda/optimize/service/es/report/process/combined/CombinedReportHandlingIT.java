@@ -28,6 +28,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
@@ -240,11 +241,42 @@ public class CombinedReportHandlingIT extends AbstractIT {
     flowNodeDurationData.setVisualization(ProcessVisualization.BAR);
     flowNodeDuration.setData(flowNodeDurationData);
 
+    // groupBy number variable reports with same bucket size
+    SingleProcessReportDefinitionDto groupByNumberVar1 = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto groupByNumberVar1Data = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setVariableType(VariableType.DOUBLE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+
+    groupByNumberVar1Data.setVisualization(ProcessVisualization.BAR);
+    groupByNumberVar1Data.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    ((VariableGroupByValueDto) groupByNumberVar1Data.getGroupBy().getValue()).setName("doubleVar");
+    groupByNumberVar1.setData(groupByNumberVar1Data);
+
+    SingleProcessReportDefinitionDto groupByNumberVar2 = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto groupByNumberVar2Data = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setVariableType(VariableType.DOUBLE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+
+    groupByNumberVar2Data.setVisualization(ProcessVisualization.BAR);
+    groupByNumberVar2Data.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    ((VariableGroupByValueDto) groupByNumberVar2Data.getGroupBy().getValue()).setName("doubleVar");
+    groupByNumberVar2.setData(groupByNumberVar2Data);
 
     return Stream.of(
       Arrays.asList(procDefKeyReport, procDefAnotherKeyReport),
       Arrays.asList(byEndDate, procDefKeyReport),
-      Arrays.asList(userTaskDuration, flowNodeDuration)
+      Arrays.asList(userTaskDuration, flowNodeDuration),
+      Arrays.asList(groupByNumberVar1, groupByNumberVar2)
     );
   }
 
@@ -301,10 +333,42 @@ public class CombinedReportHandlingIT extends AbstractIT {
     PIDuration_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
     PIDuration_startDateYear_bar.setData(PIDuration_startDateYear_barData);
 
+    // groupBy number variable reports with different bucket size
+    SingleProcessReportDefinitionDto groupByNumberVar1 = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto groupByNumberVar1Data = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setVariableType(VariableType.DOUBLE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+
+    groupByNumberVar1Data.setVisualization(ProcessVisualization.BAR);
+    groupByNumberVar1Data.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    ((VariableGroupByValueDto) groupByNumberVar1Data.getGroupBy().getValue()).setName("doubleVar");
+    groupByNumberVar1.setData(groupByNumberVar1Data);
+
+    SingleProcessReportDefinitionDto groupByNumberVar2 = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto groupByNumberVar2Data = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setVariableType(VariableType.DOUBLE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+
+    groupByNumberVar2Data.setVisualization(ProcessVisualization.BAR);
+    groupByNumberVar2Data.getConfiguration().setGroupByNumberVariableUnit(10.0);
+    ((VariableGroupByValueDto) groupByNumberVar2Data.getGroupBy().getValue()).setName("doubleVar");
+    groupByNumberVar2.setData(groupByNumberVar2Data);
+
     return Stream.of(
       Arrays.asList(PICount_startDateYear_bar, PICount_startDateYear_line),
       Arrays.asList(PICount_byVariable_bar, PICount_startDateYear_bar),
-      Arrays.asList(PICount_startDateYear_bar, PIDuration_startDateYear_bar)
+      Arrays.asList(PICount_startDateYear_bar, PIDuration_startDateYear_bar),
+      Arrays.asList(groupByNumberVar1, groupByNumberVar2)
     );
   }
 
