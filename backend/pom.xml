@@ -16,7 +16,7 @@
     <it.test.excludedGroups />
     <test.forkCount />
 
-    <argLine>-Xms256m -Xmx512m</argLine>
+    <argLine>-Xms512m -Xmx1024m</argLine>
     <sonar.coverage.jacoco.xmlReportPaths>${basedir}/../${aggregate.report.dir}</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
