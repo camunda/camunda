@@ -65,13 +65,13 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
 
   @Test
-  public void reportEvaluationForOneProcess() throws Exception {
+  public void reportEvaluationForOneProcess() {
 
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    changeActivityDuration(processInstanceDto, 20.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -92,26 +92,26 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData()).hasSize(3);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID)).isPresent();
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20.));
     assertThat(result.getEntryForKey(START_EVENT)).isPresent();
     assertThat(result.getEntryForKey(START_EVENT).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20.));
     assertThat(result.getEntryForKey(END_EVENT).isPresent()).isTrue();
     assertThat(result.getEntryForKey(END_EVENT).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20.));
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() throws Exception {
+  public void reportEvaluationForSeveralProcesses() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 10L);
+    changeActivityDuration(processInstanceDto, 10.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    changeActivityDuration(processInstanceDto, 30.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    changeActivityDuration(processInstanceDto, 20.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -124,24 +124,24 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData()).hasSize(3);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID)).isPresent();
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10L, 30L, 20L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10., 30., 20.));
   }
 
   @Test
-  public void evaluateReportForMultipleEvents() throws Exception {
+  public void evaluateReportForMultipleEvents() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 100.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 20.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 200.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 10.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 900.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 90.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -157,26 +157,26 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData().size()).isEqualTo(4);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID)).isPresent();
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L, 900L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(100., 200., 900.));
     assertThat(result.getEntryForKey(SERVICE_TASK_ID_2).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20L, 10L, 90L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20., 10., 90.));
   }
 
   @Test
-  public void evaluateReportForMultipleEvents_resultLimitedByConfig() throws Exception {
+  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 100.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 20.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 200.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 10.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 900.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 90.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -197,20 +197,20 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void testCustomOrderOnResultKeyIsApplied() throws SQLException {
+  public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 100.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 20.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 200.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 10.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 900.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 90.);
 
 
     importAllEngineEntitiesFromScratch();
@@ -229,16 +229,16 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void testEvaluationResultForAllAggregationTypes() throws Exception {
+  public void testEvaluationResultForAllAggregationTypes() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 10L);
+    changeActivityDuration(processInstanceDto, 10.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    changeActivityDuration(processInstanceDto, 30.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    changeActivityDuration(processInstanceDto, 20.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -247,11 +247,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       reportData);
 
     // then
-    assertDurationMapReportResults(results, new Long[]{10L, 30L, 20L});
+    assertDurationMapReportResults(results, new Double[]{10., 30., 20.});
   }
 
   private void assertDurationMapReportResults(final Map<AggregationType, ReportMapResultDto> results,
-                                              Long[] expectedDurations) {
+                                              Double[] expectedDurations) {
     aggregationTypes.forEach((AggregationType aggType) -> {
       final ReportMapResultDto result = results.get(aggType);
       assertThat(result.getEntryForKey(SERVICE_TASK_ID)).isPresent();
@@ -261,20 +261,20 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void testCustomOrderOnResultValueIsApplied() throws SQLException {
+  public void testCustomOrderOnResultValueIsApplied() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 100.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 20.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 200.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 10.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID, 900.);
+    changeActivityDuration(processInstanceDto, SERVICE_TASK_ID_2, 90.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -289,7 +289,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       // then
       final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
       assertThat(resultData).hasSize(4);
-      final List<Long> bucketValues = resultData.stream()
+      final List<Double> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
         .collect(Collectors.toList());
       assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
@@ -297,7 +297,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() throws Exception {
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
     //given
     ProcessDefinitionEngineDto firstDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessDefinitionEngineDto latestDefinition = deployProcessWithTwoTasks();
@@ -305,15 +305,15 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    changeActivityDuration(processInstanceDto, 20.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    changeActivityDuration(processInstanceDto, 30.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 50L);
+    changeActivityDuration(processInstanceDto, 50.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    changeActivityDuration(processInstanceDto, 120.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
+    changeActivityDuration(processInstanceDto, 100.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -329,13 +329,13 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(4);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20L, 30L, 50L, 120L, 100L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20., 30., 50., 120., 100.));
     assertThat(result.getEntryForKey(SERVICE_TASK_ID_2).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(50L, 120L, 100L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(50., 120., 100.));
   }
 
   @Test
-  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() throws Exception {
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
     //given
     ProcessDefinitionEngineDto firstDefinition = deploySimpleServiceTaskProcessDefinition();
     deploySimpleServiceTaskProcessDefinition();
@@ -344,15 +344,15 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    changeActivityDuration(processInstanceDto, 20.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    changeActivityDuration(processInstanceDto, 30.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 50L);
+    changeActivityDuration(processInstanceDto, 50.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    changeActivityDuration(processInstanceDto, 120.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
+    changeActivityDuration(processInstanceDto, 100.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -368,13 +368,13 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(4);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20L, 30L, 50L, 120L, 100L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20., 30., 50., 120., 100.));
     assertThat(result.getEntryForKey(SERVICE_TASK_ID_2).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(50L, 120L, 100L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(50., 120., 100.));
   }
 
   @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() throws Exception {
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
     //given
     ProcessDefinitionEngineDto firstDefinition = deployProcessWithTwoTasks();
     ProcessDefinitionEngineDto latestDefinition = deploySimpleServiceTaskProcessDefinition();
@@ -382,15 +382,15 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    changeActivityDuration(processInstanceDto, 20.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    changeActivityDuration(processInstanceDto, 30.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 50L);
+    changeActivityDuration(processInstanceDto, 50.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    changeActivityDuration(processInstanceDto, 120.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
+    changeActivityDuration(processInstanceDto, 100.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -406,11 +406,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(3);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20L, 30L, 50L, 120L, 100L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20., 30., 50., 120., 100.));
   }
 
   @Test
-  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() throws Exception {
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
     //given
     ProcessDefinitionEngineDto firstDefinition = deployProcessWithTwoTasks();
     deployProcessWithTwoTasks();
@@ -419,15 +419,15 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    changeActivityDuration(processInstanceDto, 20.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    changeActivityDuration(processInstanceDto, 30.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 50L);
+    changeActivityDuration(processInstanceDto, 50.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    changeActivityDuration(processInstanceDto, 120.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
+    changeActivityDuration(processInstanceDto, 100.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -444,7 +444,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(3);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20L, 30L, 50L, 120L, 100L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20., 30., 50., 120., 100.));
   }
 
   @Test
@@ -520,7 +520,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessInstanceEngineDto instance1 = engineIntegrationExtension.deployAndStartProcess(modelInstance, noneTenantId);
     engineDatabaseExtension.changeProcessInstanceTenantId(instance1.getId(), tenantId1);
 
-    engineDatabaseExtension.changeActivityDuration(instance1.getId(), 10L);
+    changeActivityDuration(instance1, 10.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -532,28 +532,28 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).isNotEmpty();
-    assertThat(result.getEntryForKey(START_EVENT).get().getValue()).isEqualTo(10L);
-    assertThat(result.getEntryForKey(END_EVENT).get().getValue()).isEqualTo(10L);
+    assertThat(result.getEntryForKey(START_EVENT).get().getValue()).isEqualTo(10.);
+    assertThat(result.getEntryForKey(END_EVENT).get().getValue()).isEqualTo(10.);
   }
 
   @Test
-  public void otherProcessDefinitionsDoNotInfluenceResult() throws Exception {
+  public void otherProcessDefinitionsDoNotInfluenceResult() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 80L);
+    changeActivityDuration(processInstanceDto, 80.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 40L);
+    changeActivityDuration(processInstanceDto, 40.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    changeActivityDuration(processInstanceDto, 120.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    changeActivityDuration(processInstanceDto, 20.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
+    changeActivityDuration(processInstanceDto, 100.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 1000L);
+    changeActivityDuration(processInstanceDto, 1000.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -568,24 +568,24 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto result1 = evaluationResponse1.getResult();
     assertThat(result1.getData()).hasSize(3);
     assertThat(result1.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(80L, 40L, 120L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(80., 40., 120.));
     final ReportMapResultDto result2 = evaluationResponse2.getResult();
     assertThat(result2.getData()).hasSize(3);
     assertThat(result2.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20L, 100L, 1000L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(20., 100., 1000.));
   }
 
   @Test
-  public void evaluateReportWithIrrationalAverageNumberAsResult() throws Exception {
+  public void evaluateReportWithIrrationalAverageNumberAsResult() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
+    changeActivityDuration(processInstanceDto, 100.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 300L);
+    changeActivityDuration(processInstanceDto, 300.);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 600L);
+    changeActivityDuration(processInstanceDto, 600.);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -595,7 +595,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
 
     // then
-    assertDurationMapReportResults(results, new Long[]{100L, 300L, 600L});
+    assertDurationMapReportResults(results, new Double[]{100., 300., 600.});
   }
 
   @Test
@@ -620,7 +620,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    changeActivityDuration(processInstanceDto, START_EVENT, 100.);
     engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
       USER_TASK,
@@ -645,7 +645,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     assertThat(result.getEntryForKey(START_EVENT).get().getValue()).isNull();
     assertThat(result.getEntryForKey(USER_TASK).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(200L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(200.));
   }
 
   @Test
@@ -657,7 +657,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    changeActivityDuration(processInstanceDto, START_EVENT, 100.);
     engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
       USER_TASK,
@@ -681,7 +681,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     assertThat(result.getEntryForKey(START_EVENT).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(100L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(100.));
     assertThat(result.getEntryForKey(USER_TASK).get().getValue()).isNull();
   }
 
@@ -694,7 +694,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    changeActivityDuration(processInstanceDto, START_EVENT, 100.);
     engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
       USER_TASK,
@@ -718,9 +718,9 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     assertThat(result.getEntryForKey(START_EVENT).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(100L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(100.));
     assertThat(result.getEntryForKey(USER_TASK).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(200L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(200.));
   }
 
   @Test
@@ -764,18 +764,18 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10.));
   }
 
   @Test
-  public void evaluateReportForMoreThanTenEvents() throws Exception {
+  public void evaluateReportForMoreThanTenEvents() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
 
     ProcessInstanceEngineDto processInstanceDto;
     for (int i = 0; i < 11; i++) {
       processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-      engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 10L);
+      changeActivityDuration(processInstanceDto, 10.);
     }
     importAllEngineEntitiesFromScratch();
 
@@ -787,8 +787,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).hasSize(3);
-    Long[] durationSet = new Long[11];
-    Arrays.fill(durationSet, 10L);
+    Double[] durationSet = new Double[11];
+    Arrays.fill(durationSet, 10.);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(durationSet));
   }
@@ -814,7 +814,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // then
     assertThat(result.getData()).hasSize(3);
-    Long notExecutedFlowNodeResult = result.getData()
+    Double notExecutedFlowNodeResult = result.getData()
       .stream()
       .filter(r -> r.getKey().equals("endEvent"))
       .findFirst().get().getValue();
@@ -822,12 +822,12 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void filterInReport() throws Exception {
+  public void filterInReport() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 10L);
+    changeActivityDuration(processInstance, 10.);
     OffsetDateTime past = engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     importAllEngineEntitiesFromScratch();
 
@@ -853,7 +853,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(3);
     assertThat(result.getEntryForKey(SERVICE_TASK_ID).get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10.));
   }
 
   private List<ProcessFilterDto<?>> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
@@ -980,6 +980,18 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .setTenantIds(tenantIds)
       .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
       .build();
+  }
+
+  @SneakyThrows
+  private void changeActivityDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), duration.longValue());
+  }
+
+  @SneakyThrows
+  private void changeActivityDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                      final String serviceTaskId,
+                                      final Double duration) {
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), serviceTaskId, duration.longValue());
   }
 
   private ReportMapResultDto getReportEvaluationResult(final String definitionKey,

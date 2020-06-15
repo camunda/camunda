@@ -66,7 +66,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     final NumberResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData(), is(1L));
+    assertThat(resultDto.getData(), is(1.));
   }
 
   @Test
@@ -83,7 +83,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(3L));
+    assertThat(result.getData(), is(3.));
   }
 
   @Test
@@ -100,7 +100,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(2L));
+    assertThat(result.getData(), is(2.));
   }
 
   @Test
@@ -121,7 +121,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is((long) selectedTenants.size()));
+    assertThat(result.getData(), is((double) selectedTenants.size()));
   }
 
   @Test
@@ -144,7 +144,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(0L));
+    assertThat(result.getData(), is(0.));
 
     // when
     reportData = createReport(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
@@ -153,7 +153,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(1L));
+    assertThat(result.getData(), is(1.));
   }
 
   @Test
@@ -228,11 +228,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       reportClient.evaluateNumberReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     final NumberResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData(), is(1L));
+    assertThat(resultDto.getData(), is(1.));
   }
 
   private ProcessReportDataDto createReport(String processDefinitionKey, String processDefinitionVersion) {

@@ -13,41 +13,41 @@ public class ElasticsearchAggregationResultMappingUtil {
   private ElasticsearchAggregationResultMappingUtil() {
   }
 
-  public static Long mapToLong(final ParsedSingleValueNumericMetricsAggregation aggregation) {
-    return mapToLong(aggregation.value());
+  public static Double mapToDouble(final ParsedSingleValueNumericMetricsAggregation aggregation) {
+    return mapToDouble(aggregation.value());
   }
 
-  public static Long mapToLong(final Double value) {
-    if (Double.isInfinite(value)) {
-      return 0L;
+  public static Double mapToDouble(final Double value) {
+    if (Double.isInfinite(value) || Double.isNaN(value)) {
+      return 0.0;
     } else {
-      return Math.round(value);
+      return value;
     }
   }
 
-  public static Long mapToLong(final ParsedTDigestPercentiles aggregation) {
+  public static Double mapToDouble(final ParsedTDigestPercentiles aggregation) {
     double median = aggregation.percentile(50);
     if (Double.isNaN(median) || Double.isInfinite(median)) {
-      return 0L;
+      return 0.0;
     } else {
-      return Math.round(median);
+      return median;
     }
   }
 
-  public static Long mapToLongOrNull(final ParsedTDigestPercentiles aggregation) {
+  public static Double mapToDoubleOrNull(final ParsedTDigestPercentiles aggregation) {
     double median = aggregation.percentile(50);
     if (Double.isNaN(median) || Double.isInfinite(median)) {
       return null;
     } else {
-      return Math.round(median);
+      return median;
     }
   }
 
-  public static Long mapToLongOrNull(final Double value) {
-    if (Double.isInfinite(value)) {
+  public static Double mapToDoubleOrNull(final Double value) {
+    if (Double.isInfinite(value) || Double.isNaN(value)) {
       return null;
     } else {
-      return Math.round(value);
+      return value;
     }
   }
 

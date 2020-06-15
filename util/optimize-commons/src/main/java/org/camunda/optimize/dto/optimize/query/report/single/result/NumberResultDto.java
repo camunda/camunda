@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 public class NumberResultDto implements DecisionReportResultDto, ProcessReportResultDto {
 
   private long instanceCount;
-  private Long data;
+  private Double data;
 
   @Override
   public ResultType getType() {

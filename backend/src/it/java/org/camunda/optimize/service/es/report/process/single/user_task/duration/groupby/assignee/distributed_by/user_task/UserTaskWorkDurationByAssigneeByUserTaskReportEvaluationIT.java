@@ -36,35 +36,15 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(
-        historicUserTaskInstanceDto -> {
-          if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserClaimTimestamp(
-              setDuration,
-              historicUserTaskInstanceDto
-            );
-          }
-        }
-      );
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double duration) {
+    changeUserTaskWorkDuration(processInstanceDto, duration);
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final long duration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto -> {
-          if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserClaimTimestamp(
-              duration,
-              historicUserTaskInstanceDto
-            );
-          }
-        }
-      );
+                                final double duration) {
+    changeUserTaskWorkDuration(processInstanceDto, userTaskKey, duration);
   }
 
   @Override
@@ -208,8 +188,8 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
     // @formatter:on
   }
 
-  protected void assertHyperMap_otherProcessDefinitionsDoNotInfluenceResult(final Long[] setDurations1,
-                                                                            final Long[] setDurations2,
+  protected void assertHyperMap_otherProcessDefinitionsDoNotInfluenceResult(final Double[] setDurations1,
+                                                                            final Double[] setDurations2,
                                                                             final ReportHyperMapResultDto result1,
                                                                             final ReportHyperMapResultDto result2) {
     // @formatter:off

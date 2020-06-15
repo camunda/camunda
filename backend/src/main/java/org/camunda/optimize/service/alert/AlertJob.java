@@ -183,6 +183,11 @@ public class AlertJob implements Job {
     return exceeded;
   }
 
+  private String formatValueToHumanReadableString(final Double value, final ReportDefinitionDto reportDefinition) {
+    long valueAsLong = value == null? 0L : value.longValue();
+    return formatValueToHumanReadableString(valueAsLong, reportDefinition);
+  }
+
   private String formatValueToHumanReadableString(final long value, final ReportDefinitionDto reportDefinition) {
     return isDurationReport(reportDefinition)
       ? durationInMsToReadableFormat(value)

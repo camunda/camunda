@@ -36,30 +36,30 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
   static class ExecutionStateTestValues {
     FlowNodeExecutionState executionState;
 
-    Long expectedIdleDurationValue;
-    Long expectedWorkDurationValue;
-    Long expectedTotalDurationValue;
+    Double expectedIdleDurationValue;
+    Double expectedWorkDurationValue;
+    Double expectedTotalDurationValue;
   }
 
   protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
     ExecutionStateTestValues runningStateValues =
       new ExecutionStateTestValues();
     runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
-    runningStateValues.expectedIdleDurationValue =  200L;
-    runningStateValues.expectedWorkDurationValue = 500L;
-    runningStateValues.expectedTotalDurationValue = 700L;
+    runningStateValues.expectedIdleDurationValue =  200.;
+    runningStateValues.expectedWorkDurationValue = 500.;
+    runningStateValues.expectedTotalDurationValue = 700.;
 
     ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
     completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
-    completedStateValues.expectedIdleDurationValue = 100L;
-    completedStateValues.expectedWorkDurationValue = 100L;
-    completedStateValues.expectedTotalDurationValue = 100L;
+    completedStateValues.expectedIdleDurationValue = 100.;
+    completedStateValues.expectedWorkDurationValue = 100.;
+    completedStateValues.expectedTotalDurationValue = 100.;
 
     ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
     allStateValues.executionState = FlowNodeExecutionState.ALL;
-    allStateValues.expectedIdleDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L);
-    allStateValues.expectedWorkDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100L, 500L);
-    allStateValues.expectedTotalDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L);
+    allStateValues.expectedIdleDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100., 200.);
+    allStateValues.expectedWorkDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100., 500.);
+    allStateValues.expectedTotalDurationValue = calculateExpectedValueGivenDurationsDefaultAggr(100., 700.);
 
     return Stream.of(runningStateValues, completedStateValues, allStateValues);
   }
@@ -74,14 +74,14 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     final ProcessInstanceEngineDto processInstanceDto1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
-    changeDuration(processInstanceDto1, 100L);
+    changeDuration(processInstanceDto1, 100.);
 
     final ProcessInstanceEngineDto processInstanceDto2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto2.getId());
 
-    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700L);
-    changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500L);
+    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700.);
+    changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -100,7 +100,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     // @formatter:on
   }
 
-  protected abstract Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues);
+  protected abstract Double getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues);
 
   @Override
   protected ProcessGroupByType getGroupByType() {

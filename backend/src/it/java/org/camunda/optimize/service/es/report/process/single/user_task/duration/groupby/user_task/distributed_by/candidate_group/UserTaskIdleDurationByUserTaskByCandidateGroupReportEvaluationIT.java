@@ -5,18 +5,14 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.user_task.distributed_by.candidate_group;
 
-import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
-import java.sql.SQLException;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
@@ -31,29 +27,15 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimTimestamp(
-            setDuration,
-            historicUserTaskInstanceDto
-          )
-      );
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
+    changeUserTaskIdleDuration(processInstanceDto, duration);
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final long duration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimTimestamp(
-            duration,
-            historicUserTaskInstanceDto
-          )
-      );
+                                final Double duration) {
+    changeUserTaskIdleDuration(processInstanceDto, userTaskKey, duration);
   }
 
   @Override
@@ -67,19 +49,6 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
       .build();
   }
 
-  private void changeUserClaimTimestamp(final long millis,
-                                        final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
-    try {
-      engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-        historicUserTaskInstanceDto.getId(),
-        historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
-      );
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
-  }
-
-
   @Override
   protected void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
                                                         final FlowNodeExecutionState executionState) {
@@ -90,9 +59,9 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
           .processInstanceCount(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-            .distributedByContains(FIRST_CANDIDATE_GROUP, 200L)
+            .distributedByContains(FIRST_CANDIDATE_GROUP, 200.)
           .groupByContains(USER_TASK_2)
-            .distributedByContains(FIRST_CANDIDATE_GROUP, 200L)
+            .distributedByContains(FIRST_CANDIDATE_GROUP, 200.)
           .doAssert(result);
         // @formatter:on
         break;
@@ -102,7 +71,7 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
           .processInstanceCount(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 100L)
+          .distributedByContains(FIRST_CANDIDATE_GROUP, 100.)
           .groupByContains(USER_TASK_2)
           .distributedByContains(FIRST_CANDIDATE_GROUP, null)
           .doAssert(result);
@@ -114,9 +83,9 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
           .processInstanceCount(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L))
+          .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(100., 200.))
           .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 200L)
+          .distributedByContains(FIRST_CANDIDATE_GROUP, 200.)
           .doAssert(result);
         // @formatter:on
         break;

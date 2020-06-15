@@ -90,15 +90,15 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 1L)
+        .distributedByContains(USER_TASK_1, 1.)
         .distributedByContains(USER_TASK_2, null)
-        .distributedByContains(USER_TASK_A, 1L)
+        .distributedByContains(USER_TASK_A, 1.)
         .distributedByContains(USER_TASK_B, null)
       .groupByContains(SECOND_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, null)
-        .distributedByContains(USER_TASK_2, 1L)
+        .distributedByContains(USER_TASK_2, 1.)
         .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, 1L)
+        .distributedByContains(USER_TASK_B, 1.)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -132,15 +132,15 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 1L)
+        .distributedByContains(USER_TASK_1, 1.)
         .distributedByContains(USER_TASK_2, null)
-        .distributedByContains(USER_TASK_A, 1L)
+        .distributedByContains(USER_TASK_A, 1.)
         .distributedByContains(USER_TASK_B, null)
       .groupByContains(getLocalisedUnassignedLabel())
         .distributedByContains(USER_TASK_1, null)
-        .distributedByContains(USER_TASK_2, 1L)
+        .distributedByContains(USER_TASK_2, 1.)
         .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, 1L)
+        .distributedByContains(USER_TASK_B, 1.)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -170,11 +170,11 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .groupByContains(SECOND_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -202,20 +202,20 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 2L)
+        .distributedByContains(USER_TASK_1, 2.)
         .distributedByContains(USER_TASK_2, null)
-        .distributedByContains(USER_TASK_A, 2L)
+        .distributedByContains(USER_TASK_A, 2.)
         .distributedByContains(USER_TASK_B, null)
       .groupByContains(SECOND_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, null)
-        .distributedByContains(USER_TASK_2, 1L)
+        .distributedByContains(USER_TASK_2, 1.)
         .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, 1L)
+        .distributedByContains(USER_TASK_B, 1.)
       .groupByContains(getLocalisedUnassignedLabel())
         .distributedByContains(USER_TASK_1, null)
-        .distributedByContains(USER_TASK_2, 1L)
+        .distributedByContains(USER_TASK_2, 1.)
         .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, 1L)
+        .distributedByContains(USER_TASK_B, 1.)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -247,7 +247,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
       .processInstanceCount(2L)
       .isComplete(false)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 2L)
+        .distributedByContains(USER_TASK_1, 2.)
         .distributedByContains(USER_TASK_2, null)
         .distributedByContains(USER_TASK_A, null)
         .distributedByContains(USER_TASK_B, null)
@@ -280,11 +280,11 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(SECOND_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -319,13 +319,13 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(SECOND_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(actualResult);
     // @formatter:on
@@ -361,13 +361,13 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(SECOND_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(actualResult);
     // @formatter:on
@@ -404,10 +404,10 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .groupByContains(getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(actualResult);
     // @formatter:on
@@ -417,10 +417,8 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
   public void otherProcessDefinitionsDoNotInfluenceResult() {
     // given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-      processDefinition1.getId());
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      processDefinition1.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
@@ -443,17 +441,17 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .doAssert(actualResult1);
 
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(getLocalisedUnassignedLabel())
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult2);
     // @formatter:on
   }
@@ -498,7 +496,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapResultEntryDto expectedFrequencyValues;
   }
 
-  private static HyperMapResultEntryDto getExpectedResultsMap(Long userTask1Result, Long userTask2Result) {
+  private static HyperMapResultEntryDto getExpectedResultsMap(Double userTask1Result, Double userTask2Result) {
     List<MapResultEntryDto> groupByResults = new ArrayList<>();
     MapResultEntryDto firstUserTask = new MapResultEntryDto(USER_TASK_1, userTask1Result, USER_TASK_1_NAME);
     groupByResults.add(firstUserTask);
@@ -509,9 +507,9 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
 
   protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
     return Stream.of(
-      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(1L, 1L)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1L, null)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(2L, 1L))
+      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(1., 1.)),
+      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1., null)),
+      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(2., 1.))
     );
   }
 
@@ -577,7 +575,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-      .distributedByContains(USER_TASK_1, 2L)
+      .distributedByContains(USER_TASK_1, 2.)
       .doAssert(actualResult);
   }
 
@@ -603,7 +601,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(11L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-      .distributedByContains(USER_TASK_1, 11L, USER_TASK_1_NAME)
+      .distributedByContains(USER_TASK_1, 11., USER_TASK_1_NAME)
       .doAssert(actualResult);
   }
 
@@ -642,7 +640,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
-      .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(actualResult);
   }
 

@@ -127,12 +127,12 @@ public class CompositeCommandResult {
       return label != null && !label.isEmpty() ? label : key;
     }
 
-    public Long getValueAsLong() {
+    public Double getValueAsDouble() {
       return this.getViewResult().getNumber();
     }
 
     public MapResultEntryDto getValueAsMapResultEntry() {
-      return new MapResultEntryDto(this.key, getValueAsLong(), this.label);
+      return new MapResultEntryDto(this.key, getValueAsDouble(), this.label);
     }
   }
 
@@ -141,7 +141,7 @@ public class CompositeCommandResult {
   @Data
   public static class ViewResult {
 
-    private Long number;
+    private Double number;
     private RawDataProcessReportResultDto processRawData;
     private RawDataDecisionReportResultDto decisionRawData;
   }
@@ -167,7 +167,7 @@ public class CompositeCommandResult {
     for (GroupByResult group : groups) {
       final List<DistributedByResult> distributions = group.getDistributions();
       if (distributions.size() == 1) {
-        final Long value = distributions.get(0).getValueAsLong();
+        final Double value = distributions.get(0).getValueAsDouble();
         mapData.add(new MapResultEntryDto(group.getKey(), value, group.getLabel()));
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedBy.class));
@@ -184,7 +184,7 @@ public class CompositeCommandResult {
     if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
-        final Long value = distributions.get(0).getViewResult().getNumber();
+        final Double value = distributions.get(0).getViewResult().getNumber();
         numberResultDto.setData(value);
         return numberResultDto;
       } else {

@@ -100,7 +100,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1);
+    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -137,7 +137,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -164,7 +164,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -215,8 +215,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData()).hasSize(2);
-    assertThat(resultDto.getEntryForKey("bar1").get().getValue()).isEqualTo(1L);
-    assertThat(resultDto.getEntryForKey("bar2").get().getValue()).isEqualTo(2L);
+    assertThat(resultDto.getEntryForKey("bar1").get().getValue()).isEqualTo(1.);
+    assertThat(resultDto.getEntryForKey("bar2").get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -650,7 +650,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(3);
-    final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
+    final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
@@ -678,8 +678,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey("1").get().getValue()).isEqualTo(1L);
-    assertThat(result.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("1").get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -706,7 +706,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar1").get().getValue()).isEqualTo(2L);
+    assertThat(result.getEntryForKey("bar1").get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -749,7 +749,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
         expectedKey = String.valueOf(entry.getValue());
       }
       assertThat(resultData.get(0).getKey()).isEqualTo(expectedKey);
-      assertThat(resultData.get(0).getValue()).isEqualTo(1L);
+      assertThat(resultData.get(0).getValue()).isEqualTo(1.);
     }
   }
 
@@ -778,7 +778,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("withValue").get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("withValue").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -818,8 +818,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey("withValue").get().getValue()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(4L);
+    assertThat(result.getEntryForKey("withValue").get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(4.);
   }
 
   @Test
@@ -853,8 +853,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey(String.valueOf(varValue)).get().getValue()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey(String.valueOf(varValue)).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -925,7 +925,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     // then
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -1030,7 +1030,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     // there is one bucket per instance since the date variables are each one bucket span apart
     assertThat(resultData).hasSize(numberOfInstances);
     // buckets are in descending order, so the first bucket is based on the date variable of the last instance
-    final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
     for (int i = 0; i < numberOfInstances; i++) {
       final String expectedBucketKey = embeddedOptimizeExtension.formatToHistogramBucketKey(
         dateVariableValue.minus(i, chronoUnit),

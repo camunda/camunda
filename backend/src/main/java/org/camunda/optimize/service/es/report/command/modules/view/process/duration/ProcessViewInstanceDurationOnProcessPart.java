@@ -39,7 +39,7 @@ public class ProcessViewInstanceDurationOnProcessPart extends ProcessViewInstanc
   public ViewResult retrieveResult(final SearchResponse response,
                                    final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
-    final Long durationInMs = processProcessPartAggregationOperations(
+    final Double durationInMs = processProcessPartAggregationOperations(
       aggs,
       getAggregationStrategy(context.getReportData()).getAggregationType()
     );

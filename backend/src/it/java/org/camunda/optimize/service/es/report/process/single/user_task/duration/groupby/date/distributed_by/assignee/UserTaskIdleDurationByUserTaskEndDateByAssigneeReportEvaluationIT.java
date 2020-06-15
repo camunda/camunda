@@ -5,13 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.date.distributed_by.assignee;
 
-import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-
-import java.sql.SQLException;
-import java.time.temporal.ChronoUnit;
 
 public class UserTaskIdleDurationByUserTaskEndDateByAssigneeReportEvaluationIT
   extends UserTaskDurationByUserTaskEndDateByAssigneeReportEvaluationIT {
@@ -22,40 +17,14 @@ public class UserTaskIdleDurationByUserTaskEndDateByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimTimestamp(
-            setDuration,
-            historicUserTaskInstanceDto
-          )
-      );
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
+    changeUserTaskIdleDuration(processInstanceDto, duration);
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final long duration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimTimestamp(
-            duration,
-            historicUserTaskInstanceDto
-          )
-      );
-  }
-
-  private void changeUserClaimTimestamp(final long millis,
-                                        final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
-    try {
-      engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-        historicUserTaskInstanceDto.getId(),
-        historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
-      );
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+                                final Double duration) {
+    changeUserTaskIdleDuration(processInstanceDto, userTaskKey, duration);
   }
 }

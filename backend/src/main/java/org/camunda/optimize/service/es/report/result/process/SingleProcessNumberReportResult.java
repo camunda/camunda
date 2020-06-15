@@ -46,7 +46,7 @@ public class SingleProcessNumberReportResult
 
   private List<String[]> durationNumberAsCsv() {
     final List<String[]> csvStrings = new LinkedList<>();
-    Long result = reportResult.getData();
+    Double result = reportResult.getData();
     csvStrings.add(
       new String[]{
         result.toString()
@@ -65,7 +65,7 @@ public class SingleProcessNumberReportResult
 
 
   @Override
-  public long getResultAsNumber() {
+  public double getResultAsNumber() {
     return reportResult.getData();
   }
 }

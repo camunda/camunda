@@ -72,7 +72,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().get(0).getValue(), is(3L));
+    assertThat(result.getData().get(0).getValue(), is(3.));
   }
 
   @Test
@@ -102,8 +102,8 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(2));
-    assertThat(resultData.get(0).getValue(), is(2L));
-    assertThat(resultData.get(1).getValue(), is(3L));
+    assertThat(resultData.get(0).getValue(), is(2.));
+    assertThat(resultData.get(1).getValue(), is(3.));
   }
 
   @Test
@@ -150,17 +150,17 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       resultData.get(0).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(0).getValue(), is(2.));
     assertThat(
       resultData.get(1).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(1).getValue(), is(2L));
+    assertThat(resultData.get(1).getValue(), is(2.));
     assertThat(
       resultData.get(2).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(2).getValue(), is(3L));
+    assertThat(resultData.get(2).getValue(), is(3.));
   }
 
   @Test
@@ -269,7 +269,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
-    final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
+    final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
       bucketValues,
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
@@ -319,31 +319,31 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       resultData.get(0).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(0).getValue(), is(1L));
+    assertThat(resultData.get(0).getValue(), is(1.));
 
     assertThat(
       resultData.get(1).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(1).getValue(), is(0L));
+    assertThat(resultData.get(1).getValue(), is(0.));
 
     assertThat(
       resultData.get(2).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(2).getValue(), is(2L));
+    assertThat(resultData.get(2).getValue(), is(2.));
 
     assertThat(
       resultData.get(3).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(3).getValue(), is(0L));
+    assertThat(resultData.get(3).getValue(), is(0.));
 
     assertThat(
       resultData.get(4).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(4).getValue(), is(0L));
+    assertThat(resultData.get(4).getValue(), is(0.));
   }
 
   @Test
@@ -435,17 +435,17 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       resultData.get(0).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit))
     );
-    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(0).getValue(), is(2.));
     assertThat(
       resultData.get(1).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(secondBucketEvaluationDate, chronoUnit))
     );
-    assertThat(resultData.get(1).getValue(), is(0L));
+    assertThat(resultData.get(1).getValue(), is(0.));
     assertThat(
       resultData.get(2).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(thirdBucketEvaluationDate, chronoUnit))
     );
-    assertThat(resultData.get(2).getValue(), is(3L));
+    assertThat(resultData.get(2).getValue(), is(3.));
   }
 
   @Test
@@ -480,9 +480,9 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultData.get(0).getValue(), is(2L));
-    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Long::intValue).sum(), is(5));
-    assertThat(resultData.get(resultData.size() - 1).getValue(), is(3L));
+    assertThat(resultData.get(0).getValue(), is(2.));
+    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum(), is(5));
+    assertThat(resultData.get(resultData.size() - 1).getValue(), is(3.));
   }
 
   @Test
@@ -508,7 +508,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(5L));
+    assertThat(resultData.get(0).getValue(), is(5.));
   }
 
   @Test
@@ -537,7 +537,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(5L));
+    assertThat(resultData.get(0).getValue(), is(5.));
   }
 
   @Test
@@ -605,7 +605,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(0).getValue(), is(2.));
   }
 
   @Test

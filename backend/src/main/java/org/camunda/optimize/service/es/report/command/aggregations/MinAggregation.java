@@ -10,16 +10,16 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.Min;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLongOrNull;
+import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.min;
 
 public class MinAggregation implements AggregationStrategy {
   private static final String MIN_AGGREGATION = "minAggregation";
 
   @Override
-  public Long getValue(final Aggregations aggs) {
+  public Double getValue(final Aggregations aggs) {
     final Min aggregation = aggs.get(MIN_AGGREGATION);
-    return mapToLongOrNull(aggregation.getValue());
+    return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override

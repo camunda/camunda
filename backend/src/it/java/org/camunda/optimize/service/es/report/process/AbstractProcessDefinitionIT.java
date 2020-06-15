@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -243,14 +244,110 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     // @formatter:on
   }
 
+  protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto, final String userTaskKey,
+                                            final double duration) {
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+      .forEach(
+        historicUserTaskInstanceDto ->
+          changeUserClaimStartTimestamp(
+            duration,
+            historicUserTaskInstanceDto
+          )
+      );
+  }
+
+  protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                            final double setDuration) {
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
+      .forEach(
+        historicUserTaskInstanceDto ->
+          changeUserClaimStartTimestamp(
+            setDuration,
+            historicUserTaskInstanceDto
+          )
+      );
+  }
+
+  private void changeUserClaimStartTimestamp(final Double millis,
+                                             final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
+    try {
+      engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+        historicUserTaskInstanceDto.getId(),
+        historicUserTaskInstanceDto.getStartTime().plus(millis.longValue(), ChronoUnit.MILLIS)
+      );
+    } catch (SQLException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
+  }
+
+  protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                             final String userTaskKey,
+                                             final Double duration) {
+    try {
+      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, duration.longValue());
+    } catch (SQLException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
+  }
+
+  protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
+    try {
+      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), duration.longValue());
+    } catch (SQLException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
+  }
+
+  protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                            final Double duration) {
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
+      .forEach(
+        historicUserTaskInstanceDto ->
+          changeUserClaimEndTimestamp(
+            duration,
+            historicUserTaskInstanceDto
+          )
+      );
+  }
+
+  protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                            final String userTaskKey,
+                                            final Double duration) {
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+      .forEach(
+        historicUserTaskInstanceDto -> {
+          if (historicUserTaskInstanceDto.getEndTime() != null) {
+            changeUserClaimEndTimestamp(
+              duration,
+              historicUserTaskInstanceDto
+            );
+          }
+        }
+      );
+  }
+
+  private void changeUserClaimEndTimestamp(final Double millis,
+                                           final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
+    try {
+      if (historicUserTaskInstanceDto.getEndTime() != null) {
+        engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+          historicUserTaskInstanceDto.getId(),
+          historicUserTaskInstanceDto.getEndTime().minus(millis.longValue(), ChronoUnit.MILLIS)
+        );
+      }
+    } catch (SQLException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
+  }
+
   protected void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
                                          final OffsetDateTime now,
                                          final String userTaskId,
-                                         final long offsetDuration) {
+                                         final Double offsetDuration) {
     engineDatabaseExtension.changeUserTaskStartDate(
       processInstanceDto.getId(),
       userTaskId,
-      now.minus(offsetDuration, ChronoUnit.MILLIS)
+      now.minus(offsetDuration.longValue(), ChronoUnit.MILLIS)
     );
   }
 
@@ -263,7 +360,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
                                          final OffsetDateTime now,
                                          final String userTaskKey,
-                                         final long offsetDuration) {
+                                         final Double offsetDuration) {
 
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
@@ -272,7 +369,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
           try {
             engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
-              now.minus(offsetDuration, ChronoUnit.MILLIS)
+              now.minus(offsetDuration.longValue(), ChronoUnit.MILLIS)
             );
           } catch (SQLException e) {
             throw new OptimizeIntegrationTestException(e);

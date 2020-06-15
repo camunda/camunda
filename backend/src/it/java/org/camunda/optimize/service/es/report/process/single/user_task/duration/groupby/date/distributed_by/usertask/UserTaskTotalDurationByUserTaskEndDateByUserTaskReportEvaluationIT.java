@@ -6,10 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.date.distributed_by.usertask;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-
-import java.sql.SQLException;
 
 public class UserTaskTotalDurationByUserTaskEndDateByUserTaskReportEvaluationIT
   extends UserTaskDurationByUserTaskEndDateByUserTaskReportEvaluationIT {
@@ -22,20 +19,12 @@ public class UserTaskTotalDurationByUserTaskEndDateByUserTaskReportEvaluationIT
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final long duration) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, duration);
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+                                final Double duration) {
+    changeUserTaskTotalDuration(processInstanceDto, userTaskKey, duration);
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), setDuration);
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
+    changeUserTaskTotalDuration(processInstanceDto, duration);
   }
 }

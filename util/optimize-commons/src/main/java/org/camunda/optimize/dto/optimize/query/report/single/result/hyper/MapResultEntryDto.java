@@ -17,19 +17,19 @@ public class MapResultEntryDto {
 
   // @formatter:off
   @NonNull @Getter @Setter private String key;
-  @Getter @Setter private Long value;
+  @Getter @Setter private Double value;
   @Setter private String label;
   // @formatter:on
 
   protected MapResultEntryDto() {
   }
 
-  public MapResultEntryDto(@NonNull final String key, final Long value) {
+  public MapResultEntryDto(@NonNull final String key, final Double value) {
     this.key = key;
     this.value = value;
   }
 
-  public MapResultEntryDto(@NonNull final String key, final Long value, String label) {
+  public MapResultEntryDto(@NonNull final String key, final Double value, String label) {
     this.key = key;
     this.value = value;
     this.label = label;

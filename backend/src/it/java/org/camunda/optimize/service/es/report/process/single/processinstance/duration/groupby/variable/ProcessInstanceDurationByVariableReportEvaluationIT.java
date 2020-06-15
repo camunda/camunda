@@ -122,7 +122,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final MapResultEntryDto resultEntry = resultData.get(0);
     assertThat(resultEntry).isNotNull();
     assertThat(resultEntry.getKey()).isEqualTo("bar");
-    assertThat(resultEntry.getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+    assertThat(resultEntry.getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -172,7 +172,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final MapResultEntryDto resultEntry = resultData.get(0);
     assertThat(resultEntry).isNotNull();
     assertThat(resultEntry.getKey()).isEqualTo("bar");
-    assertThat(resultEntry.getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+    assertThat(resultEntry.getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -242,7 +242,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       // then
       final List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData).hasSize(3);
-      final List<Long> bucketValues = resultData.stream()
+      final List<Double> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
         .collect(Collectors.toList());
       assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
@@ -322,7 +322,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo("bar2");
-    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -389,9 +389,9 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getEntryForKey("bar1").get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
     assertThat(result.getEntryForKey("bar2").get().getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
   }
 
   @Test
@@ -927,7 +927,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
-    assertThat(resultData.get(0).getValue()).isEqualTo(1000L);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
   }
 
   @Test
@@ -977,7 +977,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getValue())
-      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L, runningProcInstStartDate.until(now, MILLIS)));
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(
+        1000.,
+        (double) runningProcInstStartDate.until(now, MILLIS)
+      ));
   }
 
   @Test
@@ -1077,9 +1080,9 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(2);
     assertThat(resultData.get(0).getKey()).isEqualTo("1");
-    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
     assertThat(resultData.get(1).getKey()).isEqualTo(MISSING_VARIABLE_KEY);
-    assertThat(resultData.get(1).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+    assertThat(resultData.get(1).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -1120,7 +1123,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo("bar1");
-    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -1167,9 +1170,9 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
           ChronoUnit.MONTHS
         );
         assertThat(resultData.get(0).getKey()).isEqualTo(dateAsString);
-        assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+        assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
       } else {
-        assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+        assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
       }
     }
   }
@@ -1245,10 +1248,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(result.getEntryForKey("missing").get().getValue())
       .isEqualTo(
         calculateExpectedValueGivenDurationsDefaultAggr(
-          missingTestStartDate.until(missingTestStartDate.plus(200, MILLIS), MILLIS),
-          missingTestStartDate.until(missingTestStartDate.plus(400, MILLIS), MILLIS),
-          missingTestStartDate.until(missingTestStartDate.plus(3000, MILLIS), MILLIS),
-          missingTestStartDate.until(missingTestStartDate.plus(10000, MILLIS), MILLIS)
+          (double) missingTestStartDate.until(missingTestStartDate.plus(200, MILLIS), MILLIS),
+          (double) missingTestStartDate.until(missingTestStartDate.plus(400, MILLIS), MILLIS),
+          (double) missingTestStartDate.until(missingTestStartDate.plus(3000, MILLIS), MILLIS),
+          (double) missingTestStartDate.until(missingTestStartDate.plus(10000, MILLIS), MILLIS)
         ));
   }
 
@@ -1298,7 +1301,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(result.getData()).hasSize(2);
     assertThat(result.getEntryForKey(String.valueOf(varValue)).get().getValue())
       .isEqualTo(testStartDate.until(testEndDate, MILLIS));
-    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(400L);
+    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(400.);
   }
 
   @Test
@@ -1344,7 +1347,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     resultData = resultDto.getData();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo("bar");
-    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -1499,7 +1502,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
           chronoUnit
         ));
       assertThat(resultData.get(i).getValue())
-        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000L));
+        .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
       assertThat(resultData.get(i).getKey()).isEqualTo(expectedBucketKey);
     }
   }

@@ -38,32 +38,15 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimTimestamp(
-            setDuration,
-            historicUserTaskInstanceDto
-          )
-      );
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double duration) {
+    changeUserTaskWorkDuration(processInstanceDto, duration);
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final long duration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto -> {
-          if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserClaimTimestamp(
-              duration,
-              historicUserTaskInstanceDto
-            );
-          }
-        }
-      );
+                                final double duration) {
+    changeUserTaskWorkDuration(processInstanceDto, userTaskKey, duration);
   }
 
   @Override
@@ -103,7 +86,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForOneProcessWithUnassignedTasks(final long setDuration, final ReportMapResultDto result) {
+  protected void assertMap_ForOneProcessWithUnassignedTasks(final double setDuration, final ReportMapResultDto result) {
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(
@@ -137,7 +120,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
       results,
       ImmutableMap.of(
         DEFAULT_USERNAME, SET_DURATIONS,
-        SECOND_USER, new Long[]{SET_DURATIONS[0]}
+        SECOND_USER, new Double[]{SET_DURATIONS[0]}
       )
     );
     assertThat(results.get(MIN).getInstanceCount(), is(2L));
@@ -164,8 +147,8 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
     assertDurationMapReportResults(
       results,
       ImmutableMap.of(
-        DEFAULT_USERNAME, new Long[]{SET_DURATIONS[0]},
-        SECOND_USER, new Long[]{SET_DURATIONS[1]}
+        DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0]},
+        SECOND_USER, new Double[]{SET_DURATIONS[1]}
       )
     );
     assertThat(results.get(MIN).getIsComplete(), is(true));

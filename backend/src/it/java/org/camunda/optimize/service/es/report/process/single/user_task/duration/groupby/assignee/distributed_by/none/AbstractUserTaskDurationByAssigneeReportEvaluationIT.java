@@ -39,7 +39,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -72,8 +71,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   private static final String USER_TASK_2 = "userTask2";
   public static final String SECOND_USER = "secondUser";
   private static final String SECOND_USERS_PASSWORD = "fooPassword";
-  private static final Long UNASSIGNED_TASK_DURATION = 500L;
-  protected static final Long[] SET_DURATIONS = new Long[]{10L, 20L};
+  private static final Double UNASSIGNED_TASK_DURATION = 500.;
+  protected static final Double[] SET_DURATIONS = new Double[]{10., 20.};
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
 
   @BeforeEach
@@ -91,7 +90,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
 
-    final long setDuration = 20L;
+    final double setDuration = 20;
     changeDuration(processInstanceDto, setDuration);
     importAllEngineEntitiesFromScratch();
 
@@ -160,7 +159,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertMap_ForOneProcessWithUnassignedTasks(setDuration, result);
   }
 
-  protected void assertMap_ForOneProcessWithUnassignedTasks(final long setDuration, final ReportMapResultDto result) {
+  protected void assertMap_ForOneProcessWithUnassignedTasks(final double setDuration, final ReportMapResultDto result) {
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
     assertThat(
@@ -260,8 +259,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       results,
       ImmutableMap.of(
         DEFAULT_USERNAME, SET_DURATIONS,
-        SECOND_USER, new Long[]{SET_DURATIONS[0]},
-        getLocalisedUnassignedLabel(), new Long[]{UNASSIGNED_TASK_DURATION}
+        SECOND_USER, new Double[]{SET_DURATIONS[0]},
+        getLocalisedUnassignedLabel(), new Double[]{UNASSIGNED_TASK_DURATION}
       )
     );
     assertThat(results.get(MIN).getInstanceCount(), is(2L));
@@ -350,9 +349,9 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertDurationMapReportResults(
       results,
       ImmutableMap.of(
-        DEFAULT_USERNAME, new Long[]{SET_DURATIONS[0]},
-        SECOND_USER, new Long[]{SET_DURATIONS[1]},
-        getLocalisedUnassignedLabel(), new Long[]{UNASSIGNED_TASK_DURATION}
+        DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0]},
+        SECOND_USER, new Double[]{SET_DURATIONS[1]},
+        getLocalisedUnassignedLabel(), new Double[]{UNASSIGNED_TASK_DURATION}
       )
     );
     assertThat(results.get(MIN).getIsComplete(), is(true));
@@ -609,7 +608,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       evaluateMapReportForAllAggTypes(reportData);
 
     // then
-    assertDurationMapReportResults(results, ImmutableMap.of(DEFAULT_USERNAME, new Long[]{100L, 300L, 600L}));
+    assertDurationMapReportResults(results, ImmutableMap.of(DEFAULT_USERNAME, new Double[]{100., 300., 600.}));
   }
 
   @Test
@@ -627,13 +626,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   @Data
   static class ExecutionStateTestValues {
     FlowNodeExecutionState executionState;
-    Map<String, Long> expectedIdleDurationValues;
-    Map<String, Long> expectedWorkDurationValues;
-    Map<String, Long> expectedTotalDurationValues;
+    Map<String, Double> expectedIdleDurationValues;
+    Map<String, Double> expectedWorkDurationValues;
+    Map<String, Double> expectedTotalDurationValues;
   }
 
-  private static Map<String, Long> getExpectedResultsMap(Long userTask1Results, Long userTask2Results) {
-    Map<String, Long> result = new HashMap<>();
+  private static Map<String, Double> getExpectedResultsMap(Double userTask1Results, Double userTask2Results) {
+    Map<String, Double> result = new HashMap<>();
     if (nonNull(userTask1Results)) {
       result.put(DEFAULT_USERNAME, userTask1Results);
     }
@@ -647,29 +646,29 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     ExecutionStateTestValues runningStateValues =
       new ExecutionStateTestValues();
     runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
-    runningStateValues.expectedIdleDurationValues = getExpectedResultsMap(200L, 200L);
-    runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500L, 500L);
-    runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700L, 700L);
+    runningStateValues.expectedIdleDurationValues = getExpectedResultsMap(200., 200.);
+    runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500., 500.);
+    runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
     ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
     completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
-    completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100L, null);
-    completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100L, null);
-    completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100L, null);
+    completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
+    completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
+    completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
 
     ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
     allStateValues.executionState = FlowNodeExecutionState.ALL;
     allStateValues.expectedIdleDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L),
-      200L
+      calculateExpectedValueGivenDurationsDefaultAggr(100., 200.),
+      200.
     );
     allStateValues.expectedWorkDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100L, 500L),
-      500L
+      calculateExpectedValueGivenDurationsDefaultAggr(100., 500.),
+      500.
     );
     allStateValues.expectedTotalDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L),
-      700L
+      calculateExpectedValueGivenDurationsDefaultAggr(100., 700.),
+      700.
     );
 
     return Stream.of(runningStateValues, completedStateValues, allStateValues);
@@ -689,8 +688,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, USER_TASK_1, 100L);
     engineIntegrationExtension.claimAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId());
-    changeUserTaskStartDate(processInstanceDto, now, USER_TASK_2, 700L);
-    changeUserTaskClaimDate(processInstanceDto, now, USER_TASK_2, 500L);
+    changeUserTaskStartDate(processInstanceDto, now, USER_TASK_2, 700.);
+    changeUserTaskClaimDate(processInstanceDto, now, USER_TASK_2, 500.);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
@@ -701,8 +700,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       processInstanceDto2.getId()
     );
 
-    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700L);
-    changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500L);
+    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700.);
+    changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -749,7 +748,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(result.getData().size(), is(1));
     assertThat(
       result.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(10.))
     );
   }
 
@@ -775,7 +774,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(result.getData().size(), is(1));
     assertThat(
       result.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(10.))
     );
   }
 
@@ -813,7 +812,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(result.getData().size(), is(1));
     assertThat(
       result.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(10.))
     );
   }
 
@@ -823,13 +822,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   public static Stream<Arguments> assigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 10L))),
+      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 10.))),
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10L), Tuple.tuple(SECOND_USER, 10L))
+        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
       ),
-      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10L))),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10.))),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
     );
   }
@@ -871,16 +870,16 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   public static Stream<Arguments> candidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 10L))),
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 10.))),
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10L), Tuple.tuple(SECOND_USER, 10L))
+        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10L))
+        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10.))
       ),
       Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
     );
@@ -968,9 +967,9 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                          final String userTaskKey,
-                                         final long duration);
+                                         final double duration);
 
-  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration);
+  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double setDuration);
 
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
 
@@ -1045,7 +1044,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   protected void assertCorrectValueOrdering(ReportMapResultDto result) {
     List<MapResultEntryDto> resultData = result.getData();
-    final List<Long> bucketValues = resultData.stream()
+    final List<Double> bucketValues = resultData.stream()
       .map(MapResultEntryDto::getValue)
       .collect(Collectors.toList());
     assertThat(
@@ -1066,7 +1065,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   }
 
   protected void assertDurationMapReportResults(Map<AggregationType, ReportMapResultDto> results,
-                                                Map<String, Long[]> expectedUserTaskValues) {
+                                                Map<String, Double[]> expectedUserTaskValues) {
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       ReportMapResultDto result = results.get(aggType);

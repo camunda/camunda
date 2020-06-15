@@ -90,7 +90,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertThat(resultData.size(), is(1));
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1L));
+    assertThat(resultData.get(0).getValue(), is(1.));
   }
 
   @Test
@@ -123,7 +123,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertThat(resultData.size(), is(1));
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1L));
+    assertThat(resultData.get(0).getValue(), is(1.));
   }
 
 
@@ -249,7 +249,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
-    final List<Long> resultValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
+    final List<Double> resultValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
       resultValues,
       contains(resultValues.stream().sorted(Comparator.reverseOrder()).toArray())
@@ -327,14 +327,14 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .filter(e -> expectedStringToday.equals(e.getKey()))
       .findFirst();
     assertThat(todayEntry.isPresent(), is(true));
-    assertThat(todayEntry.get().getValue(), is(2L));
+    assertThat(todayEntry.get().getValue(), is(2.));
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
     final Optional<MapResultEntryDto> yesterdayEntry = resultData.stream()
       .filter(e -> expectedStringYesterday.equals(e.getKey()))
       .findFirst();
     assertThat(yesterdayEntry.isPresent(), is(true));
-    assertThat(yesterdayEntry.get().getValue(), is(1L));
+    assertThat(yesterdayEntry.get().getValue(), is(1.));
   }
 
   @Test
@@ -371,21 +371,21 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .filter(e -> expectedStringToday.equals(e.getKey()))
       .findFirst();
     assertThat(todayEntry.isPresent(), is(true));
-    assertThat(todayEntry.get().getValue(), is(2L));
+    assertThat(todayEntry.get().getValue(), is(2.));
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
     final Optional<MapResultEntryDto> yesterdayEntry = resultData.stream()
       .filter(e -> expectedStringYesterday.equals(e.getKey()))
       .findFirst();
     assertThat(yesterdayEntry.isPresent(), is(true));
-    assertThat(yesterdayEntry.get().getValue(), is(0L));
+    assertThat(yesterdayEntry.get().getValue(), is(0.));
 
     final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
     final Optional<MapResultEntryDto> dayBeforYesterdayEntry = resultData.stream()
       .filter(e -> expectedStringDayBeforeYesterday.equals(e.getKey()))
       .findFirst();
     assertThat(dayBeforYesterdayEntry.isPresent(), is(true));
-    assertThat(dayBeforYesterdayEntry.get().getValue(), is(1L));
+    assertThat(dayBeforYesterdayEntry.get().getValue(), is(1.));
   }
 
   @Test
@@ -418,14 +418,14 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
                                         int size,
                                         OffsetDateTime now,
                                         ChronoUnit unit) {
-    assertStartDateResultMap(resultData, size, now, unit, 1L);
+    assertStartDateResultMap(resultData, size, now, unit, 1.);
   }
 
   protected void assertStartDateResultMap(List<MapResultEntryDto> resultData,
                                           int size,
                                           OffsetDateTime now,
                                           ChronoUnit unit,
-                                          long expectedValue) {
+                                          Double expectedValue) {
     assertThat(resultData.size(), is(size));
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)

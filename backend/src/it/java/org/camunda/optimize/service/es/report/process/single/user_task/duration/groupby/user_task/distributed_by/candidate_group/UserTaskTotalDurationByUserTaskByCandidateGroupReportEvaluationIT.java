@@ -9,12 +9,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
@@ -31,21 +29,13 @@ public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final long duration) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, duration);
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+                                final Double duration) {
+    changeUserTaskTotalDuration(processInstanceDto, userTaskKey, duration);
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), setDuration);
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
+    changeUserTaskTotalDuration(processInstanceDto, duration);
   }
 
   @Override
@@ -70,9 +60,9 @@ public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
           .processInstanceCount(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 700L)
+          .distributedByContains(FIRST_CANDIDATE_GROUP, 700.)
           .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 700L)
+          .distributedByContains(FIRST_CANDIDATE_GROUP, 700.)
           .doAssert(result);
         // @formatter:on
         break;
@@ -82,7 +72,7 @@ public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
           .processInstanceCount(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 100L)
+          .distributedByContains(FIRST_CANDIDATE_GROUP, 100.)
           .groupByContains(USER_TASK_2)
           .distributedByContains(FIRST_CANDIDATE_GROUP, null)
           .doAssert(result);
@@ -94,9 +84,9 @@ public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
           .processInstanceCount(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L))
+          .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(100., 700.))
           .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP, 700L)
+          .distributedByContains(FIRST_CANDIDATE_GROUP, 700.)
           .doAssert(result);
         // @formatter:on
         break;

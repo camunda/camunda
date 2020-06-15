@@ -36,7 +36,7 @@ public class SingleDecisionNumberReportResult
   }
 
   @Override
-  public long getResultAsNumber() {
+  public double getResultAsNumber() {
     return reportResult.getData();
   }
 }

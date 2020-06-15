@@ -101,7 +101,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(2L);
+      .isEqualTo(2.);
   }
 
   @Test
@@ -135,7 +135,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
       .get()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(2L);
+      .isEqualTo(2.);
   }
 
   @Test
@@ -311,9 +311,9 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 2L));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 2.));
     final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, 2L));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, 2.));
   }
 
   @Test
@@ -342,11 +342,11 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 1L));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 1.));
     final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, 0L));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, 0.));
     final String threeDaysAgo = localDateTimeToString(startOfToday.minusDays(3));
-    assertThat(resultData).contains(new MapResultEntryDto(threeDaysAgo, 1L));
+    assertThat(resultData).contains(new MapResultEntryDto(threeDaysAgo, 1.));
   }
 
   @ParameterizedTest
@@ -417,7 +417,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 1L));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 1.));
   }
 
   @Test
@@ -463,14 +463,14 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     assertThat(result.getData()).hasSize(1);
     assertThat(result.getData())
       .extracting(MapResultEntryDto::getValue)
-      .containsExactly(1L);
+      .containsExactly(1.);
   }
 
   public static Stream<Arguments> assigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_USER}, 1L),
-      Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L),
-      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 1L),
+      Arguments.of(IN, new String[]{SECOND_USER}, 1.),
+      Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2.),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 1.),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, null)
     );
   }
@@ -479,7 +479,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
   @MethodSource("assigneeFilterScenarios")
   public void filterByAssigneeOnlyCountsUserTasksWithThatAssignee(final String filterOperator,
                                                                   final String[] filterValues,
-                                                                  final Long expectedUserTaskCount) {
+                                                                  final Double expectedUserTaskCount) {
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
@@ -515,9 +515,9 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
 
   public static Stream<Arguments> candidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L),
-      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 2L),
-      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 1L),
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, 1.),
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 2.),
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 1.),
       Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, null)
     );
   }
@@ -526,7 +526,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
   @MethodSource("candidateGroupFilterScenarios")
   public void filterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final String filterOperator,
                                                                               final String[] filterValues,
-                                                                              final Long expectedUserTaskCount) {
+                                                                              final Double expectedUserTaskCount) {
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
@@ -583,8 +583,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(2L);
-    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(1L);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
+    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -613,9 +613,9 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Long::intValue).sum()).isEqualTo(3);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(1L);
-    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(1L);
+    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum()).isEqualTo(3);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -653,7 +653,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
     assertThat(resultData).first().extracting(MapResultEntryDto::getKey).isEqualTo(nowStrippedToMonthAsString);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(1L);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test

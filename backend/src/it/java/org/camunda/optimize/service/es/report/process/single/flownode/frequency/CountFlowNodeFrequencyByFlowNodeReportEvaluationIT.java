@@ -65,7 +65,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(4);
-    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2L);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -90,7 +90,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(4);
-    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2L);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -111,7 +111,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(3);
-    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2L);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -137,7 +137,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(3);
-    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2L);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -271,7 +271,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(3);
-    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -300,7 +300,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     assertThat(result.getData()).isNotNull();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).hasSize(3);
-    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -320,7 +320,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getEntryForKey("startEvent").get().getValue()).isNull();
-    assertThat(result.getEntryForKey("userTask").get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("userTask").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -339,7 +339,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent").get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("startEvent").get().getValue()).isEqualTo(1.);
     assertThat(result.getEntryForKey("userTask").get().getValue()).isNull();
   }
 
@@ -360,8 +360,8 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // then
 
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent").get().getValue()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("userTask").get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("startEvent").get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("userTask").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -383,7 +383,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull();
-    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2L);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -439,7 +439,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final ReportMapResultDto result1 = evaluationResponse1.getResult();
     assertThat(result1.getData()).isNotNull();
     assertThat(result1.getData()).hasSize(3);
-    assertThat(result1.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2L);
+    assertThat(result1.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(2.);
 
     final ProcessReportDataDto resultReportDataDto2 = evaluationResponse2.getReportDefinition().getData();
     assertThat(resultReportDataDto2.getProcessDefinitionKey()).isEqualTo(instanceDto2.getProcessDefinitionKey());
@@ -447,7 +447,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final ReportMapResultDto result2 = evaluationResponse2.getResult();
     assertThat(result2.getData()).isNotNull();
     assertThat(result2.getData()).hasSize(3);
-    assertThat(result2.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(1L);
+    assertThat(result2.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -480,7 +480,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(13);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(13L);
-    assertThat(result.getEntryForKey(TEST_ACTIVITY + 0).get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY + 0).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -527,7 +527,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
-    final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
+    final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
     ;
   }
@@ -646,7 +646,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // then
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(3);
-    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(1L);
+    assertThat(result.getEntryForKey(TEST_ACTIVITY).get().getValue()).isEqualTo(1.);
   }
 
   @Test

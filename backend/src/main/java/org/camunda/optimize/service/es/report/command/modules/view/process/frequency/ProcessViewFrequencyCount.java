@@ -30,6 +30,6 @@ public abstract class ProcessViewFrequencyCount extends ProcessViewPart {
                                    final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
     final Filter count = aggs.get(COUNT_AGGREGATION);
-    return new ViewResult().setNumber(count.getDocCount());
+    return new ViewResult().setNumber((double) count.getDocCount());
   }
 }

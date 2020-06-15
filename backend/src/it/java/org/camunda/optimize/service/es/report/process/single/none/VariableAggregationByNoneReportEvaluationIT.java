@@ -68,7 +68,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     final NumberResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
     assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).isEqualTo(12L);
+    assertThat(resultDto.getData()).isEqualTo(12.);
   }
 
   @Test
@@ -86,8 +86,8 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
       // then
       assertThat(evaluationResponse.getInstanceCount()).isEqualTo(1L);
-      final long resultAsLong = ((Number) variables.get(variable)).longValue();
-      assertThat(evaluationResponse.getData()).isEqualTo(resultAsLong);
+      final Double resultAsDouble = ((Number) variables.get(variable)).doubleValue();
+      assertThat(evaluationResponse.getData()).isEqualTo(resultAsDouble);
     }
   }
 
@@ -108,7 +108,27 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(2L);
-    assertThat(evaluationResponse.getData()).isEqualTo(2L);
+    assertThat(evaluationResponse.getData()).isEqualTo(2.);
+  }
+
+  @Test
+  public void rationalNumberAsResult() {
+    // given
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(TEST_VARIABLE, 1);
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
+    variables.put(TEST_VARIABLE, 4);
+    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
+    reportData.getConfiguration().setAggregationType(AVERAGE);
+    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(evaluationResponse.getInstanceCount()).isEqualTo(2L);
+    assertThat(evaluationResponse.getData()).isEqualTo(2.5);
   }
 
   @Test
@@ -129,7 +149,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(2L);
-    assertThat(evaluationResponse.getData()).isEqualTo(2L);
+    assertThat(evaluationResponse.getData()).isEqualTo(2.);
   }
 
   @Test
@@ -149,12 +169,12 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(2L);
-    assertThat(evaluationResponse.getData()).isEqualTo(1L);
+    assertThat(evaluationResponse.getData()).isEqualTo(1.);
   }
 
   @ParameterizedTest
   @MethodSource("aggregationTypes")
-  public void supportsAllAggregationTypes(final AggregationType aggregationType, final long expectedResult) {
+  public void supportsAllAggregationTypes(final AggregationType aggregationType, final Double expectedResult) {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put(TEST_VARIABLE, 1);
@@ -177,11 +197,11 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
   private static Stream<Arguments> aggregationTypes() {
     return Stream.of(
-      Arguments.of(MIN, 1L),
-      Arguments.of(MAX, 6L),
-      Arguments.of(MEDIAN, 5L),
-      Arguments.of(AVERAGE, 4L),
-      Arguments.of(SUM, 12L)
+      Arguments.of(MIN, 1.),
+      Arguments.of(MAX, 6.),
+      Arguments.of(MEDIAN, 5.),
+      Arguments.of(AVERAGE, 4.),
+      Arguments.of(SUM, 12.)
     );
   }
 
@@ -228,7 +248,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(1L);
-    assertThat(evaluationResponse.getData()).isEqualTo(1L);
+    assertThat(evaluationResponse.getData()).isEqualTo(1.);
   }
 
   private static Stream<VariableType> nonNumericVariableTypes() {

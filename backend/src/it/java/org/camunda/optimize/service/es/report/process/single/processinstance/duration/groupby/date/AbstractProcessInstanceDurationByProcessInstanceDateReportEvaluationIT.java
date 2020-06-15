@@ -106,7 +106,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1000L));
+    assertThat(resultData.get(0).getValue(), is(1000.));
 
   }
 
@@ -147,7 +147,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1000L));
+    assertThat(resultData.get(0).getValue(), is(1000.));
   }
 
   @Test
@@ -181,7 +181,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
       evaluateMapReportForAllAggTypes(reportData);
 
     // then
-    assertDurationMapReportResults(results, new Long[]{1000L, 9000L, 2000L});
+    assertDurationMapReportResults(results, new Double[]{1000., 9000., 2000.});
   }
 
 
@@ -306,7 +306,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
       assertThat(result.getIsComplete(), is(true));
       final List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData.size(), is(3));
-      final List<Long> bucketValues = resultData.stream()
+      final List<Double> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
         .collect(Collectors.toList());
       assertThat(
@@ -398,12 +398,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
     assertThat(
       resultData.get(0).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.))
     );
     assertThat(resultData.get(1).getKey(), is(localDateTimeToString(startOfToday.minusDays(1))));
     assertThat(resultData.get(1).getValue(), is(nullValue()));
     assertThat(resultData.get(2).getKey(), is(localDateTimeToString(startOfToday.minusDays(2))));
-    assertThat(resultData.get(2).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
+    assertThat(resultData.get(2).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
   }
 
   @Test
@@ -438,12 +438,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     assertThat(
       resultData.get(0).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.))
     );
     assertThat(resultData.stream().map(MapResultEntryDto::getValue).filter(v -> v != null && v > 0L).count(), is(2L));
     assertThat(
       resultData.get(resultData.size() - 1).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000.))
     );
   }
 
@@ -492,7 +492,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(1000L));
+    assertThat(resultData.get(0).getValue(), is(1000.));
   }
 
   @Test
@@ -542,7 +542,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(1000L));
+    assertThat(resultData.get(0).getValue(), is(1000.));
   }
 
   @Test
@@ -579,7 +579,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
       .forEach(i -> {
         final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus(i, unit));
         assertThat(resultData.get(i).getKey(), is(expectedDateString));
-        assertThat(resultData.get(i).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
+        assertThat(resultData.get(i).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
       });
   }
 
@@ -723,7 +723,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultMap.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
+    assertThat(resultMap.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
   }
 
   @Test
@@ -859,7 +859,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
       .setDateInterval(GroupByDateUnit.DAY)
       .setReportDataType(getTestReportDataType())
       .build();
-    ProcessGroupByDto groupByDate = dataDto.getGroupBy();
+    ProcessGroupByDto<?> groupByDate = dataDto.getGroupBy();
     groupByDate.setValue(null);
 
     //when
@@ -897,7 +897,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   }
 
   private void assertDurationMapReportResults(Map<AggregationType, ReportMapResultDto> results,
-                                              Long[] expectedDurations) {
+                                              Double[] expectedDurations) {
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       final List<MapResultEntryDto> resultData = results.get(aggType).getData();

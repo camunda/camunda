@@ -31,29 +31,15 @@ public class UserTaskIdleDurationByAssigneeByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimTimestamp(
-            setDuration,
-            historicUserTaskInstanceDto
-          )
-      );
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double duration) {
+    changeUserTaskIdleDuration(processInstanceDto, duration);
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final long duration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimTimestamp(
-            duration,
-            historicUserTaskInstanceDto
-          )
-      );
+                                final double duration) {
+    changeUserTaskIdleDuration(processInstanceDto, userTaskKey, duration);
   }
 
   @Override

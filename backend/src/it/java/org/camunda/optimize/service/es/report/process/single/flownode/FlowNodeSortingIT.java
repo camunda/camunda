@@ -243,7 +243,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     assertThat(resultData.size(), is(4));
     // end activity not executed due running userTask
     assertThat(getExecutedFlowNodeDuration(result), is(3L));
-    final List<Long> resultLabels = resultData.stream()
+    final List<Double> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getValue)
       .collect(Collectors.toList());
     assertThat(

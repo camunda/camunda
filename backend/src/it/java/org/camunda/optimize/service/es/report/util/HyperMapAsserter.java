@@ -164,12 +164,12 @@ public class HyperMapAsserter {
       this.groupByKey = groupByKey;
     }
 
-    public GroupByAdder distributedByContains(String distributedByKey, Long result) {
+    public GroupByAdder distributedByContains(String distributedByKey, Double result) {
       distributedByEntry.add(new MapResultEntryDto(distributedByKey, result, distributedByKey));
       return this;
     }
 
-    public GroupByAdder distributedByContains(String distributedByKey, Long result, String label) {
+    public GroupByAdder distributedByContains(String distributedByKey, Double result, String label) {
       distributedByEntry.add(new MapResultEntryDto(distributedByKey, result, label));
       return this;
     }

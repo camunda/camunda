@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view.process.duration;
 
+import org.apache.commons.math3.util.Precision;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
@@ -22,12 +23,12 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumMap;
 
 public abstract class ProcessViewDuration extends ProcessViewPart {
 
-  private static Map<AggregationType, AggregationStrategy> aggregationStrategyMap = new HashMap<>();
+  private static final EnumMap<AggregationType, AggregationStrategy> aggregationStrategyMap =
+    new EnumMap<>(AggregationType.class);
 
   static {
     aggregationStrategyMap.put(AggregationType.MIN, new MinAggregation());
@@ -61,7 +62,12 @@ public abstract class ProcessViewDuration extends ProcessViewPart {
   @Override
   public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
-    Long number = getAggregationStrategy(context.getReportData()).getValue(aggs);
+    Double number = getAggregationStrategy(context.getReportData()).getValue(aggs);
+    if (number != null) {
+      // rounding to closest integer since the lowest precision
+      // for duration in the data is milliseconds anyway for data types.
+      number = Precision.round(number, 0);
+    }
     return new ViewResult().setNumber(number);
   }
 }

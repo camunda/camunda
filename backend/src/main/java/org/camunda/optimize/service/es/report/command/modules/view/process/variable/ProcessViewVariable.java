@@ -114,7 +114,7 @@ public class ProcessViewVariable extends ProcessViewPart {
                                    final ExecutionContext<ProcessReportDataDto> context) {
     final Nested nested = response.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
     final Filter filterVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    Long number = getAggregationStrategy(context.getReportData()).getValue(filterVariables.getAggregations());
+    Double number = getAggregationStrategy(context.getReportData()).getValue(filterVariables.getAggregations());
     return new ViewResult().setNumber(number);
   }
 

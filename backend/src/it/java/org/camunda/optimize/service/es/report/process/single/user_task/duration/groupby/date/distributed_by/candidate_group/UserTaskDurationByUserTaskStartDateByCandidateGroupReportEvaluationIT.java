@@ -75,19 +75,19 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     // finish first running task, second now runs but unclaimed
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
-    changeDuration(processInstance1, USER_TASK_1, 100L);
+    changeDuration(processInstance1, USER_TASK_1, 100.);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
     engineIntegrationExtension.claimAllRunningUserTasks(processInstance1.getId());
-    changeUserTaskStartDate(processInstance1, now, USER_TASK_2, 700L);
-    changeUserTaskClaimDate(processInstance1, now, USER_TASK_2, 500L);
+    changeUserTaskStartDate(processInstance1, now, USER_TASK_2, 700.);
+    changeUserTaskClaimDate(processInstance1, now, USER_TASK_2, 500.);
 
     final ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // claim first running task
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(processInstance2.getId(), FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.claimAllRunningUserTasks(processInstance2.getId());
-    changeUserTaskStartDate(processInstance2, now, USER_TASK_1, 700L);
-    changeUserTaskClaimDate(processInstance2, now, USER_TASK_1, 500L);
+    changeUserTaskStartDate(processInstance2, now, USER_TASK_1, 700.);
+    changeUserTaskClaimDate(processInstance2, now, USER_TASK_1, 500.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -113,34 +113,34 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
   @AllArgsConstructor
   @NoArgsConstructor
   static class ExecutionStateTestValues {
-    Long expectedIdleDurationValue;
-    Long expectedWorkDurationValue;
-    Long expectedTotalDurationValue;
+    Double expectedIdleDurationValue;
+    Double expectedWorkDurationValue;
+    Double expectedTotalDurationValue;
   }
 
   protected static Stream<Arguments> getExecutionStateExpectedValues() {
     return Stream.of(
       Arguments.of(
         FlowNodeExecutionState.RUNNING,
-        new ExecutionStateTestValues(200L, 500L, 700L),
-        new ExecutionStateTestValues(200L, 500L, 700L)
+        new ExecutionStateTestValues(200., 500., 700.),
+        new ExecutionStateTestValues(200., 500., 700.)
       ),
       Arguments.of(
         FlowNodeExecutionState.COMPLETED,
-        new ExecutionStateTestValues(100L, 100L, 100L),
+        new ExecutionStateTestValues(100., 100., 100.),
         null
       ),
       Arguments.of(
         FlowNodeExecutionState.ALL,
         new ExecutionStateTestValues(
-          calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L),
-          calculateExpectedValueGivenDurationsDefaultAggr(100L, 500L),
-          calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L)
+          calculateExpectedValueGivenDurationsDefaultAggr(100., 200.),
+          calculateExpectedValueGivenDurationsDefaultAggr(100., 500.),
+          calculateExpectedValueGivenDurationsDefaultAggr(100., 700.)
         ),
         new ExecutionStateTestValues(
-          calculateExpectedValueGivenDurationsDefaultAggr(200L),
-          calculateExpectedValueGivenDurationsDefaultAggr(500L),
-          calculateExpectedValueGivenDurationsDefaultAggr(700L)
+          calculateExpectedValueGivenDurationsDefaultAggr(200.),
+          calculateExpectedValueGivenDurationsDefaultAggr(500.),
+          calculateExpectedValueGivenDurationsDefaultAggr(700.)
         )
       )
     );
@@ -151,7 +151,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }
 
-  protected abstract Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues);
+  protected abstract Double getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues);
 
   @Override
   protected ProcessGroupByType getGroupByType() {

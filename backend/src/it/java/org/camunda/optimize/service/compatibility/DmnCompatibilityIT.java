@@ -175,7 +175,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
       .isNotNull()
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactly(Tuple.tuple("gold", 2L));
+      .containsExactly(Tuple.tuple("gold", 2.0));
   }
 
   @ParameterizedTest
@@ -200,7 +200,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
       .isNotNull()
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactly(Tuple.tuple("ok", 2L));
+      .containsExactly(Tuple.tuple("ok", 2.0));
   }
 
   @ParameterizedTest

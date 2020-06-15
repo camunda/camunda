@@ -107,10 +107,10 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
     assertThat(
       resultData.get(0).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.))
     );
     assertThat(resultData.get(1).getKey(), is(localDateTimeToString(startOfToday.minusDays(1))));
-    assertThat(resultData.get(1).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
+    assertThat(resultData.get(1).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
   }
 
 
@@ -154,7 +154,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
       resultData.get(0).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(0).getValue(), is(1000L));
+    assertThat(resultData.get(0).getValue(), is(1000.));
 
     assertThat(
       resultData.get(1).getKey(),
@@ -166,7 +166,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
       resultData.get(2).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(2).getValue(), is(2000L));
+    assertThat(resultData.get(2).getValue(), is(2000.));
 
     assertThat(
       resultData.get(3).getKey(),
@@ -212,19 +212,19 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
     assertThat(resultData.size(), is(3));
 
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(truncateToStartOfUnit(now, ChronoUnit.DAYS))));
-    assertThat(resultData.get(0).getValue(), is(1000L));
+    assertThat(resultData.get(0).getValue(), is(1000.));
 
     assertThat(
       resultData.get(1).getKey(),
       is(localDateTimeToString(truncateToStartOfUnit(now.minusDays(1), ChronoUnit.DAYS)))
     );
-    assertThat(resultData.get(1).getValue(), is(now.minusDays(1).until(now, MILLIS)));
+    assertThat(resultData.get(1).getValue(), is((double) now.minusDays(1).until(now, MILLIS)));
 
     assertThat(
       resultData.get(2).getKey(),
       is(localDateTimeToString(truncateToStartOfUnit(now.minusDays(2), ChronoUnit.DAYS)))
     );
-    assertThat(resultData.get(2).getValue(), is(now.minusDays(2).until(now, MILLIS)));
+    assertThat(resultData.get(2).getValue(), is((double) now.minusDays(2).until(now, MILLIS)));
   }
 
   @Test
@@ -273,7 +273,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
     final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(runningProcInstStartDate.until(now, MILLIS)));
+    assertThat(resultData.get(0).getValue(), is((double) runningProcInstStartDate.until(now, MILLIS)));
   }
 
   @Test
@@ -326,7 +326,7 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
     final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(runningProcInstStartDate.until(now, MILLIS)));
+    assertThat(resultData.get(0).getValue(), is((double) runningProcInstStartDate.until(now, MILLIS)));
   }
 
 }

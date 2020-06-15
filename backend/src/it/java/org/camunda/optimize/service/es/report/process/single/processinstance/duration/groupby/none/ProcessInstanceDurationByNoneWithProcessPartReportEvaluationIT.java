@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -99,8 +98,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getInstanceCount(), is(1L));
-    long calculatedResult = evaluationResponse.getResult().getData();
-    assertThat(calculatedResult, is(1000L));
+    Double calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(1000.));
   }
 
   @Test
@@ -142,8 +141,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getInstanceCount(), is(1L));
-    long calculatedResult = evaluationResponse.getResult().getData();
-    assertThat(calculatedResult, is(activityDurationInSeconds * 1000L));
+    Double calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(activityDurationInSeconds * 1000.));
   }
 
   @Test
@@ -182,8 +181,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
     assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
 
-    long calculatedResult = evaluationResponse.getResult().getData();
-    assertThat(calculatedResult, is(1000L));
+    Double calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(1000.));
   }
 
   @Test
@@ -244,8 +243,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    long calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(2000L));
+    Double calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(2000.));
   }
 
   /**
@@ -272,8 +271,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    long calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(0L));
+    Double calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0.));
   }
 
   private void setActivityStartDatesToNull() {
@@ -318,8 +317,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    long calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(0L));
+    Double calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0.));
   }
 
   @Test
@@ -344,8 +343,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    long calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(0L));
+    Double calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0.));
   }
 
   @Test
@@ -370,8 +369,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    long calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(0L));
+    Double calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0.));
   }
 
   @Test
@@ -388,8 +387,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    long calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(0L));
+    Double calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0.));
   }
 
   @Test
@@ -475,8 +474,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    long calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(1000L));
+    Double calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(1000.));
 
     // when
     reportData.setFilter(createVariableFilter("false"));
@@ -484,7 +483,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
 
     // then
     calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(0L));
+    assertThat(calculatedResult, is(0.));
   }
 
   private List<ProcessFilterDto<?>> createVariableFilter(String value) {
@@ -550,13 +549,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   private void assertAggregationResults(
     Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> results) {
     assertThat(results.get(AVERAGE).getResult().getData(), is(notNullValue()));
-    assertThat(results.get(AVERAGE).getResult().getData(), is(4000L));
+    assertThat(results.get(AVERAGE).getResult().getData(), is(4000.));
     assertThat(results.get(MIN).getResult().getData(), is(notNullValue()));
-    assertThat(results.get(MIN).getResult().getData(), is(1000L));
+    assertThat(results.get(MIN).getResult().getData(), is(1000.));
     assertThat(results.get(MAX).getResult().getData(), is(notNullValue()));
-    assertThat(results.get(MAX).getResult().getData(), is(9000L));
+    assertThat(results.get(MAX).getResult().getData(), is(9000.));
     assertThat(results.get(MEDIAN).getResult().getData(), is(notNullValue()));
-    assertThat(results.get(MEDIAN).getResult().getData(), is(2000L));
+    assertThat(results.get(MEDIAN).getResult().getData(), is(2000.));
   }
 
   private ProcessReportDataDto createReport(String definitionKey, String definitionVersion, String start, String end) {

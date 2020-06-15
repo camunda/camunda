@@ -100,7 +100,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -130,7 +130,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -173,7 +173,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -208,16 +208,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
@@ -255,16 +255,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -307,14 +307,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -352,11 +352,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -392,9 +392,9 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, 2L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 2., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
@@ -424,12 +424,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
@@ -465,12 +465,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
       .processInstanceCount(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
-      .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME);
+      .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME);
 
     for (int i = 1; i < groupingCount; i++) {
       groupByAdder = groupByAdder
         .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME);
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME);
     }
     groupByAdder.doAssert(result);
   }
@@ -502,7 +502,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -551,7 +551,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -559,17 +559,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   public static Stream<Arguments> assigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 1L))
+        IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 1.))
       ),
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1L), Tuple.tuple(USER_TASK_2, 1L))
+        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.))
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1L), Tuple.tuple(USER_TASK_2, null))
+        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, null))
       ),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
     );
@@ -616,17 +616,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       Arguments.of(
         IN,
         new String[]{SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 1L))
+        Lists.newArrayList(Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 1.))
       ),
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1L), Tuple.tuple(USER_TASK_2, 1L))
+        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.))
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1L), Tuple.tuple(USER_TASK_2, null))
+        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, null))
       ),
       Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
     );
@@ -691,8 +691,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     // then
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertFirstValueEquals(resultData, 2L);
-    assertLastValueEquals(resultData, 1L);
+    assertFirstValueEquals(resultData, 2.);
+    assertLastValueEquals(resultData, 1.);
   }
 
   @Test
@@ -722,15 +722,15 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     // then
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertFirstValueEquals(resultData, 1L);
-    assertLastValueEquals(resultData, 1L);
+    assertFirstValueEquals(resultData, 1.);
+    assertLastValueEquals(resultData, 1.);
     final int sumOfAllValues = resultData.stream()
       .map(HyperMapResultEntryDto::getValue)
       .flatMap(List::stream)
       .filter(Objects::nonNull)
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)
-      .mapToInt(Long::intValue).sum();
+      .mapToInt(Double::intValue).sum();
     assertThat(sumOfAllValues).isEqualTo(3);
   }
 
@@ -794,8 +794,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -827,8 +827,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -857,7 +857,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -889,19 +889,19 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
 
-  private void assertLastValueEquals(final List<HyperMapResultEntryDto> resultData, final long expected) {
+  private void assertLastValueEquals(final List<HyperMapResultEntryDto> resultData, final Double expected) {
     assertThat(resultData).last().extracting(HyperMapResultEntryDto::getValue)
       .extracting(e -> e.get(0))
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(expected);
   }
 
-  private void assertFirstValueEquals(final List<HyperMapResultEntryDto> resultData, final long expected) {
+  private void assertFirstValueEquals(final List<HyperMapResultEntryDto> resultData, final Double expected) {
     assertThat(resultData).first().extracting(HyperMapResultEntryDto::getValue)
       .extracting(e -> e.get(0))
       .extracting(MapResultEntryDto::getValue)

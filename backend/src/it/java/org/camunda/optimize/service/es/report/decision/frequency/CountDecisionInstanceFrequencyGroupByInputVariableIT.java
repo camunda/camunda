@@ -86,7 +86,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(result.getData().get(0).getKey()).isEqualTo(amountValue);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(2L);
+    assertThat(result.getData().get(0).getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -121,7 +121,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(result.getData().get(0).getKey()).isEqualTo(dateGroupKey);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(2L);
+    assertThat(result.getData().get(0).getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -209,9 +209,9 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(resultData).hasSize(3);
     assertThat(resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList()))
       .containsExactly("10.0", "110.0", "210.0");
-    assertThat(resultData.get(0).getValue()).isEqualTo(3L);
-    assertThat(resultData.get(1).getValue()).isEqualTo(2L);
-    assertThat(resultData.get(2).getValue()).isEqualTo(1L);
+    assertThat(resultData.get(0).getValue()).isEqualTo(3.);
+    assertThat(resultData.get(1).getValue()).isEqualTo(2.);
+    assertThat(resultData.get(2).getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -427,7 +427,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
+    final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
@@ -481,7 +481,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo("200.0");
-    assertThat(resultData.get(0).getValue()).isEqualTo(2L);
+    assertThat(resultData.get(0).getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -518,7 +518,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(result.getData().get(0).getKey()).isEqualTo(amountValue);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(4L);
+    assertThat(result.getData().get(0).getValue()).isEqualTo(4.);
   }
 
   @Test
@@ -554,7 +554,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(result.getData().get(0).getKey()).isEqualTo(categoryValue);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(4L);
+    assertThat(result.getData().get(0).getValue()).isEqualTo(4.);
   }
 
   @Test
@@ -592,7 +592,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(result.getData().get(0).getKey()).isEqualTo(amountValue);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(2L);
+    assertThat(result.getData().get(0).getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -676,7 +676,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(1L);
+    assertThat(result.getData().get(0).getValue()).isEqualTo(1.);
     assertThat(result.getData().get(0).getKey()).isEqualTo(expectedKey);
   }
 
@@ -822,8 +822,8 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData.get(0).getValue()).isEqualTo(1L);
-    assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(2L);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
+    assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -901,9 +901,9 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(3);
-    assertThat(result.getEntryForKey("testValidMatch").get().getValue()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("whateverElse").get().getValue()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(2L);
+    assertThat(result.getEntryForKey("testValidMatch").get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("whateverElse").get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -941,8 +941,8 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey(String.valueOf(doubleVarValue)).get().getValue()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(2L);
+    assertThat(result.getEntryForKey(String.valueOf(doubleVarValue)).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(2.);
   }
 
   @Test

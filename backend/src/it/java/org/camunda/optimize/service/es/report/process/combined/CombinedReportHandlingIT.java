@@ -640,7 +640,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(result.getResult().getData().entrySet()).hasSize(2);
     assertThat(result.getResult().getData().get(runningInstanceReportId).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
     assertThat(result.getResult().getData().get(completedInstanceReportId).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
       .doesNotContainNull();
@@ -773,10 +773,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(result.getResult().getData().entrySet()).hasSize(2);
     assertThat(result.getResult().getData().get(report1).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
     assertThat(result.getResult().getData().get(report2).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
 
     // when variable filter applied
     AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
@@ -789,10 +789,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
     assertThat(filteredResult.getResult().getData().get(report1).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
     assertThat(filteredResult.getResult().getData().get(report2).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
   }
 
   @Test
@@ -817,10 +817,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(result.getResult().getData().entrySet()).hasSize(2);
     assertThat(result.getResult().getData().get(variableReport).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
     assertThat(result.getResult().getData().get(noVariableReport).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
 
     // when variable filter applied
     AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
@@ -836,7 +836,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .containsOnlyNulls();
     assertThat(filteredResult.getResult().getData().get(noVariableReport).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
   }
 
   @Test
@@ -863,10 +863,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(result.getResult().getData().entrySet()).hasSize(2);
     assertThat(result.getResult().getData().get(report1).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
     assertThat(result.getResult().getData().get(report2).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
 
     // when variable filter applied with other value
     AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
@@ -894,7 +894,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
     assertThat(filteredResult.getResult().getData().get(report1).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
-      .contains(1L, 1L, null);
+      .contains(1., 1., null);
     assertThat(filteredResult.getResult().getData().get(report2).getResult().getData())
       .extracting(MapResultEntryDto::getValue)
       .containsOnlyNulls();

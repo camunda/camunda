@@ -464,12 +464,12 @@ public class DateQueryFilterIT extends AbstractFilterIT {
       resultData.get(0).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(0).getValue(), is(0L));
+    assertThat(resultData.get(0).getValue(), is(0.));
     assertThat(
       resultData.get(1).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(1).getValue(), is(2L));
+    assertThat(resultData.get(1).getValue(), is(2.));
   }
 
   private ProcessInstanceEngineDto startAndImportSimpleProcess() {

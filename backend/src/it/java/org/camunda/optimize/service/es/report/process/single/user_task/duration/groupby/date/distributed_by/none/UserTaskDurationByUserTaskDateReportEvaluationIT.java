@@ -80,7 +80,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishAllUserTasks(processInstanceDto);
 
-    final long expectedDuration = 20L;
+    final Double expectedDuration = 20.;
     changeDuration(processInstanceDto, expectedDuration);
 
     importAllEngineEntitiesFromScratch();
@@ -126,7 +126,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishAllUserTasks(processInstanceDto);
 
-    final long expectedDuration = 20L;
+    final Double expectedDuration = 20.;
     changeDuration(processInstanceDto, expectedDuration);
 
     importAllEngineEntitiesFromScratch();
@@ -167,8 +167,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     finishAllUserTasks(processInstanceDto1);
     changeUserTaskDate(processInstanceDto1, USER_TASK_1, today);
     changeUserTaskDate(processInstanceDto1, USER_TASK_2, today.minusDays(1));
-    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
-    changeDuration(processInstanceDto1, USER_TASK_2, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10.);
+    changeDuration(processInstanceDto1, USER_TASK_2, 10.);
 
     final ProcessInstanceEngineDto processInstanceDto2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -176,8 +176,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     finishAllUserTasks(processInstanceDto2);
     changeUserTaskDate(processInstanceDto2, USER_TASK_1, today);
     changeUserTaskDate(processInstanceDto2, USER_TASK_2, today.minusDays(1));
-    changeDuration(processInstanceDto2, USER_TASK_1, 20L);
-    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
+    changeDuration(processInstanceDto2, USER_TASK_1, 20.);
+    changeDuration(processInstanceDto2, USER_TASK_2, 20.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -194,7 +194,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
       assertThat(result.getEntryForKey(groupedByDayDateAsString(today)))
         .get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(10L, 20L).get(aggType));
+        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(aggType));
     });
   }
 
@@ -210,8 +210,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     finishAllUserTasks(processInstanceDto1);
     changeUserTaskDate(processInstanceDto1, USER_TASK_1, today);
     changeUserTaskDate(processInstanceDto1, USER_TASK_2, today.minusDays(1));
-    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
-    changeDuration(processInstanceDto1, USER_TASK_2, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10.);
+    changeDuration(processInstanceDto1, USER_TASK_2, 10.);
 
     final ProcessDefinitionEngineDto processDefinition2 = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto2 =
@@ -220,8 +220,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     finishAllUserTasks(processInstanceDto2);
     changeUserTaskDate(processInstanceDto2, USER_TASK_1, today);
     changeUserTaskDate(processInstanceDto2, USER_TASK_2, today.minusDays(1));
-    changeDuration(processInstanceDto2, USER_TASK_1, 20L);
-    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
+    changeDuration(processInstanceDto2, USER_TASK_1, 20.);
+    changeDuration(processInstanceDto2, USER_TASK_2, 20.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -238,7 +238,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
       assertThat(result.getEntryForKey(groupedByDayDateAsString(today)))
         .get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(10L, 20L).get(aggType));
+        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(aggType));
     });
   }
 
@@ -395,8 +395,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
     changeUserTaskDate(processInstance1, USER_TASK_2, referenceDate.minusDays(2));
-    changeDuration(processInstance1, USER_TASK_1, 10L);
-    changeDuration(processInstance1, USER_TASK_2, 20L);
+    changeDuration(processInstance1, USER_TASK_1, 10.);
+    changeDuration(processInstance1, USER_TASK_2, 20.);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -404,8 +404,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
     changeUserTaskDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
-    changeDuration(processInstance2, USER_TASK_1, 10L);
-    changeDuration(processInstance2, USER_TASK_2, 20L);
+    changeDuration(processInstance2, USER_TASK_1, 10.);
+    changeDuration(processInstance2, USER_TASK_2, 20.);
 
 
     importAllEngineEntitiesFromScratch();
@@ -420,9 +420,9 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 10L));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 10.));
     final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, 20L));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, 20.));
   }
 
   @Test
@@ -436,8 +436,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance, USER_TASK_1, referenceDate.minusDays(1));
     changeUserTaskDate(processInstance, USER_TASK_2, referenceDate.minusDays(3));
-    changeDuration(processInstance, USER_TASK_1, 10L);
-    changeDuration(processInstance, USER_TASK_2, 30L);
+    changeDuration(processInstance, USER_TASK_1, 10.);
+    changeDuration(processInstance, USER_TASK_2, 30.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -453,11 +453,11 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 10L));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 10.));
     final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
     assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, null));
     final String threeDaysAgo = localDateTimeToString(startOfToday.minusDays(3));
-    assertThat(resultData).contains(new MapResultEntryDto(threeDaysAgo, 30L));
+    assertThat(resultData).contains(new MapResultEntryDto(threeDaysAgo, 30.));
   }
 
   @ParameterizedTest
@@ -480,7 +480,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
       .collect(Collectors.toList());
     engineIntegrationExtension.finishAllRunningUserTasks();
     updateUserTaskTime(processInstanceDtos, now, groupByUnitAsChrono);
-    processInstanceDtos.forEach(procInst -> changeDuration(procInst, 10L));
+    processInstanceDtos.forEach(procInst -> changeDuration(procInst, 10.));
 
     importAllEngineEntitiesFromScratch();
 
@@ -509,14 +509,14 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
       engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
-    changeDuration(processInstance1, USER_TASK_1, 10L);
+    changeDuration(processInstance1, USER_TASK_1, 10.);
 
     ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     changeUserTaskDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
-    changeDuration(processInstance2, USER_TASK_1, 100L);
+    changeDuration(processInstance2, USER_TASK_1, 100.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -532,7 +532,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 10L));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 10.));
   }
 
   @Test
@@ -563,7 +563,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     final ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeDuration(processInstance, 10L);
+    changeDuration(processInstance, 10.);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
     importAllEngineEntitiesFromScratch();
@@ -580,14 +580,14 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     assertThat(result.getData()).hasSize(1);
     assertThat(result.getData())
       .extracting(MapResultEntryDto::getValue)
-      .containsExactly(10L);
+      .containsExactly(10.);
   }
 
   public static Stream<Arguments> assigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_USER}, 10L),
-      Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 10L),
-      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 10L),
+      Arguments.of(IN, new String[]{SECOND_USER}, 10.),
+      Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 10.),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 10.),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, null)
     );
   }
@@ -596,7 +596,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
   @MethodSource("assigneeFilterScenarios")
   public void filterByAssigneeOnlyCountsUserTasksWithThatAssignee(final String filterOperator,
                                                                   final String[] filterValues,
-                                                                  final Long expectedUserTaskCount) {
+                                                                  final Double expectedUserTaskCount) {
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
@@ -610,8 +610,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
-    changeDuration(processInstanceDto, USER_TASK_1, 10L);
-    changeDuration(processInstanceDto, USER_TASK_2, 10L);
+    changeDuration(processInstanceDto, USER_TASK_1, 10.);
+    changeDuration(processInstanceDto, USER_TASK_2, 10.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -634,9 +634,9 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
   public static Stream<Arguments> candidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, 10L),
-      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 10L),
-      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 10L),
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, 10.),
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, 10.),
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, 10.),
       Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, null)
     );
   }
@@ -645,7 +645,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
   @MethodSource("candidateGroupFilterScenarios")
   public void filterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final String filterOperator,
                                                                               final String[] filterValues,
-                                                                              final Long expectedUserTaskCount) {
+                                                                              final Double expectedUserTaskCount) {
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
@@ -657,8 +657,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeDuration(processInstanceDto, USER_TASK_1, 10L);
-    changeDuration(processInstanceDto, USER_TASK_2, 10L);
+    changeDuration(processInstanceDto, USER_TASK_1, 10.);
+    changeDuration(processInstanceDto, USER_TASK_2, 10.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -696,9 +696,9 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     updates.put(processInstanceDto2.getId(), startOfToday);
     updates.put(processInstanceDto3.getId(), startOfToday.minusDays(1));
     changeUserTaskDates(updates);
-    changeDuration(processInstanceDto1, USER_TASK_1, 100L);
-    changeDuration(processInstanceDto2, USER_TASK_1, 100L);
-    changeDuration(processInstanceDto3, USER_TASK_1, 200L);
+    changeDuration(processInstanceDto1, USER_TASK_1, 100.);
+    changeDuration(processInstanceDto2, USER_TASK_1, 100.);
+    changeDuration(processInstanceDto3, USER_TASK_1, 200.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -709,8 +709,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(100L);
-    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(200L);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
+    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(200.);
   }
 
   @Test
@@ -730,9 +730,9 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     updates.put(processInstanceDto2.getId(), startOfToday.plusDays(2));
     updates.put(processInstanceDto3.getId(), startOfToday.plusDays(5));
     changeUserTaskDates(updates);
-    changeDuration(processInstanceDto1, USER_TASK_1, 100L);
-    changeDuration(processInstanceDto2, USER_TASK_1, 200L);
-    changeDuration(processInstanceDto3, USER_TASK_1, 500L);
+    changeDuration(processInstanceDto1, USER_TASK_1, 100.);
+    changeDuration(processInstanceDto2, USER_TASK_1, 200.);
+    changeDuration(processInstanceDto3, USER_TASK_1, 500.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -746,10 +746,10 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     assertThat(resultData.stream()
                  .map(MapResultEntryDto::getValue)
                  .filter(Objects::nonNull)
-                 .mapToInt(Long::intValue)
+                 .mapToInt(Double::intValue)
                  .sum()).isEqualTo(800);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(500L);
-    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(100L);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(500.);
+    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
   }
 
   @Test
@@ -774,7 +774,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     final ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeDuration(processInstance, 100L);
+    changeDuration(processInstance, 100.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -788,7 +788,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
     assertThat(resultData).first().extracting(MapResultEntryDto::getKey).isEqualTo(nowStrippedToMonthAsString);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(100L);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
   }
 
   @Test
@@ -1061,9 +1061,9 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                          final String userTaskKey,
-                                         final long duration);
+                                         final Double duration);
 
-  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration);
+  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double setDuration);
 
   protected abstract UserTaskDurationTime getUserTaskDurationTime();
 

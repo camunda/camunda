@@ -167,7 +167,7 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
     );
     assertThat(
       resultData.get(0).getValue(),
-      is(1000L)
+      is(1000.)
     );
 
     assertThat(

@@ -65,15 +65,15 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
   @AllArgsConstructor
   static class ExecutionStateTestValues {
     FlowNodeExecutionState executionState;
-    Long resultValue;
+    Double resultValue;
 
   }
 
   protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
     return Stream.of(
-      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, 1L),
-      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, 2L),
-      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, 3L)
+      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, 1.),
+      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, 2.),
+      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, 3.)
     );
   }
 

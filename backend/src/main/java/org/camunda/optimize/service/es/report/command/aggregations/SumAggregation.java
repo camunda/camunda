@@ -10,16 +10,16 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLongOrNull;
+import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 
 public class SumAggregation implements AggregationStrategy {
   private static final String SUM_AGGREGATION = "sumAggregation";
 
   @Override
-  public Long getValue(final Aggregations aggs) {
+  public Double getValue(final Aggregations aggs) {
     final Sum aggregation = aggs.get(SUM_AGGREGATION);
-    return mapToLongOrNull(aggregation.getValue());
+    return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override

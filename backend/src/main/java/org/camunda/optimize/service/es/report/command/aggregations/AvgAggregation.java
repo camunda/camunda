@@ -10,16 +10,16 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.Avg;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLongOrNull;
+import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.avg;
 
 public class AvgAggregation implements AggregationStrategy {
   private static final String AVG_AGGREGATION = "avgAggregation";
 
   @Override
-  public Long getValue(final Aggregations aggs) {
+  public Double getValue(final Aggregations aggs) {
     final Avg aggregation = aggs.get(AVG_AGGREGATION);
-    return mapToLongOrNull(aggregation.getValue());
+    return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override

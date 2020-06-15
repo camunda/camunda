@@ -80,8 +80,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultData.get(0).getValue(), is(2L));
-    assertThat(resultData.get(resultData.size() - 1).getValue(), is(1L));
+    assertThat(resultData.get(0).getValue(), is(2.));
+    assertThat(resultData.get(resultData.size() - 1).getValue(), is(1.));
   }
 
   @Test
@@ -111,9 +111,9 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Long::intValue).sum(), is(3));
-    assertThat(resultData.get(0).getValue(), is(1L));
-    assertThat(resultData.get(resultData.size() - 1).getValue(), is(1L));
+    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum(), is(3));
+    assertThat(resultData.get(0).getValue(), is(1.));
+    assertThat(resultData.get(resultData.size() - 1).getValue(), is(1.));
   }
 
   @Test
@@ -150,7 +150,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
     assertThat(resultData.get(0).getKey(), is(nowStrippedToMonthAsString));
-    assertThat(resultData.get(0).getValue(), is(1L));
+    assertThat(resultData.get(0).getValue(), is(1.));
   }
 
   @Test

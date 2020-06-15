@@ -104,9 +104,9 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
       });
 
     // instances fall into correct buckets (overlapping in the 2nd bucket)
-    assertThat(resultData.get(0).getValue()).isEqualTo(1);
-    assertThat(resultData.get(1).getValue()).isEqualTo(2);
-    assertThat(resultData.get(2).getValue()).isEqualTo(1);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
+    assertThat(resultData.get(1).getValue()).isEqualTo(2.);
+    assertThat(resultData.get(2).getValue()).isEqualTo(1.);
   }
 
   @Override
@@ -114,7 +114,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
                                           int size,
                                           OffsetDateTime now,
                                           ChronoUnit unit,
-                                          long expectedValue) {
+                                          Double expectedValue) {
     MatcherAssert.assertThat(resultData.size(), is(size));
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit)
       .toOffsetDateTime()

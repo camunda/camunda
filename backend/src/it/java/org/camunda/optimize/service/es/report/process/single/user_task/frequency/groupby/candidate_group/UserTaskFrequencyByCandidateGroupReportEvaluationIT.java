@@ -100,11 +100,11 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(
       result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(result.getInstanceCount(), is(1L));
   }
@@ -139,11 +139,11 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(
       result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(result.getInstanceCount(), is(1L));
   }
@@ -177,11 +177,11 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(result.getData().size(), is(2));
     assertThat(
       result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(2L)
+      is(2.)
     );
     assertThat(
       result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(result.getInstanceCount(), is(1L));
   }
@@ -209,15 +209,15 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(getExecutedFlowNodeCount(result), is(3L));
     assertThat(
       result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(2L)
+      is(2.)
     );
     assertThat(
       result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(
       result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(result.getInstanceCount(), is(2L));
   }
@@ -374,22 +374,22 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(getExecutedFlowNodeCount(result1), is(2L));
     assertThat(
       result1.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(2L)
+      is(2.)
     );
     assertThat(
       result1.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(2L)
+      is(2.)
     );
 
     assertThat(result2.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(result2), is(2L));
     assertThat(
       result2.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(
       result2.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
-      is(1L)
+      is(1.)
     );
   }
 
@@ -428,13 +428,13 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   public static Stream<Arguments> assigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 1L))),
+      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 1.))),
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 1L), Tuple.tuple(SECOND_CANDIDATE_GROUP, 1L))
+        Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 1.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 1L))),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 1.))),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
     );
   }
@@ -477,15 +477,15 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   public static Stream<Arguments> candidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 1L))
+        IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_CANDIDATE_GROUP, 1.))
       ),
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 1L), Tuple.tuple(SECOND_CANDIDATE_GROUP, 1L))
+        Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 1.), Tuple.tuple(SECOND_CANDIDATE_GROUP, 1.))
       ),
       Arguments.of(
-        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 1L))
+        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(FIRST_CANDIDATE_GROUP, 1.))
       ),
       Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
     );
@@ -524,11 +524,11 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   @AllArgsConstructor
   static class ExecutionStateTestValues {
     FlowNodeExecutionState executionState;
-    Map<String, Long> expectedFrequencyValues;
+    Map<String, Double> expectedFrequencyValues;
   }
 
-  private static Map<String, Long> getExpectedResultsMap(Long userTask1Results, Long userTask2Results) {
-    Map<String, Long> result = new HashMap<>();
+  private static Map<String, Double> getExpectedResultsMap(Double userTask1Results, Double userTask2Results) {
+    Map<String, Double> result = new HashMap<>();
     result.put(FIRST_CANDIDATE_GROUP, userTask1Results);
     result.put(SECOND_CANDIDATE_GROUP, userTask2Results);
     return result;
@@ -536,9 +536,9 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
     return Stream.of(
-      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(2L, 1L)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1L, null)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(3L, 1L))
+      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(2., 1.)),
+      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1., null)),
+      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(3., 1.))
     );
   }
 
@@ -618,7 +618,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(2L)
+      is(2.)
     );
   }
 
@@ -645,7 +645,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(11L)
+      is(11.)
     );
   }
 
@@ -684,7 +684,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(1L)
+      is(1.)
     );
   }
 
@@ -806,10 +806,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   private void assertCorrectValueOrdering(ReportMapResultDto result) {
     List<MapResultEntryDto> resultData = result.getData();
-    final List<Long> bucketValues = resultData.stream()
+    final List<Double> bucketValues = resultData.stream()
       .map(MapResultEntryDto::getValue)
       .collect(Collectors.toList());
-    final List<Long> bucketValuesWithoutNullValue = bucketValues.stream()
+    final List<Double> bucketValuesWithoutNullValue = bucketValues.stream()
       .filter(Objects::nonNull)
       .collect(Collectors.toList());
     assertThat(

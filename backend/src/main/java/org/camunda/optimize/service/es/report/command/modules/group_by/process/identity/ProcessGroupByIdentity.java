@@ -44,9 +44,9 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 @RequiredArgsConstructor
 public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDataDto> {
 
-  protected static final String GROUP_BY_IDENTITY_TERMS_AGGREGATION = "identities";
-  protected static final String USER_TASKS_AGGREGATION = "userTasks";
-  protected static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
+  private static final String GROUP_BY_IDENTITY_TERMS_AGGREGATION = "identities";
+  private static final String USER_TASKS_AGGREGATION = "userTasks";
+  private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
   // temporary GROUP_BY_IDENTITY_MISSING_KEY to ensure no overlap between this label and userTask names
   private static final String GROUP_BY_IDENTITY_MISSING_KEY = "unassignedUserTasks___";
 
@@ -114,9 +114,13 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
   private List<CompositeCommandResult.GroupByResult> getGroupedDataFromAggregations(final SearchResponse response,
                                                                                     final Filter filteredUserTasks,
                                                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    List<CompositeCommandResult.GroupByResult> groupByResults = new ArrayList<>();
-    groupByResults.addAll(getByIdentityAggregationResults(response, filteredUserTasks, context));
-    return groupByResults;
+    return new ArrayList<>(
+      getByIdentityAggregationResults(
+        response,
+        filteredUserTasks,
+        context
+      )
+    );
   }
 
   private List<GroupByResult> getByIdentityAggregationResults(final SearchResponse response,
@@ -133,7 +137,7 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
         final boolean resultIsEmpty = singleResult.isEmpty()
           || singleResult.stream()
           .allMatch(
-            result -> result.getViewResult().getNumber() == null || result.getViewResult().getNumber().equals(0L)
+            result -> result.getViewResult().getNumber() == null || result.getViewResult().getNumber() == 0.0
           );
         if (!resultIsEmpty) {
           groupedData.add(GroupByResult.createGroupByResult(

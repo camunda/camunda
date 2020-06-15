@@ -103,11 +103,11 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(
       result.getEntryForKey(SECOND_USER).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(result.getInstanceCount(), is(1L));
   }
@@ -143,11 +143,11 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       .containsExactlyInAnyOrder(DEFAULT_USERNAME, getLocalisedUnassignedLabel());
     assertThat(
       result.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(
       result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(result.getInstanceCount(), is(1L));
   }
@@ -177,15 +177,15 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       .containsExactlyInAnyOrder(DEFAULT_USERNAME, SECOND_USER, getLocalisedUnassignedLabel());
     assertThat(
       result.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(2L)
+      is(2.)
     );
     assertThat(
       result.getEntryForKey(SECOND_USER).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(
       result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
-      is(1L)
+      is(1.)
     );
     assertThat(result.getInstanceCount(), is(2L));
   }
@@ -340,14 +340,14 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(getExecutedFlowNodeCount(result1), is(1L));
     assertThat(
       result1.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(2L)
+      is(2.)
     );
 
     assertThat(result2.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(result2), is(1L));
     assertThat(
       result2.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(1L)
+      is(1.)
     );
   }
 
@@ -386,13 +386,13 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   public static Stream<Arguments> assigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 1L))),
+      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 1.))),
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1L), Tuple.tuple(SECOND_USER, 1L))
+        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1L))),
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.))),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
     );
   }
@@ -431,14 +431,14 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
   public static Stream<Arguments> candidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 1L))
+        IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 1.))
       ),
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1L), Tuple.tuple(SECOND_USER, 1L))
+        Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.), Tuple.tuple(SECOND_USER, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1L))),
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 1.))),
       Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
     );
   }
@@ -480,11 +480,11 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
   @AllArgsConstructor
   static class ExecutionStateTestValues {
     FlowNodeExecutionState executionState;
-    Map<String, Long> expectedFrequencyValues;
+    Map<String, Double> expectedFrequencyValues;
   }
 
-  private static Map<String, Long> getExpectedResultsMap(Long userTask1Results, Long userTask2Results) {
-    Map<String, Long> result = new HashMap<>();
+  private static Map<String, Double> getExpectedResultsMap(Double userTask1Results, Double userTask2Results) {
+    Map<String, Double> result = new HashMap<>();
     result.put(DEFAULT_USERNAME, userTask1Results);
     result.put(SECOND_USER, userTask2Results);
     return result;
@@ -492,9 +492,9 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
     return Stream.of(
-      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(1L, 1L)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1L, null)),
-      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(2L, 1L))
+      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(1., 1.)),
+      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1., null)),
+      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(2., 1.))
     );
   }
 
@@ -575,7 +575,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(2L)
+      is(2.)
     );
   }
 
@@ -601,7 +601,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(11L)
+      is(11.)
     );
   }
 
@@ -640,7 +640,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(1L)
+      is(1.)
     );
   }
 
@@ -770,10 +770,10 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   private void assertCorrectValueOrdering(ReportMapResultDto result) {
     List<MapResultEntryDto> resultData = result.getData();
-    final List<Long> bucketValues = resultData.stream()
+    final List<Double> bucketValues = resultData.stream()
       .map(MapResultEntryDto::getValue)
       .collect(toList());
-    final List<Long> bucketValuesWithoutNullValue = bucketValues.stream()
+    final List<Double> bucketValuesWithoutNullValue = bucketValues.stream()
       .filter(Objects::nonNull)
       .collect(toList());
     assertThat(

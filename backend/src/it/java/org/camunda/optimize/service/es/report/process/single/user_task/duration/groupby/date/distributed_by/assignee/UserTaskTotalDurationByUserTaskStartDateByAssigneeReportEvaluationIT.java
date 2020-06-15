@@ -6,10 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.date.distributed_by.assignee;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-
-import java.sql.SQLException;
 
 public class UserTaskTotalDurationByUserTaskStartDateByAssigneeReportEvaluationIT
   extends UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluationIT {
@@ -22,25 +19,17 @@ public class UserTaskTotalDurationByUserTaskStartDateByAssigneeReportEvaluationI
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final long duration) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, duration);
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+                                final Double duration) {
+    changeUserTaskTotalDuration(processInstanceDto, userTaskKey, duration);
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), setDuration);
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
+    changeUserTaskTotalDuration(processInstanceDto, duration);
   }
 
   @Override
-  protected Long getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
+  protected Double getCorrectTestExecutionValue(final ExecutionStateTestValues executionStateTestValues) {
     return executionStateTestValues.expectedTotalDurationValue;
   }
 }

@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,8 +85,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(resultReportDataDto.getConfiguration().getProcessPart(), is(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getInstanceCount(), is(1L));
-    long calculatedResult = evaluationResponse.getResult().getData();
-    assertThat(calculatedResult, is(1000L));
+    Double calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(1000.));
   }
 
   @Test
@@ -119,8 +118,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
 
-    long calculatedResult = evaluationResponse.getResult().getData();
-    assertThat(calculatedResult, is(1000L));
+    Double calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(1000.));
   }
 
   @Test
@@ -151,9 +150,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     // then
     assertThat(resultDto.getData(), is(notNullValue()));
-    Long calculatedResult = resultDto.getData();
+    Double calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult, is(4000L));
+    assertThat(calculatedResult, is(4000.));
   }
 
   @Test
@@ -278,8 +277,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    Long calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(1000L));
+    Double calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(1000.));
 
     // when
     reportData.setFilter(ProcessFilterBuilder
@@ -337,9 +336,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    final Long resultData = result.getData();
+    final Double resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
-    assertThat(resultData, is(runningProcInstStartDate.until(now, MILLIS)));
+    assertThat(resultData, is((double) runningProcInstStartDate.until(now, MILLIS)));
   }
 
   @Test
@@ -382,8 +381,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    final Long resultData = result.getData();
-    assertThat(resultData, is(1000L));
+    final Double resultData = result.getData();
+    assertThat(resultData, is(1000.));
   }
 
 
@@ -422,10 +421,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    final Long resultData = result.getData();
+    final Double resultData = result.getData();
     assertThat(
       resultData,
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, runningProcInstStartDate.until(now, MILLIS)))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000., (double) runningProcInstStartDate.until(now, MILLIS)))
     );
   }
 
@@ -473,8 +472,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    final Long resultData = result.getData();
-    assertThat(resultData, is(runningProcInstStartDate.until(now, MILLIS)));
+    final Double resultData = result.getData();
+    assertThat(resultData, is((double) runningProcInstStartDate.until(now, MILLIS)));
   }
 
 
@@ -533,13 +532,13 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   private void assertAggregationResults(
     Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> results) {
     assertThat(results.get(AVERAGE).getResult().getData(), is(notNullValue()));
-    assertThat(results.get(AVERAGE).getResult().getData(), is(4000L));
+    assertThat(results.get(AVERAGE).getResult().getData(), is(4000.));
     assertThat(results.get(MIN).getResult().getData(), is(notNullValue()));
-    assertThat(results.get(MIN).getResult().getData(), is(1000L));
+    assertThat(results.get(MIN).getResult().getData(), is(1000.));
     assertThat(results.get(MAX).getResult().getData(), is(notNullValue()));
-    assertThat(results.get(MAX).getResult().getData(), is(9000L));
+    assertThat(results.get(MAX).getResult().getData(), is(9000.));
     assertThat(results.get(MEDIAN).getResult().getData(), is(notNullValue()));
-    assertThat(results.get(MEDIAN).getResult().getData(), is(2000L));
+    assertThat(results.get(MEDIAN).getResult().getData(), is(2000.));
   }
 
   private ProcessReportDataDto createReport(String processKey, String definitionVersion) {

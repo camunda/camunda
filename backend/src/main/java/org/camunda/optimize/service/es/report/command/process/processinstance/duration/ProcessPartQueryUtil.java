@@ -23,7 +23,7 @@ import org.elasticsearch.search.aggregations.metrics.ScriptedMetricAggregationBu
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLong;
+import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDouble;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -37,7 +37,9 @@ public class ProcessPartQueryUtil {
   private static final String NESTED_AGGREGATION = "nestedAggregation";
   private static final String TERMS_AGGREGATIONS = "termsAggregations";
 
-  public static Long processProcessPartAggregationOperations(Aggregations aggs, AggregationType aggregationType) {
+  private ProcessPartQueryUtil(){}
+
+  public static Double processProcessPartAggregationOperations(Aggregations aggs, AggregationType aggregationType) {
     Terms agg = aggs.get(TERMS_AGGREGATIONS);
     DescriptiveStatistics stats = new DescriptiveStatistics();
     for (Terms.Bucket entry : agg.getBuckets()) {
@@ -52,16 +54,16 @@ public class ProcessPartQueryUtil {
     return getResultForGivenAggregationType(stats, aggregationType);
   }
 
-  private static Long getResultForGivenAggregationType(DescriptiveStatistics stats, AggregationType aggregationType) {
+  private static Double getResultForGivenAggregationType(DescriptiveStatistics stats, AggregationType aggregationType) {
     switch (aggregationType) {
       case MIN:
-        return mapToLong(stats.getMin());
+        return mapToDouble(stats.getMin());
       case MAX:
-        return mapToLong(stats.getMax());
+        return mapToDouble(stats.getMax());
       case AVERAGE:
-        return mapToLong(stats.getMean());
+        return mapToDouble(stats.getMean());
       case MEDIAN:
-        return mapToLong(stats.getPercentile(50));
+        return mapToDouble(stats.getPercentile(50));
       default:
         throw new OptimizeRuntimeException(String.format("Unknown aggregation type [%s]", aggregationType));
     }

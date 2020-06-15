@@ -40,8 +40,8 @@ public class CombinedProcessReportResultTest {
     // given
     final ReportMapResultDto mapResultDto = new ReportMapResultDto();
     final List<MapResultEntryDto> resultDtoMap = new ArrayList<>();
-    resultDtoMap.add(new MapResultEntryDto("900.0", 1L));
-    resultDtoMap.add(new MapResultEntryDto("10.99", 1L));
+    resultDtoMap.add(new MapResultEntryDto("900.0", 1.));
+    resultDtoMap.add(new MapResultEntryDto("10.99", 1.));
     mapResultDto.setData(resultDtoMap);
     final List<SingleReportResultDto> mapResultDtos = Lists.newArrayList(
       mapResultDto,
@@ -66,8 +66,8 @@ public class CombinedProcessReportResultTest {
       is(new String[]{"variable_test_DOUBLE", "processInstance_frequency", "", "variable_test_DOUBLE",
         "processInstance_frequency"})
     );
-    assertThat(new String[]{"900.0", "1", "", "900.0", "1"}, is(resultAsCsv.get(2)));
-    assertThat(new String[]{"10.99", "1", "", "10.99", "1"}, is(resultAsCsv.get(3)));
+    assertThat(new String[]{"900.0", "1.0", "", "900.0", "1.0"}, is(resultAsCsv.get(2)));
+    assertThat(new String[]{"10.99", "1.0", "", "10.99", "1.0"}, is(resultAsCsv.get(3)));
 
 
     // when (limit = 0)
@@ -81,7 +81,7 @@ public class CombinedProcessReportResultTest {
         "processInstance_frequency"},
       is(resultAsCsv.get(1))
     );
-    assertThat(new String[]{"900.0", "1", "", "900.0", "1"}, is(resultAsCsv.get(2)));
+    assertThat(new String[]{"900.0", "1.0", "", "900.0", "1.0"}, is(resultAsCsv.get(2)));
 
 
     // when (offset = 1)
@@ -95,7 +95,7 @@ public class CombinedProcessReportResultTest {
         "processInstance_frequency"},
       is(resultAsCsv.get(1))
     );
-    assertThat(new String[]{"10.99", "1", "", "10.99", "1"}, is(resultAsCsv.get(2)));
+    assertThat(new String[]{"10.99", "1.0", "", "10.99", "1.0"}, is(resultAsCsv.get(2)));
   }
 
   @Test
@@ -103,10 +103,10 @@ public class CombinedProcessReportResultTest {
 
     // given
     final NumberResultDto numberResultDto1 = new NumberResultDto();
-    numberResultDto1.setData(5L);
+    numberResultDto1.setData(5.);
 
     final NumberResultDto numberResultDto2 = new NumberResultDto();
-    numberResultDto2.setData(2L);
+    numberResultDto2.setData(2.);
 
     final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
       numberResultDto1,
@@ -132,7 +132,7 @@ public class CombinedProcessReportResultTest {
       is(resultAsCsv.get(1))
     );
     assertThat(
-      new String[]{"5", "", "2"}, is(resultAsCsv.get(2))
+      new String[]{"5.0", "", "2.0"}, is(resultAsCsv.get(2))
     );
   }
 
@@ -142,7 +142,7 @@ public class CombinedProcessReportResultTest {
     // given
 
     final NumberResultDto durReportDto = new NumberResultDto();
-    durReportDto.setData(6L);
+    durReportDto.setData(6.);
 
     final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
       durReportDto,
@@ -176,7 +176,7 @@ public class CombinedProcessReportResultTest {
       is(resultAsCsv.get(2))
     );
 
-    assertThat(new String[]{"6", "", "6"}, is(resultAsCsv.get(3)));
+    assertThat(new String[]{"6.0", "", "6.0"}, is(resultAsCsv.get(3)));
   }
 
   @ParameterizedTest(name = "Test get result as CSV for duration map result with aggregate type {0}")
@@ -187,8 +187,8 @@ public class CombinedProcessReportResultTest {
     final ReportMapResultDto durMapReportDto = new ReportMapResultDto();
 
     List<MapResultEntryDto> data = new ArrayList<>();
-    data.add(new MapResultEntryDto("test1", 3L));
-    data.add(new MapResultEntryDto("test2", 6L));
+    data.add(new MapResultEntryDto("test1", 3.));
+    data.add(new MapResultEntryDto("test2", 6.));
     durMapReportDto.setData(data);
 
     final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
@@ -220,8 +220,8 @@ public class CombinedProcessReportResultTest {
         CSVUtils.mapAggregationType(aggregationType)},
       is(resultAsCsv.get(2))
     );
-    assertThat(new String[]{"test1", "3", "", "test1", "3"}, is(resultAsCsv.get(3)));
-    assertThat(new String[]{"test2", "6", "", "test2", "6"}, is(resultAsCsv.get(4)));
+    assertThat(new String[]{"test1", "3.0", "", "test1", "3.0"}, is(resultAsCsv.get(3)));
+    assertThat(new String[]{"test2", "6.0", "", "test2", "6.0"}, is(resultAsCsv.get(4)));
 
     // when (limit = 0)
     resultAsCsv = underTest.getResultAsCsv(0, 0);
@@ -242,7 +242,7 @@ public class CombinedProcessReportResultTest {
         CSVUtils.mapAggregationType(aggregationType)},
       is(resultAsCsv.get(2))
     );
-    assertThat(new String[]{"test1", "3", "", "test1", "3"}, is(resultAsCsv.get(3)));
+    assertThat(new String[]{"test1", "3.0", "", "test1", "3.0"}, is(resultAsCsv.get(3)));
 
 
     // when (offset = 1)
@@ -264,7 +264,7 @@ public class CombinedProcessReportResultTest {
         CSVUtils.mapAggregationType(aggregationType)},
       is(resultAsCsv.get(2))
     );
-    assertThat(new String[]{"test2", "6", "", "test2", "6"}, is(resultAsCsv.get(3)));
+    assertThat(new String[]{"test2", "6.0", "", "test2", "6.0"}, is(resultAsCsv.get(3)));
   }
 
   @Test

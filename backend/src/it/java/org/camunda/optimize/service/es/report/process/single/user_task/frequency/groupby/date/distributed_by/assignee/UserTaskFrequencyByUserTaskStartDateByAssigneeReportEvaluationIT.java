@@ -48,8 +48,8 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-      .distributedByContains(getLocalisedUnassignedLabel(), 1L)
-      .distributedByContains(DEFAULT_USERNAME, 1L)
+      .distributedByContains(getLocalisedUnassignedLabel(), 1.)
+      .distributedByContains(DEFAULT_USERNAME, 1.)
       .doAssert(result);
     // @formatter:on
   }
@@ -57,8 +57,8 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
   @ParameterizedTest
   @MethodSource("getExecutionStateExpectedValues")
   public void evaluateReportWithExecutionState(final FlowNodeExecutionState executionState,
-                                               final Long assignee1Count,
-                                               final Long assignee2Count) {
+                                               final Double assignee1Count,
+                                               final Double assignee2Count) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -95,9 +95,9 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
 
   protected static Stream<Arguments> getExecutionStateExpectedValues() {
     return Stream.of(
-      Arguments.of(FlowNodeExecutionState.RUNNING, 1L, null),
-      Arguments.of(FlowNodeExecutionState.COMPLETED, 1L, 1L),
-      Arguments.of(FlowNodeExecutionState.ALL, 2L, 1L)
+      Arguments.of(FlowNodeExecutionState.RUNNING, 1., null),
+      Arguments.of(FlowNodeExecutionState.COMPLETED, 1., 1.),
+      Arguments.of(FlowNodeExecutionState.ALL, 2., 1.)
     );
   }
 
