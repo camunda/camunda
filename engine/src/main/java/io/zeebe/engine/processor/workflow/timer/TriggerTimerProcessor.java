@@ -113,7 +113,12 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final var elementInstance =
           workflowState.getElementInstanceState().getInstance(elementInstanceKey);
 
-      return eventHandle.triggerEvent(streamWriter, elementInstance, catchEvent, NO_VARIABLES);
+      if (elementInstance != null && elementInstance.isActive()) {
+        return eventHandle.triggerEvent(streamWriter, elementInstance, catchEvent, NO_VARIABLES);
+
+      } else {
+        return false;
+      }
 
     } else {
       final var workflowInstanceKey =
@@ -133,7 +138,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     final Timer timer;
     try {
       timer = event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           String.format(
               "Expected to reschedule repeating timer for element with id '%s', but an exception occurred",
