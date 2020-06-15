@@ -106,3 +106,8 @@
       # Sets the path to the private key file location
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_PRIVATEKEYPATH.
       # privateKeyPath:
+
+    # longPolling:
+      # Enables long polling for available jobs
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_ENABLED.
+      # enabled: true

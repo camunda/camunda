@@ -111,7 +111,6 @@ public final class ClusterCfg {
         + '\''
         + ", requestTimeout='"
         + requestTimeout
-        + '\''
         + ", clusterName='"
         + clusterName
         + '\''

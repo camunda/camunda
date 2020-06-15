@@ -45,6 +45,7 @@ public final class GatewayCfgTest {
         .setPrivateKeyPath("privateKeyPath");
     CUSTOM_CFG.getMonitoring().setEnabled(true).setHost("monitoringHost").setPort(1234);
     CUSTOM_CFG.getThreads().setManagementThreads(100);
+    CUSTOM_CFG.getLongPolling().setEnabled(false);
   }
 
   private final Map<String, String> environment = new HashMap<>();
@@ -122,6 +123,7 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.cluster.contactPoint", "broker:432");
     setEnv("zeebe.gateway.threads.managementThreads", "32");
     setEnv("zeebe.gateway.cluster.requestTimeout", Duration.ofMinutes(43).toString());
+    setEnv("zeebe.gateway.cluster.longPollingEnabled", "false");
     setEnv("zeebe.gateway.cluster.clusterName", "envCluster");
     setEnv("zeebe.gateway.cluster.memberId", "envMember");
     setEnv("zeebe.gateway.cluster.host", "envHost");
@@ -167,6 +169,7 @@ public final class GatewayCfgTest {
             getClass().getClassLoader().getResource("security/test-server.key.pem").getPath())
         .setCertificateChainPath(
             getClass().getClassLoader().getResource("security/test-chain.cert.pem").getPath());
+    expected.getLongPolling().setEnabled(false);
 
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();

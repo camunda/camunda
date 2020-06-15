@@ -25,7 +25,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
-import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -70,14 +70,14 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
-  private final LongPollingActivateJobsHandler activateJobsHandler;
+  private final ActivateJobsHandler activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
 
   public EndpointManager(
-      final BrokerClient brokerClient, final LongPollingActivateJobsHandler longPollingHandler) {
+      final BrokerClient brokerClient, final ActivateJobsHandler activateJobsHandler) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
-    activateJobsHandler = longPollingHandler;
+    this.activateJobsHandler = activateJobsHandler;
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
   }
 

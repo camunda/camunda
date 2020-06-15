@@ -12,6 +12,7 @@ import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.zeebe.gateway.EndpointManager;
+import io.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -24,22 +25,24 @@ public final class StubbedGateway {
   private static final String SERVER_NAME = "server";
 
   private final StubbedBrokerClient brokerClient;
-  private final LongPollingActivateJobsHandler longPollingHandler;
+  private final ActivateJobsHandler activateJobsHandler;
   private final ActorScheduler actorScheduler;
   private Server server;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
       final StubbedBrokerClient brokerClient,
-      final LongPollingActivateJobsHandler longPollingHandler) {
+      final ActivateJobsHandler activateJobsHandler) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
-    this.longPollingHandler = longPollingHandler;
+    this.activateJobsHandler = activateJobsHandler;
   }
 
   public void start() throws IOException {
-    actorScheduler.submitActor(longPollingHandler);
-    final EndpointManager endpointManager = new EndpointManager(brokerClient, longPollingHandler);
+    if (activateJobsHandler instanceof LongPollingActivateJobsHandler) {
+      actorScheduler.submitActor((LongPollingActivateJobsHandler) activateJobsHandler);
+    }
+    final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME).addService(endpointManager);
     server = serverBuilder.build();
