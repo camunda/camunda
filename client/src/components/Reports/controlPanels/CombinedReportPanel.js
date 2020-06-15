@@ -129,6 +129,10 @@ export default withRouter(
     };
 
     checkSameView = (referenceReport, data) => {
+      if (data.view.entity === 'variable' && referenceReport.view.entity === 'variable') {
+        return true;
+      }
+
       const sameEntity =
         data.view.entity === referenceReport.view.entity ||
         (data.view.entity === 'flowNode' && referenceReport.view.entity === 'userTask') ||

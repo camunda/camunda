@@ -114,6 +114,22 @@ const reportsList = [
       visualization: 'heat',
     },
   },
+  {
+    id: 'variableViewReport',
+    name: 'Variable View Report',
+    combined: false,
+    collectionId: null,
+    reportType: 'process',
+    data: {
+      ...singleReportData,
+      view: {
+        entity: 'variable',
+        property: {name: 'doubleVar', type: 'Double'},
+      },
+      groupBy: {type: 'none', value: null},
+      visualization: 'number',
+    },
+  },
 ];
 
 loadReports.mockReturnValue(reportsList);
@@ -225,6 +241,48 @@ describe('isCompatible', () => {
     };
 
     expect(node.instance().isCompatible(reportWithDifferentDateConfiguration)).toBeFalsy();
+  });
+
+  it('should allow to combine if both reports have variable view', async () => {
+    const referenceReport = reportsList.find(({id}) => id === 'variableViewReport');
+
+    node = await shallow(
+      <CombinedReportPanel
+        {...props}
+        report={{
+          id: 'combinedReport',
+          name: 'Combined Report',
+          combined: true,
+          data: {
+            configuration: {},
+            reports: [{id: 'variableViewReport'}],
+            visualization: 'bar',
+          },
+          result: {
+            data: {
+              variableViewReport: {
+                id: 'variableViewReport',
+                data: referenceReport.data,
+              },
+            },
+          },
+        }}
+      />
+    );
+    await node.update();
+
+    const reportWithDifferentViewVariable = {
+      ...referenceReport,
+      data: {
+        ...referenceReport.data,
+        view: {
+          entity: 'variable',
+          property: {name: 'longVar', type: 'Long'},
+        },
+      },
+    };
+
+    expect(node.instance().isCompatible(reportWithDifferentViewVariable)).toBe(true);
   });
 
   it('should allow to combined a userTask duration report with a flowNode duration report', async () => {

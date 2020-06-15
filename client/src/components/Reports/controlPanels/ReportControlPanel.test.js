@@ -248,6 +248,32 @@ it('should reset the groupby and visualization when changing process definition 
   expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
 });
 
+it('should reset the view, groupby and visualization when changing process definition and view is variable', async () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          view: {
+            entity: 'variable',
+            property: {name: 'doubleVar', type: 'Double'},
+          },
+        },
+      }}
+      updateReport={spy}
+    />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
+
+  expect(spy.mock.calls[0][0].view).toEqual({$set: null});
+  expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
+  expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
+});
+
 it('should reset definition specific configurations on definition change', async () => {
   const spy = jest.fn();
   const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);

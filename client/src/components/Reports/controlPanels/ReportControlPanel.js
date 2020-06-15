@@ -86,7 +86,7 @@ export default withErrorHandling(
     }
 
     changeDefinition = async ({key, versions, tenantIds}) => {
-      const {groupBy, filter} = this.props.report.data;
+      const {view, groupBy, filter} = this.props.report.data;
 
       const change = {
         processDefinitionKey: {$set: key},
@@ -129,7 +129,13 @@ export default withErrorHandling(
         },
       };
 
-      if (groupBy && groupBy.type === 'variable') {
+      if (view?.entity === 'variable') {
+        change.view = {$set: null};
+        change.groupBy = {$set: null};
+        change.visualization = {$set: null};
+      }
+
+      if (groupBy?.type === 'variable') {
         change.groupBy = {$set: null};
         change.visualization = {$set: null};
       }
