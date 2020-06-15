@@ -8,7 +8,7 @@ boolean slaveDisconnected() {
 
 // general properties for CI execution
 static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
-static String MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+static String MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
 static Boolean isValidReleaseVersion(releaseVersion) {

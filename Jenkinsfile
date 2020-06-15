@@ -14,7 +14,7 @@ String storeNumOfArtifacts() {
   return env.BRANCH_NAME == 'master' ? '5' : '1'
 }
 
-MAVEN_DOCKER_IMAGE = "maven:3.6.1-jdk-8-slim"
+MAVEN_DOCKER_IMAGE = "maven:3.6.3-jdk-8-slim"
 
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 

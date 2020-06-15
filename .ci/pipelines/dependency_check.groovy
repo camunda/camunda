@@ -21,7 +21,7 @@ spec:
       effect: "NoSchedule"
   containers:
   - name: maven
-    image: maven:3.6.1-jdk-8-slim
+    image: maven:3.6.3-jdk-8-slim
     command: ["cat"]
     tty: true
     env:
