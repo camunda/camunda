@@ -93,7 +93,7 @@ spec:
         - name: SKIP_DB_CONFIG
           value: "true"
         - name: WAIT_FOR
-          value: opt-ci-perf.db:5432
+          value: optimize-stage-postgres.optimize:5432
         ports:
         - containerPort: 8080
           name: cambpm-http
