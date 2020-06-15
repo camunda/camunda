@@ -9,7 +9,6 @@ package io.zeebe.util.logging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.util.ByteBufferBackedOutputStream;
 import io.zeebe.util.logging.stackdriver.StackdriverLogEntry;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -105,7 +104,7 @@ public final class StackdriverLayout extends AbstractLayout<byte[]> implements L
   public void encode(final LogEvent event, final ByteBufferDestination destination) {
     final var entry = buildLogEntry(event);
 
-    try (final var output = new ByteBufferBackedOutputStream(destination.getByteBuffer())) {
+    try (final var output = new ByteBufferDestinationOutputStream(destination)) {
       WRITER.writeValue(output, entry);
       output.write(LINE_SEPARATOR);
     } catch (final IOException e) {
