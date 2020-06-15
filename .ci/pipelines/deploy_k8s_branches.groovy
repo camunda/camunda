@@ -162,7 +162,7 @@ pipeline {
             sh("""
               sed -i -e "s/@CAMBPM_VERSION@/$CAMBPM_VERSION/g" -e "s/@ES_VERSION@/$ES_VERSION/g" ${WORKSPACE}/optimize/.ci/branch-deployment/deployment.yml
               ./cmd/k8s/deploy-template-to-branch \
-              ${WORKSPACE}/infra-core/camunda-ci/deployments/optimize-branch \
+              ${WORKSPACE}/infra-core/camunda-ci-v2/deployments/optimize-branch \
               ${WORKSPACE}/optimize/.ci/branch-deployment \
               ${params.BRANCH} \
               optimize

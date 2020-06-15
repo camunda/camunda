@@ -45,7 +45,7 @@ spec:
   volumes:
   - name: cambpm-config
     configMap:
-      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
+      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
       name: ci-optimize-cambpm-config
   initContainers:
     - name: init-sysctl
