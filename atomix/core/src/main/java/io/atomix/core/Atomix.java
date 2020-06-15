@@ -41,7 +41,6 @@ import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.PartitionService;
-import io.atomix.primitive.partition.impl.DefaultPartitionGroupTypeRegistry;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.primitive.protocol.PrimitiveProtocol;
 import io.atomix.primitive.protocol.PrimitiveProtocolConfig;
@@ -567,10 +566,6 @@ public class Atomix extends AtomixCluster {
       partitionGroups.add(partitionGroupConfig.getType().newPartitionGroup(partitionGroupConfig));
     }
 
-    return new DefaultPartitionService(
-        clusterMembershipService,
-        messagingService,
-        partitionGroups,
-        new DefaultPartitionGroupTypeRegistry(registry.getTypes(PartitionGroup.Type.class)));
+    return new DefaultPartitionService(clusterMembershipService, messagingService, partitionGroups);
   }
 }

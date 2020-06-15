@@ -25,7 +25,6 @@ import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
-import io.atomix.primitive.partition.impl.DefaultPartitionGroupTypeRegistry;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
@@ -133,11 +132,7 @@ public class ZeebeTestNode {
     final List<ManagedPartitionGroup> partitionGroups =
         Collections.singletonList(dataPartitionGroup);
 
-    return new DefaultPartitionService(
-        clusterMembershipService,
-        messagingService,
-        partitionGroups,
-        new DefaultPartitionGroupTypeRegistry(Collections.singleton(RaftPartitionGroup.TYPE)));
+    return new DefaultPartitionService(clusterMembershipService, messagingService, partitionGroups);
   }
 
   public CompletableFuture<Void> stop() {
