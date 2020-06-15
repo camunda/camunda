@@ -9,6 +9,9 @@ metadata:
 spec:
   serviceName: elasticsearch
   replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
   template:
     metadata:
       labels:
