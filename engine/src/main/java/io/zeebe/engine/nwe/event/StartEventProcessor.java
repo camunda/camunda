@@ -74,6 +74,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.onElementTerminated(element, context);
     stateBehavior.consumeToken(context);
+    stateBehavior.removeElementInstance(context);
   }
 
   @Override

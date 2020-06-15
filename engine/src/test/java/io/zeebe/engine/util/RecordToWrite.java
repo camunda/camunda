@@ -11,13 +11,16 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 
 public final class RecordToWrite {
@@ -65,6 +68,12 @@ public final class RecordToWrite {
   public RecordToWrite job(final JobIntent intent, final JobRecordValue value) {
     recordMetadata.valueType(ValueType.JOB).intent(intent);
     unifiedRecordValue = (JobRecord) value;
+    return this;
+  }
+
+  public RecordToWrite timer(final TimerIntent intent, final TimerRecordValue value) {
+    recordMetadata.valueType(ValueType.TIMER).intent(intent);
+    unifiedRecordValue = (TimerRecord) value;
     return this;
   }
 

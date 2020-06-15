@@ -88,8 +88,11 @@ public class IntermediateCatchEventProcessor
   public void onTerminated(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
     incidentBehavior.resolveIncidents(context);
+
     stateTransitionBehavior.onElementTerminated(element, context);
+
     stateBehavior.consumeToken(context);
+    stateBehavior.removeElementInstance(context);
   }
 
   @Override
