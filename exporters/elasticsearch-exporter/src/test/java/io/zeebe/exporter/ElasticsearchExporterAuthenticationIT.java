@@ -38,8 +38,8 @@ public class ElasticsearchExporterAuthenticationIT
         elastic(c -> c.withUser("zeebe", "1234567")),
         exporter(
             c -> {
-              c.authentication.username = "zeebe";
-              c.authentication.password = "1234567";
+              c.getAuthentication().setUsername("zeebe");
+              c.getAuthentication().setPassword("1234567");
             })
       },
       new Object[] {
