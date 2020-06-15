@@ -154,7 +154,7 @@ public final class ClusteringRule extends ExternalResource {
 
     brokers = new HashMap<>();
     brokerCfgs = new HashMap<>();
-    this.partitionIds =
+    partitionIds =
         IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionCount)
             .boxed()
             .collect(Collectors.toList());
@@ -369,7 +369,7 @@ public final class ClusteringRule extends ExternalResource {
             () -> {
               try {
                 return client.newTopologyRequest().send().join();
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 LOG.trace("Topology request failed: ", e);
                 return null;
               }
@@ -681,7 +681,7 @@ public final class ClusteringRule extends ExternalResource {
     private final CountDownLatch latch;
 
     LeaderListener(final int partitionCount) {
-      this.latch = new CountDownLatch(partitionCount);
+      latch = new CountDownLatch(partitionCount);
     }
 
     @Override

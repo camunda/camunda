@@ -18,7 +18,7 @@ if grep -q "\[WARNING\] Flakes:" ${tmpfile}; then
   grep "\[ERROR\]   Run 1: " ${tmpfile} | awk '{print $4}' >> ./target/FlakyTests.txt
 
   echo ERROR: Flaky Tests detected>&2
-  
+
   exit 1
 fi
 
