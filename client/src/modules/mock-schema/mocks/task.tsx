@@ -8,13 +8,22 @@ import {Task} from 'modules/types';
 
 const unclaimedTask: Task = {
   key: '1',
-  name: 'Unclaimed Task',
+  name: 'My Task',
   workflowName: 'Nice Workflow',
   assignee: null,
   creationTime: new Date('2019').toISOString(),
   completionTime: null,
   variables: [],
   taskState: 'CREATED',
+};
+
+const claimedTask: Task = {
+  ...unclaimedTask,
+  assignee: {
+    username: 'Demo',
+    firstname: 'Demo',
+    lastname: 'User',
+  },
 };
 
 const completedTask: Task = {
@@ -32,4 +41,4 @@ const completedTask: Task = {
   taskState: 'COMPLETED',
 };
 
-export {unclaimedTask, completedTask};
+export {unclaimedTask, completedTask, claimedTask};

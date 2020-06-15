@@ -7,7 +7,11 @@
 import {gql} from 'apollo-boost';
 import {Task} from 'modules/types';
 
-import {completedTask, unclaimedTask} from 'modules/mock-schema/mocks/task';
+import {
+  completedTask,
+  unclaimedTask,
+  claimedTask,
+} from 'modules/mock-schema/mocks/task';
 
 interface GetTask {
   task: {
@@ -63,6 +67,18 @@ const mockGetTaskUnclaimed = {
   },
 };
 
+const mockGetTaskClaimed = {
+  request: {
+    query: GET_TASK,
+    variables: {key: '1'},
+  },
+  result: {
+    data: {
+      task: claimedTask,
+    },
+  },
+};
+
 const mockGetTaskCompleted = {
   request: {
     query: GET_TASK,
@@ -76,4 +92,9 @@ const mockGetTaskCompleted = {
 };
 
 export type {GetTask, GetTaskVariables};
-export {GET_TASK, mockGetTaskUnclaimed, mockGetTaskCompleted};
+export {
+  GET_TASK,
+  mockGetTaskUnclaimed,
+  mockGetTaskCompleted,
+  mockGetTaskClaimed,
+};

@@ -5,9 +5,14 @@
  */
 
 import styled from 'styled-components';
+import {Button} from 'modules/components/Button/styled';
 
 const Container = styled.div`
   margin-top: 18px;
 `;
 
-export {Container};
+const ClaimButton = styled(Button)`
+  margin-left: 22px;
+`;
+
+export {Container, ClaimButton};

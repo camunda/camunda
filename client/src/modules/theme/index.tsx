@@ -4,22 +4,44 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+const palette = {
+  blue: '#4d90ff',
+  green: '#10d070',
+  red: '#ff3d3d',
+  orange: '#ffa533',
+  ui01: '#f2f3f5',
+  ui02: '#f7f8fa',
+  ui03: '#b0bac7',
+  ui04: '#fdfdfe',
+  ui05: '#d8dce3',
+  ui06: '#62626e',
+  ui07: '#45464e',
+} as const;
+
 const theme = {
   colors: {
-    blue: '#4d90ff',
-    green: '#10d070',
-    red: '#ff3d3d',
-    orange: '#ffa533',
-    ui01: '#f2f3f5',
-    ui02: '#f7f8fa',
-    ui03: '#b0bac7',
-    ui04: '#fdfdfe',
-    ui05: '#d8dce3',
-    ui06: '#62626e',
-    ui07: '#45464e',
+    ...palette,
     item: {
-      odd: '#fdfdfe',
+      odd: palette.ui04,
       even: '#f9fafc',
+    },
+    button: {
+      default: {
+        backgroundColor: palette.ui05,
+        borderColor: '#9ea9b7',
+      },
+      hover: {
+        backgroundColor: '#cdd4df',
+        borderColor: '#9ea9b7',
+      },
+      active: {
+        backgroundColor: palette.ui03,
+        borderColor: '#88889a',
+      },
+      disabled: {
+        backgroundColor: '#f1f2f5',
+        borderColor: palette.ui03,
+      },
     },
     text: {
       button: 'rgba(69, 70, 78, 0.9)',

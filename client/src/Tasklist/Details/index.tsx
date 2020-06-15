@@ -4,17 +4,30 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useQuery} from '@apollo/react-hooks';
+import {useQuery, useMutation} from '@apollo/react-hooks';
 import {useParams} from 'react-router-dom';
 import * as React from 'react';
 
 import {GET_TASK, GetTask, GetTaskVariables} from 'modules/queries/get-task';
+import {CLAIM_TASK} from 'modules/mutations/claim-task';
+import {UNCLAIM_TASK} from 'modules/mutations/unclaim-task';
 import {Table, RowTH, TD, TR} from 'modules/components/Table/styled';
 import {formatDate} from 'modules/utils/formatDate';
-import {Container} from './styled';
+import {Container, ClaimButton} from './styled';
 
 const Details: React.FC = () => {
   const {key} = useParams();
+
+  const [claimTask] = useMutation<GetTask, GetTaskVariables>(CLAIM_TASK, {
+    variables: {key},
+    refetchQueries: [{query: GET_TASK, variables: {key}}],
+  });
+
+  const [unclaimTask] = useMutation<GetTask, GetTaskVariables>(UNCLAIM_TASK, {
+    variables: {key},
+    refetchQueries: [{query: GET_TASK, variables: {key}}],
+  });
+
   const {data, loading} = useQuery<GetTask, GetTaskVariables>(GET_TASK, {
     variables: {key},
   });
@@ -52,7 +65,19 @@ const Details: React.FC = () => {
           <TR>
             <RowTH>Assignee</RowTH>
             <TD data-testid="assignee">
-              {assignee ? `${assignee.firstname} ${assignee.lastname}` : '--'}
+              {assignee ? (
+                <>
+                  {assignee.firstname} {assignee.lastname}
+                  <ClaimButton onClick={() => unclaimTask()}>
+                    Unclaim
+                  </ClaimButton>
+                </>
+              ) : (
+                <>
+                  --
+                  <ClaimButton onClick={() => claimTask()}>Claim</ClaimButton>
+                </>
+              )}
             </TD>
           </TR>
         </tbody>

@@ -11,14 +11,9 @@ const tasks: ReadonlyArray<Task> = [
     key: '0',
     name: 'name',
     workflowName: 'workflowName',
-
     creationTime: '2020-05-28 10:11:12',
     completionTime: new Date().toISOString(),
-    assignee: {
-      username: 'Demo',
-      firstname: 'Demo',
-      lastname: 'user',
-    },
+    assignee: {username: 'Demo', firstname: 'Demo', lastname: 'User'},
     variables: [],
     taskState: 'COMPLETED',
   },

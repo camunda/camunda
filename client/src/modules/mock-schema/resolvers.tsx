@@ -9,7 +9,6 @@
 import {Resolvers} from 'apollo-boost';
 
 import {tasks} from './mocks/tasks';
-
 interface ResolverMap {
   [field: string]: (parent: any, args: any) => any;
 }
@@ -18,6 +17,27 @@ interface AppResolvers extends Resolvers {
   Query: ResolverMap;
   Task: ResolverMap;
 }
+
+type IsAssigned = {
+  [key: number]: boolean;
+};
+
+const isAssigned: IsAssigned = {};
+
+const getAssignee = (key: number) => {
+  switch (isAssigned[key]) {
+    case true:
+      return {
+        username: 'Demo',
+        firstname: 'Demo',
+        lastname: 'User',
+      };
+    case false:
+      return null;
+    default:
+      return tasks[key].assignee;
+  }
+};
 
 const resolvers: AppResolvers = {
   Task: {
@@ -37,7 +57,7 @@ const resolvers: AppResolvers = {
       return tasks[index].completionTime;
     },
     assignee({index}) {
-      return tasks[index].assignee;
+      return getAssignee(index);
     },
     variables({index}) {
       return tasks[index].variables;
@@ -58,6 +78,16 @@ const resolvers: AppResolvers = {
         __typename: 'Task',
         index: key,
       };
+    },
+  },
+  Mutation: {
+    claimTask(_, {key}) {
+      isAssigned[key] = true;
+      return {__typename: 'Task', index: key};
+    },
+    unclaimTask(_, {key}) {
+      isAssigned[key] = false;
+      return {__typename: 'Task', index: key};
     },
   },
 };

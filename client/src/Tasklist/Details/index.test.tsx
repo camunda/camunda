@@ -7,22 +7,30 @@
 import {Details} from './';
 
 import * as React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 
 import {Route, MemoryRouter} from 'react-router-dom';
 import {
   mockGetTaskUnclaimed,
   mockGetTaskCompleted,
+  mockGetTaskClaimed,
 } from 'modules/queries/get-task';
+import {mockClaimTask} from 'modules/mutations/claim-task';
+import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MockedResponse} from '@apollo/react-testing';
 
-const getWrapper = (key: string, mock: MockedResponse) => {
+type GetWrapperProps = {
+  key: string;
+  mocks: MockedResponse[];
+};
+
+const getWrapper = ({key, mocks}: GetWrapperProps) => {
   const Wrapper: React.FC = ({children}) => (
     <MemoryRouter initialEntries={[`/${key}`]}>
       <Route path="/:key">
-        <MockedApolloProvider mocks={[mock]}>
+        <MockedApolloProvider mocks={mocks}>
           <MockThemeProvider>{children}</MockThemeProvider>
         </MockedApolloProvider>
       </Route>
@@ -34,30 +42,72 @@ const getWrapper = (key: string, mock: MockedResponse) => {
 
 describe('<Details />', () => {
   it('should render completed task details', async () => {
-    render(<Details />, {wrapper: getWrapper('0', mockGetTaskCompleted)});
+    render(<Details />, {
+      wrapper: getWrapper({key: '0', mocks: [mockGetTaskCompleted]}),
+    });
 
     expect(await screen.findByText('My Completed Task')).toBeInTheDocument();
-    expect(await screen.findByText('Cool Workflow')).toBeInTheDocument();
-    expect(await screen.getByTestId('assignee')).toHaveTextContent(
-      'Jules Verne',
-    );
+    expect(screen.getByText('Cool Workflow')).toBeInTheDocument();
+    expect(screen.getByTestId('assignee')).toHaveTextContent('Jules Verne');
+    expect(screen.getByRole('button', {name: 'Unclaim'})).toBeInTheDocument();
     expect(
-      await screen.findByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
+      screen.getByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText(/2020-01-01 \d{2}:\d{2}:\d{2}/),
+      screen.getByText(/2020-01-01 \d{2}:\d{2}:\d{2}/),
     ).toBeInTheDocument();
   });
 
   it('should render unclaimed task details', async () => {
-    render(<Details />, {wrapper: getWrapper('1', mockGetTaskUnclaimed)});
+    render(<Details />, {
+      wrapper: getWrapper({key: '1', mocks: [mockGetTaskUnclaimed]}),
+    });
 
-    expect(await screen.findByText('Unclaimed Task')).toBeInTheDocument();
-    expect(await screen.findByText('Nice Workflow')).toBeInTheDocument();
-    expect(await screen.getByTestId('assignee')).toHaveTextContent('--');
+    expect(await screen.findByText('My Task')).toBeInTheDocument();
+    expect(screen.getByText('Nice Workflow')).toBeInTheDocument();
+    expect(screen.getByTestId('assignee')).toHaveTextContent('--');
+    expect(screen.getByRole('button', {name: 'Claim'})).toBeInTheDocument();
     expect(
-      await screen.findByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
+      screen.getByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
     ).toBeInTheDocument();
-    expect(await screen.queryByText('Completion Time')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completion Time')).not.toBeInTheDocument();
+  });
+
+  it('should render unclaimed task and claim it', async () => {
+    render(<Details />, {
+      wrapper: getWrapper({
+        key: '1',
+        mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetTaskClaimed],
+      }),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: 'Claim'}));
+
+    expect(
+      await screen.findByRole('button', {name: 'Unclaim'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Claim'}),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('assignee')).toHaveTextContent('Demo User');
+  });
+
+  it('should render claimed task and unclaim it', async () => {
+    render(<Details />, {
+      wrapper: getWrapper({
+        key: '1',
+        mocks: [mockGetTaskClaimed, mockUnclaimTask, mockGetTaskUnclaimed],
+      }),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: 'Unclaim'}));
+
+    expect(
+      await screen.findByRole('button', {name: 'Claim'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Unclaim'}),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('assignee')).toHaveTextContent('--');
   });
 });
