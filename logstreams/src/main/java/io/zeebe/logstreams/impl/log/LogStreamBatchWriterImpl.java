@@ -60,13 +60,10 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
 
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
-  private final Runnable closeCallback;
 
-  LogStreamBatchWriterImpl(
-      final int partitionId, final Dispatcher dispatcher, final Runnable closeCallback) {
+  LogStreamBatchWriterImpl(final int partitionId, final Dispatcher dispatcher) {
     this.logWriteBuffer = dispatcher;
     this.logId = partitionId;
-    this.closeCallback = closeCallback;
 
     reset();
   }
@@ -293,10 +290,5 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
 
     bufferWriterInstance.reset();
     metadataWriterInstance.reset();
-  }
-
-  @Override
-  public void close() {
-    closeCallback.run();
   }
 }
