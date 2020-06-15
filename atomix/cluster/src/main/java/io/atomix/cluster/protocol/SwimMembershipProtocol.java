@@ -166,6 +166,8 @@ public class SwimMembershipProtocol
       members.put(localMember.id(), localMember);
       post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_ADDED, localMember));
 
+      LOGGER.debug("Nodes from discovery service {}", discoveryService.getNodes());
+
       registerHandlers();
       gossipFuture =
           swimScheduler.scheduleAtFixedRate(
@@ -177,7 +179,7 @@ public class SwimMembershipProtocol
       syncFuture =
           swimScheduler.scheduleAtFixedRate(
               this::sync, 0, config.getSyncInterval().toMillis(), TimeUnit.MILLISECONDS);
-      LOGGER.info("Started");
+      LOGGER.info("Started {}", this.getClass());
     }
     return CompletableFuture.completedFuture(null);
   }
@@ -313,11 +315,7 @@ public class SwimMembershipProtocol
       // MEMBER_REMOVED
       // event and record an update.
       else if (member.state() == State.DEAD) {
-        members.remove(swimMember.id());
-        randomMembers.remove(swimMember);
-        Collections.shuffle(randomMembers);
-        LOGGER.debug("{} - Member removed {}", this.localMember.id(), swimMember);
-        post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, swimMember.copy()));
+        tryRemoveMember(swimMember);
       }
       recordUpdate(swimMember.copy());
       return true;
@@ -334,11 +332,7 @@ public class SwimMembershipProtocol
               GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
     }
     swimMember.setState(State.DEAD);
-    members.remove(swimMember.id());
-    randomMembers.remove(swimMember);
-    Collections.shuffle(randomMembers);
-    LOGGER.debug("{} - Member removed {}", this.localMember.id(), swimMember);
-    post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, swimMember.copy()));
+    tryRemoveMember(swimMember);
   }
 
   private void triggerReachibilityEventOnSuspect(
@@ -388,13 +382,20 @@ public class SwimMembershipProtocol
           && System.currentTimeMillis() - member.getUpdated()
               > config.getFailureTimeout().toMillis()) {
         member.setState(State.DEAD);
-        members.remove(member.id());
-        randomMembers.remove(member);
-        Collections.shuffle(randomMembers);
-        LOGGER.debug("{} - Member removed {}", this.localMember.id(), member);
-        post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, member.copy()));
+
+        tryRemoveMember(member);
         recordUpdate(member.copy());
       }
+    }
+  }
+
+  private void tryRemoveMember(final SwimMember member) {
+    final var deadMember = members.remove(member.id());
+    if (deadMember != null) {
+      randomMembers.remove(member);
+      Collections.shuffle(randomMembers);
+      LOGGER.debug("{} - Member removed {}", this.localMember.id(), member);
+      post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, member.copy()));
     }
   }
 
@@ -416,7 +417,7 @@ public class SwimMembershipProtocol
    * @param member the peer with which to synchronize the node state
    */
   private void sync(final ImmutableMember member) {
-    LOGGER.debug("{} - Synchronizing membership with {}", localMember.id(), member);
+    LOGGER.debug("{} - Start synchronizing membership with {}", localMember.id(), member);
     bootstrapService
         .getMessagingService()
         .sendAndReceive(
@@ -430,14 +431,17 @@ public class SwimMembershipProtocol
               if (error == null) {
                 final Collection<ImmutableMember> members = SERIALIZER.decode(response);
                 LOGGER.debug(
-                    "{} - Synchronized membership with {}, received: {}",
+                    "{} - Finished synchronizing membership with {}, received: '{}'",
                     localMember.id(),
                     member,
                     members);
                 members.forEach(this::updateState);
               } else {
                 LOGGER.debug(
-                    "{} - Failed to synchronize membership with {}", localMember.id(), member);
+                    "{} - Failed to synchronize membership with {}",
+                    localMember.id(),
+                    member,
+                    error);
               }
             },
             swimScheduler);
