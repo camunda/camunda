@@ -15,6 +15,7 @@ interface Props {
   hasRoundTopLeftCorner?: boolean;
   hasRoundTopRightCorner?: boolean;
   hasTransparentBackground?: boolean;
+  Icon?: React.ReactElement;
 }
 
 const Panel: React.FC<Props> = ({
@@ -25,6 +26,7 @@ const Panel: React.FC<Props> = ({
   hasRoundTopLeftCorner,
   hasRoundTopRightCorner,
   hasTransparentBackground,
+  Icon,
 }) => {
   const hasFooter = footer !== undefined;
 
@@ -35,7 +37,12 @@ const Panel: React.FC<Props> = ({
       hasRoundTopRightCorner={hasRoundTopRightCorner}
       hasFooter={hasFooter}
     >
-      {title !== undefined && <Header>{title}</Header>}
+      {title !== undefined && (
+        <Header>
+          {title}
+          {Icon}
+        </Header>
+      )}
       <Body hasTransparentBackground={hasTransparentBackground}>
         {children}
       </Body>

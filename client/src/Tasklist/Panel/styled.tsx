@@ -21,14 +21,13 @@ const Header = styled.div`
   font-weight: bold;
   background-color: ${({theme}) => theme.colors.ui02};
   color: ${({theme}) => theme.colors.ui06};
-  padding: 3px 0 3px 20px;
+  padding: 3px 0 3px 19px;
   border-bottom: 1px solid ${({theme}) => theme.colors.ui05};
   display: flex;
   justify-content: space-between;
 `;
 
 const Base = styled.div<BaseProps>`
-  border: 1px solid ${({theme}) => theme.colors.ui05};
   display: grid;
   grid-template-columns: 100%;
   grid-template-rows: ${({hasFooter}) =>

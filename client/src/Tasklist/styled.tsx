@@ -8,19 +8,21 @@
 
 import styled from 'styled-components';
 import {Panel} from './Panel';
+import {CollapsablePanel} from './CollapsablePanel';
 
 const Container = styled.main`
   display: flex;
   height: calc(100% - 56px);
 `;
 
-const TasksPanel = styled(Panel)`
+const TasksPanel = styled(CollapsablePanel)`
+  border-top-right-radius: 3px;
   margin-right: 1px;
-  min-width: 478px;
   background-color: ${({theme}) => theme.colors.ui02};
 `;
 
 const DetailsPanel = styled(Panel)`
+  border: 1px solid ${({theme}) => theme.colors.ui05};
   width: 100%;
 `;
 

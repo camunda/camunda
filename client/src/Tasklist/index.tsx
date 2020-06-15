@@ -28,11 +28,7 @@ const Tasklist: React.FC = () => {
     <>
       <Header />
       <Container>
-        <TasksPanel
-          title="Tasks"
-          hasRoundTopRightCorner
-          hasTransparentBackground
-        >
+        <TasksPanel title="Tasks" hasTransparentBackground>
           <Filters />
           <Tasks />
         </TasksPanel>
