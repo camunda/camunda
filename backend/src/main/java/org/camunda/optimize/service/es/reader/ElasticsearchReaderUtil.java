@@ -16,10 +16,6 @@ import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.indices.rollover.RolloverRequest;
-import org.elasticsearch.client.indices.rollover.RolloverResponse;
-import org.elasticsearch.common.unit.ByteSizeUnit;
-import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -32,7 +28,7 @@ import java.util.function.Function;
 
 @Slf4j
 @UtilityClass
-public class ElasticsearchHelper {
+public class ElasticsearchReaderUtil {
 
   public static <T> List<T> retrieveAllScrollResults(final SearchResponse initialScrollResponse,
                                                      final Class<T> itemClass,
@@ -77,12 +73,12 @@ public class ElasticsearchHelper {
     );
   }
 
-  private static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
-                                                            final Class<T> itemClass,
-                                                            final Function<SearchHit, T> mappingFunction,
-                                                            final OptimizeElasticsearchClient esclient,
-                                                            final Integer scrollingTimeout,
-                                                            final Integer limit) {
+  public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
+                                                           final Class<T> itemClass,
+                                                           final Function<SearchHit, T> mappingFunction,
+                                                           final OptimizeElasticsearchClient esClient,
+                                                           final Integer scrollingTimeout,
+                                                           final Integer limit) {
     final List<T> results = new ArrayList<>();
 
     SearchResponse currentScrollResp = initialScrollResponse;
@@ -95,7 +91,7 @@ public class ElasticsearchHelper {
         final SearchScrollRequest scrollRequest = new SearchScrollRequest(currentScrollResp.getScrollId());
         scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeout));
         try {
-          currentScrollResp = esclient.scroll(scrollRequest, RequestOptions.DEFAULT);
+          currentScrollResp = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
           hits = currentScrollResp.getHits();
         } catch (IOException e) {
           String reason = String.format(
@@ -109,17 +105,17 @@ public class ElasticsearchHelper {
         hits = null;
       }
     }
-    clearScroll(itemClass, esclient, currentScrollResp.getScrollId());
+    clearScroll(itemClass, esClient, currentScrollResp.getScrollId());
 
     return results;
   }
 
-  public static <T> void clearScroll(final Class<T> itemClass, final OptimizeElasticsearchClient esclient,
+  public static <T> void clearScroll(final Class<T> itemClass, final OptimizeElasticsearchClient esClient,
                                      final String scrollId) {
     try {
       ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
       clearScrollRequest.addScrollId(scrollId);
-      ClearScrollResponse clearScrollResponse = esclient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+      ClearScrollResponse clearScrollResponse = esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
       boolean succeeded = clearScrollResponse.isSucceeded();
       if (!succeeded) {
         String reason = String.format(
@@ -184,29 +180,4 @@ public class ElasticsearchHelper {
       .anyMatch(multiGetItemResponse -> multiGetItemResponse.getResponse().isExists());
   }
 
-  public static boolean triggerRollover(final OptimizeElasticsearchClient esClient, final String indexAliasName,
-                                        final int maxIndexSizeGB) {
-    RolloverRequest rolloverRequest = new RolloverRequest(indexAliasName, null);
-    rolloverRequest.addMaxIndexSizeCondition(new ByteSizeValue(maxIndexSizeGB, ByteSizeUnit.GB));
-
-    log.info("Executing Rollover Request...");
-
-    try {
-      RolloverResponse rolloverResponse = esClient.rollover(rolloverRequest);
-      if (rolloverResponse.isRolledOver()) {
-        log.info(
-          "Index with alias {} has been rolled over. New index name: {}",
-          indexAliasName,
-          rolloverResponse.getNewIndex()
-        );
-      } else {
-        log.debug("Index with alias {} has not been rolled over.", indexAliasName);
-      }
-      return rolloverResponse.isRolledOver();
-    } catch (Exception e) {
-      String message = "Failed to execute rollover request";
-      log.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
-    }
-  }
 }

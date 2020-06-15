@@ -59,7 +59,7 @@ public class AlertReader {
       throw new OptimizeRuntimeException("Was not able to retrieve stored alerts!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       AlertDefinitionDto.class,
       objectMapper,
@@ -113,7 +113,7 @@ public class AlertReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
   }
 
   public List<AlertDefinitionDto> findFirstAlertsForReports(List<String> reportIds) {
@@ -134,7 +134,7 @@ public class AlertReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
   }
 
   private void logError(String alertId) {

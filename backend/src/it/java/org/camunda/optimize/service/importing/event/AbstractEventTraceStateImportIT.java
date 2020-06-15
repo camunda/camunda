@@ -20,7 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
+import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 public abstract class AbstractEventTraceStateImportIT extends AbstractIT {

@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
+import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -606,7 +606,7 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
 
   private void updateImportIndexLastImportExecutionTimestamp(final String importType,
                                                              final OffsetDateTime timestampToSet) {
-    final TimestampBasedImportIndexDto runningProcessImport = new ArrayList<>(ElasticsearchHelper.mapHits(
+    final TimestampBasedImportIndexDto runningProcessImport = new ArrayList<>(ElasticsearchReaderUtil.mapHits(
       elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
         TIMESTAMP_BASED_IMPORT_INDEX_NAME).getHits(),
       TimestampBasedImportIndexDto.class,
@@ -628,7 +628,7 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
   }
 
   private CamundaActivityEventDto getLastImportedActivityForProcessDefinition(final String processDefinitionKey) {
-    return ElasticsearchHelper.mapHits(
+    return ElasticsearchReaderUtil.mapHits(
       elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
         new CamundaActivityEventIndex(processDefinitionKey).getIndexName()
       ).getHits(),

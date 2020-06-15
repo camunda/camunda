@@ -88,7 +88,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
+import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
@@ -323,6 +323,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     request.settings(settings);
 
     getOptimizeElasticClient().getHighLevelClient().indices().putSettings(request, RequestOptions.DEFAULT);
+  }
+
+  public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, Class<T> type) {
+    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(indexName);
+    return mapHits(response.getHits(), type, getObjectMapper());
   }
 
   @SneakyThrows
@@ -572,23 +577,19 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    return mapHits(response.getHits(), ProcessDefinitionOptimizeDto.class, getObjectMapper());
+    return getAllDocumentsOfIndexAs(PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
   }
 
   public List<TenantDto> getAllTenants() {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
-    return mapHits(response.getHits(), TenantDto.class, getObjectMapper());
+    return getAllDocumentsOfIndexAs(TENANT_INDEX_NAME, TenantDto.class);
   }
 
   public List<EventDto> getAllStoredExternalEvents() {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(EXTERNAL_EVENTS_INDEX_NAME);
-    return mapHits(response.getHits(), EventDto.class, getObjectMapper());
+    return getAllDocumentsOfIndexAs(EXTERNAL_EVENTS_INDEX_NAME, EventDto.class);
   }
 
   public List<ProcessInstanceDto> getAllProcessInstances() {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    return mapHits(response.getHits(), ProcessInstanceDto.class, getObjectMapper());
+    return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceDto.class);
   }
 
   @SneakyThrows

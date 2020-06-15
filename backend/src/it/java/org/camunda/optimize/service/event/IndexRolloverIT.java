@@ -52,6 +52,7 @@ public class IndexRolloverIT extends AbstractIT {
       .setEnabled(true);
   }
 
+  @BeforeEach
   @AfterEach
   public void cleanUpEventIndices() {
     elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();

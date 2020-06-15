@@ -239,7 +239,7 @@ public class DefinitionReader {
     }
 
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
-    final T definitionOptimizeDto = ElasticsearchHelper.mapHits(
+    final T definitionOptimizeDto = ElasticsearchReaderUtil.mapHits(
       searchResponse.getHits(),
       1,
       typeClass,
@@ -550,7 +550,7 @@ public class DefinitionReader {
     }
 
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       typeClass,
       createMappingFunctionForDefinitionType(typeClass),

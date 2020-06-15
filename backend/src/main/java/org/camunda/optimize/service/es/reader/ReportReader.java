@@ -166,7 +166,7 @@ public class ReportReader {
       ALL_REPORT_INDICES,
       LIST_FETCH_LIMIT
     );
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
       ReportDefinitionDto.class,
       objectMapper,
@@ -183,7 +183,7 @@ public class ReportReader {
       ALL_REPORT_INDICES,
       LIST_FETCH_LIMIT
     );
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
       ReportDefinitionDto.class,
       objectMapper,
@@ -200,7 +200,7 @@ public class ReportReader {
       ALL_REPORT_INDICES,
       LIST_FETCH_LIMIT
     );
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
       ReportDefinitionDto.class,
       objectMapper,
@@ -238,7 +238,7 @@ public class ReportReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
   }
 
   public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {
@@ -269,7 +269,7 @@ public class ReportReader {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), CombinedReportDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), CombinedReportDefinitionDto.class, objectMapper);
   }
 
   private <T extends ReportDefinitionDto> List<T> getReportDefinitionDtos(final List<String> reportIds,

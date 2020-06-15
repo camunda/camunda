@@ -96,7 +96,7 @@ public class EventProcessMappingReader {
       throw new OptimizeRuntimeException("Was not able to retrieve event based processes!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       IndexableEventProcessMappingDto.class,
       objectMapper,

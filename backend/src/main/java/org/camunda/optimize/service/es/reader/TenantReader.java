@@ -53,7 +53,7 @@ public class TenantReader {
       throw new OptimizeRuntimeException("Was not able to retrieve tenants!", e);
     }
 
-    return new HashSet<>(ElasticsearchHelper.retrieveAllScrollResults(
+    return new HashSet<>(ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       TenantDto.class,
       objectMapper,

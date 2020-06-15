@@ -50,7 +50,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.atLeastOneResponseExistsForMultiGet;
+import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
 import static org.camunda.optimize.service.es.reader.ReportReader.REPORT_DATA_XML_PROPERTY;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
@@ -110,7 +110,7 @@ public class EntitiesReader {
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       CollectionEntity.class,
       objectMapper,
@@ -269,7 +269,7 @@ public class EntitiesReader {
       throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       CollectionEntity.class,
       objectMapper,

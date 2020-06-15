@@ -111,7 +111,7 @@ public class ExternalEventReader {
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventDto.class, objectMapper);
+      return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventDto.class, objectMapper);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve ingested events!", e);
     }

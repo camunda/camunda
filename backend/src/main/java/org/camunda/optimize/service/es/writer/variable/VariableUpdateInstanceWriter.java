@@ -13,9 +13,12 @@ import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -23,6 +26,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
@@ -51,6 +56,23 @@ public class VariableUpdateInstanceWriter {
       .collect(Collectors.toList());
   }
 
+  public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
+    String updateItemName = "variable updates";
+    log.info("Deleting variableUpdates for [{}] processInstanceIds", processInstanceIds.size());
+
+    final BoolQueryBuilder filterQuery = boolQuery()
+      .filter(termsQuery(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds));
+
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+      esClient,
+      filterQuery,
+      updateItemName,
+      "list of ids",
+      // attach -* suffix to catch all indices and not go through the alias which only as one write index
+      VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*"
+    );
+  }
+
   private VariableUpdateInstanceDto convertToVariableUpdateInstance(final ProcessVariableDto processVariable) {
     return VariableUpdateInstanceDto.builder()
       .instanceId(processVariable.getId())
@@ -66,8 +88,8 @@ public class VariableUpdateInstanceWriter {
   private Optional<IndexRequest> createIndexRequestForVariableUpdate(VariableUpdateInstanceDto variableUpdateInstanceDto) {
     try {
       return Optional.of(new IndexRequest(VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
-        .id(IdGenerator.getNextId())
-        .source(objectMapper.writeValueAsString(variableUpdateInstanceDto), XContentType.JSON));
+                           .id(IdGenerator.getNextId())
+                           .source(objectMapper.writeValueAsString(variableUpdateInstanceDto), XContentType.JSON));
     } catch (JsonProcessingException e) {
       log.warn("Could not serialize Variable Instance: {}", variableUpdateInstanceDto, e);
       return Optional.empty();

@@ -104,7 +104,7 @@ public class EventProcessPublishStateReader {
       throw new OptimizeRuntimeException("Was not able to retrieve event process publish states!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       IndexableEventProcessPublishStateDto.class,
       objectMapper,

@@ -37,7 +37,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
-import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
+import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -928,7 +928,7 @@ public class CollectionHandlingIT extends AbstractIT {
   }
 
   private <T> List<T> getAllStoredInIndexOfType(final String indexName, Class<T> type) {
-    return ElasticsearchHelper.mapHits(
+    return ElasticsearchReaderUtil.mapHits(
       elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(indexName).getHits(),
       type,
       embeddedOptimizeExtension.getObjectMapper()

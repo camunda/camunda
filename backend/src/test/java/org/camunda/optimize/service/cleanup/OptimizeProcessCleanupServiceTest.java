@@ -5,11 +5,16 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
+import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
+import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
+import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
@@ -20,11 +25,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.time.Period;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,19 +46,31 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class OptimizeProcessCleanupServiceTest {
+  private static final List<String> INSTANCE_IDS = ImmutableList.of("1", "2");
 
   @Mock
   private ProcessDefinitionReader processDefinitionReader;
   @Mock
+  private ProcessInstanceReader processInstanceReader;
+  @Mock
   private CompletedProcessInstanceWriter processInstanceWriter;
   @Mock
   private ProcessVariableUpdateWriter processVariableUpdateWriter;
+  @Mock
+  private VariableUpdateInstanceWriter variableUpdateInstanceWriter;
+  @Mock
+  private BusinessKeyWriter businessKeyWriter;
+  @Mock
+  private CamundaActivityEventWriter camundaActivityEventWriter;
 
   private ConfigurationService configurationService;
 
@@ -65,6 +84,7 @@ public class OptimizeProcessCleanupServiceTest {
     // given
     final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
     mockProcessDefinitions(processDefinitionKeys);
+    mockGetProcessInstanceIds(processDefinitionKeys);
 
     //when
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
@@ -96,6 +116,7 @@ public class OptimizeProcessCleanupServiceTest {
     final Period customTtl = Period.parse("P2M");
     getCleanupConfig().setDefaultTtl(customTtl);
     final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
+    mockGetProcessInstanceIds(processDefinitionKeys);
 
     //when
     mockProcessDefinitions(processDefinitionKeys);
@@ -157,8 +178,8 @@ public class OptimizeProcessCleanupServiceTest {
     Map<String, OffsetDateTime> capturedArguments = verifyDeleteProcessInstanceExecutionReturnCapturedArguments(
       allProcessDefinitionKeys
     );
-    assertKeysWereCalledWithExpectedTtl(capturedArguments, processDefinitionKeysWithSpecificTtl, customTtl);
-    assertKeysWereCalledWithExpectedTtl(
+    assertInstancesWereRetrievedByKeyAndExpectedTtl(capturedArguments, processDefinitionKeysWithSpecificTtl, customTtl);
+    assertInstancesWereRetrievedByKeyAndExpectedTtl(
       capturedArguments, processDefinitionKeysWithDefaultTtl, getCleanupConfig().getDefaultTtl()
     );
   }
@@ -167,6 +188,7 @@ public class OptimizeProcessCleanupServiceTest {
   public void testCleanupRunOnceForEveryProcessDefinitionKey() {
     // given
     final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
+    mockGetProcessInstanceIds(processDefinitionKeys);
     // mock returns keys twice (in reality they have different versions but that doesn't matter for the test)
     mockProcessDefinitions(ListUtils.union(processDefinitionKeys, processDefinitionKeys));
 
@@ -200,6 +222,14 @@ public class OptimizeProcessCleanupServiceTest {
     assertThat(exception.getMessage(), containsString(configuredKey));
   }
 
+  private void mockGetProcessInstanceIds(final List<String> expectedKeys) {
+    expectedKeys.forEach(key -> {
+      when(processInstanceReader.getProcessInstanceIdsThatEndedBefore(
+        eq(key), ArgumentMatchers.any(OffsetDateTime.class), anyInt()
+      )).thenReturn(INSTANCE_IDS, Collections.emptyList());
+    });
+  }
+
   private void doCleanup(final OptimizeCleanupService underTest) {
     underTest.doCleanup(OffsetDateTime.now());
   }
@@ -208,16 +238,25 @@ public class OptimizeProcessCleanupServiceTest {
     return configurationService.getCleanupServiceConfiguration();
   }
 
-  private void assertDeleteProcessInstancesExecutedFor(List<String> expectedProcessDefinitionKeys, Period expectedTtl) {
+  private void assertDeleteProcessInstancesExecutedFor(final List<String> expectedProcessDefinitionKeys,
+                                                       final Period expectedTtl) {
     final Map<String, OffsetDateTime> processInstanceKeysWithDateFilter =
       verifyDeleteProcessInstanceExecutionReturnCapturedArguments(expectedProcessDefinitionKeys);
+    assertInstancesWereRetrievedByKeyAndExpectedTtl(
+      processInstanceKeysWithDateFilter,
+      expectedProcessDefinitionKeys,
+      expectedTtl
+    );
 
-    assertKeysWereCalledWithExpectedTtl(processInstanceKeysWithDateFilter, expectedProcessDefinitionKeys, expectedTtl);
+    verify(processInstanceWriter, times(expectedProcessDefinitionKeys.size()))
+      .deleteByIds(eq(INSTANCE_IDS));
+    verify(variableUpdateInstanceWriter, times(expectedProcessDefinitionKeys.size()))
+      .deleteByProcessInstanceIds(eq(INSTANCE_IDS));
   }
 
-  private void assertKeysWereCalledWithExpectedTtl(Map<String, OffsetDateTime> capturedInvocationArguments,
-                                                   List<String> expectedDefinitionKeys,
-                                                   Period expectedTtl) {
+  private void assertInstancesWereRetrievedByKeyAndExpectedTtl(final Map<String, OffsetDateTime> capturedInvocationArguments,
+                                                               final List<String> expectedDefinitionKeys,
+                                                               final Period expectedTtl) {
     final Map<String, OffsetDateTime> filteredInvocationArguments = capturedInvocationArguments.entrySet().stream()
       .filter(entry -> expectedDefinitionKeys.contains(entry.getKey()))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -228,23 +267,18 @@ public class OptimizeProcessCleanupServiceTest {
     filteredInvocationArguments.values().forEach(instant -> assertThat(instant, is(dateFilterValue)));
   }
 
-  private Map<String, OffsetDateTime> verifyDeleteProcessInstanceExecutionReturnCapturedArguments(List<String> expectedProcessDefinitionKeys) {
-    ArgumentCaptor<String> processInstanceCaptor = ArgumentCaptor.forClass(String.class);
+  private Map<String, OffsetDateTime> verifyDeleteProcessInstanceExecutionReturnCapturedArguments(final List<String> expectedProcessDefinitionKeys) {
+    ArgumentCaptor<String> definitionKeyCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<OffsetDateTime> endDateFilterCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
-    verify(
-      processInstanceWriter,
-      atLeast(expectedProcessDefinitionKeys.size())
-    ).deleteProcessInstancesByProcessDefinitionKeyAndEndDateOlderThan(
-      processInstanceCaptor.capture(),
-      endDateFilterCaptor.capture()
-    );
+    verify(processInstanceReader, atLeast(expectedProcessDefinitionKeys.size()))
+      .getProcessInstanceIdsThatEndedBefore(definitionKeyCaptor.capture(), endDateFilterCaptor.capture(), anyInt());
     int i = 0;
-    final Map<String, OffsetDateTime> filteredProcessInstancesWithDateFilter = new HashMap<>();
-    for (String key : processInstanceCaptor.getAllValues()) {
-      filteredProcessInstancesWithDateFilter.put(key, endDateFilterCaptor.getAllValues().get(i));
+    final Map<String, OffsetDateTime> definitionKeysWithDateFilter = new HashMap<>();
+    for (String key : definitionKeyCaptor.getAllValues()) {
+      definitionKeysWithDateFilter.put(key, endDateFilterCaptor.getAllValues().get(i));
       i++;
     }
-    return filteredProcessInstancesWithDateFilter;
+    return definitionKeysWithDateFilter;
   }
 
   private void assertDeleteAllInstanceVariablesExecutedFor(List<String> expectedProcessDefinitionKeys,
@@ -252,19 +286,20 @@ public class OptimizeProcessCleanupServiceTest {
     final Map<String, OffsetDateTime> processInstanceKeysWithDateFilter =
       verifyDeleteAllInstanceVariablesReturnCapturedArguments(expectedProcessDefinitionKeys);
 
-    assertKeysWereCalledWithExpectedTtl(processInstanceKeysWithDateFilter, expectedProcessDefinitionKeys, expectedTtl);
+    assertInstancesWereRetrievedByKeyAndExpectedTtl(
+      processInstanceKeysWithDateFilter,
+      expectedProcessDefinitionKeys,
+      expectedTtl
+    );
   }
 
-  private Map<String, OffsetDateTime> verifyDeleteAllInstanceVariablesReturnCapturedArguments(List<String> expectedProcessDefinitionKeys) {
+  private Map<String, OffsetDateTime> verifyDeleteAllInstanceVariablesReturnCapturedArguments(final List<String> expectedProcessDefinitionKeys) {
     ArgumentCaptor<String> processInstanceCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<OffsetDateTime> endDateFilterCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
-    verify(
-      processVariableUpdateWriter,
-      atLeast(expectedProcessDefinitionKeys.size())
-    ).deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(
-      processInstanceCaptor.capture(),
-      endDateFilterCaptor.capture()
-    );
+    verify(processInstanceReader, atLeast(expectedProcessDefinitionKeys.size()))
+      .getProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+        processInstanceCaptor.capture(), endDateFilterCaptor.capture(), anyInt()
+      );
     int i = 0;
     final Map<String, OffsetDateTime> filteredProcessInstancesWithDateFilter = new HashMap<>();
     for (String key : processInstanceCaptor.getAllValues()) {
@@ -274,16 +309,16 @@ public class OptimizeProcessCleanupServiceTest {
     return filteredProcessInstancesWithDateFilter;
   }
 
-  private List<String> mockProcessDefinitions(List<String> processDefinitionIds) {
+  private List<String> mockProcessDefinitions(final List<String> processDefinitionIds) {
     final List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos = processDefinitionIds.stream()
       .map(this::createProcessDefinitionDto)
       .collect(Collectors.toList());
-    when(processDefinitionReader.getProcessDefinitions(false, false)).thenReturn(
-      processDefinitionOptimizeDtos);
+    when(processDefinitionReader.getProcessDefinitions(false, false))
+      .thenReturn(processDefinitionOptimizeDtos);
     return processDefinitionIds;
   }
 
-  private List<String> generateRandomDefinitionsKeys(Integer amount) {
+  private List<String> generateRandomDefinitionsKeys(final Integer amount) {
     return IntStream.range(0, amount)
       .mapToObj(i -> UUID.randomUUID().toString())
       .collect(toList());
@@ -298,7 +333,14 @@ public class OptimizeProcessCleanupServiceTest {
 
   private OptimizeCleanupService createOptimizeCleanupServiceToTest() {
     return new OptimizeProcessCleanupService(
-      configurationService, processDefinitionReader, processInstanceWriter, processVariableUpdateWriter
+      configurationService,
+      processDefinitionReader,
+      processInstanceReader,
+      processInstanceWriter,
+      processVariableUpdateWriter,
+      businessKeyWriter,
+      camundaActivityEventWriter,
+      variableUpdateInstanceWriter
     );
   }
 }

@@ -19,12 +19,16 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
@@ -55,6 +59,23 @@ public class CamundaActivityEventWriter {
                .build())
       .filter(importRequest -> Objects.nonNull(importRequest.getRequest()))
       .collect(Collectors.toList());
+  }
+
+  public void deleteByProcessInstanceIds(final String definitionKey, final List<String> processInstanceIds) {
+    final String deletedItemName = "variable updates";
+    log.debug("Deleting camunda activity events for [{}] processInstanceIds", processInstanceIds.size());
+
+    final BoolQueryBuilder filterQuery = boolQuery()
+      .filter(termsQuery(CamundaActivityEventIndex.PROCESS_INSTANCE_ID, processInstanceIds));
+
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+      esClient,
+      filterQuery,
+      deletedItemName,
+      "list of ids",
+      // attach -* suffix to catch all indices and not go through the alias which only as one write index
+      new CamundaActivityEventIndex(definitionKey).getIndexName() + "*"
+    );
   }
 
   private Optional<IndexRequest> createIndexRequestForActivityEvent(CamundaActivityEventDto camundaActivityEventDto) {

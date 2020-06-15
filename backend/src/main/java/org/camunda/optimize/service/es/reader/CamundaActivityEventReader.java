@@ -155,7 +155,7 @@ public class CamundaActivityEventReader {
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return ElasticsearchHelper.mapHits(searchResponse.getHits(), CamundaActivityEventDto.class, objectMapper);
+      return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), CamundaActivityEventDto.class, objectMapper);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve camunda activity events!", e);
     }

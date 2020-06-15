@@ -16,6 +16,10 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.indices.rollover.RolloverRequest;
+import org.elasticsearch.client.indices.rollover.RolloverResponse;
+import org.elasticsearch.common.unit.ByteSizeUnit;
+import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
@@ -192,18 +196,44 @@ public class ElasticsearchWriterUtil {
     return deleteResponse.getDeleted() > 0L;
   }
 
-  private void doBulkRequest(OptimizeElasticsearchClient esClient, BulkRequest bulkRequest, String itemName) {
+  public static boolean triggerRollover(final OptimizeElasticsearchClient esClient, final String indexAliasName,
+                                        final int maxIndexSizeGB) {
+    RolloverRequest rolloverRequest = new RolloverRequest(indexAliasName, null);
+    rolloverRequest.addMaxIndexSizeCondition(new ByteSizeValue(maxIndexSizeGB, ByteSizeUnit.GB));
+
+    log.info("Executing Rollover Request...");
+
+    try {
+      RolloverResponse rolloverResponse = esClient.rollover(rolloverRequest);
+      if (rolloverResponse.isRolledOver()) {
+        log.info(
+          "Index with alias {} has been rolled over. New index name: {}",
+          indexAliasName,
+          rolloverResponse.getNewIndex()
+        );
+      } else {
+        log.debug("Index with alias {} has not been rolled over.", indexAliasName);
+      }
+      return rolloverResponse.isRolledOver();
+    } catch (Exception e) {
+      String message = "Failed to execute rollover request";
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public static void doBulkRequest(OptimizeElasticsearchClient esClient, BulkRequest bulkRequest, String itemName) {
     try {
       BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
       if (bulkResponse.hasFailures()) {
         throw new OptimizeRuntimeException(String.format(
-          "There were failures while writing %s with message: %s",
+          "There were failures while performing bulk on %s with message: %s",
           itemName,
           bulkResponse.buildFailureMessage()
         ));
       }
     } catch (IOException e) {
-      String reason = String.format("There were errors while writing %s.", itemName);
+      String reason = String.format("There were errors while performing a bulk on %s.", itemName);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

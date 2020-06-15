@@ -91,7 +91,7 @@ public class EventSequenceCountReader {
       log.error("Was not able to retrieve event sequence counts!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve event sequence counts!", e);
     }
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
   }
 
   public List<EventCountDto> getEventCounts(final String searchTerm) {
@@ -146,7 +146,7 @@ public class EventSequenceCountReader {
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
   }
 
   public List<EventSequenceCountDto> getAllSequenceCounts() {
@@ -169,7 +169,7 @@ public class EventSequenceCountReader {
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResponse,
       EventSequenceCountDto.class,
       objectMapper,

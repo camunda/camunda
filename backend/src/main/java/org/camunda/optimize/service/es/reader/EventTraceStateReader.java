@@ -62,7 +62,7 @@ public class EventTraceStateReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
   }
 
   public List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(final List<EventTypeDto> startEvents,
@@ -89,7 +89,7 @@ public class EventTraceStateReader {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
   }
 
   private BoolQueryBuilder createContainsAtLeastOneEventFromQuery(final List<EventTypeDto> startEvents) {

@@ -8,9 +8,9 @@ package org.camunda.optimize.upgrade;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.indexes.RenameFieldTestIndex;
@@ -280,11 +280,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     buildIndexPlan.execute();
 
-    ElasticsearchHelper.triggerRollover(
-      prefixAwareClient,
-      TEST_INDEX_WITH_TEMPLATE.getIndexName(),
-      0
-    );
+    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE.getIndexName(), 0);
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()

@@ -266,7 +266,7 @@ public class DurationOutliersReader {
 
     try {
       final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
-      return ElasticsearchHelper.retrieveScrollResultsTillLimit(
+      return ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
         response,
         ProcessInstanceIdDto.class,
         objectMapper,

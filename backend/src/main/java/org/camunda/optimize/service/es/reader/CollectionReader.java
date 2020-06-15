@@ -89,7 +89,7 @@ public class CollectionReader {
       throw new OptimizeRuntimeException("Was not able to retrieve collections!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       CollectionDefinitionDto.class,
       objectMapper,

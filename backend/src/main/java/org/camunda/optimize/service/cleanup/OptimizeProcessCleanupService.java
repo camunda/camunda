@@ -9,18 +9,24 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
+import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
+import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
+import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.cleanup.OptimizeCleanupService.enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 
 @AllArgsConstructor
 @Component
@@ -29,9 +35,12 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
 
   private final ConfigurationService configurationService;
   private final ProcessDefinitionReader processDefinitionReader;
+  private final ProcessInstanceReader processInstanceReader;
   private final CompletedProcessInstanceWriter processInstanceWriter;
   private final ProcessVariableUpdateWriter processVariableUpdateWriter;
-
+  private final BusinessKeyWriter businessKeyWriter;
+  private final CamundaActivityEventWriter camundaActivityEventWriter;
+  private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
 
   @Override
   public void doCleanup(final OffsetDateTime startTime) {
@@ -49,7 +58,7 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
     }
   }
 
-  private void performCleanupForProcessKey(OffsetDateTime startTime, String currentProcessDefinitionKey) {
+  private void performCleanupForProcessKey(final OffsetDateTime startTime, final String currentProcessDefinitionKey) {
     final ProcessDefinitionCleanupConfiguration cleanupConfigurationForKey = getCleanupConfiguration()
       .getProcessDefinitionCleanupConfigurationForKey(currentProcessDefinitionKey);
 
@@ -60,19 +69,13 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
       cleanupConfigurationForKey.getProcessDataCleanupMode()
     );
 
-    final OffsetDateTime endDateFilter = startTime.minus(cleanupConfigurationForKey.getTtl());
+    final OffsetDateTime endDate = startTime.minus(cleanupConfigurationForKey.getTtl());
     switch (cleanupConfigurationForKey.getProcessDataCleanupMode()) {
       case ALL:
-        processInstanceWriter.deleteProcessInstancesByProcessDefinitionKeyAndEndDateOlderThan(
-          currentProcessDefinitionKey,
-          endDateFilter
-        );
+        performInstanceDataCleanup(currentProcessDefinitionKey, endDate);
         break;
       case VARIABLES:
-        processVariableUpdateWriter.deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(
-          currentProcessDefinitionKey,
-          endDateFilter
-        );
+        performVariableDataCleanup(currentProcessDefinitionKey, endDate);
         break;
       default:
         throw new IllegalStateException("Unsupported cleanup mode " + cleanupConfigurationForKey.getProcessDataCleanupMode());
@@ -84,6 +87,31 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
       cleanupConfigurationForKey.getTtl(),
       cleanupConfigurationForKey.getProcessDataCleanupMode()
     );
+  }
+
+  private void performInstanceDataCleanup(final String definitionKey, final OffsetDateTime endDate) {
+    List<String> currentPageOfProcessInstanceIds = processInstanceReader
+      .getProcessInstanceIdsThatEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+    while (!currentPageOfProcessInstanceIds.isEmpty()) {
+      camundaActivityEventWriter.deleteByProcessInstanceIds(definitionKey, currentPageOfProcessInstanceIds);
+      businessKeyWriter.deleteByProcessInstanceIds(currentPageOfProcessInstanceIds);
+      variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentPageOfProcessInstanceIds);
+      processInstanceWriter.deleteByIds(currentPageOfProcessInstanceIds);
+      currentPageOfProcessInstanceIds = processInstanceReader
+        .getProcessInstanceIdsThatEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+    }
+  }
+
+  private void performVariableDataCleanup(final String definitionKey, final OffsetDateTime endDate) {
+    List<String> currentPageOfProcessInstanceIds = processInstanceReader
+      .getProcessInstanceIdsThatHaveVariablesAndEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+    while (!currentPageOfProcessInstanceIds.isEmpty()) {
+      variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentPageOfProcessInstanceIds);
+      processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(currentPageOfProcessInstanceIds);
+
+      currentPageOfProcessInstanceIds = processInstanceReader
+        .getProcessInstanceIdsThatHaveVariablesAndEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+    }
   }
 
   private Set<String> getAllOptimizeProcessDefinitionKeys() {

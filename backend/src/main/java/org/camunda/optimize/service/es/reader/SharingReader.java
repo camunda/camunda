@@ -200,7 +200,7 @@ public class SharingReader {
       throw new OptimizeRuntimeException("Was not able to retrieve report shares!", e);
     }
 
-    List<ReportShareDto> reportShareDtos = ElasticsearchHelper.retrieveAllScrollResults(
+    List<ReportShareDto> reportShareDtos = ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       ReportShareDto.class,
       objectMapper,
@@ -244,7 +244,7 @@ public class SharingReader {
       throw new OptimizeRuntimeException("Was not able to retrieve dashboard shares!", e);
     }
 
-    List<DashboardShareDto> dashboardShareDtos = ElasticsearchHelper.retrieveAllScrollResults(
+    List<DashboardShareDto> dashboardShareDtos = ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       DashboardShareDto.class,
       objectMapper,

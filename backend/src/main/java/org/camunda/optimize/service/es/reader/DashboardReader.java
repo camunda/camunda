@@ -88,7 +88,7 @@ public class DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
   }
 
   public List<DashboardDefinitionDto> findFirstDashboardsForReport(String reportId) {
@@ -116,7 +116,7 @@ public class DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
   }
 
 }

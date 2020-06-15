@@ -17,21 +17,19 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
 import java.security.InvalidParameterException;
 import java.text.MessageFormat;
-import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,11 +43,8 @@ import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.cre
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.scriptQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @AllArgsConstructor
 @Component
@@ -126,38 +121,14 @@ public class ProcessVariableUpdateWriter {
     return null;
   }
 
-  public void deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(final String processDefinitionKey,
-                                                                                  final OffsetDateTime endDate) {
-    String updateItemName = "process instance variables";
-    log.info(
-      "Deleting{} for processDefinitionKey {} and endDate past {}",
-      updateItemName,
-      processDefinitionKey,
-      endDate
+  public void deleteVariableDataByProcessInstanceIds(final List<String> processInstanceIds) {
+    final BulkRequest bulkRequest = new BulkRequest().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    log.debug("Deleting variable data on [{}] process instance documents with bulk request.", processInstanceIds.size());
+    final Script variableClearScript = createVariableClearScript();
+    processInstanceIds.forEach(
+      id -> bulkRequest.add(new UpdateRequest(PROCESS_INSTANCE_INDEX_NAME, id).script(variableClearScript))
     );
-
-    final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
-      getClass().getName(), esClient, UpdateByQueryAction.NAME
-    );
-    try {
-      progressReporter.start();
-
-      final BoolQueryBuilder filterQuery = boolQuery()
-        .filter(termQuery(ProcessInstanceIndex.PROCESS_DEFINITION_KEY, processDefinitionKey))
-        .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate)));
-      addAtLeastOneVariableArrayNotEmptyNestedFilters(filterQuery);
-
-      ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
-        updateItemName,
-        processDefinitionKey,
-        createVariableClearScript(),
-        filterQuery,
-        PROCESS_INSTANCE_INDEX_NAME
-      );
-    } finally {
-      progressReporter.stop();
-    }
+    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, PROCESS_INSTANCE_INDEX_NAME);
   }
 
   private Map<String, List<OptimizeDto>> groupVariablesByProcessInstanceIds(List<ProcessVariableDto> variableUpdates) {

@@ -22,7 +22,7 @@ import javax.annotation.PostConstruct;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.clearScroll;
+import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.clearScroll;
 
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class ScrollBasedImportIndexHandler
