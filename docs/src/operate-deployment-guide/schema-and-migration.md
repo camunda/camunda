@@ -41,47 +41,49 @@ PUT _template/template_operate
 ## Migration
 
 Version of Operate is reflected in Elasticsearch object names, e.g. `operate-user-1.3.0_` index contains user data for Operate v. 1.3.0. When upgrading from one 
-version of Operate to another, migration of data must be performed. Operate distribution provides scripts to perform data migration strictly from previous minor. 
-Operate version to the next minor version, meaning that if you make bigger upgrade step, e.g. 1.2.0 -> 1.4.0, migration must be performed step by step for each minor version:
-1.2.0 -> 1.3.0 and 1.3.0 -> 1.4.0.
+version of Operate to another, migration of data must be performed. Operate distribution provides an application to perform data migration from previous versions. 
 
-Information to migrate schema from v. x.y-1.z to x.y.z (sometimes from x-1.y.z to x.0.0) can be found in the latter version distribution in `schema/migrate` folder.
 
+### Concept
 The migration uses Elasticsearch [processors](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/ingest-processors.html) and [pipelines](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/pipeline.html) to reindex the data. 
-All required Elasticsearch scripts are provided in `schema/migrate` folder of the distribution. Additionally example shell script (`migrate.sh`) is provided that executes the following steps:
 
-1. Remove old templates
-2. Create new templates and indices
-3. Create pipelines
-4. Migrate data 
-5. Remove pipelines and old indices 
+Migration execute plans for each index. A plan consists of a sequence of steps.
+A step describes one change in an index for a particular version. 
+The step has an index name, a version where the change happened, an order number to determine the position in the plan and the content which describes what will be changed.
+To track the application of a step and also for protocol usage the step stores additionally an applied marker and created and applied dates.
+The description field is for documentation purposes.
 
-### How to migrate
+All available steps will be stored in its own index in Elasticsearch ( `operate-migration-steps-repositoy`) Each change in schema will delivered by a new Operate version. Every Operate version contains migration steps for the change as json files. Operate updates the current migration steps repository in Elasticsearch. The steps repository contains all available steps and its states.
+By using this steps repository it is possible to apply needed steps to migrate from previous to current schema. Already applied and new steps will be detected and either applied
+or ignored.
 
-Make sure that Elasticsearch that contains Operate data is running. The migration script will connect by default to
-**http://localhost:9200**. Otherwise you need to specify the address.
+### How to migrate 
 
-Follow the next steps to migrate:
+#### Migrate by using standalone application
 
-1. Change to *schema* folder Operate 
-2. Extract *camunda-operate-els-schema-<OPERATE-VERSION>.zip*
-3. Execute *migration.sh* ``[elasticsearch host:port]`` shell script
+Make sure that Elasticsearch that contains Operate data is running. The migration script will connect by default to specified connection in Operate settings.
 
-```
-cd schema
-unzip camunda-operate-els-schema-1.2.0.zip
-bash ./migrate.sh
-```
+Call ```<application-directory>/bin/migrate```
 
-All requests and responses are written to the console. Here you can see if the migration was successful.
+First the current schema will be created if not exist. Then the migration takes place. If everything was successful the previous schema will be deleted. 
+The application exits.
 
-> **Note:** You might need to adjust `migrate.sh` script to suit your needs.
 
 > **Note:** The old indices will be deleted after succeeded migration. That might need more disk space.
 
 > **Important!** You should take care of data backup before performing migration.
 
-### Example for migrate in Kubernetes
+#### Migrate by using automatic upgrade in Operate Webapplication
+
+At the start of Operate webapplication the current schema will be created if not exist. If the automatic migration is enabled the migration will be started.
+The migration runs only when ONE previous schema version exists. 
+
+#### Configure migration
+
+Automatic migration is enabled by default.
+It can be enabled/disabled by set configuration key `camunda.operate.migrationEnabled` to true/false.
+
+#### Example for migrate in Kubernetes
 
 To ensure that the migration will be executed *before* operate will be started you can use
 the [init container](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) feature of kubernetes. It makes sure that the 'main' container will only be started
@@ -95,11 +97,11 @@ The following snippet of a pod description for kubernetes shows the usage of mig
 spec:
    initContainers:
      - name: migration
-       image: camunda/operate:0.23.0
-       command: ['/bin/bash','/usr/local/operate/migration/migrate.sh','http://elasticsearch-host:9200']
+       image: camunda/operate:0.24.0
+       command: ['/bin/sh','/usr/local/operate/bin/migrate']
    containers:
      - name: operate
-       image: camunda/operate:0.23.0
+       image: camunda/operate:0.24.0
        env:
 ...
 ```
@@ -114,12 +116,8 @@ spec:
 |   |
 |   + template  - Templates
 |   
-+ migrate
++ change
 |   |
-|   + pipeline  - Pipelines
-|   | 
-|   + reindex   - Reindex requests
-|
-+ migrate.sh    
+|   + step-file.json
 
 ``` 
