@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -301,7 +302,7 @@ public class ElasticsearchExporterTest {
   public void shouldNotHandleFlushException() {
     // given
     when(esClient.shouldFlush()).thenReturn(true);
-    when(esClient.flush()).thenThrow(new ElasticsearchExporterException("expected"));
+    doThrow(new ElasticsearchExporterException("expected")).when(esClient).flush();
 
     createAndOpenExporter();
 
@@ -366,7 +367,6 @@ public class ElasticsearchExporterTest {
 
   private ElasticsearchClient mockElasticsearchClient() {
     final ElasticsearchClient client = mock(ElasticsearchClient.class);
-    when(client.flush()).thenReturn(true);
     when(client.putIndexTemplate(any(ValueType.class))).thenReturn(true);
     when(client.putIndexTemplate(anyString(), anyString(), anyString())).thenReturn(true);
     return client;

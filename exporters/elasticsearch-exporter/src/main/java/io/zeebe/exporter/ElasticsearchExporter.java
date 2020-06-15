@@ -113,11 +113,8 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void flush() {
-    if (client.flush()) {
-      controller.updateLastExportedRecordPosition(lastPosition);
-    } else {
-      log.warn("Failed to flush bulk completely");
-    }
+    client.flush();
+    controller.updateLastExportedRecordPosition(lastPosition);
   }
 
   private void createIndexTemplates() {
