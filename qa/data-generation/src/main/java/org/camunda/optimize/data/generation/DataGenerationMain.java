@@ -104,7 +104,7 @@ public class DataGenerationMain {
   public static String getDefaultDefinitionsOfClass(Class<? extends DataGenerator<?>> classToExtractDefinitionsFor) {
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
-      .whitelistPackages(DataGenerator.class.getPackage().getName())
+      .acceptPackages(DataGenerator.class.getPackage().getName())
       .scan()) {
       ClassInfoList subclasses = scanResult.getSubclasses(classToExtractDefinitionsFor.getName());
       return subclasses.stream()

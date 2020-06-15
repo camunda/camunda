@@ -41,11 +41,10 @@ public class EngineImportIndexHandlerProvider {
   private List<TimestampBasedEngineImportIndexHandler> timestampBasedEngineHandlers;
   private Map<String, ImportIndexHandler<?, ?>> allHandlers;
 
-
   static {
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
-      .whitelistPackages(EngineImportIndexHandlerProvider.class.getPackage().getName())
+      .acceptPackages(EngineImportIndexHandlerProvider.class.getPackage().getName())
       .scan()) {
       TIMESTAMP_BASED_HANDLER_CLASSES = scanResult.getSubclasses(TimestampBasedEngineImportIndexHandler.class.getName()).loadClasses();
       SCROLL_BASED_HANDLER_CLASSES = scanResult.getSubclasses(ScrollBasedImportIndexHandler.class.getName()).loadClasses();
