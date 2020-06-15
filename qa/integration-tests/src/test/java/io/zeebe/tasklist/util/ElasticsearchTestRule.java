@@ -181,7 +181,7 @@ public class ElasticsearchTestRule extends TestWatcher {
           logger.error(e.getMessage(), e);
         }
         imported = testImportListener.getImported();
-        logger.debug(" {} of {} imports processed", imported, shouldImportCount);
+        logger.debug(" {} of {} records processed", imported, shouldImportCount);
       }
       refreshTasklistESIndices();
       found = predicate.test(arguments);
@@ -195,7 +195,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     if(found) {
       logger.debug("Conditions met in round {} ({} ms).", waitingRound,finishedTime );
     }else {
-      logger.debug("Conditions not met after %s rounds (%s ms).", waitingRound, finishedTime);
+      logger.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
     }
   }
 

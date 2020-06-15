@@ -7,7 +7,18 @@ package io.zeebe.tasklist.entities;
 
 public abstract class TasklistZeebeEntity<T extends TasklistZeebeEntity<T>> extends TasklistEntity<T> {
 
+  private long key;
+
   private int partitionId;
+
+  public T setKey(long key) {
+    this.key = key;
+    return (T) this;
+  }
+
+  public long getKey() {
+    return key;
+  }
 
   public T setPartitionId(int partitionId) {
     this.partitionId = partitionId;
@@ -29,6 +40,8 @@ public abstract class TasklistZeebeEntity<T extends TasklistZeebeEntity<T>> exte
 
     TasklistZeebeEntity<?> that = (TasklistZeebeEntity<?>) o;
 
+    if (key != that.key)
+      return false;
     return partitionId == that.partitionId;
 
   }
@@ -36,6 +49,7 @@ public abstract class TasklistZeebeEntity<T extends TasklistZeebeEntity<T>> exte
   @Override
   public int hashCode() {
     int result = super.hashCode();
+    result = 31 * result + (int) (key ^ (key >>> 32));
     result = 31 * result + partitionId;
     return result;
   }

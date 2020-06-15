@@ -1,7 +1,29 @@
-# A task...
 type Task {
     # the unique identifier of the task
-    key: ID!
+    id: ID!
+    name: String!
+    workflowName: String!
+    creationTime: String!
+    completionTime: String
+    assignee: User
+    variables: [Variable!]
+    taskState: TaskState!
+}
+
+input TaskQuery {
+    state: TaskState
+    assigned: Boolean
+    assignee: String
+}
+
+enum TaskState {
+    CREATED,
+    COMPLETED
+}
+
+type Variable {
+    name: String!
+    value: String!
 }
 
 type User {
@@ -12,6 +34,6 @@ type User {
 
 type Query {
     # find all tasks
-    tasks: [Task!]!
+    tasks(query: TaskQuery!): [Task!]!
     currentUser: User!
 }

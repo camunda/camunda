@@ -5,9 +5,15 @@
  */
 package io.zeebe.tasklist.util;
 
+import java.util.function.Predicate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.tasklist.property.TasklistProperties;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Component
@@ -22,37 +28,21 @@ public class TasklistTester {
   private ZeebeClient zeebeClient;
   private ElasticsearchTestRule elasticsearchTestRule;
 //
-//  private Long workflowKey;
-//  private Long workflowInstanceKey;
+  private Long workflowKey;
+  private Long workflowInstanceKey;
 //
 //  @Autowired
 //  @Qualifier("workflowIsDeployedCheck")
 //  private Predicate<Object[]> workflowIsDeployedCheck;
-//
-//  @Autowired
-//  @Qualifier("workflowInstancesAreStartedCheck")
-//  private Predicate<Object[]> workflowInstancesAreStartedCheck;
-//
-//  @Autowired
-//  @Qualifier("workflowInstancesAreFinishedCheck")
-//  private Predicate<Object[]> workflowInstancesAreFinishedCheck;
-//
-//  @Autowired
-//  @Qualifier("workflowInstanceIsCompletedCheck")
-//  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
-//
-//  @Autowired
-//  @Qualifier("incidentIsActiveCheck")
-//  private Predicate<Object[]> incidentIsActiveCheck;
-//
-//  @Autowired
-//  @Qualifier("activityIsActiveCheck")
-//  private Predicate<Object[]> activityIsActiveCheck;
-//
-//  @Autowired
-//  @Qualifier("activityIsCompletedCheck")
-//  private Predicate<Object[]> activityIsCompletedCheck;
-//
+
+  @Autowired
+  @Qualifier("taskIsCreatedCheck")
+  private Predicate<Object[]> taskIsCreatedCheck;
+
+  @Autowired
+  @Qualifier("taskIsCompletedCheck")
+  private Predicate<Object[]> taskIsCompletedCheck;
+
 //  @Autowired
 //  @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
 //  private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
@@ -72,6 +62,10 @@ public class TasklistTester {
 //
 //  @Autowired
 //  protected IncidentReader incidentReader;
+
+  @Autowired
+  private TasklistProperties tasklistProperties;
+
 //
 //  private boolean operationExecutorEnabled = true;
 //
@@ -86,56 +80,41 @@ public class TasklistTester {
 //    return workflowInstanceKey;
 //  }
 //
-//  public TasklistTester createAndDeploySimpleWorkflow(String processId,String activityId) {
-//    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
-//        .startEvent("start")
-//        .serviceTask(activityId).zeebeJobType(activityId)
-//        .endEvent()
-//        .done();
-//    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflow,processId+".bpmn");
-//    return this;
-//  }
-//
-//  public TasklistTester deployWorkflow(String... classpathResources) {
-//    Validate.notNull(zeebeClient, "ZeebeClient should be set.");
-//    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, classpathResources);
-//    return this;
-//  }
-//
-//  public TasklistTester deployWorkflow(BpmnModelInstance workflowModel, String resourceName) {
-//    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflowModel, resourceName);
-//    return this;
-//  }
-//
-//  public TasklistTester workflowIsDeployed() {
+  public TasklistTester createAndDeploySimpleWorkflow(String processId, String elementId) {
+    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+        .startEvent("start")
+        .serviceTask(elementId).zeebeJobType(tasklistProperties.getImporter().getJobType())
+        .endEvent()
+        .done();
+    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflow, processId + ".bpmn");
+    return this;
+  }
+
+  public TasklistTester deployWorkflow(String... classpathResources) {
+    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, classpathResources);
+    return this;
+  }
+
+  public TasklistTester deployWorkflow(BpmnModelInstance workflowModel, String resourceName) {
+    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflowModel, resourceName);
+    return this;
+  }
+
+  public TasklistTester workflowIsDeployed() {
+    //TODO #40
 //    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey);
-//    return this;
-//  }
-//
-//  public TasklistTester startWorkflowInstance(String bpmnProcessId) {
-//   return startWorkflowInstance(bpmnProcessId, null);
-//  }
-//
-//  public TasklistTester startWorkflowInstance(String bpmnProcessId, String payload) {
-//    workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, bpmnProcessId, payload);
-//    return this;
-//  }
-//
-//  public TasklistTester workflowInstanceIsStarted() {
-//    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreStartedCheck, Arrays.asList(workflowInstanceKey));
-//    return this;
-//  }
-//
-//  public TasklistTester workflowInstanceIsFinished() {
-//    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck,Arrays.asList(workflowInstanceKey));
-//    return this;
-//  }
-//
-//  public TasklistTester workflowInstanceIsCompleted() {
-//    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
-//    return this;
-//  }
-//
+    return this;
+  }
+
+  public TasklistTester startWorkflowInstance(String bpmnProcessId) {
+   return startWorkflowInstance(bpmnProcessId, null);
+  }
+
+  public TasklistTester startWorkflowInstance(String bpmnProcessId, String payload) {
+    workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, bpmnProcessId, payload);
+    return this;
+  }
+
 //  public TasklistTester failTask(String taskName, String errorMessage) {
 //    jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
 //    return this;
@@ -151,28 +130,34 @@ public class TasklistTester {
 //    return this;
 //  }
 //
-//  public TasklistTester activityIsActive(String activityId) {
-//    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey,activityId);
-//    return this;
-//  }
-//
-//  public TasklistTester activityIsCompleted(String activityId) {
-//    elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey,activityId);
-//    return this;
-//  }
-//
-//  public TasklistTester completeTask(String activityId) {
-//    ZeebeTestUtil.completeTask(zeebeClient, activityId, TestUtil.createRandomString(10), null);
-//    return activityIsCompleted(activityId);
-//  }
-//
-//  public TasklistTester and() {
-//    return this;
-//  }
-//
-//  public TasklistTester waitUntil() {
-//    return this;
-//  }
+
+  public TasklistTester taskIsCreated(String elementId) {
+    elasticsearchTestRule.processAllRecordsAndWait(taskIsCreatedCheck, workflowInstanceKey, elementId);
+    return this;
+  }
+
+  public TasklistTester taskIsCompleted(String elementId) {
+    elasticsearchTestRule.processAllRecordsAndWait(taskIsCompletedCheck, workflowInstanceKey, elementId);
+    return this;
+  }
+
+  public TasklistTester completeHumanTask(String elementId) {
+    ZeebeTestUtil.completeTask(zeebeClient, tasklistProperties.getImporter().getJobType(), TestUtil.createRandomString(10), null);
+    return taskIsCompleted(elementId);
+  }
+
+  public TasklistTester completeServiceTask(String jobType) {
+    ZeebeTestUtil.completeTask(zeebeClient, jobType, TestUtil.createRandomString(10), null);
+    return this;
+  }
+
+  public TasklistTester and() {
+    return this;
+  }
+
+  public TasklistTester waitUntil() {
+    return this;
+  }
 //
 //  public TasklistTester updateVariableOperation(String varName, String varValue) throws Exception {
 //    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);

@@ -6,16 +6,25 @@
 package io.zeebe.tasklist.webapp.graphql.query;
 
 import graphql.kickstart.tools.GraphQLQueryResolver;
-import io.zeebe.tasklist.webapp.graphql.entity.Task;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.SelectedField;
+import io.zeebe.tasklist.webapp.es.reader.TaskReader;
+import io.zeebe.tasklist.webapp.graphql.entity.TaskQueryDTO;
+import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import static io.zeebe.tasklist.util.CollectionUtil.map;
 
 @Component
 public final class TaskQueryResolver implements GraphQLQueryResolver {
 
-  public List<Task> tasks() {
-    final var task = new Task();
-    task.setKey("123");
-    return List.of(task);
+  @Autowired
+  private TaskReader taskReader;
+
+  public List<TaskDTO> tasks(TaskQueryDTO query, DataFetchingEnvironment dataFetchingEnvironment) {
+    final List<SelectedField> fields = dataFetchingEnvironment.getSelectionSet().getFields();
+    return taskReader.getTasks(query, map(fields, sf -> sf.getName()));
   }
+
 }

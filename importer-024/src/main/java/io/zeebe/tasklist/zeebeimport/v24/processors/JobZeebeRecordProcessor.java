@@ -66,6 +66,7 @@ public class JobZeebeRecordProcessor {
   private UpdateRequest persistTask(Record record, JobRecordValueImpl recordValue) throws PersistenceException {
     TaskEntity entity = new TaskEntity();
     entity.setId(String.valueOf(record.getKey()));
+    entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setElementId(recordValue.getElementId());
     entity.setWorkflowInstanceKey(String.valueOf(recordValue.getWorkflowInstanceKey()));
@@ -87,9 +88,12 @@ public class JobZeebeRecordProcessor {
       updateFields.put(TaskTemplate.STATE, entity.getState());
       updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
 
+      //format date fields properly
+      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
       return new UpdateRequest(taskTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .doc(updateFields)
+          .doc(jsonMap)
           .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {

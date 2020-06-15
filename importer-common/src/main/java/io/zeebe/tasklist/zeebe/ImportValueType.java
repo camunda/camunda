@@ -19,10 +19,10 @@ public enum ImportValueType {
   }
 
   public static final ImportValueType[] IMPORT_VALUE_TYPES = new ImportValueType[]{
-      ImportValueType.WORKFLOW_INSTANCE,
-      ImportValueType.VARIABLE,
-      ImportValueType.JOB,
-      ImportValueType.VARIABLE_DOCUMENT};
+//      ImportValueType.WORKFLOW_INSTANCE,
+      ImportValueType.JOB};
+//      ImportValueType.VARIABLE,
+//      ImportValueType.VARIABLE_DOCUMENT};
 
   public String getAliasTemplate() {
     return aliasTemplate;

@@ -5,7 +5,6 @@
  */
 package io.zeebe.tasklist.util;
 
-import java.util.Properties;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -16,16 +15,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.zeebe.PartitionHolder;
 import io.zeebe.tasklist.zeebeimport.ImportPositionHolder;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
-import io.zeebe.util.SocketUtil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -55,12 +50,6 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   @Autowired
   protected ImportPositionHolder importPositionHolder;
 
-  /// Predicate checks
-//  @Autowired
-//  @Qualifier("incidentIsResolvedCheck")
-//  protected Predicate<Object[]> incidentIsResolvedCheck;
-//
-  
   @Autowired
   protected TasklistProperties tasklistProperties;
 

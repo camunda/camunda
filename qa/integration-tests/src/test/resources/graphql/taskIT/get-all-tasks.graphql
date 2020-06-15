@@ -1,0 +1,15 @@
+{tasks(query: {}) {
+    id
+    name
+    workflowName
+    creationTime
+    completionTime
+    assignee {
+        username
+    }
+    variables {
+        name
+    }
+    taskState
+}
+}

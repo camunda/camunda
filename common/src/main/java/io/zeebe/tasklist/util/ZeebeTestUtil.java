@@ -111,6 +111,7 @@ public abstract class ZeebeTestUtil {
   public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload) {
     completeTask(client, jobType, workerName, payload, 1);
   }
+
   public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload, int count) {
     handleTasks(client, jobType, workerName, count, (jobClient, job) -> {
       CompleteJobCommandStep1 command = jobClient.newCompleteCommand(job.getKey());

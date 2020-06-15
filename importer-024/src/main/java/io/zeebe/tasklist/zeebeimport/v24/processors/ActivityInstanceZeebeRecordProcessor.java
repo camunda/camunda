@@ -81,6 +81,7 @@ public class ActivityInstanceZeebeRecordProcessor {
       entity = new ActivityInstanceEntity();
     }
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
+    entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());

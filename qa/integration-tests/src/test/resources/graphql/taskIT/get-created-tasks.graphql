@@ -1,0 +1,5 @@
+{tasks(query: {state: CREATED}) {
+    id
+    taskState
+}
+}

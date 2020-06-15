@@ -1,0 +1,5 @@
+{tasks(query: {assigned: true, assignee: "demo"}) {
+    id
+    taskState
+}
+}
