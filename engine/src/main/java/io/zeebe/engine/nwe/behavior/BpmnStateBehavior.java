@@ -10,6 +10,8 @@ package io.zeebe.engine.nwe.behavior;
 import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.deployment.DeployedWorkflow;
+import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.EventScopeInstanceState;
@@ -18,6 +20,7 @@ import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -28,9 +31,10 @@ public final class BpmnStateBehavior {
   private final EventScopeInstanceState eventScopeInstanceState;
   private final VariablesState variablesState;
   private final JobState jobState;
+  private final WorkflowState workflowState;
 
   public BpmnStateBehavior(final ZeebeState zeebeState) {
-    final var workflowState = zeebeState.getWorkflowState();
+    workflowState = zeebeState.getWorkflowState();
     elementInstanceState = workflowState.getElementInstanceState();
     eventScopeInstanceState = workflowState.getEventScopeInstanceState();
     variablesState = elementInstanceState.getVariablesState();
@@ -142,6 +146,12 @@ public final class BpmnStateBehavior {
         flowScopeInstance, elementInstanceKey, record, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
   }
 
+  public ElementInstance createElementInstance(
+      final long childInstanceKey, final WorkflowInstanceRecord childRecord) {
+    return elementInstanceState.newInstance(
+        childInstanceKey, childRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+  }
+
   public void setLocalVariable(
       final BpmnElementContext context,
       final DirectBuffer variableName,
@@ -188,5 +198,33 @@ public final class BpmnStateBehavior {
         parentElementInstance.getKey(),
         parentElementInstance.getValue(),
         parentElementInstance.getState());
+  }
+
+  public Optional<DeployedWorkflow> getWorkflow(final long workflowKey) {
+    return Optional.ofNullable(workflowState.getWorkflowByKey(workflowKey));
+  }
+
+  public Optional<DeployedWorkflow> getLatestWorkflowVersion(final DirectBuffer processId) {
+    final var workflow = workflowState.getLatestWorkflowVersionByProcessId(processId);
+    return Optional.ofNullable(workflow);
+  }
+
+  public void copyVariables(
+      final long source, final long target, final DeployedWorkflow targetWorkflow) {
+    final var variables = variablesState.getVariablesAsDocument(source);
+    variablesState.setVariablesFromDocument(target, targetWorkflow.getKey(), variables);
+  }
+
+  public Optional<ElementInstance> getCalledChildInstance(final BpmnElementContext context) {
+    final var elementInstance = getElementInstance(context);
+    final var calledChildInstanceKey = elementInstance.getCalledChildInstanceKey();
+    return Optional.ofNullable(elementInstanceState.getInstance(calledChildInstanceKey));
+  }
+
+  public void propagateTemporaryVariables(
+      final BpmnElementContext sourceContext, final BpmnElementContext targetContext) {
+    final var variables =
+        variablesState.getVariablesAsDocument(sourceContext.getElementInstanceKey());
+    variablesState.setTemporaryVariables(targetContext.getElementInstanceKey(), variables);
   }
 }

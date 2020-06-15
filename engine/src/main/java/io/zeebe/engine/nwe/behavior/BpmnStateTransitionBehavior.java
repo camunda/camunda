@@ -15,16 +15,21 @@ import io.zeebe.engine.nwe.WorkflowInstanceStateTransitionGuard;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceLifecycle;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCallActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
+import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.function.Function;
 
 public final class BpmnStateTransitionBehavior {
 
+  private static final String NO_WORKFLOW_FOUND_MESSAGE =
+      "Expected to find a deployed workflow for process id '%s', but none found.";
   private final TypedStreamWriter streamWriter;
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
@@ -33,6 +38,7 @@ public final class BpmnStateTransitionBehavior {
 
   private final WorkflowInstanceStateTransitionGuard stateTransitionGuard;
   private final WorkflowEngineMetrics metrics;
+  private final WorkflowInstanceRecord childInstanceRecord = new WorkflowInstanceRecord();
 
   public BpmnStateTransitionBehavior(
       final TypedStreamWriter streamWriter,
@@ -173,8 +179,7 @@ public final class BpmnStateTransitionBehavior {
 
     for (final BpmnElementContext childInstanceContext : childInstances) {
 
-      if (WorkflowInstanceLifecycle.canTransition(
-          childInstanceContext.getIntent(), WorkflowInstanceIntent.ELEMENT_TERMINATING)) {
+      if (WorkflowInstanceLifecycle.canTerminate(childInstanceContext.getIntent())) {
         transitionToTerminating(childInstanceContext);
 
       } else if (childInstanceContext.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
@@ -218,21 +223,83 @@ public final class BpmnStateTransitionBehavior {
 
   public void onElementCompleted(
       final ExecutableFlowElement element, final BpmnElementContext childContext) {
-
+    final ExecutableFlowElement containerScope;
+    final BpmnElementContext containerContext;
     final var flowScope = element.getFlowScope();
-    final var flowScopeProcessor = processorLookUp.apply(flowScope.getElementType());
-    final var flowScopeContext = stateBehavior.getFlowScopeContext(childContext);
-
-    flowScopeProcessor.onChildCompleted(flowScope, flowScopeContext, childContext);
+    if (flowScope != null) {
+      containerScope = flowScope;
+      containerContext = stateBehavior.getFlowScopeContext(childContext);
+    } else {
+      // no flowscope, assume this is called from a parent workflow
+      containerContext = stateBehavior.getParentElementInstanceContext(childContext);
+      containerScope = getParentWorkflowScope(containerContext, childContext);
+    }
+    final var containerProcessor = processorLookUp.apply(containerScope.getElementType());
+    containerProcessor.onChildCompleted(containerScope, containerContext, childContext);
   }
 
   public void onElementTerminated(
       final ExecutableFlowElement element, final BpmnElementContext childContext) {
-
+    final ExecutableFlowElement containerScope;
+    final BpmnElementContext containerContext;
     final var flowScope = element.getFlowScope();
-    final var flowScopeProcessor = processorLookUp.apply(flowScope.getElementType());
-    final var flowScopeContext = stateBehavior.getFlowScopeContext(childContext);
+    if (flowScope != null) {
+      containerContext = stateBehavior.getFlowScopeContext(childContext);
+      containerScope = flowScope;
+    } else {
+      // no flowscope, assume this is called from a parent workflow
+      containerContext = stateBehavior.getParentElementInstanceContext(childContext);
+      containerScope = getParentWorkflowScope(containerContext, childContext);
+    }
+    final var containerProcessor = processorLookUp.apply(containerContext.getBpmnElementType());
+    containerProcessor.onChildTerminated(containerScope, containerContext, childContext);
+  }
 
-    flowScopeProcessor.onChildTerminated(flowScope, flowScopeContext, childContext);
+  private ExecutableCallActivity getParentWorkflowScope(
+      final BpmnElementContext callActivityContext, final BpmnElementContext childContext) {
+    final var workflowKey = callActivityContext.getWorkflowKey();
+    final var elementId = callActivityContext.getElementId();
+    return stateBehavior
+        .getWorkflow(workflowKey)
+        .map(DeployedWorkflow::getWorkflow)
+        .map(workflow -> workflow.getElementById(elementId, ExecutableCallActivity.class))
+        .orElseThrow(
+            () ->
+                new BpmnProcessingException(
+                    childContext, String.format(NO_WORKFLOW_FOUND_MESSAGE, workflowKey)));
+  }
+
+  public long createChildProcessInstance(
+      final DeployedWorkflow workflow, final BpmnElementContext context) {
+
+    final var workflowInstanceKey = keyGenerator.nextKey();
+
+    childInstanceRecord.reset();
+    childInstanceRecord
+        .setBpmnProcessId(workflow.getBpmnProcessId())
+        .setVersion(workflow.getVersion())
+        .setWorkflowKey(workflow.getKey())
+        .setWorkflowInstanceKey(workflowInstanceKey)
+        .setParentWorkflowInstanceKey(context.getWorkflowInstanceKey())
+        .setParentElementInstanceKey(context.getElementInstanceKey())
+        .setElementId(workflow.getWorkflow().getId())
+        .setBpmnElementType(workflow.getWorkflow().getElementType());
+
+    streamWriter.appendFollowUpEvent(
+        workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
+
+    stateBehavior.createElementInstance(workflowInstanceKey, childInstanceRecord);
+
+    return workflowInstanceKey;
+  }
+
+  public void terminateChildProcessInstance(final BpmnElementContext context) {
+    stateBehavior
+        .getCalledChildInstance(context)
+        .filter(ElementInstance::canTerminate)
+        .map(instance -> context.copy(instance.getKey(), instance.getValue(), instance.getState()))
+        .ifPresentOrElse(
+            childInstanceContext -> transitionToTerminating(childInstanceContext) /* TERMINATING */,
+            () -> transitionToTerminated(context) /* TERMINATED */);
   }
 }
