@@ -5,7 +5,7 @@
   "homepage": ".",
   "dependencies": {
     "@bpmn-io/dmn-migrate": "^0.4.3",
-    "@ibm/plex": "^4.0.2",
+    "@ibm/plex": "^5.0.0",
     "array-includes": "^3.1.1",
     "array.prototype.find": "^2.1.1",
     "bpmn-js": "6.5.1",

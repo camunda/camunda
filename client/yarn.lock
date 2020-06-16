@@ -1735,10 +1735,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@ibm/plex@^4.0.2":
-  version "4.0.2"
-  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-4.0.2.tgz#0d871cd264ace55dae6c9f5211391b28ae0c2f63"
-  integrity sha512-MCOHPVSyQwuacyjCmVUhKuV7wc21eSaj/RdMM7BIL6YHMwKv6y4I9AqOa7V0Vcuzuyaj0YL8KgXj25+hVUObMA==
+"@ibm/plex@^5.0.0":
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-5.0.0.tgz#352b06553c4efd35a20c4ad89527c21a45f775cc"
+  integrity sha512-I5WEKNNpg7x0f1CYSB3YRQ8j0wrt8pLy9H5fo7h0FF56LBiFR9CCdY/HzZcNU3wPgI0V9J2k2oI5X8WUZmS5rA==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"
