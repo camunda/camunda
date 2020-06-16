@@ -29,13 +29,13 @@ public class UserTaskTotalDurationByAssigneeByUserTaskReportEvaluationIT
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final double duration) {
-    changeUserTaskTotalDuration(processInstanceDto, userTaskKey, duration);
+                                final double durationInMs) {
+    changeUserTaskTotalDuration(processInstanceDto, userTaskKey, durationInMs);
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double duration) {
-    changeUserTaskTotalDuration(processInstanceDto, duration);
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double durationInMs) {
+    changeUserTaskTotalDuration(processInstanceDto, durationInMs);
   }
 
   @Override

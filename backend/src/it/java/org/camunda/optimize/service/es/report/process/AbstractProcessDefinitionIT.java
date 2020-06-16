@@ -244,36 +244,37 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     // @formatter:on
   }
 
-  protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto, final String userTaskKey,
-                                            final double duration) {
+  protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                            final String userTaskKey,
+                                            final double durationInMs) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
         historicUserTaskInstanceDto ->
           changeUserClaimStartTimestamp(
-            duration,
+            durationInMs,
             historicUserTaskInstanceDto
           )
       );
   }
 
   protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final double setDuration) {
+                                            final double durationInMs) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
         historicUserTaskInstanceDto ->
           changeUserClaimStartTimestamp(
-            setDuration,
+            durationInMs,
             historicUserTaskInstanceDto
           )
       );
   }
 
-  private void changeUserClaimStartTimestamp(final Double millis,
+  private void changeUserClaimStartTimestamp(final Double durationInMs,
                                              final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
     try {
       engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
         historicUserTaskInstanceDto.getId(),
-        historicUserTaskInstanceDto.getStartTime().plus(millis.longValue(), ChronoUnit.MILLIS)
+        historicUserTaskInstanceDto.getStartTime().plus(durationInMs.longValue(), ChronoUnit.MILLIS)
       );
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
@@ -282,29 +283,30 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
                                              final String userTaskKey,
-                                             final Double duration) {
+                                             final Double durationInMs) {
     try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, duration.longValue());
+      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
   }
 
-  protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
+  protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                             final Double durationInMs) {
     try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), duration.longValue());
+      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), durationInMs.longValue());
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
   }
 
   protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final Double duration) {
+                                            final Double durationInMs) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
         historicUserTaskInstanceDto ->
           changeUserClaimEndTimestamp(
-            duration,
+            durationInMs,
             historicUserTaskInstanceDto
           )
       );
@@ -312,13 +314,13 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
                                             final String userTaskKey,
-                                            final Double duration) {
+                                            final Double durationInMs) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
         historicUserTaskInstanceDto -> {
           if (historicUserTaskInstanceDto.getEndTime() != null) {
             changeUserClaimEndTimestamp(
-              duration,
+              durationInMs,
               historicUserTaskInstanceDto
             );
           }
@@ -326,13 +328,13 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       );
   }
 
-  private void changeUserClaimEndTimestamp(final Double millis,
+  private void changeUserClaimEndTimestamp(final Double durationInMs,
                                            final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
     try {
       if (historicUserTaskInstanceDto.getEndTime() != null) {
         engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
           historicUserTaskInstanceDto.getId(),
-          historicUserTaskInstanceDto.getEndTime().minus(millis.longValue(), ChronoUnit.MILLIS)
+          historicUserTaskInstanceDto.getEndTime().minus(durationInMs.longValue(), ChronoUnit.MILLIS)
         );
       }
     } catch (SQLException e) {

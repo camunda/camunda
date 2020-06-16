@@ -1139,9 +1139,9 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                          final String userTaskKey,
-                                         final Double duration);
+                                         final Double durationInMs);
 
-  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration);
+  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs);
 
   protected abstract UserTaskDurationTime getUserTaskDurationTime();
 

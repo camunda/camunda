@@ -17,14 +17,14 @@ public class UserTaskIdleDurationByUserTaskEndDateByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
-    changeUserTaskIdleDuration(processInstanceDto, duration);
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
+    changeUserTaskIdleDuration(processInstanceDto, durationInMs);
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final Double duration) {
-    changeUserTaskIdleDuration(processInstanceDto, userTaskKey, duration);
+                                final Double durationInMs) {
+    changeUserTaskIdleDuration(processInstanceDto, userTaskKey, durationInMs);
   }
 }

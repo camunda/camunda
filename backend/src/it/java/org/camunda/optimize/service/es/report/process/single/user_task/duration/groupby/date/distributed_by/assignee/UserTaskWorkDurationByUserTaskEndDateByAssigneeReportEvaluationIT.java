@@ -17,14 +17,14 @@ public class UserTaskWorkDurationByUserTaskEndDateByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
-    changeUserTaskWorkDuration(processInstanceDto, duration);
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
+    changeUserTaskWorkDuration(processInstanceDto, durationInMs);
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final Double duration) {
-    changeUserTaskWorkDuration(processInstanceDto, userTaskKey, duration);
+                                final Double durationInMs) {
+    changeUserTaskWorkDuration(processInstanceDto, userTaskKey, durationInMs);
   }
 }

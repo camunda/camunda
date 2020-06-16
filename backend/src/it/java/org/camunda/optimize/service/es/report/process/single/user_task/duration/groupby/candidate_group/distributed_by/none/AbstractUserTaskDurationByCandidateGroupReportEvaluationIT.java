@@ -1009,9 +1009,9 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                          final String userTaskKey,
-                                         final Double duration);
+                                         final Double durationInMs);
 
-  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double setDuration);
+  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs);
 
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
 

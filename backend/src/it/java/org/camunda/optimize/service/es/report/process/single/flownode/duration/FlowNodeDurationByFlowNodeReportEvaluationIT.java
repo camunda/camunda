@@ -983,15 +983,15 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @SneakyThrows
-  private void changeActivityDuration(final ProcessInstanceEngineDto processInstanceDto, final Double duration) {
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), duration.longValue());
+  private void changeActivityDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), durationInMs.longValue());
   }
 
   @SneakyThrows
   private void changeActivityDuration(final ProcessInstanceEngineDto processInstanceDto,
                                       final String serviceTaskId,
-                                      final Double duration) {
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), serviceTaskId, duration.longValue());
+                                      final Double durationInMs) {
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), serviceTaskId, durationInMs.longValue());
   }
 
   private ReportMapResultDto getReportEvaluationResult(final String definitionKey,
