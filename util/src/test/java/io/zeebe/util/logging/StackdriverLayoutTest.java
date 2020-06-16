@@ -26,6 +26,7 @@ import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.appender.OutputStreamAppender;
 import org.apache.logging.log4j.core.impl.ThrowableProxy;
+import org.apache.logging.log4j.core.util.Constants;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.JUnitSoftAssertions;
 import org.junit.After;
@@ -368,6 +369,20 @@ public final class StackdriverLayoutTest {
         .containsEntry("message", "Should appear as JSON formatted output")
         .containsEntry("severity", Severity.ERROR.name())
         .containsEntry("logger", logger.getName());
+  }
+
+  @Test
+  public void shouldWriteLargeMessageWithoutOverflow() throws IOException {
+    // given
+    final var largeMessageSize = Constants.ENCODER_BYTE_BUFFER_SIZE * 2;
+    final var largeMessage = "a".repeat(largeMessageSize);
+
+    // when
+    logger.info(largeMessage);
+
+    // then
+    final var jsonMap = readLoggedEvent();
+    softly.assertThat(jsonMap).containsEntry("message", largeMessage);
   }
 
   private Map<String, Object> readLoggedEvent() throws IOException {
