@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.agrona.IoUtil;
 import org.assertj.core.util.Files;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -171,7 +170,6 @@ public class UpgradeTest {
   }
 
   @Test
-  @Ignore
   public void oldGatewayWithNewBroker() {
     // given
     state

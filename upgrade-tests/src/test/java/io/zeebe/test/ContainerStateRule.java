@@ -41,7 +41,7 @@ class ContainerStateRule extends TestWatcher {
   }
 
   @Override
-  protected void failed(Throwable e, Description description) {
+  protected void failed(final Throwable e, final Description description) {
     super.failed(e, description);
     if (broker != null) {
       log("Broker", broker.getLogs());
@@ -53,7 +53,7 @@ class ContainerStateRule extends TestWatcher {
   }
 
   @Override
-  protected void finished(Description description) {
+  protected void finished(final Description description) {
     close();
   }
 
@@ -73,6 +73,7 @@ class ContainerStateRule extends TestWatcher {
     broker =
         new ZeebeBrokerContainer(brokerVersion)
             .withFileSystemBind(volumePath, "/usr/local/zeebe/data")
+            .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", "zeebe-cluster")
             .withNetwork(network)
             .withEmbeddedGateway(gatewayVersion == null)
             .withLogLevel(Level.DEBUG);
@@ -83,7 +84,8 @@ class ContainerStateRule extends TestWatcher {
     if (gatewayVersion != null) {
       gateway =
           new ZeebeStandaloneGatewayContainer(gatewayVersion)
-              .withContactPoint(broker.getContactPoint())
+              .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getContactPoint())
+              .withEnv("ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME", "zeebe-cluster")
               .withNetwork(network)
               .withLogLevel(Level.DEBUG);
       gateway.start();
