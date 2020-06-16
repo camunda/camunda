@@ -123,6 +123,20 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     assertThatCookiesAreDeleted(logoutResponse.getHeaders());
   }
 
+  @Test
+  public void shouldReturnIndexPageForUnknownURI() {
+    // given
+    ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
+
+    //when
+    final ResponseEntity<String> responseEntity = testRestTemplate
+        .exchange("/does-not-exist", HttpMethod.GET, prepareRequestWithCookies(loginResponse.getHeaders()), String.class);
+
+    //then
+    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+  //TODO: How can we check that this is the index page?
+    assertThat(responseEntity.getBody()).contains("<!doctype html><html lang=\"en\">"); 
+  }
   
   @Test
   public void shouldReturnCurrentUser() {
@@ -158,7 +172,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
 
     //then endpoint is not accessible
     responseEntity = testRestTemplate.exchange(GRAPHQL_URL, HttpMethod.POST, prepareRequestWithCookies(logoutResponse.getHeaders(), CURRENT_USER_QUERY), String.class);
-    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    assertThat(responseEntity.getStatusCode()).isIn(HttpStatus.FORBIDDEN,HttpStatus.UNAUTHORIZED);
     assertThat(responseEntity.getHeaders().containsKey(X_CSRF_TOKEN)).isFalse();
   }
 

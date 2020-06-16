@@ -81,7 +81,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     http.authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
-        .antMatchers("/graphql", "/api/**")
+        .antMatchers("/graphql", "/api/**", "/error")
         .authenticated()
         .and()
         .formLogin()
