@@ -285,6 +285,56 @@ public class ErrorEventTest {
   }
 
   @Test
+  public void shouldCatchErrorOutsideMultiInstanceSubprocess() {
+    // given
+    final var workflow =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.multiInstance(m -> m.zeebeInputCollectionExpression("[1]"))
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                        .endEvent())
+            .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(workflowInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldThrowErrorOnEndEvent() {
     // given
     final var workflow =
