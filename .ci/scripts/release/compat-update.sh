@@ -4,7 +4,7 @@ if [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 
   FILE=$(mvn help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
 
-  rm -f clients/java/$FILE test/$FILE exporter-api/$FILE protocol/$FILE
+  rm -f clients/java/$FILE test/$FILE exporter-api/$FILE protocol/$FILE bpmn-model/$FILE
 
   git commit -am "chore(project): update backwards compatibility version"
 else
