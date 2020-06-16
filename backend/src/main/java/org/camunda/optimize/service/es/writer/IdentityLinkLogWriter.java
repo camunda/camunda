@@ -174,6 +174,8 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
       // @formatter:off
       // 1 check for existing userTask
       "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
+      // We deduplicate the user tasks before collecting in cases where duplicates might have been written
+      "ctx._source.userTasks = ctx._source.userTasks.stream().distinct().collect(Collectors.toList());\n" +
       "def existingUserTasksById = ctx._source.userTasks.stream()" +
         ".collect(Collectors.toMap(task -> task.id, task -> task));\n" +
       "for (def currentUserTask : params.userTasks) {\n" +

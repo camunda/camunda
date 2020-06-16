@@ -370,10 +370,4 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     return expectedDto;
   }
 
-  private void createProcessDefinitionsForKey(String key, int count, String tenantId) {
-    IntStream.range(0, count).forEach(
-      i -> addProcessDefinitionToElasticsearch(key, String.valueOf(i), tenantId)
-    );
-  }
-
 }
