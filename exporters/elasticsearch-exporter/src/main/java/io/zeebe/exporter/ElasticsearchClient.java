@@ -9,8 +9,7 @@ package io.zeebe.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.prometheus.client.Histogram;
-import io.zeebe.exporter.dto.BulkItem;
-import io.zeebe.exporter.dto.BulkItemIndex;
+import io.zeebe.exporter.dto.BulkItemError;
 import io.zeebe.exporter.dto.BulkResponse;
 import io.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.zeebe.protocol.record.Record;
@@ -29,6 +28,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -120,41 +121,48 @@ public class ElasticsearchClient {
     bulkRequest.add(serializedCommand + "\n" + record.toJson());
   }
 
-  /** @return true if all bulk records where flushed successfully */
-  public boolean flush() {
-    boolean success = true;
-    final int bulkSize = bulkRequest.size();
-    if (bulkSize > 0) {
-      metrics.recordBulkSize(bulkSize);
-
-      try {
-        final var bulkResponse = exportBulk();
-        success = checkBulkResponse(bulkResponse);
-
-      } catch (final IOException e) {
-        throw new ElasticsearchExporterException("Failed to flush bulk", e);
-      }
-
-      if (success) {
-        // all records where flushed, create new bulk request, otherwise retry next time
-        bulkRequest = new ArrayList<>();
-      }
+  /**
+   * @throws ElasticsearchExporterException if not all items of the bulk were flushed successfully
+   */
+  public void flush() {
+    if (bulkRequest.isEmpty()) {
+      return;
     }
-    return success;
+
+    final int bulkSize = bulkRequest.size();
+    metrics.recordBulkSize(bulkSize);
+
+    final BulkResponse bulkResponse;
+    try {
+      bulkResponse = exportBulk();
+
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to flush bulk", e);
+    }
+
+    final var success = checkBulkResponse(bulkResponse);
+    if (!success) {
+      throw new ElasticsearchExporterException("Failed to flush all items of the bulk");
+    }
+
+    // all records where flushed, create new bulk request, otherwise retry next time
+    bulkRequest = new ArrayList<>();
   }
 
   private boolean checkBulkResponse(final BulkResponse bulkResponse) {
     final var hasErrors = bulkResponse.hasErrors();
     if (hasErrors) {
       bulkResponse.getItems().stream()
-          .map(BulkItem::getIndex)
-          .map(BulkItemIndex::getError)
+          .flatMap(item -> Optional.ofNullable(item.getIndex()).stream())
+          .flatMap(index -> Optional.ofNullable(index.getError()).stream())
+          .collect(Collectors.groupingBy(BulkItemError::getType))
           .forEach(
-              error ->
+              (errorType, errors) ->
                   log.warn(
-                      "Failed to flush item of bulk request [type: {}, reason: {}]",
-                      error.getType(),
-                      error.getReason()));
+                      "Failed to flush {} item(s) of bulk request [type: {}, reason: {}]",
+                      errors.size(),
+                      errorType,
+                      errors.get(0).getReason()));
     }
 
     return !hasErrors;

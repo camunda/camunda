@@ -12,8 +12,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class BulkItemError {
 
-  private String type;
-  private String reason;
+  private String type = "";
+  private String reason = "";
 
   public String getType() {
     return type;

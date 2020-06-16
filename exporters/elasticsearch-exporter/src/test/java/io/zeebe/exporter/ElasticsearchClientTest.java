@@ -8,6 +8,7 @@
 package io.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,6 +21,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -107,24 +109,37 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
   }
 
   @Test
-  public void shouldLogWarnIfFailToFlushBulk() {
+  public void shouldThrowExceptionIfFailToFlushBulk() {
     // given
+    final int bulkSize = 10;
+
     final Record<VariableRecordValue> recordMock = mock(Record.class);
     when(recordMock.getPartitionId()).thenReturn(1);
-    when(recordMock.getKey()).thenReturn(RECORD_KEY);
     when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
     when(recordMock.toJson()).thenReturn("invalid-json");
 
-    // when
-    client.index(recordMock);
-    final var success = client.flush();
+    // bulk contains records that fail on flush
+    IntStream.range(0, bulkSize)
+        .forEach(
+            i -> {
+              when(recordMock.getKey()).thenReturn(RECORD_KEY + i);
+              client.index(recordMock);
+            });
 
-    // then
-    assertThat(success).describedAs("Expected flush to be not successful").isFalse();
+    // and one valid record
+    when(recordMock.getKey()).thenReturn(RECORD_KEY + bulkSize);
+    when(recordMock.toJson()).thenReturn("{}");
+    client.index(recordMock);
+
+    // when/then
+    assertThatThrownBy(client::flush)
+        .isInstanceOf(ElasticsearchExporterException.class)
+        .hasMessage("Failed to flush all items of the bulk");
 
     verify(logSpy)
         .warn(
-            "Failed to flush item of bulk request [type: {}, reason: {}]",
+            "Failed to flush {} item(s) of bulk request [type: {}, reason: {}]",
+            bulkSize,
             "mapper_parsing_exception",
             "failed to parse");
   }
