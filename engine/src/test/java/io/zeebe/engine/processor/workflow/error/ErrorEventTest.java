@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -20,6 +21,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -160,5 +162,115 @@ public class ErrorEventTest {
         .extracting(Record::getIntent)
         .containsExactly(
             JobIntent.CREATE, JobIntent.CREATED, JobIntent.THROW_ERROR, JobIntent.ERROR_THROWN);
+  }
+
+  @Test
+  public void shouldCatchErrorInsideMultiInstanceSubprocess() {
+    // given
+    final Consumer<EventSubProcessBuilder> eventSubprocess =
+        s -> s.startEvent("error-start-event").error(ERROR_CODE).endEvent();
+
+    final var workflow =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.multiInstance(m -> m.zeebeInputCollection("items"))
+                        .embeddedSubProcess()
+                        .eventSubProcess("error-subprocess", eventSubprocess)
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+                        .endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final var workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("items", List.of(1))
+            .create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(workflowInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("error-start-event", WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple("error-subprocess", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("error-start-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("error-start-event", WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple("error-subprocess", WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple("subprocess", WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCatchErrorOutsideMultiInstanceSubprocess() {
+    // given
+    final var workflow =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.multiInstance(m -> m.zeebeInputCollection("items"))
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+                        .endEvent())
+            .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final var workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("items", List.of(1))
+            .create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(workflowInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 }
