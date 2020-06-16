@@ -83,6 +83,39 @@ public final class ErrorCatchEventTest {
         "error-boundary-event"
       },
       {
+        "boundary event on multi-instance subprocess",
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.multiInstance(m -> m.zeebeInputCollectionExpression("[1]"))
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
+                        .endEvent())
+            .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
+            .endEvent()
+            .done(),
+        "subprocess",
+        "error-boundary-event"
+      },
+      {
+        "boundary event on multi-instance service task",
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                TASK_ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .multiInstance(m -> m.zeebeInputCollectionExpression("[1]")))
+            .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
+            .endEvent()
+            .done(),
+        TASK_ELEMENT_ID,
+        "error-boundary-event"
+      },
+      {
         "error event subprocess",
         Bpmn.createExecutableProcess(PROCESS_ID)
             .eventSubProcess(

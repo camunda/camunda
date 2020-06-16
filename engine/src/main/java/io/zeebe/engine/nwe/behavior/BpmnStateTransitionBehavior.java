@@ -259,10 +259,14 @@ public final class BpmnStateTransitionBehavior {
       final BpmnElementContext callActivityContext, final BpmnElementContext childContext) {
     final var workflowKey = callActivityContext.getWorkflowKey();
     final var elementId = callActivityContext.getElementId();
+
     return stateBehavior
         .getWorkflow(workflowKey)
         .map(DeployedWorkflow::getWorkflow)
-        .map(workflow -> workflow.getElementById(elementId, ExecutableCallActivity.class))
+        .map(
+            workflow ->
+                workflow.getElementById(
+                    elementId, BpmnElementType.CALL_ACTIVITY, ExecutableCallActivity.class))
         .orElseThrow(
             () ->
                 new BpmnProcessingException(

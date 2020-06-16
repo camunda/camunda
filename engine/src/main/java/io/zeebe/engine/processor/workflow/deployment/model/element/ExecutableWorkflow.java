@@ -10,6 +10,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.element;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -39,27 +40,46 @@ public class ExecutableWorkflow extends ExecutableFlowElementContainer {
   }
 
   public <T extends ExecutableFlowElement> T getElementById(
-      final DirectBuffer id, final Class<T> expectedType) {
-    ExecutableFlowElement element = flowElements.get(id);
+      final DirectBuffer id, final Class<T> expectedClass) {
+
+    final var elementType =
+        ExecutableMultiInstanceBody.class.isAssignableFrom(expectedClass)
+            ? BpmnElementType.MULTI_INSTANCE_BODY
+            : BpmnElementType.UNSPECIFIED;
+
+    return getElementById(id, elementType, expectedClass);
+  }
+
+  public <T extends ExecutableFlowElement> T getElementById(
+      final DirectBuffer id, final BpmnElementType elementType, final Class<T> expectedClass) {
+
+    var element = flowElements.get(id);
     if (element == null) {
       return null;
     }
 
     if (element instanceof ExecutableMultiInstanceBody
-        && !expectedType.isAssignableFrom(ExecutableMultiInstanceBody.class)) {
+        && elementType != BpmnElementType.MULTI_INSTANCE_BODY) {
       // the multi-instance body and the inner activity have the same element id
       final var multiInstanceBody = (ExecutableMultiInstanceBody) element;
       element = multiInstanceBody.getInnerActivity();
     }
 
-    if (expectedType.isAssignableFrom(element.getClass())) {
+    if (element.getElementType() != elementType && elementType != BpmnElementType.UNSPECIFIED) {
+      throw new RuntimeException(
+          String.format(
+              "Expected element with id '%s' to be of type '%s', but it is of type '%s'",
+              bufferAsString(id), elementType, element.getElementType()));
+    }
+
+    if (expectedClass.isAssignableFrom(element.getClass())) {
       return (T) element;
     } else {
       throw new RuntimeException(
           String.format(
               "Expected element with id '%s' to be instance of class '%s', but it is an instance of '%s'",
               bufferAsString(id),
-              expectedType.getSimpleName(),
+              expectedClass.getSimpleName(),
               element.getClass().getSimpleName()));
     }
   }
