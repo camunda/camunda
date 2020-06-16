@@ -531,6 +531,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	dockerInput := &container.Config{
+		Entrypoint:   req.Entrypoint,
 		Image:        tag,
 		Env:          env,
 		ExposedPorts: exposedPortSet,
@@ -600,7 +601,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	return c, nil
 }
 
-//attemptToPullImage tries to pull the image while respecting the ctx cancellations.
+// attemptToPullImage tries to pull the image while respecting the ctx cancellations.
 // Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
 func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt types.ImagePullOptions) error {
 	var (
@@ -622,6 +623,13 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	// download of docker image finishes at EOF of the pull request
 	_, err = ioutil.ReadAll(pull)
 	return err
+}
+
+// Helth measure the healthiness of the provider. Right now we leverage the
+// docker-client ping endpoint to see if the daemon is reachable.
+func (p *DockerProvider) Health(ctx context.Context) (err error) {
+	_, err = p.client.Ping(ctx)
+	return
 }
 
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk

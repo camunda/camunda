@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -25,6 +26,7 @@ type DeprecatedContainer interface {
 type ContainerProvider interface {
 	CreateContainer(context.Context, ContainerRequest) (Container, error) // create a container without starting it
 	RunContainer(context.Context, ContainerRequest) (Container, error)    // create a container and start it
+	Health(context.Context) error
 }
 
 // Container allows getting info about and controlling a single container instance
@@ -68,6 +70,7 @@ type FromDockerfile struct {
 type ContainerRequest struct {
 	FromDockerfile
 	Image           string
+	Entrypoint      []string
 	Env             map[string]string
 	ExposedPorts    []string // allow specifying protocol info
 	Cmd             []string
