@@ -198,7 +198,7 @@ data:
                   factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
                   uniqueResourceName="process-engine"
                   driverClassName="org.postgresql.Driver"
-                  url="jdbc:postgresql://optimize-stage-postgres.optimize:5432/optimize-ci-performance"
+                  url="jdbc:postgresql://stage-postgres.optimize:5432/optimize-ci-performance"
                   defaultTransactionIsolation="READ_COMMITTED"
                   username="camunda"
                   password="camunda123"

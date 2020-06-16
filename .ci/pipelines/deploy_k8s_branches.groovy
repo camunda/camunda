@@ -57,7 +57,7 @@ spec:
       - name: PGPASSWORD
         value: camunda123
       - name: PGHOST
-        value: optimize-stage-postgres.optimize
+        value: stage-postgres.optimize
       - name: PGDATABASE
         value: optimize-ci-performance
     volumeMounts:
