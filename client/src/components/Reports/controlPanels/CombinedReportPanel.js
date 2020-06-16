@@ -10,6 +10,7 @@ import {withRouter} from 'react-router-dom';
 import {loadReports, getCollection} from 'services';
 import {TypeaheadMultipleSelection, Popover, ColorPicker} from 'components';
 import {Configuration} from './Configuration';
+import equal from 'deep-equal';
 
 import './CombinedReportPanel.scss';
 import {t} from 'translation';
@@ -160,10 +161,17 @@ export default withRouter(
     };
 
     checkSameConfiguration = ({groupBy, configuration}, data) => {
-      if (groupBy?.type === 'variable' && groupBy.value?.type === 'Date') {
-        return (
-          configuration?.groupByDateVariableUnit === data.configuration.groupByDateVariableUnit
-        );
+      if (groupBy?.type === 'variable') {
+        if (groupBy.value?.type === 'Date') {
+          return (
+            configuration?.groupByDateVariableUnit === data.configuration.groupByDateVariableUnit
+          );
+        } else if (
+          ['Integer', 'Double', 'Short', 'Long'].includes(groupBy.value?.type) &&
+          configuration?.customNumberBucket.active
+        ) {
+          return equal(configuration.customNumberBucket, data.configuration.customNumberBucket);
+        }
       }
       return true;
     };

@@ -15,6 +15,7 @@ import VisibleNodesFilter from './VisibleNodesFilter';
 import NodeStatus from './NodeStatus';
 import DistributedBy from './DistributedBy';
 import DateVariableUnit from './DateVariableUnit';
+import NumVariableBucket from './NumVariableBucket';
 import {t} from 'translation';
 
 import './Configuration.scss';
@@ -80,6 +81,11 @@ export default class Configuration extends React.Component {
           keys: [],
         },
         groupByDateVariableUnit: 'automatic',
+        customNumberBucket: {
+          active: false,
+          bucketSize: '10',
+          baseline: '0',
+        },
       }),
       true
     );
@@ -118,6 +124,7 @@ export default class Configuration extends React.Component {
               />
             )}
             <DateVariableUnit report={report} onChange={this.updateConfiguration} />
+            <NumVariableBucket report={report} onChange={this.updateConfiguration} />
             <AggregationType report={report} onChange={this.updateConfiguration} />
             <UserTaskDurationTime report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}

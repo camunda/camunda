@@ -445,7 +445,10 @@
       },
       "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
       "showGradientBars": "Verlaufsbalken anzeigen",
-      "buckets": "Buckets"
+      "buckets": "Buckets",
+      "bucketSize": "Bucket Größe",
+      "baseline": "Grundlinie",
+      "invalidNumber": "Muss eine gültige Zahl sein"
     },
     "missingVariableValue": "nicht definiert",
     "missingAssignee": "Nicht zugewiesen",

@@ -445,7 +445,10 @@
       },
       "includeTableColumn": "Table columns to include",
       "showGradientBars": "Show Gradient Bars",
-      "buckets": "Buckets"
+      "buckets": "Buckets",
+      "bucketSize": "Bucket Size",
+      "baseline": "Baseline",
+      "invalidNumber": "Must be a valid number"
     },
     "missingVariableValue": "null / undefined",
     "missingAssignee": "Unassigned",

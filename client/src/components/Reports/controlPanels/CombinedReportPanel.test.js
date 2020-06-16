@@ -41,7 +41,14 @@ const singleReportData = {
     type: 'flowNodes',
     value: null,
   },
-  configuration: {groupByDateVariableUnit: 'day'},
+  configuration: {
+    groupByDateVariableUnit: 'day',
+    customNumberBucket: {
+      active: true,
+      bucketSize: '10',
+      baseline: '-10',
+    },
+  },
   visualization: 'bar',
 };
 
@@ -94,7 +101,15 @@ const reportsList = [
     combined: false,
     collectionId: '123',
     reportType: 'process',
-    data: singleReportData,
+    data: {
+      ...singleReportData,
+      groupBy: {
+        type: 'variable',
+        value: {
+          type: 'Integer',
+        },
+      },
+    },
   },
   {
     id: 'flow-node-report',
@@ -229,13 +244,57 @@ describe('isCompatible', () => {
     expect(node.instance().isCompatible(reportSameProperty)).toBeFalsy();
   });
 
-  it('should only allow to combine if both reports have the same variable grouping', async () => {
+  it('should only allow to combine if both reports have the same date variable grouping', async () => {
+    const combinedReport = {
+      ...reportsList[1],
+      result: {
+        ...reportsList[1].result,
+        data: {
+          singleReport: {
+            id: 'singleReport',
+            data: reportsList[2].data,
+          },
+        },
+      },
+    };
+    node.setProps({report: combinedReport});
     const reportWithDifferentDateConfiguration = {
       ...reportsList[2],
       data: {
         ...reportsList[2].data,
         configuration: {
           groupByDateVariableUnit: 'month',
+        },
+      },
+    };
+
+    expect(node.instance().isCompatible(reportWithDifferentDateConfiguration)).toBeFalsy();
+  });
+
+  it('should only allow to combine if both reports have the same number variable grouping', async () => {
+    const combinedReport = {
+      ...reportsList[1],
+      result: {
+        ...reportsList[1].result,
+        data: {
+          singleReport: {
+            id: 'singleReport',
+            data: reportsList[3].data,
+          },
+        },
+      },
+    };
+    node.setProps({report: combinedReport});
+    const reportWithDifferentDateConfiguration = {
+      ...reportsList[3],
+      data: {
+        ...reportsList[3].data,
+        configuration: {
+          customNumberBucket: {
+            active: true,
+            bucketSize: '5',
+            baseline: '0',
+          },
         },
       },
     };
