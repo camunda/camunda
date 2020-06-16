@@ -27,7 +27,7 @@
     <version.java>11</version.java>
 
     <!-- dependency versions -->
-    <version.zeebe>0.23.2</version.zeebe>
+    <version.zeebe>0.23.3</version.zeebe>
     <version.config>1.4.0</version.config>
 
     <!-- maven plugin versions -->
