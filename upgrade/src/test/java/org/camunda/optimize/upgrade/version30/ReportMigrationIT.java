@@ -6,6 +6,8 @@
 package org.camunda.optimize.upgrade.version30;
 
 import org.assertj.core.util.Lists;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -42,8 +44,8 @@ public class ReportMigrationIT extends AbstractUpgradeIT {
   @Test
   public void reportsAreMigratedNoDataLost() {
     // given
-    final List<Object> processReportsBeforeUpgrade = getProcessReports();
-    final List<Object> decisionReportsBeforeUpgrade = getDecisionReports();
+    final List<SingleProcessReportDefinitionDto> processReportsBeforeUpgrade = getProcessReports();
+    final List<SingleDecisionReportDefinitionDto> decisionReportsBeforeUpgrade = getDecisionReports();
 
     final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
 
@@ -55,12 +57,12 @@ public class ReportMigrationIT extends AbstractUpgradeIT {
     assertThat(getDecisionReports()).isEqualTo(decisionReportsBeforeUpgrade);
   }
 
-  private List<Object> getDecisionReports() {
-    return getAllDocumentsOfIndexAs(SINGLE_DECISION_REPORT_INDEX_NAME, Object.class);
+  private List<SingleDecisionReportDefinitionDto> getDecisionReports() {
+    return getAllDocumentsOfIndexAs(SINGLE_DECISION_REPORT_INDEX_NAME, SingleDecisionReportDefinitionDto.class);
   }
 
-  private List<Object> getProcessReports() {
-    return getAllDocumentsOfIndexAs(SINGLE_PROCESS_REPORT_INDEX_NAME, Object.class);
+  private List<SingleProcessReportDefinitionDto> getProcessReports() {
+    return getAllDocumentsOfIndexAs(SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionDto.class);
   }
 
 }

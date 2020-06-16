@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.group.value;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 
 import java.util.Objects;
 
+@Data
 public class DateGroupByValueDto implements ProcessGroupByValueDto {
 
-  @Getter @Setter protected GroupByDateUnit unit;
+  protected GroupByDateUnit unit;
 
   @Override
   public boolean isCombinable(Object o) {

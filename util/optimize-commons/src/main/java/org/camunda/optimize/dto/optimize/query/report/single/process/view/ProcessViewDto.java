@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
@@ -16,6 +17,7 @@ import java.util.Set;
 
 @Getter
 @Setter
+@Data
 public class ProcessViewDto implements Combinable {
   private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES = ImmutableSet.of(
     ProcessViewEntity.FLOW_NODE, ProcessViewEntity.USER_TASK

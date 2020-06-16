@@ -5,8 +5,12 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
+import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
@@ -81,7 +85,9 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateDecisionReportBooleanVariableFilter())
       .addUpgradeStep(migrateProcessReportFilterForUndefined())
       .addUpgradeStep(migrateDecisionReportFilterForUndefined())
-      .addUpgradeStep(resetRunningProcessInstanceImport());
+      .addUpgradeStep(resetRunningProcessInstanceImport())
+      .addUpgradeStep(addDateVariableUnitToReportConfiguration(SINGLE_PROCESS_REPORT_INDEX_NAME))
+      .addUpgradeStep(addDateVariableUnitToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME));
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteTraceStateIndices(upgradeBuilder);
     deleteSequenceCountIndices(upgradeBuilder);
@@ -319,6 +325,25 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
     //@formatter:on
     return new UpdateDataStep(
       index,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+  }
+
+  private UpgradeStep addDateVariableUnitToReportConfiguration(final String reportIndexName) {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("groupByAutomatic", GroupByDateUnit.AUTOMATIC.getId())
+        .put("groupByUnitField", SingleReportConfigurationDto.Fields.groupByDateVariableUnit.name())
+        .build()
+    );
+    //@formatter:off
+    final String script = substitutor.replace(
+      "ctx._source.data.configuration.${groupByUnitField} = \"${groupByAutomatic}\";\n"
+    );
+    //@formatter:on
+    return new UpdateDataStep(
+      reportIndexName,
       QueryBuilders.matchAllQuery(),
       script
     );
