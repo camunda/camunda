@@ -95,7 +95,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void runningAndCompletedUserTasksAreImported() throws IOException {
+  public void runningAndCompletedUserTasksAreImported() {
     // given
     deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -292,7 +292,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void idleTimeMetricIsCalculatedOnClaimOperationImport() throws IOException {
+  public void idleTimeMetricIsCalculatedOnClaimOperationImport() {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartOneUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -314,7 +314,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void defaultWorkTimeOnNoClaimOperation() throws IOException {
+  public void defaultWorkTimeOnNoClaimOperation() {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
@@ -334,7 +334,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void workTimeMetricIsCalculatedOnClaimOperationImport() throws IOException {
+  public void workTimeMetricIsCalculatedOnClaimOperationImport() {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();

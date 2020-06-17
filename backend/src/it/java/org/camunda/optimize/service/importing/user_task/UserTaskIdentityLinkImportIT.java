@@ -410,24 +410,34 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     final ProcessInstanceDto storedInstance = getStoredProcessInstance();
     assertThat(storedInstance.getUserTasks()).hasSize(1);
 
-    // when duplicate user tasks have been stored
+    // when duplicate user tasks and tasks with same ID have been stored
     final UserTaskInstanceDto userTaskInstanceDto = storedInstance.getUserTasks().get(0);
-    final List<UserTaskInstanceDto> duplicateTaskList = Arrays.asList(userTaskInstanceDto, userTaskInstanceDto);
+    final UserTaskInstanceDto sameIdTaskInstanceDto = new UserTaskInstanceDto(
+      userTaskInstanceDto.getId(),
+      userTaskInstanceDto.getProcessInstanceId(),
+      userTaskInstanceDto.getEngine()
+    );
+    final List<UserTaskInstanceDto> duplicateTaskList = Arrays.asList(
+      userTaskInstanceDto,
+      userTaskInstanceDto,
+      sameIdTaskInstanceDto
+    );
     storedInstance.setUserTasks(duplicateTaskList);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       PROCESS_INSTANCE_INDEX_NAME,
       storedInstance.getProcessInstanceId(),
       storedInstance
     );
+
     final ProcessInstanceDto storedInstanceWithDuplicateUserTasks = getStoredProcessInstance();
     assertThat(storedInstanceWithDuplicateUserTasks.getUserTasks())
-      .hasSize(2)
+      .hasSize(3)
       .containsExactlyElementsOf(duplicateTaskList);
 
     // and we reimport tasks
     importAllEngineEntitiesFromScratch();
 
-    // then the duplicate user task has been removed
+    // then only single user task with ID remains
     final ProcessInstanceDto updatedInstance = getStoredProcessInstance();
     assertThat(updatedInstance.getUserTasks()).hasSize(1);
   }
