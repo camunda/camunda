@@ -44,10 +44,9 @@ spec:
         env:
         - name: JAVA_OPTS
           value: |
-            -Xmx2584m
+            -Xms2g
+            -Xmx2g
             -XX:MaxMetaspaceSize=256m
-            -XX:MaxHeapFreeRatio=10
-            -XX:MinHeapFreeRatio=5
         - name: WAIT_FOR
           value: "localhost:9300"
         - name: WAIT_FOR_TIMEOUT
@@ -70,11 +69,11 @@ spec:
             port: optimize-http
         resources:
           limits:
-            cpu: 2
-            memory: 3.5Gi
+            cpu: 4
+            memory: 3Gi
           requests:
-            cpu: 500m
-            memory: 1Gi
+            cpu: 4
+            memory: 3Gi
         volumeMounts:
           - name: configuration
             mountPath: /optimize/environment/environment-config.yaml
@@ -87,7 +86,7 @@ spec:
         command: ["/camunda/configure-and-run.sh"]
         env:
         - name: JAVA_OPTS
-          value: "-Xmx512m -XX:MaxMetaspaceSize=256m"
+          value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
         - name: SKIP_DB_CONFIG
           value: "true"
         - name: WAIT_FOR
@@ -112,11 +111,11 @@ spec:
             port: cambpm-http
         resources:
           limits:
-            cpu: 1
-            memory: 1Gi
+            cpu: 2
+            memory: 2Gi
           requests:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 2
+            memory: 2Gi
         volumeMounts:
           - name: configuration
             mountPath: /camunda/conf/bpm-platform.xml
@@ -131,7 +130,7 @@ spec:
         image: docker.elastic.co/elasticsearch/elasticsearch-oss:@ES_VERSION@
         env:
         - name: ES_JAVA_OPTS
-          value: "-Xms1024m -Xmx1024m"
+          value: "-Xms4g -Xmx4g"
         - name: cluster.name
           value: elasticsearch
         - name: discovery.type
@@ -163,11 +162,11 @@ spec:
           periodSeconds: 15
         resources:
           limits:
-            cpu: 2
-            memory: 2Gi
+            cpu: 4
+            memory: 8Gi
           requests:
-            cpu: 500m
-            memory: 2Gi
+            cpu: 4
+            memory: 8Gi
         volumeMounts:
           - name: configuration
             mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
