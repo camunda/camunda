@@ -242,6 +242,16 @@ it('should show a loading indicator while loading', () => {
   expect(node.find('LoadingIndicator')).toExist();
 });
 
+it('should show a loading indicator if specified by props', async () => {
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} loading />);
+
+  await flushPromises();
+
+  node.setState({loaded: true});
+
+  expect(node.find('LoadingIndicator')).toExist();
+});
+
 it('should show diagram zoom and reset controls', async () => {
   const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 

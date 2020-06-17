@@ -44,3 +44,9 @@ it('should render a table with correct data', async () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should render a loading indicator while loading the data', async () => {
+  const node = shallow(<VariablesTable config={{}} selectedNode={selectedNode} />);
+
+  expect(node).toMatchSnapshot();
+});

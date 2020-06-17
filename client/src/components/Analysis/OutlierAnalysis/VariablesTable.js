@@ -5,14 +5,14 @@
  */
 
 import React from 'react';
-import {Table, Button, Icon, NoDataNotice} from 'components';
+import {Table, Button, Icon, NoDataNotice, LoadingIndicator} from 'components';
 import {loadCommonOutliersVariables, getInstancesDownloadUrl} from './service';
 import {t} from 'translation';
 import './VariablesTable.scss';
 
 export default class VariablesTable extends React.Component {
   state = {
-    data: [],
+    data: null,
   };
 
   async componentDidMount() {
@@ -58,7 +58,7 @@ export default class VariablesTable extends React.Component {
   render() {
     const {data} = this.state;
     let tableData;
-    if (data.length) {
+    if (data?.length) {
       tableData = {
         head: [
           t('analysis.outlier.detailsModal.table.outliersNumber'),
@@ -72,8 +72,10 @@ export default class VariablesTable extends React.Component {
       tableData = {
         head: [],
         body: [],
-        noData: (
+        noData: data ? (
           <NoDataNotice>{t('analysis.outlier.detailsModal.table.emptyTableMessage')}</NoDataNotice>
+        ) : (
+          <LoadingIndicator />
         ),
       };
     }

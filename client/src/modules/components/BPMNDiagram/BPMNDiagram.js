@@ -13,10 +13,11 @@ import disableCollapsedSubprocessModule from 'bpmn-js-disable-collapsed-subproce
 
 import {withErrorHandling} from 'HOC';
 import {themed} from 'theme';
-
-import './BPMNDiagram.scss';
 import ZoomControls from './ZoomControls';
 import {LoadingIndicator} from 'components';
+import classnames from 'classnames';
+
+import './BPMNDiagram.scss';
 
 const availableViewers = [];
 
@@ -32,18 +33,23 @@ export default themed(
       };
 
       render() {
+        const {loading, style, xml, children} = this.props;
+        const {loaded} = this.state;
+
         return (
-          <div className="BPMNDiagram" style={this.props.style} ref={this.storeContainer}>
-            {this.state.loaded &&
-              this.props.xml &&
-              this.props.children &&
-              React.Children.map(this.props.children, (child) =>
+          <div
+            className={classnames('BPMNDiagram', {loading: loading})}
+            style={style}
+            ref={this.storeContainer}
+          >
+            {loaded &&
+              xml &&
+              children &&
+              React.Children.map(children, (child) =>
                 React.cloneElement(child, {viewer: this.viewer})
               )}
-            {this.state.loaded && this.props.xml && (
-              <ZoomControls zoom={this.zoom} fit={this.fitDiagram} />
-            )}
-            {!this.state.loaded && <LoadingIndicator />}
+            {loaded && xml && <ZoomControls zoom={this.zoom} fit={this.fitDiagram} />}
+            {(!loaded || loading) && <LoadingIndicator className="diagramLoading" />}
           </div>
         );
       }

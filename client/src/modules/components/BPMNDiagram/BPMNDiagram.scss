@@ -16,6 +16,17 @@
 .BPMNDiagram {
   flex-grow: 1;
   position: relative;
+
+  &.loading .bjs-container {
+    opacity: 0.5;
+  }
+
+  .diagramLoading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .bjs-powered-by {
