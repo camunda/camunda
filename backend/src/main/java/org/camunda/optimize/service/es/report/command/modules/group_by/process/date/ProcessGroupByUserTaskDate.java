@@ -198,8 +198,8 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
       final Terms terms = filteredUserTasks.getAggregations().get(USER_TASK_MOST_RECENT_DATE_AGGREGATION);
 
-      for (Terms.Bucket bucket : terms.getBuckets()) {
-        final String latestUserTaskDateAsString = bucket.getKeyAsString();
+      if (!terms.getBuckets().isEmpty()) {
+        final String latestUserTaskDateAsString = terms.getBuckets().get(0).getKeyAsString();
         return Optional.of(OffsetDateTime.from(dateTimeFormatter.parse(latestUserTaskDateAsString)));
       }
     } catch (IOException e) {

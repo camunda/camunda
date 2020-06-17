@@ -42,10 +42,9 @@ public class ElasticsearchMetadataService {
   private final ObjectMapper objectMapper;
 
   public void initMetadataVersionIfMissing(final OptimizeElasticsearchClient esClient) {
-    readMetadata(esClient).orElseGet(() -> {
+    if (!readMetadata(esClient).isPresent()) {
       writeMetadata(esClient, new MetadataDto(CURRENT_OPTIMIZE_VERSION));
-      return null;
-    });
+    }
   }
 
   public void validateSchemaVersionCompatibility(final OptimizeElasticsearchClient esClient) {

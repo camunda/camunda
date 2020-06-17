@@ -38,6 +38,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.ReportWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.UncombinableReportsException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
@@ -402,12 +403,12 @@ public class ReportService implements CollectionReferencingService {
   private AuthorizedReportDefinitionDto getReportWithEditAuthorization(final String userId,
                                                                        final ReportDefinitionDto reportDefinition) {
     final Optional<RoleType> authorizedRole = reportAuthorizationService.getAuthorizedRole(userId, reportDefinition);
-    if (!authorizedRole.map(roleType -> roleType.ordinal() >= RoleType.EDITOR.ordinal()).orElse(false)) {
-      throw new ForbiddenException(
+    return authorizedRole
+      .filter(roleType -> roleType.ordinal() >= RoleType.EDITOR.ordinal())
+      .map(role -> new AuthorizedReportDefinitionDto(reportDefinition, role))
+      .orElseThrow(() -> new ForbiddenException(
         "User [" + userId + "] is not authorized to edit report [" + reportDefinition.getName() + "]."
-      );
-    }
-    return new AuthorizedReportDefinitionDto(reportDefinition, authorizedRole.get());
+      ));
   }
 
   private Set<ConflictedItemDto> mapCombinedReportsToConflictingItems(List<CombinedReportDefinitionDto> combinedReportDtos) {

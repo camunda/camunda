@@ -130,7 +130,10 @@ public class CombinedProcessReportResult
   }
 
   private List<String[]> mergeSingleReportsToOneCsv(final List<List<String[]>> allSingleReportsAsCsvList) {
-    int numberOfRows = allSingleReportsAsCsvList.stream().mapToInt(List::size).max().getAsInt();
+    int numberOfRows = allSingleReportsAsCsvList.stream()
+      .mapToInt(List::size)
+      .max().orElseThrow(() -> new OptimizeRuntimeException("No single reports to merge"));
+
     return allSingleReportsAsCsvList.stream()
       .reduce((l1, l2) -> {
         fillMissingRowsWithEmptyEntries(numberOfRows, l1);
@@ -157,7 +160,7 @@ public class CombinedProcessReportResult
       .map(singleResultHeaderMapper)
       .reduce(ArrayUtils::addAll)
       .map(result -> Arrays.copyOf(result, result.length - 1))
-      .get();
+      .orElseThrow(() -> new OptimizeRuntimeException("Was not able to create combined report header"));
   }
 
   private void fillMissingRowsWithEmptyEntries(int numberOfRows, List<String[]> l1) {

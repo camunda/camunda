@@ -97,9 +97,7 @@ public class SingleReportConfigurationDto implements Combinable {
     if (isUserTaskCommand(viewDto)) {
       configsToConsiderForCommand.add(this.distributedBy.getId());
     }
-    if (getProcessPart().isPresent()) {
-      configsToConsiderForCommand.add(getProcessPart().get().createCommandKey());
-    }
+    getProcessPart().ifPresent(processPartDto -> configsToConsiderForCommand.add(processPartDto.createCommandKey()));
     return String.join("-", configsToConsiderForCommand);
   }
 
