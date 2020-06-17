@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {loadNodesOutliers, loadDurationData} from './service';
 
-import OutlierAnalysis from './OutlierAnalysis';
+import {OutlierAnalysis} from './OutlierAnalysis';
 
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
 
@@ -30,14 +30,18 @@ jest.mock('services', () => {
   };
 });
 
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+};
+
 it('should contain a control panel', () => {
-  const node = shallow(<OutlierAnalysis />);
+  const node = shallow(<OutlierAnalysis {...props} />);
 
   expect(node.find('OutlierControlPanel')).toExist();
 });
 
 it('should load the process definition xml when the process definition id is updated', () => {
-  const node = shallow(<OutlierAnalysis />);
+  const node = shallow(<OutlierAnalysis {...props} />);
 
   loadProcessDefinitionXml.mockClear();
   node.instance().updateConfig({
@@ -52,11 +56,14 @@ it('should load the process definition xml when the process definition id is upd
 it('should load outlier data and flownode names when the process definition version changes', async () => {
   loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
-  const node = shallow(<OutlierAnalysis />);
-  const prevConfig = {processDefinitionKey: 'someKey', processDefinitionVersions: ['someVersion']};
-  await node.instance().updateConfig(prevConfig);
-
-  await node.instance().updateConfig({processDefinitionVersions: ['anotherVersion']});
+  const node = shallow(<OutlierAnalysis {...props} />);
+  const prevConfig = {
+    processDefinitionKey: 'someKey',
+    processDefinitionVersions: ['someVersion'],
+    tenantIds: [],
+  };
+  node.instance().updateConfig(prevConfig);
+  node.instance().updateConfig({...prevConfig, processDefinitionVersions: ['anotherVersion']});
 
   expect(getFlowNodeNames).toHaveBeenCalled();
   expect(loadNodesOutliers).toHaveBeenCalled();
@@ -66,7 +73,7 @@ it('should not try to load outlier data if no process definition is selected', a
   loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
 
-  const node = shallow(<OutlierAnalysis />);
+  const node = shallow(<OutlierAnalysis {...props} />);
 
   node.instance().updateConfig({});
 
@@ -77,7 +84,7 @@ it('should create correct flownodes higher outlier heat object', async () => {
   loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
 
-  const node = shallow(<OutlierAnalysis />);
+  const node = shallow(<OutlierAnalysis {...props} />);
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
@@ -92,7 +99,7 @@ it('display load chart data and display details modal when loadChartData is call
   loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
 
-  const node = shallow(<OutlierAnalysis />);
+  const node = shallow(<OutlierAnalysis {...props} />);
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
@@ -115,20 +122,19 @@ it('display load chart data and display details modal when loadChartData is call
   });
 });
 
-// ReEnable and complete test after OPT-2594 is done
-// it('should display correct tooltip details', async () => {
-//   loadNodesOutliers.mockClear();
-//   getFlowNodeNames.mockClear();
-//   loadProcessDefinitionXml.mockReturnValue('xml');
+it('should display correct tooltip details', async () => {
+  loadNodesOutliers.mockClear();
+  getFlowNodeNames.mockClear();
+  loadProcessDefinitionXml.mockReturnValue('xml');
 
-//   const node = shallow(<OutlierAnalysis />);
+  const node = shallow(<OutlierAnalysis {...props} />);
 
-//   await node.instance().updateConfig({
-//     processDefinitionKey: 'someKey',
-//     processDefinitionVersions: ['someVersion'],
-//     tenantIds: ['a', 'b']
-//   });
+  await node.instance().updateConfig({
+    processDefinitionKey: 'someKey',
+    processDefinitionVersions: ['someVersion'],
+    tenantIds: ['a', 'b'],
+  });
 
-// const tooltipNode = node.find('HeatmapOverlay').renderProp('formatter')({}, 'nodeKey');
-// expect(tooltipNode).toMatchSnapshot();
-// });
+  const tooltipNode = node.find('HeatmapOverlay').renderProp('formatter')({}, 'nodeKey');
+  expect(tooltipNode).toMatchSnapshot();
+});
