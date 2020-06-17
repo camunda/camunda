@@ -33,20 +33,20 @@ public class EventDtoBuilderUtil {
       .build();
   }
 
-  public static EventTypeDto createCamundaProcessStartEventTypeDto(final String processId) {
+  public static EventTypeDto createCamundaProcessStartEventTypeDto(final String definitionKey) {
     return EventTypeDto.builder()
       .source(EVENT_SOURCE_CAMUNDA)
-      .group(processId)
-      .eventName(applyCamundaProcessInstanceStartEventSuffix(processId))
+      .group(definitionKey)
+      .eventName(applyCamundaProcessInstanceStartEventSuffix(definitionKey))
       .eventLabel(PROCESS_START_TYPE)
       .build();
   }
 
-  public static EventTypeDto createCamundaProcessEndEventTypeDto(final String processId) {
+  public static EventTypeDto createCamundaProcessEndEventTypeDto(final String definitionKey) {
     return EventTypeDto.builder()
       .source(EVENT_SOURCE_CAMUNDA)
-      .group(processId)
-      .eventName(applyCamundaProcessInstanceEndEventSuffix(processId))
+      .group(definitionKey)
+      .eventName(applyCamundaProcessInstanceEndEventSuffix(definitionKey))
       .eventLabel(PROCESS_END_TYPE)
       .build();
   }

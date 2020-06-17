@@ -34,6 +34,8 @@ import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
 import static org.camunda.optimize.service.util.BpmnModelUtility.getEndEventsFromInstance;
 import static org.camunda.optimize.service.util.BpmnModelUtility.getStartEventsFromInstance;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessEndEventTypeDto;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessStartEventTypeDto;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.addEndEvent;
@@ -139,25 +141,27 @@ public class CamundaEventModelBuilderService {
                                                                    final Map<String, EventMappingDto> mappings,
                                                                    final EventSourceEntryDto sourceEntryDto,
                                                                    final boolean isFinalSourceInSeries) {
+    final String definitionName = getDefinition(sourceEntryDto).map(DefinitionOptimizeDto::getName)
+      .orElse(sourceEntryDto.getProcessDefinitionKey());
     final EventTypeDto processInstanceStartProcessEvent =
       createCamundaProcessStartEventTypeDto(sourceEntryDto.getProcessDefinitionKey());
     final EventTypeDto processInstanceEndProcessEvent =
       createCamundaProcessEndEventTypeDto(sourceEntryDto.getProcessDefinitionKey());
     final String processStartEventId = generateNodeId(processInstanceStartProcessEvent);
     final String processEndEventId = generateNodeId(processInstanceEndProcessEvent);
+    final String processStartNodeName = applyCamundaProcessInstanceStartEventSuffix(definitionName);
+    final String processEndNodeName = applyCamundaProcessInstanceEndEventSuffix(definitionName);
 
     AbstractFlowNodeBuilder<?, ?> builderToReturn;
     // If this is true, this source isn't continuing the build from a previous source so should start the process
     if (generatedModelBuilder == null) {
       final AbstractFlowNodeBuilder<StartEventBuilder, StartEvent> currentBuilder = addStartEvent(
-        processInstanceStartProcessEvent,
-        processStartEventId,
-        processBuilder
+        processStartNodeName, processStartEventId, processBuilder
       );
       if (isFinalSourceInSeries) {
-        builderToReturn = addEndEvent(processInstanceEndProcessEvent, processEndEventId, currentBuilder);
+        builderToReturn = addEndEvent(processEndNodeName, processEndEventId, currentBuilder);
       } else {
-        builderToReturn = addIntermediateEvent(processInstanceEndProcessEvent, processEndEventId, currentBuilder);
+        builderToReturn = addIntermediateEvent(processEndNodeName, processEndEventId, currentBuilder);
       }
       mappings.put(processStartEventId, EventMappingDto.builder().start(processInstanceStartProcessEvent).build());
       mappings.put(processEndEventId, EventMappingDto.builder().start(processInstanceEndProcessEvent).build());
@@ -165,20 +169,14 @@ public class CamundaEventModelBuilderService {
       // If this source isn't the start or end source in the overall model, it gets added as a call activity
       if (!isFinalSourceInSeries) {
         final String nodeId = generateTaskIdForDefinitionKey(sourceEntryDto.getProcessDefinitionKey());
-        final String activityName = getDefinition(sourceEntryDto).map(DefinitionOptimizeDto::getName)
-          .orElse(sourceEntryDto.getProcessDefinitionKey());
-        builderToReturn = generatedModelBuilder.callActivity(nodeId).name(activityName);
+        builderToReturn = generatedModelBuilder.callActivity(nodeId).name(definitionName);
         mappings.put(nodeId, EventMappingDto.builder()
           .start(processInstanceStartProcessEvent)
           .end(processInstanceEndProcessEvent)
           .build());
       } else {
-        builderToReturn = addIntermediateEvent(
-          processInstanceStartProcessEvent,
-          processStartEventId,
-          generatedModelBuilder
-        );
-        builderToReturn = addEndEvent(processInstanceEndProcessEvent, processEndEventId, builderToReturn);
+        builderToReturn = addIntermediateEvent(processStartNodeName, processStartEventId, generatedModelBuilder);
+        builderToReturn = addEndEvent(processEndNodeName, processEndEventId, builderToReturn);
         mappings.put(processStartEventId, EventMappingDto.builder().start(processInstanceStartProcessEvent).build());
         mappings.put(processEndEventId, EventMappingDto.builder().start(processInstanceEndProcessEvent).build());
       }
