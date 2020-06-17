@@ -45,7 +45,12 @@ public class DevDataGenerator implements DataGenerator {
   public void createZeebeDataAsync() {
     if (shouldCreateData()) {
       executor.submit(() -> {
-        createZeebeData();
+        try {
+          Thread.sleep(10_000);
+          createZeebeData();
+        } catch (Exception ex) {
+          logger.error("Demo data was not generated: " + ex.getMessage(), ex);
+        }
       });
     }
   }
