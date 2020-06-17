@@ -117,7 +117,7 @@
                     <echo message="Make sure that ES can write data to the shared volume" />
                     <exec dir="${project.build.directory}" executable="/bin/bash">
                       <arg value="-c" />
-                      <arg value="docker exec -it upgrade-optimize-data-tests-old-elasticsearch-version chown -R elasticsearch:elasticsearch ${elasticsearch.snapshot.path}" />
+                      <arg value="docker exec upgrade-optimize-data-tests-old-elasticsearch-version chown -R elasticsearch:elasticsearch ${elasticsearch.snapshot.path}" />
                     </exec>
 
                   </target>
@@ -141,7 +141,7 @@
                     <echo message="Generating engine data..." />
                     <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="set -o pipefail; mvn clean compile -pl qa/data-generation exec:java -Dexec.args='--numberOfProcessInstances 100' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'" />
+                      <arg value="set -o pipefail; mvn clean compile -pl qa/data-generation exec:java -Dexec.args='--numberOfProcessInstances 100 --numberOfDecisionInstances 100' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'" />
                     </exec>
                   </target>
                 </configuration>
@@ -173,10 +173,13 @@
                     <echo message="Downloading &amp; unpacking Optimize Report Generator ${project.version}..." />
                     <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${project.version}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                      <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${project.version}:tar.gz:tar-with-dependencies -DoutputDirectory=./target/generators/${project.version} -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
                     </exec>
-                    <echo message="Optimize ${project.version} generator successfully unpacked." />
 
+                    <exec dir="${project.build.directory}/generators/${project.version}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="tar -xf generator-${project.version}-tar-with-dependencies.tar.gz" />
+                    </exec>
                   </target>
                 </configuration>
               </execution>
@@ -386,7 +389,7 @@
                     <echo message="Generating optimize data" />
                     <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${project.version}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
+                      <arg value="set -o pipefail; java -cp &quot;${project.build.directory}/generators/${project.version}/lib/&quot; -jar ${project.build.directory}/generators/${project.version}/generator-${project.version}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
                     </exec>
 
                     <echo message="Killing Optimize ${project.version}..." />

@@ -18,10 +18,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Ro
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class DecisionFilterUtilHelper {
@@ -82,6 +86,31 @@ public class DecisionFilterUtilHelper {
     return variableFilterDto;
   }
 
+  public static InputVariableFilterDto createBooleanInputVariableFilter(String variableName, Boolean variableValue) {
+    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableName, Collections.singletonList(variableValue));
+    InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
+    variableFilterDto.setData(data);
+
+    return variableFilterDto;
+  }
+
+  public static InputVariableFilterDto createNumericInputVariableFilter(String variableName,
+                                                                        VariableType variableType,
+                                                                        String operator,
+                                                                        List<String> variableValues) {
+    OperatorMultipleValuesVariableFilterSubDataDto subData = new OperatorMultipleValuesVariableFilterSubDataDto(
+      operator, variableValues
+    );
+    OperatorMultipleValuesVariableFilterDataDto data = new OperatorMultipleValuesVariableFilterDataDto(
+      variableName, variableType, subData
+    );
+
+    InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
+    variableFilterDto.setData(data);
+
+    return variableFilterDto;
+  }
+
   public static InputVariableFilterDto createFixedDateInputVariableFilter(final String variableName,
                                                                           final OffsetDateTime startDate,
                                                                           final OffsetDateTime endDate) {
@@ -116,6 +145,51 @@ public class DecisionFilterUtilHelper {
   public static OutputVariableFilterDto createBooleanOutputVariableFilter(final String variableName,
                                                                           final List<Boolean> variableValues) {
     BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto(variableName, variableValues);
+    OutputVariableFilterDto variableFilterDto = new OutputVariableFilterDto();
+    variableFilterDto.setData(data);
+
+    return variableFilterDto;
+  }
+
+  public static OutputVariableFilterDto createStringOutputVariableFilter(String variableName, String operator,
+                                                                         String variableValue) {
+    StringVariableFilterDataDto data = new StringVariableFilterDataDto(
+      variableName,
+      operator,
+      Collections.singletonList(variableValue)
+    );
+
+    OutputVariableFilterDto variableFilterDto = new OutputVariableFilterDto();
+    variableFilterDto.setData(data);
+
+    return variableFilterDto;
+  }
+
+  public static OutputVariableFilterDto createNumericOutputVariableFilter(String variableName,
+                                                                          VariableType variableType,
+                                                                          String operator,
+                                                                          List<String> variableValues) {
+    OperatorMultipleValuesVariableFilterSubDataDto subData = new OperatorMultipleValuesVariableFilterSubDataDto(
+      operator, variableValues
+    );
+    OperatorMultipleValuesVariableFilterDataDto data = new OperatorMultipleValuesVariableFilterDataDto(
+      variableName, variableType, subData
+    );
+
+    OutputVariableFilterDto variableFilterDto = new OutputVariableFilterDto();
+    variableFilterDto.setData(data);
+
+    return variableFilterDto;
+  }
+
+  public static OutputVariableFilterDto createFixedDateOutputVariableFilter(String variableName,
+                                                                          OffsetDateTime startDate,
+                                                                          OffsetDateTime endDate) {
+    DateVariableFilterDataDto data = new DateVariableFilterDataDto(
+      variableName,
+      new FixedDateFilterDataDto(startDate, endDate)
+    );
+
     OutputVariableFilterDto variableFilterDto = new OutputVariableFilterDto();
     variableFilterDto.setData(data);
 
