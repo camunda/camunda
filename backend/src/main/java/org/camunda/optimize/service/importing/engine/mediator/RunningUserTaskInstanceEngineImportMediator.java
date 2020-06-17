@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningUserTaskInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.RunningUserTaskInstanceImportIndexHandler;
@@ -31,19 +30,17 @@ public class RunningUserTaskInstanceEngineImportMediator
                                                      final RunningUserTaskInstanceFetcher engineEntityFetcher,
                                                      final RunningUserTaskInstanceImportService importService,
                                                      final ConfigurationService configurationService,
-                                                     final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                      final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override
-  protected List<HistoricUserTaskInstanceDto> getEntitiesLastTimestamp() {
-    return engineEntityFetcher.fetchRunningUserTaskInstancesForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+  protected OffsetDateTime getTimestamp(final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
+    return historicUserTaskInstanceDto.getStartTime();
   }
 
   @Override
@@ -52,12 +49,12 @@ public class RunningUserTaskInstanceEngineImportMediator
   }
 
   @Override
-  protected int getMaxPageSize() {
-    return configurationService.getEngineImportUserTaskInstanceMaxPageSize();
+  protected List<HistoricUserTaskInstanceDto> getEntitiesLastTimestamp() {
+    return engineEntityFetcher.fetchRunningUserTaskInstancesForTimestamp(importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
-    return historicUserTaskInstanceDto.getStartTime();
+  protected int getMaxPageSize() {
+    return configurationService.getEngineImportUserTaskInstanceMaxPageSize();
   }
 }

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningProcessInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler;
@@ -31,14 +30,17 @@ public class RunningProcessInstanceEngineImportMediator
                                                     final RunningProcessInstanceFetcher engineEntityFetcher,
                                                     final RunningProcessInstanceImportService importService,
                                                     final ConfigurationService configurationService,
-                                                    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                     final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
+  }
+
+  @Override
+  protected OffsetDateTime getTimestamp(final HistoricProcessInstanceDto historicProcessInstanceDto) {
+    return historicProcessInstanceDto.getStartTime();
   }
 
   @Override
@@ -54,10 +56,5 @@ public class RunningProcessInstanceEngineImportMediator
   @Override
   protected int getMaxPageSize() {
     return configurationService.getEngineImportProcessInstanceMaxPageSize();
-  }
-
-  @Override
-  protected OffsetDateTime getTimestamp(final HistoricProcessInstanceDto historicProcessInstanceDto) {
-    return historicProcessInstanceDto.getStartTime();
   }
 }

@@ -51,6 +51,31 @@ public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto> extends
     );
   }
 
+  public List<DEF> fetchDefinitionsForTimestamp(final OffsetDateTime deploymentTimeOfLastDefinition) {
+    logger.debug("Fetching definitions ...");
+    long requestStart = System.currentTimeMillis();
+    List<DEF> definitions =
+      fetchWithRetry(() -> performDefinitionRequest(deploymentTimeOfLastDefinition));
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] definitions for set deployment time within [{}] ms",
+      definitions.size(),
+      requestEnd - requestStart
+    );
+    return definitions;
+  }
+
+  /**
+   * We need to explicitly create the response type during runtime else
+   * java won't be to extract the specific type and stick to DefinitionEngineDto which
+   * would not contain all the necessary fields.
+   */
+  protected abstract GenericType<List<DEF>> getResponseType();
+
+  protected abstract String getDefinitionEndpoint();
+
+  protected abstract int getMaxPageSize();
+
   private List<DEF> fetchDefinitions(final OffsetDateTime timeStamp,
                                      final int pageSize) {
     logger.debug("Fetching definitions ...");
@@ -102,20 +127,6 @@ public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto> extends
       .get(getResponseType());
   }
 
-  public List<DEF> fetchDefinitionsForTimestamp(final OffsetDateTime deploymentTimeOfLastDefinition) {
-    logger.debug("Fetching definitions ...");
-    long requestStart = System.currentTimeMillis();
-    List<DEF> definitions =
-      fetchWithRetry(() -> performDefinitionRequest(deploymentTimeOfLastDefinition));
-    long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] definitions for set deployment time within [{}] ms",
-      definitions.size(),
-      requestEnd - requestStart
-    );
-    return definitions;
-  }
-
   private List<DEF> performDefinitionRequest(OffsetDateTime deploymentTimeOfLastDefinition) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
@@ -126,16 +137,5 @@ public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto> extends
       .acceptEncoding(UTF8)
       .get(getResponseType());
   }
-
-  /**
-   * We need to explicitly create the response type during runtime else
-   * java won't be to extract the specific type and stick to DefinitionEngineDto which
-   * would not contain all the necessary fields.
-   */
-  protected abstract GenericType<List<DEF>> getResponseType();
-
-  protected abstract String getDefinitionEndpoint();
-
-  protected abstract int getMaxPageSize();
 
 }

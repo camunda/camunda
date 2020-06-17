@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionInstanceImportIndexHandler;
@@ -31,19 +30,17 @@ public class DecisionInstanceEngineImportMediator
                                               final DecisionInstanceFetcher decisionInstanceFetcher,
                                               final DecisionInstanceImportService importService,
                                               final ConfigurationService configurationService,
-                                              final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                               final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.decisionInstanceFetcher = decisionInstanceFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override
-  protected List<HistoricDecisionInstanceDto> getEntitiesLastTimestamp() {
-    return decisionInstanceFetcher.fetchHistoricDecisionInstances(importIndexHandler.getTimestampOfLastEntity());
+  protected OffsetDateTime getTimestamp(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
+    return historicDecisionInstanceDto.getEvaluationTime();
   }
 
   @Override
@@ -52,12 +49,12 @@ public class DecisionInstanceEngineImportMediator
   }
 
   @Override
-  protected int getMaxPageSize() {
-    return configurationService.getEngineImportDecisionInstanceMaxPageSize();
+  protected List<HistoricDecisionInstanceDto> getEntitiesLastTimestamp() {
+    return decisionInstanceFetcher.fetchHistoricDecisionInstances(importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    return historicDecisionInstanceDto.getEvaluationTime();
+  protected int getMaxPageSize() {
+    return configurationService.getEngineImportDecisionInstanceMaxPageSize();
   }
 }

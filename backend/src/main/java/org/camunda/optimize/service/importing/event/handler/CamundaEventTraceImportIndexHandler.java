@@ -20,12 +20,12 @@ public class CamundaEventTraceImportIndexHandler extends TimestampBasedEngineImp
   private final String definitionKey;
 
   @Override
-  protected String getElasticsearchDocID() {
-    return ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey;
+  public String getEngineAlias() {
+    return ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE;
   }
 
   @Override
-  public String getEngineAlias() {
-    return ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE;
+  protected String getElasticsearchDocID() {
+    return ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey;
   }
 }

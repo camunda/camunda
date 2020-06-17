@@ -47,6 +47,24 @@ public class IdentityLinkLogInstanceFetcher extends RetryBackoffEngineEntityFetc
     );
   }
 
+  public List<HistoricIdentityLinkLogDto> fetchIdentityLinkLogsForTimestamp(
+    final OffsetDateTime endTimeOfLastInstance) {
+    logger.debug("Fetching identity link logs ...");
+
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricIdentityLinkLogDto> secondEntries = fetchWithRetry(
+      () -> performIdentityLinkLogRequest(endTimeOfLastInstance)
+    );
+    final long requestEnd = System.currentTimeMillis();
+
+    logger.debug(
+      "Fetched [{}] identity link logs within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
+  }
+
   private List<HistoricIdentityLinkLogDto> fetchIdentityLinkLogs(final OffsetDateTime timeStamp,
                                                                  final long pageSize) {
     logger.debug("Fetching identity link logs ...");
@@ -65,24 +83,6 @@ public class IdentityLinkLogInstanceFetcher extends RetryBackoffEngineEntityFetc
     );
 
     return entries;
-  }
-
-  public List<HistoricIdentityLinkLogDto> fetchIdentityLinkLogsForTimestamp(
-    final OffsetDateTime endTimeOfLastInstance) {
-    logger.debug("Fetching identity link logs ...");
-
-    final long requestStart = System.currentTimeMillis();
-    final List<HistoricIdentityLinkLogDto> secondEntries = fetchWithRetry(
-      () -> performIdentityLinkLogRequest(endTimeOfLastInstance)
-    );
-    final long requestEnd = System.currentTimeMillis();
-
-    logger.debug(
-      "Fetched [{}] identity link logs within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
-    return secondEntries;
   }
 
   private List<HistoricIdentityLinkLogDto> performIdentityLinkLogRequest(final OffsetDateTime timeStamp,

@@ -5,16 +5,17 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 
 import java.util.List;
 
 public abstract class ScrollBasedImportMediator<T extends ScrollBasedImportIndexHandler, DTO>
-  extends BackoffImportMediator<T> {
+  extends BackoffImportMediator<T, DTO> {
 
-  protected ImportService<DTO> importService;
-  
+  public void reset() {
+    importIndexHandler.resetImportIndex();
+  }
+
   protected abstract List<DTO> getEntities(IdSetBasedImportPage page);
 
   @Override
@@ -32,10 +33,6 @@ public abstract class ScrollBasedImportMediator<T extends ScrollBasedImportIndex
     }
     importCompleteCallback.run();
     return false;
-  }
-
-  public void reset() {
-    importIndexHandler.resetImportIndex();
   }
 
 }

@@ -5,24 +5,21 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
-import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
-public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>> implements EngineImportMediator {
+public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>, DTO> implements EngineImportMediator {
+  private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
   protected Logger logger = LoggerFactory.getLogger(getClass());
   protected ConfigurationService configurationService;
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected BackoffCalculator idleBackoffCalculator;
-
-  private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
-
   protected T importIndexHandler;
+  protected ImportService<DTO> importService;
 
   @Override
   public CompletableFuture<Void> runImport() {
@@ -58,18 +55,18 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>> 
     return canImportNewPage;
   }
 
-  @Override
-  public ImportJobExecutor getImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
-  }
-
   public T getImportIndexHandler() {
     return importIndexHandler;
   }
 
   @Override
+  public boolean hasPendingImportJobs() {
+    return importService.hasPendingImportJobs();
+  }
+
+  @Override
   public void shutdown() {
-    elasticsearchImportJobExecutor.stopExecutingImportJobs();
+    importService.shutdown();
   }
 
   protected abstract boolean importNextPage(Runnable importCompleteCallback);

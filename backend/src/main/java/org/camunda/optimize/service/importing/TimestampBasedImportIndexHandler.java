@@ -19,7 +19,10 @@ import java.time.temporal.ChronoUnit;
 
 public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
   implements ImportIndexHandler<TimestampBasedImportPage, INDEX_DTO> {
-  public static final OffsetDateTime BEGINNING_OF_TIME = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
+  public static final OffsetDateTime BEGINNING_OF_TIME = OffsetDateTime.ofInstant(
+    Instant.EPOCH,
+    ZoneId.systemDefault()
+  );
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -63,17 +66,21 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
   }
 
   @Override
+  public TimestampBasedImportPage getNextPage() {
+    TimestampBasedImportPage page = new TimestampBasedImportPage();
+    page.setTimestampOfLastEntity(getTimestampOfLastEntity());
+    return page;
+  }
+
+  @Override
   public void resetImportIndex() {
     updateLastImportExecutionTimestamp(BEGINNING_OF_TIME);
     updateLastPersistedEntityTimestamp(BEGINNING_OF_TIME);
     updatePendingLastEntityTimestamp(BEGINNING_OF_TIME);
   }
 
-  @Override
-  public TimestampBasedImportPage getNextPage() {
-    TimestampBasedImportPage page = new TimestampBasedImportPage();
-    page.setTimestampOfLastEntity(getTimestampOfLastEntity());
-    return page;
+  public OffsetDateTime getTimestampOfLastEntity() {
+    return timestampOfLastEntity;
   }
 
   abstract protected void updateLastPersistedEntityTimestamp(OffsetDateTime timestamp);
@@ -82,10 +89,6 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
 
   protected void updatePendingLastEntityTimestamp(final OffsetDateTime timestamp) {
     this.timestampOfLastEntity = timestamp;
-  }
-
-  public OffsetDateTime getTimestampOfLastEntity() {
-    return timestampOfLastEntity;
   }
 
   private int getTipOfTimeBackoffMilliseconds() {

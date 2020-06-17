@@ -45,6 +45,11 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
     }
   }
 
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
+  }
+
   private void addElasticsearchImportJobToQueue(
     final ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob) {
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);

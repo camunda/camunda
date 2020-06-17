@@ -8,5 +8,6 @@ package org.camunda.optimize.service.importing.engine.service;
 public interface ImportObserver {
 
   void importInProgress(String engineAlias);
+
   void importIsIdle(String engineAlias);
 }

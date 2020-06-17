@@ -48,7 +48,6 @@ public class DecisionDefinitionXmlEngineImportMediatorFactory extends AbstractIm
         decisionDefinitionResolverService
       ),
       configurationService,
-      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }

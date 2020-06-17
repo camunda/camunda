@@ -28,10 +28,18 @@ public class EventTraceImportService implements ImportService<EventDto> {
 
     boolean newDataIsAvailable = !pageOfEvents.isEmpty();
     if (newDataIsAvailable) {
-      elasticsearchImportJobExecutor.executeImportJob(createElasticsearchImportJob(pageOfEvents, importCompleteCallback));
+      elasticsearchImportJobExecutor.executeImportJob(createElasticsearchImportJob(
+        pageOfEvents,
+        importCompleteCallback
+      ));
     } else {
       importCompleteCallback.run();
     }
+  }
+
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
   }
 
   private EventCountAndTracesImportJob createElasticsearchImportJob(final List<EventDto> events,
@@ -41,10 +49,6 @@ public class EventTraceImportService implements ImportService<EventDto> {
     );
     importJob.setEntitiesToImport(events);
     return importJob;
-  }
-
-  public void shutdown() {
-    elasticsearchImportJobExecutor.shutdown();
   }
 
 }

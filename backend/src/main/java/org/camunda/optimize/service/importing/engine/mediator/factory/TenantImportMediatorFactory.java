@@ -39,7 +39,6 @@ public class TenantImportMediatorFactory extends AbstractImportMediatorFactory {
       beanFactory.getBean(TenantFetcher.class, engineContext),
       new TenantImportService(elasticsearchImportJobExecutor, engineContext, tenantWriter),
       configurationService,
-      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }

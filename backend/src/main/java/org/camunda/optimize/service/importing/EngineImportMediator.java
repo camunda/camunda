@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.service.util.ImportJobExecutor;
-
 import java.util.concurrent.CompletableFuture;
 
 public interface EngineImportMediator {
@@ -19,7 +17,7 @@ public interface EngineImportMediator {
 
   boolean canImport();
 
-  ImportJobExecutor getImportJobExecutor();
+  boolean hasPendingImportJobs();
 
   void shutdown();
 

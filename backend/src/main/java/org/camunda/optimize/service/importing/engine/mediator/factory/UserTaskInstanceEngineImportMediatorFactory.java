@@ -50,7 +50,6 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractImportM
         engineContext
       ),
       configurationService,
-      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }
@@ -69,7 +68,6 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractImportM
         engineContext
       ),
       configurationService,
-      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }

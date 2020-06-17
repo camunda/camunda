@@ -62,6 +62,11 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
     }
   }
 
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
+  }
+
   private ElasticsearchImportJob<UserOperationLogEntryDto> createElasticsearchImportJob(
     final List<UserOperationLogEntryDto> userOperationLogs,
     Runnable callback) {

@@ -20,12 +20,12 @@ public class ExternalEventTraceImportIndexHandler extends TimestampBasedEngineIm
     EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX;
 
   @Override
-  protected String getElasticsearchDocID() {
-    return EXTERNAL_EVENT_TRACE_IMPORT_INDEX_DOC_ID;
+  public String getEngineAlias() {
+    return EVENT_PROCESSING_ENGINE_REFERENCE;
   }
 
   @Override
-  public String getEngineAlias() {
-    return EVENT_PROCESSING_ENGINE_REFERENCE;
+  protected String getElasticsearchDocID() {
+    return EXTERNAL_EVENT_TRACE_IMPORT_INDEX_DOC_ID;
   }
 }

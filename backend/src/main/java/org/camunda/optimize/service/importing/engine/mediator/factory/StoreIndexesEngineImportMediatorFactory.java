@@ -36,8 +36,7 @@ public class StoreIndexesEngineImportMediatorFactory extends AbstractImportMedia
       importIndexHandlerRegistry,
       new StoreIndexesEngineImportService(importIndexWriter, elasticsearchImportJobExecutor),
       engineContext,
-      configurationService,
-      elasticsearchImportJobExecutor
+      configurationService
     );
   }
 

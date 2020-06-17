@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.importing.StoreIndexesElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
@@ -30,6 +31,11 @@ public class StoreIndexesEngineImportService implements ImportService<ImportInde
     );
     storeIndexesImportJob.setEntitiesToImport(importIndexesToStore);
     elasticsearchImportJobExecutor.executeImportJob(storeIndexesImportJob);
+  }
+
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
   }
 
 }

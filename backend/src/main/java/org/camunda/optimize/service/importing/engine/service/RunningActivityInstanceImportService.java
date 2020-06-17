@@ -53,6 +53,11 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
     }
   }
 
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
+  }
+
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
