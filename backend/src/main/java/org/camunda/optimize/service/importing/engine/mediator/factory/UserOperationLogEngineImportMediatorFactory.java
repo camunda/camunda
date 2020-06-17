@@ -43,6 +43,7 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractImportM
         importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias())
       ),
       configurationService,
+      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }

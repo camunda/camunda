@@ -35,11 +35,6 @@ public class TenantImportService implements ImportService<TenantEngineDto> {
     }
   }
 
-  @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
-  }
-
   private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }

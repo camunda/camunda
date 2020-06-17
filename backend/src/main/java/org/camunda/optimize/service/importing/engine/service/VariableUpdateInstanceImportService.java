@@ -30,8 +30,8 @@ import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSup
 public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  protected EngineContext engineContext;
   private VariableImportAdapterProvider variableImportAdapterProvider;
+  protected EngineContext engineContext;
   private ProcessVariableUpdateWriter variableWriter;
   private CamundaEventImportService camundaEventService;
 
@@ -63,11 +63,6 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       );
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
-  }
-
-  @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
   }
 
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {

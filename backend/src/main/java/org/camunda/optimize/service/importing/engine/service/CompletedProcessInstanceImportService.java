@@ -46,11 +46,6 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
     }
   }
 
-  @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
-  }
-
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }

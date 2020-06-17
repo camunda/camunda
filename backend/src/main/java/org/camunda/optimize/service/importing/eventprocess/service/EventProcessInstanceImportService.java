@@ -102,9 +102,8 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     }
   }
 
-  @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public void shutdown() {
+    elasticsearchImportJobExecutor.shutdown();
   }
 
   private List<EventProcessInstanceDto> mapToProcessInstances(final List<EventDto> ingestedEvents) {
@@ -204,12 +203,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
       });
   }
 
-  private void updateInstanceForSingleMappedFlowNodeEvent(final EventProcessInstanceDto processInstanceDto,
-                                                          final String eventId,
-                                                          final EventToFlowNodeMapping eventToFlowNodeMapping,
-                                                          final OffsetDateTime eventTimeStampAsOffsetDateTime,
-                                                          final EventCorrelationStateDto eventCorrelationStateDto,
-                                                          final FlowNodeInstanceDto flowNodeInstance) {
+  private void updateInstanceForSingleMappedFlowNodeEvent(final EventProcessInstanceDto processInstanceDto, final String eventId, final EventToFlowNodeMapping eventToFlowNodeMapping, final OffsetDateTime eventTimeStampAsOffsetDateTime, final EventCorrelationStateDto eventCorrelationStateDto, final FlowNodeInstanceDto flowNodeInstance) {
     switch (eventToFlowNodeMapping.getMappedAs()) {
       case START:
         eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
@@ -250,12 +244,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     processInstanceDto.getEvents().add(flowNodeInstance);
   }
 
-  private void updateInstanceForSingleMappedBpmnNodeEvent(final EventProcessInstanceDto processInstanceDto,
-                                                          final String eventId,
-                                                          final EventToFlowNodeMapping eventToFlowNodeMapping,
-                                                          final OffsetDateTime eventTimeStampAsOffsetDateTime,
-                                                          final EventCorrelationStateDto eventCorrelationStateDto,
-                                                          final FlowNodeInstanceDto flowNodeInstance) {
+  private void updateInstanceForSingleMappedBpmnNodeEvent(final EventProcessInstanceDto processInstanceDto, final String eventId, final EventToFlowNodeMapping eventToFlowNodeMapping, final OffsetDateTime eventTimeStampAsOffsetDateTime, final EventCorrelationStateDto eventCorrelationStateDto, final FlowNodeInstanceDto flowNodeInstance) {
     // BPMN Events that do not have a timer property should have a duration of 0
     flowNodeInstance.setStartDate(eventTimeStampAsOffsetDateTime);
     eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
@@ -272,12 +261,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     processInstanceDto.getEvents().add(flowNodeInstance);
   }
 
-  private void updateInstanceForStartAndEndMappedNodeEvent(final EventProcessInstanceDto processInstanceDto,
-                                                           final String eventId,
-                                                           final EventToFlowNodeMapping eventToFlowNodeMapping,
-                                                           final OffsetDateTime eventTimeStampAsOffsetDateTime,
-                                                           final EventCorrelationStateDto eventCorrelationStateDto,
-                                                           final FlowNodeInstanceDto flowNodeInstance) {
+  private void updateInstanceForStartAndEndMappedNodeEvent(final EventProcessInstanceDto processInstanceDto, final String eventId, final EventToFlowNodeMapping eventToFlowNodeMapping, final OffsetDateTime eventTimeStampAsOffsetDateTime, final EventCorrelationStateDto eventCorrelationStateDto, final FlowNodeInstanceDto flowNodeInstance) {
     switch (eventToFlowNodeMapping.getMappedAs()) {
       case START:
         eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
@@ -322,8 +306,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   }
 
   private boolean isZeroDurationBpmnEvent(final String flowNodeId) {
-    final Class<? extends ModelElementInstance> nodeClass = bpmnModelInstance.getModelElementById(flowNodeId)
-      .getClass();
+    final Class<? extends ModelElementInstance> nodeClass = bpmnModelInstance.getModelElementById(flowNodeId).getClass();
     return Event.class.isAssignableFrom(nodeClass) && !IntermediateCatchEvent.class.isAssignableFrom(nodeClass);
   }
 
@@ -333,8 +316,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
                                                                          final EventProcessInstanceDto processInstanceDto) {
     eventToFlowNodeMapping.getNextMappedFlowNodeIds().forEach(nextFlowNodeId -> {
       final EventMappingDto nextFlowNodeMapping = eventProcessPublishStateDto.getMappings().get(nextFlowNodeId);
-      if (nextFlowNodeMapping != null && nextFlowNodeMapping.getStart() == null && !isZeroDurationBpmnEvent(
-        nextFlowNodeId)) {
+      if (nextFlowNodeMapping != null && nextFlowNodeMapping.getStart() == null && !isZeroDurationBpmnEvent(nextFlowNodeId)) {
         final FlowNodeInstanceUpdateDto nextFlowNodeInstanceUpdate = FlowNodeInstanceUpdateDto.builder()
           .sourceEventId(updateSourceEventId)
           .flowNodeId(nextFlowNodeId)

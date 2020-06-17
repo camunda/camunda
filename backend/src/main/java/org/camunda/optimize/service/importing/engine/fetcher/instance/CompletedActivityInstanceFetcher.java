@@ -47,21 +47,6 @@ public class CompletedActivityInstanceFetcher
     );
   }
 
-  public List<HistoricActivityInstanceEngineDto> fetchCompletedActivityInstancesForTimestamp(
-    OffsetDateTime endTimeOfLastInstance) {
-    logger.debug("Fetching completed activity instances ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricActivityInstanceEngineDto> secondEntries =
-      fetchWithRetry(() -> performCompletedActivityInstanceRequest(endTimeOfLastInstance));
-    long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] historic activity instances for set end time within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
-    return secondEntries;
-  }
-
   private List<HistoricActivityInstanceEngineDto> fetchCompletedActivityInstances(OffsetDateTime timeStamp,
                                                                                   long pageSize) {
     logger.debug("Fetching historic activity instances ...");
@@ -79,8 +64,7 @@ public class CompletedActivityInstanceFetcher
     return entries;
   }
 
-  private List<HistoricActivityInstanceEngineDto> performCompletedActivityInstanceRequest(OffsetDateTime timeStamp,
-                                                                                          long pageSize) {
+  private List<HistoricActivityInstanceEngineDto> performCompletedActivityInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(COMPLETED_ACTIVITY_INSTANCE_ENDPOINT)
@@ -90,6 +74,21 @@ public class CompletedActivityInstanceFetcher
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
       });
+  }
+
+  public List<HistoricActivityInstanceEngineDto> fetchCompletedActivityInstancesForTimestamp(
+    OffsetDateTime endTimeOfLastInstance) {
+    logger.debug("Fetching completed activity instances ...");
+    long requestStart = System.currentTimeMillis();
+    List<HistoricActivityInstanceEngineDto> secondEntries =
+      fetchWithRetry(() -> performCompletedActivityInstanceRequest(endTimeOfLastInstance));
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] historic activity instances for set end time within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
   }
 
   private List<HistoricActivityInstanceEngineDto> performCompletedActivityInstanceRequest(OffsetDateTime endTimeOfLastInstance) {

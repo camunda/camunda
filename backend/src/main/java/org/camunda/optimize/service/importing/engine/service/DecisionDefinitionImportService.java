@@ -41,11 +41,6 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
     }
   }
 
-  @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
-  }
-
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(
     final List<DecisionDefinitionEngineDto> engineDtos) {
     return engineDtos

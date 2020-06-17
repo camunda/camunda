@@ -42,6 +42,31 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     }
   }
 
+  @Override
+  protected void run() {
+    if (isScheduledToRun()) {
+      runImportRound();
+    }
+  }
+
+  @Override
+  protected Trigger createScheduleTrigger() {
+    return new PeriodicTrigger(0);
+  }
+
+  @Override
+  public synchronized boolean startScheduling() {
+    log.info("Scheduling event pre-aggregation.");
+    return super.startScheduling();
+  }
+
+  @PreDestroy
+  @Override
+  public synchronized void stopScheduling() {
+    log.info("Stop scheduling event pre-aggregation.");
+    super.stopScheduling();
+  }
+
   public Future<Void> runImportRound() {
     return runImportRound(false);
   }
@@ -74,38 +99,6 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     return CompletableFuture.allOf(importTaskFutures);
   }
 
-  public List<EngineImportMediator> getImportMediators() {
-    return Stream.concat(
-      Stream.of(eventProcessingProgressMediator),
-      eventTraceImportMediatorManager.getEventTraceImportMediators().stream()
-    ).collect(Collectors.toList());
-  }
-
-  @Override
-  protected void run() {
-    if (isScheduledToRun()) {
-      runImportRound();
-    }
-  }
-
-  @Override
-  protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(0);
-  }
-
-  @Override
-  public synchronized boolean startScheduling() {
-    log.info("Scheduling event pre-aggregation.");
-    return super.startScheduling();
-  }
-
-  @PreDestroy
-  @Override
-  public synchronized void stopScheduling() {
-    log.info("Stop scheduling event pre-aggregation.");
-    super.stopScheduling();
-  }
-
   private void doBackoff(final List<EngineImportMediator> mediators) {
     long timeToSleep = mediators
       .stream()
@@ -118,6 +111,13 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     } catch (InterruptedException e) {
       log.warn("Scheduler was interrupted while sleeping.", e);
     }
+  }
+
+  public List<EngineImportMediator> getImportMediators() {
+    return Stream.concat(
+      Stream.of(eventProcessingProgressMediator),
+      eventTraceImportMediatorManager.getEventTraceImportMediators().stream()
+    ).collect(Collectors.toList());
   }
 
   private EventBasedProcessConfiguration getEventBasedProcessConfiguration() {

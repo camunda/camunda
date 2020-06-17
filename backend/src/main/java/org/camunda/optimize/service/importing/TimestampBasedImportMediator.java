@@ -5,12 +5,16 @@
  */
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.service.importing.engine.service.ImportService;
+
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class TimestampBasedImportMediator<T extends TimestampBasedImportIndexHandler<?>, DTO>
-  extends BackoffImportMediator<T, DTO> {
+  extends BackoffImportMediator<T> {
+
+  protected ImportService<DTO> importService;
 
   protected int countOfImportedEntitiesWithLastEntityTimestamp = 0;
 

@@ -8,10 +8,12 @@ package org.camunda.optimize.service.importing.engine.mediator;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
+import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -30,23 +32,34 @@ import java.util.stream.Stream;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
 public class StoreIndexesEngineImportMediator implements EngineImportMediator {
-  protected EngineContext engineContext;
   private ConfigurationService configurationService;
+  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
   private StoreIndexesEngineImportService importService;
   private OffsetDateTime dateUntilJobCreationIsBlocked;
+  protected EngineContext engineContext;
 
 
   public StoreIndexesEngineImportMediator(final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                           final StoreIndexesEngineImportService importService,
                                           final EngineContext engineContext,
-                                          final ConfigurationService configurationService) {
+                                          final ConfigurationService configurationService,
+                                          final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
     this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
     this.dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     this.importService = importService;
     this.engineContext = engineContext;
     this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+  }
+
+  @Override
+  public long getBackoffTimeInMs() {
+    long backoffTime = OffsetDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
+    backoffTime = Math.max(0, backoffTime);
+    return backoffTime;
   }
 
   @Override
@@ -73,10 +86,13 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
   }
 
   @Override
-  public long getBackoffTimeInMs() {
-    long backoffTime = OffsetDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
-    backoffTime = Math.max(0, backoffTime);
-    return backoffTime;
+  public boolean canImport() {
+    return OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked);
+  }
+
+  @Override
+  public ImportJobExecutor getImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
   }
 
   @Override
@@ -85,18 +101,8 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
   }
 
   @Override
-  public boolean canImport() {
-    return OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked);
-  }
-
-  @Override
-  public boolean hasPendingImportJobs() {
-    return importService.hasPendingImportJobs();
-  }
-
-  @Override
   public void shutdown() {
-    importService.shutdown();
+    elasticsearchImportJobExecutor.stopExecutingImportJobs();
   }
 
   private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {

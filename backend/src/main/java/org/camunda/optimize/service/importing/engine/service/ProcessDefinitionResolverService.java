@@ -26,17 +26,16 @@ public class ProcessDefinitionResolverService {
 
   public Optional<ProcessDefinitionOptimizeDto> getDefinitionForProcessDefinitionId(final String processDefinitionId) {
     // #1 read field value from internal cache
-    final ProcessDefinitionOptimizeDto processDefinition =
-      Optional.ofNullable(idToDefinitionMap.get(processDefinitionId))
-        // #2 on miss sync the cache and try again
-        .orElseGet(() -> {
-          log.debug(
-            "No definition for processDefinitionId {} in cache, syncing Process Definitions",
-            processDefinitionId
-          );
-          syncCache();
-          return Optional.ofNullable(idToDefinitionMap.get(processDefinitionId)).orElse(null);
-        });
+    final ProcessDefinitionOptimizeDto processDefinition = Optional.ofNullable(idToDefinitionMap.get(processDefinitionId))
+      // #2 on miss sync the cache and try again
+      .orElseGet(() -> {
+        log.debug(
+          "No definition for processDefinitionId {} in cache, syncing Process Definitions",
+          processDefinitionId
+        );
+        syncCache();
+        return Optional.ofNullable(idToDefinitionMap.get(processDefinitionId)).orElse(null);
+      });
 
     return Optional.ofNullable(processDefinition);
   }

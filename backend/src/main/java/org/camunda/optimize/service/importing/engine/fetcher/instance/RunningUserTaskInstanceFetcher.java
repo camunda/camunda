@@ -31,13 +31,13 @@ public class RunningUserTaskInstanceFetcher extends RetryBackoffEngineEntityFetc
 
   private DateTimeFormatter dateTimeFormatter;
 
-  public RunningUserTaskInstanceFetcher(final EngineContext engineContext) {
-    super(engineContext);
-  }
-
   @PostConstruct
   public void init() {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
+  }
+
+  public RunningUserTaskInstanceFetcher(final EngineContext engineContext) {
+    super(engineContext);
   }
 
   public List<HistoricUserTaskInstanceDto> fetchRunningUserTaskInstances(final TimestampBasedImportPage page) {
@@ -45,24 +45,6 @@ public class RunningUserTaskInstanceFetcher extends RetryBackoffEngineEntityFetc
       page.getTimestampOfLastEntity(),
       configurationService.getEngineImportUserTaskInstanceMaxPageSize()
     );
-  }
-
-  public List<HistoricUserTaskInstanceDto> fetchRunningUserTaskInstancesForTimestamp(
-    final OffsetDateTime startTimeOfLastInstance) {
-    logger.debug("Fetching running user task instances ...");
-
-    final long requestStart = System.currentTimeMillis();
-    final List<HistoricUserTaskInstanceDto> secondEntries = fetchWithRetry(
-      () -> performRunningUserTaskInstanceRequest(startTimeOfLastInstance)
-    );
-    final long requestEnd = System.currentTimeMillis();
-
-    logger.debug(
-      "Fetched [{}] running user task instances for set start time within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
-    return secondEntries;
   }
 
   private List<HistoricUserTaskInstanceDto> fetchRunningUserTaskInstances(final OffsetDateTime timeStamp,
@@ -83,6 +65,24 @@ public class RunningUserTaskInstanceFetcher extends RetryBackoffEngineEntityFetc
     );
 
     return entries;
+  }
+
+  public List<HistoricUserTaskInstanceDto> fetchRunningUserTaskInstancesForTimestamp(
+    final OffsetDateTime startTimeOfLastInstance) {
+    logger.debug("Fetching running user task instances ...");
+
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricUserTaskInstanceDto> secondEntries = fetchWithRetry(
+      () -> performRunningUserTaskInstanceRequest(startTimeOfLastInstance)
+    );
+    final long requestEnd = System.currentTimeMillis();
+
+    logger.debug(
+      "Fetched [{}] running user task instances for set start time within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
   }
 
   private List<HistoricUserTaskInstanceDto> performRunningUserTaskInstanceRequest(final OffsetDateTime timeStamp,

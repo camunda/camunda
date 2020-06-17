@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.event.mediator;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -14,7 +13,9 @@ import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.importing.event.handler.EventImportIndexHandlerRegistry;
+import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -27,13 +28,17 @@ import static java.util.stream.Collectors.toList;
 
 @Component
 @Slf4j
-@AllArgsConstructor
 public class PersistEventIndexHandlerStateMediator implements EngineImportMediator {
 
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  protected ConfigurationService configurationService;
-  protected EventImportIndexHandlerRegistry importIndexHandlerRegistry;
+  @Autowired
   private ImportIndexWriter importIndexWriter;
+  @Autowired
+  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  @Autowired
+  protected ConfigurationService configurationService;
+  @Autowired
+  protected EventImportIndexHandlerRegistry importIndexHandlerRegistry;
+
   private StoreIndexesEngineImportService importService;
 
   private OffsetDateTime dateUntilJobCreationIsBlocked;
@@ -42,6 +47,13 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
   public void init() {
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     importService = new StoreIndexesEngineImportService(importIndexWriter, elasticsearchImportJobExecutor);
+  }
+
+  @Override
+  public long getBackoffTimeInMs() {
+    long backoffTime = OffsetDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
+    backoffTime = Math.max(0, backoffTime);
+    return backoffTime;
   }
 
   @Override
@@ -63,10 +75,17 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
   }
 
   @Override
-  public long getBackoffTimeInMs() {
-    long backoffTime = OffsetDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
-    backoffTime = Math.max(0, backoffTime);
-    return backoffTime;
+  public boolean canImport() {
+    return OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked);
+  }
+
+  @Override
+  public ImportJobExecutor getImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
+  }
+
+  private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {
+    return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
   }
 
   @Override
@@ -75,22 +94,8 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
   }
 
   @Override
-  public boolean canImport() {
-    return OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked);
-  }
-
-  @Override
-  public boolean hasPendingImportJobs() {
-    return importService.hasPendingImportJobs();
-  }
-
-  @Override
   public void shutdown() {
-    importService.shutdown();
-  }
-
-  private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {
-    return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
+    elasticsearchImportJobExecutor.stopExecutingImportJobs();
   }
 
 }

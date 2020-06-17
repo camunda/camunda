@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionImportIndexHandler;
@@ -31,11 +32,13 @@ public class ProcessDefinitionEngineImportMediator
                                                final ProcessDefinitionFetcher engineEntityFetcher,
                                                final ProcessDefinitionImportService importService,
                                                final ConfigurationService configurationService,
+                                               final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
   }
 

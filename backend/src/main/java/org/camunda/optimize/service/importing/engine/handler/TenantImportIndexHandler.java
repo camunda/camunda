@@ -23,8 +23,9 @@ import java.util.stream.Collectors;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler {
 
-  private final EngineContext engineContext;
   private Map<String, TenantEngineDto> alreadyImportedTenants = new HashMap<>();
+
+  private final EngineContext engineContext;
 
   public TenantImportIndexHandler(final EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -33,6 +34,11 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
   @Override
   public String getEngineAlias() {
     return engineContext.getEngineAlias();
+  }
+
+  @Override
+  protected String getElasticsearchImportIndexType() {
+    return ElasticsearchConstants.TENANT_INDEX_NAME;
   }
 
   public void addImportedTenants(final Collection<TenantEngineDto> tenantDtos) {
@@ -46,11 +52,6 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
       .stream()
       .filter(tenantDto -> !importedTenantDtos.contains(tenantDto))
       .collect(Collectors.toList());
-  }
-
-  @Override
-  protected String getElasticsearchImportIndexType() {
-    return ElasticsearchConstants.TENANT_INDEX_NAME;
   }
 
   @Override

@@ -43,6 +43,7 @@ public class EventTraceImportMediatorFactory {
         eventTraceStateServiceFactory.createEventTraceStateService(processDefinitionKey)
       ),
       configurationService,
+      elasticsearchImportJobExecutor,
       idleBackoffCalculator
     );
   }
@@ -60,6 +61,7 @@ public class EventTraceImportMediatorFactory {
         eventTraceStateServiceFactory.createEventTraceStateService(ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX)
       ),
       configurationService,
+      elasticsearchImportJobExecutor,
       idleBackoffCalculator
     );
   }

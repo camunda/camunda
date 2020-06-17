@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
@@ -42,22 +43,26 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
                                             final EventFetcherService eventFetcherService,
                                             final ImportService<T> eventProcessEventImportService,
                                             final ConfigurationService configurationService,
+                                            final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                             final BackoffCalculator idleBackoffCalculator) {
     this.publishedProcessStateId = publishedProcessStateId;
     this.importIndexHandler = importSourceIndexHandler;
     this.eventFetcherService = eventFetcherService;
     this.importService = eventProcessEventImportService;
     this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
+  }
+
+  @Override
+  public int getMaxPageSize() {
+    return configurationService.getEventImportConfiguration().getMaxPageSize();
   }
 
   @Override
   protected OffsetDateTime getTimestamp(final T eventProcessEventDto) {
     if (eventProcessEventDto instanceof EventDto) {
-      return OffsetDateTime.ofInstant(
-        Instant.ofEpochMilli(((EventDto) eventProcessEventDto).getIngestionTimestamp()),
-        ZoneId.systemDefault()
-      );
+      return OffsetDateTime.ofInstant(Instant.ofEpochMilli(((EventDto) eventProcessEventDto).getIngestionTimestamp()), ZoneId.systemDefault());
     } else if (eventProcessEventDto instanceof CamundaActivityEventDto) {
       return ((CamundaActivityEventDto) eventProcessEventDto).getTimestamp();
     } else {
@@ -78,10 +83,5 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
     return eventFetcherService.getEventsIngestedAt(
       importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli()
     );
-  }
-
-  @Override
-  public int getMaxPageSize() {
-    return configurationService.getEventImportConfiguration().getMaxPageSize();
   }
 }

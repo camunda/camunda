@@ -34,8 +34,7 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
 
   @Override
-  public void executeImport(final List<DecisionDefinitionXmlEngineDto> engineDtoList,
-                            final Runnable importCompleteCallback) {
+  public void executeImport(final List<DecisionDefinitionXmlEngineDto> engineDtoList, final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
     final boolean newDataIsAvailable = !engineDtoList.isEmpty();
     if (newDataIsAvailable) {
@@ -45,11 +44,6 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
       );
       elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
     }
-  }
-
-  @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
   }
 
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(

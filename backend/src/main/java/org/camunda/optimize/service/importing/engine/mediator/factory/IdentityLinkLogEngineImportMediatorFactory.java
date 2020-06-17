@@ -43,6 +43,7 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractImportMe
         engineContext
       ),
       configurationService,
+      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }

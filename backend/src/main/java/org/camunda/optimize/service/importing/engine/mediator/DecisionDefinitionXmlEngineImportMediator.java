@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
@@ -31,11 +32,13 @@ public class DecisionDefinitionXmlEngineImportMediator
                                                    final DecisionDefinitionXmlFetcher engineEntityFetcher,
                                                    final DecisionDefinitionXmlImportService importService,
                                                    final ConfigurationService configurationService,
+                                                   final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                    final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
   }
 

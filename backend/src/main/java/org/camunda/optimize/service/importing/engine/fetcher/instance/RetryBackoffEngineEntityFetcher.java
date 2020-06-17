@@ -28,10 +28,6 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
     super(engineContext);
   }
 
-  public void setBackoffCalculator(final BackoffCalculator backoffCalculator) {
-    this.backoffCalculator = backoffCalculator;
-  }
-
   protected <DTOS> DTOS fetchWithRetry(Supplier<DTOS> fetchFunction) {
     DTOS result = null;
     while (result == null) {
@@ -67,6 +63,10 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
     }
     backoffCalculator.resetBackoff();
     return result;
+  }
+
+  public void setBackoffCalculator(final BackoffCalculator backoffCalculator) {
+    this.backoffCalculator = backoffCalculator;
   }
 
   private void sleep(long timeToSleep) {

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.VariableUpdateInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.VariableUpdateInstanceImportIndexHandler;
@@ -30,17 +31,14 @@ public class VariableUpdateEngineImportMediator
                                             final VariableUpdateInstanceFetcher engineEntityFetcher,
                                             final VariableUpdateInstanceImportService importService,
                                             final ConfigurationService configurationService,
+                                            final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                             final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
-  }
-
-  @Override
-  protected OffsetDateTime getTimestamp(final HistoricVariableUpdateInstanceDto historicVariableUpdateInstanceDto) {
-    return historicVariableUpdateInstanceDto.getTime();
   }
 
   @Override
@@ -56,5 +54,10 @@ public class VariableUpdateEngineImportMediator
   @Override
   protected int getMaxPageSize() {
     return configurationService.getEngineImportVariableInstanceMaxPageSize();
+  }
+
+  @Override
+  protected OffsetDateTime getTimestamp(final HistoricVariableUpdateInstanceDto historicVariableUpdateInstanceDto) {
+    return historicVariableUpdateInstanceDto.getTime();
   }
 }

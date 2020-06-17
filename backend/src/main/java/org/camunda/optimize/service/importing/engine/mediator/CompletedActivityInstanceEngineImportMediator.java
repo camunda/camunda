@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.CompletedActivityInstanceImportIndexHandler;
@@ -30,22 +31,14 @@ public class CompletedActivityInstanceEngineImportMediator
                                                        final CompletedActivityInstanceFetcher engineEntityFetcher,
                                                        final CompletedActivityInstanceImportService importService,
                                                        final ConfigurationService configurationService,
+                                                       final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                        final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
-  }
-
-  @Override
-  protected OffsetDateTime getTimestamp(final HistoricActivityInstanceEngineDto dto) {
-    return dto.getEndTime();
-  }
-
-  @Override
-  protected List<HistoricActivityInstanceEngineDto> getEntitiesNextPage() {
-    return engineEntityFetcher.fetchCompletedActivityInstances(importIndexHandler.getNextPage());
   }
 
   @Override
@@ -54,8 +47,18 @@ public class CompletedActivityInstanceEngineImportMediator
   }
 
   @Override
+  protected List<HistoricActivityInstanceEngineDto> getEntitiesNextPage() {
+    return engineEntityFetcher.fetchCompletedActivityInstances(importIndexHandler.getNextPage());
+  }
+
+  @Override
   protected int getMaxPageSize() {
     return configurationService.getEngineImportActivityInstanceMaxPageSize();
+  }
+
+  @Override
+  protected OffsetDateTime getTimestamp(final HistoricActivityInstanceEngineDto dto) {
+    return dto.getEndTime();
   }
 
 }

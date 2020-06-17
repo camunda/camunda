@@ -55,6 +55,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
         engineContext
       ),
       configurationService,
+      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }
@@ -74,6 +75,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
         engineContext
       ),
       configurationService,
+      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }

@@ -22,8 +22,11 @@ import javax.ws.rs.client.Client;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class EngineEntityFetcher {
   public static final String UTF8 = "UTF-8";
-  protected final EngineContext engineContext;
+
   protected Logger logger = LoggerFactory.getLogger(getClass());
+
+  protected final EngineContext engineContext;
+
   @Autowired
   @Getter
   @Setter

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.event.mediator;
 
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
@@ -34,12 +35,19 @@ public class EventTraceImportMediator
                                   final TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> importIndexHandler,
                                   final EventTraceImportService importService,
                                   final ConfigurationService configurationService,
+                                  final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                   final BackoffCalculator idleBackoffCalculator) {
     this.eventService = eventService;
     this.importIndexHandler = importIndexHandler;
     this.importService = importService;
     this.configurationService = configurationService;
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
+  }
+
+  @Override
+  public int getMaxPageSize() {
+    return configurationService.getEventImportConfiguration().getMaxPageSize();
   }
 
   @Override
@@ -60,11 +68,6 @@ public class EventTraceImportMediator
     return eventService.getEventsIngestedAt(
       importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli()
     );
-  }
-
-  @Override
-  public int getMaxPageSize() {
-    return configurationService.getEventImportConfiguration().getMaxPageSize();
   }
 
 }

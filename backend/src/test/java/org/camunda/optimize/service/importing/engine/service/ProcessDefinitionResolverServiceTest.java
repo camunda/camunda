@@ -59,10 +59,8 @@ public class ProcessDefinitionResolverServiceTest {
     mockProcessDefinitions(id);
 
     //when
-    final Optional<ProcessDefinitionOptimizeDto> processDefinitionIdFirstTry =
-      underTest.getDefinitionForProcessDefinitionId(id);
-    final Optional<ProcessDefinitionOptimizeDto> processDefinitionIdSecondTry =
-      underTest.getDefinitionForProcessDefinitionId(id);
+    final Optional<ProcessDefinitionOptimizeDto> processDefinitionIdFirstTry = underTest.getDefinitionForProcessDefinitionId(id);
+    final Optional<ProcessDefinitionOptimizeDto> processDefinitionIdSecondTry = underTest.getDefinitionForProcessDefinitionId(id);
 
     //then
     assertThat(processDefinitionIdFirstTry.isPresent(), is(true));
@@ -79,8 +77,7 @@ public class ProcessDefinitionResolverServiceTest {
     mockProcessDefinitions("otherId");
 
     //when
-    final Optional<ProcessDefinitionOptimizeDto> processDefinitionResult =
-      underTest.getDefinitionForProcessDefinitionId(id);
+    final Optional<ProcessDefinitionOptimizeDto> processDefinitionResult = underTest.getDefinitionForProcessDefinitionId(id);
 
     //then
     assertThat(processDefinitionResult.isPresent(), is(false));
