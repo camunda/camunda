@@ -104,7 +104,8 @@ public final class AtomixFactory {
             .withSnapshotStoreFactory(new FileBasedSnapshotStoreFactory())
             .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withEntryValidator(new ZeebeEntryValidator())
-            .withFlushOnCommit();
+            .withFlushOnCommit()
+            .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark());
 
     // by default, the Atomix max entry size is 1 MB
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();

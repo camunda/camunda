@@ -34,12 +34,14 @@ public class RaftStorageConfig {
   private static final boolean DEFAULT_FLUSH_ON_COMMIT = false;
   private static final PersistedSnapshotStoreFactory DEFAULT_SNAPSHOT_STORE_FACTORY =
       new FileBasedSnapshotStoreFactory();
+  private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024 * 1; // 1GB
 
   private String directory;
   private StorageLevel level = DEFAULT_STORAGE_LEVEL;
   private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
   private boolean flushOnCommit = DEFAULT_FLUSH_ON_COMMIT;
+  private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
 
   @Optional("SnapshotStoreFactory")
   private PersistedSnapshotStoreFactory persistedSnapshotStoreFactory =
@@ -166,6 +168,26 @@ public class RaftStorageConfig {
   public RaftStorageConfig setPersistedSnapshotStoreFactory(
       final PersistedSnapshotStoreFactory persistedSnapshotStoreFactory) {
     this.persistedSnapshotStoreFactory = persistedSnapshotStoreFactory;
+    return this;
+  }
+
+  /**
+   * Returns the minimum free disk space buffer to leave when allocating a new segment
+   *
+   * @return free disk buffer
+   */
+  public long getFreeDiskSpace() {
+    return this.freeDiskSpace;
+  }
+
+  /**
+   * Sets the minimum free disk space buffer
+   *
+   * @param freeDiskSpace
+   * @return
+   */
+  public RaftStorageConfig setFreeDiskSpace(final long freeDiskSpace) {
+    this.freeDiskSpace = freeDiskSpace;
     return this;
   }
 }

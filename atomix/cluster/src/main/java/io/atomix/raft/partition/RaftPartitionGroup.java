@@ -442,6 +442,17 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
+     * Set the minimum free disk space (in bytes) to leave when allocating a new segment
+     *
+     * @param freeDiskSpace free disk space in bytes
+     * @return the Raft partition group builder
+     */
+    public Builder withFreeDiskSpace(final long freeDiskSpace) {
+      config.getStorageConfig().setFreeDiskSpace(freeDiskSpace);
+      return this;
+    }
+
+    /**
      * Enables flush on commit.
      *
      * @return the Raft partition group builder

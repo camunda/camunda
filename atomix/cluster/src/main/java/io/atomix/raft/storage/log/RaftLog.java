@@ -216,6 +216,18 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
     }
 
     /**
+     * Sets the minimum free disk space to leave when allocating a new segment
+     *
+     * @param freeDiskSpace free disk space in bytes
+     * @return the storage builder
+     * @throws IllegalArgumentException if the {@code freeDiskSpace} is not positive
+     */
+    public Builder withFreeDiskSpace(final long freeDiskSpace) {
+      journalBuilder.withFreeDiskSpace(freeDiskSpace);
+      return this;
+    }
+
+    /**
      * Sets the maximum number of allows entries per segment, returning the builder for method
      * chaining.
      *
