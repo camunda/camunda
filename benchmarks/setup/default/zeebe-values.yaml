@@ -31,6 +31,8 @@ gateway:
       value: INFO
     - name: ZEEBE_GATEWAY_MONITORING_ENABLED
       value: "true"
+    - name: ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS
+      value: "4"
 
 # Uncomment to add custom YAML configuration
 # This will overwrite anything at the application.yml location
