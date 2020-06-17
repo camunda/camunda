@@ -170,17 +170,12 @@ public class SwimMembershipProtocol
       LOGGER.debug("Nodes from discovery service {}", discoveryService.getNodes());
 
       registerHandlers();
-      gossipFuture =
-          swimScheduler.scheduleAtFixedRate(
-              this::gossip, 0, config.getGossipInterval().toMillis(), TimeUnit.MILLISECONDS);
-      probeFuture =
-          swimScheduler.scheduleAtFixedRate(
-              this::probe, 0, config.getProbeInterval().toMillis(), TimeUnit.MILLISECONDS);
-      swimScheduler.execute(this::syncAll);
-      syncFuture =
-          swimScheduler.scheduleAtFixedRate(
-              this::sync, 0, config.getSyncInterval().toMillis(), TimeUnit.MILLISECONDS);
-      LOGGER.info("Started {}", this.getClass());
+
+      scheduleGossip();
+      scheduleProbe();
+      scheduleSync();
+
+      LOGGER.info("Started");
     }
     return CompletableFuture.completedFuture(null);
   }
@@ -401,19 +396,6 @@ public class SwimMembershipProtocol
     }
   }
 
-  /** Synchronizes the node state with peers. */
-  private void syncAll() {
-    final List<SwimMember> syncMembers =
-        discoveryService.getNodes().stream()
-            .map(node -> new SwimMember(MemberId.from(node.id().id()), node.address()))
-            .filter(member -> !member.id().equals(localMember.id()))
-            .filter(member -> !member.address().equals(localMember.address()))
-            .collect(Collectors.toList());
-    for (final SwimMember member : syncMembers) {
-      sync(member.copy());
-    }
-  }
-
   /**
    * Synchronizes the node state with the given peer.
    *
@@ -446,6 +428,8 @@ public class SwimMembershipProtocol
                     member,
                     error);
               }
+
+              scheduleSync();
             },
             swimScheduler);
   }
@@ -462,6 +446,8 @@ public class SwimMembershipProtocol
       if (member != null) {
         sync(member.copy());
       }
+    } else {
+      scheduleSync();
     }
   }
 
@@ -472,8 +458,7 @@ public class SwimMembershipProtocol
    */
   private Collection<ImmutableMember> handleSync(final ImmutableMember member) {
     updateState(member);
-    return new ArrayList<>(
-        members.values().stream().map(SwimMember::copy).collect(Collectors.toList()));
+    return members.values().stream().map(SwimMember::copy).collect(Collectors.toList());
   }
 
   /** Sends probes to all members or to the next member in round robin fashion. */
@@ -482,14 +467,13 @@ public class SwimMembershipProtocol
     // This is necessary to ensure we attempt to probe all nodes that are provided by the discovery
     // provider.
     final List<SwimMember> probeMembers =
-        Lists.newArrayList(
-            discoveryService.getNodes().stream()
-                .map(node -> new SwimMember(MemberId.from(node.id().id()), node.address()))
-                .filter(member -> !members.containsKey(member.id()))
-                .filter(member -> !member.id().equals(localMember.id()))
-                .filter(member -> !member.address().equals(localMember.address()))
-                .sorted(Comparator.comparing(Member::id))
-                .collect(Collectors.toList()));
+        discoveryService.getNodes().stream()
+            .map(node -> new SwimMember(MemberId.from(node.id().id()), node.address()))
+            .filter(member -> !members.containsKey(member.id()))
+            .filter(member -> !member.id().equals(localMember.id()))
+            .filter(member -> !member.address().equals(localMember.address()))
+            .sorted(Comparator.comparing(Member::id))
+            .collect(Collectors.toList());
 
     // Then add the randomly sorted list of SWIM members.
     probeMembers.addAll(randomMembers);
@@ -501,6 +485,8 @@ public class SwimMembershipProtocol
       final SwimMember probeMember =
           probeMembers.get(Math.abs(probeCounter.incrementAndGet() % probeMembers.size()));
       probe(probeMember.copy());
+    } else {
+      scheduleProbe();
     }
   }
 
@@ -532,6 +518,8 @@ public class SwimMembershipProtocol
                   requestProbes(swimMember.copy());
                 }
               }
+
+              scheduleProbe();
             },
             swimScheduler);
   }
@@ -732,6 +720,8 @@ public class SwimMembershipProtocol
       // Gossip the pending updates to peers.
       gossip(updates);
     }
+
+    scheduleGossip();
   }
 
   /**
@@ -834,6 +824,24 @@ public class SwimMembershipProtocol
 
     // Unregister UDP message listeners.
     bootstrapService.getUnicastService().removeListener(MEMBERSHIP_GOSSIP, gossipListener);
+  }
+
+  private void scheduleGossip() {
+    gossipFuture =
+        swimScheduler.schedule(
+            (Runnable) this::gossip, config.getGossipInterval().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private void scheduleSync() {
+    syncFuture =
+        swimScheduler.schedule(
+            (Runnable) this::sync, config.getSyncInterval().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private void scheduleProbe() {
+    probeFuture =
+        swimScheduler.schedule(
+            (Runnable) this::probe, config.getProbeInterval().toMillis(), TimeUnit.MILLISECONDS);
   }
 
   /** Bootstrap member location provider type. */
