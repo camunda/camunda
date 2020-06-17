@@ -237,6 +237,35 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
       .done();
   }
 
+  protected static BpmnModelInstance embeddedSubprocessModel() {
+    return Bpmn.createExecutableProcess(PROCESS_ID_1)
+      .startEvent(START_EVENT_ID_1)
+      .subProcess()
+      .embeddedSubProcess()
+      .startEvent()
+      .endEvent()
+      .subProcessDone()
+      .endEvent(END_EVENT_ID_1)
+      .done();
+  }
+
+  protected static BpmnModelInstance multipleEmbeddedSubprocessModel() {
+    return Bpmn.createExecutableProcess(PROCESS_ID_1)
+      .startEvent(START_EVENT_ID_1)
+      .subProcess()
+      .embeddedSubProcess()
+      .startEvent()
+      .endEvent()
+      .subProcessDone()
+      .subProcess()
+      .embeddedSubProcess()
+      .startEvent()
+      .endEvent()
+      .subProcessDone()
+      .endEvent(END_EVENT_ID_1)
+      .done();
+  }
+
   protected static BpmnModelInstance multipleStartSingleEndModel() {
     return multipleStartSingleEndModel(PROCESS_ID_1);
   }

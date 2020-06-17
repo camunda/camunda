@@ -20,6 +20,7 @@ import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
@@ -47,10 +48,12 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       .setEnabled(true);
   }
 
-  @Test
-  public void createFromCamundaSource_startEndEvents_singleStartSingleEndEvents() {
+  @SuppressWarnings("unused")
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("singleStartEndModels")
+  public void createFromCamundaSource_startEndEvents_singleStartSingleEndEvents(final String modelDescription,
+                                                                                final BpmnModelInstance modelInstance) {
     // given
-    BpmnModelInstance modelInstance = singleStartSingleEndModel();
     final EventSourceEntryDto eventSource = deployDefinitionAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
@@ -97,8 +100,16 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
-    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_2, START_EVENT_ID_2);
+    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(
+      PROCESS_ID_1,
+      START_EVENT_ID_1,
+      START_EVENT_ID_1
+    );
+    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(
+      PROCESS_ID_1,
+      START_EVENT_ID_2,
+      START_EVENT_ID_2
+    );
     final EventTypeDto expectedEndEvent = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
@@ -239,8 +250,16 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
-    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_2, START_EVENT_ID_2);
+    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(
+      PROCESS_ID_1,
+      START_EVENT_ID_1,
+      START_EVENT_ID_1
+    );
+    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(
+      PROCESS_ID_1,
+      START_EVENT_ID_2,
+      START_EVENT_ID_2
+    );
     final EventTypeDto expectedEndEvent1 = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
     final EventTypeDto expectedEndEvent2 = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_2, END_EVENT_ID_2);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
@@ -301,8 +320,16 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
-    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_2, START_EVENT_ID_2);
+    final EventTypeDto expectedStartEvent1 = createCamundaEventTypeDto(
+      PROCESS_ID_1,
+      START_EVENT_ID_1,
+      START_EVENT_ID_1
+    );
+    final EventTypeDto expectedStartEvent2 = createCamundaEventTypeDto(
+      PROCESS_ID_1,
+      START_EVENT_ID_2,
+      START_EVENT_ID_2
+    );
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
@@ -334,9 +361,11 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
     assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(2);
   }
 
-  @ParameterizedTest
+  @SuppressWarnings("unused")
+  @ParameterizedTest(name = "{0}")
   @MethodSource("camundaModels")
-  public void createFromCamundaSource_processStartEndEvents(final BpmnModelInstance modelInstance) {
+  public void createFromCamundaSource_processStartEndEvents(final String modelDescription,
+                                                            final BpmnModelInstance modelInstance) {
     // given
     final EventSourceEntryDto eventSource = deployDefinitionAndCreateEventSource(
       modelInstance,
@@ -376,14 +405,24 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
     assertThat(eventCounts).containsAll(getMappedEventTypeDtosFromMappings(mappings));
   }
 
-  private static Stream<BpmnModelInstance> camundaModels() {
+  private static Stream<Arguments> singleStartEndModels() {
     return Stream.of(
-      singleStartSingleEndModel(),
-      multipleStartSingleEndModel(),
-      singleStartMultipleEndModel(),
-      singleStartNoEndModel(),
-      multipleStartMultipleEndModel(),
-      multipleStartNoEndModel()
+      Arguments.of("singleStartSingleEndModel", singleStartSingleEndModel()),
+      Arguments.of("embeddedSubprocessModel", embeddedSubprocessModel()),
+      Arguments.of("multipleEmbeddedSubprocessModel", multipleEmbeddedSubprocessModel())
+    );
+  }
+
+  private static Stream<Arguments> camundaModels() {
+    return Stream.of(
+      Arguments.of("singleStartSingleEndModel", singleStartSingleEndModel()),
+      Arguments.of("multipleStartSingleEndModel", multipleStartSingleEndModel()),
+      Arguments.of("singleStartMultipleEndModel", singleStartMultipleEndModel()),
+      Arguments.of("singleStartNoEndModel", singleStartNoEndModel()),
+      Arguments.of("multipleStartMultipleEndModel", multipleStartMultipleEndModel()),
+      Arguments.of("multipleStartNoEndModel", multipleStartNoEndModel()),
+      Arguments.of("embeddedSubprocessModel", embeddedSubprocessModel()),
+      Arguments.of("multipleEmbeddedSubprocessModel", multipleEmbeddedSubprocessModel())
     );
   }
 
