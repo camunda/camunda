@@ -11,7 +11,7 @@ import {t} from 'translation';
 
 import {formatters} from 'services';
 import './DurationChart.scss';
-const {createDurationFormattingOptions} = formatters;
+const {createDurationFormattingOptions, duration} = formatters;
 
 export default class DurationChart extends React.Component {
   componentDidMount() {
@@ -52,7 +52,8 @@ export default class DurationChart extends React.Component {
           mode: 'x',
           callbacks: {
             title: this.createTooltipTitle,
-            label: ({xLabel}) => ' ' + t('analysis.outlier.tooltip.tookDuration') + ' ' + xLabel,
+            label: ({xLabel}) =>
+              ' ' + t('analysis.outlier.tooltip.tookDuration') + ' ' + duration(xLabel),
           },
           filter: (tooltipItem, data) => +tooltipItem.value > 0,
         },
