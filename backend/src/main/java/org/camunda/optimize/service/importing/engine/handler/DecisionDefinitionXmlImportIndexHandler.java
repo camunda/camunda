@@ -76,23 +76,6 @@ public class DecisionDefinitionXmlImportIndexHandler extends ScrollBasedImportIn
     return result;
   }
 
-  private void performRefresh() {
-    RefreshRequest refreshAllRequest = new RefreshRequest();
-
-    try {
-      esClient.getHighLevelClient().indices().refresh(refreshAllRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      logger.error("Could not refresh Optimize indexes!", e);
-      throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
-    }
-  }
-
-  private QueryBuilder buildBasicQuery() {
-    return QueryBuilders.boolQuery()
-      .mustNot(existsQuery(DecisionDefinitionIndex.DECISION_DEFINITION_XML))
-      .must(termQuery(ENGINE, engineContext.getEngineAlias()));
-  }
-
   @Override
   protected Set<String> performInitialSearchQuery() {
     performRefresh();
@@ -129,5 +112,22 @@ public class DecisionDefinitionXmlImportIndexHandler extends ScrollBasedImportIn
   @Override
   protected String getElasticsearchTypeForStoring() {
     return DECISION_DEFINITION_XML_IMPORT_INDEX_DOC_ID;
+  }
+
+  private void performRefresh() {
+    RefreshRequest refreshAllRequest = new RefreshRequest();
+
+    try {
+      esClient.getHighLevelClient().indices().refresh(refreshAllRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Could not refresh Optimize indexes!", e);
+      throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
+    }
+  }
+
+  private QueryBuilder buildBasicQuery() {
+    return QueryBuilders.boolQuery()
+      .mustNot(existsQuery(DecisionDefinitionIndex.DECISION_DEFINITION_XML))
+      .must(termQuery(ENGINE, engineContext.getEngineAlias()));
   }
 }

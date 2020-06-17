@@ -48,9 +48,6 @@ public class EventProcessInstanceImportMediatorFactory {
 
   public List<EventProcessInstanceImportMediator> createEventProcessInstanceMediators(
     final EventProcessPublishStateDto publishedStateDto) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return publishedStateDto.getEventImportSources().stream()
       .map(importSource -> beanFactory.getBean(
         EventProcessInstanceImportMediator.class,
@@ -59,7 +56,6 @@ public class EventProcessInstanceImportMediatorFactory {
         eventFetcherFactory.createEventFetcherForEventSource(importSource.getEventSource()),
         createImportService(publishedStateDto, importSource.getEventSource()),
         configurationService,
-        elasticsearchImportJobExecutor,
         idleBackoffCalculator
       ))
       .collect(Collectors.toList());

@@ -32,7 +32,8 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
   }
 
   @Override
-  public void executeImport(final List<HistoricUserTaskInstanceDto> pageOfEngineEntities, Runnable importCompleteCallback) {
+  public void executeImport(final List<HistoricUserTaskInstanceDto> pageOfEngineEntities,
+                            Runnable importCompleteCallback) {
     log.trace("Importing running user task entities from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
@@ -42,6 +43,11 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
         newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
+  }
+
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
   }
 
   private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {

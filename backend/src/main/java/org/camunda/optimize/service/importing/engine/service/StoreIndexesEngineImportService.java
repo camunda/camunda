@@ -32,4 +32,9 @@ public class StoreIndexesEngineImportService implements ImportService<ImportInde
     elasticsearchImportJobExecutor.executeImportJob(storeIndexesImportJob);
   }
 
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
+  }
+
 }

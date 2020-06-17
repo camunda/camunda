@@ -62,6 +62,32 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
 
   private List<EngineImportScheduler> schedulers;
 
+  public List<EngineImportScheduler> getImportSchedulers() {
+    if (schedulers == null) {
+      this.schedulers = this.buildSchedulers();
+    }
+    return schedulers;
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    if (schedulers != null) {
+      for (EngineImportScheduler oldScheduler : schedulers) {
+        oldScheduler.stopImportScheduling();
+        oldScheduler.shutdown();
+      }
+    }
+    engineContextFactory.close();
+  }
+
+  @Override
+  public void reloadConfiguration(ApplicationContext context) {
+    shutdown();
+    engineContextFactory.init();
+    importIndexHandlerRegistry.reloadConfiguration();
+    schedulers = this.buildSchedulers();
+  }
+
   private List<EngineImportScheduler> buildSchedulers() {
     final List<EngineImportScheduler> result = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
@@ -146,31 +172,5 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     }
 
     return mediators;
-  }
-
-  public List<EngineImportScheduler> getImportSchedulers() {
-    if (schedulers == null) {
-      this.schedulers = this.buildSchedulers();
-    }
-    return schedulers;
-  }
-
-  @PreDestroy
-  public void shutdown() {
-    if (schedulers != null) {
-      for (EngineImportScheduler oldScheduler : schedulers) {
-        oldScheduler.stopImportScheduling();
-        oldScheduler.shutdown();
-      }
-    }
-    engineContextFactory.close();
-  }
-
-  @Override
-  public void reloadConfiguration(ApplicationContext context) {
-    shutdown();
-    engineContextFactory.init();
-    importIndexHandlerRegistry.reloadConfiguration();
-    schedulers = this.buildSchedulers();
   }
 }

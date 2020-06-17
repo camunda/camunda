@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.reader.BusinessKeyReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.reader.VariableUpdateInstanceReader;
@@ -59,6 +60,11 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
     eventProcessInstanceImportService.executeImport(correlatedEvents, importCompleteCallback);
   }
 
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return eventProcessInstanceImportService.getElasticsearchImportJobExecutor();
+  }
+
   private List<CamundaActivityEventDto> filterForConfiguredTenantsAndVersions(final List<CamundaActivityEventDto> camundaActivities) {
     List<CamundaActivityEventDto> filteredActivities = camundaActivities.stream()
       .filter(activity -> eventSource.getTenants().contains(activity.getTenantId()))
@@ -74,7 +80,8 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
 
   private List<EventDto> correlateCamundaEvents(final List<EventDto> eventDtosToImport) {
     log.trace("Correlating [{}] camunda activity events for process definition key {}.",
-              eventDtosToImport.size(), eventSource.getProcessDefinitionKey());
+              eventDtosToImport.size(), eventSource.getProcessDefinitionKey()
+    );
 
     Set<String> processInstanceIds = eventDtosToImport.stream()
       .map(EventDto::getTraceId)

@@ -30,11 +30,6 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   private long importIndex = 0;
 
-  @PostConstruct
-  protected void init() {
-    readIndexFromElasticsearch();
-  }
-
   public void readIndexFromElasticsearch() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
       importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), getEngineAlias()));
@@ -53,18 +48,23 @@ public abstract class AllEntitiesBasedImportIndexHandler
     return indexToStore;
   }
 
-  protected abstract String getElasticsearchImportIndexType();
+  public void resetImportIndex() {
+    importIndex = 0;
+  }
 
   public Long getImportIndex() {
     return importIndex;
   }
 
-  protected void moveImportIndex(long units) {
-    importIndex += units;
+  @PostConstruct
+  protected void init() {
+    readIndexFromElasticsearch();
   }
 
-  public void resetImportIndex() {
-    importIndex = 0;
+  protected abstract String getElasticsearchImportIndexType();
+
+  protected void moveImportIndex(long units) {
+    importIndex += units;
   }
 
 }

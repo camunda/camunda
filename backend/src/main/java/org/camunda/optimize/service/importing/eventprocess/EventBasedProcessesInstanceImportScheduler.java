@@ -44,18 +44,6 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     }
   }
 
-  @Override
-  protected void run() {
-    if (isScheduledToRun()) {
-      runImportRound();
-    }
-  }
-
-  @Override
-  protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(0);
-  }
-
   public synchronized void startImportScheduling() {
     log.info("Scheduling ingested event import.");
     startScheduling();
@@ -112,6 +100,17 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     return CompletableFuture.allOf(importTaskFutures);
   }
 
+  @Override
+  protected void run() {
+    if (isScheduledToRun()) {
+      runImportRound();
+    }
+  }
+
+  @Override
+  protected Trigger createScheduleTrigger() {
+    return new PeriodicTrigger(0);
+  }
 
   private void doBackoff(final Collection<? extends EngineImportMediator> mediators) {
     long timeToSleep = mediators

@@ -30,16 +30,6 @@ public class EventProcessInstanceImportSourceIndexHandler
   }
 
   @Override
-  protected void updateLastPersistedEntityTimestamp(final OffsetDateTime timestamp) {
-    eventImportSourceDto.setLastImportedEventTimestamp(timestamp);
-  }
-
-  @Override
-  protected void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
-    eventImportSourceDto.setLastImportExecutionTimestamp(timestamp);
-  }
-
-  @Override
   public EventImportSourceDto getIndexStateDto() {
     return eventImportSourceDto;
   }
@@ -47,6 +37,16 @@ public class EventProcessInstanceImportSourceIndexHandler
   @Override
   public String getEngineAlias() {
     return ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE;
+  }
+
+  @Override
+  protected void updateLastPersistedEntityTimestamp(final OffsetDateTime timestamp) {
+    eventImportSourceDto.setLastImportedEventTimestamp(timestamp);
+  }
+
+  @Override
+  protected void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
+    eventImportSourceDto.setLastImportExecutionTimestamp(timestamp);
   }
 
 }

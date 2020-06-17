@@ -47,6 +47,24 @@ public class CompletedUserTaskInstanceFetcher extends RetryBackoffEngineEntityFe
     );
   }
 
+  public List<HistoricUserTaskInstanceDto> fetchCompletedUserTaskInstancesForTimestamp(
+    final OffsetDateTime endTimeOfLastInstance) {
+    logger.debug("Fetching completed user task instances ...");
+
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricUserTaskInstanceDto> secondEntries = fetchWithRetry(
+      () -> performCompletedUserTaskInstanceRequest(endTimeOfLastInstance)
+    );
+    final long requestEnd = System.currentTimeMillis();
+
+    logger.debug(
+      "Fetched [{}] completed user task instances for set end time within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
+  }
+
   private List<HistoricUserTaskInstanceDto> fetchCompletedUserTaskInstances(final OffsetDateTime timeStamp,
                                                                             final long pageSize) {
     logger.debug("Fetching completed user task instances ...");
@@ -65,24 +83,6 @@ public class CompletedUserTaskInstanceFetcher extends RetryBackoffEngineEntityFe
     );
 
     return entries;
-  }
-
-  public List<HistoricUserTaskInstanceDto> fetchCompletedUserTaskInstancesForTimestamp(
-    final OffsetDateTime endTimeOfLastInstance) {
-    logger.debug("Fetching completed user task instances ...");
-
-    final long requestStart = System.currentTimeMillis();
-    final List<HistoricUserTaskInstanceDto> secondEntries = fetchWithRetry(
-      () -> performCompletedUserTaskInstanceRequest(endTimeOfLastInstance)
-    );
-    final long requestEnd = System.currentTimeMillis();
-
-    logger.debug(
-      "Fetched [{}] completed user task instances for set end time within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
-    return secondEntries;
   }
 
   private List<HistoricUserTaskInstanceDto> performCompletedUserTaskInstanceRequest(final OffsetDateTime timeStamp,

@@ -46,6 +46,21 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
     );
   }
 
+  public List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstancesForTimestamp(
+    OffsetDateTime startTimeOfLastInstance) {
+    logger.debug("Fetching running activity instances ...");
+    long requestStart = System.currentTimeMillis();
+    List<HistoricActivityInstanceEngineDto> secondEntries =
+      fetchWithRetry(() -> performRunningActivityInstanceRequest(startTimeOfLastInstance));
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] running activity instances for set end time within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
+  }
+
   private List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstances(OffsetDateTime timeStamp,
                                                                                 long pageSize) {
     logger.debug("Fetching historic activity instances ...");
@@ -74,21 +89,6 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
       });
-  }
-
-  public List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstancesForTimestamp(
-    OffsetDateTime startTimeOfLastInstance) {
-    logger.debug("Fetching running activity instances ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricActivityInstanceEngineDto> secondEntries =
-      fetchWithRetry(() -> performRunningActivityInstanceRequest(startTimeOfLastInstance));
-    long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] running activity instances for set end time within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
-    return secondEntries;
   }
 
   private List<HistoricActivityInstanceEngineDto> performRunningActivityInstanceRequest(OffsetDateTime startTimeOfLastInstance) {

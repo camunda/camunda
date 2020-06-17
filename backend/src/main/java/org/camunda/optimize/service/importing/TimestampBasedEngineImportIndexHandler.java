@@ -27,6 +27,16 @@ public abstract class TimestampBasedEngineImportIndexHandler
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
   private OffsetDateTime persistedTimestampOfLastEntity = BEGINNING_OF_TIME;
 
+  @Override
+  public TimestampBasedImportIndexDto getIndexStateDto() {
+    TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
+    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
+    indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
+    indexToStore.setEngine(getEngineAlias());
+    indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
+    return indexToStore;
+  }
+
   @PostConstruct
   protected void init() {
     readIndexFromElasticsearch();
@@ -56,16 +66,6 @@ public abstract class TimestampBasedEngineImportIndexHandler
       updatePendingLastEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
       updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
     }
-  }
-
-  @Override
-  public TimestampBasedImportIndexDto getIndexStateDto() {
-    TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
-    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
-    indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
-    indexToStore.setEngine(getEngineAlias());
-    indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
-    return indexToStore;
   }
 
 }

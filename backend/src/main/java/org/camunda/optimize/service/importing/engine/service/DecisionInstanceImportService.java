@@ -65,30 +65,9 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     }
   }
 
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
-  }
-
-  private List<DecisionInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricDecisionInstanceDto>
-                                                                          engineEntities)
-    throws OptimizeDecisionDefinitionFetchException {
-    List<DecisionInstanceDto> list = new ArrayList<>();
-    for (HistoricDecisionInstanceDto engineEntity : engineEntities) {
-      DecisionInstanceDto decisionInstanceDto = mapEngineEntityToOptimizeEntity(engineEntity);
-      list.add(decisionInstanceDto);
-    }
-    return list;
-  }
-
-  private ElasticsearchImportJob<DecisionInstanceDto> createElasticsearchImportJob(List<DecisionInstanceDto>
-                                                                                     decisionInstanceDtos,
-                                                                                   Runnable callback) {
-    final DecisionInstanceElasticsearchImportJob importJob = new DecisionInstanceElasticsearchImportJob(
-      decisionInstanceWriter,
-      callback
-    );
-    importJob.setEntitiesToImport(decisionInstanceDtos);
-    return importJob;
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
   }
 
   public DecisionInstanceDto mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity)
@@ -114,6 +93,32 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       engineContext.getEngineAlias(),
       engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
+  }
+
+  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
+    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  }
+
+  private List<DecisionInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricDecisionInstanceDto>
+                                                                          engineEntities)
+    throws OptimizeDecisionDefinitionFetchException {
+    List<DecisionInstanceDto> list = new ArrayList<>();
+    for (HistoricDecisionInstanceDto engineEntity : engineEntities) {
+      DecisionInstanceDto decisionInstanceDto = mapEngineEntityToOptimizeEntity(engineEntity);
+      list.add(decisionInstanceDto);
+    }
+    return list;
+  }
+
+  private ElasticsearchImportJob<DecisionInstanceDto> createElasticsearchImportJob(List<DecisionInstanceDto>
+                                                                                     decisionInstanceDtos,
+                                                                                   Runnable callback) {
+    final DecisionInstanceElasticsearchImportJob importJob = new DecisionInstanceElasticsearchImportJob(
+      decisionInstanceWriter,
+      callback
+    );
+    importJob.setEntitiesToImport(decisionInstanceDtos);
+    return importJob;
   }
 
   private List<OutputInstanceDto> mapDecisionOutputs(HistoricDecisionInstanceDto engineEntity) {

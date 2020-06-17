@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.CompletedActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
@@ -32,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,9 +56,6 @@ public class TimestampBasedImportMediatorTest {
   private CompletedActivityInstanceFetcher engineEntityFetcher;
 
   @Mock
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-
-  @Mock
   private BackoffCalculator idleBackoffCalculator;
 
   private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
@@ -70,7 +67,6 @@ public class TimestampBasedImportMediatorTest {
       engineEntityFetcher,
       importService,
       configurationService,
-      elasticsearchImportJobExecutor,
       idleBackoffCalculator
     );
 
@@ -182,6 +178,43 @@ public class TimestampBasedImportMediatorTest {
     // and all the same timestamp entities are present in the import batch
     assertThat(importEntitiesCaptor.getValue()).isEqualTo(entitiesLastTimestamp2);
     assertThat(underTest.countOfImportedEntitiesWithLastEntityTimestamp).isEqualTo(3);
+  }
+
+  @Test
+  public void testRunImport_verifyCorrectBackoff() {
+    // given
+    final OffsetDateTime now = OffsetDateTime.now();
+    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
+    entitiesLastTimestamp.add(createHistoricActivityInstance(now));
+
+    Mockito.when(underTest.getEntitiesLastTimestamp()).thenReturn(entitiesLastTimestamp);
+    Mockito.when(underTest.getEntitiesNextPage()).thenReturn(new ArrayList<>());
+
+    // when running import for empty page
+    underTest.runImport();
+
+    // then
+    verify(idleBackoffCalculator, atLeastOnce()).isMaximumBackoffReached();
+    verify(idleBackoffCalculator, atLeastOnce()).calculateSleepTime();
+
+    // clearing invocations done from given setup
+    Mockito.clearInvocations(idleBackoffCalculator);
+
+    // given
+    final OffsetDateTime entityTimestamp = OffsetDateTime.now().plusSeconds(1);
+    List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
+
+    for (int i = 0; i < configurationService.getEngineImportActivityInstanceMaxPageSize(); i++) {
+      entitiesNextPage.add(createHistoricActivityInstance(entityTimestamp));
+    }
+
+    Mockito.when(underTest.getEntitiesNextPage()).thenReturn(entitiesNextPage);
+
+    // when running import with a full next page
+    underTest.runImport();
+
+    // then
+    verify(idleBackoffCalculator, atLeastOnce()).resetBackoff();
   }
 
   @Test

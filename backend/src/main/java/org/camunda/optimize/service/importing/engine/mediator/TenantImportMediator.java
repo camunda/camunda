@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.TenantEngineDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.TenantFetcher;
 import org.camunda.optimize.service.importing.engine.handler.TenantImportIndexHandler;
@@ -21,22 +20,19 @@ import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class TenantImportMediator extends BackoffImportMediator<TenantImportIndexHandler> {
+public class TenantImportMediator extends BackoffImportMediator<TenantImportIndexHandler, TenantEngineDto> {
 
   private TenantFetcher engineEntityFetcher;
-  private TenantImportService tenantImportService;
 
   public TenantImportMediator(final TenantImportIndexHandler importIndexHandler,
                               final TenantFetcher engineEntityFetcher,
                               final TenantImportService tenantImportService,
                               final ConfigurationService configurationService,
-                              final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                               final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
-    this.tenantImportService = tenantImportService;
+    this.importService = tenantImportService;
     this.configurationService = configurationService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
@@ -46,7 +42,7 @@ public class TenantImportMediator extends BackoffImportMediator<TenantImportInde
     final List<TenantEngineDto> newEntities = importIndexHandler.filterNewOrChangedTenants(entities);
 
     if (!newEntities.isEmpty()) {
-      tenantImportService.executeImport(newEntities, importCompleteCallback);
+      importService.executeImport(newEntities, importCompleteCallback);
       importIndexHandler.addImportedTenants(newEntities);
     } else {
       importCompleteCallback.run();

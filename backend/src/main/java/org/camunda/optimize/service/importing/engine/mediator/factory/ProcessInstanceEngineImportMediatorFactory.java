@@ -60,7 +60,6 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
         camundaEventService
       ),
       configurationService,
-      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }
@@ -81,7 +80,6 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
         camundaEventService
       ),
       configurationService,
-      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }
