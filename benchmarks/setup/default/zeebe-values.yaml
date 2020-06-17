@@ -29,6 +29,8 @@ gateway:
           fieldPath: metadata.namespace
     - name: ATOMIX_LOG_LEVEL
       value: INFO
+    - name: ZEEBE_GATEWAY_MONITORING_ENABLED
+      value: "true"
 
 # Uncomment to add custom YAML configuration
 # This will overwrite anything at the application.yml location
