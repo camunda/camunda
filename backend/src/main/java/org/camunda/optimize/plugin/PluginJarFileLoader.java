@@ -17,6 +17,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
@@ -25,18 +26,14 @@ public class PluginJarFileLoader {
 
   protected final ConfigurationService configurationService;
 
-  public Path getPluginsDirectoryPath() {
-    return Paths.get(configurationService.getPluginDirectory());
-  }
-
   public List<Path> getPluginJars() {
     if (!Files.exists(getPluginsDirectoryPath())) {
       log.error("The configured plugin directory [{}] does not exist!", getPluginsDirectoryPath());
       return Collections.emptyList();
     }
 
-    try {
-      return Files.list(getPluginsDirectoryPath())
+    try (Stream<Path> paths = Files.list(getPluginsDirectoryPath())) {
+      return paths
         .filter(s -> s.toString().endsWith(".jar"))
         .collect(Collectors.toList());
     } catch (IOException e) {
@@ -44,4 +41,9 @@ public class PluginJarFileLoader {
     }
     return Collections.emptyList();
   }
+
+  private Path getPluginsDirectoryPath() {
+    return Paths.get(configurationService.getPluginDirectory());
+  }
+
 }
