@@ -5,14 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.result.hyper;
 
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 
 @EqualsAndHashCode
 @ToString
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MapResultEntryDto {
 
   // @formatter:off
@@ -20,9 +23,6 @@ public class MapResultEntryDto {
   @Getter @Setter private Double value;
   @Setter private String label;
   // @formatter:on
-
-  protected MapResultEntryDto() {
-  }
 
   public MapResultEntryDto(@NonNull final String key, final Double value) {
     this.key = key;
