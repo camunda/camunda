@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -45,7 +46,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_B
 public class ForceReimportIT extends AbstractIT {
 
   @Test
-  public void forceReimport() throws IOException {
+  public void forceReimport() {
     //given
     addLicense();
     ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
@@ -173,8 +174,8 @@ public class ForceReimportIT extends AbstractIT {
     interval.setUnit("Seconds");
     interval.setValue(1);
     alertCreationDto.setCheckInterval(interval);
-    alertCreationDto.setThreshold(0);
-    alertCreationDto.setThresholdOperator(">");
+    alertCreationDto.setThreshold(0.0);
+    alertCreationDto.setThresholdOperator(AlertThresholdOperator.GREATER);
     alertCreationDto.setEmail("test@camunda.com");
     alertCreationDto.setName("test alert");
     alertCreationDto.setReportId(reportId);

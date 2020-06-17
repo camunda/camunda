@@ -77,6 +77,10 @@ public class ReportConstants {
   public static final String WORK_USER_TASK_DURATION_TIME = "work";
   public static final String TOTAL_USER_TASK_DURATION_TIME = "total";
 
+  // alert constants
+  public static final String ALERT_THRESHOLD_OPERATOR_GREATER = ">";
+  public static final String ALERT_THRESHOLD_OPERATOR_LESS = "<";
+
   // miscellaneous report constants
   public static final String ALL_VERSIONS = "ALL";
   public static final String LATEST_VERSION = "LATEST";

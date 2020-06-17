@@ -8,9 +8,15 @@ package org.camunda.optimize.service.alert;
 import com.icegreen.greenmail.util.GreenMail;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractAlertIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,15 +27,16 @@ import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.verify.VerificationTimes;
 
 import javax.mail.internet.MimeMessage;
+import java.util.HashMap;
+import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_INVALID_PORT_WEBHOOK_NAME;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_METHOD;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 import static org.mockserver.model.HttpRequest.request;
 
 @ExtendWith(MockServerExtension.class)
@@ -68,7 +75,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     //reminder received once
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
+    assertThat(emails).hasSize(1);
 
     //when
     greenMail.purgeEmailFromAllMailboxes();
@@ -77,7 +84,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     //then
     //reminder received twice
     emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
+    assertThat(emails).hasSize(1);
 
     //when
     greenMail.purgeEmailFromAllMailboxes();
@@ -86,7 +93,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     //then
     //reminder is not received
     emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(0));
+    assertThat(emails).hasSize(0);
   }
 
   @Test
@@ -186,7 +193,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     triggerAndCompleteReminderJob(id);
 
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(0));
+    assertThat(emails).hasSize(0);
     assertWebhookRequestReceived(client, 0);
   }
 
@@ -224,19 +231,18 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     assertWebhookRequestReceived(client, 1);
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
-    assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
+    assertThat(emails).hasSize(1);
+    assertThat(emails[0].getSubject()).isEqualTo("[Camunda-Optimize] - Report status");
     String content = emails[0].getContent().toString();
-    assertThat(content, containsString(simpleAlert.getName()));
-    assertThat(content, containsString("is not exceeded anymore."));
-    assertThat(
-      content,
-      containsString(String.format(
+    assertThat(content).containsSequence(simpleAlert.getName());
+    assertThat(content).containsSequence("is not exceeded anymore.");
+    assertThat(content).containsSequence(
+      String.format(
         "http://localhost:%d/#/collection/%s/report/%s/",
         getOptimizeHttpPort(),
         collectionId,
         reportId
-      ))
+      )
     );
   }
 
@@ -261,7 +267,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
+    assertThat(emails).hasSize(1);
   }
 
   @Test
@@ -302,7 +308,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
     simpleAlert.setFixNotification(true);
-    simpleAlert.setThreshold(258165800L); // = 2d 23h 42min 45s 800ms
+    simpleAlert.setThreshold(258165800.0); // = 2d 23h 42min 45s 800ms
 
     String id = alertClient.createAlert(simpleAlert);
 
@@ -317,9 +323,80 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
+    assertThat(emails).hasSize(1);
     String content = emails[0].getContent().toString();
-    assertThat(content, containsString("2d 23h 42min 45s 800ms"));
+    assertThat(content).containsSequence("2d 23h 42min 45s 800ms");
+  }
+
+  @Test
+  public void noNotificationIsSendIfResultIsNull() throws Exception {
+    //given
+    setEmailConfiguration();
+
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    processInstance.setProcessDefinitionKey("definitionKeyThatDoesNotExistAndWillLeadToNoResults");
+    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
+    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
+    String id = alertClient.createAlert(simpleAlert);
+
+    // when
+    greenMail.purgeEmailFromAllMailboxes();
+    triggerAndCompleteCheckJob(id);
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails).hasSize(0);
+  }
+
+  @Test
+  public void alertsWorkForVariableReports() throws Exception {
+    //given
+    setEmailConfiguration();
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var", 5.0);
+    final ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcess("aProcess");
+    engineIntegrationExtension.startProcessInstance(definition.getId(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    String reportId = createAndStoreVariableAggregationReport(definition, "var", VariableType.DOUBLE);
+    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
+    simpleAlert.setThreshold(10.0);
+    simpleAlert.setThresholdOperator(AlertThresholdOperator.LESS);
+    String id = alertClient.createAlert(simpleAlert);
+
+    // when
+    greenMail.purgeEmailFromAllMailboxes();
+    triggerAndCompleteCheckJob(id);
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails).hasSize(1);
+  }
+
+  private String createAndStoreVariableAggregationReport(final ProcessDefinitionEngineDto definition,
+                                                         final String variableName,
+                                                         final VariableType variableType) {
+    String collectionId = collectionClient.createNewCollectionWithProcessScope(definition);
+    return createVariableReport(definition, collectionId, variableName, variableType);
+  }
+
+  private String createVariableReport(final ProcessDefinitionEngineDto definition,
+                                      final String collectionId,
+                                      final String variableName, final VariableType variableType) {
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(definition.getKey())
+      .setProcessDefinitionVersion(definition.getVersionAsString())
+      .setVariableName(variableName)
+      .setVariableType(variableType)
+      .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
+      .build();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    report.setData(reportDataDto);
+    report.setName("something");
+    report.setCollectionId(collectionId);
+    return reportClient.createSingleProcessReport(report);
   }
 
   private void assertWebhookRequestReceived(final MockServerClient client, final Integer times) {
@@ -345,7 +422,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     reminderInterval.setValue(3);
     reminderInterval.setUnit("Seconds");
     alert.setReminder(reminderInterval);
-    alert.setThreshold(1500);
+    alert.setThreshold(1500.0);
     alert.getCheckInterval().setValue(5);
     return alert;
   }

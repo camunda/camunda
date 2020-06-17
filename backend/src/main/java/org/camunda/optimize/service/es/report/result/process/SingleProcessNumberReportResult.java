@@ -65,7 +65,7 @@ public class SingleProcessNumberReportResult
 
 
   @Override
-  public double getResultAsNumber() {
+  public Double getResultAsNumber() {
     return reportResult.getData();
   }
 }

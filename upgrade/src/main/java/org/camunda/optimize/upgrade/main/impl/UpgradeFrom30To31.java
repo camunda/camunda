@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
@@ -87,12 +88,17 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(migrateDecisionReportFilterForUndefined())
       .addUpgradeStep(resetRunningProcessInstanceImport())
       .addUpgradeStep(addDateVariableUnitToReportConfiguration(SINGLE_PROCESS_REPORT_INDEX_NAME))
-      .addUpgradeStep(addDateVariableUnitToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME));
+      .addUpgradeStep(addDateVariableUnitToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME))
+      .addUpgradeStep(migrateAlertThresholdToNewDataType());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteTraceStateIndices(upgradeBuilder);
     deleteSequenceCountIndices(upgradeBuilder);
     upgradeBuilder.addUpgradeStep(deleteTraceStateImportIndexData());
     return upgradeBuilder.build();
+  }
+
+  private UpgradeStep migrateAlertThresholdToNewDataType() {
+    return new UpdateIndexStep(new AlertIndex(), null);
   }
 
   private UpgradeStep migrateProcessReportFilterForUndefined() {

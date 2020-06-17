@@ -27,6 +27,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
+import org.camunda.optimize.upgrade.version30.AlertIndexV2;
 import org.camunda.optimize.upgrade.version30.SingleDecisionReportIndexV2;
 import org.camunda.optimize.upgrade.version30.SingleProcessReportIndexV2;
 import org.elasticsearch.action.admin.indices.alias.Alias;
@@ -64,6 +65,7 @@ public abstract class AbstractUpgradeIT {
   protected static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
   protected static final TimestampBasedImportIndex TIMESTAMP_BASED_IMPORT_INDEX = new TimestampBasedImportIndex();
   protected static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
+  protected static final AlertIndexV2 ALERT_INDEX = new AlertIndexV2();
 
   private ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;

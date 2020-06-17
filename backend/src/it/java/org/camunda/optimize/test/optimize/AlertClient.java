@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
@@ -113,28 +114,14 @@ public class AlertClient {
     interval.setUnit(unit);
     interval.setValue(intervalValue);
     alertCreationDto.setCheckInterval(interval);
-    alertCreationDto.setThreshold(0);
-    alertCreationDto.setThresholdOperator(">");
+    alertCreationDto.setThreshold(0.0);
+    alertCreationDto.setThresholdOperator(AlertThresholdOperator.GREATER);
     alertCreationDto.setEmail("test@camunda.com");
     alertCreationDto.setName("test alert");
     alertCreationDto.setReportId(reportId);
 
     return alertCreationDto;
   }
-
-  public AlertCreationDto createAlertWithReminder(String reportId, int reminderIntervalValue, String unit,
-                                                  int threshold,
-                                                  int intervalValue) {
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
-    AlertInterval reminderInterval = new AlertInterval();
-    reminderInterval.setValue(reminderIntervalValue);
-    reminderInterval.setUnit(unit);
-    simpleAlert.setReminder(reminderInterval);
-    simpleAlert.setThreshold(threshold);
-    simpleAlert.getCheckInterval().setValue(intervalValue);
-    return simpleAlert;
-  }
-
 
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();

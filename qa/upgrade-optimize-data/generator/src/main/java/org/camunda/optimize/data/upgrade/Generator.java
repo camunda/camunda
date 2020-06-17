@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
@@ -33,8 +34,8 @@ import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.DashboardClient;
 import org.camunda.optimize.test.optimize.ReportClient;
-import org.camunda.optimize.test.util.ReportsGenerator;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.ReportsGenerator;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import javax.ws.rs.client.Client;
@@ -49,7 +50,7 @@ import java.util.stream.Collectors;
 
 public class Generator {
 
-  public static final String DEFAULT_USER = "demo";
+  private static final String DEFAULT_USER = "demo";
   private String processDefinitionKey;
   private String processDefinitionVersion;
 
@@ -201,10 +202,10 @@ public class Generator {
     AlertCreationDto alertCreation = new AlertCreationDto();
 
     alertCreation.setReportId(id);
-    alertCreation.setThreshold(700L);
+    alertCreation.setThreshold(700.0);
     alertCreation.setEmail("foo@gmail.bar");
     alertCreation.setName("alertFoo");
-    alertCreation.setThresholdOperator("<");
+    alertCreation.setThresholdOperator(AlertThresholdOperator.LESS);
     alertCreation.setFixNotification(true);
 
     AlertInterval interval = new AlertInterval();

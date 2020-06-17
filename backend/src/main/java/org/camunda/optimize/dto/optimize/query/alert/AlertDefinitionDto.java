@@ -13,8 +13,6 @@ import java.time.OffsetDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AlertDefinitionDto extends AlertCreationDto {
-  public static final String GREATER = ">";
-  public static final String LESS = "<";
 
   protected String id;
   protected OffsetDateTime lastModified;

@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -382,8 +383,8 @@ public class ReportConflictIT extends AbstractIT {
     interval.setUnit("Seconds");
     interval.setValue(1);
     alertCreationDto.setCheckInterval(interval);
-    alertCreationDto.setThreshold(0);
-    alertCreationDto.setThresholdOperator(">");
+    alertCreationDto.setThreshold(0.0);
+    alertCreationDto.setThresholdOperator(AlertThresholdOperator.GREATER);
     alertCreationDto.setEmail("test@camunda.com");
     alertCreationDto.setName("test alert");
     alertCreationDto.setReportId(reportId);

@@ -12,8 +12,8 @@ public class AlertCreationDto {
   protected String name;
   protected AlertInterval checkInterval;
   protected String reportId;
-  protected long threshold;
-  protected String thresholdOperator;
+  protected Double threshold;
+  protected AlertThresholdOperator thresholdOperator;
   protected boolean fixNotification;
   protected AlertInterval reminder;
   protected String email;

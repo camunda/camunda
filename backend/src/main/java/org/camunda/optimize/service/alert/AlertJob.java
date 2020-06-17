@@ -8,6 +8,7 @@ package org.camunda.optimize.service.alert;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -143,7 +144,7 @@ public class AlertJob implements Job {
     ReportDefinitionDto reportDefinition,
     NumberResult result
   ) {
-    String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
+    String statusText = AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())
       ? "is not reached" : "was exceeded";
     return composeAlertText(alert, reportDefinition, result, statusText);
   }
@@ -152,7 +153,7 @@ public class AlertJob implements Job {
     AlertDefinitionDto alert,
     ReportDefinitionDto reportDefinition,
     NumberResult result) {
-    String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
+    String statusText = AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())
       ? "has been reached" : "is not exceeded anymore";
     return composeAlertText(alert, reportDefinition, result, statusText);
   }
@@ -175,20 +176,17 @@ public class AlertJob implements Job {
 
   private boolean thresholdExceeded(AlertDefinitionDto alert, NumberResult result) {
     boolean exceeded = false;
-    if (AlertDefinitionDto.GREATER.equals(alert.getThresholdOperator())) {
-      exceeded = result.getResultAsNumber() > alert.getThreshold();
-    } else if (AlertDefinitionDto.LESS.equals(alert.getThresholdOperator())) {
-      exceeded = result.getResultAsNumber() < alert.getThreshold();
+    if (result.getResultAsNumber() != null) {
+      if (AlertThresholdOperator.GREATER.equals(alert.getThresholdOperator())) {
+        exceeded = result.getResultAsNumber() > alert.getThreshold();
+      } else if (AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())) {
+        exceeded = result.getResultAsNumber() < alert.getThreshold();
+      }
     }
     return exceeded;
   }
 
   private String formatValueToHumanReadableString(final Double value, final ReportDefinitionDto reportDefinition) {
-    long valueAsLong = value == null? 0L : value.longValue();
-    return formatValueToHumanReadableString(valueAsLong, reportDefinition);
-  }
-
-  private String formatValueToHumanReadableString(final long value, final ReportDefinitionDto reportDefinition) {
     return isDurationReport(reportDefinition)
       ? durationInMsToReadableFormat(value)
       : String.valueOf(value);
@@ -202,7 +200,15 @@ public class AlertJob implements Job {
     return false;
   }
 
-  private String durationInMsToReadableFormat(final long durationInMs) {
+  private String durationInMsToReadableFormat(final Double durationInMsAsDouble) {
+    if (durationInMsAsDouble == null) {
+      return String.valueOf(durationInMsAsDouble);
+    }
+    final long durationInMs = durationInMsAsDouble.longValue();
+    return formatMilliSecondsToReadableDurationString(durationInMs);
+  }
+
+  private String formatMilliSecondsToReadableDurationString(final long durationInMs) {
     final long days = TimeUnit.MILLISECONDS.toDays(durationInMs);
     final long hours = TimeUnit.MILLISECONDS.toHours(durationInMs) - TimeUnit.DAYS.toHours(days);
     final long minutes = TimeUnit.MILLISECONDS.toMinutes(durationInMs)

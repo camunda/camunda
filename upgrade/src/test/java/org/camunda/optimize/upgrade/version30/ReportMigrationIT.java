@@ -34,7 +34,8 @@ public class ReportMigrationIT extends AbstractUpgradeIT {
       SINGLE_DECISION_REPORT_INDEX,
       COMBINED_REPORT_INDEX,
       TIMESTAMP_BASED_IMPORT_INDEX,
-      IMPORT_INDEX_INDEX
+      IMPORT_INDEX_INDEX,
+      ALERT_INDEX
     ));
     setMetadataIndexVersion(FROM_VERSION);
 

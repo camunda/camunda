@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.upgrade.version30;
 
-import lombok.SneakyThrows;
 import org.assertj.core.util.Lists;
-import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -17,9 +17,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 
-public class RemoveDefinitionImportIndexDocumentsIT extends AbstractUpgradeIT {
+public class AlertMigrationIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "3.0.0";
 
   @BeforeEach
@@ -38,25 +38,45 @@ public class RemoveDefinitionImportIndexDocumentsIT extends AbstractUpgradeIT {
     ));
     setMetadataIndexVersion(FROM_VERSION);
 
-    executeBulk("steps/3.0/report_data/30-import-index-bulk");
+    executeBulk("steps/3.0/report_data/30-alert-bulk");
   }
 
-  @SneakyThrows
   @Test
-  public void reportFiltersAreMigrated() {
+  public void alertsAreMigratedNoDataLost() {
     // given
+    final List<Object> alertsBeforeMigration = getAllAlerts();
     final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
 
     // when
     upgradePlan.execute();
 
     // then
-    final List<AllEntitiesBasedImportIndexDto> importIndexDocuments = getAllDocumentsOfIndexAs(
-      IMPORT_INDEX_INDEX_NAME,
-      AllEntitiesBasedImportIndexDto.class
+    assertThat(getAllAlerts())
+      .hasSize(1)
+      .isEqualTo(alertsBeforeMigration);
+  }
+
+  @Test
+  public void optimizeIsAbleToParseNewAlerts() {
+    // given
+    final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+    final List<AlertDefinitionDto> allAlerts = getAllDocumentsOfIndexAs(
+      new AlertIndex().getIndexName(),
+      AlertDefinitionDto.class
     );
-    assertThat(importIndexDocuments)
-      .hasSize(1);
+
+    // then
+    assertThat(allAlerts)
+      .hasSize(1)
+      .first()
+      .extracting(AlertDefinitionDto::getThreshold).isEqualTo(100.0);
+  }
+
+  private List<Object> getAllAlerts() {
+    return getAllDocumentsOfIndexAs(ALERT_INDEX_NAME, Object.class);
   }
 
 }

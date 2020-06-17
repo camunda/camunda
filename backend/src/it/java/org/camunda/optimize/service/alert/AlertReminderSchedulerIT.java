@@ -130,7 +130,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     reminderInterval.setUnit("Minutes");
     simpleAlert.setReminder(reminderInterval);
 
-    simpleAlert.setThreshold(1500);
+    simpleAlert.setThreshold(1500.0);
 
     String id = alertClient.createAlert(simpleAlert);
 

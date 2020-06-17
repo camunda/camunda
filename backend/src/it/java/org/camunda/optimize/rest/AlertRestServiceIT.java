@@ -114,12 +114,12 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest(name = "create new alert with max threshold and report definition type {0}")
   @MethodSource("definitionType")
-  public void createNewAlertAllowsMaxInt(final DefinitionType definitionType) {
+  public void createNewAlertAllowsMaxDouble(final DefinitionType definitionType) {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
-    alert.setThreshold(Integer.MAX_VALUE);
+    alert.setThreshold(Double.MAX_VALUE);
 
     // when
     String id = embeddedOptimizeExtension

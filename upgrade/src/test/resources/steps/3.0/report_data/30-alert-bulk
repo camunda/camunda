@@ -1,0 +1,2 @@
+{"index":{"_index":"optimize-alert_v2","_type":"_doc","_id":"e4086007-c97e-4315-ae16-edde1ad92fcb"}}
+{"name":"NewAlert","checkInterval":{"value":10,"unit":"minutes"},"reportId":"622585f6-9d62-4e30-971a-46830c8a5df3","threshold":100,"thresholdOperator":"<","fixNotification":false,"reminder":null,"email":"johannes.heinemann@camunda.com","webhook":null,"id":"e4086007-c97e-4315-ae16-edde1ad92fcb","lastModified":"2020-06-15T21:16:09.357+0200","created":"2020-06-15T21:15:13.759+0200","owner":"demo","lastModifier":"demo","triggered":false}
