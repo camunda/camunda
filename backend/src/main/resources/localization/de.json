@@ -443,7 +443,7 @@
       },
       "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
       "showGradientBars": "Verlaufsbalken anzeigen",
-      "DateGrouping": "Datumsgruppierung"
+      "buckets": "Buckets"
     },
     "missingVariableValue": "nicht definiert",
     "missingAssignee": "Nicht zugewiesen",
@@ -903,6 +903,7 @@
       "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?"
     },
     "unit": {
+      "automatic": "Automatisch",
       "milli": {
         "label": "Millisekunde",
         "label-plural": "Millisekunden "

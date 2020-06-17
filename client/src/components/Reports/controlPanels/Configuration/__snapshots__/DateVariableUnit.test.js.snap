@@ -5,7 +5,7 @@ exports[`should render a unit selection for Date variables 1`] = `
   className="DateVariableUnit"
 >
   <legend>
-    Date Grouping
+    Buckets
   </legend>
   <Select
     onChange={[Function]}
@@ -14,32 +14,32 @@ exports[`should render a unit selection for Date variables 1`] = `
     <Option
       value="automatic"
     >
-      Automatic
+      automatic
     </Option>
     <Option
       value="hour"
     >
-      Hour
+      hours
     </Option>
     <Option
       value="day"
     >
-      Day
+      days
     </Option>
     <Option
       value="week"
     >
-      Week
+      weeks
     </Option>
     <Option
       value="month"
     >
-      Month
+      months
     </Option>
     <Option
       value="year"
     >
-      Year
+      years
     </Option>
   </Select>
 </fieldset>

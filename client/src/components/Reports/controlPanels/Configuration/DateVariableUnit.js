@@ -18,17 +18,17 @@ export default function DateVariableUnit({
   if (groupBy?.type === 'variable' && groupBy.value?.type === 'Date') {
     return (
       <fieldset className="DateVariableUnit">
-        <legend>{t('report.config.DateGrouping')}</legend>
+        <legend>{t('report.config.buckets')}</legend>
         <Select
           value={configuration.groupByDateVariableUnit}
           onChange={(value) => onChange({groupByDateVariableUnit: {$set: value}}, true)}
         >
-          <Select.Option value="automatic">{t('report.groupBy.automatic')}</Select.Option>
-          <Select.Option value="hour">{t('report.groupBy.hour')}</Select.Option>
-          <Select.Option value="day">{t('report.groupBy.day')}</Select.Option>
-          <Select.Option value="week">{t('report.groupBy.week')}</Select.Option>
-          <Select.Option value="month">{t('report.groupBy.month')}</Select.Option>
-          <Select.Option value="year">{t('report.groupBy.year')}</Select.Option>
+          <Select.Option value="automatic">{t('common.unit.automatic')}</Select.Option>
+          <Select.Option value="hour">{t('common.unit.hour.label-plural')}</Select.Option>
+          <Select.Option value="day">{t('common.unit.day.label-plural')}</Select.Option>
+          <Select.Option value="week">{t('common.unit.week.label-plural')}</Select.Option>
+          <Select.Option value="month">{t('common.unit.month.label-plural')}</Select.Option>
+          <Select.Option value="year">{t('common.unit.year.label-plural')}</Select.Option>
         </Select>
       </fieldset>
     );

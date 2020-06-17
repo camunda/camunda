@@ -443,7 +443,7 @@
       },
       "includeTableColumn": "Table columns to include",
       "showGradientBars": "Show Gradient Bars",
-      "DateGrouping": "Date Grouping"
+      "buckets": "Buckets"
     },
     "missingVariableValue": "null / undefined",
     "missingAssignee": "Unassigned",
@@ -903,6 +903,7 @@
       "areYouSure": "Are you sure you want to proceed?"
     },
     "unit": {
+      "automatic": "automatic",
       "milli": {
         "label": "millisecond",
         "label-plural": "milliseconds"
