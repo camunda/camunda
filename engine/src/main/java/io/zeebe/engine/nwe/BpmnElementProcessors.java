@@ -12,6 +12,7 @@ import io.zeebe.engine.nwe.container.CallActivityProcessor;
 import io.zeebe.engine.nwe.container.MultiInstanceBodyProcessor;
 import io.zeebe.engine.nwe.container.ProcessProcessor;
 import io.zeebe.engine.nwe.container.SubProcessProcessor;
+import io.zeebe.engine.nwe.event.BoundaryEventProcessor;
 import io.zeebe.engine.nwe.event.EndEventProcessor;
 import io.zeebe.engine.nwe.event.IntermediateCatchEventProcessor;
 import io.zeebe.engine.nwe.event.StartEventProcessor;
@@ -35,23 +36,28 @@ public final class BpmnElementProcessors {
     // tasks
     processors.put(BpmnElementType.SERVICE_TASK, new ServiceTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.RECEIVE_TASK, new ReceiveTaskProcessor(bpmnBehaviors));
+
     // gateways
     processors.put(BpmnElementType.EXCLUSIVE_GATEWAY, new ExclusiveGatewayProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.PARALLEL_GATEWAY, new ParallelGatewayProcessor(bpmnBehaviors));
     processors.put(
         BpmnElementType.EVENT_BASED_GATEWAY, new EventBasedGatewayProcessor(bpmnBehaviors));
+
     // containers
     processors.put(BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));
     processors.put(
         BpmnElementType.MULTI_INSTANCE_BODY, new MultiInstanceBodyProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.CALL_ACTIVITY, new CallActivityProcessor(bpmnBehaviors));
+
     // events
     processors.put(BpmnElementType.START_EVENT, new StartEventProcessor(bpmnBehaviors));
     processors.put(
         BpmnElementType.INTERMEDIATE_CATCH_EVENT,
         new IntermediateCatchEventProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.END_EVENT, new EndEventProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.BOUNDARY_EVENT, new BoundaryEventProcessor(bpmnBehaviors));
+
     // others
     processors.put(BpmnElementType.SEQUENCE_FLOW, new SequenceFlowProcessor(bpmnBehaviors));
   }
