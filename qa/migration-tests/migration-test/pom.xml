@@ -8,7 +8,7 @@
     <version>0.24.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate Migration tests new</name>
+  <name>Camunda Operate Migration tests</name>
   <artifactId>test-migration</artifactId>
 
   <properties>
@@ -92,6 +92,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkCount>1</forkCount>
+          <redirectTestOutputToFile>false</redirectTestOutputToFile>
+        </configuration>
       </plugin>
     </plugins>
     <!--

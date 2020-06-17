@@ -1,11 +1,5 @@
 #!/usr/bin/env groovy
 
-// TODO: Use parameters for different migrations 
-// Defaults:
-//  elasticsearch-6.8.6
-//  zeebe-0.21.1
-//  operate-1.1.0 
-//  maven-3.6.1 - Used for migration, test and validation
 String agent() {
   boolean isStage = env.JENKINS_URL.contains('stage')
   String vaultPrefix = isStage ? 'stage.' : ''
@@ -94,6 +88,8 @@ spec:
           valueFrom:
             resourceFieldRef:
               resource: limits.cpu
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
       resources:
         limits:
           cpu: 4
@@ -101,69 +97,19 @@ spec:
         requests:
           cpu: 4
           memory: 8Gi
-    - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.9
-      env:
-        - name: ES_JAVA_OPTS
-          value: '-Xms512m -Xmx512m'
-        - name: cluster.name
-          value: docker-cluster
-        - name: discovery.type
-          value: single-node
-        - name: action.auto_create_index
-          value: "true"
-        - name: bootstrap.memory_lock
-          value: "true"
+    - name: docker
+      image: docker:18.06-dind
+      args: ["--storage-driver=overlay2"]
       securityContext:
         privileged: true
-        capabilities:
-          add:
-            - IPC_LOCK
-      volumeMounts:
-      - mountPath: /usr/share/elasticsearch/config/
-        name: configdir
-      - mountPath: /usr/share/elasticsearch/plugins/
-        name: plugindir
-      ports:
-        - containerPort: 9200
-          name: es-http
-          protocol: TCP
-        - containerPort: 9300
-          name: es-transport
-          protocol: TCP
+      tty: true
       resources:
         limits:
-          cpu: 2
-          memory: 4Gi
+          cpu: 3
+          memory: 12Gi
         requests:
-          cpu: 2
-          memory: 4Gi
-    - name: zeebe
-      image: camunda/zeebe:0.23.0
-      env:
-        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-          value: io.zeebe.exporter.ElasticsearchExporter
-      resources:
-        limits:
-          cpu: 4
-          memory: 8Gi
-        requests:
-          cpu: 4
-          memory: 8Gi
-    - name: operate
-      image: camunda/operate:0.23.0
-      env:
-        - name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
-          value: false
-        - name: CAMUNDA_OPERATE_ARCHIVER_WAIT_PERIOD_BEFORE_ARCHIVING
-          value: 1m
-      resources:
-        limits:
-          cpu: 1
-          memory: 2Gi
-        requests:
-          cpu: 1
-          memory: 2Gi            
+          cpu: 3
+          memory: 12Gi            
   volumes:
   - name: configdir
     emptyDir: {}
@@ -216,30 +162,7 @@ pipeline {
          }
       }
     }
-	stage('Create testdata') {
-	  steps {
-		 container('maven') {
-          configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-            // Compile els-schema
-            sh('mvn -B -s $MAVEN_SETTINGS_XML -f els-schema -DskipTests clean install')
-            // Compile QA
-            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
-            // Generate Data
-            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration-tests spring-boot:run')
-            sh('sleep 5')
-          }
-        }
-	  }
-	}
-	stage('Migrate data') {
-		steps {
-		   container('maven') {
-		   	 // Migrate 
-			  sh("bash ./els-schema/target/classes/migrate.sh")
-		 }
-	  }
-	}
-	stage('Check migration results') {
+	stage('Run migration tests') {
 		steps {
 		  container('maven') {
 		      configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {

@@ -32,7 +32,6 @@
     <module>query-performance-tests</module>
     <module>batch-operation-performance-tests</module>
     <module>migration-tests</module>
-    <module>migration-tests-new</module>
   </modules>
 
 </project>

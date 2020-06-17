@@ -26,7 +26,7 @@ public class PartitionHolder {
 
   public static final long WAIT_TIME_IN_MS = 1000L;
 
-  public static final int MAX_RETRY = 2;
+  public static final int MAX_RETRY = 60;   //1 minute
 
   private static final Logger logger = LoggerFactory.getLogger(PartitionHolder.class);
 

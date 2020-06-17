@@ -8,7 +8,7 @@
     <version>0.24.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate Migration tests</name>
+  <name>Camunda Operate Migration tests - test fixture 1.2.1</name>
   <artifactId>test-fixture-121</artifactId>
 
   <properties>

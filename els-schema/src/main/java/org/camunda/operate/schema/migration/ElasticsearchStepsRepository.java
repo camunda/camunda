@@ -8,17 +8,12 @@ package org.camunda.operate.schema.migration;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.client.RequestOptions.DEFAULT;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import javax.annotation.PostConstruct;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
@@ -37,8 +32,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Saves and retrieves Steps from Elasticsearch index.<br>
@@ -85,31 +81,27 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   
   private List<Step> readStepsFromClasspath(final String classpath){
     List<Step> steps = new ArrayList<>();
-    Path stepsFolder;
     try {
-      stepsFolder = Paths.get(ElasticsearchStepsRepository.class.getResource(classpath).toURI());
-    } catch (URISyntaxException e) {
-      throw new OperateRuntimeException(String.format("Could not get steps folder from classpath %s",classpath), e);
-    }
+      PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+      Resource[] resources = resolver.getResources(classpath + "/*" + STEP_FILE_EXTENSION);
     
-    logger.info("Reading steps from {}", stepsFolder);
-    final File[] stepFiles = stepsFolder.toFile()
-        .listFiles(f -> f.isFile() && f.getName().endsWith(STEP_FILE_EXTENSION));
-
-    for (final File stepFile : stepFiles) {
-      logger.info("Read step {} ", stepFile.getName());
-      steps.add(readStepFromFile(stepFile));
+      for(Resource resource: resources) {
+        logger.info("Read step {} ", resource.getFilename());
+        steps.add(readStepFromFile(resource.getFilename(), resource.getInputStream()));
+      }
+    } catch (IOException e) {
+      throw new OperateRuntimeException(String.format("Could not get steps folder from classpath %s",classpath), e);
     }
    
     steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
     return steps;
   }
-
-  private Step readStepFromFile(final File stepFile) {
+  
+  private Step readStepFromFile(final String name,final InputStream is) {
     try {
-      return objectMapper.readValue(stepFile, Step.class);
+      return objectMapper.readValue(is, Step.class);
     } catch (IOException e) {
-      throw new OperateRuntimeException(String.format("Error in reading step from file %s",stepFile), e);
+      throw new OperateRuntimeException(String.format("Error in reading step from file %s",name), e);
     }
   }
 

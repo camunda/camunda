@@ -8,102 +8,15 @@
 		<version>0.24.0-SNAPSHOT</version>
 	</parent>
 
-	<name>Camunda Operate Migration tests</name>
-	<artifactId>migration-tests</artifactId>
+	<name>Camunda Operate Migration tests parent</name>
+	<artifactId>migration-tests-parent</artifactId>
+	<packaging>pom</packaging>
 
-	<dependencies>
-
-		<dependency>
-			<groupId>org.camunda.operate</groupId>
-			<artifactId>camunda-operate-common</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.camunda.operate</groupId>
-			<artifactId>camunda-operate-els-schema</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.camunda.operate</groupId>
-			<artifactId>camunda-operate-webapp</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.camunda.operate</groupId>
-			<artifactId>camunda-operate-qa-util</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>io.zeebe</groupId>
-			<artifactId>zeebe-client-java</artifactId>
-		</dependency>
-
-		<!-- ELASTICSEARCH -->
-		<dependency>
-			<groupId>org.elasticsearch.client</groupId>
-			<artifactId>elasticsearch-rest-high-level-client</artifactId>
-		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
-		<dependency>
-			<groupId>org.glassfish</groupId>
-			<artifactId>javax.json</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-configuration-processor</artifactId>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<!-- TODO there are classes in main path dependening on test stuff, they should rather be moved to the test sources -->
-<!--			<scope>test</scope>-->
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-	</dependencies>
-
-	<build>
-
-		<plugins>
-
-			<!-- LICENSE PLUGIN -->
-			<plugin>
-				<groupId>com.mycila</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<redirectTestOutputToFile>false</redirectTestOutputToFile>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-
-	<profiles>
-		<profile>
-			<id>skipTests</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
-			<properties>
-				<skipTests>true</skipTests>
-			</properties>
-		</profile>
-	</profiles>
+	<modules>
+		<module>test-fixture-120</module>
+		<module>test-fixture-121</module>
+		<module>test-fixture-0230</module>
+		<module>migration-test</module>
+	</modules>
 
 </project>
