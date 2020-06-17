@@ -71,7 +71,6 @@ public class CSVUtils {
   }
 
 
-
   public static List<String[]> mapRawProcessReportInstances(final List<RawDataProcessInstanceDto> rawData,
                                                             final Integer limit,
                                                             final Integer offset,
@@ -235,7 +234,7 @@ public class CSVUtils {
   private static List<String> extractAllDtoFieldKeys(Class<?> dtoClass) {
     final List<String> fieldKeys = new ArrayList<>();
     for (Field f : dtoClass.getDeclaredFields()) {
-      if (!f.isSynthetic() && !Map.class.getName().equals(f.getType().getName())) {
+      if (!f.isSynthetic() && !Map.class.isAssignableFrom(f.getType())) {
         fieldKeys.add(f.getName());
       }
     }
