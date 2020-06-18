@@ -121,6 +121,9 @@ it('should apply previously defined target values to input fields', async () => 
 });
 
 it('should set isInvalid property for input if value is invalid', async () => {
+  global.ResizeObserver = class {
+    observe(element, initObject) {}
+  };
   const node = mount(<DurationHeatmapModal {...validProps} />);
   node.setProps({open: true});
   await flushPromises();
