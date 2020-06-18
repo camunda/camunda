@@ -63,7 +63,7 @@ or ignored.
 
 Make sure that Elasticsearch that contains Operate data is running. The migration script will connect by default to specified connection in Operate settings.
 
-Call ```<application-directory>/bin/migrate```
+Execute ```<application-directory>/bin/migrate```
 
 First the current schema will be created if not exist. Then the migration takes place. If everything was successful the previous schema will be deleted. 
 The application exits.
@@ -81,7 +81,16 @@ The migration runs only when ONE previous schema version exists.
 #### Configure migration
 
 Automatic migration is enabled by default.
-It can be enabled/disabled by set configuration key `camunda.operate.migrationEnabled` to true/false.
+It can be enabled/disabled by set configuration key to true or false:
+
+`camunda.operate.migration.migrationEnabled` 
+
+To specify previous/source version use configuration key:
+
+ `camunda.operate.migration.sourceVersion` 
+
+If no *sourceVersion* is defined Operate tries to detect the previous version.
+
 
 #### Example for migrate in Kubernetes
 
@@ -112,11 +121,11 @@ spec:
 ```
 + create
 |   |
-|   + index     - Indices
+|   + index     - Folder of indices as json files
 |   |
-|   + template  - Templates
+|   + template  - Folder of templates as json files
 |   
-+ change
++ change   - Folder of steps as json files
 |   |
 |   + step-file.json
 
