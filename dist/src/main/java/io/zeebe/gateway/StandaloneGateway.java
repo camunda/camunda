@@ -11,7 +11,6 @@ import static java.lang.Runtime.getRuntime;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.zeebe.gateway.impl.SpringGatewayBridge;
 import io.zeebe.gateway.impl.broker.BrokerClient;
@@ -54,7 +53,7 @@ public class StandaloneGateway {
 
   private AtomixCluster createAtomixCluster(final ClusterCfg clusterCfg) {
     final var atomix =
-        Atomix.builder()
+        AtomixCluster.builder()
             .withMemberId(clusterCfg.getMemberId())
             .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
             .withClusterId(clusterCfg.getClusterName())
