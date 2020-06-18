@@ -18,10 +18,6 @@ spec:
         valueFrom:
           resourceFieldRef:
             resource: limits.cpu
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:InitialRAMPercentage=25.0
-          -XX:MaxRAMPercentage=50.0
       - name: TZ
         value: Europe/Berlin
     resources:
