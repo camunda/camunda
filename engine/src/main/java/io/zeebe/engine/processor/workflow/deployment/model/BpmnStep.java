@@ -30,8 +30,6 @@ public enum BpmnStep {
 
   FLOWOUT_ELEMENT_COMPLETED,
 
-  EVENT_SUBPROC_EVENT_OCCURRED,
-
   // ---- delegate to the new BPMN lifecycle processor  ----
   BPMN_ELEMENT_PROCESSOR
 }

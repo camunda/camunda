@@ -32,23 +32,22 @@ public final class SubProcessTransformer implements ModelElementTransformer<SubP
 
     if (element.triggeredByEvent()) {
       transformEventSubprocess(element, currentWorkflow, subprocess);
-
-    } else {
-      subprocess.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-      subprocess.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-      subprocess.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-      subprocess.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-      subprocess.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-      subprocess.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-      subprocess.bindLifecycleState(
-          WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
     }
+
+    subprocess.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    subprocess.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    subprocess.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    subprocess.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    subprocess.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    subprocess.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    subprocess.bindLifecycleState(
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 
   private void transformEventSubprocess(
@@ -70,13 +69,5 @@ public final class SubProcessTransformer implements ModelElementTransformer<SubP
     final ExecutableStartEvent startEvent = subprocess.getStartEvents().iterator().next();
 
     startEvent.setEventSubProcess(subprocess.getId());
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.CONTAINER_ELEMENT_ACTIVATED);
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.CONTAINER_ELEMENT_TERMINATING);
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED);
   }
 }

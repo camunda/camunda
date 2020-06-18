@@ -80,6 +80,12 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   @Override
   public void onEventOccurred(
       final ExecutableStartEvent element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.triggerStartEvent(context);
+
+    if (element.getEventSubProcess() != null) {
+      eventSubscriptionBehavior.triggerEventSubProcess(element, context);
+
+    } else {
+      eventSubscriptionBehavior.triggerStartEvent(context);
+    }
   }
 }
