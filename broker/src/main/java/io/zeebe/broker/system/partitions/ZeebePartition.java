@@ -770,7 +770,14 @@ public final class ZeebePartition extends Actor
 
   @Override
   public HealthStatus getHealthStatus() {
-    return healthStatus;
+    if (healthStatus == HealthStatus.UNHEALTHY) {
+      return HealthStatus.UNHEALTHY;
+    }
+    final var componentsHealthStatus = criticalComponentsHealthMonitor.getHealthStatus();
+    if (componentsHealthStatus == HealthStatus.UNHEALTHY) {
+      updateHealthStatus(HealthStatus.UNHEALTHY);
+    }
+    return componentsHealthStatus;
   }
 
   @Override
