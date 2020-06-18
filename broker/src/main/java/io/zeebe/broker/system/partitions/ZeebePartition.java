@@ -609,4 +609,66 @@ public final class ZeebePartition extends Actor
         .withActorScheduler(scheduler)
         .buildAsync();
   }
+
+  @Override
+  public void onFailure() {
+    actor.run(() -> updateHealthStatus(HealthStatus.UNHEALTHY));
+  }
+
+  @Override
+  public void onRecovered() {
+    actor.run(this::onRecoveredInternal);
+  }
+
+  private void onInstallFailure() {
+    updateHealthStatus(HealthStatus.UNHEALTHY);
+    if (atomixRaftPartition.getRole() == Role.LEADER) {
+      LOG.info("Unexpected failures occurred when installing leader services, stepping down");
+      atomixRaftPartition.stepDown();
+    }
+  }
+
+  private void onRecoveredInternal() {
+    updateHealthStatus(HealthStatus.HEALTHY);
+  }
+
+  private void updateHealthStatus(final HealthStatus newStatus) {
+    if (healthStatus != newStatus) {
+      healthStatus = newStatus;
+      switch (newStatus) {
+        case HEALTHY:
+          healthMetrics.setHealthy();
+          if (failureListener != null) {
+            failureListener.onRecovered();
+          }
+          break;
+        case UNHEALTHY:
+          healthMetrics.setUnhealthy();
+          if (failureListener != null) {
+            failureListener.onFailure();
+          }
+          break;
+        default:
+          LOG.warn("Unknown health status {}", newStatus);
+          break;
+      }
+    }
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    if (healthStatus == HealthStatus.UNHEALTHY) {
+      return HealthStatus.UNHEALTHY;
+    }
+    final var componentsHealthStatus = criticalComponentsHealthMonitor.getHealthStatus();
+    if (componentsHealthStatus == HealthStatus.UNHEALTHY) {
+      updateHealthStatus(HealthStatus.UNHEALTHY);
+    }
+    return componentsHealthStatus;
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    actor.run(() -> this.failureListener = failureListener);
+  }
 }
