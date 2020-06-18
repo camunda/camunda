@@ -39,32 +39,7 @@
   </dependencies>
 
   <build>
-    <defaultGoal>install</defaultGoal>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>assemble</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>assembly-generator.xml</descriptor>
-              </descriptors>
-              <attach>true</attach>
-              <appendAssemblyId>true</appendAssemblyId>
-              <outputDirectory>target/</outputDirectory>
-              <workDirectory>target/assembly/work</workDirectory>
-              <tarLongFileMode>gnu</tarLongFileMode>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
@@ -93,7 +68,7 @@
         <executions>
           <execution>
             <id>copy-dependencies-to-lib-folder</id>
-            <phase>compile</phase>
+            <phase>package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -103,6 +78,31 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>assemble</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assembly-generator.xml</descriptor>
+              </descriptors>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
+              <outputDirectory>target/</outputDirectory>
+              <workDirectory>target/assembly/work</workDirectory>
+              <tarLongFileMode>gnu</tarLongFileMode>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
   </build>
 </project>
