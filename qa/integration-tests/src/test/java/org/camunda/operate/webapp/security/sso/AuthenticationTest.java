@@ -12,15 +12,15 @@ import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import org.camunda.operate.webapp.es.reader.Probes;
 import org.camunda.operate.webapp.rest.AuthenticationRestService;
+import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,7 +47,7 @@ import com.auth0.Tokens;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
   classes = {
-      TestApplicationWithNoBeans.class, SSOWebSecurityConfig.class, SSOController.class, TokenAuthentication.class, SSOUserService.class, AuthenticationRestService.class
+      TestApplicationWithNoBeans.class, SSOWebSecurityConfig.class, SSOController.class, TokenAuthentication.class, SSOUserService.class, AuthenticationRestService.class,HealthCheckRestService.class
   },
   properties = {
       "camunda.operate.auth0.clientId=1",
@@ -74,6 +74,9 @@ public class AuthenticationTest {
   @MockBean
   AuthenticationController authenticationController;
   
+  @MockBean
+  Probes probes;
+  
   @Before
   public void setUp() throws Throwable{
     // mock building authorizeUrl
@@ -82,6 +85,8 @@ public class AuthenticationTest {
     given(mockedAuthorizedUrl.withAudience(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.withScope(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.build()).willReturn("https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://backendDomain/userinfo"); 
+   
+    given(probes.isLive(any(Long.class))).willReturn(true);
   }
   
   @Test
@@ -230,6 +235,12 @@ public class AuthenticationTest {
   public void testAccessNoPermission() {
     ResponseEntity<String> response = get(SSOWebSecurityConfig.NO_PERMISSION);   
     assertThat(response.getBody()).contains("No permission for Operate");
+  }
+  
+  @Test
+  public void testAPICheckWithoutLogin() {
+    ResponseEntity<String> response = get(HealthCheckRestService.HEALTH_CHECK_URL);   
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
   
   protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response,String url) {

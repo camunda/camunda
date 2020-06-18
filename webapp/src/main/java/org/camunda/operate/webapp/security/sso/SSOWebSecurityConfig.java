@@ -12,7 +12,7 @@ import java.io.UnsupportedEncodingException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
+import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,6 +56,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
       NO_PERMISSION,
       LOGOUT_RESOURCE,
       ACTUATOR_ENDPOINTS,
+      HealthCheckRestService.HEALTH_CHECK_URL,
       LOGIN_RESOURCE,
       CLIENT_CONFIG_RESOURCE
    };
