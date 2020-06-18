@@ -18,6 +18,21 @@ podSecurityContext:
 gateway:
   replicas: 1
   logLevel: debug
+  env:
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe-gateway
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: ATOMIX_LOG_LEVEL
+      value: INFO
+    - name: ZEEBE_GATEWAY_MONITORING_ENABLED
+      value: "true"
+    - name: ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS
+      value: "4"
 
 # Uncomment to add custom YAML configuration
 # This will overwrite anything at the application.yml location
@@ -45,8 +60,20 @@ env:
   # Enable JSON logging for google cloud stackdriver
   - name: ZEEBE_LOG_APPENDER
     value: Stackdriver
+  - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+    value: zeebe-broker
+  - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  # Avoid tons of noise when exporting larger payloads
+  - name: JAVA_OPTS
+    value: >-
+      -Dzeebe.broker.exporters.elasticsearch.args.index.ignoreVariablesAbove=32767
   - name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED
     value: "true"
+  - name: ATOMIX_LOG_LEVEL
+    value: INFO
 
 # RESOURCES
 resources:
