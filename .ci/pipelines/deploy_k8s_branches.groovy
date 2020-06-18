@@ -55,8 +55,8 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        dir('gcloud-infrastructure') {
-          git url: 'git@github.com:camunda-internal/gcloud-infrastructure',
+        dir('infra-core') {
+          git url: 'git@github.com:camunda/infra-core',
             branch: "${params.INFRASTRUCTURE_BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
@@ -78,10 +78,10 @@ pipeline {
     stage('Deploy to K8s') {
       steps {
         container('gcloud') {
-          dir('gcloud-infrastructure') {
+          dir('infra-core') {
             sh("""
               ./cmd/k8s/deploy-template-to-branch \
-              ${WORKSPACE}/gcloud-infrastructure/camunda-ci/deployments/zeebe-tasklist-branch \
+              ${WORKSPACE}/infra-core/camunda-ci/deployments/zeebe-tasklist-branch \
               ${WORKSPACE}/zeebe-tasklist/.ci/branch-deployment \
               ${params.BRANCH} \
               zeebe-tasklist
@@ -91,7 +91,7 @@ pipeline {
       }
       post {
         always {
-          archiveArtifacts artifacts: 'gcloud-infrastructure/rendered-templates/**/*'
+          archiveArtifacts artifacts: 'infra-core/rendered-templates/**/*'
         }
       }
     }
