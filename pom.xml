@@ -301,6 +301,7 @@
           <configuration>
             <skipTests>${skip.unit.tests}</skipTests>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <useModulePath>false</useModulePath>
           </configuration>
           <dependencies>
             <dependency>
@@ -316,6 +317,7 @@
           <version>${surefire-plugin.version}</version>
           <configuration>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <useModulePath>false</useModulePath>
           </configuration>
         </plugin>
         <plugin>
