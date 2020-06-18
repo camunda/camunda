@@ -22,6 +22,61 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
+/*
+ * There's 2 ways BrokerHealthCheckService can monitor its current healthstatus:
+ *
+ *  - listening for failures: in which a subcomponent tells its parent component that a failure
+ *   occurred, so that the healthstatus can be updated for all ancestor components. All of the
+ *   subcomponents in the diagram below do this.
+ *  - probing for healthstatus, in which the BrokerHealthCheckService just checks the healthstatus
+ *   of its CriticalComponentsHealthMonitor.
+ *
+ * In turn, the CriticalComponentsHealthMonitors periodically probe their subcomponents for their
+ *  healthstatus and update their own healthstatus when one of their subcomponents has become
+ *  unhealthy.
+ *
+ * The ZeebePartition only probes its CriticalComponentsHealthMonitor when its healthstatus is
+ *  probed by the CriticalComponentsHealthMonitor that monitors the ZeebePartition.
+ *
+ *       +--------------+
+ *       | BrokerHealth |-----healthstatus
+ *       | CheckService |
+ *       +--------------+
+ *    probes    |
+ *    downwards |informs
+ *              |upwards
+ *    +--------------------+
+ *    | CriticalComponents |----healthstatus
+ *    | HealthMonitor      |
+ *    +--------------------+
+ * periodically |
+ * monitors     |informs
+ * downwards    |upwards   +----------------+
+ *              |----------| ZeebePartition |----healthstatus
+ *                   probes ----------------+
+ *                   downwards     |
+ *                   when probed   |informs
+ *                                 |upwards
+ *                       +--------------------+
+ *                       | CriticalComponents |-----healthstatus
+ *                       | HealthMonitor      |
+ *                       +--------------------+
+ *                    periodically |
+ *                    monitors     |informs
+ *                    downwards    |upwards   +------+
+ *                                 |----------| Raft |
+ *                                 |          +------+
+ *                                 |informs
+ *                                 |upwards   +-----------------+
+ *                                 |----------| StreamProcessor |
+ *                                 |          +-----------------+
+ *                                 |informs
+ *                                 |upwards   +-----+
+ *                                 |----------| Log |
+ *                                            +-----+
+ *
+ * https://textik.com/#cb084adedb02d970
+ */
 public final class BrokerHealthCheckService extends Actor implements PartitionListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
