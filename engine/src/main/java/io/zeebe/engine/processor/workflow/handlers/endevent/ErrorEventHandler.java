@@ -107,10 +107,13 @@ public final class ErrorEventHandler {
       final ExecutableWorkflow workflow,
       final ElementInstance instance) {
 
-    final var elementId = instance.getValue().getElementIdBuffer();
-    final var activity = workflow.getElementById(elementId, ExecutableActivity.class);
+    final var workflowInstanceRecord = instance.getValue();
+    final var elementId = workflowInstanceRecord.getElementIdBuffer();
+    final var elementType = workflowInstanceRecord.getBpmnElementType();
 
-    for (final ExecutableCatchEvent catchEvent : activity.getEvents()) {
+    final var element = workflow.getElementById(elementId, elementType, ExecutableActivity.class);
+
+    for (final ExecutableCatchEvent catchEvent : element.getEvents()) {
       if (hasErrorCode(catchEvent, errorCode)) {
 
         catchEventTuple.instance = instance;
