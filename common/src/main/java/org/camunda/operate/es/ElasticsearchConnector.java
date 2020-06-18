@@ -82,18 +82,21 @@ public class ElasticsearchConnector {
 
   public boolean checkHealth(RestHighLevelClient esClient, boolean reconnect) {
     //TODO temporary solution
-    int attempts = 0;
+    int attempts = 0, maxAttempts = 50;
     boolean successfullyConnected = false;
-    while (attempts == 0 || (reconnect && attempts < 10 && !successfullyConnected)) {
+    while (attempts == 0 || (reconnect && attempts < maxAttempts && !successfullyConnected)) {
       try {
         final ClusterHealthResponse clusterHealthResponse = esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
+        //!clusterHealthResponse.getStatus().equals(ClusterHealthStatus.RED)
         //TODO do we need this?
         successfullyConnected = clusterHealthResponse.getClusterName().equals(operateProperties.getElasticsearch().getClusterName());
       } catch (IOException ex) {
-        logger.error(String.format("Error occurred while connecting to Elasticsearch: clustername [%s], %s:%s. Will be retried...",
+        logger.error("Error occurred while connecting to Elasticsearch: clustername [{}], {}:{}. Will be retried ({}/{}) ...",
             operateProperties.getElasticsearch().getClusterName(),
             operateProperties.getElasticsearch().getHost(),
-            operateProperties.getElasticsearch().getPort()), ex);
+            operateProperties.getElasticsearch().getPort(),
+            attempts, maxAttempts,
+            ex);
         sleepFor(3000);
       }
       attempts++;

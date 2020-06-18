@@ -41,7 +41,7 @@ public class StartupBean {
 
   @Autowired
   private OperationExecutor operationExecutor;
-
+  
   @Autowired
   private OperateProperties operateProperties;
 

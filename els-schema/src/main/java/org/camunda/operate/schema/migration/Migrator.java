@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.PostConstruct;
+import org.camunda.operate.property.MigrationProperties;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.IndexDescriptor;
@@ -30,8 +31,6 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 /**
  * Migrates an operate schema from one version to another.
@@ -40,8 +39,6 @@ import org.springframework.stereotype.Component;
  * Tries to detect source/previous schema if not provided.
  *
  */
-@Profile("migration")
-@DependsOn("schemaManager")
 @Component
 public class Migrator{
 
@@ -67,11 +64,18 @@ public class Migrator{
   @Autowired
   private StepsRepository stepsRepository;
 
+  @Autowired
+  private MigrationProperties migrationProperties;
+
   private boolean shouldDeleteSrcSchema = true;
   
   @PostConstruct
   private void init() {
     logger.debug("Created Migrator for elasticsearch at {}:{} ",operateProperties.getElasticsearch().getHost(),operateProperties.getElasticsearch().getPort());
+  }
+  
+  public void migrate() {
+    migrate(migrationProperties.getSourceVersion(), migrationProperties.getDestinationVersion());
   }
   
   /**
@@ -84,22 +88,20 @@ public class Migrator{
    * @param destinationVersion
    * @return whether migration was successful
    */
-  public boolean migrate(final String sourceVersion,final String destinationVersion) {
+  public void migrate(final String sourceVersion,final String destinationVersion) {
+    logger.info("Check whether migration is needed ...");
     final Optional<String> srcVersion = sourceVersion != null ? Optional.of(sourceVersion) : detectPreviousSchemaVersion();
     final Optional<String> dstVersion = destinationVersion != null ? Optional.of(destinationVersion) : Optional.of(operateProperties.getSchemaVersion());
-    
+
     if (srcVersion.isPresent()) {
       logger.info("Detected previous Operate Elasticsearch schema: {}", srcVersion.get());
       try {
         migrateFromTo(srcVersion.get(), dstVersion.get());
       }catch(Exception e) {
-        logger.error("Migration from {} to {} failed", srcVersion.get(), dstVersion.get(), e);
-        return false;
+        throw new OperateRuntimeException(String.format("Migration from %s to %s failed", srcVersion.get(), dstVersion.get()),e);
       }
-      return true;
     } else {
-      logger.info("No previous Operate Elasticsearch schema found.");
-      return false;
+      logger.info("No previous Operate Elasticsearch schema found. No migration needed.");
     }
   }
   /**

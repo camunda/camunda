@@ -31,7 +31,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -41,7 +41,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * After creation it updates the repository index by looking in classpath folder for new steps.<br>
  * 
  */
-@Profile("migration")
 @Component
 public class ElasticsearchStepsRepository implements StepsRepository {
   
@@ -56,6 +55,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   @Autowired
   private RestHighLevelClient esClient;
   
+  @Qualifier("operateObjectMapper")
   @Autowired
   private ObjectMapper objectMapper;
   
@@ -96,7 +96,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
     steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
     return steps;
   }
-  
+
   private Step readStepFromFile(final String name,final InputStream is) {
     try {
       return objectMapper.readValue(is, Step.class);

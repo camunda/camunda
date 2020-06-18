@@ -27,7 +27,7 @@ public class OperateProperties {
   private boolean importerEnabled = true;
   private boolean archiverEnabled = true;
   private boolean webappEnabled = true;
-  
+
   /**
    * Indicates, whether CSRF prevention is enabled.
    */

@@ -27,10 +27,9 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager{
 
   @PostConstruct
   @Override
-  public boolean initializeSchema() {
+  public void initializeSchema() {
     //do nothing
     logger.info("TestSchemaManager: no schema will be created");
-    return true;
   }
 
   public void deleteSchema() {

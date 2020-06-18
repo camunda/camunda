@@ -49,6 +49,13 @@
               <mainClass>org.springframework.boot.loader.JarLauncher</mainClass>
               <id>operate</id>
             </program>
+            <program>
+              <jvmSettings>
+              	<extraArgument>-Dloader.main=org.camunda.operate.schema.migration.SchemaMigration</extraArgument>
+              </jvmSettings>
+              <mainClass>org.springframework.boot.loader.PropertiesLauncher</mainClass>
+              <id>migrate</id>
+            </program>
           </programs>
         </configuration>
 

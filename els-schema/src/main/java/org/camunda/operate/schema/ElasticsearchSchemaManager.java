@@ -14,9 +14,11 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import org.camunda.operate.property.MigrationProperties;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.IndexDescriptor;
+import org.camunda.operate.schema.migration.Migrator;
 import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -29,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component("schemaManager")
@@ -38,25 +41,36 @@ public class ElasticsearchSchemaManager {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
 
   @Autowired
+  Environment env;
+  
+  @Autowired
   private List<IndexDescriptor> indexDescriptors;
 
   @Autowired
   private List<TemplateDescriptor> templateDescriptors;
 
   @Autowired
+  private Migrator migrator;
+  
+  @Autowired
   protected RestHighLevelClient esClient;
 
   @Autowired
   protected OperateProperties operateProperties;
+
+  @Autowired
+  private MigrationProperties migrationProperties;
     
   @PostConstruct
-  public boolean initializeSchema() {
+  public void initializeSchema() {
     if (operateProperties.getElasticsearch().isCreateSchema() && !schemaAlreadyExists()) {
       logger.info("Elasticsearch schema is empty. Indices will be created.");
-      return createSchema();
+      createSchema();
     } else {
       logger.info("Elasticsearch schema won't be created, it either already exist, or schema creation is disabled in configuration.");
-      return false;
+    }
+    if (migrationProperties.isMigrationEnabled()) {
+      migrator.migrate();
     }
   }
   
@@ -142,6 +156,6 @@ public class ElasticsearchSchemaManager {
       throw new OperateRuntimeException("Failed to put index template", e);
     }
   }
-  
+
 }
 

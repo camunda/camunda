@@ -56,6 +56,8 @@ public class TestFixture extends AbstractTestFixture {
       String[] args = new String[]{
         "--camunda.operate.elasticsearch.host=" + testContext.getExternalElsHost(),
         "--camunda.operate.elasticsearch.port=" + testContext.getExternalElsPort(),
+        "--camunda.operate.zeebeElasticsearch.host=" + testContext.getExternalElsHost(),
+        "--camunda.operate.zeebeElasticsearch.port=" + testContext.getExternalElsPort(),
         "--camunda.operate.elasticsearch.createSchema=false",
           //migration specific properties
         "--camunda.operate.migration.destinationVersion=" + OPERATE_VERSION,

@@ -5,45 +5,33 @@
  */
 package org.camunda.operate.schema.migration;
 
-import java.util.Arrays;
+import org.camunda.operate.JacksonConfig;
+import org.camunda.operate.schema.ElasticsearchSchemaManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Import;
 
-@Profile("migration")
 @SpringBootApplication
-@ComponentScan(basePackages = { "org.camunda.operate.property", "org.camunda.operate.es", "org.camunda.operate.schema" })
+@ComponentScan(basePackages = { "org.camunda.operate.property", "org.camunda.operate.es", "org.camunda.operate.schema" },
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@Import(JacksonConfig.class)
 public class SchemaMigration implements CommandLineRunner {
-
-  @Autowired
-  private Migrator migrator;
   
-  private static int exitCode = 0;
+  @Autowired
+  private ElasticsearchSchemaManager schemaManager;
+  
+  private static int exitCode = -1;
 
   @Override
   public void run(String... args) {
-    if (!migrator.migrate(extractArg(args, "migration.sourceVersion"), extractArg(args, "migration.destinationVersion"))) {
-      exitCode = -1;
-    } else {
-      exitCode = 0;
-    }
-  }
-
-  private String extractArg(final String[] args,final String argName) {
-    final String[] destinationVersion = new String[1];
-    Arrays.stream(args).filter(v -> v.contains(argName)).findFirst()
-        .ifPresentOrElse(v -> {
-              destinationVersion[0] = v.substring(v.indexOf("=") + 1);
-            },
-            () -> destinationVersion[0] = null
-        );
-    return destinationVersion[0];
+    //only if application context starts correctly, the exit code is 0(OK)
+    exitCode = 0;
   }
 
   public static void main(String[] args) {
@@ -52,15 +40,7 @@ public class SchemaMigration implements CommandLineRunner {
     final SpringApplication springApplication = new SpringApplication(SchemaMigration.class);
     springApplication.setWebApplicationType(WebApplicationType.NONE);
     springApplication.setAddCommandLineProperties(true);
-    springApplication.setAdditionalProfiles("migration");
-    final ConfigurableApplicationContext ctx = springApplication.run(args); 
-    SpringApplication.exit(ctx, new ExitCodeGenerator() {
-
-      @Override
-      public int getExitCode() {
-        return exitCode;
-      }
-      
-    });
+    final ConfigurableApplicationContext ctx = springApplication.run(args);
+    SpringApplication.exit(ctx, () -> exitCode);
   }
 }
