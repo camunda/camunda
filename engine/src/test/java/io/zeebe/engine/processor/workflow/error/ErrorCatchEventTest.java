@@ -17,6 +17,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -80,6 +81,37 @@ public final class ErrorCatchEventTest {
             .endEvent()
             .done(),
         "subprocess",
+        "error-boundary-event"
+      },
+      {
+        "boundary event on multi-instance subprocess",
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.multiInstance(m -> m.zeebeInputCollection("items"))
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeTaskType(JOB_TYPE))
+                        .endEvent())
+            .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
+            .endEvent()
+            .done(),
+        "subprocess",
+        "error-boundary-event"
+      },
+      {
+        "boundary event on multi-instance service task",
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                TASK_ELEMENT_ID,
+                t -> t.zeebeTaskType(JOB_TYPE).multiInstance(m -> m.zeebeInputCollection("items")))
+            .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
+            .endEvent()
+            .done(),
+        TASK_ELEMENT_ID,
         "error-boundary-event"
       },
       {
@@ -164,7 +196,12 @@ public final class ErrorCatchEventTest {
     // given
     ENGINE.deployment().withXmlResource(workflow).deploy();
 
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("items", List.of(1))
+            .create();
 
     // when
     ENGINE

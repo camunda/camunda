@@ -112,7 +112,9 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
     // assuming that error events are used rarely
     // - just walk through the scope hierarchy and look for a matching boundary event
     final var elementId = instance.getValue().getElementIdBuffer();
-    final var activity = workflow.getElementById(elementId, ExecutableActivity.class);
+    final var elementType = instance.getValue().getBpmnElementType();
+
+    final var activity = workflow.getElementById(elementId, elementType, ExecutableActivity.class);
 
     for (final ExecutableCatchEvent catchEvent : activity.getEvents()) {
       if (hasErrorCode(catchEvent, errorCode)) {
