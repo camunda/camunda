@@ -11,7 +11,7 @@ static String MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
 static String PUBLIC_DOCKER_REGISTRY(boolean pushChanges) {
-  return (pushChanges && !isStagingJenkins()) ?
+  return (pushChanges && !utils.isStageJenkins()) ?
     'registry.camunda.cloud' : 'stage.registry.camunda.cloud'
 }
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
@@ -21,7 +21,7 @@ ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME(boolean pushChanges) {
-  return (pushChanges && !isStagingJenkins()) ?
+  return (pushChanges && !utils.isStageJenkins()) ?
     'downloads-camunda-cloud-enterprise-release' :
     'stage-downloads-camunda-cloud-enterprise-release'
 }
