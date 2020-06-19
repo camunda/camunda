@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomNumberBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
@@ -24,7 +25,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
-public class GroupByDateVariableUnitMigrationIT extends AbstractUpgradeIT {
+public class ReportCustomBucketConfigIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "3.0.0";
 
   @BeforeEach
@@ -62,6 +63,22 @@ public class GroupByDateVariableUnitMigrationIT extends AbstractUpgradeIT {
     assertThat(allReports).allSatisfy(this::assertDefaultGroupByDateVariableUnit);
   }
 
+  @SneakyThrows
+  @Test
+  public void groupByNumberVariableCustomBucketHasDefaultValue() {
+    // given
+    final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    final SearchHit[] allReports =
+      getAllDocumentsOfIndex(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME);
+
+    // then
+    assertThat(allReports).allSatisfy(this::assertDefaultGroupByNumberVariableBuckets);
+  }
+
   @SuppressWarnings("unchecked")
   private void assertDefaultGroupByDateVariableUnit(final SearchHit document) {
     final Map<String, Object> data = (Map<String, Object>) document.getSourceAsMap()
@@ -71,5 +88,24 @@ public class GroupByDateVariableUnitMigrationIT extends AbstractUpgradeIT {
     final String actualUnitName =
       (String) configuration.get(SingleReportConfigurationDto.Fields.groupByDateVariableUnit.name());
     assertThat(actualUnitName).isEqualTo(GroupByDateUnit.AUTOMATIC.toString());
+  }
+
+  @SuppressWarnings("unchecked")
+  @SneakyThrows
+  private void assertDefaultGroupByNumberVariableBuckets(final SearchHit document) {
+    final CustomNumberBucketDto expectedCustomNumberBucketDto = new CustomNumberBucketDto();
+    final Map<String, Object> data = (Map<String, Object>) document.getSourceAsMap()
+      .get(AbstractReportIndex.DATA);
+    final Map<String, Object> configuration =
+      (Map<String, Object>) data.get(SingleReportDataDto.Fields.configuration.name());
+    final Map<String, Object> actualCustomBucketField =
+      (Map<String, Object>) configuration.get(SingleReportConfigurationDto.Fields.customNumberBucket.name());
+
+    assertThat(actualCustomBucketField.get(CustomNumberBucketDto.Fields.active.name()))
+      .isEqualTo(expectedCustomNumberBucketDto.isActive());
+    assertThat(actualCustomBucketField.get(CustomNumberBucketDto.Fields.baseline.name()))
+      .isEqualTo(expectedCustomNumberBucketDto.getBaseline().toString());
+    assertThat(actualCustomBucketField.get(CustomNumberBucketDto.Fields.bucketSize.name()))
+      .isEqualTo(expectedCustomNumberBucketDto.getBucketSize().toString());
   }
 }

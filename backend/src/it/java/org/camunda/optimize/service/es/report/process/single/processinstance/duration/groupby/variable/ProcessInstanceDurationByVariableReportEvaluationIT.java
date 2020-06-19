@@ -487,7 +487,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData.getConfiguration().setGroupByNumberVariableUnit(1.0);
+    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(1.0);
 
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
@@ -558,8 +559,9 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData.getConfiguration().setBaseline(10.0);
-    reportData.getConfiguration().setGroupByNumberVariableUnit(100.0);
+    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData.getConfiguration().getCustomNumberBucket().setBaseline(10.0);
+    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(100.0);
 
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(
       reportData).getResult();
@@ -579,7 +581,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_numberVariable_invalidBaseline_doesNotFail() throws SQLException {
+  public void multipleBuckets_numberVariable_invalidBaseline_returnsEmptyResult() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
     Map<String, Object> variables = new HashMap<>();
@@ -599,21 +601,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData.getConfiguration().setBaseline(30.0);
-    reportData.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData.getConfiguration().getCustomNumberBucket().setBaseline(30.0);
+    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
 
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(
       reportData).getResult();
 
-    // then the bucket range defaults to min. - max. variable value
-    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getIsComplete()).isTrue();
+    // then the result is empty
     assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(3);
-    assertThat(resultDto.getData().stream()
-                 .map(MapResultEntryDto::getKey)
-                 .collect(toList()))
-      .containsExactly("10.0", "15.0", "20.0");
+    assertThat(resultDto.getData()).isEmpty();
   }
 
   @SneakyThrows
@@ -643,7 +640,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData1.getConfiguration().setGroupByNumberVariableUnit(10.0);
+    reportData1.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData1.getConfiguration().getCustomNumberBucket().setBucketSize(10.0);
 
 
     ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
@@ -654,7 +652,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData2.getConfiguration().setGroupByNumberVariableUnit(10.0);
+    reportData2.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData2.getConfiguration().getCustomNumberBucket().setBucketSize(10.0);
 
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -711,7 +710,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData1.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    reportData1.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData1.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
 
 
     ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
@@ -722,7 +722,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData2.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    reportData2.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData2.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
 
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -779,7 +780,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData1.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    reportData1.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData1.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
 
 
     ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
@@ -790,7 +792,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData2.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    reportData2.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData2.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
 
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -1162,8 +1165,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       assertThat(resultDto.getData()).isNotNull();
 
       final List<MapResultEntryDto> resultData = resultDto.getData();
-      assertThat(resultData).hasSize(1);
       if (VariableType.DATE.equals(variableType)) {
+        assertThat(resultData).hasSize(1);
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
         String dateAsString = embeddedOptimizeExtension.formatToHistogramBucketKey(
           temporal.atZoneSimilarLocal(ZoneId.systemDefault()).toOffsetDateTime(),
@@ -1171,7 +1174,14 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
         );
         assertThat(resultData.get(0).getKey()).isEqualTo(dateAsString);
         assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
+      } else if (VariableType.getNumericTypes().contains(variableType)) {
+        assertThat(resultData
+                     .stream()
+                     .mapToDouble(resultEntry -> resultEntry.getValue() == null ? 0.0 : resultEntry.getValue())
+                     .sum())
+          .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
       } else {
+        assertThat(resultData).hasSize(1);
         assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
       }
     }

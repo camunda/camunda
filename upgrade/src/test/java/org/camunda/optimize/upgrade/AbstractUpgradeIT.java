@@ -67,7 +67,7 @@ public abstract class AbstractUpgradeIT {
   protected static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
   protected static final AlertIndexV2 ALERT_INDEX = new AlertIndexV2();
 
-  private ObjectMapper objectMapper;
+  protected ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;
   protected OptimizeIndexNameService indexNameService;
   protected UpgradeExecutionDependencies upgradeDependencies;

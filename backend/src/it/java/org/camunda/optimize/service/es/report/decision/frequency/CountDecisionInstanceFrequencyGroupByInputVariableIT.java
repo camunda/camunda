@@ -84,9 +84,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getData().get(0).getKey()).isEqualTo(amountValue);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(2.);
+    assertThat(result.getData().stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(2L);
   }
 
   @Test
@@ -158,12 +156,12 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       decisionDefinitionDto1, decisionDefinitionDto1.getVersionAsString(), INPUT_AMOUNT_ID, VariableType.DOUBLE
     ).getResult();
 
-    // then
+    // then the result includes all instance data
     assertThat(result.getInstanceCount()).isEqualTo(6L);
     assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(6L);
   }
 
   @Test
@@ -215,7 +213,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   }
 
   @Test
-  public void reportEvaluationMultiBucketGroupByNumberInputVariable_invalidBaseline_doesNotFail() {
+  public void reportEvaluationMultiBucketGroupByNumberInputVariable_invalidBaseline_returnsEmptyResult() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
@@ -237,11 +235,9 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       5.0
     ).getResult().getData();
 
-    // then the result bucket range defaults to the min-max range
+    // then the result is empty
     assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(3);
-    assertThat(resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList()))
-      .containsExactly("10.0", "15.0", "20.0");
+    assertThat(resultData).isEmpty();
   }
 
   @Test
@@ -380,9 +376,9 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    // then
+    // then the result covers all instances and is sorted
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(6L);
     final List<String> resultDataKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(resultDataKeys).isSortedAccordingTo(Comparator.reverseOrder());
   }
@@ -424,9 +420,9 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
-    // then
+    // then the result includes all instance data and is sorted
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(6L);
     final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
   }
@@ -479,9 +475,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(1);
-    assertThat(resultData.get(0).getKey()).isEqualTo("200.0");
-    assertThat(resultData.get(0).getValue()).isEqualTo(2.);
+    assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(2L);
   }
 
   @Test
@@ -1074,8 +1068,9 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       variableType
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(dateUnit);
-    reportData.getConfiguration().setBaseline(baseline);
-    reportData.getConfiguration().setGroupByNumberVariableUnit(numberVariableBucketSize);
+    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData.getConfiguration().getCustomNumberBucket().setBaseline(baseline);
+    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(numberVariableBucketSize);
     return reportClient.evaluateMapReport(reportData);
   }
 

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -176,7 +177,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(4L);
   }
 
   @Test
@@ -236,7 +237,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
   }
 
   @Test
-  public void reportEvaluationMultiBuckets_GroupByNumberOutputVariable_invalidBaseline_doesNotFail() {
+  public void reportEvaluationMultiBuckets_GroupByNumberOutputVariable_invalidBaseline_returnsEmptyResult() {
     // given
     final String outputVarName = "outputVarName";
     final String inputVarName = "inputVarName";
@@ -270,11 +271,9 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       5.0
     ).getResult().getData();
 
-    // then the result bucket range defaults to the min-max range
+    // then the result is empty
     assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(3);
-    assertThat(resultData.stream().map(MapResultEntryDto::getKey).collect(toList()))
-      .containsExactly("10.0", "15.0", "20.0");
+    assertThat(resultData).isEmpty();
   }
 
   @Test
@@ -1107,8 +1106,9 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       variableType
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    reportData.getConfiguration().setGroupByNumberVariableUnit(numberVariableBucketSize);
-    reportData.getConfiguration().setBaseline(baseline);
+    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(numberVariableBucketSize);
+    reportData.getConfiguration().getCustomNumberBucket().setBaseline(baseline);
     return reportClient.evaluateMapReport(reportData);
   }
 

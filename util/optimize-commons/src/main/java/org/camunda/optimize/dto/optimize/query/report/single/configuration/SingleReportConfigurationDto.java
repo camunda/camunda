@@ -15,6 +15,7 @@ import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomNumberBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
@@ -84,10 +85,8 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   @NonNull
   private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
-  private Double groupByNumberVariableUnit = null;
-  // baseline = start of first bucket for number var reports. If left null, the bucket range will start at the min.
-  // variable value
-  private Double baseline = null;
+  @Builder.Default
+  private CustomNumberBucketDto customNumberBucket = new CustomNumberBucketDto();
   private SortingDto sorting = null;
   private ProcessPartDto processPart = null;
 
@@ -124,5 +123,17 @@ public class SingleReportConfigurationDto implements Combinable {
 
   public Optional<ProcessPartDto> getProcessPart() {
     return Optional.ofNullable(processPart);
+  }
+
+  public Optional<Double> getBaselineForNumberVariableReport() {
+    return customNumberBucket.isActive()
+      ? Optional.ofNullable(customNumberBucket.getBaseline())
+      : Optional.empty();
+  }
+
+  public Optional<Double> getBucketSizeForNumberVariableReport() {
+    return customNumberBucket.isActive()
+      ? Optional.ofNullable(customNumberBucket.getBucketSize())
+      : Optional.empty();
   }
 }

@@ -554,7 +554,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   @Test
-  public void multipleBuckets_numberVariable_invalidBaseline_doesNotFail() {
+  public void multipleBuckets_numberVariable_invalidBaseline_returnsEmptyResult() {
     // given
     final String varName = "doubleVar";
     Map<String, Object> variables = new HashMap<>();
@@ -581,11 +581,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     // then the bucket range defaults to min. - max. variable value
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(3);
-    assertThat(resultData.stream()
-                 .map(MapResultEntryDto::getKey)
-                 .collect(toList()))
-      .containsExactly("10.0", "15.0", "20.0");
+    assertThat(resultData).isEmpty();
   }
 
   @Test
@@ -737,7 +733,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       // then
 
       assertThat(resultData).isNotNull();
-      assertThat(resultData).hasSize(1);
       String expectedKey;
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
@@ -745,11 +740,20 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
           temporal.atZoneSimilarLocal(ZoneId.systemDefault()).toOffsetDateTime(),
           ChronoUnit.MONTHS
         );
+        assertThat(resultData).hasSize(1);
+        assertThat(resultData.get(0).getKey()).isEqualTo(expectedKey);
+        assertThat(resultData.get(0).getValue()).isEqualTo(1.);
+      } else if (VariableType.getNumericTypes().contains(variableType)) {
+        assertThat(resultData
+                     .stream()
+                     .mapToDouble(resultEntry -> resultEntry.getValue() == null ? 0.0 : resultEntry.getValue())
+                     .sum())
+          .isEqualTo(1.0);
       } else {
+        assertThat(resultData).hasSize(1);
         expectedKey = String.valueOf(entry.getValue());
+        assertThat(resultData.get(0).getKey()).isEqualTo(expectedKey);
       }
-      assertThat(resultData.get(0).getKey()).isEqualTo(expectedKey);
-      assertThat(resultData.get(0).getValue()).isEqualTo(1.);
     }
   }
 
@@ -1173,8 +1177,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       .setVariableType(variableType)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
       .build();
-    reportDataDto.getConfiguration().setBaseline(baseline);
-    reportDataDto.getConfiguration().setGroupByNumberVariableUnit(groupByNumberVariableBucketSize);
+    reportDataDto.getConfiguration().getCustomNumberBucket().setActive(true);
+    reportDataDto.getConfiguration().getCustomNumberBucket().setBaseline(baseline);
+    reportDataDto.getConfiguration().getCustomNumberBucket().setBucketSize(groupByNumberVariableBucketSize);
     return reportDataDto;
   }
 

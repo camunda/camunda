@@ -119,14 +119,29 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
           .getGroupByDateVariableUnit()
           .equals(that.getConfiguration().getGroupByDateVariableUnit());
       } else if (isGroupByNumberVariableReport()) {
-        return Objects.equals(
-          this.getConfiguration().getGroupByNumberVariableUnit(),
-          that.getConfiguration().getGroupByNumberVariableUnit()
-        );
+        return isBucketSizeCombinable(that);
       }
       return true;
     }
     return false;
+  }
+
+  private boolean isBucketSizeCombinable(final ProcessReportDataDto that) {
+    return this.getConfiguration().getCustomNumberBucket().isActive()
+      && that.getConfiguration().getCustomNumberBucket().isActive()
+      && Objects.equals(
+      this.getConfiguration().getCustomNumberBucket().getBucketSize(),
+      that.getConfiguration().getCustomNumberBucket().getBucketSize()
+    ) || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
+  }
+
+  private boolean isBucketSizeIrrelevant(final ProcessReportDataDto reportData) {
+    // Bucket size settings for combined reports are not relevant if custom bucket config is
+    // inactive or bucket size is null
+    if (reportData.getConfiguration().getCustomNumberBucket().isActive()) {
+      return reportData.getConfiguration().getCustomNumberBucket().getBucketSize() == null;
+    }
+    return true;
   }
 
   private boolean isGroupByDateVariableReport() {

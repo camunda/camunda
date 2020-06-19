@@ -253,7 +253,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     groupByNumberVar1Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar1Data.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setActive(true);
+    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
     ((VariableGroupByValueDto) groupByNumberVar1Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar1.setData(groupByNumberVar1Data);
 
@@ -268,7 +269,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     groupByNumberVar2Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar2Data.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    groupByNumberVar2Data.getConfiguration().getCustomNumberBucket().setActive(true);
+    groupByNumberVar2Data.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
     ((VariableGroupByValueDto) groupByNumberVar2Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar2.setData(groupByNumberVar2Data);
 
@@ -345,7 +347,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     groupByNumberVar1Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar1Data.getConfiguration().setGroupByNumberVariableUnit(5.0);
+    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setActive(true);
+    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
     ((VariableGroupByValueDto) groupByNumberVar1Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar1.setData(groupByNumberVar1Data);
 
@@ -360,7 +363,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     groupByNumberVar2Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar2Data.getConfiguration().setGroupByNumberVariableUnit(10.0);
+    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setActive(true);
+    groupByNumberVar2Data.getConfiguration().getCustomNumberBucket().setBucketSize(10.0);
     ((VariableGroupByValueDto) groupByNumberVar2Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar2.setData(groupByNumberVar2Data);
 

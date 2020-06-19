@@ -177,8 +177,13 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       return Optional.empty();
     }
 
-    final double unit = getGroupByNumberVariableUnit(context, minMaxStats);
-    final double min = getMinForNumberVariableAggregation(context, minMaxStats);
+    final Optional<Double> min = getBaselineForNumberVariableAggregation(context, minMaxStats);
+    if (!min.isPresent()) {
+      // no valid baseline is set, return empty result
+      return Optional.empty();
+    }
+
+    final double unit = getGroupByNumberVariableUnit(context, min.get(), minMaxStats);
     final double max = getMaxForNumberVariableAggregation(context, minMaxStats);
     int numberOfBuckets = 0;
 
@@ -186,7 +191,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .range(RANGE_AGGREGATION)
       .field(getNestedVariableValueFieldLabel(getVariableType(context)));
 
-    for (double start = min;
+    for (double start = min.get();
          start <= max && numberOfBuckets < configurationService.getEsAggregationBucketLimit();
          start += unit) {
       RangeAggregator.Range range =
@@ -343,41 +348,47 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       : minMaxStats.getMax();
   }
 
-  private Double getMinForNumberVariableAggregation(final ExecutionContext<Data> context,
-                                                    final Stats minMaxStats) {
+  private Optional<Double> getBaselineForNumberVariableAggregation(final ExecutionContext<Data> context,
+                                                                   final Stats minMaxStats) {
     final Optional<Range<Double>> range = context.getNumberVariableRange();
-    final Double baselineForSingleReport = context.getReportData().getConfiguration().getBaseline();
+    final Optional<Double> baselineForSingleReport = context.getReportData()
+      .getConfiguration()
+      .getBaselineForNumberVariableReport();
 
     if (!range.isPresent()
-      && baselineForSingleReport != null
-      && baselineForSingleReport <= minMaxStats.getMax()) {
+      && baselineForSingleReport.isPresent()) {
+      if (baselineForSingleReport.get() > minMaxStats.getMax()) {
+        // if report is single report and invalid baseline is set, return empty result
+        return Optional.empty();
+      }
       // if report is single report and a valid baseline is set, use this instead of the min. range value
       return baselineForSingleReport;
     }
 
     return range.isPresent()
-      ? range.get().getMinimum()
-      : minMaxStats.getMin();
+      ? Optional.of(roundDownToNearestPowerOfTen(range.get().getMinimum()))
+      : Optional.of(roundDownToNearestPowerOfTen(minMaxStats.getMin()));
   }
 
   private Double getGroupByNumberVariableUnit(final ExecutionContext<Data> context,
+                                              final Double baseline,
                                               final Stats minMaxStats) {
     final Optional<Range<Double>> rangeForCombinedReport = context.getNumberVariableRange();
     final double maxVariableValue = rangeForCombinedReport.isPresent()
       ? rangeForCombinedReport.get().getMaximum()
       : minMaxStats.getMax();
-    final double minVariableValue = rangeForCombinedReport.isPresent()
-      ? rangeForCombinedReport.get().getMinimum()
-      : minMaxStats.getMin();
 
-    Double unit = context.getReportData().getConfiguration().getGroupByNumberVariableUnit();
-    if (unit == null || unit <= 0) {
+    final boolean customBucketsActive = context.getReportData().getConfiguration().getCustomNumberBucket().isActive();
+    Double unit = context.getReportData().getConfiguration().getCustomNumberBucket().getBucketSize();
+    if (!customBucketsActive || unit == null || unit <= 0) {
       // if no valid unit is configured, calculate default automatic unit
       unit =
-        (maxVariableValue - minVariableValue)
+        (maxVariableValue - baseline)
           / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1); // -1 because the end of the loop is
       // inclusive and would otherwise create 81 buckets
-      unit = Math.max(unit, 1);
+      unit = unit == 0
+        ? 1
+        : roundToNearestPowerOfTen(unit);
     }
     if (!VariableType.DOUBLE.equals(getVariableType(context))) {
       // round unit up if grouped by number variable without decimal point
@@ -399,8 +410,15 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     return context.getReportData().getConfiguration().getGroupByDateVariableUnit();
   }
 
+  private Double roundDownToNearestPowerOfTen(Double numberToRound) {
+    return Math.pow(10, Math.floor(Math.log10(numberToRound)));
+  }
+
+  private Double roundToNearestPowerOfTen(Double numberToRound) {
+    return Math.pow(10, Math.round(Math.log10(numberToRound)));
+  }
+
   protected boolean isGroupedByNumberVariable(final VariableType varType) {
     return VariableType.getNumericTypes().contains(varType);
   }
-
 }
