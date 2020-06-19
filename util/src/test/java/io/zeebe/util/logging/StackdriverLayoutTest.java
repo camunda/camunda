@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.logging.log4j.Level;
@@ -47,7 +46,7 @@ public final class StackdriverLayoutTest {
   private Logger logger;
   private PipedInputStream source;
   private PipedOutputStream sink;
-  private OutputStreamAppender appender;
+  private RecordingAppender appender;
 
   @Before
   public void before() throws IOException {
@@ -79,6 +78,7 @@ public final class StackdriverLayoutTest {
     }
 
     logger.removeAppender(appender);
+    appender.stop();
   }
 
   @Test
@@ -210,24 +210,17 @@ public final class StackdriverLayoutTest {
 
   @Test
   public void shouldContainTime() throws IOException {
-    // given
-    final var lowerBound = Instant.now();
-
     // when
     logger.info("This is a message");
 
     // then
-    final var upperBound = Instant.now();
     final var jsonMap = readLoggedEvent();
+    final var event = appender.getAppendedEvents().get(0);
     final var timestampSeconds = ((Number) jsonMap.get("timestampSeconds")).longValue();
     final var timestampNanos = ((Number) jsonMap.get("timestampNanos")).longValue();
 
-    softly
-        .assertThat(timestampSeconds)
-        .isBetween(lowerBound.getEpochSecond(), upperBound.getEpochSecond());
-    softly
-        .assertThat(timestampNanos)
-        .isBetween((long) lowerBound.getNano(), (long) upperBound.getNano());
+    softly.assertThat(timestampSeconds).isEqualTo(event.getInstant().getEpochSecond());
+    softly.assertThat(timestampNanos).isEqualTo(event.getInstant().getNanoOfSecond());
   }
 
   @Test
@@ -389,11 +382,12 @@ public final class StackdriverLayoutTest {
     return OBJECT_READER.withValueToUpdate(new HashMap<String, Object>()).readValue(source);
   }
 
-  private OutputStreamAppender createAndStartAppender(
+  private RecordingAppender createAndStartAppender(
       final Layout<?> layout, final OutputStream logTarget) {
     final OutputStreamAppender appender =
         OutputStreamAppender.createAppender(layout, null, logTarget, "test", false, false);
-    appender.start();
-    return appender;
+    final RecordingAppender recordingAppender = new RecordingAppender(appender);
+    recordingAppender.start();
+    return recordingAppender;
   }
 }
