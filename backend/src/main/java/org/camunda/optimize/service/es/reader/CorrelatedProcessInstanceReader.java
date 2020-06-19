@@ -155,7 +155,7 @@ public class CorrelatedProcessInstanceReader {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
       CorrelatableProcessInstanceDto.class,
       objectMapper,
