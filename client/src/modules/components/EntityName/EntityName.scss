@@ -1,0 +1,44 @@
+@import 'shared-styles/shared-styles.scss';
+
+.EntityName {
+  position: relative;
+  flex-grow: 1;
+  display: flex;
+  width: 100%;
+  padding-right: 48px;
+
+  .name {
+    position: absolute;
+    width: 100%;
+    padding-right: inherit;
+    line-height: 35px;
+
+    font-size: 18px;
+    color: $grey-darken-23;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  .Tooltip {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    max-width: 346px;
+
+    .Tooltip__text-bottom {
+      padding: 9px 13px 9px 11px;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 14px;
+      font-weight: normal;
+      text-align: left;
+    }
+  }
+
+  &:hover .Tooltip {
+    display: inline-block;
+  }
+}

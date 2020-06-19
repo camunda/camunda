@@ -15,10 +15,6 @@ exports[`should match snapshot 1`] = `
       onChange={[Function]}
       onSave={[Function]}
     />
-    <ModificationInfo
-      date="2020-11-11T11:11:11.1111+0200"
-      user="john"
-    />
   </div>
   <Themed(BPMNDiagramErrorHandler)
     allowModeling={true}

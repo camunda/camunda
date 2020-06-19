@@ -18,7 +18,7 @@ import {
   Dropdown,
   Popover,
   Deleter,
-  ModificationInfo,
+  EntityName,
 } from 'components';
 
 import {themed} from 'theme';
@@ -89,8 +89,6 @@ export default themed(
       const {
         id,
         name,
-        lastModifier,
-        lastModified,
         currentUserRole,
         isAuthorizedToShare,
         sharingEnabled,
@@ -111,9 +109,7 @@ export default themed(
           >
             <div className="header">
               <div className="head">
-                <div className="name-container">
-                  <h1 className="name">{name}</h1>
-                </div>
+                <EntityName>{name}</EntityName>
                 <div className="tools">
                   {!fullScreenActive && (
                     <React.Fragment>
@@ -230,7 +226,6 @@ export default themed(
                   </Dropdown>
                 </div>
               </div>
-              <ModificationInfo user={lastModifier} date={lastModified} />
             </div>
             {filtersShown && (
               <FiltersView

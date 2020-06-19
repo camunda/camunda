@@ -1,4 +1,8 @@
 .ReportView {
+  .Report__header .instanceCount {
+    margin-top: -5px;
+  }
+
   .share-button .Popover__dialog {
     padding: 20px 40px;
   }

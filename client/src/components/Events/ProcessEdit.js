@@ -7,9 +7,8 @@
 import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
-import moment from 'moment';
 
-import {EntityNameForm, BPMNDiagram, LoadingIndicator, ModificationInfo} from 'components';
+import {EntityNameForm, BPMNDiagram, LoadingIndicator} from 'components';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {nowDirty, nowPristine} from 'saveGuard';
@@ -44,8 +43,6 @@ export class ProcessEdit extends React.Component {
       mappings: {},
       eventSources: null,
       selectedEvent: null,
-      lastModified: null,
-      lastModifier: null,
     };
   }
 
@@ -90,22 +87,18 @@ export class ProcessEdit extends React.Component {
       `,
       mappings: {},
       eventSources: [],
-      lastModifier: (await this.props.getUser()).id,
-      lastModified: moment().format('Y-MM-DDTHH:mm:ss.SSSZZ'),
     });
   };
 
   loadProcess = () => {
     this.props.mightFail(
       loadProcess(this.props.id),
-      ({name, xml, mappings, eventSources, lastModifier, lastModified}) =>
+      ({name, xml, mappings, eventSources}) =>
         this.setState({
           name,
           xml,
           mappings,
           eventSources,
-          lastModifier,
-          lastModified,
         }),
       showError
     );
@@ -228,16 +221,7 @@ export class ProcessEdit extends React.Component {
   };
 
   render() {
-    const {
-      name,
-      mappings,
-      selectedNode,
-      xml,
-      eventSources,
-      selectedEvent,
-      lastModified,
-      lastModifier,
-    } = this.state;
+    const {name, mappings, selectedNode, xml, eventSources, selectedEvent} = this.state;
 
     if (!xml) {
       return <LoadingIndicator />;
@@ -257,7 +241,6 @@ export class ProcessEdit extends React.Component {
             onSave={this.saveAndGoBack}
             onCancel={nowPristine}
           />
-          <ModificationInfo user={lastModifier} date={lastModified} />
         </div>
         <BPMNDiagram xml={xml} allowModeling>
           <ProcessRenderer

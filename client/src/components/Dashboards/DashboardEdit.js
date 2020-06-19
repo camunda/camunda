@@ -9,7 +9,7 @@ import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 
 import {evaluateReport} from 'services';
-import {DashboardRenderer, EntityNameForm, ModificationInfo, Button, Icon} from 'components';
+import {DashboardRenderer, EntityNameForm, Button, Icon} from 'components';
 import {t} from 'translation';
 import {nowDirty, nowPristine} from 'saveGuard';
 
@@ -195,7 +195,6 @@ export default class DashboardEdit extends React.Component {
               {t('dashboard.filter.label')}
             </Button>
           </EntityNameForm>
-          <ModificationInfo user={lastModifier} date={lastModified} />
         </div>
         {filtersShown && (
           <FiltersEdit

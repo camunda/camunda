@@ -41,7 +41,7 @@ const report = {
     groupBy: {type: 'none', value: null},
     visualization: 'table',
   },
-  result: {data: [1, 2, 3]},
+  result: {data: [1, 2, 3], instanceCount: 37},
 };
 
 const props = {
@@ -50,6 +50,12 @@ const props = {
   updateOverview: jest.fn(),
   location: {pathname: '/report/1'},
 };
+
+it('should show the instance count in the header if it is available', () => {
+  const node = shallow(<ReportEdit {...props} />);
+
+  expect(node.find('.instanceCount')).toIncludeText('37');
+});
 
 it('should not contain a Control Panel in edit mode for a combined report', () => {
   const combinedReport = {

@@ -17,7 +17,6 @@ import EventTable from './EventTable';
 const props = {
   id: '1',
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  getUser: jest.fn().mockReturnValue({id: 'john'}),
 };
 
 jest.mock('saveGuard', () => ({
@@ -54,11 +53,9 @@ it('should load process by id', () => {
 
 it('should initalize a new process for the current user', () => {
   loadProcess.mockClear();
-  props.getUser.mockClear();
   shallow(<ProcessEdit {...props} id="new" />);
 
   expect(loadProcess).not.toHaveBeenCalled();
-  expect(props.getUser).toHaveBeenCalled();
 });
 
 it('should update the process', async () => {

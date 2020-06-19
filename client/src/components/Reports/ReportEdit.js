@@ -11,13 +11,7 @@ import {Redirect, withRouter} from 'react-router-dom';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {
-  ReportRenderer,
-  LoadingIndicator,
-  MessageBox,
-  EntityNameForm,
-  ModificationInfo,
-} from 'components';
+import {ReportRenderer, LoadingIndicator, MessageBox, EntityNameForm} from 'components';
 import {getOptimizeVersion} from 'config';
 
 import {
@@ -203,13 +197,14 @@ export class ReportEdit extends React.Component {
 
   render() {
     const {report, loadingReportData, conflict, redirect, optimizeVersion} = this.state;
-    const {name, lastModifier, lastModified, data, combined, reportType} = report;
+    const {name, data, combined, reportType, result} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
     }
 
     const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/update/2.7-to-3.0/#suspension-filter`;
+    const instanceCount = result?.instanceCount;
 
     return (
       <div className="Report">
@@ -222,7 +217,13 @@ export class ReportEdit extends React.Component {
             onSave={this.saveAndGoBack}
             onCancel={this.cancel}
           />
-          <ModificationInfo user={lastModifier} date={lastModified} />
+          <div className="instanceCount">
+            {typeof instanceCount === 'number' &&
+              t(
+                `report.instanceCount.process.header-label${instanceCount !== 1 ? '-plural' : ''}`,
+                {count: instanceCount}
+              )}
+          </div>
         </div>
 
         {!combined && reportType === 'process' && (

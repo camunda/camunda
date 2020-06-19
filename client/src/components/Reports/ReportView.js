@@ -7,15 +7,7 @@
 import React from 'react';
 import {Link, Redirect} from 'react-router-dom';
 
-import {
-  Button,
-  ShareEntity,
-  ReportRenderer,
-  Popover,
-  Icon,
-  Deleter,
-  ModificationInfo,
-} from 'components';
+import {Button, ShareEntity, ReportRenderer, Popover, Icon, Deleter, EntityName} from 'components';
 import {isSharingEnabled} from 'config';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
@@ -47,7 +39,9 @@ export default class ReportView extends React.Component {
     const {report} = this.props;
     const {redirect, sharingEnabled, deleting} = this.state;
 
-    const {id, name, currentUserRole, lastModifier, lastModified} = report;
+    const {id, name, currentUserRole, result} = report;
+
+    const instanceCount = result?.instanceCount;
 
     if (redirect) {
       return <Redirect to={redirect} />;
@@ -57,9 +51,7 @@ export default class ReportView extends React.Component {
       <div className="ReportView Report">
         <div className="Report__header">
           <div className="head">
-            <div className="name-container">
-              <h1 className="name">{name}</h1>
-            </div>
+            <EntityName>{name}</EntityName>
             <div className="tools">
               {currentUserRole === 'editor' && (
                 <>
@@ -108,7 +100,13 @@ export default class ReportView extends React.Component {
               )}
             </div>
           </div>
-          <ModificationInfo user={lastModifier} date={lastModified} />
+          <div className="instanceCount">
+            {typeof instanceCount === 'number' &&
+              t(
+                `report.instanceCount.process.header-label${instanceCount !== 1 ? '-plural' : ''}`,
+                {count: instanceCount}
+              )}
+          </div>
         </div>
         <div className="Report__view">
           <div className="Report__content">

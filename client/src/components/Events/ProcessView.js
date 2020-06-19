@@ -13,8 +13,8 @@ import {
   Icon,
   Deleter,
   BPMNDiagram,
-  ModificationInfo,
   MessageBox,
+  EntityName,
 } from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -98,7 +98,7 @@ export default withErrorHandling(
         deleting,
         publishing,
         optimizeVersion,
-        data: {id, name, xml, mappings, state, publishingProgress, lastModified, lastModifier},
+        data: {id, name, xml, mappings, state, publishingProgress},
       } = this.state;
 
       const isPublishing = state === 'publish_pending';
@@ -109,9 +109,7 @@ export default withErrorHandling(
         <div className="ProcessView">
           <div className="header">
             <div className="head">
-              <div className="name-container">
-                <h1 className="name">{name}</h1>
-              </div>
+              <EntityName>{name}</EntityName>
               <div className="tools">
                 {isPublishing && (
                   <>
@@ -150,7 +148,6 @@ export default withErrorHandling(
                 </Button>
               </div>
             </div>
-            <ModificationInfo user={lastModifier} date={lastModified} />
             {this.props.generated && (
               <MessageBox type="warning">
                 {t('events.generationWarning')}{' '}

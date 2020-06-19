@@ -10,15 +10,9 @@ exports[`should match snapshot 1`] = `
     <div
       className="head"
     >
-      <div
-        className="name-container"
-      >
-        <h1
-          className="name"
-        >
-          Process Name
-        </h1>
-      </div>
+      <EntityName>
+        Process Name
+      </EntityName>
       <div
         className="tools"
       >
@@ -61,10 +55,6 @@ exports[`should match snapshot 1`] = `
         </ForwardRef(Button)>
       </div>
     </div>
-    <ModificationInfo
-      date="2020-11-11T11:11:11.111+0200"
-      user="john"
-    />
   </div>
   <Themed(BPMNDiagramErrorHandler)
     xml="Process XML"

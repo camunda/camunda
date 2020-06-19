@@ -22,8 +22,7 @@ it('should display the key properties of a dashboard', () => {
     />
   );
 
-  expect(node.find('h1.name')).toIncludeText('name');
-  expect(node.find('ModificationInfo')).toMatchSnapshot();
+  expect(node.find('EntityName').prop('children')).toBe('name');
 });
 
 it('should provide a link to edit mode in view mode', () => {
