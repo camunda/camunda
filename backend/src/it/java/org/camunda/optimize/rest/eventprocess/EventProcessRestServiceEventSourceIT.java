@@ -410,7 +410,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .versions(sourceEntryDto.getVersions())
       .tenants(sourceEntryDto.getTenants())
       .traceVariable(sourceEntryDto.getTraceVariable())
-      .tracedByBusinessKey(sourceEntryDto.getTracedByBusinessKey())
+      .tracedByBusinessKey(sourceEntryDto.isTracedByBusinessKey())
       .processDefinitionKey(sourceEntryDto.getProcessDefinitionKey())
       .processDefinitionName(sourceEntryDto.getProcessDefinitionKey())
       .eventScope(sourceEntryDto.getEventScope())

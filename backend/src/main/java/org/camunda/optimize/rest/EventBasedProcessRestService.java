@@ -272,7 +272,7 @@ public class EventBasedProcessRestService {
         .eventScope(eventSource.getEventScope())
         .processDefinitionKey(eventSource.getProcessDefinitionKey())
         .processDefinitionName(getDefinitionName(userId, eventSource))
-        .tracedByBusinessKey(eventSource.getTracedByBusinessKey())
+        .tracedByBusinessKey(eventSource.isTracedByBusinessKey())
         .traceVariable(eventSource.getTraceVariable())
         .versions(eventSource.getVersions())
         .tenants(eventSource.getTenants())

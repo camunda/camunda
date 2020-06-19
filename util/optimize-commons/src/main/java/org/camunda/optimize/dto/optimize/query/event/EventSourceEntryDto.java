@@ -46,7 +46,7 @@ public class EventSourceEntryDto {
   private List<String> versions = new ArrayList<>();
   @Builder.Default
   private List<String> tenants = new ArrayList<>();
-  private Boolean tracedByBusinessKey;
+  private boolean tracedByBusinessKey;
   private String traceVariable;
 
 }

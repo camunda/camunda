@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDt
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -45,7 +46,8 @@ import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateTa
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEventProcessAutogenerationIT {
+// The tests in this class relate to the connections between sources
+public class EventBasedProcessAutogenerationSourceConnectionsIT extends AbstractEventProcessAutogenerationIT {
 
   @BeforeEach
   public void init() {
@@ -56,6 +58,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   }
 
   @Test
+  @Disabled(value = "OPT-3861")
   public void createFromExternalAndCamundaSources_singleExternalStartEndEvents() {
     final String traceId = "tracingId";
     final Instant now = Instant.now();
@@ -67,7 +70,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     ));
 
     BpmnModelInstance modelInstance = singleStartSingleEndModel();
-    final EventSourceEntryDto camundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -107,6 +110,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   }
 
   @Test
+  @Disabled(value = "OPT-3861")
   public void createFromExternalAndCamundaSources_noExternalEndEvents_singleCamundaStartEvent() {
     final Instant now = Instant.now();
     final String firstTraceId = "firstTracingId";
@@ -121,7 +125,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     ));
 
     BpmnModelInstance modelInstance = singleStartSingleEndModel();
-    final EventSourceEntryDto camundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -159,6 +163,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   }
 
   @Test
+  @Disabled(value = "OPT-3861")
   public void createFromExternalAndCamundaSources_noExternalEndEvents_multipleCamundaStartEvent() {
     final Instant now = Instant.now();
     final String firstTraceId = "firstTracingId";
@@ -173,7 +178,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     ));
 
     BpmnModelInstance modelInstance = multipleStartSingleEndModel();
-    final EventSourceEntryDto camundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -232,6 +237,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   }
 
   @Test
+  @Disabled(value = "OPT-3861")
   public void createFromExternalAndCamundaSources_multipleExternalStartEndEvents() {
     final Instant now = Instant.now();
     final String firstTrace = "firstTracingId";
@@ -248,7 +254,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     ));
 
     BpmnModelInstance modelInstance = singleStartSingleEndModel();
-    final EventSourceEntryDto camundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -311,7 +317,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   @Test
   public void createFromTwoCamundaStartEndEventSources_singleStartEndEvents() {
     BpmnModelInstance firstModelInstance = singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1);
-    final EventSourceEntryDto firstCamundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto firstCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstModelInstance,
       EventScopeType.START_END
     );
@@ -319,7 +325,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     final EventTypeDto firstEnd = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
 
     BpmnModelInstance secondModelInstance = singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2);
-    final EventSourceEntryDto secondCamundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto secondCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondModelInstance,
       EventScopeType.START_END
     );
@@ -359,7 +365,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   @Test
   public void createFromTwoCamundaStartEndEventSources_multipleStartEndEvents() {
     BpmnModelInstance firstModelInstance = multipleStartMultipleEndModel(PROCESS_ID_1);
-    final EventSourceEntryDto firstCamundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto firstCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstModelInstance,
       EventScopeType.START_END
     );
@@ -369,7 +375,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     final EventTypeDto firstEnd2 = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_2, END_EVENT_ID_2);
 
     BpmnModelInstance secondModelInstance = multipleStartMultipleEndModel(PROCESS_ID_2);
-    final EventSourceEntryDto secondCamundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto secondCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondModelInstance,
       EventScopeType.START_END
     );
@@ -476,14 +482,14 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   @MethodSource("processStartEventModelCombinations")
   public void createFromTwoCamundaProcessStartEndSources_singleStartEndEvents(final BpmnModelInstance firstInstance,
                                                                               final BpmnModelInstance secondInstance) {
-    final EventSourceEntryDto firstCamundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto firstCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstInstance,
       EventScopeType.PROCESS_INSTANCE
     );
     final EventTypeDto firstStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto firstEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
 
-    final EventSourceEntryDto secondCamundaSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto secondCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondInstance,
       EventScopeType.PROCESS_INSTANCE
     );
@@ -521,6 +527,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   }
 
   @Test
+  @Disabled(value = "OPT-3861")
   public void createFromThreeSourcesWithOrder_external_processStartEnd_startEndEvents() {
     final String traceId = "tracingId";
     final Instant now = Instant.now();
@@ -531,7 +538,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
     ));
 
-    final EventSourceEntryDto camundaProcessSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
       EventScopeType.PROCESS_INSTANCE
     );
@@ -539,7 +546,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
     final String processNodeId = generateTaskIdForDefinitionKey(camundaProcessSource.getProcessDefinitionKey());
 
-    final EventSourceEntryDto startEndSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2),
       EventScopeType.START_END
     );
@@ -603,7 +610,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
     ));
 
-    final EventSourceEntryDto camundaProcessSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
       EventScopeType.PROCESS_INSTANCE
     );
@@ -611,7 +618,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     final EventTypeDto processStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
 
-    final EventSourceEntryDto startEndSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2),
       EventScopeType.START_END
     );
@@ -670,6 +677,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   }
 
   @Test
+  @Disabled(value = "OPT-3861")
   public void createFromThreeSourcesWithOrder_startEndEvents_external_processStartEnd() {
     final String traceId = "tracingId";
     final Instant now = Instant.now();
@@ -680,7 +688,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
     ));
 
-    final EventSourceEntryDto camundaProcessSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
       EventScopeType.PROCESS_INSTANCE
     );
@@ -688,7 +696,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     final EventTypeDto processStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
 
-    final EventSourceEntryDto startEndSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2),
       EventScopeType.START_END
     );
@@ -735,6 +743,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   }
 
   @Test
+  @Disabled(value = "OPT-3861")
   public void createFromThreeSourcesWithOrder_complexModelConfiguration() {
     final Instant now = Instant.now();
     final String firstTraceId = "firstTracingId";
@@ -752,7 +761,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
       createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(30))
     ));
 
-    final EventSourceEntryDto camundaProcessSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
       EventScopeType.PROCESS_INSTANCE
     );
@@ -760,7 +769,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
     final String processNodeId = generateTaskIdForDefinitionKey(camundaProcessSource.getProcessDefinitionKey());
 
-    final EventSourceEntryDto startEndSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
       multipleStartMultipleEndModel(PROCESS_ID_2),
       EventScopeType.START_END
     );
@@ -875,14 +884,14 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   @Test
   public void createFromTwoCamundaSources_camundaSourceHasNoEndEvents_canStillConnectToNextSource() {
     BpmnModelInstance firstModelInstance = singleStartNoEndModel();
-    final EventSourceEntryDto noEndEventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto noEndEventSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstModelInstance,
       EventScopeType.START_END
     );
     final EventTypeDto firstStart = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
 
     BpmnModelInstance secondModelInstance = singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2);
-    final EventSourceEntryDto endEventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto endEventSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondModelInstance,
       EventScopeType.START_END
     );
@@ -921,7 +930,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
   @Test
   public void createFromTwoCamundaSources_camundaSourceHasNoEndEvents_canStillExistAtEndOfGeneratedModel() {
     BpmnModelInstance firstModelInstance = singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2);
-    final EventSourceEntryDto endEventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto endEventSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstModelInstance,
       EventScopeType.START_END
     );
@@ -929,7 +938,7 @@ public class EventBasedProcessAutogenerationMultipleSourceIT extends AbstractEve
     final EventTypeDto firstEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
 
     BpmnModelInstance secondModelInstance = singleStartNoEndModel();
-    final EventSourceEntryDto noEndEventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto noEndEventSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondModelInstance,
       EventScopeType.START_END
     );

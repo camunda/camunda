@@ -97,7 +97,7 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
       eventDto -> eventDto.setData(extractVariablesDataForEvent(processInstanceToVariableUpdates.get(eventDto.getTraceId()))));
 
     List<EventDto> correlatedEvents;
-    if (eventSource.getTracedByBusinessKey()) {
+    if (eventSource.isTracedByBusinessKey()) {
       Map<String, String> instanceIdToBusinessKeys =
         businessKeyReader.getBusinessKeysForProcessInstanceIds(processInstanceIds)
           .stream()

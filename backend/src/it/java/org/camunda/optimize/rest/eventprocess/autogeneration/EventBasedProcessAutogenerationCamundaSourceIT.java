@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest.eventprocess.autogeneration;
 
+import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Gateway;
@@ -49,15 +50,22 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
   }
 
   @SuppressWarnings("unused")
-  @ParameterizedTest(name = "{0}")
+  @ParameterizedTest(name = "modelDescription: {0}, tracedByBusinessKey: {2}")
   @MethodSource("singleStartEndModels")
   public void createFromCamundaSource_startEndEvents_singleStartSingleEndEvents(final String modelDescription,
-                                                                                final BpmnModelInstance modelInstance) {
+                                                                                final BpmnModelInstance modelInstance,
+                                                                                final boolean tracedByBusinessKey) {
     // given
-    final EventSourceEntryDto eventSource = deployDefinitionAndCreateEventSource(
+    final String varName = "varName";
+    final EventSourceEntryDto eventSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
-      EventScopeType.START_END
+      EventScopeType.START_END,
+      ImmutableMap.of(varName, "varVa1")
     );
+    eventSource.setTracedByBusinessKey(tracedByBusinessKey);
+    if (!tracedByBusinessKey) {
+      eventSource.setTraceVariable(varName);
+    }
     final EventTypeDto expectedStartEvent = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
     final EventTypeDto expectedEndEvent = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
@@ -96,7 +104,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
   public void createFromCamundaSource_startEndEvents_multipleStartSingleEndEvents() {
     // given
     final BpmnModelInstance modelInstance = multipleStartSingleEndModel();
-    final EventSourceEntryDto eventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto eventSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -156,7 +164,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
   public void createFromCamundaSource_startEndEvents_singleStartMultipleEndEvents() {
     // given
     final BpmnModelInstance modelInstance = singleStartMultipleEndModel();
-    final EventSourceEntryDto eventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto eventSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -209,7 +217,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
   public void createFromCamundaSource_startEndEvents_singleStartNoEndEvents() {
     // given
     final BpmnModelInstance modelInstance = singleStartNoEndModel();
-    final EventSourceEntryDto eventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto eventSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -246,7 +254,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
   public void createFromCamundaSource_startEndEvents_multipleStartMultipleEndEvents() {
     // given
     final BpmnModelInstance modelInstance = multipleStartMultipleEndModel();
-    final EventSourceEntryDto eventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto eventSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -316,7 +324,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
   public void createFromCamundaSource_startEndEvents_multipleStartNoEndEvents() {
     // given
     final BpmnModelInstance modelInstance = multipleStartNoEndModel();
-    final EventSourceEntryDto eventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto eventSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -367,7 +375,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
   public void createFromCamundaSource_processStartEndEvents(final String modelDescription,
                                                             final BpmnModelInstance modelInstance) {
     // given
-    final EventSourceEntryDto eventSource = deployDefinitionAndCreateEventSource(
+    final EventSourceEntryDto eventSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.PROCESS_INSTANCE
     );
@@ -407,9 +415,12 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
   private static Stream<Arguments> singleStartEndModels() {
     return Stream.of(
-      Arguments.of("singleStartSingleEndModel", singleStartSingleEndModel()),
-      Arguments.of("embeddedSubprocessModel", embeddedSubprocessModel()),
-      Arguments.of("multipleEmbeddedSubprocessModel", multipleEmbeddedSubprocessModel())
+      Arguments.of("singleStartSingleEndModel", singleStartSingleEndModel(), true),
+      Arguments.of("singleStartSingleEndModel", singleStartSingleEndModel(), false),
+      Arguments.of("embeddedSubprocessModel", embeddedSubprocessModel(), true),
+      Arguments.of("embeddedSubprocessModel", embeddedSubprocessModel(), false),
+      Arguments.of("multipleEmbeddedSubprocessModel", multipleEmbeddedSubprocessModel(), true),
+      Arguments.of("multipleEmbeddedSubprocessModel", multipleEmbeddedSubprocessModel(), false)
     );
   }
 

@@ -1170,7 +1170,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .processDefinitionKey(eventSourceEntry.getProcessDefinitionKey())
       .versions(eventSourceEntry.getVersions())
       .tenants(eventSourceEntry.getTenants())
-      .tracedByBusinessKey(eventSourceEntry.getTracedByBusinessKey())
+      .tracedByBusinessKey(eventSourceEntry.isTracedByBusinessKey())
       .traceVariable(eventSourceEntry.getTraceVariable())
       .build();
   }

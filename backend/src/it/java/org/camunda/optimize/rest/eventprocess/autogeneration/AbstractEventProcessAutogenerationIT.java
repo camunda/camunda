@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest.eventprocess.autogeneration;
 
+import com.google.common.collect.ImmutableMap;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -34,6 +35,7 @@ import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.EventProcessService;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
@@ -73,10 +75,16 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
 
   protected static final String PROCESS_ID_1 = "someProcessId";
   protected static final String PROCESS_ID_2 = "someOtherProcessId";
+  protected static final String PROCESS_ID_3 = "anotherProcessId";
   protected static final String START_EVENT_ID_1 = "startEvent1";
   protected static final String START_EVENT_ID_2 = "startEvent2";
+  protected static final String START_EVENT_ID_3 = "startEvent3";
   protected static final String END_EVENT_ID_1 = "endEvent1";
   protected static final String END_EVENT_ID_2 = "endEvent2";
+  protected static final String END_EVENT_ID_3 = "endEvent3";
+  protected static final String DEFAULT_VARIABLE = "default";
+  protected static final String STRING_VAR = "stringVarName";
+  protected static final String STRING_VAR_VAL = "stringVarVal";
 
   protected void assertProcessMappingConfiguration(final EventProcessMappingResponseDto eventProcessMapping,
                                                    final List<EventSourceEntryDto> externalSources,
@@ -105,12 +113,70 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
       .build();
   }
 
+  protected EventSourceEntryDto deployDefinitionWithInstanceAndCreateEventSource(final BpmnModelInstance modelInstance,
+                                                                                 final EventScopeType eventScopeType) {
+    return deployDefinitionWithInstanceAndCreateEventSource(
+      modelInstance,
+      eventScopeType,
+      ImmutableMap.of(DEFAULT_VARIABLE, true, STRING_VAR, STRING_VAR_VAL)
+    );
+  }
+
+  protected EventSourceEntryDto deployDefinitionWithInstanceAndCreateEventSource(final BpmnModelInstance modelInstance,
+                                                                                 final EventScopeType eventScopeType,
+                                                                                 final Map<String, Object> variables) {
+    return deployDefinitionWithInstanceAndCreateEventSource(modelInstance, eventScopeType, variables, null);
+  }
+
+  protected EventSourceEntryDto deployDefinitionWithInstanceAndCreateEventSource(final BpmnModelInstance modelInstance,
+                                                                                 final EventScopeType eventScopeType,
+                                                                                 final String businessKey) {
+    return deployDefinitionWithInstanceAndCreateEventSource(
+      modelInstance,
+      eventScopeType,
+      ImmutableMap.of(DEFAULT_VARIABLE, true, STRING_VAR, STRING_VAR_VAL),
+      businessKey
+    );
+  }
+
+  protected EventSourceEntryDto deployDefinitionWithInstanceAndCreateEventSource(final BpmnModelInstance modelInstance,
+                                                                                 final EventScopeType eventScopeType,
+                                                                                 final Map<String, Object> variables,
+                                                                                 final String businessKey) {
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployDefinitionWithInstance(
+      modelInstance,
+      variables,
+      businessKey
+    );
+    return createCamundaSourceEntry(processInstanceEngineDto.getProcessDefinitionKey(), eventScopeType);
+  }
+
+  protected ProcessInstanceEngineDto deployDefinitionWithInstance(final BpmnModelInstance modelInstance,
+                                                                  final Map<String, Object> variables,
+                                                                  final String businessKey) {
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(
+        modelInstance,
+        variables,
+        businessKey,
+        null
+      );
+    importEngineEntities();
+    return processInstanceEngineDto;
+  }
+
   protected EventSourceEntryDto deployDefinitionAndCreateEventSource(final BpmnModelInstance modelInstance,
                                                                      final EventScopeType eventScopeType) {
-    final ProcessDefinitionEngineDto processDefinitionEngineDto =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
-    importEngineEntities();
+    final ProcessDefinitionEngineDto processDefinitionEngineDto = deployDefinition(modelInstance, null);
     return createCamundaSourceEntry(processDefinitionEngineDto.getKey(), eventScopeType);
+  }
+
+  protected ProcessDefinitionEngineDto deployDefinition(final BpmnModelInstance modelInstance,
+                                                        final String tenantId) {
+    final ProcessDefinitionEngineDto processDefinitionEngineDto =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    importEngineEntities();
+    return processDefinitionEngineDto;
   }
 
   protected EventSourceEntryDto createCamundaSourceEntry(final String definitionKey,
@@ -232,6 +298,15 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
                                                                final String endEventId) {
     return Bpmn.createExecutableProcess(processId)
       .startEvent(startEventId)
+      .endEvent(endEventId)
+      .done();
+  }
+
+  protected static BpmnModelInstance singleStartSingleEndUserTaskModel(final String processId,
+                                                                       final String startEventId,
+                                                                       final String endEventId) {
+    return Bpmn.createExecutableProcess(processId)
+      .startEvent(startEventId)
       .userTask(BPMN_INTERMEDIATE_EVENT_ID)
       .endEvent(endEventId)
       .done();
@@ -274,9 +349,8 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
     final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(processId);
     final String gateway = "someGatewayId";
     processBuilder
-      .startEvent(START_EVENT_ID_1).message(START_EVENT_ID_1)
+      .startEvent(START_EVENT_ID_1)
       .exclusiveGateway(gateway)
-      .userTask(BPMN_INTERMEDIATE_EVENT_ID)
       .endEvent(END_EVENT_ID_1);
     processBuilder.startEvent(START_EVENT_ID_2).message(START_EVENT_ID_2)
       .connectTo(gateway);
@@ -289,14 +363,10 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
     processBuilder
       .startEvent(START_EVENT_ID_1)
       .exclusiveGateway(gateway)
-      .condition("no", "${!goToEndEvent2}")
-      .serviceTask()
-      .camundaExpression("${true}")
+      .condition("yes", "${default}")
       .endEvent(END_EVENT_ID_1)
       .moveToNode(gateway)
-      .condition("yes", "${goToEndEvent2}")
-      .serviceTask()
-      .camundaExpression("${true}")
+      .condition("no", "${!default}")
       .endEvent(END_EVENT_ID_2)
       .done();
     return processBuilder.done();
@@ -319,20 +389,16 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
     final String convergingGateway = "convergingGatewayId";
     final String divergingGateway = "divergingGatewayId";
     processBuilder
-      .startEvent(START_EVENT_ID_1).message(IdGenerator.getNextId())
+      .startEvent(START_EVENT_ID_1)
       .exclusiveGateway(convergingGateway)
       .exclusiveGateway(divergingGateway)
-      .condition("no", "${!goToEndEvent2}")
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT_ID_1)
-      .moveToNode(divergingGateway)
-      .condition("yes", "${goToEndEvent2}")
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT_ID_2);
+      .condition("yes", "${default}")
+      .endEvent(END_EVENT_ID_1);
     processBuilder.startEvent(START_EVENT_ID_2).message(IdGenerator.getNextId())
       .connectTo(convergingGateway)
+      .moveToNode(divergingGateway)
+      .condition("no", "${!default}")
+      .endEvent(END_EVENT_ID_2)
       .done();
     return processBuilder.done();
   }
@@ -344,7 +410,7 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
   protected static BpmnModelInstance multipleStartNoEndModel(final String processId) {
     final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(processId);
     processBuilder
-      .startEvent(START_EVENT_ID_1).message(IdGenerator.getNextId());
+      .startEvent(START_EVENT_ID_1);
     processBuilder.startEvent(START_EVENT_ID_2).message(IdGenerator.getNextId())
       .done();
     return processBuilder.done();

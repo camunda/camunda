@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.process.util;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.search.SearchRequest;
@@ -25,6 +26,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @Slf4j
+@UtilityClass
 public class ProcessInstanceQueryUtil {
 
   public static Optional<OffsetDateTime> getLatestDate(final QueryBuilder baseQuery,

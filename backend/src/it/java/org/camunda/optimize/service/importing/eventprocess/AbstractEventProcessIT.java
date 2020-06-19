@@ -216,7 +216,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .processDefinitionKey(eventSourceRestEntry.getProcessDefinitionKey())
       .versions(eventSourceRestEntry.getVersions())
       .tenants(eventSourceRestEntry.getTenants())
-      .tracedByBusinessKey(eventSourceRestEntry.getTracedByBusinessKey())
+      .tracedByBusinessKey(eventSourceRestEntry.isTracedByBusinessKey())
       .traceVariable(eventSourceRestEntry.getTraceVariable())
       .build();
   }

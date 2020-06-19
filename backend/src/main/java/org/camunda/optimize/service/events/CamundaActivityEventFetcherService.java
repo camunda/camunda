@@ -71,7 +71,7 @@ public class CamundaActivityEventFetcherService implements EventFetcherService {
   }
 
   private List<String> getImportIndicesToSearch() {
-    if (!eventSource.getTracedByBusinessKey()) {
+    if (!eventSource.isTracedByBusinessKey()) {
       return Arrays.asList(
         COMPLETED_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID,
         RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID,
