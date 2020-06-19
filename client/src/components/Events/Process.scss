@@ -3,6 +3,11 @@
 
   > .ProcessView,
   > .ProcessEdit {
+    .content {
+      display: flex;
+      flex-grow: 1;
+    }
+
     > .header {
       padding: 20px 25px 0 40px;
       margin-bottom: 1em;

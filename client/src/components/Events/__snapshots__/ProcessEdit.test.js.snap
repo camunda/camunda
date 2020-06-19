@@ -16,18 +16,22 @@ exports[`should match snapshot 1`] = `
       onSave={[Function]}
     />
   </div>
-  <Themed(BPMNDiagramErrorHandler)
-    allowModeling={true}
-    xml="Process XML"
+  <div
+    className="content"
   >
-    <ProcessRenderer
-      mappings={Object {}}
-      name="Process Name"
-      onChange={[Function]}
-      onSelectNode={[Function]}
-      selectedEvent={null}
-    />
-  </Themed(BPMNDiagramErrorHandler)>
+    <Themed(BPMNDiagramErrorHandler)
+      allowModeling={true}
+      xml="Process XML"
+    >
+      <ProcessRenderer
+        mappings={Object {}}
+        name="Process Name"
+        onChange={[Function]}
+        onSelectNode={[Function]}
+        selectedEvent={null}
+      />
+    </Themed(BPMNDiagramErrorHandler)>
+  </div>
   <EventTableErrorHandler
     eventSources={Array []}
     mappings={Object {}}

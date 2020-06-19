@@ -157,10 +157,11 @@ export default withErrorHandling(
               </MessageBox>
             )}
           </div>
-
-          <BPMNDiagram xml={xml}>
-            <ProcessRenderer mappings={mappings} />
-          </BPMNDiagram>
+          <div className="content">
+            <BPMNDiagram xml={xml}>
+              <ProcessRenderer mappings={mappings} />
+            </BPMNDiagram>
+          </div>
           <Deleter
             type="process"
             descriptionText={t('events.deleteWarning', {

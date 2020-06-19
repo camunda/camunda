@@ -56,13 +56,17 @@ exports[`should match snapshot 1`] = `
       </div>
     </div>
   </div>
-  <Themed(BPMNDiagramErrorHandler)
-    xml="Process XML"
+  <div
+    className="content"
   >
-    <ProcessRenderer
-      mappings={Object {}}
-    />
-  </Themed(BPMNDiagramErrorHandler)>
+    <Themed(BPMNDiagramErrorHandler)
+      xml="Process XML"
+    >
+      <ProcessRenderer
+        mappings={Object {}}
+      />
+    </Themed(BPMNDiagramErrorHandler)>
+  </div>
   <DeleterErrorHandler
     checkConflicts={[Function]}
     deleteEntity={[Function]}

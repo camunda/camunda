@@ -242,15 +242,17 @@ export class ProcessEdit extends React.Component {
             onCancel={nowPristine}
           />
         </div>
-        <BPMNDiagram xml={xml} allowModeling>
-          <ProcessRenderer
-            name={name}
-            selectedEvent={selectedEvent}
-            mappings={mappings}
-            onChange={this.updateXml}
-            onSelectNode={this.onSelectNode}
-          />
-        </BPMNDiagram>
+        <div className="content">
+          <BPMNDiagram xml={xml} allowModeling>
+            <ProcessRenderer
+              name={name}
+              selectedEvent={selectedEvent}
+              mappings={mappings}
+              onChange={this.updateXml}
+              onSelectNode={this.onSelectNode}
+            />
+          </BPMNDiagram>
+        </div>
         <EventTable
           selection={selectedNode}
           mappings={mappings}
