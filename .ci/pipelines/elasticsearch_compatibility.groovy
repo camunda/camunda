@@ -372,6 +372,10 @@ pipeline {
           }
         }
         stage("Elasticsearch AWS Integration") {
+          // disabled till INFRA-1555 is resolved
+          when {
+            expression { false }
+          }
           agent {
             kubernetes {
               cloud 'optimize-ci'
