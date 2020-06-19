@@ -100,7 +100,11 @@ export function AssigneeFilter({
               {t('common.add')}
             </Button>
           </Form.InputGroup>
-          <p className="info">{t('common.filter.assigneeModal.info')}</p>
+          <p className="info">
+            {data.operator === 'in'
+              ? t('common.filter.assigneeModal.info.included')
+              : t('common.filter.assigneeModal.info.excluded')}
+          </p>
           <Form.Group noSpacing className="addedValues">
             {data.values.map((val) => (
               <LabeledInput

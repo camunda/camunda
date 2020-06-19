@@ -839,7 +839,10 @@
         },
         "unassigned": "Nicht zugewiesen",
         "selectValue": "Filter für ID",
-        "info": "Die folgenden Auswahlen werden eingeschlossen sein:"
+        "info": {
+          "included": "Die folgenden Auswahlen werden eingeschlossen sein:",
+          "excluded": "Die folgenden Auswahlen werden ausgeschlossen sein:"
+        }
       },
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
       "suspensionFilterWarning": "Bitte beachten Sie die Einschränkungen der Suspensions-Filter, die in der <a href='{docsLink}'>Optimize Dokumentation</a> beschrieben sind."
