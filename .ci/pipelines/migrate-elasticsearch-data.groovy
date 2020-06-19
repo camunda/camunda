@@ -27,7 +27,7 @@ spec:
       - name: VAULT_ADDR
         value: https://${vaultPrefix}vault.int.camunda.com/
       - name: CLUSTER
-        value: camunda-ci
+        value: camunda-ci-v2
       - name: SA_NAMESPACE
         valueFrom:
           fieldRef:
@@ -109,7 +109,7 @@ spec:
           memory: 12Gi
         requests:
           cpu: 3
-          memory: 12Gi            
+          memory: 12Gi
   volumes:
   - name: configdir
     emptyDir: {}
@@ -166,7 +166,7 @@ pipeline {
 		steps {
 		  container('maven') {
 		      configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-		        // Validate operate indices 
+		        // Validate operate indices
 		        sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration-tests -DskipTests=false verify')
 		      }
           }

@@ -27,7 +27,7 @@ spec:
       - name: VAULT_ADDR
         value: https://${vaultPrefix}vault.int.camunda.com/
       - name: CLUSTER
-        value: camunda-ci
+        value: camunda-ci-v2
       - name: SA_NAMESPACE
         valueFrom:
           fieldRef:
@@ -137,7 +137,7 @@ spec:
       #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-          value: io.zeebe.exporter.ElasticsearchExporter        
+          value: io.zeebe.exporter.ElasticsearchExporter
         - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
           value: 4
       resources:

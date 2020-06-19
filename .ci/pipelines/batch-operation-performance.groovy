@@ -27,7 +27,7 @@ spec:
       - name: VAULT_ADDR
         value: https://${vaultPrefix}vault.int.camunda.com/
       - name: CLUSTER
-        value: camunda-ci
+        value: camunda-ci-v2
       - name: SA_NAMESPACE
         valueFrom:
           fieldRef:
@@ -42,7 +42,7 @@ spec:
       - mountPath: /etc/consul-templates
         name: vault-config
       - mountPath: /etc/vault-output
-        name: vault-output  
+        name: vault-output
     - name: init-sysctl
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.9
       command:
