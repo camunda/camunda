@@ -40,15 +40,19 @@ On requesting jobs, the following properties can be set:
 * **FetchVariables**: A list of variables names which are required. If the list is empty, all variables of the workflow instance are requested.
 
 #### Long polling
+When there are no jobs available, a request for jobs can be completed immediately.
+To find a job to work on, the worker now needs to poll again for available jobs.
+This leads to the situation that the workers repeatedly send the requests until a job is available.
+This is expensive in terms of resource usage, because both the client and the server are performing a lot of unproductive work.
+To better utilize the resources, Zeebe can employ *long polling* for available jobs.
 
-When there are no jobs available, a request for jobs can be immediately completed.
-This leads to the situation that the workers repeatedly send the requests until a job is available. 
-This is expensive in terms of resource usage because both the client and the server is performing a lot of unproductive work. 
-To better utilize the resources, Zeebe employs *long polling* for job requests.
-With *long polling*, a request is queued  when there are no jobs available.
+With *long polling* enabled, a request will be kept open when there are no jobs available.
 The request is completed when at least one job is available or after a specified duration.
-A worker can also specify a **RequestTimeout** which is the duration for which the request is queued.
-The default timeout is 10 seconds.
+A worker can also specify a **RequestTimeout** as the duration of keeping the request open.
+The default request timeout is 10 seconds, but it is also configurable in the client.
+Long polling for available jobs can be disabled using the configuration flag:
+`gateway.longPolling.enabled` or the environment variable `ZEEBE_GATEWAY_LONGPOLLING_ENABLED`.
+It is enabled by default.
 
 ## Job Queueing
 
