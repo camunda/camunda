@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
+import org.camunda.optimize.rest.mapper.EntityRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.EntitiesService;
 import org.camunda.optimize.service.security.SessionService;
@@ -31,12 +32,15 @@ public class EntitiesRestService {
 
   private final EntitiesService entitiesService;
   private final SessionService sessionService;
+  private final EntityRestMapper entityRestMapper;
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<EntityDto> getEntities(@Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return entitiesService.getAllEntities(userId);
+    List<EntityDto> entities = entitiesService.getAllEntities(userId);
+    entities.forEach(entity -> entityRestMapper.prepareRestResponse(entity));
+    return entities;
   }
 
   @GET

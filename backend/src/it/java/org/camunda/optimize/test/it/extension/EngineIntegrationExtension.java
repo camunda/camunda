@@ -115,6 +115,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   public static final String DEFAULT_EMAIL_DOMAIN = "@camunda.org";
   public static final String DEFAULT_FIRSTNAME = "firstName";
   public static final String DEFAULT_LASTNAME = "lastName";
+  public static final String DEFAULT_FULLNAME = DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME;
   private static final int MAX_WAIT = 10;
   private static final String COUNT = "count";
   public static final String KERMIT_GROUP_NAME = "anyGroupName";

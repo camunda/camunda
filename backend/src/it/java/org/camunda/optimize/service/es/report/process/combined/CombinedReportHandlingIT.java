@@ -76,6 +76,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
@@ -430,7 +431,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(newReport.getCreated()).isNotEqualTo(shouldBeIgnoredDate);
     assertThat(newReport.getLastModified()).isNotEqualTo(shouldBeIgnoredDate);
     assertThat(newReport.getName()).isEqualTo("MyReport");
-    assertThat(newReport.getOwner()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(newReport.getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   private Stream<Function<CombinedReportUpdateData, Response>> reportUpdateScenarios() {
@@ -574,10 +575,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     assertThat(result.getReportDefinition().getId()).isEqualTo(reportId);
     assertThat(result.getReportDefinition().getName()).isEqualTo("name");
-    assertThat(result.getReportDefinition().getOwner()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(result.getReportDefinition().getOwner()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(result.getReportDefinition().getCreated().truncatedTo(ChronoUnit.DAYS))
       .isEqualTo(now.truncatedTo(ChronoUnit.DAYS));
-    assertThat(result.getReportDefinition().getLastModifier()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(result.getReportDefinition().getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(result.getReportDefinition().getLastModified().truncatedTo(ChronoUnit.DAYS))
       .isEqualTo(now.truncatedTo(ChronoUnit.DAYS));
     assertThat(result.getResult().getData()).isNotNull();

@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
@@ -199,6 +200,8 @@ public class DashboardRestServiceIT extends AbstractIT {
     assertThat(returnedDashboard).isNotNull();
     assertThat(returnedDashboard.getId()).isEqualTo(id);
     assertThat(returnedDashboard.getName()).isEqualTo(definitionDto.getName());
+    assertThat(returnedDashboard.getOwner()).isEqualTo(DEFAULT_FULLNAME);
+    assertThat(returnedDashboard.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   @Test

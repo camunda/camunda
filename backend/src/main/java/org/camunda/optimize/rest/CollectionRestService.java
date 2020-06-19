@@ -20,6 +20,10 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRest
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.rest.mapper.AlertRestMapper;
+import org.camunda.optimize.rest.mapper.CollectionRestMapper;
+import org.camunda.optimize.rest.mapper.EntityRestMapper;
+import org.camunda.optimize.rest.mapper.ReportRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.collection.CollectionEntityService;
@@ -61,6 +65,10 @@ public class CollectionRestService {
   private final CollectionScopeService collectionScopeService;
   private final IdentityService identityService;
   private final CollectionEntityService collectionEntityService;
+  private final ReportRestMapper reportRestMapper;
+  private final CollectionRestMapper collectionRestMapper;
+  private final AlertRestMapper alertRestMapper;
+  private final EntityRestMapper entityRestMapper;
 
   /**
    * Creates a new collection.
@@ -87,7 +95,10 @@ public class CollectionRestService {
   public AuthorizedCollectionDefinitionRestDto getCollection(@Context ContainerRequestContext requestContext,
                                                              @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getCollectionDefinitionRestDto(userId, collectionId);
+    AuthorizedCollectionDefinitionRestDto authorizedCollectionDefinitionRestDto =
+      collectionService.getCollectionDefinitionRestDto(userId, collectionId);
+    collectionRestMapper.prepareRestResponse(authorizedCollectionDefinitionRestDto);
+    return authorizedCollectionDefinitionRestDto;
   }
 
   /**
@@ -262,7 +273,9 @@ public class CollectionRestService {
   public List<AlertDefinitionDto> getAlerts(@Context ContainerRequestContext requestContext,
                                             @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionEntityService.getStoredAlertsForCollection(userId, collectionId);
+    List<AlertDefinitionDto> alerts = collectionEntityService.getStoredAlertsForCollection(userId, collectionId);
+    alerts.forEach(alert -> alertRestMapper.prepareRestResponse(alert));
+    return alerts;
   }
 
   @GET
@@ -271,7 +284,9 @@ public class CollectionRestService {
   public List<AuthorizedReportDefinitionDto> getReports(@Context ContainerRequestContext requestContext,
                                                         @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionEntityService.findAndFilterReports(userId, collectionId);
+    List<AuthorizedReportDefinitionDto> reports = collectionEntityService.findAndFilterReports(userId, collectionId);
+    reports.forEach(report -> reportRestMapper.prepareRestResponse(report));
+    return reports;
   }
 
   @GET
@@ -280,6 +295,8 @@ public class CollectionRestService {
   public List<EntityDto> getEntities(@Context ContainerRequestContext requestContext,
                                      @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
+    List<EntityDto> entities = collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
+    entities.forEach(entity -> entityRestMapper.prepareRestResponse(entity));
+    return entities;
   }
 }

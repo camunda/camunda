@@ -15,11 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
@@ -43,12 +41,14 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     alertClient.createAlertForReport(reportId3);
 
     // when
-    List<String> allAlertIds = alertClient.getAlertsForCollectionAsDefaultUser(collectionId1).stream()
-      .map(AlertDefinitionDto::getId)
-      .collect(toList());
+    List<AlertDefinitionDto> allAlerts = alertClient.getAlertsForCollectionAsDefaultUser(collectionId1);
 
     // then
-    assertThat(allAlertIds, containsInAnyOrder(alertId1, alertId2, alertId3));
+    assertThat(allAlerts)
+      .extracting(alert -> alert.getId())
+      .containsExactlyInAnyOrder(alertId1, alertId2, alertId3);
+    assertThat(allAlerts).allMatch(alert -> alert.getOwner().equals(DEFAULT_FULLNAME));
+    assertThat(allAlerts).allMatch(alert -> alert.getLastModifier().equals(DEFAULT_FULLNAME));
   }
 
   @ParameterizedTest(name = "only alerts in given collection should be retrieved for definition type {0}")
@@ -65,7 +65,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAlerts = alertClient.getAlertsForCollectionAsDefaultUser(collectionId2);
 
     // then
-    assertThat(allAlerts.size(), is(0));
+    assertThat(allAlerts).isEmpty();
   }
 
   @ParameterizedTest
@@ -88,7 +88,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     Integer alertCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(ALERT_INDEX_NAME);
 
     // then
-    assertThat(alertCount, is(0));
+    assertThat(alertCount).isEqualTo(0);
   }
 
 }

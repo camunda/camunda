@@ -48,6 +48,7 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
@@ -307,6 +308,8 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     assertThat(report).isNotNull();
     assertThat(report.getReportType()).isEqualTo(reportType);
     assertThat(report.getId()).isEqualTo(id);
+    assertThat(report.getOwner()).isEqualTo(DEFAULT_FULLNAME);
+    assertThat(report.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   @Test

@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -150,7 +151,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final DashboardDefinitionDto dashboardCopy = dashboardClient.getDashboard(copyId);
-    assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
+    assertThat(dashboardCopy.getOwner(), is(DEFAULT_FULLNAME));
   }
 
   @ParameterizedTest
@@ -191,7 +192,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final DashboardDefinitionDto dashboardCopy = dashboardClient.getDashboard(copyId);
-    assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
+    assertThat(dashboardCopy.getOwner(), is(DEFAULT_FULLNAME));
   }
 
   @ParameterizedTest
@@ -246,7 +247,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final DashboardDefinitionDto dashboardCopy = dashboardClient.getDashboard(copyId);
-    assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
+    assertThat(dashboardCopy.getOwner(), is(DEFAULT_FULLNAME));
   }
 
   @ParameterizedTest
@@ -268,7 +269,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsKermit(copyId).getDefinitionDto();
-    assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
+    assertThat(dashboardCopy.getOwner(), is(DEFAULT_FULLNAME));
   }
 
   @Test
@@ -595,7 +596,12 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   }
 
   private Response createDashboardInCollectionAsKermit(final String collectionId) {
-    return dashboardClient.createDashboardAsUserGetRawResponse(collectionId, new ArrayList<>(), KERMIT_USER, KERMIT_USER);
+    return dashboardClient.createDashboardAsUserGetRawResponse(
+      collectionId,
+      new ArrayList<>(),
+      KERMIT_USER,
+      KERMIT_USER
+    );
   }
 
   private Response copyDashboardAsPrivateDashboardAsKermit(final String dashboardId) {
@@ -608,7 +614,12 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   }
 
   private Response copyDashboardToCollectionAsKermit(final String dashboardId, final String collectionId) {
-    return dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(dashboardId, collectionId, KERMIT_USER, KERMIT_USER);
+    return dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(
+      dashboardId,
+      collectionId,
+      KERMIT_USER,
+      KERMIT_USER
+    );
   }
 
   private AuthorizedDashboardDefinitionDto getDashboardByIdAsKermit(final String dashboardId) {

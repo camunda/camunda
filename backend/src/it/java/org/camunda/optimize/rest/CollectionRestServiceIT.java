@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -144,6 +145,8 @@ public class CollectionRestServiceIT extends AbstractIT {
     assertThat(collection, is(notNullValue()));
     assertThat(collection.getId(), is(id));
     assertThat(collectionEntities.size(), is(0));
+    assertThat(collection.getOwner(), is(DEFAULT_FULLNAME));
+    assertThat(collection.getLastModifier(), is(DEFAULT_FULLNAME));
   }
 
   @Test

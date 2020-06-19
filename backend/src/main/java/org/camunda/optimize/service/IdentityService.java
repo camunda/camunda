@@ -216,6 +216,14 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     userGroupsCache.invalidate(userId);
   }
 
+  public Optional<String> getIdentityNameById(final String identityId) {
+    Optional<? extends IdentityWithMetadataDto> identityDto = getIdentityWithMetadataForId(identityId);
+    if (identityDto.isPresent()) {
+      return Optional.of(identityDto.get().getName());
+    }
+    return Optional.empty();
+  }
+
   private void initUserGroupCache() {
     userGroupsCache = Caffeine.newBuilder()
       .maximumSize(CACHE_MAXIMUM_SIZE)

@@ -14,7 +14,8 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
+import org.camunda.optimize.rest.mapper.DashboardRestMapper;
+import org.camunda.optimize.rest.mapper.ReportRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.SharingNotAllowedException;
 import org.camunda.optimize.service.security.SessionService;
@@ -42,6 +43,8 @@ public class SharingRestService {
   private final SharingService sharingService;
   private final ConfigurationService configurationService;
   private final SessionService sessionService;
+  private final ReportRestMapper reportRestMapper;
+  private final DashboardRestMapper dashboardRestMapper;
 
   @POST
   @Secured
@@ -109,7 +112,7 @@ public class SharingRestService {
   @Path("/report/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedEvaluationResultDto evaluateReport(@PathParam("shareId") String reportShareId) {
-    return ReportEvaluationResultMapper.mapToEvaluationResultDto(
+    return reportRestMapper.mapToEvaluationResultDto(
       sharingService.evaluateReportShare(reportShareId)
     );
   }
@@ -121,16 +124,19 @@ public class SharingRestService {
     @PathParam("shareId") String dashboardShareId,
     @PathParam("reportId") String reportId
   ) {
-    return ReportEvaluationResultMapper.mapToEvaluationResultDto(
-      sharingService.evaluateReportForSharedDashboard(dashboardShareId, reportId)
-    );
+    return reportRestMapper.mapToEvaluationResultDto(sharingService.evaluateReportForSharedDashboard(
+      dashboardShareId,
+      reportId
+    ));
   }
 
   @GET
   @Path("/dashboard/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   public DashboardDefinitionDto evaluateDashboard(@PathParam("shareId") String dashboardShareId) {
-    return sharingService.evaluateDashboard(dashboardShareId).orElse(null);
+    DashboardDefinitionDto dashboardDefinitionDto = sharingService.evaluateDashboard(dashboardShareId).orElse(null);
+    dashboardRestMapper.prepareRestResponse(dashboardDefinitionDto);
+    return dashboardDefinitionDto;
   }
 
   /**
@@ -159,4 +165,5 @@ public class SharingRestService {
   public ShareSearchResultDto checkShareStatus(ShareSearchDto searchRequest) {
     return sharingService.checkShareStatus(searchRequest);
   }
+
 }

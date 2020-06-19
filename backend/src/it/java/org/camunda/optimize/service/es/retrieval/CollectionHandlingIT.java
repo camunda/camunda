@@ -71,6 +71,8 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
@@ -188,7 +190,7 @@ public class CollectionHandlingIT extends AbstractIT {
     // then
     assertThat(collection.getId()).isEqualTo(id);
     assertThat(collection.getName()).isEqualTo("MyCollection");
-    assertThat(collection.getLastModifier()).isEqualTo("demo");
+    assertThat(collection.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(collection.getLastModified()).isEqualTo(now);
     assertThat(collection.getData().getConfiguration()).isEqualTo(configuration);
     assertThat(collectionEntities).isEmpty();
@@ -211,7 +213,7 @@ public class CollectionHandlingIT extends AbstractIT {
     // then
     assertThat(collection.getId()).isEqualTo(id);
     assertThat(collection.getName()).isEqualTo("MyCollection");
-    assertThat(collection.getLastModifier()).isEqualTo("demo");
+    assertThat(collection.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(collection.getLastModified()).isEqualTo(now);
 
     // when (update only configuration)
@@ -227,7 +229,7 @@ public class CollectionHandlingIT extends AbstractIT {
     // then
     assertThat(collection.getId()).isEqualTo(id);
     assertThat(collection.getName()).isEqualTo("MyCollection");
-    assertThat(collection.getLastModifier()).isEqualTo("demo");
+    assertThat(collection.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(collection.getLastModified()).isEqualTo(now);
     CollectionDataDto resultCollectionData = collection.getData();
     assertThat(resultCollectionData.getConfiguration()).isEqualTo(configuration);
@@ -243,7 +245,7 @@ public class CollectionHandlingIT extends AbstractIT {
     // then
     assertThat(collection.getId()).isEqualTo(id);
     assertThat(collection.getName()).isEqualTo("TestNewCollection");
-    assertThat(collection.getLastModifier()).isEqualTo("demo");
+    assertThat(collection.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(collection.getLastModified()).isEqualTo(now);
     resultCollectionData = collection.getData();
     assertThat(resultCollectionData.getConfiguration()).isEqualTo(configuration);

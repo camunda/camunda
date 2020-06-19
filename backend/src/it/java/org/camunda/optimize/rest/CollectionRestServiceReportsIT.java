@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
@@ -52,7 +53,12 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
 
     // then
     assertThat(reports).hasSize(expectedReportIds.size());
-    assertThat(reports.stream().allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId())));
+    assertThat(reports)
+      .allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId()));
+    assertThat(reports)
+      .allMatch(reportDto -> reportDto.getDefinitionDto().getOwner().equals(DEFAULT_FULLNAME));
+    assertThat(reports)
+      .allMatch(reportDto -> reportDto.getDefinitionDto().getLastModifier().equals(DEFAULT_FULLNAME));
   }
 
   @Test

@@ -47,7 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -73,7 +73,8 @@ public class SingleReportHandlingIT extends AbstractIT {
 
     // when
     GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .get(getRequest, RequestOptions.DEFAULT);
 
     // then
     assertThat(getResponse.isExists(), is(true));
@@ -180,7 +181,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getName(), is("MyReport"));
-    assertThat(newReport.getOwner(), is(DEFAULT_USERNAME));
+    assertThat(newReport.getOwner(), is(DEFAULT_FULLNAME));
   }
 
   @Test
@@ -376,16 +377,17 @@ public class SingleReportHandlingIT extends AbstractIT {
     reportClient.updateSingleProcessReport(reportId, report);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = reportClient.evaluateRawReportById(
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+      reportClient.evaluateRawReportById(
       reportId);
 
     // then
     final SingleProcessReportDefinitionDto reportDefinition = result.getReportDefinition();
     assertThat(reportDefinition.getId(), is(reportId));
     assertThat(reportDefinition.getName(), is("name"));
-    assertThat(reportDefinition.getOwner(), is(DEFAULT_USERNAME));
+    assertThat(reportDefinition.getOwner(), is(DEFAULT_FULLNAME));
     assertThat(reportDefinition.getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
-    assertThat(reportDefinition.getLastModifier(), is(DEFAULT_USERNAME));
+    assertThat(reportDefinition.getLastModifier(), is(DEFAULT_FULLNAME));
     assertThat(reportDefinition.getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
   }
 

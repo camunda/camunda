@@ -68,6 +68,7 @@ import static javax.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
@@ -185,7 +186,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       USER_TASK_ID_ONE, createEventMappingsDto(
         createMappedEventDtoWithLabel(firstLabel),
         createMappedEventDtoWithLabel(secondLabel)
-    ));
+      ));
     EventProcessMappingDto eventProcessMappingDto =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
         eventMappings, "process name", simpleDiagramXml
@@ -380,8 +381,8 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .hasSize(1)
       .containsExactly(convertToEventSourceRestEntryDto(eventProcessMappingDto.getEventSources().get(0)));
     assertThat(actual.getLastModified()).isEqualTo(now);
-    assertThat(actual.getLastModifier()).isEqualTo("demo");
     assertThat(actual.getState()).isEqualTo(EventProcessState.MAPPED);
+    assertThat(actual.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   @Test
@@ -442,11 +443,19 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
           firstExpectedDto.getName(),
           null,
           now,
-          "demo",
+          DEFAULT_FULLNAME,
           firstProcessMappings,
           EventProcessState.MAPPED
         ),
-        tuple(secondExpectedId, secondExpectedDto.getName(), null, now, "demo", null, EventProcessState.UNMAPPED)
+        tuple(
+          secondExpectedId,
+          secondExpectedDto.getName(),
+          null,
+          now,
+          DEFAULT_FULLNAME,
+          null,
+          EventProcessState.UNMAPPED
+        )
       );
   }
 
@@ -490,7 +499,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       )
       .extracting("id").isEqualTo(storedEventProcessMappingId);
     assertThat(storedDto.getLastModified()).isEqualTo(updatedTime);
-    assertThat(storedDto.getLastModifier()).isEqualTo("demo");
+    assertThat(storedDto.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(storedDto.getEventSources())
       .hasSize(1)
       .extracting(

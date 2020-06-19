@@ -451,6 +451,41 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     }
 
     // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
+      .execute();
+
+    // then the status code is okay
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReportType.class)
+  public void evaluateUnsavedReport_containsUserAndModifierNames(ReportType reportType) {
+    //given
+    final SingleReportDataDto reportDataDto;
+    switch (reportType) {
+      case PROCESS:
+        reportDataDto = TemplatedProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(RANDOM_KEY)
+          .setProcessDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build();
+        break;
+      case DECISION:
+        reportDataDto = DecisionReportDataBuilder
+          .create()
+          .setDecisionDefinitionKey(RANDOM_KEY)
+          .setDecisionDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build();
+        break;
+      default:
+        throw new IllegalStateException("Uncovered type: " + reportType);
+    }
+
+    // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportDataDto);
 
     // then the status code is okay

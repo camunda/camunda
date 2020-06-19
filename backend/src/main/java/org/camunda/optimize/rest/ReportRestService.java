@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
+import org.camunda.optimize.rest.mapper.ReportRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.report.ReportEvaluationService;
 import org.camunda.optimize.service.report.ReportService;
@@ -53,6 +53,7 @@ public class ReportRestService {
   private final ReportService reportService;
   private final ReportEvaluationService reportEvaluationService;
   private final SessionService sessionService;
+  private final ReportRestMapper reportRestMapper;
 
   /**
    * Creates a new single process report.
@@ -136,7 +137,11 @@ public class ReportRestService {
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.findAndFilterPrivateReports(userId, queryParameters);
+    List<AuthorizedReportDefinitionDto> reportDefinitions =
+      reportService.findAndFilterPrivateReports(userId, queryParameters);
+    reportDefinitions
+      .forEach(reportDefinition -> reportRestMapper.prepareRestResponse(reportDefinition));
+    return reportDefinitions;
   }
 
   /**
@@ -148,7 +153,9 @@ public class ReportRestService {
   public AuthorizedReportDefinitionDto getReport(@Context ContainerRequestContext requestContext,
                                                  @PathParam("id") String reportId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.getReportDefinition(reportId, userId);
+    AuthorizedReportDefinitionDto reportDefinition = reportService.getReportDefinition(reportId, userId);
+    reportRestMapper.prepareRestResponse(reportDefinition);
+    return reportDefinition;
   }
 
   /**
@@ -165,7 +172,7 @@ public class ReportRestService {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
       reportEvaluationService.evaluateSavedReportWithAdditionalFilters(userId, reportId, reportEvaluationFilter);
-    return ReportEvaluationResultMapper.mapToEvaluationResultDto(reportEvaluationResult);
+    return reportRestMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
 
   /**
@@ -184,7 +191,7 @@ public class ReportRestService {
       userId,
       reportDefinitionDto
     );
-    return ReportEvaluationResultMapper.mapToEvaluationResultDto(reportEvaluationResult);
+    return reportRestMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
 
   /**
