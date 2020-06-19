@@ -45,28 +45,30 @@
       .Button {
         display: block;
         width: 100%;
-        padding: 10px;
+        padding: 0;
         margin-bottom: 20px;
         background-color: white;
         text-align: left;
 
-        &.active {
-          outline: none;
-          border-radius: 3px;
-          box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
-          transition: box-shadow 0.05s ease-out 0s;
+        &.active .name {
+          background-color: $silver-darken-94;
         }
 
         img,
         .imgPlaceholder {
-          width: 100%;
+          margin: 10px;
+          margin-bottom: 0;
+          width: calc(100% - 20px);
           height: 80px;
         }
 
-        span {
+        .name {
           color: $grey-darken-23;
           font-size: 14px;
           font-weight: 500;
+          height: 40px;
+          padding: 10px;
+          line-height: 20px;
         }
       }
     }

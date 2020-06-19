@@ -128,7 +128,7 @@ export function ReportTemplateModal({onClose, mightFail}) {
                 ) : (
                   <div className="imgPlaceholder" />
                 )}
-                <span>{t('report.templates.' + name)}</span>
+                <div className="name">{t('report.templates.' + name)}</div>
               </Button>
             ))}
           </div>
