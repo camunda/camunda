@@ -458,6 +458,7 @@ pipeline {
             SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
             IMAGE_TAG = getImageTag()
             GCR_REGISTRY = credentials('docker-registry-ci3')
+            REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
           }
           steps {
             container('docker') {
@@ -465,6 +466,7 @@ pipeline {
                 sh("""
                 cp \$MAVEN_SETTINGS_XML settings.xml
                 echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+                echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
 
                 docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
                   --build-arg SKIP_DOWNLOAD=true \
@@ -477,6 +479,9 @@ pipeline {
                 if [ "${env.BRANCH_NAME}" = 'master' ]; then
                   docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
                   docker push ${PROJECT_DOCKER_IMAGE()}:latest
+
+                  docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} registry.camunda.cloud/team-optimize/optimize:master
+                  docker push registry.camunda.cloud/team-optimize/optimize:master
                 fi
               """)
               }
