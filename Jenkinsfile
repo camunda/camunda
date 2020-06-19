@@ -382,7 +382,7 @@ pipeline {
             }
           }
         }
-        stage('Rolling data upgrade') {
+        stage('Data upgrade test') {
           agent {
             kubernetes {
               cloud 'optimize-ci'
