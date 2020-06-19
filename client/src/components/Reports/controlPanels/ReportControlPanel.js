@@ -85,11 +85,12 @@ export default withErrorHandling(
       }
     }
 
-    changeDefinition = async ({key, versions, tenantIds}) => {
+    changeDefinition = async ({key, versions, tenantIds, name}) => {
       const {view, groupBy, filter} = this.props.report.data;
 
       const change = {
         processDefinitionKey: {$set: key},
+        processDefinitionName: {$set: name},
         processDefinitionVersions: {$set: versions},
         tenantIds: {$set: tenantIds},
         configuration: {

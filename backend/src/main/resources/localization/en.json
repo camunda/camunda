@@ -238,7 +238,9 @@
       "count": "Count",
       "duration": "Duration",
       "evaluationCount": "Evaluation Count",
-      "variable": "Variable"
+      "variable": "Variable",
+      "process": "Process View",
+      "decision": "Decision View"
     },
     "groupBy": {
       "label": "Group By",
@@ -452,6 +454,7 @@
         "invalidNumber": "Must be a valid number"
       }
     },
+    "viewByGroup": "{view} by {group}",
     "missingVariableValue": "null / undefined",
     "missingAssignee": "Unassigned",
     "runningEndedUserTaskWarning": "Only completed user tasks are considered when grouping by End Date. Therefore, setting Node Status to 'running' will show no results"
@@ -668,6 +671,9 @@
     },
     "entity": {
       "modified": "Last modified",
+      "modifiedTitle": "Modified",
+      "byModifier": "by {modifier}",
+      "createdBy": "Created by",
       "namePlaceholder": {
         "Report": "Report name",
         "Dashboard": "Dashboard name",

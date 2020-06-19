@@ -53,7 +53,8 @@ export class Report extends React.Component {
       name: t('report.new'),
       lastModified: now,
       created: now,
-      lastModifier: user.id,
+      lastModifier: user.name,
+      owner: user.name,
     };
 
     if (this.getId() === 'new' && location.state) {
@@ -119,7 +120,7 @@ export class Report extends React.Component {
                 report: {
                   ...newReport,
                   lastModified: getFormattedNowDate(),
-                  lastModifier: user.id,
+                  lastModifier: user.name,
                 },
               });
             }}

@@ -20,6 +20,7 @@ jest.mock('services', () => {
     reportConfig: {
       ...rest.reportConfig,
       process: {
+        findSelectedOption: jest.fn().mockReturnValue({key: 'none', data: 'foo'}),
         getLabelFor: jest.fn().mockReturnValue('foo'),
         options: {
           view: [
@@ -94,12 +95,15 @@ it('invoke onChange with the correct variable data', async () => {
 
   const node = shallow(<ReportSelect {...config} field="groupBy" />);
 
-  node.props().onChange('inputVariable_test');
-
-  expect(config.onChange).toHaveBeenCalledWith({
+  const selectedOption = {
     type: 'inputVariable',
     value: {id: 'test', name: 'testName', type: 'date'},
-  });
+  };
+  reportConfig.process.findSelectedOption.mockReturnValueOnce({key: 'none', data: selectedOption});
+
+  node.props().onChange('inputVariable_test');
+
+  expect(config.onChange).toHaveBeenCalledWith(selectedOption);
 });
 
 it('provide the correct payload for variable reports', async () => {
@@ -114,10 +118,13 @@ it('provide the correct payload for variable reports', async () => {
 
   const node = shallow(<ReportSelect {...config} />);
 
-  node.find('Select').simulate('change', 'variable_testName');
-
-  expect(config.onChange).toHaveBeenCalledWith({
+  const selectedOption = {
     entity: 'variable',
     property: {name: 'testName', type: 'Integer'},
-  });
+  };
+  reportConfig.process.findSelectedOption.mockReturnValueOnce({key: 'none', data: selectedOption});
+
+  node.find('Select').simulate('change', 'variable_testName');
+
+  expect(config.onChange).toHaveBeenCalledWith(selectedOption);
 });

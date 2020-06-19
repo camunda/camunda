@@ -6,10 +6,13 @@
 
 import React, {useState, useRef, useEffect} from 'react';
 
+import {Popover} from 'components';
+
 import './EntityName.scss';
 
-export default function EntityName({children}) {
+export default function EntityName({children, details}) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [hovering, setHovering] = useState(false);
   const nameRef = useRef(null);
 
   useEffect(() => {
@@ -19,10 +22,18 @@ export default function EntityName({children}) {
 
   return (
     <div className="EntityName">
-      <h1 className="name" ref={nameRef}>
-        {children}
-      </h1>
-      {showTooltip && (
+      <div className="name-container">
+        <h1
+          className="name"
+          ref={nameRef}
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
+        >
+          {children}
+        </h1>
+        {details && <Popover icon="down">{details}</Popover>}
+      </div>
+      {showTooltip && hovering && (
         <div className="Tooltip dark">
           <div className="Tooltip__text-bottom">{children}</div>
         </div>

@@ -30,3 +30,10 @@ export async function getSharedReport(reportId) {
 export async function revokeReportSharing(id) {
   return await del(`api/share/report/${id}`);
 }
+
+export async function loadTenants(key, versions, type) {
+  const params = {versions};
+  const response = await post(`api/definition/${type}/${key}/_resolveTenantsForVersions`, params);
+
+  return await response.json();
+}

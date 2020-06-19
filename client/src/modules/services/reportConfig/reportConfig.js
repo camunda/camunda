@@ -189,7 +189,24 @@ export default function reportConfig({view, groupBy, visualization, combinations
     return {visualization: {$set: newVisualization}};
   }
 
+  function findSelectedOption(options, compareProp, compareValue) {
+    for (let i = 0; i < options.length; i++) {
+      const option = options[i];
+      if (option.options) {
+        const found = findSelectedOption(option.options, compareProp, compareValue);
+        if (found) {
+          return found;
+        }
+      } else {
+        if (equal(option[compareProp], compareValue, {strict: true})) {
+          return option;
+        }
+      }
+    }
+  }
+
   return {
+    findSelectedOption,
     getLabelFor,
     isAllowed,
     update,

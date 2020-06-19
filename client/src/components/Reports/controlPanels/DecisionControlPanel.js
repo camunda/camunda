@@ -63,11 +63,12 @@ export default class DecisionControlPanel extends React.Component {
     }
   };
 
-  changeDefinition = async ({key, versions, tenantIds}) => {
+  changeDefinition = async ({key, versions, tenantIds, name}) => {
     const {groupBy, filter} = this.props.report.data;
 
     const change = {
       decisionDefinitionKey: {$set: key},
+      decisionDefinitionName: {$set: name},
       decisionDefinitionVersions: {$set: versions},
       tenantIds: {$set: tenantIds},
       configuration: {

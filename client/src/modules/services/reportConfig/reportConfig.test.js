@@ -12,6 +12,7 @@ const {
   options: {view, groupBy, visualization},
   getLabelFor,
   isAllowed,
+  findSelectedOption,
   update,
 } = reportConfig(process);
 
@@ -140,6 +141,13 @@ it('should forbid line, pie charts and heatmap for distributed userTask reports'
   expect(isAllowed(report, view, groupBy, 'line')).toBeFalsy();
   expect(isAllowed(report, view, groupBy, 'pie')).toBeFalsy();
   expect(isAllowed(report, view, groupBy, 'heat')).toBeFalsy();
+});
+
+it('should find a selected option based on property', () => {
+  expect(findSelectedOption(view, 'data', {property: 'frequency', entity: 'processInstance'})).toBe(
+    view[1].options[0]
+  );
+  expect(findSelectedOption(groupBy, 'key', 'startDate_day')).toBe(groupBy[3].options[4]);
 });
 
 describe('update', () => {

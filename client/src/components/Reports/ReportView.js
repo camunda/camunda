@@ -9,13 +9,13 @@ import {Link, Redirect} from 'react-router-dom';
 
 import {Button, ShareEntity, ReportRenderer, Popover, Icon, Deleter, EntityName} from 'components';
 import {isSharingEnabled} from 'config';
+import {checkDeleteConflict} from 'services';
+import {t} from 'translation';
 
+import ReportDetails from './ReportDetails';
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
 
-import {checkDeleteConflict} from 'services';
-
 import './ReportView.scss';
-import {t} from 'translation';
 
 export default class ReportView extends React.Component {
   state = {
@@ -51,7 +51,7 @@ export default class ReportView extends React.Component {
       <div className="ReportView Report">
         <div className="Report__header">
           <div className="head">
-            <EntityName>{name}</EntityName>
+            <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
             <div className="tools">
               {currentUserRole === 'editor' && (
                 <>

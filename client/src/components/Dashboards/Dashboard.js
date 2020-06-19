@@ -63,7 +63,7 @@ export class Dashboard extends React.Component {
       loaded: true,
       name: t('dashboard.new'),
       lastModified: getFormattedNowDate(),
-      lastModifier: user.id,
+      lastModifier: user.name,
       currentUserRole: 'editor',
       reports: [],
       availableFilters: [],
@@ -135,7 +135,7 @@ export class Dashboard extends React.Component {
       redirect: this.isNew() ? `../${id}/` : './',
       isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
       lastModified: getFormattedNowDate(),
-      lastModifier: user.id,
+      lastModifier: user.name,
     });
   };
 

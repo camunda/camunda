@@ -29,12 +29,12 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
     );
   }
 
-  const selectedOption = findSelectedOption(options, 'data', value);
+  const selectedOption = config.findSelectedOption(options, 'data', value);
 
   return (
     <Select
       onChange={(value) => {
-        const foundOption = findSelectedOption(options, 'key', value);
+        const foundOption = config.findSelectedOption(options, 'key', value);
         onChange(foundOption.data);
       }}
       value={selectedOption ? selectedOption.key : null}
@@ -115,20 +115,4 @@ function addVariables(options, variables, payloadFormatter, filter = () => true)
     }
     return option;
   });
-}
-
-function findSelectedOption(options, compareProp, compareValue) {
-  for (let i = 0; i < options.length; i++) {
-    const option = options[i];
-    if (option.options) {
-      const found = findSelectedOption(option.options, compareProp, compareValue);
-      if (found) {
-        return found;
-      }
-    } else {
-      if (equal(option[compareProp], compareValue, {strict: true})) {
-        return option;
-      }
-    }
-  }
 }
