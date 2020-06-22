@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -28,6 +29,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -55,10 +57,17 @@ public class ElasticsearchClient {
 
   public ElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration, final Logger log) {
+    this(configuration, log, new BulkRequest());
+  }
+
+  ElasticsearchClient(
+      final ElasticsearchExporterConfiguration configuration,
+      final Logger log,
+      final BulkRequest bulkRequest) {
     this.configuration = configuration;
     this.log = log;
     this.client = createClient();
-    this.bulkRequest = new BulkRequest();
+    this.bulkRequest = bulkRequest;
     this.formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
   }
 
@@ -104,7 +113,12 @@ public class ElasticsearchClient {
   }
 
   public void bulk(final IndexRequest indexRequest) {
-    bulkRequest.add(indexRequest);
+    final List<DocWriteRequest<?>> requests = bulkRequest.requests();
+
+    // don't re-append when retrying same record, to avoid OOM
+    if (requests.isEmpty() || !requests.get(requests.size() - 1).id().equals(indexRequest.id())) {
+      bulkRequest.add(indexRequest);
+    }
   }
 
   /** @return true if all bulk records where flushed successfully */
