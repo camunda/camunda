@@ -83,6 +83,11 @@
       <groupId>io.zeebe</groupId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <modelVersion>4.0.0</modelVersion>
   <name>Atomix</name>

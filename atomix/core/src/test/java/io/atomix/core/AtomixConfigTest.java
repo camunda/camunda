@@ -27,12 +27,9 @@ import io.atomix.cluster.discovery.MulticastDiscoveryConfig;
 import io.atomix.cluster.discovery.MulticastDiscoveryProvider;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.HeartbeatMembershipProtocolConfig;
-import io.atomix.core.profile.ConsensusProfile;
-import io.atomix.core.profile.ConsensusProfileConfig;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import java.time.Duration;
-import java.util.Arrays;
 import org.junit.Test;
 
 /** Atomix configuration test. */
@@ -42,7 +39,6 @@ public class AtomixConfigTest {
   public void testDefaultAtomixConfig() throws Exception {
     final AtomixConfig config = Atomix.config();
     assertTrue(config.getPartitionGroups().isEmpty());
-    assertTrue(config.getProfiles().isEmpty());
   }
 
   @Test
@@ -102,13 +98,5 @@ public class AtomixConfigTest {
     assertEquals(RaftPartitionGroup.TYPE, groupOne.getType());
     assertEquals("one", groupOne.getName());
     assertEquals(7, groupOne.getPartitions());
-
-    final ConsensusProfileConfig consensusProfile =
-        (ConsensusProfileConfig) config.getProfiles().get(0);
-    assertEquals(ConsensusProfile.TYPE, consensusProfile.getType());
-    assertEquals("management", consensusProfile.getManagementGroup());
-    assertEquals("consensus", consensusProfile.getDataGroup());
-    assertEquals(3, consensusProfile.getPartitions());
-    assertTrue(consensusProfile.getMembers().containsAll(Arrays.asList("one", "two", "three")));
   }
 }

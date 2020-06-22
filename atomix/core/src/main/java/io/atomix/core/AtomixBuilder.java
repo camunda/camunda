@@ -22,7 +22,6 @@ import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
-import io.atomix.core.profile.Profile;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.utils.net.Address;
 import java.time.Duration;
@@ -87,50 +86,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
    */
   public AtomixBuilder withShutdownHook(final boolean enabled) {
     config.setEnableShutdownHook(enabled);
-    return this;
-  }
-
-  /**
-   * Sets the Atomix profiles.
-   *
-   * <p>Profiles are common configurations that will be applied to the instance configuration when
-   * the {@link Atomix} instance is constructed.
-   *
-   * @param profiles the profiles
-   * @return the Atomix builder
-   * @throws NullPointerException if the profiles are null
-   */
-  public AtomixBuilder withProfiles(final Profile... profiles) {
-    return withProfiles(Arrays.asList(checkNotNull(profiles)));
-  }
-
-  /**
-   * Sets the Atomix profiles.
-   *
-   * <p>Profiles are common configurations that will be applied to the instance configuration when
-   * the {@link Atomix} instance is constructed.
-   *
-   * @param profiles the profiles
-   * @return the Atomix builder
-   * @throws NullPointerException if the profiles are null
-   */
-  public AtomixBuilder withProfiles(final Collection<Profile> profiles) {
-    profiles.forEach(profile -> config.addProfile(profile.config()));
-    return this;
-  }
-
-  /**
-   * Adds an Atomix profile.
-   *
-   * <p>Profiles are common configurations that will be applied to the instance configuration when
-   * the {@link Atomix} instance is constructed.
-   *
-   * @param profile the profile to add
-   * @return the Atomix builder
-   * @throws NullPointerException if the profile is null
-   */
-  public AtomixBuilder addProfile(final Profile profile) {
-    config.addProfile(profile.config());
     return this;
   }
 

@@ -38,34 +38,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class RaftRolesTest extends AbstractAtomixTest {
+public final class RaftRolesTest {
 
   @Rule public AtomixRule atomixRule = new AtomixRule();
-
-  private List<Atomix> instances;
-
-  @Before
-  public void setupInstances() {
-    instances = new ArrayList<>();
-  }
-
-  @After
-  public void teardownInstances() {
-    final List<CompletableFuture<Void>> futures =
-        instances.stream().map(Atomix::stop).collect(Collectors.toList());
-    try {
-      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(30, TimeUnit.SECONDS);
-    } catch (final Exception e) {
-      // Do nothing
-    }
-  }
 
   @Test
   public void testRoleChangedListener() throws Exception {
@@ -281,7 +260,7 @@ public final class RaftRolesTest extends AbstractAtomixTest {
     final List<String> memberIds =
         nodeIds.stream().map(Object::toString).collect(Collectors.toList());
 
-    return startAtomix(
+    return atomixRule.startAtomix(
         nodeId,
         nodeIds,
         builder -> {
@@ -306,14 +285,5 @@ public final class RaftRolesTest extends AbstractAtomixTest {
                       raftPartitionGroup.getPartitions().forEach(partitionConsumer));
           return atomix;
         });
-  }
-
-  private CompletableFuture<Atomix> startAtomix(
-      final int id,
-      final List<Integer> persistentIds,
-      final Function<AtomixBuilder, Atomix> builderFunction) {
-    final Atomix atomix = atomixRule.createAtomix(id, persistentIds, builderFunction);
-    instances.add(atomix);
-    return atomix.start().thenApply(v -> atomix);
   }
 }
