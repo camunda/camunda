@@ -20,6 +20,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.ArrayList;
 import java.util.List;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -33,12 +34,13 @@ public class ElasticsearchClientTest {
   private ElasticsearchExporterConfiguration configuration;
   private Logger logSpy;
   private ElasticsearchClient client;
+  private BulkRequest bulkRequest = new BulkRequest();
 
   @Before
   public void setUp() {
     configuration = new ElasticsearchExporterConfiguration();
     logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientTest.class));
-    client = new ElasticsearchClient(configuration, logSpy);
+    client = new ElasticsearchClient(configuration, logSpy, bulkRequest);
   }
 
   @Test
@@ -102,5 +104,24 @@ public class ElasticsearchClientTest {
             variableValue.getBytes().length,
             scopeKey,
             workflowInstanceKey);
+  }
+
+  @Test
+  public void shouldIgnoreRecordIfDuplicateOfLast() {
+    // given
+    final Record<VariableRecordValue> recordMock = mock(Record.class);
+    when(recordMock.getPartitionId()).thenReturn(1);
+    when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
+    when(recordMock.getKey()).thenReturn(1L);
+    when(recordMock.toJson()).thenReturn("{}");
+
+    client.index(recordMock);
+    assertThat(bulkRequest.numberOfActions()).isEqualTo(1);
+
+    // when
+    client.index(recordMock);
+
+    // then
+    assertThat(bulkRequest.numberOfActions()).isEqualTo(1);
   }
 }
