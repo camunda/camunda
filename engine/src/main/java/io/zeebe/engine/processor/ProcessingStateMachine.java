@@ -137,29 +137,28 @@ public final class ProcessingStateMachine {
   public ProcessingStateMachine(
       final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
 
-    this.actor = context.getActor();
-    this.eventFilter = context.getEventFilter();
-    this.recordProcessorMap = context.getRecordProcessorMap();
-    this.recordValues = context.getRecordValues();
-    this.logStreamReader = context.getLogStreamReader();
-    this.logStreamWriter = context.getLogStreamWriter();
-    this.logStream = context.getLogStream();
-    this.zeebeState = context.getZeebeState();
-    this.dbContext = context.getDbContext();
-    this.abortCondition = context.getAbortCondition();
+    actor = context.getActor();
+    eventFilter = context.getEventFilter();
+    recordProcessorMap = context.getRecordProcessorMap();
+    recordValues = context.getRecordValues();
+    logStreamReader = context.getLogStreamReader();
+    logStreamWriter = context.getLogStreamWriter();
+    logStream = context.getLogStream();
+    zeebeState = context.getZeebeState();
+    dbContext = context.getDbContext();
+    abortCondition = context.getAbortCondition();
 
-    this.writeRetryStrategy = new AbortableRetryStrategy(actor);
-    this.sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
-    this.updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
+    writeRetryStrategy = new AbortableRetryStrategy(actor);
+    sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
+    updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
     this.shouldProcessNext = shouldProcessNext;
 
     final int partitionId = logStream.getPartitionId();
-    this.typedEvent = new TypedEventImpl(partitionId);
-    this.responseWriter =
-        new TypedResponseWriterImpl(context.getCommandResponseWriter(), partitionId);
+    typedEvent = new TypedEventImpl(partitionId);
+    responseWriter = new TypedResponseWriterImpl(context.getCommandResponseWriter(), partitionId);
 
-    this.metrics = new StreamProcessorMetrics(partitionId);
-    this.onProcessed = context.getOnProcessedListener();
+    metrics = new StreamProcessorMetrics(partitionId);
+    onProcessed = context.getOnProcessedListener();
   }
 
   private void skipRecord() {

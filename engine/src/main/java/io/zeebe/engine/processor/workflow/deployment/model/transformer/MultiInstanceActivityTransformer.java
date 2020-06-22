@@ -8,7 +8,6 @@
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
 import io.zeebe.el.Expression;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableLoopCharacteristics;
@@ -20,7 +19,6 @@ import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.LoopCharacteristics;
 import io.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
@@ -53,25 +51,6 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
       multiInstanceBody.setFlowScope(innerActivity.getFlowScope());
       innerActivity.setFlowScope(multiInstanceBody);
-
-      // configure lifecycle of the body
-      multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-      multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-
-      multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-      multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-
-      multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-      multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-
-      multiInstanceBody.bindLifecycleState(
-          WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
 
       // attach boundary events to the multi-instance body
       innerActivity.getBoundaryEvents().forEach(multiInstanceBody::attach);

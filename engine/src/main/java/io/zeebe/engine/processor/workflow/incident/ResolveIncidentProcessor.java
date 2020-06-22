@@ -13,7 +13,6 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
-import io.zeebe.engine.processor.workflow.BpmnStepProcessor;
 import io.zeebe.engine.processor.workflow.SideEffectQueue;
 import io.zeebe.engine.processor.workflow.job.JobErrorThrownProcessor;
 import io.zeebe.engine.state.ZeebeState;
@@ -33,18 +32,20 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
 
-  private final SideEffectQueue queue = new SideEffectQueue();
+  private final SideEffectQueue sideEffects = new SideEffectQueue();
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
   private final ZeebeState zeebeState;
-  private final BpmnStepProcessor stepProcessor;
+  private final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor;
   private final JobErrorThrownProcessor jobErrorThrownProcessor;
+
+  private final IncidentRecordWrapper incidentRecordWrapper = new IncidentRecordWrapper();
 
   public ResolveIncidentProcessor(
       final ZeebeState zeebeState,
-      final BpmnStepProcessor stepProcessor,
+      final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor,
       final JobErrorThrownProcessor jobErrorThrownProcessor) {
-    this.stepProcessor = stepProcessor;
+    this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.zeebeState = zeebeState;
     this.jobErrorThrownProcessor = jobErrorThrownProcessor;
   }
@@ -110,24 +111,15 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
     if (failedRecord != null) {
 
-      queue.clear();
-      queue.add(responseWriter::flush);
-      stepProcessor.processRecordValue(
-          createRecord(failedRecord),
-          failedRecord.getKey(),
-          failedRecord.getValue(),
-          failedRecord.getState(),
-          streamWriter,
-          noopResponseWriter,
-          queue::add);
+      sideEffects.clear();
+      sideEffects.add(responseWriter::flush);
 
-      sideEffect.accept(queue);
+      incidentRecordWrapper.wrap(failedRecord);
+      bpmnStreamProcessor.processRecord(
+          incidentRecordWrapper, noopResponseWriter, streamWriter, sideEffects::add);
+
+      sideEffect.accept(sideEffects);
     }
-  }
-
-  // TODO (saig0): need to pass the record properties for the new BPMN element processor
-  private TypedRecord<WorkflowInstanceRecord> createRecord(final IndexedRecord failedRecord) {
-    return new IncidentRecordWrapper(failedRecord);
   }
 
   private void attemptToSolveJobIncident(final long jobKey, final TypedStreamWriter streamWriter) {

@@ -7,8 +7,11 @@
  */
 package io.zeebe.engine.processor.workflow;
 
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
+import io.zeebe.engine.processor.SideEffectProducer;
 
-public interface BpmnStepHandler<T extends ExecutableFlowElement> {
-  void handle(BpmnStepContext<T> context);
+/** A chain of side effects that are executed/flushed together at the end of the processing. */
+public interface SideEffects {
+
+  /** Chain the given side effect. It will be executed/flushed at the end of the processing. */
+  void add(SideEffectProducer sideEffect);
 }

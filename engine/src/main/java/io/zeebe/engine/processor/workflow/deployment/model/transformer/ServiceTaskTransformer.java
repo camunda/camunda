@@ -12,7 +12,6 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import io.zeebe.el.Expression;
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.Loggers;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableServiceTask;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
@@ -22,7 +21,6 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.zeebe.msgpack.spec.MsgPackWriter;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -54,25 +52,6 @@ public final class ServiceTaskTransformer implements ModelElementTransformer<Ser
     transformTaskDefinition(element, serviceTask, context);
 
     transformTaskHeaders(element, serviceTask);
-
-    bindLifecycle(serviceTask);
-  }
-
-  private void bindLifecycle(final ExecutableServiceTask serviceTask) {
-    serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 
   private void transformTaskDefinition(

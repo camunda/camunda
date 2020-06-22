@@ -18,7 +18,6 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class WorkflowInstanceCommandContext {
 
-  private final EventOutput eventOutput;
   private final ElementInstanceState elementInstanceState;
 
   private TypedRecord<WorkflowInstanceRecord> record;
@@ -26,9 +25,7 @@ public final class WorkflowInstanceCommandContext {
   private TypedResponseWriter responseWriter;
   private TypedStreamWriter streamWriter;
 
-  public WorkflowInstanceCommandContext(
-      final EventOutput eventOutput, final ElementInstanceState elementInstanceState) {
-    this.eventOutput = eventOutput;
+  public WorkflowInstanceCommandContext(final ElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
   }
 
@@ -42,10 +39,6 @@ public final class WorkflowInstanceCommandContext {
 
   public void setRecord(final TypedRecord<WorkflowInstanceRecord> record) {
     this.record = record;
-  }
-
-  public EventOutput getOutput() {
-    return eventOutput;
   }
 
   public ElementInstance getElementInstance() {
@@ -64,11 +57,6 @@ public final class WorkflowInstanceCommandContext {
     this.responseWriter = responseWriter;
   }
 
-  public void setStreamWriter(final TypedStreamWriter writer) {
-    streamWriter = writer;
-    eventOutput.setStreamWriter(writer);
-  }
-
   public ElementInstanceState getElementInstanceState() {
     return elementInstanceState;
   }
@@ -76,5 +64,13 @@ public final class WorkflowInstanceCommandContext {
   public void reject(final RejectionType rejectionType, final String reason) {
     streamWriter.appendRejection(record, rejectionType, reason);
     responseWriter.writeRejectionOnCommand(record, rejectionType, reason);
+  }
+
+  public TypedStreamWriter getStreamWriter() {
+    return streamWriter;
+  }
+
+  public void setStreamWriter(final TypedStreamWriter writer) {
+    streamWriter = writer;
   }
 }

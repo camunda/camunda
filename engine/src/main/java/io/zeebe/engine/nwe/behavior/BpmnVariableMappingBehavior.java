@@ -28,8 +28,8 @@ public final class BpmnVariableMappingBehavior {
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor, final ZeebeState zeebeState) {
     this.expressionProcessor = expressionProcessor;
-    this.elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
-    this.variablesState = elementInstanceState.getVariablesState();
+    elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
+    variablesState = elementInstanceState.getVariablesState();
   }
 
   /**
@@ -97,7 +97,6 @@ public final class BpmnVariableMappingBehavior {
     return Either.right(null);
   }
 
-  // Copied (and slightly changed) from IOMappingHelper
   private long getVariableScopeKey(final BpmnElementContext context) {
     final var elementInstanceKey = context.getElementInstanceKey();
 

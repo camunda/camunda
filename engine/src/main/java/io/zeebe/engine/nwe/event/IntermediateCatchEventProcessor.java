@@ -42,6 +42,14 @@ public class IntermediateCatchEventProcessor
   @Override
   public void onActivating(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
+
+    if (element.isConnectedToEventBasedGateway()) {
+      // the event is already triggered on the event-based gateway when the activating record is
+      // written for the intermediate catch event
+      stateTransitionBehavior.transitionToActivated(context);
+      return;
+    }
+
     variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
@@ -53,7 +61,10 @@ public class IntermediateCatchEventProcessor
   @Override
   public void onActivated(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    // nothing to do here
+
+    if (element.isConnectedToEventBasedGateway()) {
+      stateTransitionBehavior.transitionToCompleting(context);
+    }
   }
 
   @Override

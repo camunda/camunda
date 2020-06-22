@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 import io.zeebe.el.EvaluationResult;
 import io.zeebe.el.ResultType;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor.CorrelationKeyResultHandler;
-import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -24,10 +23,11 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class ExpressionProcessorCorrelationKeyResultHandlerTest {
 
-  public static final String TEST_EXPRESSION = "expression";
+  private static final String TEST_EXPRESSION = "expression";
+  private static final long VARIABLE_SCOPE_KEY = 21;
 
-  CorrelationKeyResultHandler sutResultHandler =
-      new CorrelationKeyResultHandler(new MessageCorrelationKeyContext());
+  private final CorrelationKeyResultHandler sutResultHandler =
+      new CorrelationKeyResultHandler(VARIABLE_SCOPE_KEY);
 
   @Test
   public void shouldReturnStringForStringResult() {

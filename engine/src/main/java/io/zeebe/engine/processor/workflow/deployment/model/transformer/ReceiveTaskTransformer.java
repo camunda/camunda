@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableReceiveTask;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -15,7 +14,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelE
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTask> {
 
@@ -34,24 +32,5 @@ public final class ReceiveTaskTransformer implements ModelElementTransformer<Rec
 
     final ExecutableMessage executableMessage = context.getMessage(message.getId());
     executableElement.setMessage(executableMessage);
-
-    bindLifecycle(executableElement);
-  }
-
-  private void bindLifecycle(final ExecutableReceiveTask executableElement) {
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 }

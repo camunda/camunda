@@ -18,7 +18,6 @@ import io.zeebe.engine.nwe.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
-import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
@@ -51,13 +50,11 @@ public final class MultiInstanceBodyProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final VariablesState variablesState;
 
   public MultiInstanceBodyProcessor(final BpmnBehaviors bpmnBehaviors) {
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
-    variablesState = stateBehavior.getVariablesState();
     expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
   }
@@ -176,7 +173,7 @@ public final class MultiInstanceBodyProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    final var updatedOrFailure = updateOutputCollection(element, childContext);
+    final var updatedOrFailure = updateOutputCollection(element, childContext, flowScopeContext);
     if (updatedOrFailure.isLeft()) {
       incidentBehavior.createIncident(updatedOrFailure.getLeft(), childContext);
       return;
@@ -237,6 +234,8 @@ public final class MultiInstanceBodyProcessor
     final var innerInstance =
         stateTransitionBehavior.activateChildInstance(
             context, multiInstanceBody.getInnerActivity());
+    final var innerInstanceContext =
+        context.copy(innerInstance.getKey(), innerInstance.getValue(), innerInstance.getState());
 
     // update loop counters
     final var bodyInstance = stateBehavior.getElementInstance(context);
@@ -253,8 +252,7 @@ public final class MultiInstanceBodyProcessor
         .getInputElement()
         .ifPresent(
             variableName ->
-                variablesState.setVariableLocal(
-                    innerInstance.getKey(), context.getWorkflowKey(), variableName, item));
+                stateBehavior.setLocalVariable(innerInstanceContext, variableName, item));
 
     // Output element expressions that are just a variable or nested property of a variable need to
     // be initialised with a nil-value. This makes sure that they are not written at a non-local
@@ -265,12 +263,10 @@ public final class MultiInstanceBodyProcessor
         .map(BufferUtil::wrapString)
         .ifPresent(
             variableName ->
-                variablesState.setVariableLocal(
-                    innerInstance.getKey(), context.getWorkflowKey(), variableName, NIL_VALUE));
+                stateBehavior.setLocalVariable(innerInstanceContext, variableName, NIL_VALUE));
 
-    variablesState.setVariableLocal(
-        innerInstance.getKey(),
-        context.getWorkflowKey(),
+    stateBehavior.setLocalVariable(
+        innerInstanceContext,
         LOOP_COUNTER_VARIABLE,
         wrapLoopCounter(innerInstance.getMultiInstanceLoopCounter()));
   }
@@ -302,21 +298,25 @@ public final class MultiInstanceBodyProcessor
   }
 
   private Either<Failure, Void> updateOutputCollection(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext childContext) {
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementContext childContext,
+      final BpmnElementContext flowScopeContext) {
 
     return element
         .getLoopCharacteristics()
         .getOutputCollection()
-        .map(variableName -> updateOutputCollection(element, childContext, variableName))
+        .map(
+            variableName ->
+                updateOutputCollection(element, childContext, flowScopeContext, variableName))
         .orElse(Either.right(null));
   }
 
   private Either<Failure, Void> updateOutputCollection(
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext childContext,
+      final BpmnElementContext flowScopeContext,
       final DirectBuffer variableName) {
 
-    final var bodyInstanceKey = childContext.getFlowScopeKey();
     final var loopCounter =
         stateBehavior.getElementInstance(childContext).getMultiInstanceLoopCounter();
 
@@ -328,11 +328,10 @@ public final class MultiInstanceBodyProcessor
               // buffer as getVariableLocal this could also be avoided by cloning the current
               // collection, but that is slower.
               final var currentCollection =
-                  variablesState.getVariableLocal(bodyInstanceKey, variableName);
+                  stateBehavior.getLocalVariable(flowScopeContext, variableName);
               final var updatedCollection =
                   insertAt(currentCollection, loopCounter, elementVariable);
-              variablesState.setVariableLocal(
-                  bodyInstanceKey, childContext.getWorkflowKey(), variableName, updatedCollection);
+              stateBehavior.setLocalVariable(flowScopeContext, variableName, updatedCollection);
 
               return null;
             });

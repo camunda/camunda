@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -15,7 +14,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelE
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.SubProcess;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class SubProcessTransformer implements ModelElementTransformer<SubProcess> {
 
@@ -33,21 +31,6 @@ public final class SubProcessTransformer implements ModelElementTransformer<SubP
     if (element.triggeredByEvent()) {
       transformEventSubprocess(element, currentWorkflow, subprocess);
     }
-
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 
   private void transformEventSubprocess(

@@ -8,7 +8,6 @@
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
 import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
@@ -16,7 +15,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.Transf
 import io.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
@@ -38,7 +36,6 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
 
     setParentReference(flowNode, workflow, element);
     transformIoMappings(flowNode, element, context.getExpressionLanguage());
-    bindLifecycle(element);
   }
 
   private void setParentReference(
@@ -51,22 +48,6 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
         .map(BufferUtil::wrapString)
         .map(workflow::getElementById)
         .ifPresent(element::setFlowScope);
-  }
-
-  private void bindLifecycle(final ExecutableFlowNode element) {
-    element.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.ELEMENT_ACTIVATING);
-    element.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.ELEMENT_ACTIVATED);
-    element.bindLifecycleState(WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.EVENT_OCCURRED);
-    element.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.ELEMENT_COMPLETING);
-    element.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.ELEMENT_COMPLETED);
-    element.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.ELEMENT_TERMINATING);
-    element.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ELEMENT_TERMINATED);
   }
 
   private void transformIoMappings(

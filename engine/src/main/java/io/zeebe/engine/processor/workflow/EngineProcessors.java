@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow;
 
 import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processor.ProcessingContext;
+import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.deployment.DeploymentCreatedProcessor;
 import io.zeebe.engine.processor.workflow.deployment.DeploymentEventProcessors;
@@ -24,6 +25,7 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.sched.ActorControl;
@@ -69,7 +71,7 @@ public final class EngineProcessors {
         expressionProcessor);
     addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors);
 
-    final BpmnStepProcessor stepProcessor =
+    final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor =
         addWorkflowProcessors(
             zeebeState,
             expressionProcessor,
@@ -82,7 +84,7 @@ public final class EngineProcessors {
             zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize);
 
     addIncidentProcessors(
-        zeebeState, stepProcessor, typedRecordProcessors, jobErrorThrownProcessor);
+        zeebeState, bpmnStreamProcessor, typedRecordProcessors, jobErrorThrownProcessor);
 
     return typedRecordProcessors;
   }
@@ -101,7 +103,7 @@ public final class EngineProcessors {
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
   }
 
-  private static BpmnStepProcessor addWorkflowProcessors(
+  private static TypedRecordProcessor<WorkflowInstanceRecord> addWorkflowProcessors(
       final ZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
       final TypedRecordProcessors typedRecordProcessors,
@@ -142,11 +144,11 @@ public final class EngineProcessors {
 
   private static void addIncidentProcessors(
       final ZeebeState zeebeState,
-      final BpmnStepProcessor stepProcessor,
+      final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final JobErrorThrownProcessor jobErrorThrownProcessor) {
     IncidentEventProcessors.addProcessors(
-        typedRecordProcessors, zeebeState, stepProcessor, jobErrorThrownProcessor);
+        typedRecordProcessors, zeebeState, bpmnStreamProcessor, jobErrorThrownProcessor);
   }
 
   private static JobErrorThrownProcessor addJobProcessors(

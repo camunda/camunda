@@ -7,17 +7,13 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import java.util.List;
 
 public final class IntermediateCatchEventTransformer
     implements ModelElementTransformer<IntermediateCatchEvent> {
@@ -33,37 +29,11 @@ public final class IntermediateCatchEventTransformer
     final ExecutableCatchEventElement executableElement =
         workflow.getElementById(element.getId(), ExecutableCatchEventElement.class);
 
-    // in the case of events bound to a gateway, we use pass through semantics and will not actually
-    // need any lifecycle
-    if (!isAttachedToEventBasedGateway(executableElement)) {
-      bindLifecycle(executableElement);
-    }
-  }
+    final var isConnectedToEventBasedGateway =
+        executableElement.getIncoming().stream()
+            .map(ExecutableSequenceFlow::getSource)
+            .anyMatch(source -> source.getElementType() == BpmnElementType.EVENT_BASED_GATEWAY);
 
-  private boolean isAttachedToEventBasedGateway(final ExecutableCatchEventElement element) {
-    final List<ExecutableSequenceFlow> incoming = element.getIncoming();
-    if (!incoming.isEmpty()) {
-      final ExecutableFlowNode source = incoming.get(0).getSource();
-      return source.getElementType() == BpmnElementType.EVENT_BASED_GATEWAY;
-    }
-
-    return false;
-  }
-
-  private void bindLifecycle(final ExecutableCatchEventElement executableElement) {
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    executableElement.setConnectedToEventBasedGateway(isConnectedToEventBasedGateway);
   }
 }

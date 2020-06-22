@@ -15,6 +15,7 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
+import io.zeebe.engine.processor.workflow.SideEffects;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -32,6 +33,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnDeferredRecordsBehavior deferredRecordsBehavior;
   private final WorkflowInstanceStateTransitionGuard stateTransitionGuard;
   private final TypedStreamWriter streamWriter;
+  private final SideEffects sideEffects;
   private final BpmnWorkflowResultSenderBehavior workflowResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
 
@@ -39,12 +41,14 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final ExpressionProcessor expressionBehavior,
       final TypedStreamWriter streamWriter,
       final TypedResponseWriter responseWriter,
+      final SideEffects sideEffects,
       final ZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookup) {
 
     this.streamWriter = streamWriter;
+    this.sideEffects = sideEffects;
     this.expressionBehavior = expressionBehavior;
 
     stateBehavior = new BpmnStateBehavior(zeebeState);
@@ -60,7 +64,12 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processorLookup);
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
-            stateBehavior, stateTransitionBehavior, catchEventBehavior, streamWriter, zeebeState);
+            stateBehavior,
+            stateTransitionBehavior,
+            catchEventBehavior,
+            streamWriter,
+            sideEffects,
+            zeebeState);
     incidentBehavior = new BpmnIncidentBehavior(zeebeState, streamWriter);
     deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
     eventPublicationBehavior = new BpmnEventPublicationBehavior(zeebeState, streamWriter);
@@ -127,5 +136,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior() {
     return bufferedMessageStartEventBehavior;
+  }
+
+  @Override
+  public SideEffects sideEffects() {
+    return sideEffects;
   }
 }

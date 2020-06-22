@@ -7,20 +7,30 @@
  */
 package io.zeebe.engine.processor.workflow;
 
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
+import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.instance.VariablesState.VariableListener;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import org.agrona.DirectBuffer;
 
-public final class UpdateVariableStreamWriter implements VariableListener {
+public final class UpdateVariableStreamWriter
+    implements VariableListener, StreamProcessorLifecycleAware {
 
   private final VariableRecord record = new VariableRecord();
 
-  private final TypedStreamWriter streamWriter;
+  private TypedStreamWriter streamWriter;
 
-  public UpdateVariableStreamWriter(final TypedStreamWriter streamWriter) {
-    this.streamWriter = streamWriter;
+  @Override
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    streamWriter = context.getLogStreamWriter();
+
+    final var zeebeState = context.getZeebeState();
+    final var variablesState =
+        zeebeState.getWorkflowState().getElementInstanceState().getVariablesState();
+
+    variablesState.setListener(this);
   }
 
   @Override

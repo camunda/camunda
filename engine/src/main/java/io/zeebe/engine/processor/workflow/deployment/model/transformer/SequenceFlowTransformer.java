@@ -9,7 +9,6 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
 import io.zeebe.el.Expression;
 import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -17,7 +16,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelE
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class SequenceFlowTransformer implements ModelElementTransformer<SequenceFlow> {
   @Override
@@ -33,12 +31,6 @@ public final class SequenceFlowTransformer implements ModelElementTransformer<Se
 
     parseCondition(element, sequenceFlow, context.getExpressionLanguage());
     connectWithFlowNodes(element, workflow, sequenceFlow);
-    bindLifecycle(sequenceFlow);
-  }
-
-  private void bindLifecycle(final ExecutableSequenceFlow sequenceFlow) {
-    sequenceFlow.bindLifecycleState(
-        WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 
   private void connectWithFlowNodes(

@@ -7,19 +7,13 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.buffer.BufferUtil;
-import java.util.EnumMap;
-import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public abstract class AbstractFlowElement implements ExecutableFlowElement {
 
   private final DirectBuffer id;
-  private final Map<WorkflowInstanceIntent, BpmnStep> bpmnSteps =
-      new EnumMap<>(WorkflowInstanceIntent.class);
   private BpmnElementType elementType;
   private ExecutableFlowElement flowScope;
 
@@ -31,11 +25,6 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
   @Override
   public DirectBuffer getId() {
     return id;
-  }
-
-  @Override
-  public BpmnStep getStep(final WorkflowInstanceIntent state) {
-    return bpmnSteps.get(state);
   }
 
   @Override
@@ -54,9 +43,5 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
 
   public void setFlowScope(final ExecutableFlowElement flowScope) {
     this.flowScope = flowScope;
-  }
-
-  public void bindLifecycleState(final WorkflowInstanceIntent state, final BpmnStep step) {
-    bpmnSteps.put(state, step);
   }
 }

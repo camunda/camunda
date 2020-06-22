@@ -51,14 +51,11 @@ public final class BpmnIncidentBehavior {
     createIncident(failure.getErrorType(), failure.getMessage(), context, variableScopeKey);
   }
 
-  public void createIncident(
+  private void createIncident(
       final ErrorType errorType,
       final String errorMessage,
       final BpmnElementContext context,
       final long variableScopeKey) {
-
-    // TODO (saig0): the variable scope key should be resolved on a central place
-    //  This currently also happens in BpmnVariableMappingBehavior and CatchEventBehavior
 
     incidentCommand.reset();
     incidentCommand
@@ -81,7 +78,6 @@ public final class BpmnIncidentBehavior {
     streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
   }
 
-  // from IncidentResolver
   public void resolveIncidents(final BpmnElementContext context) {
     incidentState.forExistingWorkflowIncident(
         context.getElementInstanceKey(),
