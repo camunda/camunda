@@ -24,7 +24,8 @@ import static org.mockito.Mockito.when;
   classes = {TestApplication.class},
   properties = { TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
     TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-    TasklistProperties.PREFIX + "importer.jobType = testJobType"},
+    TasklistProperties.PREFIX + "importer.jobType = testJobType",
+    "graphql.servlet.exception-handlers-enabled = true"},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class TasklistIntegrationTest {

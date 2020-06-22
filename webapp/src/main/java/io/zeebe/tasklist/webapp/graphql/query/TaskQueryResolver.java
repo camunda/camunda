@@ -27,4 +27,9 @@ public final class TaskQueryResolver implements GraphQLQueryResolver {
     return taskReader.getTasks(query, map(fields, sf -> sf.getName()));
   }
 
+  public TaskDTO task(String id, DataFetchingEnvironment dataFetchingEnvironment) {
+    final List<SelectedField> fields = dataFetchingEnvironment.getSelectionSet().getFields();
+    return taskReader.getTask(id,  map(fields, sf -> sf.getName()));
+  }
+
 }

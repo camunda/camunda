@@ -26,6 +26,9 @@ import static org.junit.Assert.assertTrue;
 
 public class TaskIT extends TasklistZeebeIntegrationTest {
 
+  public static final String ELEMENT_ID = "taskA";
+  public static final String BPMN_PROCESS_ID = "testProcess";
+  public static final String GET_TASK_QUERY_PATTERN = "{task(id: \"%s\"){id name workflowName creationTime completionTime assignee {username} variables {name} taskState}}";
   @Autowired
   private GraphQLTestTemplate graphQLTestTemplate;
 
@@ -157,24 +160,60 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   // test Unclaimed and Claimed by me filters
   // test tasks claimed by different users
 
+  @Test
+  public void shouldReturnOneTask() throws IOException {
+    //having
+    createCreatedAndCompletedTasks(1, 0);
+    final GraphQLResponse response = graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    final String taskId = response.get("$.data.tasks[0].id");
+
+    //when
+    final GraphQLResponse taskResponse = graphQLTestTemplate.postMultipart(
+        String.format(GET_TASK_QUERY_PATTERN, taskId), "{}");
+
+    //then
+    assertEquals(taskId, taskResponse.get("$.data.task.id"));
+    assertEquals(ELEMENT_ID, taskResponse.get("$.data.task.name"));
+    assertEquals(BPMN_PROCESS_ID, taskResponse.get("$.data.task.workflowName"));
+    assertNotNull(taskResponse.get("$.data.task.creationTime"));
+    assertNull(taskResponse.get("$.data.task.completionTime"));
+    assertEquals(TaskState.CREATED.name(), taskResponse.get("$.data.task.taskState"));
+    assertNull(taskResponse.get("$.data.task.assignee"));
+    assertEquals("0", taskResponse.get("$.data.task.variables.length()"));
+  }
+
+  @Test
+  public void shouldNotReturnTaskWithWrongId() throws IOException {
+    //having
+    createCreatedAndCompletedTasks(1, 0);
+    final String taskId = "wrongTaskId";
+
+    //when
+    final GraphQLResponse taskResponse = graphQLTestTemplate.postMultipart(
+        String.format(GET_TASK_QUERY_PATTERN, taskId), "{}");
+
+    //then
+    assertNull(taskResponse.get("$.data"));
+    assertEquals("1", taskResponse.get("$.errors.length()"));
+    assertEquals("Task with id wrongTaskId was not found", taskResponse.get("$.errors[0].message"));
+  }
+
   private void createCreatedAndCompletedTasks(int created, int completed) {
-    final String bpmnProcessId = "testProcess";
-    final String elementId = "taskA";
-    tester.createAndDeploySimpleWorkflow(bpmnProcessId, elementId)
+    tester.createAndDeploySimpleWorkflow(BPMN_PROCESS_ID, ELEMENT_ID)
         .waitUntil()
         .workflowIsDeployed()
         .and();
     //complete tasks
     for (int i = 0; i < completed; i++) {
-        tester.startWorkflowInstance(bpmnProcessId)
+        tester.startWorkflowInstance(BPMN_PROCESS_ID)
         .and()
-        .completeHumanTask(elementId);
+        .completeHumanTask(ELEMENT_ID);
     }
     //start more workflow instances
     for (int i = 0; i < created; i++) {
-      tester.startWorkflowInstance(bpmnProcessId)
+      tester.startWorkflowInstance(BPMN_PROCESS_ID)
           .waitUntil()
-          .taskIsCreated(elementId);
+          .taskIsCreated(ELEMENT_ID);
     }
   }
 

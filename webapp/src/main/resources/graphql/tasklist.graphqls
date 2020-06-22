@@ -35,5 +35,7 @@ type User {
 type Query {
     # find all tasks
     tasks(query: TaskQuery!): [Task!]!
+    # get one task: returns error when task does not exist
+    task(id: String!): Task!
     currentUser: User!
 }

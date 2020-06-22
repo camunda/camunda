@@ -1,3 +1,8 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package io.zeebe.tasklist.webapp.es.reader;
 
 import java.io.IOException;
@@ -21,6 +26,7 @@ import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskQueryDTO;
+import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -43,14 +49,19 @@ public class TaskReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public TaskDTO getTask(String taskKey, List<String> fieldNames) {
+  public TaskDTO getTask(String id, List<String> fieldNames) {
+
+    //TODO #104 define list of fields
 
     //TODO specity sourceFields to fetch
     final GetRequest getRequest = new GetRequest(taskTemplate.getAlias())
-        .id(taskKey);
+        .id(id);
 
     try {
       final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
+      if (!response.isExists()) {
+        throw new NotFoundException(String.format("Task with id %s was not found", id));
+      }
       final TaskEntity taskEntity = fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
       return TaskDTO.createFrom(taskEntity);
     } catch (IOException e) {

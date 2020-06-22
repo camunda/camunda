@@ -44,7 +44,9 @@ public class Application {
     }
 
     // GraphQL inspection tool is disabled by default
-    springApplication.setDefaultProperties(Map.of("graphql.playground.enabled", "false"));
+    // Exception handler is enabled
+    springApplication.setDefaultProperties(Map.of("graphql.playground.enabled", "false",
+        "graphql.servlet.exception-handlers-enabled", "true"));
 
     springApplication.run(args);
   }
