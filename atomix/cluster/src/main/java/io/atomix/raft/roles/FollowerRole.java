@@ -303,7 +303,7 @@ public final class FollowerRole extends ActiveRole {
 
     if (isRunning() && !complete.get()) {
       if (error != null) {
-        log.warn("{}", error.getMessage());
+        log.warn("Poll request to {} failed: {}", member.memberId(), error.getMessage());
         quorum.fail();
       } else {
         if (response.term() > raft.getTerm()) {
