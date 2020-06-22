@@ -66,11 +66,18 @@ public class ElasticsearchClient {
 
   public ElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration, final Logger log) {
+    this(configuration, log, new ArrayList<>());
+  }
+
+  ElasticsearchClient(
+      final ElasticsearchExporterConfiguration configuration,
+      final Logger log,
+      final List<String> bulkRequest) {
     this.configuration = configuration;
     this.log = log;
-    client = createClient();
-    bulkRequest = new ArrayList<>();
-    formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
+    this.client = createClient();
+    this.bulkRequest = bulkRequest;
+    this.formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
   }
 
   public void close() throws IOException {
@@ -118,7 +125,11 @@ public class ElasticsearchClient {
           "Failed to serialize bulk request command to JSON", e);
     }
 
-    bulkRequest.add(serializedCommand + "\n" + record.toJson());
+    final String jsonCommand = serializedCommand + "\n" + record.toJson();
+    // don't re-append when retrying same record, to avoid OOM
+    if (bulkRequest.isEmpty() || !bulkRequest.get(bulkRequest.size() - 1).equals(jsonCommand)) {
+      bulkRequest.add(jsonCommand);
+    }
   }
 
   /**
