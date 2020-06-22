@@ -161,7 +161,8 @@ public class SwimMembershipProtocol
       this.localProperties.putAll(localMember.properties());
       discoveryService.addListener(discoveryEventListener);
 
-      LOGGER.info("{} - Member activated: {}", localMember.id(), localMember);
+      // we need to add our local node to the member list,
+      // to share the mapping between node id and address in the cluster
       localMember.setState(State.ALIVE);
       members.put(localMember.id(), localMember);
       post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_ADDED, localMember));
@@ -235,6 +236,7 @@ public class SwimMembershipProtocol
 
     // If the local member is not present, add the member in the ALIVE state.
     if (swimMember == null) {
+      LOGGER.trace("Member not exist yet {}", member);
       if (member.state() == State.ALIVE) {
         swimMember = new SwimMember(member);
         members.put(swimMember.id(), swimMember);
@@ -405,6 +407,7 @@ public class SwimMembershipProtocol
         discoveryService.getNodes().stream()
             .map(node -> new SwimMember(MemberId.from(node.id().id()), node.address()))
             .filter(member -> !member.id().equals(localMember.id()))
+            .filter(member -> !member.address().equals(localMember.address()))
             .collect(Collectors.toList());
     for (final SwimMember member : syncMembers) {
       sync(member.copy());
@@ -484,6 +487,7 @@ public class SwimMembershipProtocol
                 .map(node -> new SwimMember(MemberId.from(node.id().id()), node.address()))
                 .filter(member -> !members.containsKey(member.id()))
                 .filter(member -> !member.id().equals(localMember.id()))
+                .filter(member -> !member.address().equals(localMember.address()))
                 .sorted(Comparator.comparing(Member::id))
                 .collect(Collectors.toList()));
 
@@ -493,6 +497,7 @@ public class SwimMembershipProtocol
     // If there are members to probe, select the next member to probe using a counter for round
     // robin probes.
     if (!probeMembers.isEmpty()) {
+      LOGGER.trace("Possible members to probe '{}'", probeMembers);
       final SwimMember probeMember =
           probeMembers.get(Math.abs(probeCounter.incrementAndGet() % probeMembers.size()));
       probe(probeMember.copy());
