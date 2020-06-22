@@ -529,7 +529,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultDto.getData().stream()
                  .map(MapResultEntryDto::getKey)
                  .collect(toList()))
-      .containsExactly("10.0", "110.0", "210.0");
+      .containsExactly("10.00", "110.00", "210.00");
     assertThat(resultDto.getData().get(0).getValue()).isEqualTo(1000L);
     assertThat(resultDto.getData().get(1).getValue()).isEqualTo(1000L);
     assertThat(resultDto.getData().get(2).getValue()).isEqualTo(1000L);
@@ -645,7 +645,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
-    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
+    assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
   }
 
   @SneakyThrows
@@ -721,7 +721,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
-    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
+    assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
   }
 
   @SneakyThrows
@@ -797,7 +797,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
-    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
+    assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
   }
 
   @Test

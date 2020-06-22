@@ -574,7 +574,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultDto.getData().stream()
                  .map(MapResultEntryDto::getKey)
                  .collect(toList()))
-      .containsExactly("10.0", "110.0", "210.0");
+      .containsExactly("10.00", "110.00", "210.00");
     assertThat(resultDto.getData().get(0).getValue()).isEqualTo(1000L);
     assertThat(resultDto.getData().get(1).getValue()).isEqualTo(1000L);
     assertThat(resultDto.getData().get(2).getValue()).isEqualTo(1000L);
@@ -605,12 +605,74 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     reportData.getConfiguration().getCustomNumberBucket().setBaseline(30.0);
     reportData.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
 
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(
-      reportData).getResult();
+    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result is empty
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData()).isEmpty();
+  }
+
+  @Test
+  public void multipleBuckets_negativeNumberVariable_defaultBaselineWorks() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", -1);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("foo", -5);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is no baseline set
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("foo")
+      .setVariableType(VariableType.INTEGER)
+      .build();
+
+    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then the result includes all instances
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData())
+      .filteredOn(result -> result.getValue() != null)
+      .extracting(MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(1000.0, 1000.0);
+  }
+
+  @Test
+  public void multipleBuckets_doubleVariable_bucketKeysHaveTwoDecimalPlaces() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", 1.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("foo", 5.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is no baseline set
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("foo")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+
+    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then the result includes all instances
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData())
+      .extracting(MapResultEntryDto::getKey)
+      .allMatch(key -> key.length() - key.indexOf(".") - 1 == 2); // key should have two chars after the decimal
   }
 
   @SneakyThrows
@@ -680,7 +742,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
-    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
+    assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
   }
 
   @SneakyThrows
@@ -750,7 +812,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
-    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
+    assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
   }
 
   @SneakyThrows
@@ -820,7 +882,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
-    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
+    assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
   }
 
   @Test
@@ -1309,7 +1371,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey(String.valueOf(varValue)).get().getValue())
+    assertThat(result.getEntryForKey("1.00").get().getValue())
       .isEqualTo(testStartDate.until(testEndDate, MILLIS));
     assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(400.);
   }

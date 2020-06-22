@@ -206,7 +206,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(3);
     assertThat(resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList()))
-      .containsExactly("10.0", "110.0", "210.0");
+      .containsExactly("10.00", "110.00", "210.00");
     assertThat(resultData.get(0).getValue()).isEqualTo(3.);
     assertThat(resultData.get(1).getValue()).isEqualTo(2.);
     assertThat(resultData.get(2).getValue()).isEqualTo(1.);
@@ -238,6 +238,60 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then the result is empty
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
+  }
+
+  @Test
+  public void reportEvaluationMultiBucket_negativeVariableValues_defaultBaselineWorks() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(-1.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(-5.0, "Misc")
+    );
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is no baseline set
+    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByInputVariable(
+      decisionDefinitionDto1,
+      decisionDefinitionDto1.getVersionAsString(),
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE
+    ).getResult().getData();
+
+    // then the result includes all instances
+    assertThat(resultData).isNotNull();
+    assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(2.0);
+  }
+
+  @Test
+  public void reportEvaluationMultiBucket_doubleVariable_bucketKeysHaveTwoDecimalPlaces() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(1.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(5.0, "Misc")
+    );
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is no baseline set
+    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByInputVariable(
+      decisionDefinitionDto1,
+      decisionDefinitionDto1.getVersionAsString(),
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE
+    ).getResult().getData();
+
+    // then the result includes all instances
+    assertThat(resultData).isNotNull();
+    assertThat(resultData)
+      .extracting(MapResultEntryDto::getKey)
+      .allMatch(key -> key.length() - key.indexOf(".") - 1 == 2); // key should have two chars after the decimal
   }
 
   @Test
@@ -481,7 +535,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   @Test
   public void reportEvaluationSingleBucketAllVersionsGroupByNumberInputVariable() {
     // given
-    final String amountValue = "100.0";
+    final String amountValue = "100.00";
     final Double amountValueAsDouble = Double.valueOf(amountValue);
     DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
@@ -554,7 +608,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   @Test
   public void reportEvaluationSingleBucketAllVersionsGroupByNumberInputVariableOtherDefinitionsHaveNoSideEffect() {
     // given
-    final String amountValue = "100.0";
+    final String amountValue = "100.00";
     final Double amountValueAsDouble = Double.valueOf(amountValue);
     DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
@@ -935,7 +989,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey(String.valueOf(doubleVarValue)).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("1.00").get().getValue()).isEqualTo(1.);
     assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(2.);
   }
 

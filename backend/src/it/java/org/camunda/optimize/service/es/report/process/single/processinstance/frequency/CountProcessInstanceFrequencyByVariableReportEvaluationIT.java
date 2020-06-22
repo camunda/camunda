@@ -352,7 +352,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(resultData.stream()
                  .map(MapResultEntryDto::getKey)
                  .collect(toList()))
-      .containsExactly("10.0", "110.0", "210.0");
+      .containsExactly("10.00", "110.00", "210.00");
     assertThat(resultData.get(0).getValue()).isEqualTo(1L);
     assertThat(resultData.get(1).getValue()).isEqualTo(1L);
     assertThat(resultData.get(2).getValue()).isEqualTo(1L);
@@ -420,7 +420,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
-    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
+    assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 100.0, 10, 2, result.getData());
   }
 
   @SneakyThrows
@@ -485,7 +485,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
-    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
+    assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 25.0, 4, 2, result.getData());
   }
 
   @SneakyThrows
@@ -550,7 +550,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     //then
     final CombinedProcessReportResultDataDto result = reportClient.evaluateCombinedReportById(response.getId())
       .getResult();
-    assertCombinedNumberVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
+    assertCombinedDoubleVariableResultsAreInCorrectRanges(10.0, 30.0, 5, 2, result.getData());
   }
 
   @Test
@@ -582,6 +582,66 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
+  }
+
+  @Test
+  public void multipleBuckets_negativeNumberVariable_defaultBaselineWorks() {
+    // given
+    final String varName = "intVar";
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(varName, -1);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables.put(varName, -5);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is no baseline set
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      varName,
+      VariableType.INTEGER
+    );
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then the result includes all instances
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    assertThat(resultData).isNotNull();
+    assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(2.0);
+  }
+
+  @Test
+  public void multipleBuckets_doubleVariable_bucketKeysHaveTwoDecimalPlaces() {
+    // given
+    final String varName = "doubleVar";
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(varName, 1.0);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables.put(varName, 5.0);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is no baseline set
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      varName,
+      VariableType.DOUBLE
+    );
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then the result includes all instances
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    assertThat(resultData).isNotNull();
+    assertThat(resultData)
+      .extracting(MapResultEntryDto::getKey)
+      .allMatch(key -> key.length() - key.indexOf(".") - 1 == 2); // key should have two chars after the decimal
   }
 
   @Test
@@ -857,7 +917,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey(String.valueOf(varValue)).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("1.00").get().getValue()).isEqualTo(1.);
     assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(1.);
   }
 

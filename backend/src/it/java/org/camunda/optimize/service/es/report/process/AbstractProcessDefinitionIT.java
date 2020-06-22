@@ -27,12 +27,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -380,18 +383,21 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       );
   }
 
-  protected void assertCombinedNumberVariableResultsAreInCorrectRanges(
+  protected void assertCombinedDoubleVariableResultsAreInCorrectRanges(
     Double startRange,
     Double endRange,
     int expectedNumberOfBuckets,
     int resultSize,
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap) {
+    DecimalFormatSymbols decimalSymbols = new DecimalFormatSymbols(Locale.US);
+    final DecimalFormat decimalFormat = new DecimalFormat("0.00", decimalSymbols);
+
     assertThat(resultMap).hasSize(resultSize);
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
       final List<MapResultEntryDto> resultData = result.getResult().getData();
       assertThat(resultData.size()).isEqualTo(expectedNumberOfBuckets);
-      assertThat(resultData.get(0).getKey()).isEqualTo(String.valueOf(startRange));
-      assertThat(resultData.get(resultData.size() - 1).getKey()).isEqualTo(String.valueOf(endRange));
+      assertThat(resultData.get(0).getKey()).isEqualTo(decimalFormat.format(startRange));
+      assertThat(resultData.get(resultData.size() - 1).getKey()).isEqualTo(decimalFormat.format(endRange));
     }
   }
 

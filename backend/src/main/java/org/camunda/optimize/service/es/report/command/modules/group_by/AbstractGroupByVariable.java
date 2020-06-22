@@ -40,6 +40,9 @@ import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -47,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
@@ -366,8 +370,8 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     }
 
     return range.isPresent()
-      ? Optional.of(roundDownToNearestPowerOfTen(range.get().getMinimum()))
-      : Optional.of(roundDownToNearestPowerOfTen(minMaxStats.getMin()));
+      ? Optional.of(roundBaselineToNearestPowerOfTen(range.get().getMinimum()))
+      : Optional.of(roundBaselineToNearestPowerOfTen(minMaxStats.getMin()));
   }
 
   private Double getGroupByNumberVariableUnit(final ExecutionContext<Data> context,
@@ -403,15 +407,30 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       // truncate decimal point for non-double variable aggregations
       return String.valueOf((long) bucketStart);
     }
-    return String.valueOf(bucketStart);
+    DecimalFormatSymbols decimalSymbols = new DecimalFormatSymbols(Locale.US);
+    final DecimalFormat decimalFormat = new DecimalFormat("0.00", decimalSymbols);
+    return decimalFormat.format(bucketStart);
   }
 
   private GroupByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {
     return context.getReportData().getConfiguration().getGroupByDateVariableUnit();
   }
 
+  private Double roundBaselineToNearestPowerOfTen(Double baselineToRound) {
+    if (baselineToRound >= 0) {
+      return roundDownToNearestPowerOfTen(baselineToRound);
+    } else {
+      // round up if baseline is negative and apply sign again after rounding
+      return roundUpToNearestPowerOfTen(Math.abs(baselineToRound)) * -1;
+    }
+  }
+
   private Double roundDownToNearestPowerOfTen(Double numberToRound) {
     return Math.pow(10, Math.floor(Math.log10(numberToRound)));
+  }
+
+  private Double roundUpToNearestPowerOfTen(Double numberToRound) {
+    return Math.pow(10, Math.ceil(Math.log10(numberToRound)));
   }
 
   private Double roundToNearestPowerOfTen(Double numberToRound) {
