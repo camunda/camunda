@@ -90,6 +90,7 @@
       * [Authentication](operations/authentication.md)
       * [Authorization](operations/authorization.md)
     * [Health Status](operations/health.md)
+    * [Configuring Backpressure](operations/backpressure.md)
 * [Zeebe on Kubernetes](kubernetes/index.md)
     * [Prerequisites](kubernetes/prerequisites.md)
     * [Installing HELM Charts](kubernetes/installing-helm.md)
