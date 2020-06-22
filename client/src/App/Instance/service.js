@@ -11,7 +11,7 @@ import {
   MULTI_INSTANCE_TYPE,
 } from 'modules/constants';
 import * as api from 'modules/api/instances';
-import {isFlowNode} from 'modules/utils/flowNodes/flowNodes';
+import {isFlowNode} from 'modules/utils/flowNodes';
 
 function getEventType(bpmnElement) {
   // doesn't return a event type when element of type 'multiple event'

@@ -4,4 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './PanelListItem';
+import * as Styled from './styled';
+
+import React from 'react';
+import PropTypes from 'prop-types';
+
+export default function PanelListItem({children, ...props}) {
+  return <Styled.PanelListItem {...props}>{children}</Styled.PanelListItem>;
+}
+
+PanelListItem.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};

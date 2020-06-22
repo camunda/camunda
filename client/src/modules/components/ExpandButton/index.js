@@ -4,4 +4,35 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './ExpandButton';
+import React from 'react';
+import PropTypes from 'prop-types';
+import * as Styled from './styled';
+import IconButton from 'modules/components/IconButton';
+
+const ExpandButton = React.forwardRef(function ExpandButton(
+  {children, isExpanded, ...props},
+  ref
+) {
+  const renderIcon = () => (
+    <Styled.Transition timeout={400} in={isExpanded} appear>
+      <Styled.ArrowIcon />
+    </Styled.Transition>
+  );
+
+  return (
+    <IconButton {...props} icon={renderIcon()}>
+      {children}
+    </IconButton>
+  );
+});
+
+ExpandButton.propTypes = {
+  isExpanded: PropTypes.bool,
+  children: PropTypes.node,
+};
+
+ExpandButton.defaultProps = {
+  isExpanded: false,
+};
+
+export default ExpandButton;

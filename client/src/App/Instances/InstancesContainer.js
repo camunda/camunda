@@ -32,7 +32,7 @@ import {
 } from 'modules/utils/filter';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 
-import Instances from './Instances';
+import {Instances} from './index';
 
 import FilterContext from 'modules/contexts/FilterContext';
 import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';

@@ -4,4 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default, useListContext} from './ListContext';
+import React, {useContext} from 'react';
+
+const ListContext = React.createContext();
+export const useListContext = () => useContext(ListContext);
+
+export default ListContext;

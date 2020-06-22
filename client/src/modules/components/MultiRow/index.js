@@ -4,4 +4,31 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './MultiRow';
+import React from 'react';
+import PropTypes from 'prop-types';
+
+function MultiRow({Component, rowsToDisplay, children, ...props}) {
+  function rowMultiplier(rowsToDisplay) {
+    const rows = [];
+
+    for (var i = 0; i < rowsToDisplay; i++) {
+      rows.push(<Component key={i} />);
+    }
+    return rows;
+  }
+
+  return (
+    <>
+      {children}
+      {rowMultiplier(rowsToDisplay)}
+    </>
+  );
+}
+
+MultiRow.propTypes = {
+  Component: PropTypes.elementType,
+  rowsToDisplay: PropTypes.number,
+  children: PropTypes.node,
+};
+
+export default MultiRow;

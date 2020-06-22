@@ -18,7 +18,7 @@ import {
   mockExistingOperationFinished,
   mockSubscribe,
   mockUnsubscribe,
-} from './OperationsPanel.setup';
+} from './index.setup';
 
 jest.mock('modules/hooks/useSubscription');
 jest.mock('modules/hooks/useDataManager');

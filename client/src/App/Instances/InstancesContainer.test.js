@@ -8,13 +8,13 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import InstancesContainer from './InstancesContainer';
-import Instances from './Instances';
+import {Instances} from './index';
 
 import {decodeFields} from './service';
 import {parseQueryString} from 'modules/utils/filter';
-import * as api from 'modules/api/instances/instances';
-import * as apiDiagram from 'modules/api/diagram/diagram';
-import * as filterUtils from 'modules/utils/filter/filter';
+import * as api from 'modules/api/instances';
+import * as apiDiagram from 'modules/api/diagram';
+import * as filterUtils from 'modules/utils/filter';
 import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
 
 import {formatGroupedWorkflows} from 'modules/utils/instance';
@@ -47,13 +47,11 @@ import PropTypes from 'prop-types';
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
 
 // component mocks
-jest.mock(
-  './Instances',
-  () =>
-    function Instances(props) {
-      return <div />;
-    }
-);
+jest.mock('./index', () => ({
+  Instances() {
+    return <div />;
+  },
+}));
 
 // api mocks
 api.fetchGroupedWorkflows = mockResolvedAsyncFn(groupedWorkflowsMock);

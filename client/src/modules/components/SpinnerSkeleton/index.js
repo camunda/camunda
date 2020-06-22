@@ -4,4 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './Skeletons';
+import React from 'react';
+import * as Styled from './styled';
+
+export default function SpinnerSkeleton(props) {
+  return (
+    <Styled.Skeleton {...props}>
+      <Styled.SkeletonSpinner />
+    </Styled.Skeleton>
+  );
+}

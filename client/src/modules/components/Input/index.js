@@ -4,4 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './Input';
+import React from 'react';
+import PropTypes from 'prop-types';
+
+import * as Styled from './styled';
+
+export default function Input(props) {
+  return <Styled.Input {...props} aria-label={props.placeholder} />;
+}
+
+Input.propTypes = {
+  placeholder: PropTypes.string,
+  hasError: PropTypes.bool,
+};

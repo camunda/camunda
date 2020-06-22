@@ -4,4 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './PanelBody';
+import React from 'react';
+import PropTypes from 'prop-types';
+
+import * as Styled from './styled.js';
+
+const PanelBody = React.forwardRef(function PanelBody(props, ref) {
+  return <Styled.Body ref={ref} {...props} />;
+});
+
+export default PanelBody;
+
+PanelBody.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};

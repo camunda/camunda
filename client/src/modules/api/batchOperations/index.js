@@ -4,4 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export * from './batchOperations';
+import {post} from 'modules/request';
+
+const URL = '/api/batch-operations';
+
+export async function fetchBatchOperations({pageSize, searchAfter}) {
+  const response = await post(URL, {
+    pageSize,
+    searchAfter,
+  });
+  return await response.json();
+}

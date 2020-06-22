@@ -4,4 +4,22 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {Transition, TransitionGroup} from './Transition';
+import React, {Children} from 'react';
+import PropTypes from 'prop-types';
+import {CSSTransition, TransitionGroup} from 'react-transition-group';
+
+function Transition(props) {
+  return (
+    props.children && (
+      <CSSTransition classNames="transition" {...props}>
+        {Children.only(props.children)}
+      </CSSTransition>
+    )
+  );
+}
+
+Transition.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
+export {Transition, TransitionGroup};

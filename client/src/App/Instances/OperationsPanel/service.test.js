@@ -9,10 +9,7 @@ import {
   hasRunningBatchOperations,
   hasBatchOperations,
 } from './service';
-import {
-  mockOperationFinished,
-  mockOperationRunning,
-} from './OperationsPanel.setup';
+import {mockOperationFinished, mockOperationRunning} from './index.setup';
 
 describe('isBatchOperationRunning', () => {
   it('should be true when operation is running', () => {

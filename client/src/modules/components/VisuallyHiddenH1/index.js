@@ -4,4 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './VisuallyHiddenH1';
+import React from 'react';
+
+import * as Styled from './styled';
+
+export default function VisuallyHiddenH1(props) {
+  return <Styled.VisuallyHiddenH1 {...props} />;
+}

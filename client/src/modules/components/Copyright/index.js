@@ -4,4 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './Copyright';
+import React from 'react';
+import * as Styled from './styled';
+
+function Copyright(props) {
+  return (
+    <Styled.Copyright {...props}>
+      &copy; Camunda Services GmbH {new Date().getFullYear()}. All rights
+      reserved. | {process.env.REACT_APP_VERSION}
+    </Styled.Copyright>
+  );
+}
+
+export default Copyright;

@@ -4,4 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export * from './events';
+import {post} from 'modules/request';
+
+const URL = `/api/events`;
+
+export async function fetchEvents(workflowInstanceId) {
+  const response = await post(URL, {workflowInstanceId});
+  return await response.json();
+}
