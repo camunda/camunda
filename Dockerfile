@@ -1,3 +1,7 @@
+
+ARG APP_ENV=prod
+
+# Building builder image
 FROM alpine:latest as builder
 ARG DISTBALL
 
@@ -16,7 +20,18 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini ${TMP
 COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
 RUN chmod +x -R ${TMP_DIR}/bin/
 
-FROM openjdk:11-jre-slim as app
+# Building prod image
+FROM openjdk:11-jre-slim as prod
+RUN echo "running PROD pre-install commands"
+
+# Building dev image
+FROM openjdk:11 as dev
+RUN echo "running DEV pre-install commands"
+RUN apt-get update
+RUN wget -O - https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.7.1/async-profiler-1.7.1-linux-x64.tar.gz | tar xzv
+
+# Building application image
+FROM ${APP_ENV} as app
 
 ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_LOG_LEVEL=info \
