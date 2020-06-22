@@ -23,9 +23,7 @@ import io.zeebe.exporter.api.context.Context;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.value.ErrorRecordValue;
 import io.zeebe.test.exporter.ExporterTestHarness;
-import io.zeebe.test.exporter.record.MockRecordValue;
 import io.zeebe.util.ZbLogger;
 import java.time.Duration;
 import java.util.Arrays;
@@ -370,33 +368,5 @@ public class ElasticsearchExporterTest {
     when(client.putIndexTemplate(any(ValueType.class))).thenReturn(true);
     when(client.putIndexTemplate(anyString(), anyString(), anyString())).thenReturn(true);
     return client;
-  }
-
-  static class ErrorMockRecord extends MockRecordValue implements ErrorRecordValue {
-
-    static final String EXCEPTION_MESSAGE = "Expected Exception Message";
-    static final String STACKTRACE = "Expected Stacktrace";
-    static final long ERROR_EVENT_POSITION = 123;
-    static final long WORKFLOW_INSTANCE_KEY = 456;
-
-    @Override
-    public String getExceptionMessage() {
-      return EXCEPTION_MESSAGE;
-    }
-
-    @Override
-    public String getStacktrace() {
-      return STACKTRACE;
-    }
-
-    @Override
-    public long getErrorEventPosition() {
-      return ERROR_EVENT_POSITION;
-    }
-
-    @Override
-    public long getWorkflowInstanceKey() {
-      return WORKFLOW_INSTANCE_KEY;
-    }
   }
 }

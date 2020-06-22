@@ -35,6 +35,7 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
   private ElasticsearchExporterConfiguration configuration;
   private Logger logSpy;
   private ElasticsearchClient client;
+  private ArrayList<String> bulkRequest;
 
   @Before
   public void init() {
@@ -42,7 +43,8 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
 
     configuration = getDefaultConfiguration();
     logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientTest.class));
-    client = new ElasticsearchClient(configuration, logSpy);
+    bulkRequest = new ArrayList<>();
+    client = new ElasticsearchClient(configuration, logSpy, bulkRequest);
   }
 
   @Test
@@ -116,13 +118,13 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
     final Record<VariableRecordValue> recordMock = mock(Record.class);
     when(recordMock.getPartitionId()).thenReturn(1);
     when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
-    when(recordMock.toJson()).thenReturn("invalid-json");
 
     // bulk contains records that fail on flush
     IntStream.range(0, bulkSize)
         .forEach(
             i -> {
               when(recordMock.getKey()).thenReturn(RECORD_KEY + i);
+              when(recordMock.toJson()).thenReturn("invalid-json-" + i);
               client.index(recordMock);
             });
 
@@ -142,5 +144,24 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
             bulkSize,
             "mapper_parsing_exception",
             "failed to parse");
+  }
+
+  @Test
+  public void shouldIgnoreRecordIfDuplicateOfLast() {
+    // given
+    final Record<VariableRecordValue> recordMock = mock(Record.class);
+    when(recordMock.getPartitionId()).thenReturn(1);
+    when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
+    when(recordMock.getKey()).thenReturn(RECORD_KEY + 1);
+    when(recordMock.toJson()).thenReturn("{}");
+
+    client.index(recordMock);
+    assertThat(bulkRequest).hasSize(1);
+
+    // when
+    client.index(recordMock);
+
+    // then
+    assertThat(bulkRequest).hasSize(1);
   }
 }
