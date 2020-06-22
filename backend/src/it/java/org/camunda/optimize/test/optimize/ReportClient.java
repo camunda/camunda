@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -617,21 +618,26 @@ public class ReportClient {
       // @formatter:on
   }
 
-  public AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport
-    (ProcessReportDataDto reportData) {
+  public AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport(
+    final ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute(new TypeReference<AuthorizedEvaluationResultDto<ProcessReportResultDto,
-        SingleProcessReportDefinitionDto>>() {
-      });
+      // @formatter:off
+      .execute(
+        new TypeReference<AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto>>() {}
+      );
+      // @formatter:on
   }
 
-  public AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(DecisionReportDataDto reportData) {
+  public AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(
+    final DecisionReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute(new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto,
-        SingleDecisionReportDefinitionDto>>() {
-      });
+      // @formatter:off
+      .execute(
+        new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto>>() {}
+      );
+      // @formatter:off
   }
 
   public ReportMapResultDto evaluateReportAndReturnMapResult(final ProcessReportDataDto reportData) {
@@ -641,5 +647,21 @@ public class ReportClient {
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
       // @formatter:on
       .getResult();
+  }
+
+  public <RD extends ProcessReportResultDto, DD extends SingleReportDefinitionDto<?>> AuthorizedProcessReportEvaluationResultDto<RD> evaluateProcessReport(final DD reportDefinition) {
+    return getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RD>>() {});
+      // @formatter:on
+  }
+
+  public <RD extends DecisionReportResultDto, DD extends SingleReportDefinitionDto<?>> AuthorizedDecisionReportEvaluationResultDto<RD> evaluateDecisionReport(final DD reportDefinition) {
+    return getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RD>>() {});
+    // @formatter:on
   }
 }

@@ -29,6 +29,10 @@ public class ReportEvaluationService {
 
   public AuthorizedReportEvaluationResult evaluateReport(final String userId,
                                                          final ReportDefinitionDto reportDefinition) {
+    // reset owner, it's not relevant for authorization given a full report definition is provided anyway
+    reportDefinition.setOwner(null);
+    // and reset lastModified, it's also not relevant in the case of an on demand evaluation
+    reportDefinition.setLastModifier(null);
     // auth is handled in evaluator as it also handles single reports of a combined report
     return reportEvaluator.evaluateReport(userId, reportDefinition);
   }

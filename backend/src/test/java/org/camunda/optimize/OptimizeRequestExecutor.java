@@ -27,6 +27,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -434,6 +435,21 @@ public class OptimizeRequestExecutor {
       this.body = getBody(null);
     } else {
       throw new OptimizeIntegrationTestException("Unknown report data type!");
+    }
+    this.method = POST;
+    return this;
+  }
+
+  public <T extends SingleReportDefinitionDto> OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(T definitionDto) {
+    this.path = "report/evaluate";
+    if (definitionDto instanceof SingleProcessReportDefinitionDto) {
+      this.body = getBody(definitionDto);
+    } else if (definitionDto instanceof SingleDecisionReportDefinitionDto) {
+      this.body = getBody(definitionDto);
+    } else if (definitionDto == null) {
+      this.body = getBody(null);
+    } else {
+      throw new OptimizeIntegrationTestException("Unknown report definition type!");
     }
     this.method = POST;
     return this;

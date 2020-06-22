@@ -13,16 +13,21 @@ import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -428,27 +433,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @EnumSource(ReportType.class)
   public void evaluateUnsavedReport(ReportType reportType) {
     //given
-    final SingleReportDataDto reportDataDto;
-    switch (reportType) {
-      case PROCESS:
-        reportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
-        break;
-      case DECISION:
-        reportDataDto = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
-        break;
-      default:
-        throw new IllegalStateException("Uncovered type: " + reportType);
-    }
+    final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -461,35 +446,36 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  public void evaluateUnsavedReport_containsUserAndModifierNames(ReportType reportType) {
+  public void evaluateUnsavedReport_ignoresOwnerAndModifierNames(ReportType reportType) {
     //given
-    final SingleReportDataDto reportDataDto;
+    final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
+    final SingleReportDefinitionDto<?> reportDefinitionDto;
+    final AuthorizedEvaluationResultDto<?, ?> result;
     switch (reportType) {
       case PROCESS:
-        reportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
+        reportDefinitionDto = new SingleProcessReportDefinitionDto((ProcessReportDataDto) reportDataDto);
         break;
       case DECISION:
-        reportDataDto = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
+        reportDefinitionDto =
+          new SingleDecisionReportDefinitionDto((DecisionReportDataDto) reportDataDto);
         break;
       default:
         throw new IllegalStateException("Uncovered type: " + reportType);
     }
 
-    // when
-    Response response = reportClient.evaluateReportAndReturnResponse(reportDataDto);
+    // set owner should be ignored in the context of full config evaluation
+    reportDefinitionDto.setOwner("Sauron");
+    reportDefinitionDto.setLastModifier("Frodo Beutlin");
 
-    // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    // when
+    result = ReportType.PROCESS.equals(reportType)
+      ? reportClient.evaluateProcessReport(reportDefinitionDto)
+      : reportClient.evaluateDecisionReport(reportDefinitionDto);
+
+    // then
+    assertThat(result.getCurrentUserRole()).isEqualTo(RoleType.EDITOR);
+    assertThat(result.getReportDefinition().getOwner()).isNull();
+    assertThat(result.getReportDefinition().getLastModifier()).isNull();
   }
 
   @ParameterizedTest
@@ -581,6 +567,31 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // then
     AbstractSharingIT.assertErrorFields(response);
+  }
+
+  private SingleReportDataDto createSingleReportDataForType(final ReportType reportType) {
+    final SingleReportDataDto reportDataDto;
+    switch (reportType) {
+      case PROCESS:
+        reportDataDto = TemplatedProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(RANDOM_KEY)
+          .setProcessDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build();
+        break;
+      case DECISION:
+        reportDataDto = DecisionReportDataBuilder
+          .create()
+          .setDecisionDefinitionKey(RANDOM_KEY)
+          .setDecisionDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build();
+        break;
+      default:
+        throw new IllegalStateException("Uncovered type: " + reportType);
+    }
+    return reportDataDto;
   }
 
   private Response evaluateUnsavedCombinedReport(CombinedReportDataDto reportDataDto) {
