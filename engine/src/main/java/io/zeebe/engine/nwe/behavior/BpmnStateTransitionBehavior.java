@@ -173,7 +173,13 @@ public final class BpmnStateTransitionBehavior {
         context, elementInstanceKey, elementInstanceRecord);
   }
 
-  public void terminateChildInstances(final BpmnElementContext context) {
+  /**
+   * Terminate all child instances of the given scope.
+   *
+   * @param context the scope to terminate the child instances of
+   * @return {@code true} if the scope has no active child instances
+   */
+  public boolean terminateChildInstances(final BpmnElementContext context) {
 
     final var childInstances = stateBehavior.getChildInstances(context);
 
@@ -191,12 +197,8 @@ public final class BpmnStateTransitionBehavior {
     final var elementInstance = stateBehavior.getElementInstance(context);
     final var activeChildInstances = elementInstance.getNumberOfActiveElementInstances();
 
-    if (activeChildInstances == 0) {
-      // terminate element instance if all child instances are terminated
-      transitionToTerminated(context);
-
-    } else {
-      // don't yet transition to terminated but wait for child instances to be terminated
+    if (activeChildInstances > 0) {
+      // wait for child instances to be terminated
 
       // clean up the state because some events of child instances will not be processed (e.g.
       // element completed, sequence flow taken)
@@ -206,6 +208,8 @@ public final class BpmnStateTransitionBehavior {
       }
       stateBehavior.updateElementInstance(elementInstance);
     }
+
+    return activeChildInstances == 0;
   }
 
   public <T extends ExecutableFlowNode> void takeOutgoingSequenceFlows(

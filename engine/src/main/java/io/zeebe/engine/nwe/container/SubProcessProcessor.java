@@ -9,7 +9,6 @@ package io.zeebe.engine.nwe.container;
 
 import io.zeebe.engine.nwe.BpmnElementContainerProcessor;
 import io.zeebe.engine.nwe.BpmnElementContext;
-import io.zeebe.engine.nwe.BpmnProcessingException;
 import io.zeebe.engine.nwe.behavior.BpmnBehaviors;
 import io.zeebe.engine.nwe.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnIncidentBehavior;
@@ -57,13 +56,16 @@ public final class SubProcessProcessor
   public void onActivated(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
-    final var noneStartEvent = element.getNoneStartEvent();
-    if (noneStartEvent == null) {
-      throw new BpmnProcessingException(
-          context, "Expected to activate the none start event of the sub-process but not found.");
-    }
+    if (element.hasNoneStartEvent()) {
+      // embedded sub-process is activated
+      final var noneStartEvent = element.getNoneStartEvent();
+      stateTransitionBehavior.activateChildInstance(context, noneStartEvent);
 
-    stateTransitionBehavior.activateChildInstance(context, noneStartEvent);
+    } else {
+      // event sub-process is activated
+      final var startEvent = element.getStartEvents().get(0);
+      stateTransitionBehavior.activateChildInstance(context, startEvent);
+    }
   }
 
   @Override
@@ -96,7 +98,10 @@ public final class SubProcessProcessor
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
 
-    stateTransitionBehavior.terminateChildInstances(context);
+    final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
+    if (noActiveChildInstances) {
+      stateTransitionBehavior.transitionToTerminated(context);
+    }
   }
 
   @Override

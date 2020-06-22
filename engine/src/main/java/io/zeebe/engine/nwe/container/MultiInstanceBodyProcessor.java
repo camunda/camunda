@@ -143,7 +143,10 @@ public final class MultiInstanceBodyProcessor
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
 
-    stateTransitionBehavior.terminateChildInstances(context);
+    final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
+    if (noActiveChildInstances) {
+      stateTransitionBehavior.transitionToTerminated(context);
+    }
   }
 
   @Override

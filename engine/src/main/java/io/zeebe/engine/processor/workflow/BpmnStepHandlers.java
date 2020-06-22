@@ -26,7 +26,6 @@ import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletingHand
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
-import io.zeebe.engine.processor.workflow.handlers.eventsubproc.EventSubProcessEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.FlowOutElementCompletedHandler;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -76,10 +75,6 @@ public final class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.CONTAINER_ELEMENT_TERMINATING,
         new ContainerElementTerminatingHandler<>(catchEventSubscriber));
-
-    stepHandlers.put(
-        BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED,
-        new EventSubProcessEventOccurredHandler<>(catchEventBehavior));
 
     // ---------- new -----------------
     bpmnStreamProcessor =

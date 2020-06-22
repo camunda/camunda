@@ -23,6 +23,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEve
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableReceiveTask;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.engine.processor.workflow.message.MessageNameException;
 import io.zeebe.engine.state.ZeebeState;
@@ -378,6 +379,66 @@ public final class BpmnEventSubscriptionBehavior {
   public void unsubscribeFromEvents(final BpmnElementContext context) {
     catchEventBehavior.unsubscribeFromEvents(
         context.getElementInstanceKey(), context.toStepContext());
+  }
+
+  public void triggerEventSubProcess(
+      final ExecutableStartEvent startEvent, final BpmnElementContext context) {
+
+    if (stateBehavior.getFlowScopeInstance(context).getInterruptingEventKey() > 0) {
+      // the flow scope is already interrupted - discard this event
+      return;
+    }
+
+    final var flowScopeContext = stateBehavior.getFlowScopeContext(context);
+
+    triggerEvent(
+        flowScopeContext,
+        eventTrigger -> {
+          final var eventSubProcessElementId = startEvent.getEventSubProcess();
+          final var record =
+              getEventRecord(context.getRecordValue(), eventTrigger, BpmnElementType.SUB_PROCESS)
+                  .setElementId(eventSubProcessElementId);
+
+          final long eventElementInstanceKey = keyGenerator.nextKey();
+          if (startEvent.interrupting()) {
+
+            triggerInterruptingEventSubProcess(
+                context, flowScopeContext, record, eventElementInstanceKey);
+
+          } else {
+            // activate non-interrupting event sub-process
+            publishActivatingEvent(context, eventElementInstanceKey, record);
+          }
+
+          return eventElementInstanceKey;
+        });
+  }
+
+  private void triggerInterruptingEventSubProcess(
+      final BpmnElementContext context,
+      final BpmnElementContext flowScopeContext,
+      final WorkflowInstanceRecord eventRecord,
+      final long eventElementInstanceKey) {
+
+    unsubscribeFromEvents(flowScopeContext);
+
+    final var noActiveChildInstances =
+        stateTransitionBehavior.terminateChildInstances(flowScopeContext);
+    if (noActiveChildInstances) {
+      // activate interrupting event sub-process
+      publishActivatingEvent(context, eventElementInstanceKey, eventRecord);
+
+    } else {
+      // wait until child instances are terminated
+      deferActivatingEvent(flowScopeContext, eventElementInstanceKey, eventRecord);
+    }
+
+    stateBehavior.updateFlowScopeInstance(
+        context,
+        flowScopeInstance -> {
+          flowScopeInstance.spawnToken();
+          flowScopeInstance.setInterruptingEventKey(eventElementInstanceKey);
+        });
   }
 
   public void publishTriggeredEventSubProcess(final BpmnElementContext context) {
