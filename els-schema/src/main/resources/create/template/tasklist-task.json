@@ -16,7 +16,7 @@
 				"format": "date_time",
 				"type": "date"
 			},
-			"workflowInstanceKey": {
+			"workflowInstanceId": {
 				"type": "long"
 			},
 			"id": {
@@ -36,6 +36,9 @@
 				"type": "date"
 			},
 			"bpmnProcessId": {
+				"type": "keyword"
+			},
+			"workflowId": {
 				"type": "keyword"
 			},
 			"assignee": {

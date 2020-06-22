@@ -10,8 +10,9 @@ import java.time.OffsetDateTime;
 public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
 
   private String bpmnProcessId;
+  private String workflowId;
   private String elementId;
-  private String workflowInstanceKey;     //TODO is this String or Long? If String may be rename to workflowInstanceId?
+  private String workflowInstanceId;
   private OffsetDateTime creationTime;
   private OffsetDateTime completionTime;
   private TaskState state;
@@ -26,6 +27,15 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
+  public String getWorkflowId() {
+    return workflowId;
+  }
+
+  public TaskEntity setWorkflowId(String workflowId) {
+    this.workflowId = workflowId;
+    return this;
+  }
+
   public String getElementId() {
     return elementId;
   }
@@ -35,12 +45,12 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
-  public String getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public String getWorkflowInstanceId() {
+    return workflowInstanceId;
   }
 
-  public TaskEntity setWorkflowInstanceKey(String workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public TaskEntity setWorkflowInstanceId(String workflowInstanceId) {
+    this.workflowInstanceId = workflowInstanceId;
     return this;
   }
 
@@ -93,9 +103,11 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
 
     if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
+    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
+      return false;
     if (elementId != null ? !elementId.equals(that.elementId) : that.elementId != null)
       return false;
-    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
+    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
       return false;
     if (creationTime != null ? !creationTime.equals(that.creationTime) : that.creationTime != null)
       return false;
@@ -111,8 +123,9 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
+    result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
     result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
-    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
+    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
     result = 31 * result + (completionTime != null ? completionTime.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);

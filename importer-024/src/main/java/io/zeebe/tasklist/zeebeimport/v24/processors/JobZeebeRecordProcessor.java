@@ -69,8 +69,9 @@ public class JobZeebeRecordProcessor {
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setElementId(recordValue.getElementId());
-    entity.setWorkflowInstanceKey(String.valueOf(recordValue.getWorkflowInstanceKey()));
+    entity.setWorkflowInstanceId(String.valueOf(recordValue.getWorkflowInstanceKey()));
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
+    entity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
     if (TASK_FINISH_STATES.contains(record.getIntent().name())) {
       entity.setState(TaskState.COMPLETED);
       entity.setCompletionTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));

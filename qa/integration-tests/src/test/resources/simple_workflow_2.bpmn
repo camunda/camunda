@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_09jlb3q" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
-  <bpmn:process id="Process_1g4wt4m" name="Simple process" isExecutable="true">
+  <bpmn:process id="Process_1g4wt4m" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_007nkah</bpmn:outgoing>
     </bpmn:startEvent>
@@ -27,17 +27,17 @@
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1g4wt4m">
-      <bpmndi:BPMNEdge id="Flow_0lsd3t8_di" bpmnElement="Flow_0lsd3t8">
-        <di:waypoint x="550" y="117" />
-        <di:waypoint x="602" y="117" />
+      <bpmndi:BPMNEdge id="Flow_007nkah_di" bpmnElement="Flow_007nkah">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="290" y="117" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0qc07xr_di" bpmnElement="Flow_0qc07xr">
         <di:waypoint x="390" y="117" />
         <di:waypoint x="450" y="117" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_007nkah_di" bpmnElement="Flow_007nkah">
-        <di:waypoint x="215" y="117" />
-        <di:waypoint x="290" y="117" />
+      <bpmndi:BPMNEdge id="Flow_0lsd3t8_di" bpmnElement="Flow_0lsd3t8">
+        <di:waypoint x="550" y="117" />
+        <di:waypoint x="602" y="117" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="179" y="99" width="36" height="36" />

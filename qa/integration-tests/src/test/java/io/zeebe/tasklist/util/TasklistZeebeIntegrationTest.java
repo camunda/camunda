@@ -19,6 +19,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.zeebe.PartitionHolder;
 import io.zeebe.tasklist.zeebeimport.ImportPositionHolder;
+import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +52,9 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   protected ImportPositionHolder importPositionHolder;
 
   @Autowired
+  private WorkflowCache workflowCache;
+
+  @Autowired
   protected TasklistProperties tasklistProperties;
 
   private String workerName;
@@ -78,7 +82,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
 
     tester = beanFactory.getBean(TasklistTester.class, zeebeClient, elasticsearchTestRule);
 
-//    workflowCache.clearCache();
+    workflowCache.clearCache();
     importPositionHolder.clearCache();
     try {
       FieldSetter.setField(partitionHolder, PartitionHolder.class.getDeclaredField("zeebeClient"), getClient());
@@ -90,7 +94,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
 
   @After
   public void after() {
-//    workflowCache.clearCache();
+    workflowCache.clearCache();
     importPositionHolder.clearCache();
   }
 

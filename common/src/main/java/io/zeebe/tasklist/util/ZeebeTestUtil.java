@@ -39,7 +39,7 @@ public abstract class ZeebeTestUtil {
    * @param classpathResources classpath resources
    * @return workflow id
    */
-  public static Long deployWorkflow(ZeebeClient client, String... classpathResources) {
+  public static String deployWorkflow(ZeebeClient client, String... classpathResources) {
     if (classpathResources.length == 0) {
       return null;
     }
@@ -52,7 +52,7 @@ public abstract class ZeebeTestUtil {
         .send()
         .join();
     logger.debug("Deployment of resource [{}] was performed", (Object[])classpathResources);
-    return deploymentEvent.getWorkflows().get(classpathResources.length - 1).getWorkflowKey();
+    return String.valueOf(deploymentEvent.getWorkflows().get(classpathResources.length - 1).getWorkflowKey());
   }
 
   /**
@@ -62,7 +62,7 @@ public abstract class ZeebeTestUtil {
    * @param resourceName resourceName
    * @return workflow id
    */
-  public static Long deployWorkflow(ZeebeClient client, BpmnModelInstance workflowModel, String resourceName) {
+  public static String deployWorkflow(ZeebeClient client, BpmnModelInstance workflowModel, String resourceName) {
     DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.newDeployCommand()
       .addWorkflowModel(workflowModel, resourceName);
     final DeploymentEvent deploymentEvent =
@@ -70,7 +70,7 @@ public abstract class ZeebeTestUtil {
         .send()
         .join();
     logger.debug("Deployment of resource [{}] was performed", resourceName);
-    return deploymentEvent.getWorkflows().get(0).getWorkflowKey();
+    return String.valueOf(deploymentEvent.getWorkflows().get(0).getWorkflowKey());
   }
 
   /**
@@ -80,7 +80,7 @@ public abstract class ZeebeTestUtil {
    * @param payload payload
    * @return workflow instance id
    */
-  public static long startWorkflowInstance(ZeebeClient client, String bpmnProcessId, String payload) {
+  public static String startWorkflowInstance(ZeebeClient client, String bpmnProcessId, String payload) {
     final CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3 createWorkflowInstanceCommandStep3 = client
       .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
@@ -100,7 +100,7 @@ public abstract class ZeebeTestUtil {
           .send().join();
       logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
     }
-    return workflowInstanceEvent.getWorkflowInstanceKey();
+    return String.valueOf(workflowInstanceEvent.getWorkflowInstanceKey());
   }
 
   public static void cancelWorkflowInstance(ZeebeClient client, long workflowInstanceKey) {

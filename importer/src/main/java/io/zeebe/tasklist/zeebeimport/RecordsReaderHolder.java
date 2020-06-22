@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.CollectionUtil;
 import io.zeebe.tasklist.zeebe.ImportValueType;
@@ -51,8 +52,11 @@ public class RecordsReaderHolder {
     logger.info("Starting import for partitions: {}", partitionIds);
     for (Integer partitionId : partitionIds) {
       // TODO what if it's not the final list of partitions
-      for (ImportValueType importValueType : IMPORT_VALUE_TYPES) {
-        recordsReaders.add(beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
+      for (ImportValueType importValueType: IMPORT_VALUE_TYPES) {
+        //we load deployments only from deployment partition
+        if (!importValueType.equals(ImportValueType.DEPLOYMENT) || partitionId.equals(Protocol.DEPLOYMENT_PARTITION)) {
+          recordsReaders.add(beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
+        }
       }
     }
     return recordsReaders;

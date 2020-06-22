@@ -15,6 +15,7 @@ import graphql.schema.DataFetchingEnvironment;
 import io.zeebe.tasklist.webapp.es.reader.UserReader;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
 import static io.zeebe.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.USER_DATA_LOADER;
 
 @Component
@@ -22,6 +23,9 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
 
   @Autowired
   private UserReader userReader;
+
+  @Autowired
+  private WorkflowCache workflowCache;
 
   public CompletableFuture<UserDTO> getAssignee(TaskDTO task, DataFetchingEnvironment dfe) {
     if (task.getAssigneeUsername() == null) {
@@ -32,6 +36,22 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
         .getDataLoader(USER_DATA_LOADER);
 
     return dataloader.load(task.getAssigneeUsername());
+  }
+
+  public String getWorkflowName(TaskDTO task) {
+    final String workflowName = workflowCache.getWorkflowName(task.getWorkflowId());
+    if (workflowName == null) {
+      return task.getBpmnProcessId();
+    }
+    return workflowName;
+  }
+
+  public String getName(TaskDTO task) {
+    final String taskName = workflowCache.getTaskName(task.getWorkflowId(), task.getElementId());
+    if (taskName == null) {
+      return task.getElementId();
+    }
+    return taskName;
   }
 
 }

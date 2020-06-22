@@ -15,8 +15,9 @@ import static io.zeebe.tasklist.util.CollectionUtil.map;
 public final class TaskDTO {
 
   private String id;
-  private String name;
-  private String workflowName;
+  private String elementId;
+  private String workflowId;
+  private String bpmnProcessId;
   private OffsetDateTime creationTime;
   private OffsetDateTime completionTime;
   private String assigneeUsername;
@@ -32,21 +33,30 @@ public final class TaskDTO {
     return this;
   }
 
-  public String getName() {
-    return name;
+  public String getElementId() {
+    return elementId;
   }
 
-  public TaskDTO setName(String name) {
-    this.name = name;
+  public TaskDTO setElementId(String elementId) {
+    this.elementId = elementId;
     return this;
   }
 
-  public String getWorkflowName() {
-    return workflowName;
+  public String getWorkflowId() {
+    return workflowId;
   }
 
-  public TaskDTO setWorkflowName(String workflowName) {
-    this.workflowName = workflowName;
+  public TaskDTO setWorkflowId(String workflowId) {
+    this.workflowId = workflowId;
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public TaskDTO setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
@@ -102,10 +112,9 @@ public final class TaskDTO {
         .setId(taskEntity.getId())
         .setTaskState(taskEntity.getState())
         .setAssigneeUsername(taskEntity.getAssignee())
-        //TODO #40
-        .setName(taskEntity.getElementId())
-        .setWorkflowName(taskEntity.getBpmnProcessId());
-    //        .setVariables()
+        .setBpmnProcessId(taskEntity.getBpmnProcessId())
+        .setWorkflowId(taskEntity.getWorkflowId())
+        .setElementId(taskEntity.getElementId());
   }
 
   public static List<TaskDTO> createFrom(List<TaskEntity> taskEntities) {
@@ -119,31 +128,34 @@ public final class TaskDTO {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    TaskDTO task = (TaskDTO) o;
+    TaskDTO taskDTO = (TaskDTO) o;
 
-    if (id != null ? !id.equals(task.id) : task.id != null)
+    if (id != null ? !id.equals(taskDTO.id) : taskDTO.id != null)
       return false;
-    if (name != null ? !name.equals(task.name) : task.name != null)
+    if (elementId != null ? !elementId.equals(taskDTO.elementId) : taskDTO.elementId != null)
       return false;
-    if (workflowName != null ? !workflowName.equals(task.workflowName) : task.workflowName != null)
+    if (workflowId != null ? !workflowId.equals(taskDTO.workflowId) : taskDTO.workflowId != null)
       return false;
-    if (creationTime != null ? !creationTime.equals(task.creationTime) : task.creationTime != null)
+    if (bpmnProcessId != null ? !bpmnProcessId.equals(taskDTO.bpmnProcessId) : taskDTO.bpmnProcessId != null)
       return false;
-    if (completionTime != null ? !completionTime.equals(task.completionTime) : task.completionTime != null)
+    if (creationTime != null ? !creationTime.equals(taskDTO.creationTime) : taskDTO.creationTime != null)
       return false;
-    if (assigneeUsername != null ? !assigneeUsername.equals(task.assigneeUsername) : task.assigneeUsername != null)
+    if (completionTime != null ? !completionTime.equals(taskDTO.completionTime) : taskDTO.completionTime != null)
       return false;
-    if (variables != null ? !variables.equals(task.variables) : task.variables != null)
+    if (assigneeUsername != null ? !assigneeUsername.equals(taskDTO.assigneeUsername) : taskDTO.assigneeUsername != null)
       return false;
-    return taskState == task.taskState;
+    if (variables != null ? !variables.equals(taskDTO.variables) : taskDTO.variables != null)
+      return false;
+    return taskState == taskDTO.taskState;
 
   }
 
   @Override
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + (workflowName != null ? workflowName.hashCode() : 0);
+    result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
+    result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
+    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
     result = 31 * result + (completionTime != null ? completionTime.hashCode() : 0);
     result = 31 * result + (assigneeUsername != null ? assigneeUsername.hashCode() : 0);
@@ -154,8 +166,8 @@ public final class TaskDTO {
 
   @Override
   public String toString() {
-    return "TaskDTO{" + "id='" + id + '\'' + ", name='" + name + '\'' + ", workflowName='" + workflowName + '\'' + ", creationTime=" + creationTime
-        + ", completionTime=" + completionTime + ", assigneeUsername='" + assigneeUsername + '\'' + ", variables=" + variables + ", taskState=" + taskState
-        + '}';
+    return "TaskDTO{" + "id='" + id + '\'' + ", elementId='" + elementId + '\'' + ", workflowId='" + workflowId + '\'' + ", bpmnProcessId='" + bpmnProcessId
+        + '\'' + ", creationTime=" + creationTime + ", completionTime=" + completionTime + ", assigneeUsername='" + assigneeUsername + '\'' + ", variables="
+        + variables + ", taskState=" + taskState + '}';
   }
 }

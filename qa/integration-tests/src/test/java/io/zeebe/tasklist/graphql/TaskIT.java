@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Predicate;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.model.bpmn.Bpmn;
@@ -18,6 +20,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
+import io.zeebe.tasklist.zeebe.ImportValueType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -31,6 +34,10 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   public static final String GET_TASK_QUERY_PATTERN = "{task(id: \"%s\"){id name workflowName creationTime completionTime assignee {username} variables {name} taskState}}";
   @Autowired
   private GraphQLTestTemplate graphQLTestTemplate;
+
+  @Autowired
+  @Qualifier("taskIsCreatedCheck")
+  private Predicate<Object[]> taskIsCreatedCheck;
 
   @Test
   public void shouldReturnAllTasks() throws IOException {
@@ -55,8 +62,11 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     for (int i=0; i < 3; i++) {
       final String taskJsonPath = String.format("$.data.tasks[%d]", i);
       assertNotNull(response.get(taskJsonPath + ".id"));
+
+      //workflow does not contain task name and workflow name
       assertEquals(elementId, response.get(taskJsonPath + ".name"));
       assertEquals(bpmnProcessId, response.get(taskJsonPath + ".workflowName"));
+
       assertNotNull(response.get(taskJsonPath + ".creationTime"));
       assertNull(response.get(taskJsonPath + ".completionTime"));
       assertEquals(TaskState.CREATED.name(), response.get(taskJsonPath + ".taskState"));
@@ -159,6 +169,64 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   //TODO #47
   // test Unclaimed and Claimed by me filters
   // test tasks claimed by different users
+
+  @Test
+  public void shouldReturnWorkflowAndTaskName() throws IOException {
+    //having
+    final String workflowName = "Test process name";
+    final String taskName = "Task A";
+    final String bpmnProcessId = "testProcess";
+    final String taskId = "taskA";
+    BpmnModelInstance workflow = Bpmn.createExecutableProcess(bpmnProcessId).name(workflowName)
+        .startEvent("start")
+        .serviceTask(taskId).name(taskName).zeebeJobType(tasklistProperties.getImporter().getJobType())
+        .endEvent()
+        .done();
+
+    tester.deployWorkflow(workflow, "testWorkflow.bpmn")
+        .waitUntil()
+        .workflowIsDeployed()
+        .and()
+        .startWorkflowInstance(bpmnProcessId)
+        .waitUntil()
+        .taskIsCreated(taskId);
+
+    //when
+    final GraphQLResponse response = graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+
+    //then
+    assertTrue(response.isOk());
+    assertEquals("1", response.get("$.data.tasks.length()"));
+    assertEquals(taskName, response.get("$.data.tasks[0].name"));
+    assertEquals(workflowName, response.get("$.data.tasks[0].workflowName"));
+  }
+
+  @Test
+  public void shouldFallbackToTaskIdAndBpmnProcessId() throws IOException {
+    //having
+    final String bpmnProcessId = "testProcess";
+    final String taskId = "taskA";
+    BpmnModelInstance workflow = Bpmn.createExecutableProcess(bpmnProcessId).name("Test process name")
+        .startEvent("start")
+        .serviceTask(taskId).name("Task A").zeebeJobType(tasklistProperties.getImporter().getJobType())
+        .endEvent()
+        .done();
+
+    tester.deployWorkflow(workflow, "testWorkflow.bpmn")
+        .and()
+        .startWorkflowInstance(bpmnProcessId);
+    //load all but workflow
+    elasticsearchTestRule.processRecordsWithTypeAndWait(ImportValueType.JOB, taskIsCreatedCheck, tester.getWorkflowInstanceId(), taskId);
+
+    //when
+    final GraphQLResponse response = graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+
+    //then
+    assertTrue(response.isOk());
+    assertEquals("1", response.get("$.data.tasks.length()"));
+    assertEquals(taskId, response.get("$.data.tasks[0].name"));
+    assertEquals(bpmnProcessId, response.get("$.data.tasks[0].workflowName"));
+  }
 
   @Test
   public void shouldReturnOneTask() throws IOException {

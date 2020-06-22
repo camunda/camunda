@@ -24,6 +24,7 @@ import io.zeebe.tasklist.zeebe.ImportValueType;
 import io.zeebe.tasklist.zeebeimport.AbstractImportBatchProcessor;
 import io.zeebe.tasklist.zeebeimport.ImportBatch;
 import io.zeebe.tasklist.zeebeimport.v24.record.RecordImpl;
+import io.zeebe.tasklist.zeebeimport.v24.record.value.DeploymentRecordValueImpl;
 import io.zeebe.tasklist.zeebeimport.v24.record.value.JobRecordValueImpl;
 import io.zeebe.tasklist.zeebeimport.v24.record.value.VariableDocumentRecordImpl;
 import io.zeebe.tasklist.zeebeimport.v24.record.value.VariableRecordValueImpl;
@@ -42,6 +43,9 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   @Autowired
   private JobZeebeRecordProcessor jobZeebeRecordProcessor;
+
+  @Autowired
+  private WorkflowZeebeRecordProcessor workflowZeebeRecordProcessor;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -73,6 +77,12 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         jobZeebeRecordProcessor.processJobRecord(record, bulkRequest);
       }
       break;
+    case DEPLOYMENT:
+      for (Record record : zeebeRecords) {
+        // deployment records can be processed one by one
+        workflowZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
+      }
+      break;
     default:
       logger.debug("Default case triggered for type {}", importValueType);
       break;
@@ -90,6 +100,8 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       return VariableRecordValueImpl.class;
     case VARIABLE_DOCUMENT:
       return VariableDocumentRecordImpl.class;
+    case DEPLOYMENT:
+      return DeploymentRecordValueImpl.class;
     default:
       throw new TasklistRuntimeException(String.format("No value type class found for: %s", importValueType));
     }
