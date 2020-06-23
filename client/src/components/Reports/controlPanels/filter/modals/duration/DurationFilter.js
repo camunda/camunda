@@ -88,9 +88,7 @@ export default class DurationFilter extends React.Component {
                   <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
                 </Select>
               </Form.InputGroup>
-              {!isValidInput && (
-                <Message error>{t('common.filter.durationModal.invalidInput')}</Message>
-              )}
+              {!isValidInput && <Message error>{t('common.errors.postiveNum')}</Message>}
             </Form.Group>
           </Form>
         </Modal.Content>

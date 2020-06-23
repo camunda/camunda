@@ -37,6 +37,7 @@ export default function NumVariableBucket({
     ['Integer', 'Double', 'Short', 'Long'].includes(groupBy.value?.type)
   ) {
     const {active, bucketSize, baseline} = customNumberBucket;
+    const flush = () => applyChanges.flush();
 
     return (
       <fieldset className="NumVariableBucket">
@@ -46,34 +47,40 @@ export default function NumVariableBucket({
             onChange={(evt) =>
               onChange({customNumberBucket: {active: {$set: evt.target.checked}}}, true)
             }
-            label={t('report.config.bucketSize')}
+            label={t('report.config.bucket.bucketSize')}
           />
         </legend>
         <Input
           disabled={!active}
           isInvalid={!sizeValid}
+          onBlur={flush}
           onChange={(evt) => {
-            const valid = numberParser.isNonNegativeNumber(evt.target.value);
+            const valid = numberParser.isPositiveNumber(evt.target.value);
             setSizeValid(valid);
             applyChanges('bucketSize', evt.target.value, valid);
           }}
-          defaultValue={bucketSize}
+          defaultValue={removeTrailingZeros(bucketSize)}
         />
-        {!sizeValid && <Message error>{t('report.config.goal.invalidInput')}</Message>}
+        {!sizeValid && <Message error>{t('common.errors.postiveNum')}</Message>}
         <LabeledInput
-          label={t('report.config.baseline')}
+          label={t('report.config.bucket.baseline')}
           disabled={!active}
           isInvalid={!baseValid}
+          onBlur={flush}
           onChange={(evt) => {
             const valid = !isNaN(evt.target.value);
             setBaseValid(valid);
             applyChanges('baseline', evt.target.value, valid);
           }}
-          defaultValue={baseline}
+          defaultValue={removeTrailingZeros(baseline)}
         />
-        {!baseValid && <Message error>{t('report.config.invalidNumber')}</Message>}
+        {!baseValid && <Message error>{t('report.config.bucket.invalidNumber')}</Message>}
       </fieldset>
     );
   }
   return null;
+}
+
+function removeTrailingZeros(val) {
+  return val.replace(/\.0+$/, '');
 }

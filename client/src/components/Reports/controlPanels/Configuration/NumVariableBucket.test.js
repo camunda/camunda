@@ -58,7 +58,7 @@ it('should reevaluate the report when changing the size or baseline to a valid v
 
   node.find(Input).prop('onChange')({target: {value: '-50'}});
   expect(spy).not.toHaveBeenCalled();
-  expect(node.find('Message').dive()).toIncludeText('non-negative');
+  expect(node.find('Message').dive()).toIncludeText('positive');
 
   node.find(LabeledInput).prop('onChange')({target: {value: '-1'}});
 

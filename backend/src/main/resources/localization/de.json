@@ -445,10 +445,12 @@
       },
       "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
       "showGradientBars": "Verlaufsbalken anzeigen",
-      "buckets": "Buckets",
-      "bucketSize": "Bucket Größe",
-      "baseline": "Grundlinie",
-      "invalidNumber": "Muss eine gültige Zahl sein"
+      "bucket": {
+        "buckets": "Buckets",
+        "bucketSize": "Bucket Größe",
+        "baseline": "Grundlinie",
+        "invalidNumber": "Muss eine gültige Zahl sein"
+      }
     },
     "missingVariableValue": "nicht definiert",
     "missingAssignee": "Nicht zugewiesen",
@@ -647,7 +649,8 @@
     "null": "null",
     "nullOrUndefined": "Null oder nicht definiert",
     "errors": {
-      "inValidLink": "Dieser Link ist nicht gültig"
+      "inValidLink": "Dieser Link ist nicht gültig",
+      "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
     },
     "tenant": {
       "label": "Mandant",
@@ -824,7 +827,6 @@
         "includeInstance": "Berücksichtigen Sie nur Prozessinstanzen, die gelaufen sind für ...",
         "moreThan": "mehr als",
         "lessThan": "weniger als",
-        "invalidInput": "Bitte einen positiven Zahlenwert eingeben",
         "appliedTo": "Filter wird angewendet auf"
       },
       "nodeModal": {

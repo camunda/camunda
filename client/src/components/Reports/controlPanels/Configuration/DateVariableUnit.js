@@ -18,7 +18,7 @@ export default function DateVariableUnit({
   if (groupBy?.type === 'variable' && groupBy.value?.type === 'Date') {
     return (
       <fieldset className="DateVariableUnit">
-        <legend>{t('report.config.buckets')}</legend>
+        <legend>{t('report.config.bucket.buckets')}</legend>
         <Select
           value={configuration.groupByDateVariableUnit}
           onChange={(value) => onChange({groupByDateVariableUnit: {$set: value}}, true)}

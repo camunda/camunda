@@ -445,10 +445,12 @@
       },
       "includeTableColumn": "Table columns to include",
       "showGradientBars": "Show Gradient Bars",
-      "buckets": "Buckets",
-      "bucketSize": "Bucket Size",
-      "baseline": "Baseline",
-      "invalidNumber": "Must be a valid number"
+      "bucket": {
+        "buckets": "Buckets",
+        "bucketSize": "Bucket Size",
+        "baseline": "Baseline",
+        "invalidNumber": "Must be a valid number"
+      }
     },
     "missingVariableValue": "null / undefined",
     "missingAssignee": "Unassigned",
@@ -647,7 +649,8 @@
     "null": "null",
     "nullOrUndefined": "Null or undefined",
     "errors": {
-      "inValidLink": "This link is not valid."
+      "inValidLink": "This link is not valid.",
+      "postiveNum": "Please enter a positive numeric value"
     },
     "tenant": {
       "label": "Tenant",
@@ -824,7 +827,6 @@
         "includeInstance": "Only include process instances that ran for...",
         "moreThan": "more than",
         "lessThan": "less than",
-        "invalidInput": "Please enter a positive numeric value",
         "appliedTo": "filter is applied to"
       },
       "nodeModal": {

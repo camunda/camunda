@@ -15,6 +15,7 @@ exports[`should render bucket options 1`] = `
     defaultValue="10"
     disabled={true}
     isInvalid={false}
+    onBlur={[Function]}
     onChange={[Function]}
   />
   <ForwardRef(LabeledInput)
@@ -22,6 +23,7 @@ exports[`should render bucket options 1`] = `
     disabled={true}
     isInvalid={false}
     label="Baseline"
+    onBlur={[Function]}
     onChange={[Function]}
   />
 </fieldset>
