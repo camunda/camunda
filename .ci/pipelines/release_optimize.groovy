@@ -1,5 +1,7 @@
 #!/usr/bin/env groovy
 
+@Library('camunda-ci') _
+
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 boolean slaveDisconnected() {
   return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
@@ -24,10 +26,6 @@ static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME(boolean pushChanges) {
   return (pushChanges && !utils.isStageJenkins()) ?
     'downloads-camunda-cloud-enterprise-release' :
     'stage-downloads-camunda-cloud-enterprise-release'
-}
-
-static boolean isStagingJenkins() {
-  return jenkins.model.Jenkins.getInstanceOrNull()?.getRootUrl()?.contains('stage') ?: false
 }
 
 static boolean isMajorOrMinorRelease(releaseVersion) {
