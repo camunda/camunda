@@ -57,3 +57,21 @@ it('should reevaluate the report when changing the aggregation type', () => {
 
   expect(spy).toHaveBeenCalledWith({aggregationType: {$set: 'max'}}, true);
 });
+
+it('should hide median aggregation if processpart is defined', () => {
+  const spy = jest.fn();
+
+  const node = shallow(
+    <AggregationType
+      report={{
+        data: {
+          view: {property: 'duration'},
+          configuration: {aggregationType: 'avg', processPart: 'defined'},
+        },
+      }}
+      onChange={spy}
+    />
+  );
+
+  expect(node.find({value: 'median'})).not.toExist();
+});

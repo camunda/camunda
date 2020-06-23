@@ -28,7 +28,9 @@ export default function AggregationType({report, onChange}) {
           )}
           <Select.Option value="min">{t('report.config.aggregation.minimum')}</Select.Option>
           <Select.Option value="avg">{t('report.config.aggregation.average')}</Select.Option>
-          <Select.Option value="median">{t('report.config.aggregation.median')}</Select.Option>
+          {!data.configuration.processPart && (
+            <Select.Option value="median">{t('report.config.aggregation.median')}</Select.Option>
+          )}
           <Select.Option value="max">{t('report.config.aggregation.maximum')}</Select.Option>
         </Select>
       </fieldset>

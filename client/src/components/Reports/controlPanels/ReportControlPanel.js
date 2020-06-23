@@ -227,9 +227,13 @@ export default withErrorHandling(
                   flowNodeNames={this.state.flowNodeNames}
                   xml={data.configuration.xml}
                   processPart={data.configuration.processPart}
-                  update={(newPart) =>
-                    this.props.updateReport({configuration: {processPart: {$set: newPart}}}, true)
-                  }
+                  update={(newPart) => {
+                    const change = {configuration: {processPart: {$set: newPart}}};
+                    if (data.configuration.aggregationType === 'median') {
+                      change.configuration.aggregationType = {$set: 'avg'};
+                    }
+                    this.props.updateReport(change, true);
+                  }}
                 />
               </li>
             )}
