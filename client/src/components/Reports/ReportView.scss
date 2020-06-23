@@ -1,6 +1,10 @@
 .ReportView {
-  .Report__header .instanceCount {
-    margin-top: -5px;
+  .Report__header {
+    margin-bottom: 40px;
+
+    .instanceCount {
+      margin-top: 0;
+    }
   }
 
   .share-button .Popover__dialog {

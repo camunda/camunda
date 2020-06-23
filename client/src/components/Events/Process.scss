@@ -1,6 +1,13 @@
 .Process {
   height: 100%;
 
+  > .ProcessView > .header {
+    margin-bottom: 40px;
+  }
+  > .ProcessEdit > .header {
+    margin-bottom: 20px;
+  }
+
   > .ProcessView,
   > .ProcessEdit {
     .content {
@@ -9,8 +16,7 @@
     }
 
     > .header {
-      padding: 20px 25px 0 40px;
-      margin-bottom: 1em;
+      padding: 30px 25px 0 40px;
 
       .head {
         display: flex;
