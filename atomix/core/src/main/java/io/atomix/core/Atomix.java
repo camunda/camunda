@@ -32,8 +32,6 @@ import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.GroupMembershipProtocolConfig;
 import io.atomix.core.impl.CoreSerializationService;
-import io.atomix.core.profile.Profile;
-import io.atomix.core.profile.ProfileConfig;
 import io.atomix.core.utils.config.PolymorphicConfigMapper;
 import io.atomix.core.utils.config.PolymorphicTypeMapper;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
@@ -41,7 +39,6 @@ import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.PartitionService;
-import io.atomix.primitive.partition.impl.DefaultPartitionGroupTypeRegistry;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.primitive.protocol.PrimitiveProtocol;
 import io.atomix.primitive.protocol.PrimitiveProtocolConfig;
@@ -157,9 +154,6 @@ public class Atomix extends AtomixCluster {
       final ManagedUnicastService unicastService,
       final ManagedBroadcastService broadcastService) {
     super(config.getClusterConfig(), VERSION, messagingService, unicastService, broadcastService);
-    config
-        .getProfiles()
-        .forEach(profile -> profile.getType().newProfile(profile).configure(config));
     this.executorService =
         Executors.newScheduledThreadPool(
             Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4),
@@ -333,7 +327,6 @@ public class Atomix extends AtomixCluster {
                 "type", PartitionGroupConfig.class, PartitionGroup.Type.class),
             new PolymorphicTypeMapper(
                 "type", PrimitiveProtocolConfig.class, PrimitiveProtocol.Type.class),
-            new PolymorphicTypeMapper("type", ProfileConfig.class, Profile.Type.class),
             new PolymorphicTypeMapper(
                 "type", NodeDiscoveryConfig.class, NodeDiscoveryProvider.Type.class),
             new PolymorphicTypeMapper(
@@ -567,10 +560,6 @@ public class Atomix extends AtomixCluster {
       partitionGroups.add(partitionGroupConfig.getType().newPartitionGroup(partitionGroupConfig));
     }
 
-    return new DefaultPartitionService(
-        clusterMembershipService,
-        messagingService,
-        partitionGroups,
-        new DefaultPartitionGroupTypeRegistry(registry.getTypes(PartitionGroup.Type.class)));
+    return new DefaultPartitionService(clusterMembershipService, messagingService, partitionGroups);
   }
 }
