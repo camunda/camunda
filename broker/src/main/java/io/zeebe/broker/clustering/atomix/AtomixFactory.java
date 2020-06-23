@@ -24,9 +24,9 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
+import io.zeebe.broker.system.configuration.MembershipCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import java.io.File;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.IoUtil;
@@ -48,11 +48,19 @@ public final class AtomixFactory {
     final NodeDiscoveryProvider discoveryProvider =
         createDiscoveryProvider(clusterCfg, localMemberId);
 
+    final MembershipCfg membershipCfg = clusterCfg.getMembership();
     final GroupMembershipProtocol membershipProtocol =
         SwimMembershipProtocol.builder()
-            .withFailureTimeout(Duration.ofMillis(clusterCfg.getGossipFailureTimeout()))
-            .withGossipInterval(Duration.ofMillis(clusterCfg.getGossipInterval()))
-            .withProbeInterval(Duration.ofMillis(clusterCfg.getGossipProbeInterval()))
+            .withFailureTimeout(membershipCfg.getFailureTimeout())
+            .withGossipInterval(membershipCfg.getGossipInterval())
+            .withProbeInterval(membershipCfg.getProbeInterval())
+            .withProbeTimeout(membershipCfg.getProbeTimeout())
+            .withBroadcastDisputes(membershipCfg.isBroadcastDisputes())
+            .withBroadcastUpdates(membershipCfg.isBroadcastUpdates())
+            .withGossipFanout(membershipCfg.getGossipFanout())
+            .withNotifySuspect(membershipCfg.isNotifySuspect())
+            .withSuspectProbes(membershipCfg.getSuspectProbes())
+            .withSyncInterval(membershipCfg.getSyncInterval())
             .build();
 
     final AtomixBuilder atomixBuilder =
