@@ -28,6 +28,7 @@ import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
 import {t} from 'translation';
 import ConflictModal from './ConflictModal';
+import InstanceCount from './InstanceCount';
 
 export class ReportEdit extends React.Component {
   state = {
@@ -197,14 +198,13 @@ export class ReportEdit extends React.Component {
 
   render() {
     const {report, loadingReportData, conflict, redirect, optimizeVersion} = this.state;
-    const {name, data, combined, reportType, result} = report;
+    const {name, data, combined, reportType} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
     }
 
     const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/update/2.7-to-3.0/#suspension-filter`;
-    const instanceCount = result?.instanceCount;
 
     return (
       <div className="Report">
@@ -217,13 +217,7 @@ export class ReportEdit extends React.Component {
             onSave={this.saveAndGoBack}
             onCancel={this.cancel}
           />
-          <div className="instanceCount">
-            {typeof instanceCount === 'number' &&
-              t(
-                `report.instanceCount.process.header-label${instanceCount !== 1 ? '-plural' : ''}`,
-                {count: instanceCount}
-              )}
-          </div>
+          <InstanceCount noInfo report={report} />
         </div>
 
         {!combined && reportType === 'process' && (

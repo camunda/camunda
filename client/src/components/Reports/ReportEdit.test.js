@@ -13,6 +13,8 @@ import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 's
 import {nowDirty, nowPristine} from 'saveGuard';
 import {EntityNameForm} from 'components';
 
+import InstanceCount from './InstanceCount';
+
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
@@ -54,7 +56,7 @@ const props = {
 it('should show the instance count in the header if it is available', () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  expect(node.find('.instanceCount')).toIncludeText('37');
+  expect(node.find(InstanceCount)).toExist();
 });
 
 it('should not contain a Control Panel in edit mode for a combined report', () => {

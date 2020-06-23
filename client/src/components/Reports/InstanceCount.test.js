@@ -1,0 +1,127 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+import React from 'react';
+import {shallow} from 'enzyme';
+
+import update from 'immutability-helper';
+
+import {getFlowNodeNames, loadInputVariables, loadOutputVariables} from 'services';
+
+import {InstanceCount} from './InstanceCount';
+
+jest.mock('services', () => {
+  return {
+    ...jest.requireActual('services'),
+    getFlowNodeNames: jest.fn().mockReturnValue({nodeA: 'Flow Node A'}),
+    loadInputVariables: jest
+      .fn()
+      .mockReturnValue([{id: 'input1', name: 'Input 1', type: 'String'}]),
+    loadOutputVariables: jest
+      .fn()
+      .mockReturnValue([{id: 'output1', name: 'Output 1', type: 'String'}]),
+  };
+});
+
+beforeEach(() => {
+  getFlowNodeNames.mockClear();
+  loadInputVariables.mockClear();
+  loadOutputVariables.mockClear();
+});
+
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+
+const props = {
+  report: {
+    data: {
+      filter: [{type: 'runningInstancesOnly'}],
+      processDefinitionKey: 'aKey',
+      processDefinitionVersions: ['1'],
+      tenantIds: ['tenantId'],
+    },
+    result: {
+      instanceCount: 123,
+    },
+    reportType: 'process',
+  },
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+};
+
+it('should should show the instance count', () => {
+  const node = shallow(<InstanceCount {...props} />);
+
+  expect(node).toIncludeText('123');
+});
+
+it('should contain a popover with information about the filters', () => {
+  const node = shallow(<InstanceCount {...props} />);
+
+  expect(node.find('Popover')).toExist();
+  expect(node.find('FilterList').prop('data')).toBe(props.report.data.filter);
+});
+
+it('should not contain a popover if the report has no filters', () => {
+  const noFilterReport = update(props.report, {data: {filter: {$set: []}}});
+  const node = shallow(<InstanceCount {...props} report={noFilterReport} />);
+
+  expect(node.find('Popover')).not.toExist();
+});
+
+it('should disable the popover if the noInfo prop is set', () => {
+  const node = shallow(<InstanceCount {...props} noInfo />);
+
+  expect(node.find('Popover').prop('disabled')).toBe(true);
+});
+
+it('should load flow node names for process reports', () => {
+  const node = shallow(<InstanceCount {...props} />);
+
+  node.find('span').first().simulate('click');
+
+  expect(getFlowNodeNames).toHaveBeenCalledWith('aKey', '1', 'tenantId');
+  expect(node.find('FilterList').prop('flowNodeNames')).toEqual({nodeA: 'Flow Node A'});
+});
+
+it('should load variable names for decision reports', async () => {
+  const decisionReport = update(props.report, {
+    data: {
+      $unset: ['processDefinitionKey', 'processDefinitionVersions'],
+      decisionDefinitionKey: {$set: 'aKey'},
+      decisionDefinitionVersions: {$set: ['1']},
+    },
+    reportType: {$set: 'decision'},
+  });
+  const node = shallow(
+    <InstanceCount
+      {...props}
+      report={decisionReport}
+      mightFail={async (data, cb) => cb(await data)}
+    />
+  );
+
+  node.find('span').first().simulate('click');
+
+  await flushPromises();
+
+  const payload = {
+    decisionDefinitionKey: 'aKey',
+    decisionDefinitionVersions: ['1'],
+    tenantIds: ['tenantId'],
+  };
+
+  expect(loadInputVariables).toHaveBeenCalledWith(payload);
+  expect(loadOutputVariables).toHaveBeenCalledWith(payload);
+  expect(node.find('FilterList').prop('variables')).toMatchSnapshot();
+});
+
+it('should not load data twice', () => {
+  const node = shallow(<InstanceCount {...props} />);
+
+  node.find('span').first().simulate('click');
+  node.find('span').first().simulate('click');
+
+  expect(getFlowNodeNames).toHaveBeenCalledTimes(1);
+});

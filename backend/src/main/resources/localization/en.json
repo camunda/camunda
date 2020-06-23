@@ -218,11 +218,14 @@
       "chart": "Bar Chart: Process Instance count"
     },
     "instanceCount": {
+      "appliedFilters": "Applied filters",
+      "label": "Displaying {count} instance",
+      "label-plural": "Displaying {count} instances",
+      "label-withFilter": "displaying {count} instance",
+      "label-plural-withFilter": "displaying {count} instances",
       "process": {
         "label": "{count} instance in current filter",
-        "label-plural": "{count} instances in current filter",
-        "header-label": "Displaying {count} instance",
-        "header-label-plural": "Displaying {count} instances"
+        "label-plural": "{count} instances in current filter"
       },
       "decision": {
         "label": "{count} evaluation in current filter",

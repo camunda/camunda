@@ -12,6 +12,8 @@ import ReportView from './ReportView';
 import {Deleter, ReportRenderer} from 'components';
 import {checkDeleteConflict} from 'services';
 
+import InstanceCount from './InstanceCount';
+
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
@@ -58,7 +60,7 @@ it('should display the key properties of a report', () => {
   });
 
   expect(node.find('EntityName').prop('children')).toBe(report.name);
-  expect(node.find('.instanceCount')).toIncludeText('37');
+  expect(node.find(InstanceCount)).toExist();
 });
 
 it('should provide a link to edit mode in view mode', () => {

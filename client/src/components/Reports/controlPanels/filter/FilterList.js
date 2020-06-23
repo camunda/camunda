@@ -129,8 +129,11 @@ export default class FilterList extends React.Component {
               >
                 <span className="parameterName">{t('common.filter.types.duration')}</span>
                 {this.createOperator(t('common.filter.durationModal.appliedTo'))}
-                <span className="previewItemValue">
-                  {filtersCount} {t(`common.flowNode.label${filtersCount !== 1 ? '-plural' : ''}`)}
+                <span className="previewItemValue withTooltip">
+                  <span>
+                    {filtersCount}{' '}
+                    {t(`common.flowNode.label${filtersCount !== 1 ? '-plural' : ''}`)}
+                  </span>
                   <div className="Tooltip light">
                     <div className="Tooltip__text-bottom">
                       {Object.keys(filters).map((key, i) => {
@@ -223,4 +226,6 @@ export default class FilterList extends React.Component {
 
 FilterList.defaultProps = {
   flowNodeNames: {},
+  openEditFilterModal: () => {},
+  deleteFilter: () => {},
 };

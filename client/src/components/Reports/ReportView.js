@@ -13,6 +13,7 @@ import {checkDeleteConflict} from 'services';
 import {t} from 'translation';
 
 import ReportDetails from './ReportDetails';
+import InstanceCount from './InstanceCount';
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
 
 import './ReportView.scss';
@@ -39,9 +40,7 @@ export default class ReportView extends React.Component {
     const {report} = this.props;
     const {redirect, sharingEnabled, deleting} = this.state;
 
-    const {id, name, currentUserRole, result} = report;
-
-    const instanceCount = result?.instanceCount;
+    const {id, name, currentUserRole} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
@@ -100,13 +99,7 @@ export default class ReportView extends React.Component {
               )}
             </div>
           </div>
-          <div className="instanceCount">
-            {typeof instanceCount === 'number' &&
-              t(
-                `report.instanceCount.process.header-label${instanceCount !== 1 ? '-plural' : ''}`,
-                {count: instanceCount}
-              )}
-          </div>
+          <InstanceCount report={report} />
         </div>
         <div className="Report__view">
           <div className="Report__content">

@@ -218,11 +218,14 @@
       "chart": "Balkendiagram: Prozessinstanz Anzahl"
     },
     "instanceCount": {
+      "appliedFilters": "Angewandte Filter",
+      "label": "Zeigt {count} Instanz",
+      "label-plural": "Zeigt {count} Instanzen",
+      "label-withFilter": "zeigen {count} Instanz",
+      "label-plural-withFilter": "zeigen {count} Instanzen",
       "process": {
         "label": "{count} Instanz im aktuellen Filter",
-        "label-plural": "{count} Instanzen im aktuellen Filter",
-        "header-label": "Zeigt {count} Instanz",
-        "header-label-plural": "Zeigt {count} Instanzen"
+        "label-plural": "{count} Instanzen im aktuellen Filter"
       },
       "decision": {
         "label": "{count} Evaluierung im aktuellen Filter",

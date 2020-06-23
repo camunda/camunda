@@ -5,5 +5,6 @@
  */
 
 export {default as Filter} from './Filter';
+export {default as FilterList} from './FilterList';
 export {default as DecisionFilter} from './DecisionFilter';
 export {VariableFilter, VariablePreview} from './modals';
