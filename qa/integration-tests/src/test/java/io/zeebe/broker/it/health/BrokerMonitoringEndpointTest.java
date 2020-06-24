@@ -8,6 +8,7 @@
 package io.zeebe.broker.it.health;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
@@ -16,7 +17,6 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import java.io.IOException;
-import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,14 +52,19 @@ public final class BrokerMonitoringEndpointTest {
   }
 
   @Test
-  public void shouldGetMetrics() throws IOException, InterruptedException {
+  public void shouldGetMetrics() {
     given()
         .spec(brokerServerSpec)
         .when()
         .get("metrics")
         .then() //
         .statusCode(200)
-        .body(CoreMatchers.containsString("zeebe_health"));
+        .body(
+            containsString("jvm_info"), // example JVM metric
+            containsString("zeebe_health"), // example zebe metric
+            containsString(
+                "zeebe_rocksdb_writes_actual_delayed_write_rate") // exanmple rocks db metric
+            );
   }
 
   @Test

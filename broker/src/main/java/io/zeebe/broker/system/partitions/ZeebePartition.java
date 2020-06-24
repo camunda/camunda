@@ -7,6 +7,8 @@
  */
 package io.zeebe.broker.system.partitions;
 
+import static io.zeebe.engine.state.DefaultZeebeDbFactory.DEFAULT_DB_METRIC_EXPORTER_FACTORY;
+
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
@@ -53,6 +55,7 @@ import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
@@ -102,6 +105,7 @@ public final class ZeebePartition extends Actor
   private long deferredCommitPosition;
   private final RaftPartitionHealth raftPartitionHealth;
   private long term;
+  private ScheduledTimer metricsTimer;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -452,6 +456,19 @@ public final class ZeebePartition extends Actor
                     .onComplete(
                         (nonResult, errorOnInstallSnapshotDirector) -> {
                           if (errorOnInstallSnapshotDirector == null) {
+                            final var metricExporter =
+                                DEFAULT_DB_METRIC_EXPORTER_FACTORY.apply(
+                                    Integer.toString(partitionId), zeebeDb);
+
+                            metricsTimer =
+                                actor.runAtFixedRate(
+                                    Duration.ofSeconds(5),
+                                    () -> {
+                                      if (zeebeDb != null) {
+                                        metricExporter.exportMetrics();
+                                      }
+                                    });
+
                             installExporter(zeebeDb).onComplete(installFuture);
                           } else {
                             LOG.error(
