@@ -55,7 +55,7 @@ public class GatewayLivenessProbeIntegrationTest {
     final ZeebeClient zeebeClient = createZeebeClient(gateway);
 
     // wait a little while to give the broker and gateway a chance to find each other
-    await().atMost(15, SECONDS).untilAsserted(() -> assertTopologyIsComplete(zeebeClient));
+    await().atMost(60, SECONDS).untilAsserted(() -> assertTopologyIsComplete(zeebeClient));
 
     final Integer actuatorPort = gateway.getMappedPort(MONITORING_PORT_IN_CONTAINER);
     final String containerIPAddress = gateway.getContainerIpAddress();
