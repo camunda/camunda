@@ -67,7 +67,7 @@
   "devDependencies": {
     "@types/history": "^4.7.6",
     "eslint-plugin-camunda-licensed": "^0.4.3",
-    "history": "^4.10.1",
+    "history": "^5.0.0",
     "http-proxy-middleware": "^1.0.4",
     "husky": "^4.2.5",
     "jest-junit": "^11.0.1",
