@@ -47,6 +47,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
       .distributedByContains(getLocalisedUnassignedLabel(), 1.)
       .distributedByContains(DEFAULT_USERNAME, 1.)
@@ -83,6 +84,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     // then
     final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (assignee2Count != null) {
       groupByAsserter.distributedByContains(SECOND_USER, assignee2Count);

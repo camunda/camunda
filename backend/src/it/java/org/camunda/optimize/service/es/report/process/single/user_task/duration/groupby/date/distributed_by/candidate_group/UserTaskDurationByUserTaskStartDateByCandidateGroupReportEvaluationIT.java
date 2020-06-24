@@ -97,8 +97,9 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
+    final HyperMapAsserter.GroupByAdder groupByAsserter =     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (candidateGroup2Count != null) {
       groupByAsserter.distributedByContains(SECOND_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup2Count));

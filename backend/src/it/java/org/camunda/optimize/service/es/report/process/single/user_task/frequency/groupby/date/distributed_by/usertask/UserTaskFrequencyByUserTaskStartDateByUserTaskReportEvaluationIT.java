@@ -48,6 +48,7 @@ public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT ex
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
       .distributedByContains(USER_TASK_2, executionStateTestValues.expectedUserTask2Count, USER_TASK_2_NAME)
       .distributedByContains(USER_TASK_1, executionStateTestValues.expectedUserTask1Count, USER_TASK_1_NAME)

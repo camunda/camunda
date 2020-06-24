@@ -17,6 +17,7 @@ import java.util.List;
 public class RawDataProcessReportResultDto implements ProcessReportResultDto, LimitedResultDto {
 
   private long instanceCount;
+  private long instanceCountWithoutFilters;
   private List<RawDataProcessInstanceDto> data;
   private Boolean isComplete = true;
 

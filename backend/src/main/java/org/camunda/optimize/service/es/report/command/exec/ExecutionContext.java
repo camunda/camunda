@@ -21,6 +21,7 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
 
   private ReportData reportData;
   private Integer recordLimit;
+  private long unfilteredInstanceCount;
 
   // only used/needed for group by date commands when evaluated for
   // a combined report.

@@ -27,7 +27,8 @@ import static java.util.stream.Collectors.toMap;
 public class RawDecisionDataResultDtoMapper {
 
   public RawDataDecisionReportResultDto mapFrom(final List<DecisionInstanceDto> decisionInstanceDtos,
-                                                final long totalHits) {
+                                                final long totalHits,
+                                                final long totalHitsWithoutFilters) {
     final List<RawDataDecisionInstanceDto> rawData = new ArrayList<>();
     final Set<InputVariableEntry> allInputVariablesWithBlankValue = new LinkedHashSet<>();
     final Set<OutputVariableEntry> allOutputVariablesWithNoValues = new LinkedHashSet<>();
@@ -45,7 +46,7 @@ public class RawDecisionDataResultDtoMapper {
       rawData, allInputVariablesWithBlankValue, allOutputVariablesWithNoValues
     );
 
-    return createResult(rawData, totalHits);
+    return createResult(rawData, totalHits, totalHitsWithoutFilters);
   }
 
   private void ensureEveryRawDataInstanceContainsAllVariables(final List<RawDataDecisionInstanceDto> rawData,
@@ -127,11 +128,13 @@ public class RawDecisionDataResultDtoMapper {
   }
 
   private RawDataDecisionReportResultDto createResult(final List<RawDataDecisionInstanceDto> limitedRawDataResult,
-                                                      final Long totalHits) {
+                                                      final Long totalHits,
+                                                      final Long totalHitsWithoutFilters) {
     final RawDataDecisionReportResultDto result = new RawDataDecisionReportResultDto();
     result.setData(limitedRawDataResult);
     result.setIsComplete(limitedRawDataResult.size() == totalHits);
     result.setInstanceCount(totalHits);
+    result.setInstanceCountWithoutFilters(totalHitsWithoutFilters);
     return result;
   }
 

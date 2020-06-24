@@ -128,7 +128,10 @@ public class ProcessViewRawData extends ProcessViewPart {
       );
 
     final RawDataProcessReportResultDto rawDataSingleReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
-      rawDataProcessInstanceDtos, response.getHits().getTotalHits().value, objectMapper
+      rawDataProcessInstanceDtos,
+      response.getHits().getTotalHits().value,
+      context.getUnfilteredInstanceCount(),
+      objectMapper
     );
     return new ViewResult().setProcessRawData(rawDataSingleReportResultDto);
   }

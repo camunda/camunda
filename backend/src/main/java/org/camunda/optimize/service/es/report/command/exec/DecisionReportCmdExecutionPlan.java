@@ -45,15 +45,20 @@ public class DecisionReportCmdExecutionPlan<R extends DecisionReportResultDto>
 
   @Override
   protected BoolQueryBuilder setupBaseQuery(final DecisionReportDataDto reportData) {
-    BoolQueryBuilder boolQueryBuilder = createDefinitionQuery(
+    BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(reportData);
+    queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, reportData.getFilter());
+    return boolQueryBuilder;
+  }
+
+  @Override
+  protected BoolQueryBuilder setupUnfilteredBaseQuery(final DecisionReportDataDto reportData) {
+    return createDefinitionQuery(
       reportData.getDefinitionKey(),
       reportData.getDefinitionVersions(),
       reportData.getTenantIds(),
       new DecisionInstanceIndex(),
       decisionDefinitionReader::getLatestVersionToKey
     );
-    queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, reportData.getFilter());
-    return boolQueryBuilder;
   }
 
   @Override

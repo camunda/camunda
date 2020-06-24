@@ -31,6 +31,11 @@ public class HyperMapAsserter {
     return this;
   }
 
+  public HyperMapAsserter processInstanceCountWithoutFilters(long count) {
+    expectedResult.setInstanceCountWithoutFilters(count);
+    return this;
+  }
+
   public HyperMapAsserter isComplete(boolean isComplete) {
     expectedResult.setIsComplete(isComplete);
     return this;
@@ -52,6 +57,15 @@ public class HyperMapAsserter {
       ),
       actualResult.getInstanceCount(),
       is(expectedResult.getInstanceCount())
+    );
+    assertThat(
+      String.format(
+        "Instance count without filters should be [%s] but is [%s].",
+        expectedResult.getInstanceCountWithoutFilters(),
+        actualResult.getInstanceCountWithoutFilters()
+      ),
+      actualResult.getInstanceCountWithoutFilters(),
+      is(expectedResult.getInstanceCountWithoutFilters())
     );
     assertThat(
       String.format(

@@ -106,6 +106,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(truncateToStartOfUnit(now, ChronoUnit.DAYS)))
         .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
       .doAssert(result);
@@ -139,6 +140,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
         .distributedByContains(FIRST_CANDIDATE_GROUP, null)
@@ -183,6 +185,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(FIRST_CANDIDATE_GROUP, null)
         .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
@@ -233,6 +236,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
+      .processInstanceCountWithoutFilters(3L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
         .distributedByContains(FIRST_CANDIDATE_GROUP, null)
@@ -275,6 +279,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
@@ -313,6 +318,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_CANDIDATE_GROUP, null)
         .distributedByContains(FIRST_CANDIDATE_GROUP, 2.)
@@ -344,6 +350,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_CANDIDATE_GROUP, null)
         .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
@@ -390,6 +397,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // of the previous loop.
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
       .processInstanceCount(groupingCount)
+      .processInstanceCountWithoutFilters(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
       .distributedByContains(FIRST_CANDIDATE_GROUP, 1.);
 
@@ -429,6 +437,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
       .doAssert(result);
@@ -479,6 +488,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
         .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
       .doAssert(result);
@@ -715,6 +725,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(now))
         .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
         .distributedByContains(FIRST_CANDIDATE_GROUP, 2.)
@@ -746,6 +757,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(now))
         .distributedByContains(FIRST_CANDIDATE_GROUP, 2.)
       .doAssert(result);

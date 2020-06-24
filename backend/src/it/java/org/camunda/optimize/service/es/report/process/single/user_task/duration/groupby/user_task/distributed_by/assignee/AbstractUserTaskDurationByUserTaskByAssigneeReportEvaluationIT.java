@@ -109,6 +109,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, 20.)
         .distributedByContains(SECOND_USER, null)
@@ -161,6 +162,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
         .distributedByContains(getLocalisedUnassignedLabel(), null)
@@ -220,6 +222,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
         .distributedByContains(SECOND_USER, null)
@@ -271,6 +274,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, SET_DURATIONS[0])
@@ -308,7 +312,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     aggregationTypes.forEach((AggregationType aggType) -> {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
         .isComplete(true)
         .groupByContains(USER_TASK_1)
           .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
@@ -350,7 +355,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     aggregationTypes.forEach((AggregationType aggType) -> {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
         .isComplete(true)
         .groupByContains(USER_TASK_1)
           .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
@@ -403,6 +409,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
         .distributedByContains(getLocalisedUnassignedLabel(), null)
@@ -444,6 +451,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(20., 40.))
         .distributedByContains(SECOND_USER, null)
@@ -488,6 +496,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(20., 40.))
         .distributedByContains(SECOND_USER, null)
@@ -527,6 +536,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(20., 40.))
       .doAssert(actualResult);
@@ -567,6 +577,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(20., 40.))
       .doAssert(actualResult);
@@ -625,12 +636,14 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(setDurations1))
       .doAssert(result1);
 
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(setDurations2[0]))
         .distributedByContains(getLocalisedUnassignedLabel(), UNASSIGNED_TASK_DURATION)
@@ -685,8 +698,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // then
     aggregationTypes.forEach((AggregationType aggType) -> {
       // @formatter:off
-      HyperMapAsserter.asserter()
-        .processInstanceCount(3L)
+    HyperMapAsserter.asserter()
+      .processInstanceCount(3L)
+      .processInstanceCountWithoutFilters(3L)
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(setDurations).get(aggType))
         .doAssert(results.get(aggType));
@@ -780,7 +794,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // then
     final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
       // we don't care about the instance count here so we just take it from the result
-      .processInstanceCount(actualResult.getInstanceCount());
+      .processInstanceCount(actualResult.getInstanceCount())
+      .processInstanceCountWithoutFilters(actualResult.getInstanceCountWithoutFilters());
     expectedResult.forEach((userTaskId, distributionResults) -> {
       final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
       distributionResults.forEach(
@@ -869,7 +884,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // then
     final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
       // we don't care about the instance count here so we just take it from the result
-      .processInstanceCount(actualResult.getInstanceCount());
+      .processInstanceCount(actualResult.getInstanceCount())
+      .processInstanceCountWithoutFilters(actualResult.getInstanceCountWithoutFilters());
     expectedResult.forEach((userTaskId, distributionResults) -> {
       final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
       distributionResults.forEach(

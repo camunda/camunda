@@ -25,6 +25,7 @@ public class RawProcessDataResultDtoMapper {
 
   public RawDataProcessReportResultDto mapFrom(final List<ProcessInstanceDto> processInstanceDtos,
                                                final long totalHits,
+                                               final long totalHitsWithoutFilters,
                                                final ObjectMapper objectMapper) {
     final List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
     final Set<String> allVariableNames = new HashSet<>();
@@ -38,7 +39,7 @@ public class RawProcessDataResultDtoMapper {
 
     ensureEveryRawDataInstanceContainsAllVariableNames(rawData, allVariableNames);
 
-    return createResult(rawData, totalHits);
+    return createResult(rawData, totalHits, totalHitsWithoutFilters);
   }
 
   private void ensureEveryRawDataInstanceContainsAllVariableNames(final List<RawDataProcessInstanceDto> rawData,
@@ -85,11 +86,13 @@ public class RawProcessDataResultDtoMapper {
   }
 
   private RawDataProcessReportResultDto createResult(final List<RawDataProcessInstanceDto> limitedRawDataResult,
-                                                     final Long totalHits) {
+                                                     final Long totalHits,
+                                                     final Long totalHitsWithoutFilters) {
     final RawDataProcessReportResultDto result = new RawDataProcessReportResultDto();
     result.setData(limitedRawDataResult);
     result.setIsComplete(limitedRawDataResult.size() == totalHits);
     result.setInstanceCount(totalHits);
+    result.setInstanceCountWithoutFilters(totalHitsWithoutFilters);
     return result;
   }
 

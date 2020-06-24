@@ -19,6 +19,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -53,6 +55,8 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
 
   protected abstract BoolQueryBuilder setupBaseQuery(final Data reportData);
 
+  protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(final Data reportData);
+
   protected abstract String getIndexName();
 
   public <T extends ReportDefinitionDto<Data>> R evaluate(final CommandContext<T> commandContext) {
@@ -62,21 +66,15 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
   protected R evaluate(final ExecutionContext<Data> executionContext) {
     final Data reportData = executionContext.getReportData();
 
-    final BoolQueryBuilder baseQuery = setupBaseQuery(reportData);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(baseQuery)
-      .trackTotalHits(true)
-      .fetchSource(false)
-      .size(0);
-    addAggregation(searchSourceBuilder, executionContext);
-
-    SearchRequest searchRequest = new SearchRequest(getIndexName())
-      .source(searchSourceBuilder);
-    groupByPart.adjustSearchRequest(searchRequest, baseQuery, executionContext);
+    SearchRequest searchRequest = createBaseQuerySearchRequest(reportData, executionContext);
+    CountRequest unfilteredInstanceCountRequest = createUnfilteredInstanceCountSearchRequest(reportData);
 
     SearchResponse response;
+    CountResponse unfilteredInstanceCountResponse;
     try {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      unfilteredInstanceCountResponse = esClient.count(unfilteredInstanceCountRequest, RequestOptions.DEFAULT);
+      executionContext.setUnfilteredInstanceCount(unfilteredInstanceCountResponse.getCount());
     } catch (IOException e) {
       String reason =
         String.format(
@@ -95,6 +93,30 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     return retrieveQueryResult(response, executionContext);
   }
 
+  private SearchRequest createBaseQuerySearchRequest(final Data reportData,
+                                                     final ExecutionContext<Data> executionContext) {
+    final BoolQueryBuilder baseQuery = setupBaseQuery(reportData);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(baseQuery)
+      .trackTotalHits(true)
+      .fetchSource(false)
+      .size(0);
+    addAggregation(searchSourceBuilder, executionContext);
+
+    SearchRequest searchRequest = new SearchRequest(getIndexName())
+      .source(searchSourceBuilder);
+    groupByPart.adjustSearchRequest(searchRequest, baseQuery, executionContext);
+    return searchRequest;
+  }
+
+  private CountRequest createUnfilteredInstanceCountSearchRequest(final Data reportData) {
+    final BoolQueryBuilder baseQuery = setupUnfilteredBaseQuery(reportData);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(baseQuery);
+
+    return new CountRequest(getIndexName()).source(searchSourceBuilder);
+  }
+
   public String generateCommandKey() {
     return groupByPart.generateCommandKey(getDataDtoSupplier());
   }
@@ -105,6 +127,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext);
     final R reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits().value);
+    reportResult.setInstanceCountWithoutFilters(executionContext.getUnfilteredInstanceCount());
     return reportResult;
   }
 

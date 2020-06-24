@@ -89,6 +89,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 1.)
         .distributedByContains(USER_TASK_2, null)
@@ -131,6 +132,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 1.)
         .distributedByContains(USER_TASK_2, null)
@@ -169,6 +171,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
@@ -201,6 +204,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 2.)
         .distributedByContains(USER_TASK_2, null)
@@ -245,6 +249,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 2.)
@@ -279,6 +284,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
@@ -318,6 +324,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
@@ -360,6 +367,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
@@ -403,6 +411,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
@@ -440,12 +449,14 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .doAssert(actualResult1);
 
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
@@ -574,6 +585,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
       .distributedByContains(USER_TASK_1, 2.)
       .doAssert(actualResult);
@@ -600,6 +612,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(11L)
+      .processInstanceCountWithoutFilters(11L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
       .distributedByContains(USER_TASK_1, 11., USER_TASK_1_NAME)
       .doAssert(actualResult);
@@ -629,6 +642,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(0L)
+      .processInstanceCountWithoutFilters(1L)
       .doAssert(actualResult);
 
     // when
@@ -639,6 +653,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
       .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(actualResult);

@@ -59,7 +59,8 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       case RUNNING:
         // @formatter:off
         HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 500.)
@@ -71,7 +72,8 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       case COMPLETED:
         // @formatter:off
         HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 100.)
@@ -83,7 +85,8 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       case ALL:
         // @formatter:off
         HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(100., 500.))
@@ -100,6 +103,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
         .distributedByContains(getLocalisedUnassignedLabel(), null)
@@ -122,6 +126,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
         .distributedByContains(SECOND_USER, null)
@@ -148,6 +153,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
         .distributedByContains(getLocalisedUnassignedLabel(), null)
@@ -167,12 +173,14 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(setDurations1))
       .doAssert(result1);
 
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(setDurations2[0]))
         .distributedByContains(getLocalisedUnassignedLabel(), null)

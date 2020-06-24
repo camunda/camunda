@@ -17,6 +17,7 @@ import java.util.List;
 public class RawDataDecisionReportResultDto implements DecisionReportResultDto,LimitedResultDto {
 
   private long instanceCount;
+  private long instanceCountWithoutFilters;
   private List<RawDataDecisionInstanceDto> data;
   private Boolean isComplete = true;
 

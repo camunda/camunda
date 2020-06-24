@@ -174,7 +174,7 @@ public class DecisionViewRawData extends DecisionViewPart {
       );
 
     final RawDataDecisionReportResultDto rawDataSingleReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
-      rawDataDecisionInstanceDtos, response.getHits().getTotalHits().value
+      rawDataDecisionInstanceDtos, response.getHits().getTotalHits().value, context.getUnfilteredInstanceCount()
     );
     return new ViewResult().setDecisionRawData(rawDataSingleReportResultDto);
   }

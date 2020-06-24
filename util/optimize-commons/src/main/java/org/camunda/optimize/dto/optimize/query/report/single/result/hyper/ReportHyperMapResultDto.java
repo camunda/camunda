@@ -19,6 +19,7 @@ import java.util.Optional;
 public class ReportHyperMapResultDto implements ProcessReportResultDto, LimitedResultDto {
 
   private long instanceCount;
+  private long instanceCountWithoutFilters;
   private List<HyperMapResultEntryDto> data = new ArrayList<>();
   private Boolean isComplete = true;
 

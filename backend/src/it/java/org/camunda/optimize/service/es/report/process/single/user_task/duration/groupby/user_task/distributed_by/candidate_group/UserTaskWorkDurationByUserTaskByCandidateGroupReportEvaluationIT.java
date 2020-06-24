@@ -58,7 +58,8 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
       case RUNNING:
         // @formatter:off
         HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
           .distributedByContains(FIRST_CANDIDATE_GROUP, 500.)
@@ -70,7 +71,8 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
       case COMPLETED:
         // @formatter:off
         HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
           .distributedByContains(FIRST_CANDIDATE_GROUP, 100.)
@@ -82,7 +84,8 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
       case ALL:
         // @formatter:off
         HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
           .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(100., 500.))
@@ -99,6 +102,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
         .distributedByContains(getLocalisedUnassignedLabel(), null)
@@ -120,6 +124,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS))
         .distributedByContains(SECOND_CANDIDATE_GROUP, null)
@@ -147,6 +152,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
         .distributedByContains(SECOND_CANDIDATE_GROUP, null)
@@ -173,6 +179,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
         .distributedByContains(SECOND_CANDIDATE_GROUP, null)
@@ -191,6 +198,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
         .distributedByContains(SECOND_CANDIDATE_GROUP, null)
@@ -211,12 +219,14 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(setDurations1))
       .doAssert(result1);
 
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(setDurations2[0]))
         .distributedByContains(getLocalisedUnassignedLabel(), null)

@@ -111,6 +111,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(startOfToday))
         .distributedByContains(DEFAULT_USERNAME, expectedDuration)
       .doAssert(result);
@@ -150,6 +151,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_USER, 10.)
         .distributedByContains(DEFAULT_USERNAME, null)
@@ -200,6 +202,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(DEFAULT_USERNAME, null)
         .distributedByContains(SECOND_USER, 10.)
@@ -259,6 +262,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
+      .processInstanceCountWithoutFilters(3L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_USER, 10.)
         .distributedByContains(DEFAULT_USERNAME, null)
@@ -305,6 +309,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_USER, 10.)
@@ -349,6 +354,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_USER, null)
         .distributedByContains(DEFAULT_USERNAME, 10.)
@@ -383,6 +389,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(SECOND_USER, null)
         .distributedByContains(DEFAULT_USERNAME, 10.)
@@ -428,6 +435,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // of the previous loop.
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
       .processInstanceCount(groupingCount)
+      .processInstanceCountWithoutFilters(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
       .distributedByContains(DEFAULT_USERNAME, 10.);
 
@@ -467,6 +475,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
         .distributedByContains(DEFAULT_USERNAME, 10.)
       .doAssert(result);
@@ -518,6 +527,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
         .distributedByContains(DEFAULT_USERNAME, 10.)
       .doAssert(result);
@@ -765,6 +775,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
         .distributedByContains(SECOND_USER, 30.)
         .distributedByContains(DEFAULT_USERNAME, 15.)
@@ -801,6 +812,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
         .distributedByContains(DEFAULT_USERNAME, 15.)
       .doAssert(result);

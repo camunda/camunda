@@ -25,6 +25,7 @@ public class ReportMapResultDto implements LimitedResultDto, DecisionReportResul
   private List<MapResultEntryDto> data = new ArrayList<>();
   private Boolean isComplete = true;
   private long instanceCount;
+  private long instanceCountWithoutFilters;
 
   public Optional<MapResultEntryDto> getEntryForKey(final String key) {
     return data.stream().filter(entry -> key.equals(entry.getKey())).findFirst();

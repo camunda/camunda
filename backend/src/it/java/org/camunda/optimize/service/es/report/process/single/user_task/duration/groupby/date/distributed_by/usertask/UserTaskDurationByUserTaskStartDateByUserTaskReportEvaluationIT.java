@@ -94,6 +94,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
       .distributedByContains(USER_TASK_1, getCorrectTestExecutionValue(executionStateTestValues), USER_TASK_1_NAME)
       .doAssert(result);

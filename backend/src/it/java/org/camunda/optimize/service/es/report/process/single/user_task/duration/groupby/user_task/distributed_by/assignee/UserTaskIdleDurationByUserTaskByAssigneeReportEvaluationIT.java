@@ -57,7 +57,8 @@ public class UserTaskIdleDurationByUserTaskByAssigneeReportEvaluationIT
       case RUNNING:
         // @formatter:off
         HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 200.)
@@ -69,7 +70,8 @@ public class UserTaskIdleDurationByUserTaskByAssigneeReportEvaluationIT
       case COMPLETED:
         // @formatter:off
         HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 100.)
@@ -81,7 +83,8 @@ public class UserTaskIdleDurationByUserTaskByAssigneeReportEvaluationIT
       case ALL:
         // @formatter:off
         HyperMapAsserter.asserter()
-          .processInstanceCount(2L)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
           .isComplete(true)
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(100., 200.))

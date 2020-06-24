@@ -28,5 +28,9 @@ public interface SingleReportResultDto extends ReportResultDto {
 
   void setInstanceCount(long instanceCount);
 
+  long getInstanceCountWithoutFilters();
+
+  void setInstanceCountWithoutFilters(long instanceCount);
+
   void sortResultData(SortingDto sorting, boolean keyIsOfNumericType);
 }

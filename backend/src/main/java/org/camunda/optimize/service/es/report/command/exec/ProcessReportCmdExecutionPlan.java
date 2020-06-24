@@ -47,15 +47,20 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
 
   @Override
   protected BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportData) {
-    BoolQueryBuilder boolQueryBuilder = createDefinitionQuery(
+    BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(reportData);
+    queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, reportData.getFilter());
+    return boolQueryBuilder;
+  }
+
+  @Override
+  protected BoolQueryBuilder setupUnfilteredBaseQuery(final ProcessReportDataDto reportData) {
+    return createDefinitionQuery(
       reportData.getDefinitionKey(),
       reportData.getDefinitionVersions(),
       reportData.getTenantIds(),
       new ProcessInstanceIndex(),
       processDefinitionReader::getLatestVersionToKey
     );
-    queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, reportData.getFilter());
-    return boolQueryBuilder;
   }
 
   @Override
