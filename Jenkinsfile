@@ -1,5 +1,8 @@
 #!/usr/bin/env groovy
 
+// https://github.com/camunda-ci/jenkins-global-shared-library
+@Library('camunda-ci') _
+
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 def static ZEEBE_TASKLIST_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/zeebe-tasklist" }
@@ -216,6 +219,24 @@ pipeline {
   }
 
   post {
+    always {
+      // Retrigger the build if the node disconnected
+      script {
+        if (agentDisconnected()) {
+          build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
+        }
+      }
+    }
+    changed {
+      script {
+        // Do not send notification if the node disconnected
+        if (env.BRANCH_NAME == 'master' && !agentDisconnected()) {
+          slackSend(
+              channel: "#zeebe-tasklist-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+              message: "Zeebe Tasklist ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+        }
+      }
+    }
     unsuccessful {
       // Store container logs
       writeFile(
@@ -225,23 +246,11 @@ pipeline {
       archiveArtifacts artifacts: '*.txt'
       // Do not send notification if the node disconnected
       script {
-        if (!nodeDisconnected()) {
+        if (!agentDisconnected()) {
           def notification = load ".ci/pipelines/build_notification.groovy"
           notification.buildNotification(currentBuild.result)
         }
       }
     }
-    always {
-      // Retrigger the build if the node disconnected
-      script {
-        if (nodeDisconnected()) {
-          build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
-        }
-      }
-    }
   }
-}
-
-boolean nodeDisconnected() {
-  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|ProtocolException|uv_resident_set_memory).*/
 }
