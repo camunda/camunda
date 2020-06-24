@@ -10,32 +10,53 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.script.Script;
 
+import java.text.MessageFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 
 @RequiredArgsConstructor
 @Slf4j
 public class EventProcessInstanceWriter {
 
+  public static final Script VARIABLE_CLEAR_SCRIPT = new Script(
+    MessageFormat.format("ctx._source.{0} = new ArrayList();\n", VARIABLES)
+  );
+
   private final EventProcessInstanceIndex eventProcessInstanceIndex;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final DateTimeFormatter dateTimeFormatter;
+
   private List<Object> gatewayLookup;
 
   public void setGatewayLookup(final List<EventProcessGatewayDto> gatewayLookup) {
@@ -54,6 +75,60 @@ public class EventProcessInstanceWriter {
       eventProcessInstanceDtos,
       this::addImportProcessInstanceRequest
     );
+  }
+
+  public void deleteInstancesThatEndedBefore(final OffsetDateTime endDate) {
+    final String indexName = getIndexName();
+    final String deletedItemName = "event process instances";
+    final String deletedItemIdentifier = String.format(
+      "%s in index %s that ended before %s", deletedItemName, indexName, endDate
+    );
+    log.info("Performing cleanup on {}", deletedItemIdentifier);
+
+    final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
+      getClass().getName(), esClient, DeleteByQueryAction.NAME
+    );
+    try {
+      progressReporter.start();
+      final BoolQueryBuilder filterQuery = boolQuery()
+        .filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)));
+
+      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+        esClient, filterQuery, deletedItemName, deletedItemIdentifier, false, indexName
+      );
+    } finally {
+      progressReporter.stop();
+    }
+
+    log.info("Finished cleanup on {}", deletedItemIdentifier);
+  }
+
+  public void deleteVariablesOfInstancesThatEndedBefore(final OffsetDateTime endDate) {
+    final String indexName = getIndexName();
+    final String updateItemName = "event process variables";
+    final String updatedItemIdentifier = String.format(
+      "%s in index %s that ended before %s", updateItemName, indexName, endDate
+    );
+    log.info("Performing cleanup on {}", updatedItemIdentifier);
+
+    final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
+      getClass().getName(), esClient, UpdateByQueryAction.NAME
+    );
+    try {
+      progressReporter.start();
+
+      final BoolQueryBuilder filterQuery = boolQuery()
+        .filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)))
+        .filter(nestedQuery(VARIABLES, existsQuery(VARIABLES + "." + VARIABLE_ID), ScoreMode.None));
+
+      ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+        esClient, updateItemName, updatedItemIdentifier, VARIABLE_CLEAR_SCRIPT, filterQuery, indexName
+      );
+    } finally {
+      progressReporter.stop();
+    }
+
+    log.info("Finished cleanup on {}", updatedItemIdentifier);
   }
 
   private String getIndexName() {

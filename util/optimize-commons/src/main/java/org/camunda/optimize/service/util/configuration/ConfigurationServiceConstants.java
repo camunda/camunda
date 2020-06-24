@@ -107,6 +107,7 @@ public class ConfigurationServiceConstants {
   public static final String EXPORT_CSV_LIMIT = "$.export.csv.limit";
 
   public static final String HISTORY_CLEANUP = "$.historyCleanup";
+  public static final String HISTORY_CLEANUP_PROCESS_DATA = HISTORY_CLEANUP + ".processDataCleanup";
 
   public static final String SHARING_ENABLED = "$.sharing.enabled";
 

@@ -33,7 +33,7 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractEngineDataCleanu
   public void testCleanupModeAll_camundaEventData_afterRollover() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
 
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
@@ -75,7 +75,7 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractEngineDataCleanu
   public void testCleanupModeVariables_camundaEventData_afterRollover() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
 
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();

@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class OptimizeCleanupScheduler extends AbstractScheduledService implements ConfigurationReloadable {
+public class CleanupScheduler extends AbstractScheduledService implements ConfigurationReloadable {
 
   private final ConfigurationService configurationService;
   private final List<CleanupService> cleanupServices;
@@ -34,6 +34,8 @@ public class OptimizeCleanupScheduler extends AbstractScheduledService implement
     getCleanupConfiguration().validate();
     if (getCleanupConfiguration().isEnabled()) {
       startCleanupScheduling();
+    } else {
+      stopCleanupScheduling();
     }
   }
 
@@ -81,7 +83,7 @@ public class OptimizeCleanupScheduler extends AbstractScheduledService implement
     init();
   }
 
-  protected OptimizeCleanupConfiguration getCleanupConfiguration() {
+  protected CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
   }
 

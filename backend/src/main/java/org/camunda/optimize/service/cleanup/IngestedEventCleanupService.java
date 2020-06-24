@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.writer.ExternalEventWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.cleanup.IngestedEventCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -23,19 +23,18 @@ public class IngestedEventCleanupService implements CleanupService {
 
   @Override
   public boolean isEnabled() {
-    return getCleanupConfiguration().isEnabled();
+    return getCleanupConfiguration().getIngestedEventCleanupConfiguration().isEnabled();
   }
 
   @Override
   public void doCleanup(final OffsetDateTime startTime) {
-    final IngestedEventCleanupConfiguration cleanupConfiguration = getCleanupConfiguration();
-    final OffsetDateTime endDate = startTime.minus(cleanupConfiguration.getDefaultTtl());
+    final OffsetDateTime endDate = startTime.minus(getCleanupConfiguration().getTtl());
     log.info("Performing cleanup on external ingested events with a timestamp older than {}", endDate);
     externalEventWriter.deleteEventsOlderThan(endDate);
     log.info("Finished cleanup on external ingested events with a timestamp older than {}", endDate);
   }
 
-  private IngestedEventCleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration().getIngestedEventCleanupConfiguration();
+  private CleanupConfiguration getCleanupConfiguration() {
+    return this.configurationService.getCleanupServiceConfiguration();
   }
 }

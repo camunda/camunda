@@ -18,8 +18,9 @@ import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
-import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.VariableTestUtil;
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,7 +68,7 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
   public void enableCamundaCleanup() {
     embeddedOptimizeExtension.getConfigurationService()
       .getCleanupServiceConfiguration()
-      .getEngineDataCleanupConfiguration()
+      .getProcessDataCleanupConfiguration()
       .setEnabled(true);
   }
 
@@ -84,14 +86,16 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
   }
 
   protected void configureHigherProcessSpecificTtl(final String processDefinitionKey) {
-    getCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
-      processDefinitionKey,
-      ProcessDefinitionCleanupConfiguration.builder()
-        .processDataCleanupMode(CleanupMode.ALL)
-        // higher ttl than default
-        .ttl(getCleanupConfiguration().getDefaultTtl().plusYears(5L))
-        .build()
-    );
+    getCleanupConfiguration().getProcessDataCleanupConfiguration()
+      .getProcessDefinitionSpecificConfiguration()
+      .put(
+        processDefinitionKey,
+        ProcessDefinitionCleanupConfiguration.builder()
+          .processDataCleanupMode(CleanupMode.ALL)
+          // higher ttl than default
+          .ttl(getCleanupConfiguration().getTtl().plusYears(5L))
+          .build()
+      );
   }
 
   @SneakyThrows
@@ -127,7 +131,7 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
   }
 
   protected OffsetDateTime getEndTimeLessThanGlobalTtl() {
-    return OffsetDateTime.now().minus(getCleanupConfiguration().getDefaultTtl()).minusSeconds(1);
+    return OffsetDateTime.now().minus(getCleanupConfiguration().getTtl()).minusSeconds(1);
   }
 
   protected List<String> deployTwoDecisionInstancesWithEvaluationTime(OffsetDateTime evaluationTime) throws
@@ -240,10 +244,17 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
     );
   }
 
-  protected EngineCleanupConfiguration getCleanupConfiguration() {
+  protected Instant getTimestampLessThanIngestedEventsTtl() {
+    return OffsetDateTime.now().minus(getCleanupConfiguration().getTtl()).minusSeconds(1).toInstant();
+  }
+
+  protected ProcessCleanupConfiguration getProcessDataCleanupConfiguration() {
+    return getCleanupConfiguration().getProcessDataCleanupConfiguration();
+  }
+
+  protected CleanupConfiguration getCleanupConfiguration() {
     return embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .getEngineDataCleanupConfiguration();
+      .getCleanupServiceConfiguration();
   }
 
   protected List<CamundaActivityEventDto> getCamundaActivityEvents() {

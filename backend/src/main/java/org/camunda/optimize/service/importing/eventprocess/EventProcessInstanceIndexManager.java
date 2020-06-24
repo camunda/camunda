@@ -30,18 +30,18 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 @Slf4j
 @Component
 public class EventProcessInstanceIndexManager implements ConfigurationReloadable {
-  final private OptimizeElasticsearchClient elasticsearchClient;
-  final private ElasticSearchSchemaManager elasticSearchSchemaManager;
-  final private EventProcessPublishStateReader eventProcessPublishStateReader;
+  private final OptimizeElasticsearchClient elasticsearchClient;
+  private final ElasticSearchSchemaManager elasticSearchSchemaManager;
+  private final EventProcessPublishStateReader eventProcessPublishStateReader;
 
-  final private Map<String, EventProcessPublishStateDto> publishedInstanceIndices = new HashMap<>();
-  final private Map<String, AtomicInteger> usageCountPerIndex = new HashMap<>();
+  private final Map<String, EventProcessPublishStateDto> publishedInstanceIndices = new HashMap<>();
+  private final Map<String, AtomicInteger> usageCountPerIndex = new HashMap<>();
 
-  public synchronized Map<String, EventProcessPublishStateDto> getPublishedInstanceIndicesMap() {
+  public synchronized Map<String, EventProcessPublishStateDto> getPublishedInstanceStatesMap() {
     return publishedInstanceIndices;
   }
 
-  public synchronized Collection<EventProcessPublishStateDto> getPublishedInstanceIndices() {
+  public synchronized Collection<EventProcessPublishStateDto> getPublishedInstanceStates() {
     return publishedInstanceIndices.values();
   }
 

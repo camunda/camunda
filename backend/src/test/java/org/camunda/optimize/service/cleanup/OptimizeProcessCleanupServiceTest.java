@@ -19,8 +19,8 @@ import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWri
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
-import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,14 +94,14 @@ public class OptimizeProcessCleanupServiceTest {
     doCleanup(underTest);
 
     //then
-    assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfig().getDefaultTtl());
+    assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
   @Test
   public void testCleanupRunForMultipleProcessDefinitionsDifferentDefaultMode() {
     // given
     final CleanupMode customMode = CleanupMode.VARIABLES;
-    getCleanupConfig().setDefaultProcessDataCleanupMode(customMode);
+    getCleanupConfiguration().getProcessDataCleanupConfiguration().setCleanupMode(customMode);
     final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
 
     //when
@@ -112,14 +112,14 @@ public class OptimizeProcessCleanupServiceTest {
     doCleanup(underTest);
 
     //then
-    assertDeleteAllInstanceVariablesExecutedFor(processDefinitionKeys, getCleanupConfig().getDefaultTtl());
+    assertDeleteAllInstanceVariablesExecutedFor(processDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
   @Test
   public void testCleanupRunForMultipleProcessDefinitionsDifferentDefaultTtl() {
     // given
     final Period customTtl = Period.parse("P2M");
-    getCleanupConfig().setDefaultTtl(customTtl);
+    getCleanupConfiguration().setTtl(customTtl);
     final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
     mockProcessDefinitions(processDefinitionKeys);
     mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
@@ -139,7 +139,7 @@ public class OptimizeProcessCleanupServiceTest {
     final CleanupMode customMode = CleanupMode.VARIABLES;
     final List<String> processDefinitionKeysWithSpecificMode = generateRandomDefinitionsKeys(3);
     Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration =
-      getCleanupConfig().getProcessDefinitionSpecificConfiguration();
+      getCleanupConfiguration().getProcessDataCleanupConfiguration().getProcessDefinitionSpecificConfiguration();
     processDefinitionKeysWithSpecificMode.forEach(processDefinitionKey -> processDefinitionSpecificConfiguration.put(
       processDefinitionKey, new ProcessDefinitionCleanupConfiguration(customMode)
     ));
@@ -169,7 +169,7 @@ public class OptimizeProcessCleanupServiceTest {
     final Period customTtl = Period.parse("P2M");
     final List<String> processDefinitionKeysWithSpecificTtl = generateRandomDefinitionsKeys(3);
     Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration =
-      getCleanupConfig().getProcessDefinitionSpecificConfiguration();
+      getCleanupConfiguration().getProcessDataCleanupConfiguration().getProcessDefinitionSpecificConfiguration();
     processDefinitionKeysWithSpecificTtl.forEach(processDefinitionKey -> processDefinitionSpecificConfiguration.put(
       processDefinitionKey, new ProcessDefinitionCleanupConfiguration(customTtl)
     ));
@@ -192,7 +192,7 @@ public class OptimizeProcessCleanupServiceTest {
     );
     assertInstancesWereRetrievedByKeyAndExpectedTtl(capturedArguments, processDefinitionKeysWithSpecificTtl, customTtl);
     assertInstancesWereRetrievedByKeyAndExpectedTtl(
-      capturedArguments, processDefinitionKeysWithDefaultTtl, getCleanupConfig().getDefaultTtl()
+      capturedArguments, processDefinitionKeysWithDefaultTtl, getCleanupConfiguration().getTtl()
     );
   }
 
@@ -210,17 +210,20 @@ public class OptimizeProcessCleanupServiceTest {
     doCleanup(underTest);
 
     //then
-    assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfig().getDefaultTtl());
+    assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
   @Test
   public void testFailCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinition() {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
-    getCleanupConfig().getProcessDefinitionSpecificConfiguration().put(
-      configuredKey,
-      new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES)
-    );
+    getCleanupConfiguration()
+      .getProcessDataCleanupConfiguration()
+      .getProcessDefinitionSpecificConfiguration()
+      .put(
+        configuredKey,
+        new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES)
+      );
     // and this key is not present in the known process definition keys
     mockProcessDefinitions(generateRandomDefinitionsKeys(3));
 
@@ -262,8 +265,8 @@ public class OptimizeProcessCleanupServiceTest {
     underTest.doCleanup(OffsetDateTime.now());
   }
 
-  private EngineCleanupConfiguration getCleanupConfig() {
-    return configurationService.getCleanupServiceConfiguration().getEngineDataCleanupConfiguration();
+  private CleanupConfiguration getCleanupConfiguration() {
+    return configurationService.getCleanupServiceConfiguration();
   }
 
   private void assertDeleteProcessInstancesExecutedFor(final List<String> expectedProcessDefinitionKeys,

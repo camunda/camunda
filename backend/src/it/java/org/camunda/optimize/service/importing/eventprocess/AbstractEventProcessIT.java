@@ -133,6 +133,8 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .add(DEFAULT_USERNAME);
   }
 
+  // it's used as test param via @MethodSource
+  @SuppressWarnings("unused")
   protected static Stream<Arguments> cancelOrDeleteAction() {
     return Stream.of(
       Arguments.arguments(
@@ -329,6 +331,10 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
 
   protected String ingestTestEvent(final String eventName, final OffsetDateTime eventTimestamp) {
     return ingestTestEvent(IdGenerator.getNextId(), eventName, eventTimestamp, MY_TRACE_ID_1);
+  }
+
+  protected String ingestTestEvent(final String eventName, final OffsetDateTime eventTimestamp, final String traceId) {
+    return ingestTestEvent(IdGenerator.getNextId(), eventName, eventTimestamp, traceId);
   }
 
   protected String ingestTestEvent(final String eventId, final String eventName, final OffsetDateTime eventTimestamp) {

@@ -32,7 +32,7 @@ public class EventProcessDefinitionImportService {
   public void syncPublishedEventProcessDefinitions() {
     final Set<String> publishedStateProcessIds = new HashSet<>();
     final List<EventProcessPublishStateDto> publishedEventProcesses = eventProcessInstanceIndexManager
-      .getPublishedInstanceIndices()
+      .getPublishedInstanceStates()
       .stream()
       .filter(eventProcessPublishStateDto -> EventProcessState.PUBLISHED.equals(eventProcessPublishStateDto.getState()))
       .peek(eventProcessPublishStateDto -> publishedStateProcessIds.add(eventProcessPublishStateDto.getId()))

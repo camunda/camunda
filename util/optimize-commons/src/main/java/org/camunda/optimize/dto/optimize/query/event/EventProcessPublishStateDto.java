@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,4 +39,9 @@ public class EventProcessPublishStateDto {
   private Map<String, EventMappingDto> mappings;
   @Builder.Default
   private List<EventImportSourceDto> eventImportSources = new ArrayList<>();
+
+  @JsonIgnore
+  public String getProcessKey() {
+    return processMappingId;
+  }
 }

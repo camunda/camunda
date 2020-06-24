@@ -26,7 +26,7 @@ public class PublishStateUpdateService {
   private final EventProcessInstanceIndexManager eventProcessInstanceIndexManager;
 
   public void updateEventProcessPublishStates() {
-    eventProcessInstanceIndexManager.getPublishedInstanceIndices()
+    eventProcessInstanceIndexManager.getPublishedInstanceStates()
       .stream()
       .peek(publishState -> {
         // for each publishing process we also update progress and eventually state

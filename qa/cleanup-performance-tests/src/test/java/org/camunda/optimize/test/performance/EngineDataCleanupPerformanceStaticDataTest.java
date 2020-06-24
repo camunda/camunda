@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.test.performance;
 
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
-import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -41,8 +41,10 @@ public class EngineDataCleanupPerformanceStaticDataTest extends AbstractEngineDa
   @Test
   public void aCleanupModeVariablesAndDecisionDataPerformanceTest() throws Exception {
     //given TTL of 0
-    getEngineDataCleanupConfiguration().setDefaultTtl(Period.parse("P0D"));
-    getEngineDataCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
+    getCleanupConfiguration().getProcessDataCleanupConfiguration().setEnabled(true);
+    getCleanupConfiguration().getDecisionCleanupConfiguration().setEnabled(true);
+    getCleanupConfiguration().setTtl(Period.parse("P0D"));
+    getCleanupConfiguration().getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
     final int countProcessDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME);
     final int processInstanceCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME);
     final int activityCount = elasticSearchIntegrationTestExtension.getActivityCount();
@@ -91,8 +93,10 @@ public class EngineDataCleanupPerformanceStaticDataTest extends AbstractEngineDa
   @Test
   public void bCleanupModeAllPerformanceTest() throws Exception {
     //given ttl of 0
-    getEngineDataCleanupConfiguration().setDefaultTtl(Period.parse("P0D"));
-    getEngineDataCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
+    getCleanupConfiguration().getProcessDataCleanupConfiguration().setEnabled(true);
+    getCleanupConfiguration().getDecisionCleanupConfiguration().setEnabled(true);
+    getCleanupConfiguration().setTtl(Period.parse("P0D"));
+    getCleanupConfiguration().getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final int countProcessDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME);
     final int countDecisionDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME);
     // and run the cleanup
@@ -130,10 +134,8 @@ public class EngineDataCleanupPerformanceStaticDataTest extends AbstractEngineDa
     );
   }
 
-  private EngineCleanupConfiguration getEngineDataCleanupConfiguration() {
-    return embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .getEngineDataCleanupConfiguration();
+  private CleanupConfiguration getCleanupConfiguration() {
+    return embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration();
   }
 
   private Integer getFinishedProcessInstanceActivityCount() {

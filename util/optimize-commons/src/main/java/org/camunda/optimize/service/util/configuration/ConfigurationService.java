@@ -11,7 +11,7 @@ import com.jayway.jsonpath.ReadContext;
 import com.jayway.jsonpath.TypeRef;
 import lombok.Setter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
@@ -173,7 +173,7 @@ public class ConfigurationService {
   private Properties quartzProperties;
 
   // history cleanup
-  private OptimizeCleanupConfiguration cleanupServiceConfiguration;
+  private CleanupConfiguration cleanupServiceConfiguration;
 
   private Boolean sharingEnabled;
 
@@ -983,11 +983,11 @@ public class ConfigurationService {
     return Optional.ofNullable(elasticsearchSecuritySSLCertificateAuthorities).orElse(new ArrayList<>());
   }
 
-  public OptimizeCleanupConfiguration getCleanupServiceConfiguration() {
+  public CleanupConfiguration getCleanupServiceConfiguration() {
     if (cleanupServiceConfiguration == null) {
       cleanupServiceConfiguration = configJsonContext.read(
         ConfigurationServiceConstants.HISTORY_CLEANUP,
-        OptimizeCleanupConfiguration.class
+        CleanupConfiguration.class
       );
       cleanupServiceConfiguration.validate();
     }

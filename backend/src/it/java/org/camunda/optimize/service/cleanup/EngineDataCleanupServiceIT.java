@@ -28,7 +28,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
   @SneakyThrows
   public void testCleanupModeAll() {
     // given
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
@@ -49,8 +49,8 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
   @SneakyThrows
   public void testCleanupModeAll_disabled() {
     // given
-    getCleanupConfiguration().setEnabled(false);
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setEnabled(false);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> unaffectedProcessInstances =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
 
@@ -66,9 +66,9 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
 
   @Test
   @SneakyThrows
-  public void testCleanupModeAll_specificKey() {
+  public void testCleanupModeAll_specificKeyTtl() {
     // given
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
 
@@ -92,7 +92,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
   public void testCleanupModeAll_camundaEventData() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
@@ -121,10 +121,10 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
 
   @Test
   @SneakyThrows
-  public void testCleanupModeAll_camundaEventData_specificKey() {
+  public void testCleanupModeAll_camundaEventData_specificKeyTtl() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
 
@@ -157,7 +157,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
   @SneakyThrows
   public void testCleanupModeVariables() {
     // given
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
@@ -176,9 +176,33 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
 
   @Test
   @SneakyThrows
-  public void testCleanupModeVariables_specificKey() {
+  public void testCleanupModeVariables_specificKeyCleanupMode() {
     // given
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    final List<ProcessInstanceEngineDto> instancesOfDefinitionWithVariableMode =
+      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+    getCleanupConfiguration().getProcessDataCleanupConfiguration()
+      .getProcessDefinitionSpecificConfiguration()
+      .put(
+        instancesOfDefinitionWithVariableMode.get(0).getProcessDefinitionKey(),
+        ProcessDefinitionCleanupConfiguration.builder().processDataCleanupMode(CleanupMode.VARIABLES).build()
+      );
+
+    importAllEngineEntitiesFromScratch();
+
+    //when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    //then
+    assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesOfDefinitionWithVariableMode));
+  }
+
+  @Test
+  @SneakyThrows
+  public void testCleanupModeVariables_specificKeyTtl() {
+    // given
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
 
@@ -202,7 +226,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
   public void testCleanupModeVariables_camundaEventData() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
 
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
@@ -229,7 +253,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
   public void testCleanupModeVariables_camundaEventData_specificKey() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
 
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
       deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
@@ -259,7 +283,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
   public void testFailCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinitionNoInstancesCleaned() {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
-    getCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
+    getProcessDataCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
       configuredKey,
       new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES)
     );
@@ -321,10 +345,12 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
   public void testFailCleanupOnSpecificKeyConfigWithNoMatchingDecisionDefinitionNoInstancesCleaned() {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
-    getCleanupConfiguration().getDecisionDefinitionSpecificConfiguration().put(
-      configuredKey,
-      new DecisionDefinitionCleanupConfiguration(getCleanupConfiguration().getDefaultTtl())
-    );
+    getCleanupConfiguration().getDecisionCleanupConfiguration()
+      .getDecisionDefinitionSpecificConfiguration()
+      .put(
+        configuredKey,
+        new DecisionDefinitionCleanupConfiguration(getCleanupConfiguration().getTtl())
+      );
     // and deploy processes with different keys
     final List<String> decisionDefinitionsWithEvaluationTimeLessThanTtl =
       deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();

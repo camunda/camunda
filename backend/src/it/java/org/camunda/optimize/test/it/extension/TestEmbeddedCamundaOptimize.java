@@ -15,7 +15,7 @@ import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
-import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
+import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
@@ -169,8 +169,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return getApplicationContext().getBean(SessionService.class);
   }
 
-  public OptimizeCleanupScheduler getCleanupService() {
-    return getApplicationContext().getBean(OptimizeCleanupScheduler.class);
+  public CleanupScheduler getCleanupService() {
+    return getApplicationContext().getBean(CleanupScheduler.class);
   }
 
   public SyncedIdentityCacheService getSyncedIdentityCacheService() {

@@ -73,7 +73,7 @@ public class IngestedEventCleanupIT extends AbstractIT {
 
   private Instant getTimestampLessThanIngestedEventsTtl() {
     return OffsetDateTime.now()
-      .minus(getIngestedEventCleanupConfiguration().getDefaultTtl())
+      .minus(embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration().getTtl())
       .minusSeconds(1)
       .toInstant();
   }

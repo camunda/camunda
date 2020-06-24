@@ -8,7 +8,7 @@ package org.camunda.optimize.service.cleanup;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class OptimizeCleanupSchedulerTest {
+public class CleanupSchedulerTest {
 
   private ConfigurationService configurationService;
 
@@ -39,7 +39,7 @@ public class OptimizeCleanupSchedulerTest {
   @Test
   public void testAllEnabledCleanupServicesAreCalled() {
     // given
-    final OptimizeCleanupScheduler underTest = createOptimizeCleanupServiceToTest();
+    final CleanupScheduler underTest = createOptimizeCleanupServiceToTest();
     final CleanupService mockedCleanupService1 = mock(CleanupService.class);
     final CleanupService mockedCleanupService2 = mock(CleanupService.class);
     final CleanupService mockedCleanupService3 = mock(CleanupService.class);
@@ -65,7 +65,7 @@ public class OptimizeCleanupSchedulerTest {
   @Test
   public void testFailingCleanupServiceDoesntAffectOthersExecution() {
     // given
-    final OptimizeCleanupScheduler underTest = createOptimizeCleanupServiceToTest();
+    final CleanupScheduler underTest = createOptimizeCleanupServiceToTest();
     final CleanupService mockedCleanupService1 = mock(CleanupService.class);
     final CleanupService mockedCleanupService2 = mock(CleanupService.class);
     when(mockedCleanupService1.isEnabled()).thenReturn(true);
@@ -87,20 +87,20 @@ public class OptimizeCleanupSchedulerTest {
   @Test
   public void testFailInitOnInvalidConfig() {
     // given
-    getCleanupConfiguration().getEngineDataCleanupConfiguration().setDefaultTtl(null);
+    getCleanupConfiguration().setTtl(null);
 
     //when
-    final OptimizeCleanupScheduler underTest = createOptimizeCleanupServiceToTest();
+    final CleanupScheduler underTest = createOptimizeCleanupServiceToTest();
 
     //then
     assertThrows(OptimizeConfigurationException.class, underTest::init);
   }
 
-  private OptimizeCleanupConfiguration getCleanupConfiguration() {
+  private CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
   }
 
-  private OptimizeCleanupScheduler createOptimizeCleanupServiceToTest() {
-    return new OptimizeCleanupScheduler(configurationService, new ArrayList<>());
+  private CleanupScheduler createOptimizeCleanupServiceToTest() {
+    return new CleanupScheduler(configurationService, new ArrayList<>());
   }
 }

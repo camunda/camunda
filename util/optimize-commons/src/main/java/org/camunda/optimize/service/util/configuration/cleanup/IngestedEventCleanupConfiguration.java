@@ -11,11 +11,6 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-
-import java.time.Period;
-
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.HISTORY_CLEANUP;
 
 @Data
 @AllArgsConstructor
@@ -24,13 +19,4 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 public class IngestedEventCleanupConfiguration {
   @JsonProperty("enabled")
   private boolean enabled;
-  @JsonProperty("ttl")
-  private Period defaultTtl;
-
-  public void validate() {
-    if (defaultTtl == null) {
-      throw new OptimizeConfigurationException(HISTORY_CLEANUP + ".ingestedEventCleanup.ttl must be set");
-    }
-  }
-
 }

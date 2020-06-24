@@ -17,7 +17,7 @@ import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.springframework.stereotype.Component;
 
@@ -45,16 +45,16 @@ public class EngineDataProcessCleanupService implements CleanupService {
 
   @Override
   public boolean isEnabled() {
-    return getCleanupConfiguration().isEnabled();
+    return getCleanupConfiguration().getProcessDataCleanupConfiguration().isEnabled();
   }
 
   @Override
   public void doCleanup(final OffsetDateTime startTime) {
-    final Set<String> allOptimizeProcessDefinitionKeys = getAllOptimizeProcessDefinitionKeys();
+    final Set<String> allOptimizeProcessDefinitionKeys = getAllCamundaEngineProcessDefinitionKeys();
 
     enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown(
       allOptimizeProcessDefinitionKeys,
-      getCleanupConfiguration().getAllProcessSpecificConfigurationKeys()
+      getCleanupConfiguration().getProcessDataCleanupConfiguration().getAllProcessSpecificConfigurationKeys()
     );
     int i = 1;
     for (String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
@@ -122,15 +122,16 @@ public class EngineDataProcessCleanupService implements CleanupService {
     }
   }
 
-  private Set<String> getAllOptimizeProcessDefinitionKeys() {
+  private Set<String> getAllCamundaEngineProcessDefinitionKeys() {
     return processDefinitionReader.getProcessDefinitions(false, false)
       .stream()
+      .filter(definition -> !definition.isEventBased())
       .map(ProcessDefinitionOptimizeDto::getKey)
       .collect(Collectors.toSet());
   }
 
-  private EngineCleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration().getEngineDataCleanupConfiguration();
+  private CleanupConfiguration getCleanupConfiguration() {
+    return this.configurationService.getCleanupServiceConfiguration();
   }
 
 }

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
@@ -66,8 +67,8 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     publishStateUpdateService.updateEventProcessPublishStates();
     eventProcessDefinitionImportService.syncPublishedEventProcessDefinitions();
 
-    final Collection<EventProcessInstanceImportMediator> allInstanceMediators = instanceImportMediatorManager
-      .getActiveMediators();
+    final Collection<EventProcessInstanceImportMediator<EventProcessEventDto>> allInstanceMediators =
+      instanceImportMediatorManager.getActiveMediators();
     final List<EventProcessInstanceImportMediator> currentImportRound = allInstanceMediators
       .stream()
       .filter(mediator -> forceImport || mediator.canImport())

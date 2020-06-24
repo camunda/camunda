@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,13 +63,6 @@ public class IngestedEventCleanupServiceRolloverIT extends AbstractEngineDataCle
     return embeddedOptimizeExtension.getConfigurationService()
       .getCleanupServiceConfiguration()
       .getIngestedEventCleanupConfiguration();
-  }
-
-  private Instant getTimestampLessThanIngestedEventsTtl() {
-    return OffsetDateTime.now()
-      .minus(getIngestedEventCleanupConfiguration().getDefaultTtl())
-      .minusSeconds(1)
-      .toInstant();
   }
 
 }

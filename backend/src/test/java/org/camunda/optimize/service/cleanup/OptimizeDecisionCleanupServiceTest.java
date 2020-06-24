@@ -12,8 +12,8 @@ import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,14 +67,14 @@ public class OptimizeDecisionCleanupServiceTest {
     doCleanup(underTest);
 
     //then
-    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfig().getDefaultTtl());
+    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
   @Test
   public void testCleanupRunForMultipleDecisionDefinitionsDifferentDefaultTtl() {
     // given
     final Period customTtl = Period.parse("P2M");
-    getCleanupConfig().setDefaultTtl(customTtl);
+    getCleanupConfiguration().setTtl(customTtl);
     final List<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
 
     //when
@@ -92,7 +92,7 @@ public class OptimizeDecisionCleanupServiceTest {
     final Period customTtl = Period.parse("P2M");
     final List<String> decisionDefinitionKeysWithSpecificTtl = generateRandomDefinitionsKeys(3);
     final Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration =
-      getCleanupConfig().getDecisionDefinitionSpecificConfiguration();
+      getCleanupConfiguration().getDecisionCleanupConfiguration().getDecisionDefinitionSpecificConfiguration();
     decisionDefinitionKeysWithSpecificTtl.forEach(decisionDefinitionKey -> decisionDefinitionSpecificConfiguration.put(
       decisionDefinitionKey, new DecisionDefinitionCleanupConfiguration(customTtl)
     ));
@@ -113,7 +113,7 @@ public class OptimizeDecisionCleanupServiceTest {
     );
     assertKeysWereCalledWithExpectedTtl(capturedArguments, decisionDefinitionKeysWithSpecificTtl, customTtl);
     assertKeysWereCalledWithExpectedTtl(
-      capturedArguments, decisionDefinitionKeysWithDefaultTtl, getCleanupConfig().getDefaultTtl()
+      capturedArguments, decisionDefinitionKeysWithDefaultTtl, getCleanupConfiguration().getTtl()
     );
   }
 
@@ -129,17 +129,20 @@ public class OptimizeDecisionCleanupServiceTest {
     doCleanup(underTest);
 
     //then
-    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfig().getDefaultTtl());
+    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
   @Test
   public void testFailCleanupOnSpecificKeyConfigWithNoMatchingDecisionDefinition() {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
-    getCleanupConfig().getDecisionDefinitionSpecificConfiguration().put(
-      configuredKey,
-      new DecisionDefinitionCleanupConfiguration(Period.parse("P2M"))
-    );
+    getCleanupConfiguration()
+      .getDecisionCleanupConfiguration()
+      .getDecisionDefinitionSpecificConfiguration()
+      .put(
+        configuredKey,
+        new DecisionDefinitionCleanupConfiguration(Period.parse("P2M"))
+      );
     // and this key is not present in the known process definition keys
     mockDecisionDefinitions(generateRandomDefinitionsKeys(3));
 
@@ -153,8 +156,8 @@ public class OptimizeDecisionCleanupServiceTest {
     underTest.doCleanup(OffsetDateTime.now());
   }
 
-  private EngineCleanupConfiguration getCleanupConfig() {
-    return configurationService.getCleanupServiceConfiguration().getEngineDataCleanupConfiguration();
+  private CleanupConfiguration getCleanupConfiguration() {
+    return configurationService.getCleanupServiceConfiguration();
   }
 
   private void assertKeysWereCalledWithExpectedTtl(Map<String, OffsetDateTime> capturedInvocationArguments,

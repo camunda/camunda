@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -32,7 +32,7 @@ public class EngineDataDecisionCleanupService implements CleanupService {
 
   @Override
   public boolean isEnabled() {
-    return getCleanupConfiguration().isEnabled();
+    return getCleanupConfiguration().getDecisionCleanupConfiguration().isEnabled();
   }
 
   @Override
@@ -41,7 +41,7 @@ public class EngineDataDecisionCleanupService implements CleanupService {
 
     enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown(
       allOptimizeProcessDefinitionKeys,
-      getCleanupConfiguration().getAllDecisionSpecificConfigurationKeys()
+      getCleanupConfiguration().getDecisionCleanupConfiguration().getAllDecisionSpecificConfigurationKeys()
     );
     int i = 1;
     for (String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
@@ -80,8 +80,8 @@ public class EngineDataDecisionCleanupService implements CleanupService {
       .collect(Collectors.toSet());
   }
 
-  private EngineCleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration().getEngineDataCleanupConfiguration();
+  private CleanupConfiguration getCleanupConfiguration() {
+    return this.configurationService.getCleanupServiceConfiguration();
   }
 
 }
