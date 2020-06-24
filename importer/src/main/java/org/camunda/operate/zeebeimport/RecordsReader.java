@@ -151,12 +151,10 @@ public class RecordsReader {
         throw new NoSuchIndexException();
       } else {
         final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", ex.getMessage());
-        logger.error(message, ex);
         throw new OperateRuntimeException(message, ex);
       }
     } catch (Exception e) {
       final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
-      logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -225,6 +223,7 @@ public class RecordsReader {
           }
           return imported;
         } catch (Exception ex) {
+          logger.error("Exception occurred when importing data: " + ex.getMessage(), ex);
           //retry the same job
           execute(active);
           return false;

@@ -63,7 +63,6 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
             archiveBatch.getIds());
         return archiveBatch.getIds().size();
       } catch (ArchiverException e) {
-        logger.error(e.getMessage(), e);
         throw e;
       }
     } else {
@@ -86,8 +85,7 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
 
       return createArchiveBatch(searchResponse, datesAgg, instancesAgg);
     } catch (Exception e) {
-      final String message = String.format("Exception occurred, while obtaining finished workflow instances: %s", e.getMessage());
-      logger.error(message, e);
+      final String message = String.format("Exception occurred, while obtaining finished batch operations: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }

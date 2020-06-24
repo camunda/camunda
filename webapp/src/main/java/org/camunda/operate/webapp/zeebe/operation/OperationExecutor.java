@@ -79,9 +79,7 @@ public class OperationExecutor extends Thread {
 
       } catch (Exception ex) {
         //retry
-        logger.error("Something went wrong, while executing operations batch. Will be retried. Underlying exception: ", ex.getCause());
-
-        logger.error(ex.getMessage(), ex);
+        logger.error("Something went wrong, while executing operations batch. Will be retried.", ex);
         
         sleepFor(2000);
       }

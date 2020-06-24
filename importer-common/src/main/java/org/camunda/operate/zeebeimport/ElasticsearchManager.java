@@ -112,7 +112,6 @@ public class ElasticsearchManager {
       }
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining the operation: %s", e.getMessage());
-      logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -147,7 +146,6 @@ public class ElasticsearchManager {
       return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining workflow instance that has empty versions: %s", e.getMessage());
-      logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }

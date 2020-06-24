@@ -67,7 +67,7 @@ public class UserStorage extends AbstractReader {
       IndexRequest request = new IndexRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE,user.getId())
           .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request,RequestOptions.DEFAULT);
-    } catch (Throwable t) {
+    } catch (Exception t) {
       logger.error("Could not create user with username {}", user.getUsername(), t);
     }    
   }

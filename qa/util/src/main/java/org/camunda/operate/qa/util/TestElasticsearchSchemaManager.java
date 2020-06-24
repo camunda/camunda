@@ -46,7 +46,7 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager{
   public void deleteSchemaQuietly() {
     try {
       deleteSchema();
-    } catch (Throwable t) {
+    } catch (Exception t) {
       logger.debug(t.getMessage());
     }
   }

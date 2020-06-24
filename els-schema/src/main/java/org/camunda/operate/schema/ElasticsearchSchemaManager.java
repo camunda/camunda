@@ -113,7 +113,6 @@ public class ElasticsearchSchemaManager {
       return esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while checking schema existence: %s", e.getMessage());
-      logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }

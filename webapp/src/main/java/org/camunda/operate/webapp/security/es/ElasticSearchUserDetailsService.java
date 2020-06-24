@@ -90,7 +90,7 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
   private boolean userExists(String username) {
     try {
       return userStorage.getByName(username)!=null;
-    }catch(Throwable t) {
+    }catch(Exception t) {
       return false;
     }
   }

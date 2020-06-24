@@ -174,7 +174,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     try {
       RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (Throwable t) {
+    } catch (Exception t) {
       logger.error("Could not refresh Zeebe Elasticsearch indices", t);
     }
   }
@@ -183,7 +183,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     try {
       RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (Throwable t) {
+    } catch (Exception t) {
       logger.error("Could not refresh Operate Elasticsearch indices", t);
     }
   }
@@ -258,7 +258,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       checks++;
       try {
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
-      } catch (Throwable t) {
+      } catch (Exception t) {
         logger.error("Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, checks, maxChecks);
         sleepFor(200);
       }
@@ -349,7 +349,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       ObjectMapper objectMapper = new ObjectMapper();
       Response response = esClient.getLowLevelClient().performRequest(new Request("GET",path));
       return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
-    } catch (Throwable e) {
+    } catch (Exception e) {
       logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.",e);
       return Optional.empty();
     }

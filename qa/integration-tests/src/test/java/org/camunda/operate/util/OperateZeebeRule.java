@@ -155,14 +155,7 @@ public class OperateZeebeRule extends TestWatcher {
 
   private Properties newClientProperties() {
     final Properties properties = new Properties();
-    try {
-      properties.put(ClientProperties.BROKER_CONTACTPOINT, SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
-    } catch (Throwable th) {
-      // TODO remove this after Zeebe 0.23.0 is released
-      properties.put(
-          ClientProperties.BROKER_CONTACTPOINT,
-          getBrokerConfig().getGateway().getNetwork().toSocketAddress().toString());
-    }
+    properties.put(ClientProperties.BROKER_CONTACTPOINT, SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
     properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
     properties.setProperty(ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
     return properties;

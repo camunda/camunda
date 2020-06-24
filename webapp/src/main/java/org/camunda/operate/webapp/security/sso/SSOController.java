@@ -80,7 +80,7 @@ public class SSOController {
       }
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
-    } catch (Throwable t /*AuthenticationException | IdentityVerificationException e*/) {
+    } catch (Exception t /*AuthenticationException | IdentityVerificationException e*/) {
       clearContextAndRedirectToNoPermission(req,res, t);
     }
   }

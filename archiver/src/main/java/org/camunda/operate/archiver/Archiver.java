@@ -139,7 +139,6 @@ public class Archiver {
       throw ex;
     } catch (Exception e) {
       final String message = String.format("Exception occurred, while deleting the documents: %s", e.getMessage());
-      logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -170,7 +169,6 @@ public class Archiver {
       throw ex;
     } catch (Exception e) {
       final String message = String.format("Exception occurred, while reindexing the documents: %s", e.getMessage());
-      logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }

@@ -91,7 +91,6 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
       return createArchiveBatch(searchResponse, datesAgg, instancesAgg);
     } catch (Exception e) {
       final String message = String.format("Exception occurred, while obtaining finished workflow instances: %s", e.getMessage());
-      logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -157,7 +156,6 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
         metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, archiveBatch.getIds().size());
         return archiveBatch.getIds().size();
       } catch (ArchiverException e) {
-        logger.error(e.getMessage(), e);
         throw e;
       }
     } else {
