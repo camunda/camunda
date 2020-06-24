@@ -1,5 +1,8 @@
 #!/usr/bin/env groovy
 
+// https://github.com/camunda-ci/jenkins-global-shared-library
+@Library('camunda-ci') _
+
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 def static OPERATE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
@@ -129,17 +132,17 @@ pipeline {
           steps {
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-              	sh ('mvn -B -s $MAVEN_SETTINGS_XML -DCAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true')
-              	sh ('sleep 30')
+                sh ('mvn -B -s $MAVEN_SETTINGS_XML -DCAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true')
+                sh ('sleep 30')
                 sh '''
                   JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
                   mvn -B -s $MAVEN_SETTINGS_XML -f client/pom.xml -P client.e2etests-chromeheadless test
                   '''
                 sh ('mvn -B -s $MAVEN_SETTINGS_XML spring-boot:stop -f webapp/pom.xml -Dspring-boot.stop.fork=true')
               }
-            }               
+            }
           }
-		}
+        }
       }
     }
     stage('Deploy') {
@@ -240,7 +243,7 @@ pipeline {
       archiveArtifacts artifacts: '*.txt'
       // Do not send notification if the node disconnected
       script {
-        if (!nodeDisconnected()) {
+        if (!agentDisconnected()) {
           def notification = load ".ci/pipelines/build_notification.groovy"
           notification.buildNotification(currentBuild.result)
         }
@@ -249,7 +252,7 @@ pipeline {
     changed {
       script {
         // Do not send notification if the node disconnected
-        if (env.BRANCH_NAME == 'master' && !nodeDisconnected()) {
+        if (env.BRANCH_NAME == 'master' && !agentDisconnected()) {
           slackSend(
               channel: "#operate-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
               message: "Operate ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
@@ -259,14 +262,10 @@ pipeline {
     always {
       // Retrigger the build if the node disconnected
       script {
-        if (nodeDisconnected()) {
+        if (agentDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }
     }
   }
-}
-
-boolean nodeDisconnected() {
-  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|ProtocolException|uv_resident_set_memory).*/
 }
