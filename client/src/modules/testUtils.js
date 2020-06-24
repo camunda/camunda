@@ -212,20 +212,6 @@ export const createArrayOfMockInstances = (amount, options = {}) => {
 };
 
 /**
- * @returns a Map with mocked instanceId 'keys' and instance object 'values'
- * @param {Array} arrayofInstances contains any number of instance objects
- */
-export const createMapOfMockInstances = (arrayofInstances) => {
-  const transformedInstances = arrayofInstances.reduce((acc, instance) => {
-    return {
-      ...acc,
-      [instance.id]: instance,
-    };
-  }, {});
-  return new Map(Object.entries(transformedInstances));
-};
-
-/**
  * A hard coded object to use when mocking fetchGroupedWorkflows api/instances.js
  */
 export const groupedWorkflowsMock = [
@@ -361,19 +347,6 @@ export const createIncidentsByError = (options) => {
 };
 
 /**
- * @returns mocked Core Statistis Object as exposed by '/api/workflow-instances/core-statistics'
- * @param {*} customProps array with any number of instanceByError Objects
- */
-export const createCoreStatistics = (options = {}) => {
-  return {
-    running: 10,
-    active: 7,
-    withIncident: 3,
-    ...options,
-  };
-};
-
-/**
  * @returns a mocked diagramNode Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
@@ -394,25 +367,6 @@ export const createActivities = (diagramNodes) => {
       activityId: diagramNode.id,
     })
   );
-};
-
-export const createDiagramStatistics = () => {
-  return [
-    {
-      activityId: 'afterTimerTask',
-      active: 0,
-      canceled: 0,
-      incidents: 8,
-      completed: 0,
-    },
-    {
-      activityId: 'lastTask',
-      active: 0,
-      canceled: 0,
-      incidents: 21,
-      completed: 0,
-    },
-  ];
 };
 
 export const createDefinitions = () => {
@@ -502,32 +456,6 @@ export const createRawTreeNode = (options = {}) => {
   };
 };
 
-export const createVariables = () => {
-  return [
-    {
-      id: '1031-clientNo',
-      name: 'clientNo',
-      value: '"CNT-1211132-02"',
-      scopeId: '1031',
-      workflowInstanceId: '1031',
-    },
-    {
-      id: '1031-items',
-      name: 'items',
-      value:
-        '[{"code":"123.135.625","name":"Laptop Lenovo ABC-001","quantity":1,"price":488.0},{"code":"111.653.365","name":"Headset Sony QWE-23","quantity":2,"price":72.0}]',
-      scopeId: '1031',
-      workflowInstanceId: '1031',
-    },
-    {
-      id: '1031-mwst',
-      name: 'mwst',
-      value: '106.4',
-      scopeId: '1031',
-      workflowInstanceId: '1031',
-    },
-  ];
-};
 export const diObject = {set: jest.fn()};
 
 export const createSequenceFlows = () => {

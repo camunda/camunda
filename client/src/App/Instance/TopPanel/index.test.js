@@ -17,7 +17,7 @@ import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 
 import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
-import {mockProps, mockedExpandedPaneId} from './index.setup';
+import {mockProps, mockedExpandedPaneId, createRawTree} from './index.setup';
 
 import {
   mockedModules,
@@ -34,6 +34,7 @@ import {ThemeProvider} from 'modules/theme';
 import TopPanel from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {flushPromises} from 'modules/testUtils';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 jest.mock('modules/utils/bpmn');
 
@@ -74,6 +75,12 @@ const mountTopPanel = (props) => {
 describe('DiagramPanel', () => {
   afterEach(() => {
     jest.clearAllMocks();
+  });
+  beforeAll(() => {
+    flowNodeInstance.setFlowNodeInstanceMap(createRawTree());
+  });
+  afterAll(() => {
+    flowNodeInstance.reset();
   });
 
   it('should render spinner by default', () => {

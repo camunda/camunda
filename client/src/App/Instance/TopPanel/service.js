@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {STATE} from 'modules/constants';
+import {STATE, TYPE} from 'modules/constants';
 
 export function mapify(arrayOfObjects, uniqueKey, modifier) {
   return arrayOfObjects.reduce((acc, object) => {
@@ -25,12 +25,12 @@ export function getSelectedFlowNodeName(selection, nodeMetaDataMap) {
 
 /**
  * @returns {Array} of flow node state overlays to be added the diagram.
- * @param {*} activityIdToActivityInstanceMap
+ * @param {*} flowNodeIdToFlowNodeInstanceMap
  */
-export function getFlowNodeStateOverlays(activityIdToActivityInstanceMap) {
-  return [...activityIdToActivityInstanceMap.entries()].reduce(
-    (overlays, [id, activityInstancesMap]) => {
-      const {state, type} = [...activityInstancesMap.values()].reverse()[0];
+export function getFlowNodeStateOverlays(flowNodeIdToFlowNodeInstanceMap) {
+  return [...flowNodeIdToFlowNodeInstanceMap.entries()].reduce(
+    (overlays, [id, flowNodeInstancesMap]) => {
+      const {state, type} = [...flowNodeInstancesMap.values()].reverse()[0];
 
       // If the activity is completed, only push an overlay
       // if the activity is an end event.
@@ -40,5 +40,44 @@ export function getFlowNodeStateOverlays(activityIdToActivityInstanceMap) {
       return !shouldPushOverlay ? overlays : [...overlays, {id, state}];
     },
     []
+  );
+}
+function hasMultiInstanceActivities(instances) {
+  return instances.some(
+    (instance) => instance.type === TYPE.MULTI_INSTANCE_BODY
+  );
+}
+function filterMultiInstanceActivities(flowNodeInstancesMap, filterFn) {
+  const flowNodeInstances = [...flowNodeInstancesMap.values()];
+
+  if (hasMultiInstanceActivities(flowNodeInstances)) {
+    return flowNodeInstances.reduce(
+      (ids, instance) => (filterFn(instance) ? [...ids, instance.id] : ids),
+      []
+    );
+  } else {
+    return [...flowNodeInstancesMap.keys()];
+  }
+}
+
+/**
+ * @returns {Array} an array containing activity instance ids (excluding multi instance children)
+ * @param {Map} flowNodeInstancesMap
+ */
+export function getMultiInstanceBodies(flowNodeInstancesMap) {
+  return filterMultiInstanceActivities(
+    flowNodeInstancesMap,
+    (instance) => instance.type === TYPE.MULTI_INSTANCE_BODY
+  );
+}
+
+/**
+ * @returns {Array} an array containing activity instance ids (excluding multi instance bodies)
+ * @param {Map} flowNodeInstancesMap
+ */
+export function getMultiInstanceChildren(flowNodeInstancesMap) {
+  return filterMultiInstanceActivities(
+    flowNodeInstancesMap,
+    (instance) => instance.type !== TYPE.MULTI_INSTANCE_BODY
   );
 }

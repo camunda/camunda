@@ -10,6 +10,8 @@ import {
   mapify,
   getSelectedFlowNodeName,
   getFlowNodeStateOverlays,
+  getMultiInstanceBodies,
+  getMultiInstanceChildren,
 } from './service';
 
 import {withData} from 'modules/DataManager';
@@ -36,9 +38,7 @@ const TopPanel = observer(
       processedSequenceFlows: PropTypes.array,
       expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
       diagramDefinitions: PropTypes.object,
-      activityIdToActivityInstanceMap: PropTypes.object,
       onTreeRowSelection: PropTypes.func,
-      onFlowNodeSelection: PropTypes.func,
       getCurrentMetadata: PropTypes.func,
     };
 
@@ -78,18 +78,48 @@ const TopPanel = observer(
       return modifiedObject;
     };
 
+    /**
+     * Handles selecting a flow node from the diagram
+     * @param {string} flowNodeId: id of the selected flow node
+     * @param {Object} options: refine, which instances to select
+     */
+    handleFlowNodeSelection = async (
+      flowNodeId,
+      options = {
+        selectMultiInstanceChildrenOnly: false,
+      }
+    ) => {
+      const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstance.state;
+      const {instance} = currentInstance.state;
+      let treeRowIds = [instance.id];
+      if (flowNodeId) {
+        const flowNodeInstancesMap = flowNodeIdToFlowNodeInstanceMap.get(
+          flowNodeId
+        );
+
+        treeRowIds = options.selectMultiInstanceChildrenOnly
+          ? getMultiInstanceChildren(flowNodeInstancesMap)
+          : getMultiInstanceBodies(flowNodeInstancesMap);
+      }
+
+      flowNodeInstance.setCurrentSelection({flowNodeId, treeRowIds});
+    };
+
     renderContent() {
       const {
         incidents,
         onInstanceOperation,
         diagramDefinitions,
-        activityIdToActivityInstanceMap,
         nodeMetaDataMap,
         ...props
       } = this.props;
 
-      const {selection} = flowNodeInstance.state;
+      const {
+        selection,
+        flowNodeIdToFlowNodeInstanceMap,
+      } = flowNodeInstance.state;
       const {instance} = currentInstance.state;
+
       return (
         <>
           {instance.state === 'INCIDENT' && nodeMetaDataMap && (
@@ -107,11 +137,11 @@ const TopPanel = observer(
               )}
             />
           )}
-          {diagramDefinitions && activityIdToActivityInstanceMap && (
+          {diagramDefinitions && (
             <Diagram
               expandState={props.expandState}
-              onFlowNodeSelection={this.props.onFlowNodeSelection}
-              selectableFlowNodes={[...activityIdToActivityInstanceMap.keys()]}
+              onFlowNodeSelection={this.handleFlowNodeSelection}
+              selectableFlowNodes={[...flowNodeIdToFlowNodeInstanceMap.keys()]}
               processedSequenceFlows={props.processedSequenceFlows}
               selectedFlowNodeId={selection.flowNodeId}
               selectedFlowNodeName={getSelectedFlowNodeName(
@@ -119,7 +149,7 @@ const TopPanel = observer(
                 nodeMetaDataMap
               )}
               flowNodeStateOverlays={getFlowNodeStateOverlays(
-                activityIdToActivityInstanceMap
+                flowNodeIdToFlowNodeInstanceMap
               )}
               definitions={diagramDefinitions}
               metadata={
@@ -136,10 +166,8 @@ const TopPanel = observer(
         onInstanceOperation,
         incidents,
         diagramDefinitions,
-        activityIdToActivityInstanceMap,
         nodeMetaDataMap,
         onTreeRowSelection,
-        onFlowNodeSelection,
         getCurrentMetadata,
         ...props
       } = this.props;

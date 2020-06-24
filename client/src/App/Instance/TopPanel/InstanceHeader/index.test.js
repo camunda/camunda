@@ -5,13 +5,18 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import InstanceHeader from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
+import {variables} from 'modules/stores/variables';
 import PropTypes from 'prop-types';
 
 jest.mock('modules/api/instances', () => ({
@@ -23,6 +28,12 @@ jest.mock('modules/api/instances', () => ({
     } else if (instance_id === 'instance_without_active_operations')
       return {...mockInstance, hasActiveOperation: false, operations: []};
   }),
+  applyOperation: jest.fn(),
+  fetchVariables: jest
+    .fn()
+    .mockImplementation(() => [
+      {name: 'key', value: 'value', hasActiveOperation: false},
+    ]),
 }));
 
 let dataManager = createMockDataManager();
@@ -41,6 +52,9 @@ describe('InstanceHeader', () => {
   beforeEach(() => {
     currentInstance.reset();
     jest.clearAllMocks();
+  });
+  afterAll(() => {
+    variables.reset();
   });
 
   it('should show skeleton before instance data is available', async () => {
@@ -122,7 +136,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
 
-  it('should show spinner when variable is edited/created', async () => {
+  it('should show spinner when variables is updated', async () => {
     render(<InstanceHeader.WrappedComponent dataManager={dataManager} />, {
       wrapper: Wrapper,
     });
@@ -131,16 +145,13 @@ describe('InstanceHeader', () => {
       'instance_without_active_operations'
     );
 
-    const {instance} = currentInstance.state;
+    // spinner is not in the document initially
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    const subscriptions = dataManager.subscriptions();
-
-    dataManager.publish({
-      subscription: subscriptions[`OPERATION_APPLIED_VARIABLE_${instance.id}`],
-      state: 'LOADING',
-    });
-
+    variables.addVariable('id', 'key', 'value');
+    // spinner is displayed after save variable operation triggered
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+
+    waitForElementToBeRemoved(screen.queryByTestId('operation-spinner'));
   });
 });

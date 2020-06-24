@@ -17,6 +17,7 @@ import {observer} from 'mobx-react';
 import {currentInstance} from 'modules/stores/currentInstance';
 
 import * as Styled from './styled';
+import {variables} from 'modules/stores/variables';
 
 const InstanceHeader = observer(
   class InstanceHeader extends React.PureComponent {
@@ -65,11 +66,6 @@ const InstanceHeader = observer(
             this.setState({hasActiveOperation: true});
           }
         },
-        [`OPERATION_APPLIED_VARIABLE_${instance.id}`]: ({state}) => {
-          if (state === LOADING_STATE.LOADING) {
-            this.setState({hasActiveOperation: true});
-          }
-        },
         [`OPERATION_APPLIED_INSTANCE_${instance.id}`]: ({state}) => {
           if (state === LOADING_STATE.LOADING) {
             this.setState({hasActiveOperation: true});
@@ -77,11 +73,8 @@ const InstanceHeader = observer(
         },
         CONSTANT_REFRESH: ({response, state}) => {
           if (state === LOADING_STATE.LOADED) {
-            const {LOAD_VARIABLES, LOAD_INSTANCE} = response;
-            if (
-              !LOAD_VARIABLES.find((variable) => variable.hasActiveOperation) &&
-              !LOAD_INSTANCE.hasActiveOperation
-            ) {
+            const {LOAD_INSTANCE} = response;
+            if (!LOAD_INSTANCE.hasActiveOperation) {
               this.setState({hasActiveOperation: false});
             }
           }
@@ -114,7 +107,10 @@ const InstanceHeader = observer(
                     <Styled.OperationsWrapper>
                       <Operations
                         instance={instance}
-                        forceSpinner={this.state.hasActiveOperation}
+                        forceSpinner={
+                          variables.hasActiveOperation ||
+                          this.state.hasActiveOperation
+                        }
                       />
                     </Styled.OperationsWrapper>
                   </Styled.Td>

@@ -5,163 +5,82 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {
-  mockProps,
-  multipleVariableScopes,
-  noVariableScopes,
-} from './index.setup';
-
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
-import {DataManagerProvider} from 'modules/DataManager';
-
-import VariablePanel from './index';
-import {LOADING_STATE} from 'modules/constants';
-import {SUBSCRIPTION_TOPIC} from 'modules/constants';
-
+import {VariablePanel} from './index';
+import {render, screen} from '@testing-library/react';
 import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {variables} from 'modules/stores/variables';
+import {currentInstance} from 'modules/stores/currentInstance';
+import PropTypes from 'prop-types';
+import {MemoryRouter, Route} from 'react-router-dom';
 
-import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
+jest.mock('../Variables', () => {
+  return {
+    __esModule: true,
+    default: () => {
+      return <div>{'Variables'}</div>;
+    },
+  };
+});
 
-jest.mock('modules/utils/bpmn');
+jest.mock('modules/api/instances', () => ({
+  fetchVariables: jest.fn().mockImplementation((param) => {
+    if (param.instanceId === 'invalid_instance')
+      return {error: 'An error occured'};
+    else {
+      return [];
+    }
+  }),
+}));
 
-const mountRenderComponent = (customProps = {}) => {
-  createMockDataManager();
-  return mount(
+const Wrapper = ({children}) => {
+  return (
     <ThemeProvider>
-      <DataManagerProvider>
-        <VariablePanel {...customProps} />
-      </DataManagerProvider>
+      <MemoryRouter initialEntries={['/instances/1']}>
+        <Route path="/instances/:id">{children} </Route>
+      </MemoryRouter>
     </ThemeProvider>
   );
 };
+Wrapper.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};
 
 describe('VariablePanel', () => {
-  let node, root;
   beforeEach(() => {
-    root = mountRenderComponent(mockProps);
-    node = root.find('VariablePanel');
-  });
-
-  it('should subscribe and unsubscribe on un/mount', () => {
-    //given
-    const {
-      props: {dataManager},
-      subscriptions,
-    } = node.instance();
-
-    //then
-    expect(dataManager.subscribe).toHaveBeenCalledWith(subscriptions);
-
-    //when
-    root.unmount();
-    //then
-    expect(dataManager.unsubscribe).toHaveBeenCalledWith(subscriptions);
-  });
-
-  it('should show the Message for selected multi scope cases', () => {
-    //given
-    root = mountRenderComponent(multipleVariableScopes);
-
-    const {
-      props: {dataManager},
-      subscriptions,
-    } = root.find('VariablePanel').instance();
-
-    dataManager.publish({
-      subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-      state: LOADING_STATE.LOADED,
-    });
-
-    root.update();
-
-    const node = root.find('VariablePanel');
-
-    expect(node.find('EmptyPanel')).toExist();
-    expect(node.text()).toContain(MULTI_SCOPE_PLACEHOLDER);
-  });
-
-  it('should show the Message for failed data fetches', () => {
-    //given
-    root = mountRenderComponent(multipleVariableScopes);
-
-    const {
-      props: {dataManager},
-      subscriptions,
-    } = root.find('VariablePanel').instance();
-
-    dataManager.publish({
-      subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-      state: LOADING_STATE.LOAD_FAILED,
-    });
-
-    root.update();
-
-    const node = root.find('VariablePanel');
-
-    expect(node.find('EmptyPanel')).toExist();
-    expect(node.text()).toContain(FAILED_PLACEHOLDER);
-  });
-
-  describe('Placeholder', () => {
-    it('should show skeleton when initially loaded', () => {
-      //given
-      root = mountRenderComponent(mockProps);
-
-      const node = root.find('VariablePanel');
-
-      expect(node.find('Variables').props().Placeholder()).toMatchSnapshot();
-    });
-
-    it('should show the Message when scope doesnt have variable ', () => {
-      //given
-      root = mountRenderComponent(noVariableScopes);
-
-      const {
-        props: {dataManager},
-        subscriptions,
-      } = root.find('VariablePanel').instance();
-
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-        state: LOADING_STATE.LOADED,
-      });
-
-      root.update();
-
-      const node = root.find('VariablePanel');
-
-      expect(node.find('Variables').props().Placeholder()).toMatchSnapshot();
+    currentInstance.setCurrentInstance({
+      id: 'instance_id',
+      state: 'ACTIVE',
     });
   });
+  afterEach(() => {
+    flowNodeInstance.reset();
+    variables.reset();
+  });
 
-  describe('Spinner', () => {
-    it('should render spinner when data is loading', () => {
-      //given
-      root = mountRenderComponent(noVariableScopes);
+  it('should show multiple scope placeholder when multiple nodes are selected', () => {
+    flowNodeInstance.setCurrentSelection({flowNodeId: 1, treeRowIds: [1, 2]});
+    render(<VariablePanel />, {wrapper: Wrapper});
 
-      const {
-        props: {dataManager},
-        subscriptions,
-      } = root.find('VariablePanel').instance();
+    expect(screen.getByText(MULTI_SCOPE_PLACEHOLDER)).toBeInTheDocument();
+  });
 
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-        state: LOADING_STATE.LOADED,
-      });
+  it('should show failed placeholder when variables could not be fetched', async () => {
+    flowNodeInstance.setCurrentSelection({flowNodeId: null, treeRowIds: []});
+    render(<VariablePanel />, {wrapper: Wrapper});
+    await variables.fetchVariables('invalid_instance');
 
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-        state: LOADING_STATE.LOADING,
-      });
+    expect(screen.getByText(FAILED_PLACEHOLDER)).toBeInTheDocument();
+  });
 
-      root.update();
+  it('should render variables', async () => {
+    render(<VariablePanel />, {wrapper: Wrapper});
+    await variables.fetchVariables(1);
 
-      const node = root.find('VariablePanel');
-
-      expect(node.find(SpinnerSkeleton)).toExist();
-      expect(node.find('Variables').props().Overlay()).toMatchSnapshot();
-    });
+    expect(screen.getByText('Variables')).toBeInTheDocument();
   });
 });

@@ -110,97 +110,15 @@ export function isRunningInstance(instance) {
   return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
 }
 
-/**
- * transforms the activities instances tree to
- * @return activityIdToActivityInstanceMap: (activityId -> activityInstance) map
- * @param {*} activitiesInstancesTree
- * @param {*} [activityIdToActivityInstanceMap] optional
- */
-export function getActivityIdToActivityInstancesMap(
-  activitiesInstancesTree,
-  activityIdToActivityInstanceMap = new Map()
-) {
-  const {children} = activitiesInstancesTree;
-
-  return children.reduce(
-    (activityIdToActivityInstanceMap, activityInstance) => {
-      const {id, activityId} = activityInstance;
-
-      // update activityIdToActivityInstanceMap
-      const activityInstancesMap =
-        activityIdToActivityInstanceMap.get(activityId) || new Map();
-
-      activityInstancesMap.set(id, activityInstance);
-
-      activityIdToActivityInstanceMap.set(activityId, activityInstancesMap);
-
-      return !activityInstance.children
-        ? activityIdToActivityInstanceMap
-        : getActivityIdToActivityInstancesMap(
-            activityInstance,
-            activityIdToActivityInstanceMap
-          );
-    },
-    activityIdToActivityInstanceMap
-  );
-}
-
-function hasMultiInstanceActivities(instances) {
-  return instances.some(
-    (instance) => instance.type === TYPE.MULTI_INSTANCE_BODY
-  );
-}
-
 export function getProcessedSequenceFlows(response) {
   return response
     .map((item) => item.activityId)
     .filter((value, index, self) => self.indexOf(value) === index);
 }
 
-function filterMultiInstanceActivities(activityInstancesMap, filterFn) {
-  const activityInstances = [...activityInstancesMap.values()];
-
-  if (hasMultiInstanceActivities(activityInstances)) {
-    return activityInstances.reduce(
-      (ids, instance) => (filterFn(instance) ? [...ids, instance.id] : ids),
-      []
-    );
-  } else {
-    return [...activityInstancesMap.keys()];
-  }
-}
-
-/**
- * @returns {Array} an array containing activity instance ids (excluding multi instance children)
- * @param {Map} activityInstancesMap
- */
-export function getMultiInstanceBodies(activityInstancesMap) {
-  return filterMultiInstanceActivities(
-    activityInstancesMap,
-    (instance) => instance.type === TYPE.MULTI_INSTANCE_BODY
-  );
-}
-
-/**
- * @returns {Array} an array containing activity instance ids (excluding multi instance bodies)
- * @param {Map} activityInstancesMap
- */
-export function getMultiInstanceChildren(activityInstancesMap) {
-  return filterMultiInstanceActivities(
-    activityInstancesMap,
-    (instance) => instance.type !== TYPE.MULTI_INSTANCE_BODY
-  );
-}
-
 export async function fetchIncidents(instance) {
   return instance.state === 'INCIDENT'
     ? await api.fetchWorkflowInstanceIncidents(instance.id)
-    : null;
-}
-
-export async function fetchVariables({id}, {treeRowIds}) {
-  return treeRowIds.length === 1
-    ? await api.fetchVariables({instanceId: id, scopeId: treeRowIds[0]})
     : null;
 }
 

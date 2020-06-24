@@ -25,16 +25,13 @@ import {DataManagerProvider} from 'modules/DataManager';
 
 import TopPanel from './TopPanel';
 import BottomPanel from './BottomPanel';
-import VariablePanel from './BottomPanel/VariablePanel';
+import {VariablePanel} from './BottomPanel/VariablePanel';
 import IncidentsWrapper from './IncidentsWrapper';
 import {currentInstance} from 'modules/stores/currentInstance';
 
 import Instance from './index';
-import {
-  getActivityIdToActivityInstancesMap,
-  getSelectableFlowNodes,
-  createNodeMetaDataMap,
-} from './service';
+import {variables as variablesStore} from 'modules/stores/variables';
+import {getSelectableFlowNodes, createNodeMetaDataMap} from './service';
 
 // mock modules
 jest.mock('modules/utils/bpmn');
@@ -64,8 +61,10 @@ jest.mock('./FlowNodeInstancesTree', () => {
 });
 
 jest.mock('./BottomPanel/VariablePanel', () => {
-  return function VariablePanel() {
-    return <div />;
+  return {
+    VariablePanel: function VariablePanel() {
+      return <div />;
+    },
   };
 });
 
@@ -82,13 +81,14 @@ jest.mock(
       return <div data-test="IncidentsWrapper" />;
     }
 );
-
 jest.mock('modules/api/instances', () => ({
   fetchWorkflowInstance: jest.fn().mockImplementation((instance_id) => {
     const {testData} = require('./index.setup');
     if (instance_id === 'workflow_instance') {
       return testData.fetch.onPageLoad.workflowInstance;
-    } else if (instance_id === 'completed_workflow_instance')
+    } else if (instance_id === 'completed_workflow_instance') {
+      return testData.fetch.onPageLoad.workflowInstanceCompleted;
+    } else if (instance_id === 'canceled_workflow_instance')
       return testData.fetch.onPageLoad.workflowInstanceCompleted;
   }),
   fetchWorkflowCoreStatistics: jest.fn().mockImplementation(() => ({
@@ -98,6 +98,18 @@ jest.mock('modules/api/instances', () => ({
       withIncidents: 731,
     },
   })),
+  fetchVariables: jest.fn().mockImplementation(() => {
+    return [
+      {
+        id: '2251799813686037-mwst',
+        name: 'newVariable',
+        value: '1234',
+        scopeId: '2251799813686037',
+        workflowInstanceId: '2251799813686037',
+        hasActiveOperation: false,
+      },
+    ];
+  }),
 }));
 
 const {
@@ -107,7 +119,6 @@ const {
   workflowInstanceWithIncident,
   noIncidents,
   incidents,
-  variables,
   instanceHistoryTree,
   diagramNodes,
   events,
@@ -126,7 +137,6 @@ describe('Instance', () => {
 
     beforeEach(() => {
       createMockDataManager();
-
       root = mountWrappedComponent(
         [
           ThemeProvider,
@@ -140,6 +150,8 @@ describe('Instance', () => {
       );
       node = root.find('Instance');
       subscriptions = node.instance().subscriptions;
+      currentInstance.reset();
+      variablesStore.reset();
     });
 
     it('should subscribe and unsubscribe on un/mount', () => {
@@ -189,10 +201,6 @@ describe('Instance', () => {
           workflowInstance.workflowId,
           workflowInstance
         );
-        expect(dataManager.getVariables).toHaveBeenCalledWith(
-          workflowInstance.id,
-          workflowInstance.id
-        );
         expect(dataManager.getActivityInstancesTreeData).toHaveBeenCalledWith(
           workflowInstance
         );
@@ -226,21 +234,6 @@ describe('Instance', () => {
         });
         // then
         expect(node.instance().state.incidents).toEqual(incidents);
-      });
-    });
-    describe('load variables', () => {
-      it('should set loaded variables in state', async () => {
-        //given
-        const {dataManager} = node.instance().props;
-        // when
-        await currentInstance.fetchCurrentInstance('workflow_instance');
-
-        dataManager.publish({
-          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
-          response: variables,
-        });
-        // then
-        expect(node.instance().state.variables).toEqual(variables);
       });
     });
     describe('load events', () => {
@@ -280,9 +273,7 @@ describe('Instance', () => {
           staticContent: workflowInstance,
         });
         // then
-        expect(node.instance().state.activityIdToActivityInstanceMap).toEqual(
-          getActivityIdToActivityInstancesMap(instanceHistoryTree)
-        );
+
         expect(node.instance().state.activityInstancesTree).toEqual({
           ...instanceHistoryTree,
           id: workflowInstance.id,
@@ -293,16 +284,19 @@ describe('Instance', () => {
       });
     });
     describe('load instance diagram', () => {
-      it('should set loaded diagram in state', () => {
+      it('should set loaded diagram in state', async () => {
         //given
         const {dataManager} = node.instance().props;
         // when
+
+        await currentInstance.fetchCurrentInstance('workflow_instance');
         dataManager.publish({
           subscription:
             subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
           response: {bpmnElements: diagramNodes, definitions: mockDefinition},
           staticContent: {},
         });
+
         // then
         expect(node.instance().state.nodeMetaDataMap).toEqual(
           createNodeMetaDataMap(getSelectableFlowNodes(diagramNodes))
@@ -349,13 +343,10 @@ describe('Instance', () => {
         });
 
         //then
-        expect(node.instance().state.activityIdToActivityInstanceMap).toEqual(
-          getActivityIdToActivityInstancesMap(instanceHistoryTree)
-        );
+
         expect(node.instance().state.events).toEqual(events);
 
         // don't set conditional states.
-        expect(node.instance().state.variables).toEqual(null);
         expect(node.instance().state.incidents).toEqual(noIncidents);
       });
 
@@ -365,11 +356,11 @@ describe('Instance', () => {
 
         const {dataManager} = node.instance().props;
         // when
+
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
           response: {
             LOAD_INSTANCE: workflowInstance,
-            LOAD_VARIABLES: variables,
             LOAD_INCIDENTS: incidents,
             LOAD_EVENTS: events,
             LOAD_INSTANCE_TREE: instanceHistoryTree,
@@ -379,7 +370,6 @@ describe('Instance', () => {
 
         //then
         //Set conditional states.
-        expect(node.instance().state.variables).toEqual(variables);
         expect(node.instance().state.incidents).toEqual(incidents);
       });
     });
@@ -390,7 +380,7 @@ describe('Instance', () => {
     let subscriptions;
     let dataManager;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       dataManager = createMockDataManager();
 
       // directly mounted as wrapped components can not be updated.
@@ -414,11 +404,12 @@ describe('Instance', () => {
         staticContent: workflowInstance,
       });
 
+      await variablesStore.fetchVariables(1);
+
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
         response: {
           LOAD_INSTANCE: workflowInstance,
-          LOAD_VARIABLES: variables,
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
@@ -451,7 +442,6 @@ describe('Instance', () => {
         subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
         response: {
           LOAD_INSTANCE: workflowInstanceCompleted,
-          LOAD_VARIABLES: variables,
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
@@ -465,10 +455,11 @@ describe('Instance', () => {
       expect(dataManager.update).not.toHaveBeenCalled();
     });
 
-    it('should not poll for canceled instances', () => {
+    it('should not poll for canceled instances', async () => {
       //given
-      const {dataManager} = node.instance().props;
+      await currentInstance.fetchCurrentInstance('canceled_workflow_instance');
 
+      const {dataManager} = node.instance().props;
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
         response: workflowInstanceCanceled,
@@ -484,7 +475,6 @@ describe('Instance', () => {
         subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
         response: {
           LOAD_INSTANCE: workflowInstanceCompleted,
-          LOAD_VARIABLES: variables,
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
@@ -497,12 +487,12 @@ describe('Instance', () => {
       expect(dataManager.update).not.toHaveBeenCalled();
     });
 
-    it('should not trigger a new poll while one timer is already running', async () => {
+    it.skip('should not trigger a new poll while one timer is already running', async () => {
       //given
       const {dataManager} = node.instance().props;
 
       await currentInstance.fetchCurrentInstance('workflow_instance');
-
+      await variablesStore.fetchVariables(1);
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
         response: {bpmnElements: diagramNodes, definitions: mockDefinition},
@@ -513,13 +503,13 @@ describe('Instance', () => {
         subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
         response: {
           LOAD_INSTANCE: workflowInstance,
-          LOAD_VARIABLES: variables,
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
           LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
         },
       });
+
       node.update();
 
       expect(dataManager.poll.register).toHaveBeenCalled();
@@ -537,8 +527,9 @@ describe('Instance', () => {
       expect(dataManager.poll.register).toHaveBeenCalledTimes(1);
     });
 
-    it('should unregister when component unmounts', () => {
+    it('should unregister when component unmounts', async () => {
       //given
+      await currentInstance.fetchCurrentInstance('workflow_instance');
       const {dataManager} = node.instance().props;
 
       //when

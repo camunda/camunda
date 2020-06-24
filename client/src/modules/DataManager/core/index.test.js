@@ -211,23 +211,6 @@ describe('DataManager', () => {
       });
     });
 
-    describe('fetch variables', () => {
-      it('should fetch and publish', () => {
-        dataManager.getVariables(mockWorkflowInstance.id, mockScopeId);
-
-        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_VARIABLES
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
-          instancesApi.fetchVariables
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual({
-          instanceId: mockWorkflowInstance.id,
-          scopeId: mockScopeId,
-        });
-      });
-    });
-
     describe('fetch sequence flows', () => {
       it('should fetch and publish', () => {
         dataManager.getSequenceFlows(mockWorkflowInstance.id);

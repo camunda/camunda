@@ -6,11 +6,7 @@
 
 import {STATE} from 'modules/constants';
 
-import {
-  getActivityIdToActivityInstancesMap,
-  getSelectableFlowNodes,
-  createNodeMetaDataMap,
-} from '../service';
+import {getSelectableFlowNodes, createNodeMetaDataMap} from '../service';
 
 import {
   createRawTreeNode,
@@ -39,7 +35,7 @@ const createDiagramNodes = () => {
   };
 };
 
-const createRawTree = () => {
+export const createRawTree = () => {
   return {
     children: [
       createRawTreeNode({
@@ -89,9 +85,6 @@ const mockIncidents = () => {
 export const mockProps = {
   incidents: mockIncidents(),
   diagramDefinitions: createDefinitions(),
-  activityIdToActivityInstanceMap: getActivityIdToActivityInstancesMap(
-    createRawTree()
-  ),
   nodeMetaDataMap: createNodeMetaDataMap(
     getSelectableFlowNodes(createDiagramNodes())
   ),
@@ -100,7 +93,6 @@ export const mockProps = {
     flowNodeId: null,
   },
   getCurrentMetadata: jest.fn(),
-  onFlowNodeSelection: jest.fn(),
   onInstanceOperation: jest.fn(),
   onTreeRowSelection: jest.fn(),
 };

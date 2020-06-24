@@ -7,7 +7,7 @@
 import React from 'react';
 import * as Styled from './styled';
 
-export function VariableRow() {
+function VariableRow() {
   return (
     <Styled.Row>
       <Styled.VariableBlock />
@@ -16,6 +16,12 @@ export function VariableRow() {
   );
 }
 
-export default React.memo(function Skeleton(props) {
-  return <Styled.MultiRow Component={VariableRow} {...props} />;
+const Rows = React.memo(function Skeleton(props) {
+  return (
+    <div data-test="skeleton-rows">
+      <Styled.MultiRow Component={VariableRow} {...props} />
+    </div>
+  );
 });
+
+export {Rows};

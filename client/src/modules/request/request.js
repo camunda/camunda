@@ -31,11 +31,7 @@ export async function request({url, method, body, query, headers}) {
     await responseInterceptor(response);
   }
 
-  if (response.status >= 200 && response.status < 300) {
-    return response;
-  } else {
-    throw response;
-  }
+  return response;
 }
 
 export function stringifyQuery(query) {

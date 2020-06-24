@@ -8,9 +8,15 @@ import {post} from 'modules/request';
 
 export const login = async ({username, password}) => {
   const body = `username=${username}&password=${password}`;
-  await post('/api/login', body, {
+  const response = await post('/api/login', body, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
   });
+
+  if (response && response.status >= 200 && response.status < 300) {
+    return response;
+  } else {
+    throw response;
+  }
 };

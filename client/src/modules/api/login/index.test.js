@@ -8,7 +8,11 @@ import {post} from 'modules/request';
 
 import {login} from './index';
 
-jest.mock('modules/request');
+jest.mock('modules/request', () => ({
+  post: jest.fn().mockImplementation(() => ({
+    status: 200,
+  })),
+}));
 
 describe('login api', () => {
   beforeEach(() => {

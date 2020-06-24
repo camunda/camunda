@@ -5,376 +5,420 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {createVariables, setProps} from 'modules/testUtils';
+import {MemoryRouter, Route} from 'react-router-dom';
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
+import {variables} from 'modules/stores/variables';
 import {currentInstance} from 'modules/stores/currentInstance';
-
 import Variables from './index';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {mockVariables, mockProps} from './Variables.setup';
 
-const MODE = {
-  EDIT: 'edit',
-  ADD: 'add',
-};
-
-const mockProps = {
-  variables: createVariables(),
-  editMode: '',
-  onVariableUpdate: jest.fn(),
-  isEditable: true,
-  setVariables: jest.fn(),
-  setEditMode: jest.fn(),
-};
+const EMPTY_PLACEHOLDER = 'The Flow Node has no variables.';
 
 jest.mock('modules/api/instances', () => ({
   fetchWorkflowInstance: jest.fn().mockImplementation((instanceId) => {
-    if (instanceId === 'active_instance') return {state: 'ACTIVE'};
-    else if (instanceId === 'canceled_instance') return {state: 'CANCELED'};
+    if (instanceId === 'active_instance') return {id: 1, state: 'ACTIVE'};
+    else if (instanceId === 'canceled_instance')
+      return {id: 2, state: 'CANCELED'};
+  }),
+  fetchVariables: jest.fn().mockImplementation((param) => {
+    if (param.instanceId === 'invalid_instance')
+      return {error: 'An error occured'};
+    else if (param.instanceId === 'no_variable_instance') {
+      return [];
+    } else if (param.instanceId === 'with-newly-added-variable') {
+      return [
+        ...mockVariables,
+        {
+          id: '2251799813686037-mwst',
+          name: 'newVariable',
+          value: '1234',
+          scopeId: '2251799813686037',
+          workflowInstanceId: '2251799813686037',
+          hasActiveOperation: false,
+        },
+      ];
+    } else {
+      return mockVariables;
+    }
+  }),
+  applyOperation: jest.fn().mockImplementation(() => {
+    return null;
   }),
 }));
 
-function mountNode(props = {}) {
-  return mount(
-    <ThemeProvider>
-      <Variables {...mockProps} {...props} />
-    </ThemeProvider>
+function renderVariables(instanceId) {
+  return render(
+    <MemoryRouter initialEntries={[`/instances/${instanceId}`]}>
+      <Route path="/instances/:id">
+        <Variables {...mockProps} />
+      </Route>
+    </MemoryRouter>
   );
 }
 
 describe('Variables', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should render variables table', async () => {
-    // given
+  beforeEach(async () => {
     await currentInstance.fetchCurrentInstance('active_instance');
-    const node = mountNode();
+    variables.reset();
+    variables.init();
+  });
 
-    // then
-    expect(node.find('tr')).toHaveLength(mockProps.variables.length + 1);
-    mockProps.variables.forEach((variable) => {
-      const row = node.find(`tr[data-test="${variable.name}"]`);
-      expect(row).toHaveLength(1);
-      const columns = row.find('td');
-      expect(columns).toHaveLength(3);
-      expect(columns.at(0).text()).toContain(variable.name);
-      expect(columns.at(1).text()).toContain(variable.value);
+  describe('Skeleton', () => {
+    it('should display empty content if there are no variables', async () => {
+      renderVariables('no_variable_instance');
+
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+      expect(screen.getByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();
+    });
+
+    it('should display skeleton on initial load', async () => {
+      renderVariables();
+
+      expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+    });
+
+    it('should display spinner on second variable fetch', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      const variableList = variables.fetchVariables(1);
+
+      expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
+      await variableList;
+      expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
     });
   });
 
-  describe('Disable "Add Variable" button', () => {
-    it('should disable when no editable variable', () => {
-      // when
-      const node = mountNode({isEditable: false});
+  describe('Variables', () => {
+    it('should render variables table', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      // then
-      const addButton = node.find("button[data-test='enter-add-btn']");
-      expect(addButton.prop('disabled')).toBe(true);
+      expect(screen.getByText('Variable')).toBeInTheDocument();
+      expect(screen.getByText('Value')).toBeInTheDocument();
+      const {items} = variables.state;
+      items.forEach((item) => {
+        const withinVariableRow = within(screen.getByTestId(item.name));
+        expect(withinVariableRow.getByText(item.name)).toBeInTheDocument();
+        expect(withinVariableRow.getByText(item.value)).toBeInTheDocument();
+      });
     });
 
-    it('should disable when editing variable', () => {
-      // given
-      const node = mountNode({isEditable: true, editMode: MODE.EDIT});
+    it('should show/hide spinner next to variable according to it having an active operation', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      // then
-      const addButton = node.find("button[data-test='enter-add-btn']");
-      expect(addButton.prop('disabled')).toBe(true);
-    });
+      const {items} = variables.state;
 
-    it('should disable when adding variable', () => {
-      // given
-      const node = mountNode({isEditable: true, editMode: MODE.ADD});
+      const [activeOperationVariable] = items.filter(
+        (item) => item.hasActiveOperation
+      );
 
-      // then
-      const updatedAddButton = node.find("button[data-test='enter-add-btn']");
-      expect(updatedAddButton.prop('disabled')).toBe(true);
+      expect(
+        within(screen.getByTestId(activeOperationVariable.name)).getByTestId(
+          'edit-variable-spinner'
+        )
+      ).toBeInTheDocument();
+
+      const [inactiveOperationVariable] = items.filter(
+        (item) => !item.hasActiveOperation
+      );
+
+      expect(
+        within(
+          screen.getByTestId(inactiveOperationVariable.name)
+        ).queryByTestId('edit-variable-spinner')
+      ).not.toBeInTheDocument();
     });
   });
 
   describe('Add variable', () => {
-    it('should show add variable inputs', () => {
-      const node = mountNode({editMode: MODE.ADD});
+    it('should show/hide add variable inputs', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      // then
-      expect(node.find('input[data-test="add-key"]')).toHaveLength(1);
-      expect(node.find('textarea[data-test="add-value"]')).toHaveLength(1);
+      expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('add-variable-button'));
+      expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('exit-edit-inline-btn'));
+      expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
     });
 
-    it('should expose that a variable is being added by the user', () => {
-      // given
-      const node = mountNode({variables: null});
+    it('should validate when adding variable', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      const newVariable = 'newVariable';
-      const newValue = '1234';
+      fireEvent.click(screen.getByTestId('add-variable-button'));
 
-      const addButton = node.find("button[data-test='enter-add-btn']");
-
-      // when
-      addButton.simulate('click');
-      expect(mockProps.setEditMode.mock.calls[0][0]).toBe(MODE.ADD);
-
-      setProps(node, Variables, {
-        ...mockProps,
-        editMode: MODE.ADD,
+      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
+      fireEvent.change(screen.getByTestId('add-key'), {
+        target: {value: 'test'},
       });
-      node.update();
+      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
+      fireEvent.change(screen.getByTestId('add-value'), {
+        target: {value: 'test'},
+      });
+      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
+      fireEvent.change(screen.getByTestId('add-value'), {
+        target: {value: '"test"'},
+      });
+      expect(screen.getByTestId('save-var-inline-btn')).toBeEnabled();
+      fireEvent.change(screen.getByTestId('add-value'), {
+        target: {value: '123'},
+      });
+      expect(screen.getByTestId('save-var-inline-btn')).toBeEnabled();
 
-      node
-        .find("input[data-test='add-key']")
-        .simulate('change', {target: {value: newVariable}});
-      node
-        .find("textarea[data-test='add-value']")
-        .simulate('change', {target: {value: newValue}});
+      fireEvent.change(screen.getByTestId('add-value'), {
+        target: {value: '{}'},
+      });
+      expect(screen.getByTestId('save-var-inline-btn')).toBeEnabled();
 
-      // then
-      node.find("button[data-test='save-var-inline-btn']").simulate('click');
-      expect(mockProps.setEditMode.mock.calls[1][0]).toBe('');
+      fireEvent.change(screen.getByTestId('add-key'), {
+        target: {value: '"test"'},
+      });
+      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
+
+      fireEvent.change(screen.getByTestId('add-key'), {
+        target: {value: 'test'},
+      });
+      expect(screen.getByTestId('save-var-inline-btn')).toBeEnabled();
+
+      const invalidJSONObject = "{invalidKey: 'value'}";
+
+      fireEvent.change(screen.getByTestId('add-value'), {
+        target: {value: invalidJSONObject},
+      });
+      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
+
+      // already existing variable
+      fireEvent.change(screen.getByTestId('add-key'), {
+        target: {value: variables.state.items[0].name},
+      });
+
+      fireEvent.change(screen.getByTestId('add-value'), {
+        target: {value: variables.state.items[0].value},
+      });
+
+      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
     });
 
-    it('should expose the new key-value pair', () => {
-      const node = mountNode();
+    it('should save new variable', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      const newVariable = 'newVariable';
-      const newValue = '1234';
+      fireEvent.click(screen.getByTestId('add-variable-button'));
 
-      setProps(node, Variables, {
-        ...mockProps,
-        editMode: MODE.ADD,
+      const newVariableName = 'newVariable';
+      const newVariableValue = '1234';
+
+      fireEvent.change(screen.getByTestId('add-key'), {
+        target: {value: newVariableName},
+      });
+      fireEvent.change(screen.getByTestId('add-value'), {
+        target: {value: newVariableValue},
       });
 
-      node
-        .find("input[data-test='add-key']")
-        .simulate('change', {target: {value: newVariable}});
-      node
-        .find("textarea[data-test='add-value']")
-        .simulate('change', {target: {value: newValue}});
+      fireEvent.click(screen.getByTestId('save-var-inline-btn'));
 
-      node.find("button[data-test='save-var-inline-btn']").simulate('click');
+      expect(
+        within(screen.getByTestId(newVariableName)).getByTestId(
+          'edit-variable-spinner'
+        )
+      ).toBeInTheDocument();
 
-      expect(mockProps.onVariableUpdate).toHaveBeenCalledWith(
-        newVariable,
-        newValue
-      );
-    });
-
-    describe('disable save button', () => {
-      let node;
-
-      beforeEach(() => {
-        node = mountNode({editMode: MODE.ADD});
-      });
-
-      it('should not allow to save empty values', () => {
-        // then
-        expect(
-          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
-        ).toBe(true);
-      });
-
-      it('should not allow to save invalid values', () => {
-        const variable = 'variableName';
-        // key must be a string to be valid JSON;
-        const invalidJSONObject = "{invalidKey: 'value'}";
-
-        // when
-        node
-          .find("input[data-test='add-key']")
-          .simulate('change', {target: {value: variable}});
-        node
-          .find("textarea[data-test='add-value']")
-          .simulate('change', {target: {value: invalidJSONObject}});
-
-        // then
-        expect(
-          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
-        ).toBe(true);
-      });
-
-      it('should not allow to save variables which key already exists', () => {
-        const alreadyExistingVariable = 'clientNo';
-        const newValue = '1234';
-
-        // when
-        node
-          .find("input[data-test='add-key']")
-          .simulate('change', {target: {value: alreadyExistingVariable}});
-        node
-          .find("textarea[data-test='add-value']")
-          .simulate('change', {target: {value: newValue}});
-
-        // then
-        expect(
-          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
-        ).toBe(true);
-      });
-
-      it('should not allow to save variables which key has invalid characters', () => {
-        const keyWithInvalidCharacter = '"test"';
-        const newValue = '1234';
-
-        // when
-        node
-          .find("input[data-test='add-key']")
-          .simulate('change', {target: {value: keyWithInvalidCharacter}});
-        node
-          .find("textarea[data-test='add-value']")
-          .simulate('change', {target: {value: newValue}});
-
-        // then
-        expect(
-          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
-        ).toBe(true);
-      });
+      await variables.fetchVariables('with-newly-added-variable');
+      expect(
+        within(screen.getByTestId(newVariableName)).queryByTestId(
+          'edit-variable-spinner'
+        )
+      ).not.toBeInTheDocument();
     });
   });
 
   describe('Edit variable', () => {
-    let node;
+    it('should show/hide edit button next to variable according to it having an active operation', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    beforeEach(async () => {
-      await currentInstance.fetchCurrentInstance('active_instance');
-      node = mountNode();
+      const activeOperationVariable = variables.state.items.filter(
+        (x) => x.hasActiveOperation
+      )[0];
+
+      expect(
+        within(screen.getByTestId(activeOperationVariable.name)).queryByTestId(
+          'edit-variable-button'
+        )
+      ).not.toBeInTheDocument();
+
+      const inactiveOperationVariable = variables.state.items.filter(
+        (x) => !x.hasActiveOperation
+      )[0];
+
+      expect(
+        within(screen.getByTestId(inactiveOperationVariable.name)).getByTestId(
+          'edit-variable-button'
+        )
+      ).toBeInTheDocument();
     });
 
-    it('should show edit in-line buttons for running instances', () => {
-      let openInlineEditButtons = node.find(
-        "button[data-test='enter-edit-btn']"
-      );
-      expect(openInlineEditButtons).toHaveLength(3);
-    });
+    it('should not display edit button next to variables if instance is completed or canceled', async () => {
+      renderVariables(1);
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    it('should NOT show edit in-line buttons for finished instances', async () => {
+      const activeOperationVariable = variables.state.items.filter(
+        (x) => !x.hasActiveOperation
+      )[0];
+
+      expect(
+        within(screen.getByTestId(activeOperationVariable.name)).getByTestId(
+          'edit-variable-button'
+        )
+      ).toBeInTheDocument();
+
       await currentInstance.fetchCurrentInstance('canceled_instance');
-      node = mountNode();
-
-      let openInlineEditButtons = node.find(
-        "button[data-test='enter-edit-btn']"
-      );
-      expect(openInlineEditButtons).toHaveLength(0);
+      expect(
+        within(screen.getByTestId(activeOperationVariable.name)).queryByTestId(
+          'edit-variable-button'
+        )
+      ).not.toBeInTheDocument();
     });
 
-    it('should show inline edit functionality', () => {
-      // given
-      const openInlineEditButtons = node.find(
-        "button[data-test='enter-edit-btn']"
+    it('should show/hide edit variable inputs', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.queryByTestId('edit-value')).not.toBeInTheDocument();
+
+      const withinFirstVariable = within(
+        screen.getByTestId(variables.state.items[0].name)
       );
-      // when
-      openInlineEditButtons.first().simulate('click');
+      expect(
+        withinFirstVariable.queryByTestId('edit-value')
+      ).not.toBeInTheDocument();
+      expect(
+        withinFirstVariable.queryByTestId('exit-edit-inline-btn')
+      ).not.toBeInTheDocument();
+      expect(
+        withinFirstVariable.queryByTestId('save-var-inline-btn')
+      ).not.toBeInTheDocument();
 
-      setProps(node, Variables, {
-        ...mockProps,
-        editMode: MODE.EDIT,
-      });
+      fireEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
-      // then
-      expect(node.find("textarea[data-test='edit-value']")).toExist();
-
-      expect(node.find("button[data-test='exit-edit-inline-btn']")).toExist();
-      expect(node.find("button[data-test='save-var-inline-btn']")).toExist();
+      expect(withinFirstVariable.getByTestId('edit-value')).toBeInTheDocument();
+      expect(
+        withinFirstVariable.getByTestId('exit-edit-inline-btn')
+      ).toBeInTheDocument();
+      expect(
+        withinFirstVariable.getByTestId('save-var-inline-btn')
+      ).toBeInTheDocument();
     });
 
-    it('should expose that a variable is being edited by the user', () => {
-      // given
-      const openInlineEditButtons = node.find(
-        "button[data-test='enter-edit-btn']"
+    it('should disable save button when nothing is changed', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.queryByTestId('edit-value')).not.toBeInTheDocument();
+
+      const withinFirstVariable = within(
+        screen.getByTestId(variables.state.items[0].name)
       );
-      const newJsonValue = '{"key": "MyValue"}';
 
-      // when
-      // edit mode is true
-      openInlineEditButtons.first().simulate('click');
-      expect(mockProps.setEditMode).toHaveBeenNthCalledWith(1, MODE.EDIT);
+      fireEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
-      setProps(node, Variables, {
-        ...mockProps,
-        editMode: MODE.EDIT,
-      });
-      node.update();
-
-      node
-        .find("textarea[data-test='edit-value']")
-        .simulate('change', {target: {value: newJsonValue}});
-
-      // then
-      // edit mode is false
-      node.find("button[data-test='save-var-inline-btn']").simulate('click');
-      expect(mockProps.setEditMode).toHaveBeenNthCalledWith(2, '');
+      expect(
+        withinFirstVariable.getByTestId('save-var-inline-btn')
+      ).toBeDisabled();
     });
 
-    describe('disable save button', () => {
-      beforeEach(() => {
-        const openInlineEditButtons = node.find(
-          "button[data-test='enter-edit-btn']"
-        );
-        //given
-        openInlineEditButtons.first().simulate('click');
+    it('should validate when editing variables', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.queryByTestId('edit-value')).not.toBeInTheDocument();
+
+      const withinFirstVariable = within(
+        screen.getByTestId(variables.state.items[0].name)
+      );
+
+      fireEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
+
+      const emptyValue = '';
+
+      fireEvent.change(screen.getByTestId('edit-value'), {
+        target: {value: emptyValue},
       });
 
-      it('should not allow to save empty values', () => {
-        // given
-        const emptyValue = '';
+      expect(
+        withinFirstVariable.getByTestId('save-var-inline-btn')
+      ).toBeDisabled();
 
-        setProps(node, Variables, {
-          ...mockProps,
-          editMode: MODE.EDIT,
-        });
-        node.update();
+      const invalidJSONObject = "{invalidKey: 'value'}";
 
-        node
-          .find("textarea[data-test='edit-value']")
-          .simulate('change', {target: {value: emptyValue}});
-
-        // then
-        node.find("button[data-test='save-var-inline-btn']").simulate('click');
-
-        expect(
-          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
-        ).toBe(true);
+      fireEvent.change(screen.getByTestId('edit-value'), {
+        target: {value: invalidJSONObject},
       });
 
-      it('should not allow to save invalid values', () => {
-        // given
-        // key must be a string to be valid JSON;
-        const invalidJSONObject = "{invalidKey: 'value'}";
+      expect(
+        withinFirstVariable.getByTestId('save-var-inline-btn')
+      ).toBeDisabled();
+    });
+  });
 
-        setProps(node, Variables, {
-          ...mockProps,
-          editMode: MODE.EDIT,
-        });
-        node.update();
+  describe('Footer', () => {
+    beforeAll(async () => {
+      flowNodeInstance.setCurrentSelection({flowNodeId: null, treeRowIds: []});
+    });
+    it('should disable add variable button when loading', async () => {
+      renderVariables();
 
-        // when
-        node
-          .find("textarea[data-test='edit-value']")
-          .simulate('change', {target: {value: invalidJSONObject}});
+      expect(screen.getByText('Add Variable')).toBeDisabled();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+      expect(screen.getByText('Add Variable')).toBeEnabled();
+    });
 
-        // then
-        expect(
-          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
-        ).toBe(true);
+    it('should disable add variable button if instance state is cancelled', async () => {
+      currentInstance.setCurrentInstance({
+        id: 'instance_id',
+        state: 'CANCELED',
       });
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      it('should not allow to save an unmodified value', () => {
-        const unmodifiedValue = mockProps.variables[0].value;
+      expect(screen.getByText('Add Variable')).toBeDisabled();
+    });
 
-        setProps(node, Variables, {
-          ...mockProps,
-          editMode: MODE.EDIT,
-        });
-        node.update();
+    it('should disable add variable button if add/edit variable button is clicked', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-        // when
-        node
-          .find("textarea[data-test='edit-value']")
-          .simulate('change', {target: {value: unmodifiedValue}});
+      fireEvent.click(screen.getByTestId('add-variable-button'));
+      expect(screen.getByText('Add Variable')).toBeDisabled();
 
-        // then
-        expect(
-          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
-        ).toBe(true);
-      });
+      fireEvent.click(screen.getByTestId('exit-edit-inline-btn'));
+      expect(screen.getByText('Add Variable')).toBeEnabled();
+
+      fireEvent.click(screen.getAllByTestId('edit-variable-button')[0]);
+      expect(screen.getByText('Add Variable')).toBeDisabled();
+
+      fireEvent.click(screen.getByTestId('exit-edit-inline-btn'));
+      expect(screen.getByText('Add Variable')).toBeEnabled();
+    });
+
+    it('should disable add variable button when clicked', async () => {
+      renderVariables();
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.getByText('Add Variable')).toBeEnabled();
+      fireEvent.click(screen.getByText('Add Variable'));
+      expect(screen.getByText('Add Variable')).toBeDisabled();
     });
   });
 });

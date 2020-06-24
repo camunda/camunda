@@ -11,7 +11,6 @@ import {
   fetchWorkflowInstances,
   fetchWorkflowInstanceIncidents,
   fetchSequenceFlows,
-  fetchVariables,
   applyBatchOperation,
   applyOperation,
 } from 'modules/api/instances';
@@ -89,13 +88,6 @@ export class DataManager {
       () => apiCall(cachedParams),
       staticContent
     );
-  };
-
-  getVariables = (instanceId, scopeId) => {
-    this.fetchAndPublish(SUBSCRIPTION_TOPIC.LOAD_VARIABLES, fetchVariables, {
-      instanceId,
-      scopeId,
-    });
   };
 
   getActivityInstancesTreeData = (instance) => {

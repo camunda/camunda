@@ -9,17 +9,19 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Panel from 'modules/components/Panel';
 import Operations from 'modules/components/Operations';
-import DefaultButton from 'modules/components/Button';
 import IconButton from 'modules/components/IconButton';
 import BasicInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
 import Modal from 'modules/components/Modal';
 
 import {ReactComponent as DefaultEdit} from 'modules/components/Icon/edit.svg';
-import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 import {ReactComponent as DefaultClose} from 'modules/components/Icon/close.svg';
 import {ReactComponent as DefaultCheck} from 'modules/components/Icon/check.svg';
 import {ReactComponent as DefaultModal} from 'modules/components/Icon/modal.svg';
+import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
+
+import EmptyPanelComponent from 'modules/components/EmptyPanel';
+import DefaultButton from 'modules/components/Button';
 
 export const Spinner = styled(Operations.Spinner)`
   margin-top: 4px;
@@ -66,21 +68,6 @@ export const Placeholder = themed(styled.span`
   padding: 0 20px;
 `);
 
-export const Table = themed(styled.table`
-  width: 100%;
-  margin-bottom: 3px;
-  border-spacing: 0;
-  border-collapse: collapse;
-`);
-
-export const TH = themed(styled.th`
-  font-style: italic;
-  font-weight: normal;
-  text-align: left;
-  padding-left: 17px;
-  height: 31px;
-`);
-
 export const TD = themed(styled.td`
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
@@ -97,55 +84,6 @@ export const TD = themed(styled.td`
     white-space: nowrap;
   }
   vertical-align: top;
-`);
-
-export const SkeletonTD = styled.td`
-  height: 100%;
-  padding-top: 44px;
-`;
-
-export const SkeletonTR = styled.tr``;
-
-export const SkeletonTable = styled(Table)`
-  height: 100%;
-`;
-
-const rowWithActiveOperationStyle = css`
-  background-color: ${themeStyle({
-    dark: 'rgba(91, 94, 99, 0.4)',
-    light: '#e7e9ed',
-  })};
-
-  opacity: ${themeStyle({
-    dark: '0.7',
-  })};
-`;
-
-export const TR = themed(styled.tr`
-  border-width: 1px 0;
-  border-style: solid;
-
-  border-color: ${themeStyle({
-    dark: Colors.uiDark04,
-    light: Colors.uiLight05,
-  })};
-
-  &:first-child {
-    border-top: none;
-  }
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  > td:first-child {
-    max-width: 226px;
-    min-width: 226px;
-    width: 226px;
-  }
-
-  ${({hasActiveOperation}) =>
-    !hasActiveOperation ? '' : rowWithActiveOperationStyle};
 `);
 
 export const THead = themed(styled.thead`
@@ -186,30 +124,6 @@ export const VariableName = styled.span`
   display: block;
   text-overflow: ellipsis;
   overflow: hidden;
-`;
-
-export const VariablesFooter = styled(Panel.Footer)`
-  position: absolute;
-  bottom: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: 41px;
-`;
-
-export const Button = styled(DefaultButton)`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 22px;
-  width: 119px;
-  margin-left: 16px;
-`;
-
-export const Plus = styled(DefaultPlus)`
-  height: 16px;
-  margin-right: 4px;
 `;
 
 const inputMargin = css`
@@ -391,3 +305,33 @@ export const LinesSeparator = themed(styled.span`
     light: Colors.uiLight05,
   })};
 `);
+
+export const EmptyPanel = styled(EmptyPanelComponent)`
+  position: absolute;
+  top: 20px;
+  z-index: 1;
+`;
+
+export const Button = styled(DefaultButton)`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 22px;
+  width: 119px;
+  margin-left: 16px;
+`;
+
+export const Plus = styled(DefaultPlus)`
+  height: 16px;
+  margin-right: 4px;
+`;
+
+export const Footer = styled(Panel.Footer)`
+  position: absolute;
+  bottom: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 41px;
+`;

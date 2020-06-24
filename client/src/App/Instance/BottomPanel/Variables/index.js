@@ -4,34 +4,42 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useRef, useState} from 'react';
+import React, {useRef, useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
-import {isRunning as isInstanceRunning} from 'modules/utils/instance';
-import {Observer} from 'mobx-react';
+import {isRunning} from 'modules/utils/instance';
 import {currentInstance} from 'modules/stores/currentInstance';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {variables} from 'modules/stores/variables';
 
 import * as Styled from './styled';
+import {observer} from 'mobx-react';
+import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
+import {Skeleton} from './Skeleton';
+import {VARIABLE_MODE} from './constants';
+import {STATE} from 'modules/constants';
+import {Table, TH, TR} from '../VariablesTable';
+import {useParams} from 'react-router-dom';
 
-export default function Variables({
-  variables,
-  editMode,
-  onVariableUpdate,
-  isEditable,
-  setEditMode,
-  Placeholder,
-  Overlay,
-  isLoading,
-}) {
-  const MODE = {EDIT: 'edit', ADD: 'add'};
+const Variables = observer(function Variables() {
+  const {
+    state: {items, isLoading, isInitialLoadComplete},
+    hasNoVariables,
+  } = variables;
+  const {id: workflowInstanceId} = useParams();
 
+  useEffect(() => {
+    variables.fetchVariables(workflowInstanceId);
+    return () => variables.clearItems();
+  }, [workflowInstanceId]);
+
+  const [editMode, setEditMode] = useState('');
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
 
   const variablesContentRef = useRef(null);
   const editInputTDRef = useRef(null);
-
   /**
    * Determine, if bottom of currently opened edit textarea is
    * out of bottom bounds of visible scroll area.
@@ -71,16 +79,17 @@ export default function Variables({
   }
 
   function saveVariable() {
-    onVariableUpdate(key, value);
+    if (editMode === VARIABLE_MODE.ADD) {
+      variables.addVariable(workflowInstanceId, key, value);
+    } else if (editMode === VARIABLE_MODE.EDIT) {
+      variables.updateVariable(workflowInstanceId, key, value);
+    }
+
     closeEdit();
   }
 
-  function handleOpenAddVariable() {
-    setEditMode(MODE.ADD);
-  }
-
   function handleOpenEditVariable(name, value) {
-    setEditMode(MODE.EDIT);
+    setEditMode(VARIABLE_MODE.EDIT);
     setKey(name);
     setValue(value);
   }
@@ -149,12 +158,11 @@ export default function Variables({
 
   function renderInlineAdd() {
     const variableAlreadyExists =
-      !!variables
-        .map((variable) => variable.name)
-        .filter((name) => name === key).length > 0;
+      items.map((variable) => variable.name).filter((name) => name === key)
+        .length > 0;
     const isVariableEmpty = key.trim() === '';
     return (
-      <Styled.TR data-test="add-key-row">
+      <TR data-test="add-key-row">
         <Styled.EditInputTD>
           <Styled.TextInput
             autoFocus
@@ -182,124 +190,132 @@ export default function Variables({
             isDisabled: variableAlreadyExists || isVariableEmpty,
           })}
         </Styled.AddButtonsTD>
-      </Styled.TR>
+      </TR>
     );
   }
 
   function renderContent() {
     const {instance} = currentInstance.state;
-    const isRunning = instance && isInstanceRunning({state: instance.state});
+    const isCurrentInstanceRunning =
+      instance && isRunning({state: instance.state});
     return (
       <Styled.TableScroll>
-        <Styled.Table>
+        <Table>
           <Styled.THead>
-            <Styled.TR>
-              <Styled.TH>Variable</Styled.TH>
-              <Styled.TH>Value</Styled.TH>
-              <Styled.TH />
-            </Styled.TR>
+            <TR>
+              <TH>Variable</TH>
+              <TH>Value</TH>
+              <TH />
+            </TR>
           </Styled.THead>
           <tbody>
-            {variables &&
-              variables.map(({name, value: propValue, hasActiveOperation}) => (
-                <Styled.TR
-                  key={name}
-                  data-test={name}
-                  hasActiveOperation={hasActiveOperation}
-                >
-                  <Styled.TD isBold={true}>
-                    <Styled.VariableName title={name}>
-                      {name}
-                    </Styled.VariableName>
-                  </Styled.TD>
-                  {key === name && editMode === MODE.EDIT && isRunning ? (
-                    renderInlineEdit(propValue, name)
-                  ) : (
-                    <>
-                      <Styled.DisplayTextTD>
-                        <Styled.DisplayText>{propValue}</Styled.DisplayText>
-                      </Styled.DisplayTextTD>
-                      {isRunning && (
-                        <Styled.EditButtonsTD>
-                          {hasActiveOperation ? (
-                            <Styled.Spinner data-test="edit-variable-spinner" />
-                          ) : (
-                            <Styled.EditButton
-                              title="Enter edit mode"
-                              data-test="enter-edit-btn"
-                              onClick={() =>
-                                handleOpenEditVariable(name, propValue)
-                              }
-                              size="large"
-                              iconButtonTheme="default"
-                              icon={<Styled.EditIcon />}
-                            />
-                          )}
-                        </Styled.EditButtonsTD>
-                      )}
-                    </>
-                  )}
-                </Styled.TR>
-              ))}
-            {editMode === MODE.ADD && renderInlineAdd()}
+            {items.map(({name, value: propValue, hasActiveOperation}) => (
+              <TR
+                key={name}
+                data-test={name}
+                hasActiveOperation={hasActiveOperation}
+              >
+                <Styled.TD isBold={true}>
+                  <Styled.VariableName title={name}>{name}</Styled.VariableName>
+                </Styled.TD>
+                {key === name &&
+                editMode === VARIABLE_MODE.EDIT &&
+                isCurrentInstanceRunning ? (
+                  renderInlineEdit(propValue, name)
+                ) : (
+                  <>
+                    <Styled.DisplayTextTD>
+                      <Styled.DisplayText>{propValue}</Styled.DisplayText>
+                    </Styled.DisplayTextTD>
+                    {isCurrentInstanceRunning && (
+                      <Styled.EditButtonsTD>
+                        {hasActiveOperation ? (
+                          <Styled.Spinner data-test="edit-variable-spinner" />
+                        ) : (
+                          <Styled.EditButton
+                            title="Enter edit mode"
+                            data-test="edit-variable-button"
+                            onClick={() =>
+                              handleOpenEditVariable(name, propValue)
+                            }
+                            size="large"
+                            iconButtonTheme="default"
+                            icon={<Styled.EditIcon />}
+                          />
+                        )}
+                      </Styled.EditButtonsTD>
+                    )}
+                  </>
+                )}
+              </TR>
+            ))}
+            {editMode === VARIABLE_MODE.ADD && renderInlineAdd()}
           </tbody>
-        </Styled.Table>
+        </Table>
       </Styled.TableScroll>
     );
   }
 
-  function renderPlaceholder() {
-    return (
-      <Styled.SkeletonTable>
-        <Styled.THead>
-          <Styled.TR>
-            <Styled.TH>Variable</Styled.TH>
-            <Styled.TH>Value</Styled.TH>
-            <Styled.TH />
-          </Styled.TR>
-        </Styled.THead>
-        <tbody>
-          <Styled.SkeletonTR>
-            <Styled.SkeletonTD>{Placeholder()}</Styled.SkeletonTD>
-          </Styled.SkeletonTR>
-        </tbody>
-      </Styled.SkeletonTable>
-    );
+  function isInstanceRunning() {
+    const {
+      selection: {flowNodeId, treeRowIds},
+      flowNodeIdToFlowNodeInstanceMap,
+    } = flowNodeInstance.state;
+
+    const {instance} = currentInstance.state;
+
+    if (instance === null && flowNodeId === null) {
+      return false;
+    }
+
+    const selectedRowState = !flowNodeId
+      ? instance.state
+      : flowNodeIdToFlowNodeInstanceMap.get(flowNodeId).get(treeRowIds[0])
+          .state;
+
+    return [STATE.ACTIVE, STATE.INCIDENT].includes(selectedRowState);
+  }
+
+  function handleOpenAddVariable() {
+    setEditMode(VARIABLE_MODE.ADD);
   }
 
   return (
     <>
-      <Observer>
-        {() => (
-          <Styled.VariablesContent ref={variablesContentRef}>
-            {Overlay && Overlay()}
-            {!editMode && Placeholder ? renderPlaceholder() : renderContent()}
-          </Styled.VariablesContent>
+      <Styled.VariablesContent ref={variablesContentRef}>
+        {isLoading && isInitialLoadComplete && (
+          <Styled.EmptyPanel
+            data-test="variables-spinner"
+            type="skeleton"
+            Skeleton={SpinnerSkeleton}
+          />
         )}
-      </Observer>
-      <Styled.VariablesFooter>
+        {!editMode && !isInitialLoadComplete && (
+          <Skeleton type="skeleton" rowHeight={32} />
+        )}
+        {!editMode && hasNoVariables && (
+          <Skeleton type="info" label="The Flow Node has no variables." />
+        )}
+        {renderContent()}
+      </Styled.VariablesContent>
+      <Styled.Footer>
         <Styled.Button
           title="Add variable"
           size="small"
-          data-test="enter-add-btn"
+          data-test="add-variable-button"
           onClick={() => handleOpenAddVariable()}
-          disabled={!!editMode || !isEditable || isLoading}
+          disabled={
+            isLoading ||
+            !isInitialLoadComplete ||
+            !!editMode ||
+            !isInstanceRunning()
+          }
         >
           <Styled.Plus /> Add Variable
         </Styled.Button>
-      </Styled.VariablesFooter>
+      </Styled.Footer>
     </>
   );
-}
+});
 
-Variables.propTypes = {
-  variables: PropTypes.array,
-  editMode: PropTypes.string.isRequired,
-  isEditable: PropTypes.bool.isRequired,
-  onVariableUpdate: PropTypes.func.isRequired,
-  setEditMode: PropTypes.func.isRequired,
-  isLoading: PropTypes.bool,
-  // render props
-  Placeholder: PropTypes.func,
-  Overlay: PropTypes.func,
-};
+export default Variables;

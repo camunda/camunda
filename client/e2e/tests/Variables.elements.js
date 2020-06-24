@@ -6,8 +6,8 @@
 
 import {Selector} from 'testcafe';
 
-export const editButton = Selector('[data-test="enter-edit-btn"]');
-export const addButton = Selector('[data-test="enter-add-btn"]');
+export const editButton = Selector('[data-test="edit-variable-button"]');
+export const addButton = Selector('[data-test="add-variable-button"]');
 export const editText = Selector('[data-test="edit-value"]');
 export const addKey = Selector('[data-test="add-key"]');
 export const addValue = Selector('[data-test="add-value"]');
