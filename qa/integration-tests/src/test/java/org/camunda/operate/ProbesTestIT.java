@@ -22,7 +22,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = { TestApplication.class, OperateProperties.class, TestElasticsearchSchemaManager.class, Probes.class }
+    classes = { TestApplication.class, OperateProperties.class, TestElasticsearchSchemaManager.class, Probes.class },
+    properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"}
 )
 public class ProbesTestIT{
 

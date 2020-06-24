@@ -14,7 +14,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { ModulesTestApplication.class }, properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false"})
+@SpringBootTest(classes = { ModulesTestApplication.class },
+    properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
 public abstract class ModuleIntegrationTest {
 
   @Autowired
