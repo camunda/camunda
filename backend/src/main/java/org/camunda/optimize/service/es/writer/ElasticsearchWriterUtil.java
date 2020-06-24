@@ -175,13 +175,14 @@ public class ElasticsearchWriterUtil {
                                                 AbstractQueryBuilder queryBuilder,
                                                 String deletedItemName,
                                                 String deletedItemIdentifier,
+                                                final boolean refresh,
                                                 String... indices) {
     log.debug("Deleting {} with {}", deletedItemName, deletedItemIdentifier);
 
     DeleteByQueryRequest request = new DeleteByQueryRequest(indices)
       .setAbortOnVersionConflict(false)
       .setQuery(queryBuilder)
-      .setRefresh(true);
+      .setRefresh(refresh);
 
     BulkByScrollResponse deleteResponse;
     try {

@@ -166,6 +166,7 @@ public class DashboardWriter {
       QueryBuilders.termQuery(COLLECTION_ID, collectionId),
       deletedItemName,
       deletedItemIdentifier,
+      true,
       DASHBOARD_INDEX_NAME
     );
   }

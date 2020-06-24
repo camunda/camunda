@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.springframework.stereotype.Component;
 
@@ -75,11 +74,9 @@ public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWrite
   }
 
   public void deleteByIds(final List<String> processInstanceIds) {
-    final BulkRequest bulkRequest = new BulkRequest().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    final BulkRequest bulkRequest = new BulkRequest();
     log.debug("Deleting [{}] process instance documents with bulk request.", processInstanceIds.size());
-    processInstanceIds.forEach(id -> {
-      bulkRequest.add(new DeleteRequest(PROCESS_INSTANCE_INDEX_NAME, id));
-    });
+    processInstanceIds.forEach(id -> bulkRequest.add(new DeleteRequest(PROCESS_INSTANCE_INDEX_NAME, id)));
     ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, PROCESS_INSTANCE_INDEX_NAME);
   }
 

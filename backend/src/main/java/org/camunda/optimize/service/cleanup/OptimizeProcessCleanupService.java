@@ -8,6 +8,7 @@ package org.camunda.optimize.service.cleanup;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
 import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
@@ -90,27 +91,29 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
   }
 
   private void performInstanceDataCleanup(final String definitionKey, final OffsetDateTime endDate) {
-    List<String> currentPageOfProcessInstanceIds = processInstanceReader
-      .getProcessInstanceIdsThatEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+    PageResultDto<String> currentPageOfProcessInstanceIds = processInstanceReader
+      .getFirstPageOfProcessInstanceIdsThatEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
-      camundaActivityEventWriter.deleteByProcessInstanceIds(definitionKey, currentPageOfProcessInstanceIds);
-      businessKeyWriter.deleteByProcessInstanceIds(currentPageOfProcessInstanceIds);
-      variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentPageOfProcessInstanceIds);
-      processInstanceWriter.deleteByIds(currentPageOfProcessInstanceIds);
+      final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
+      camundaActivityEventWriter.deleteByProcessInstanceIds(definitionKey, currentInstanceIds);
+      businessKeyWriter.deleteByProcessInstanceIds(currentInstanceIds);
+      variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
+      processInstanceWriter.deleteByIds(currentInstanceIds);
       currentPageOfProcessInstanceIds = processInstanceReader
-        .getProcessInstanceIdsThatEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+        .getNextPageOfProcessInstanceIds(currentPageOfProcessInstanceIds);
     }
   }
 
   private void performVariableDataCleanup(final String definitionKey, final OffsetDateTime endDate) {
-    List<String> currentPageOfProcessInstanceIds = processInstanceReader
-      .getProcessInstanceIdsThatHaveVariablesAndEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+    PageResultDto<String> currentPageOfProcessInstanceIds = processInstanceReader
+      .getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
-      variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentPageOfProcessInstanceIds);
-      processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(currentPageOfProcessInstanceIds);
+      final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
+      variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
+      processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(currentInstanceIds);
 
       currentPageOfProcessInstanceIds = processInstanceReader
-        .getProcessInstanceIdsThatHaveVariablesAndEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+        .getNextPageOfProcessInstanceIds(currentPageOfProcessInstanceIds);
     }
   }
 

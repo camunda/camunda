@@ -53,10 +53,10 @@ public class CamundaActivityEventWriter {
       .map(this::createIndexRequestForActivityEvent)
       .filter(Optional::isPresent)
       .map(request -> ImportRequestDto.builder()
-               .importName(importItemName)
-               .esClient(esClient)
-               .request(request.get())
-               .build())
+        .importName(importItemName)
+        .esClient(esClient)
+        .request(request.get())
+        .build())
       .filter(importRequest -> Objects.nonNull(importRequest.getRequest()))
       .collect(Collectors.toList());
   }
@@ -73,6 +73,7 @@ public class CamundaActivityEventWriter {
       filterQuery,
       deletedItemName,
       "list of ids",
+      false,
       // attach -* suffix to catch all indices and not go through the alias which only as one write index
       new CamundaActivityEventIndex(definitionKey).getIndexName() + "*"
     );
@@ -80,10 +81,11 @@ public class CamundaActivityEventWriter {
 
   private Optional<IndexRequest> createIndexRequestForActivityEvent(CamundaActivityEventDto camundaActivityEventDto) {
     try {
-      return Optional.of(new IndexRequest(
-        new CamundaActivityEventIndex(camundaActivityEventDto.getProcessDefinitionKey()).getIndexName())
-        .id(IdGenerator.getNextId())
-        .source(objectMapper.writeValueAsString(camundaActivityEventDto), XContentType.JSON));
+      return Optional.of(
+        new IndexRequest(new CamundaActivityEventIndex(camundaActivityEventDto.getProcessDefinitionKey()).getIndexName())
+          .id(IdGenerator.getNextId())
+          .source(objectMapper.writeValueAsString(camundaActivityEventDto), XContentType.JSON)
+      );
     } catch (JsonProcessingException e) {
       log.warn("Could not serialize Camunda Activity Event: {}", camundaActivityEventDto, e);
       return Optional.empty();

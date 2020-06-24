@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.get.MultiGetResponse;
@@ -71,6 +72,54 @@ public class ElasticsearchReaderUtil {
     return retrieveScrollResultsTillLimit(
       initialScrollResponse, itemClass, mappingFunction, esClient, scrollingTimeout, limit
     );
+  }
+
+  public static <T> PageResultDto<T> retrieveNextScrollResultsPage(final String scrollId,
+                                                                   final Class<T> itemClass,
+                                                                   final Function<SearchHit, T> mappingFunction,
+                                                                   final OptimizeElasticsearchClient esClient,
+                                                                   final Integer scrollingTimeout,
+                                                                   final Integer limit) {
+    final PageResultDto<T> pageResult = new PageResultDto<>(limit);
+
+    String currentScrollId = scrollId;
+    SearchHits currentHits;
+    do {
+      if (pageResult.getEntities().size() < limit) {
+        final SearchResponse currentScrollResp = getScrollResponse(esClient, scrollingTimeout, currentScrollId);
+        currentScrollId = currentScrollResp.getScrollId();
+        currentHits = currentScrollResp.getHits();
+        pageResult.getEntities().addAll(
+          mapHits(currentHits, limit - pageResult.getEntities().size(), itemClass, mappingFunction)
+        );
+        pageResult.setPagingState(currentScrollId);
+      } else {
+        currentHits = null;
+      }
+    } while (currentHits != null && currentHits.getHits().length > 0);
+
+    if (pageResult.getEntities().isEmpty() || pageResult.getEntities().size() < limit) {
+      clearScroll(itemClass, esClient, currentScrollId);
+      pageResult.setPagingState(null);
+    }
+
+    return pageResult;
+  }
+
+  private static SearchResponse getScrollResponse(final OptimizeElasticsearchClient esClient,
+                                                  final Integer scrollingTimeout,
+                                                  final String scrollId) {
+    final SearchResponse currentScrollResp;
+    final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId)
+      .scroll(TimeValue.timeValueSeconds(scrollingTimeout));
+    try {
+      currentScrollResp = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not get scroll response through entries for scrollId [%s].", scrollId);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    return currentScrollResp;
   }
 
   public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,

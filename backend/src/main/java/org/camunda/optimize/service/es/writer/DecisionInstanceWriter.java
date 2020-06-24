@@ -102,6 +102,7 @@ public class DecisionInstanceWriter {
         filterQuery,
         deletedItemName,
         deletedItemIdentifier,
+        true,
         DECISION_INSTANCE_INDEX_NAME
       );
     } finally {

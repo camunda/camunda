@@ -68,6 +68,7 @@ public class VariableUpdateInstanceWriter {
       filterQuery,
       updateItemName,
       "list of ids",
+      false,
       // attach -* suffix to catch all indices and not go through the alias which only as one write index
       VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*"
     );

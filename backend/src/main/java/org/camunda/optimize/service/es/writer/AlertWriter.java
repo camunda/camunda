@@ -172,6 +172,7 @@ public class AlertWriter {
       QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId),
       deletedItemName,
       deletedItemIdentifier,
+      true,
       ALERT_INDEX_NAME
     );
   }

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.cleanup;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
 import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
@@ -31,7 +32,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.time.Period;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +56,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class OptimizeProcessCleanupServiceTest {
   private static final List<String> INSTANCE_IDS = ImmutableList.of("1", "2");
+  private static final PageResultDto<String> FIRST_PAGE = new PageResultDto("1", 1, INSTANCE_IDS.subList(0, 1));
+  private static final PageResultDto<String> SECOND_PAGE = new PageResultDto("1", 1, INSTANCE_IDS.subList(1, 2));
 
   @Mock
   private ProcessDefinitionReader processDefinitionReader;
@@ -84,7 +86,8 @@ public class OptimizeProcessCleanupServiceTest {
     // given
     final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
     mockProcessDefinitions(processDefinitionKeys);
-    mockGetProcessInstanceIds(processDefinitionKeys);
+    mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
+    mockNextPageOfEntities();
 
     //when
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
@@ -103,6 +106,8 @@ public class OptimizeProcessCleanupServiceTest {
 
     //when
     mockProcessDefinitions(processDefinitionKeys);
+    mockGetProcessInstanceIdsForVariableDelete(processDefinitionKeys);
+    mockNextPageOfEntities();
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
@@ -116,10 +121,11 @@ public class OptimizeProcessCleanupServiceTest {
     final Period customTtl = Period.parse("P2M");
     getCleanupConfig().setDefaultTtl(customTtl);
     final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
-    mockGetProcessInstanceIds(processDefinitionKeys);
+    mockProcessDefinitions(processDefinitionKeys);
+    mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
+    mockNextPageOfEntities();
 
     //when
-    mockProcessDefinitions(processDefinitionKeys);
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
@@ -145,6 +151,9 @@ public class OptimizeProcessCleanupServiceTest {
 
     //when
     mockProcessDefinitions(allProcessDefinitionKeys);
+    mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeysWithDefaultMode);
+    mockGetProcessInstanceIdsForVariableDelete(processDefinitionKeysWithSpecificMode);
+    mockNextPageOfEntities();
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
@@ -156,6 +165,7 @@ public class OptimizeProcessCleanupServiceTest {
   @Test
   public void testCleanupRunForMultipleProcessDefinitionsSpecificTtlsOverrideDefault() {
     // given
+
     final Period customTtl = Period.parse("P2M");
     final List<String> processDefinitionKeysWithSpecificTtl = generateRandomDefinitionsKeys(3);
     Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration =
@@ -164,13 +174,15 @@ public class OptimizeProcessCleanupServiceTest {
       processDefinitionKey, new ProcessDefinitionCleanupConfiguration(customTtl)
     ));
     final List<String> processDefinitionKeysWithDefaultTtl = generateRandomDefinitionsKeys(3);
-    final List allProcessDefinitionKeys = ListUtils.union(
+    final List<String> allProcessDefinitionKeys = (List<String>) ListUtils.union(
       processDefinitionKeysWithSpecificTtl,
       processDefinitionKeysWithDefaultTtl
     );
 
     //when
     mockProcessDefinitions(allProcessDefinitionKeys);
+    mockGetProcessInstanceIdsForProcessInstanceDelete(allProcessDefinitionKeys);
+    mockNextPageOfEntities();
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
@@ -188,9 +200,10 @@ public class OptimizeProcessCleanupServiceTest {
   public void testCleanupRunOnceForEveryProcessDefinitionKey() {
     // given
     final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
-    mockGetProcessInstanceIds(processDefinitionKeys);
     // mock returns keys twice (in reality they have different versions but that doesn't matter for the test)
     mockProcessDefinitions(ListUtils.union(processDefinitionKeys, processDefinitionKeys));
+    mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
+    mockNextPageOfEntities();
 
     //when
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
@@ -222,11 +235,26 @@ public class OptimizeProcessCleanupServiceTest {
     assertThat(exception.getMessage(), containsString(configuredKey));
   }
 
-  private void mockGetProcessInstanceIds(final List<String> expectedKeys) {
+  private void mockGetProcessInstanceIdsForProcessInstanceDelete(final List<String> expectedKeys) {
     expectedKeys.forEach(key -> {
-      when(processInstanceReader.getProcessInstanceIdsThatEndedBefore(
+      when(processInstanceReader.getFirstPageOfProcessInstanceIdsThatEndedBefore(
         eq(key), ArgumentMatchers.any(OffsetDateTime.class), anyInt()
-      )).thenReturn(INSTANCE_IDS, Collections.emptyList());
+      )).thenReturn(FIRST_PAGE);
+    });
+  }
+
+  private void mockNextPageOfEntities() {
+    when(processInstanceReader.getNextPageOfProcessInstanceIds(eq(FIRST_PAGE)))
+      .thenReturn(SECOND_PAGE);
+    when(processInstanceReader.getNextPageOfProcessInstanceIds(eq(SECOND_PAGE)))
+      .thenReturn(new PageResultDto<>(1));
+  }
+
+  private void mockGetProcessInstanceIdsForVariableDelete(final List<String> expectedKeys) {
+    expectedKeys.forEach(key -> {
+      when(processInstanceReader.getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+        eq(key), ArgumentMatchers.any(OffsetDateTime.class), anyInt()
+      )).thenReturn(FIRST_PAGE);
     });
   }
 
@@ -249,9 +277,13 @@ public class OptimizeProcessCleanupServiceTest {
     );
 
     verify(processInstanceWriter, times(expectedProcessDefinitionKeys.size()))
-      .deleteByIds(eq(INSTANCE_IDS));
+      .deleteByIds(eq(FIRST_PAGE.getEntities()));
+    verify(processInstanceWriter, times(expectedProcessDefinitionKeys.size()))
+      .deleteByIds(eq(SECOND_PAGE.getEntities()));
     verify(variableUpdateInstanceWriter, times(expectedProcessDefinitionKeys.size()))
-      .deleteByProcessInstanceIds(eq(INSTANCE_IDS));
+      .deleteByProcessInstanceIds(eq(FIRST_PAGE.getEntities()));
+    verify(variableUpdateInstanceWriter, times(expectedProcessDefinitionKeys.size()))
+      .deleteByProcessInstanceIds(eq(SECOND_PAGE.getEntities()));
   }
 
   private void assertInstancesWereRetrievedByKeyAndExpectedTtl(final Map<String, OffsetDateTime> capturedInvocationArguments,
@@ -271,7 +303,11 @@ public class OptimizeProcessCleanupServiceTest {
     ArgumentCaptor<String> definitionKeyCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<OffsetDateTime> endDateFilterCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
     verify(processInstanceReader, atLeast(expectedProcessDefinitionKeys.size()))
-      .getProcessInstanceIdsThatEndedBefore(definitionKeyCaptor.capture(), endDateFilterCaptor.capture(), anyInt());
+      .getFirstPageOfProcessInstanceIdsThatEndedBefore(
+        definitionKeyCaptor.capture(),
+        endDateFilterCaptor.capture(),
+        anyInt()
+      );
     int i = 0;
     final Map<String, OffsetDateTime> definitionKeysWithDateFilter = new HashMap<>();
     for (String key : definitionKeyCaptor.getAllValues()) {
@@ -297,7 +333,7 @@ public class OptimizeProcessCleanupServiceTest {
     ArgumentCaptor<String> processInstanceCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<OffsetDateTime> endDateFilterCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
     verify(processInstanceReader, atLeast(expectedProcessDefinitionKeys.size()))
-      .getProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+      .getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
         processInstanceCaptor.capture(), endDateFilterCaptor.capture(), anyInt()
       );
     int i = 0;

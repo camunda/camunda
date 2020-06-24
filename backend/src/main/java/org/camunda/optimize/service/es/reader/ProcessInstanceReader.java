@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.reader;
 
 import lombok.AllArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -22,7 +23,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
@@ -43,36 +43,46 @@ public class ProcessInstanceReader {
   private final OptimizeElasticsearchClient esClient;
   private final DateTimeFormatter dateTimeFormatter;
 
-  public List<String> getProcessInstanceIdsThatHaveVariablesAndEndedBefore(final String processDefinitionKey,
-                                                                           final OffsetDateTime endDate,
-                                                                           final Integer limit) {
-    return getProcessInstanceIdsThatEndedBefore(
-      boolQuery().filter(nestedQuery(VARIABLES, existsQuery(VARIABLES + "." + VARIABLE_ID), ScoreMode.None)),
-      processDefinitionKey,
-      endDate,
+  public PageResultDto<String> getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(final String processDefinitionKey,
+                                                                                               final OffsetDateTime endDate,
+                                                                                               final Integer limit) {
+    return getFirstPageOfProcessInstanceIdsForFilter(
+      boolQuery()
+        .filter(termQuery(ProcessInstanceIndex.PROCESS_DEFINITION_KEY, processDefinitionKey))
+        .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate)))
+        .filter(nestedQuery(VARIABLES, existsQuery(VARIABLES + "." + VARIABLE_ID), ScoreMode.None)),
       limit
     );
   }
 
-  public List<String> getProcessInstanceIdsThatEndedBefore(final String processDefinitionKey,
-                                                           final OffsetDateTime endDate,
-                                                           final Integer limit) {
-    return getProcessInstanceIdsThatEndedBefore(boolQuery(), processDefinitionKey, endDate, limit);
-  }
-
-  public List<String> getProcessInstanceIdsThatEndedBefore(final BoolQueryBuilder filterQuery,
-                                                           final String processDefinitionKey,
-                                                           final OffsetDateTime endDate,
-                                                           final Integer limit) {
-    return getProcessInstanceIdsForFilter(
-      filterQuery
+  public PageResultDto<String> getFirstPageOfProcessInstanceIdsThatEndedBefore(final String processDefinitionKey,
+                                                                               final OffsetDateTime endDate,
+                                                                               final Integer limit) {
+    return getFirstPageOfProcessInstanceIdsForFilter(
+      boolQuery()
         .filter(termQuery(ProcessInstanceIndex.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate))),
       limit
     );
   }
 
-  private List<String> getProcessInstanceIdsForFilter(final BoolQueryBuilder filterQuery, final Integer limit) {
+  public PageResultDto<String> getNextPageOfProcessInstanceIds(final PageResultDto<String> previousPage) {
+    if (previousPage.isLastPage()) {
+      return new PageResultDto<>(previousPage.getLimit());
+    }
+    return ElasticsearchReaderUtil.retrieveNextScrollResultsPage(
+      previousPage.getPagingState(),
+      String.class,
+      searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID),
+      esClient,
+      configurationService.getElasticsearchScrollTimeout(),
+      previousPage.getLimit()
+    );
+  }
+
+  private PageResultDto<String> getFirstPageOfProcessInstanceIdsForFilter(final BoolQueryBuilder filterQuery,
+                                                                          final Integer limit) {
+    final PageResultDto<String> result = new PageResultDto<>(limit);
     final Integer resolvedLimit = Optional.ofNullable(limit).orElse(MAX_RESPONSE_SIZE_LIMIT);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(filterQuery)
@@ -86,17 +96,18 @@ public class ProcessInstanceReader {
 
     try {
       final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
-      return ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
-        response,
+      result.getEntities().addAll(ElasticsearchReaderUtil.mapHits(
+        response.getHits(),
+        resolvedLimit,
         String.class,
-        searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID),
-        esClient,
-        configurationService.getElasticsearchScrollTimeout(),
-        resolvedLimit
-      );
+        searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID)
+      ));
+      result.setPagingState(response.getScrollId());
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not obtain process instance ids.", e);
     }
+
+    return result;
   }
 
 }
