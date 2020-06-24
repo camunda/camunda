@@ -201,10 +201,10 @@ void integrationTestStepsAWS() {
 
   container('maven') {
     sh("""    
-      curl -s "https://$OPTIMIZE_ELASTICSEARCH_HOST/_cat/indices?v"
+      curl -s "http://$OPTIMIZE_ELASTICSEARCH_HOST/_cat/indices?v"
       
       #cleanup before starting the integration tests to assure starting from scratch
-      curl -XDELETE "https://$OPTIMIZE_ELASTICSEARCH_HOST/_all"
+      curl -XDELETE "http://$OPTIMIZE_ELASTICSEARCH_HOST/_all"
       """)
     runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU -DhttpTestTimeout=30000")
   }
@@ -371,10 +371,6 @@ pipeline {
           }
         }
         stage("Elasticsearch AWS Integration") {
-          // disabled till INFRA-1555 is resolved
-          when {
-            expression { false }
-          }
           agent {
             kubernetes {
               cloud 'optimize-ci'
@@ -385,7 +381,7 @@ pipeline {
           }
 
           environment {
-            OPTIMIZE_ELASTICSEARCH_HOST = "vpc-optimize-es-test1-mniyd6oio2w5hhzrkncykqg36e.eu-central-1.es.amazonaws.com"
+            OPTIMIZE_ELASTICSEARCH_HOST = "ci-elasticsearch.optimize"
             OPTIMIZE_ELASTICSEARCH_HTTP_PORT = 80
           }
 
