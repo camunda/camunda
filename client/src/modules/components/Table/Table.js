@@ -101,13 +101,15 @@ export default function Table({
   const thead = useRef();
   const tr = useRef();
   useEffect(() => {
-    const ro = new ResizeObserver(() => {
-      if (tr.current && thead.current) {
-        thead.current.style.width = tr.current.clientWidth + 'px';
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => {
+        if (tr.current && thead.current) {
+          thead.current.style.width = tr.current.clientWidth + 'px';
+        }
+      });
+      if (tr.current) {
+        ro.observe(tr.current);
       }
-    });
-    if (tr.current) {
-      ro.observe(tr.current);
     }
   }, []);
 
