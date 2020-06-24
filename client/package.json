@@ -71,7 +71,7 @@
     "http-proxy-middleware": "^1.0.4",
     "husky": "^4.2.5",
     "jest-junit": "^11.0.1",
-    "lint-staged": "^10.2.9",
+    "lint-staged": "^10.2.11",
     "prettier": "^2.0.5",
     "testcafe": "^1.8.6",
     "zeebe-node": "^0.23.2"
