@@ -5,32 +5,31 @@
  */
 package io.zeebe.tasklist.util;
 
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.response.Topology;
-import java.util.function.Consumer;
-import org.junit.rules.ExternalResource;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.Topology;
 import io.zeebe.test.EmbeddedBrokerRule;
 import io.zeebe.util.SocketUtil;
+import java.util.function.Consumer;
+import org.junit.rules.ExternalResource;
 
 public class ZeebeClientRule extends ExternalResource {
 
-  private final Consumer<ZeebeClientBuilder> configurator;
-
   protected ZeebeClient client;
+  private final Consumer<ZeebeClientBuilder> configurator;
 
   public ZeebeClientRule(final EmbeddedBrokerRule brokerRule) {
     this(brokerRule, ZeebeClientBuilder::usePlaintext);
   }
 
   public ZeebeClientRule(
-    final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
+      final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
-      config -> {
-        config.brokerContactPoint(SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
-        configurator.accept(config);
-      });
+        config -> {
+          config.brokerContactPoint(SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
+          configurator.accept(config);
+        });
   }
 
   private ZeebeClientRule(final Consumer<ZeebeClientBuilder> configurator) {
@@ -43,7 +42,7 @@ public class ZeebeClientRule extends ExternalResource {
     configurator.accept(builder);
     client = builder.build();
 
-    //get topology to check that cluster is available and ready for work
+    // get topology to check that cluster is available and ready for work
     Topology topology = null;
     while (topology == null) {
       try {
@@ -52,7 +51,6 @@ public class ZeebeClientRule extends ExternalResource {
         ex.printStackTrace();
       }
     }
-
   }
 
   @Override
@@ -64,5 +62,4 @@ public class ZeebeClientRule extends ExternalResource {
   public ZeebeClient getClient() {
     return client;
   }
-
 }

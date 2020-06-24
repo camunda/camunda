@@ -17,8 +17,7 @@ public class ImportPositionEntity extends TasklistEntity {
 
   private String indexName;
 
-  public ImportPositionEntity() {
-  }
+  public ImportPositionEntity() {}
 
   public ImportPositionEntity(String aliasName, int partitionId, long position) {
     this.aliasName = aliasName;
@@ -62,39 +61,9 @@ public class ImportPositionEntity extends TasklistEntity {
     return String.format("%s-%s", partitionId, aliasName);
   }
 
-  public static ImportPositionEntity createFrom(ImportPositionEntity importPositionEntity, long newPosition, String indexName) {
-    ImportPositionEntity newImportPositionEntity = new ImportPositionEntity();
-    newImportPositionEntity.setAliasName(importPositionEntity.getAliasName());
-    newImportPositionEntity.setPartitionId(importPositionEntity.getPartitionId());
-    newImportPositionEntity.setIndexName(indexName);
-    newImportPositionEntity.setPosition(newPosition);
-    return newImportPositionEntity;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-        return false;
-
-    ImportPositionEntity that = (ImportPositionEntity) o;
-
-    if (partitionId != that.partitionId)
-      return false;
-    if (position != that.position)
-      return false;
-    if (aliasName != null ? !aliasName.equals(that.aliasName) : that.aliasName != null)
-      return false;
-    return indexName != null ? indexName.equals(that.indexName) : that.indexName == null;
-
-  }
-
   @Override
   public int hashCode() {
-	int result = super.hashCode();
+    int result = super.hashCode();
     result = 31 * result + (aliasName != null ? aliasName.hashCode() : 0);
     result = 31 * result + partitionId;
     result = 31 * result + (int) (position ^ (position >>> 32));
@@ -103,8 +72,54 @@ public class ImportPositionEntity extends TasklistEntity {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final ImportPositionEntity that = (ImportPositionEntity) o;
+
+    if (partitionId != that.partitionId) {
+      return false;
+    }
+    if (position != that.position) {
+      return false;
+    }
+    if (aliasName != null ? !aliasName.equals(that.aliasName) : that.aliasName != null) {
+      return false;
+    }
+    return indexName != null ? indexName.equals(that.indexName) : that.indexName == null;
+  }
+
+  @Override
   public String toString() {
-    return "ImportPositionEntity{" + "aliasName='" + aliasName + '\'' + ", partitionId=" + partitionId + ", position=" + position + ", indexName='" + indexName
-        + '\'' + '}';
+    return "ImportPositionEntity{"
+        + "aliasName='"
+        + aliasName
+        + '\''
+        + ", partitionId="
+        + partitionId
+        + ", position="
+        + position
+        + ", indexName='"
+        + indexName
+        + '\''
+        + '}';
+  }
+
+  public static ImportPositionEntity createFrom(
+      ImportPositionEntity importPositionEntity, long newPosition, String indexName) {
+    final ImportPositionEntity newImportPositionEntity = new ImportPositionEntity();
+    newImportPositionEntity.setAliasName(importPositionEntity.getAliasName());
+    newImportPositionEntity.setPartitionId(importPositionEntity.getPartitionId());
+    newImportPositionEntity.setIndexName(indexName);
+    newImportPositionEntity.setPosition(newPosition);
+    return newImportPositionEntity;
   }
 }

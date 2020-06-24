@@ -5,5 +5,4 @@
  */
 package io.zeebe.tasklist.exceptions;
 
-public class NoSuchIndexException extends Exception {
-}
+public class NoSuchIndexException extends Exception {}

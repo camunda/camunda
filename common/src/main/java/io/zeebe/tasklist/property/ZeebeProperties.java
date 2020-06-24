@@ -16,5 +16,4 @@ public class ZeebeProperties {
   public void setBrokerContactPoint(String brokerContactPoint) {
     this.brokerContactPoint = brokerContactPoint;
   }
-
 }

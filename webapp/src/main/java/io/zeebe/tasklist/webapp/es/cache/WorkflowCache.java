@@ -5,6 +5,8 @@
  */
 package io.zeebe.tasklist.webapp.es.cache;
 
+import io.zeebe.tasklist.entities.WorkflowEntity;
+import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -13,26 +15,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import io.zeebe.tasklist.entities.WorkflowEntity;
-import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 
 @Component
 public class WorkflowCache {
-  
-  private static final Logger logger = LoggerFactory.getLogger(WorkflowCache.class);
 
-  private Map<String, WorkflowCacheEntity> cache = new ConcurrentHashMap<>();
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowCache.class);
   private static final int CACHE_MAX_SIZE = 100;
-
-  @Autowired
-  private WorkflowReader workflowReader;
+  private Map<String, WorkflowCacheEntity> cache = new ConcurrentHashMap<>();
+  @Autowired private WorkflowReader workflowReader;
 
   private WorkflowCacheEntity getWorkflowCacheEntity(String workflowId) {
     if (cache.get(workflowId) == null) {
       final Optional<WorkflowEntity> workflowMaybe = readWorkflowByKey(workflowId);
       if (workflowMaybe.isPresent()) {
-        WorkflowEntity workflow = workflowMaybe.get();
+        final WorkflowEntity workflow = workflowMaybe.get();
         putToCache(workflowId, workflow);
       }
     }
@@ -56,7 +52,7 @@ public class WorkflowCache {
       return null;
     }
   }
-  
+
   private Optional<WorkflowEntity> readWorkflowByKey(String workflowId) {
     try {
       return Optional.of(workflowReader.getWorkflow(workflowId));

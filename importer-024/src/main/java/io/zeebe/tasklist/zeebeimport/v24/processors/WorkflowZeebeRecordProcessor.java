@@ -5,22 +5,6 @@
  */
 package io.zeebe.tasklist.zeebeimport.v24.processors;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
@@ -35,68 +19,88 @@ import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.util.XMLUtil;
 import io.zeebe.tasklist.zeebeimport.v24.record.value.DeploymentRecordValueImpl;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class WorkflowZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(WorkflowZeebeRecordProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowZeebeRecordProcessor.class);
 
-  private final static Set<String> STATES = new HashSet<>();
+  private static final Set<String> STATES = new HashSet<>();
+
   static {
     STATES.add(DeploymentIntent.CREATED.name());
   }
-  
-  @Autowired
-  private ObjectMapper objectMapper;
 
-  @Autowired
-  private WorkflowIndex workflowIndex;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private XMLUtil xmlUtil;
+  @Autowired private WorkflowIndex workflowIndex;
 
-  public void processDeploymentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
+  @Autowired private XMLUtil xmlUtil;
+
+  public void processDeploymentRecord(Record record, BulkRequest bulkRequest)
+      throws PersistenceException {
     final String intentStr = record.getIntent().name();
 
     if (STATES.contains(intentStr)) {
-      DeploymentRecordValueImpl recordValue = (DeploymentRecordValueImpl)record.getValue();
-      Map<String, DeploymentResource> resources = resourceToMap(recordValue.getResources());
+      final DeploymentRecordValueImpl recordValue = (DeploymentRecordValueImpl) record.getValue();
+      final Map<String, DeploymentResource> resources = resourceToMap(recordValue.getResources());
       for (DeployedWorkflow workflow : recordValue.getDeployedWorkflows()) {
         persistWorkflow(workflow, resources, bulkRequest);
       }
     }
-
   }
 
-  private void persistWorkflow(DeployedWorkflow workflow, Map<String, DeploymentResource> resources, BulkRequest bulkRequest) throws PersistenceException {
-    String resourceName = workflow.getResourceName();
-    DeploymentResource resource = resources.get(resourceName);
+  private void persistWorkflow(
+      DeployedWorkflow workflow, Map<String, DeploymentResource> resources, BulkRequest bulkRequest)
+      throws PersistenceException {
+    final String resourceName = workflow.getResourceName();
+    final DeploymentResource resource = resources.get(resourceName);
 
     final WorkflowEntity workflowEntity = createEntity(workflow, resource);
-    logger.debug("Workflow: key {}", workflowEntity.getKey());
+    LOGGER.debug("Workflow: key {}", workflowEntity.getKey());
 
     try {
-      bulkRequest.add(new IndexRequest(workflowIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, ConversionUtils.toStringOrNull(workflowEntity.getKey()))
-          .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON)
-      );
+      bulkRequest.add(
+          new IndexRequest(
+                  workflowIndex.getIndexName(),
+                  ElasticsearchUtil.ES_INDEX_TYPE,
+                  ConversionUtils.toStringOrNull(workflowEntity.getKey()))
+              .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON));
     } catch (JsonProcessingException e) {
-      logger.error("Error preparing the query to insert workflow", e);
-      throw new PersistenceException(String.format("Error preparing the query to insert workflow [%s]", workflowEntity.getKey()), e);
+      LOGGER.error("Error preparing the query to insert workflow", e);
+      throw new PersistenceException(
+          String.format(
+              "Error preparing the query to insert workflow [%s]", workflowEntity.getKey()),
+          e);
     }
   }
 
   private WorkflowEntity createEntity(DeployedWorkflow workflow, DeploymentResource resource) {
-    WorkflowEntity workflowEntity = new WorkflowEntity();
+    final WorkflowEntity workflowEntity = new WorkflowEntity();
 
     workflowEntity.setId(String.valueOf(workflow.getWorkflowKey()));
     workflowEntity.setKey(workflow.getWorkflowKey());
 
-    ResourceType resourceType = resource.getResourceType();
+    final ResourceType resourceType = resource.getResourceType();
     if (ResourceType.BPMN_XML.equals(resourceType)) {
-      byte[] byteArray = resource.getResource();
+      final byte[] byteArray = resource.getResource();
 
       final Optional<WorkflowEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
-      if(diagramData.isPresent()) {
+      if (diagramData.isPresent()) {
         workflowEntity.setName(diagramData.get().getName());
         workflowEntity.setFlowNodes(diagramData.get().getFlowNodes());
       }
@@ -106,7 +110,7 @@ public class WorkflowZeebeRecordProcessor {
   }
 
   private Map<String, DeploymentResource> resourceToMap(List<DeploymentResource> resources) {
-    return resources.stream().collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
+    return resources.stream()
+        .collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
   }
-
 }

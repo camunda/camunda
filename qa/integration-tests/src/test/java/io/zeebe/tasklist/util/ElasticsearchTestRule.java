@@ -5,6 +5,18 @@
  */
 package io.zeebe.tasklist.util;
 
+import static io.zeebe.tasklist.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.tasklist.es.ElasticsearchSchemaManager;
+import io.zeebe.tasklist.property.TasklistElasticsearchProperties;
+import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.zeebe.ImportValueType;
+import io.zeebe.tasklist.zeebeimport.RecordsReader;
+import io.zeebe.tasklist.zeebeimport.RecordsReaderHolder;
+import io.zeebe.tasklist.zeebeimport.ZeebeImporter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -25,58 +37,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.tasklist.es.ElasticsearchSchemaManager;
-import io.zeebe.tasklist.property.TasklistElasticsearchProperties;
-import io.zeebe.tasklist.property.TasklistProperties;
-import io.zeebe.tasklist.zeebe.ImportValueType;
-import io.zeebe.tasklist.zeebeimport.RecordsReader;
-import io.zeebe.tasklist.zeebeimport.RecordsReaderHolder;
-import io.zeebe.tasklist.zeebeimport.ZeebeImporter;
-import static io.zeebe.tasklist.util.ThreadUtil.sleepFor;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class ElasticsearchTestRule extends TestWatcher {
 
-  protected static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
-  
-  // Scroll contexts constants 
-  private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
-  // Path to find search statistics for all indexes
-  private static final String PATH_SEARCH_STATISTICS = "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchTestRule.class);
 
-  @Autowired
-  protected RestHighLevelClient esClient;
+  /** Scroll contexts constants */
+  private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
+
+  /** Path to find search statistics for all indexes */
+  private static final String PATH_SEARCH_STATISTICS =
+      "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
+
+  @Autowired protected RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  @Autowired
-  protected TasklistProperties tasklistProperties;
-
-  @Autowired
-  private ElasticsearchSchemaManager elasticsearchSchemaManager;
-
-  @Autowired
-  protected ZeebeImporter zeebeImporter;
-
-  @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  protected RecordsReaderHolder recordsReaderHolder;
-
-  @Autowired
-  private TestImportListener testImportListener;
-
+  @Autowired protected TasklistProperties tasklistProperties;
+  @Autowired protected ZeebeImporter zeebeImporter;
+  @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
-
+  @Autowired private ElasticsearchSchemaManager elasticsearchSchemaManager;
+  @Autowired private ObjectMapper objectMapper;
+  @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
 
-  public ElasticsearchTestRule() {
-  }
+  public ElasticsearchTestRule() {}
 
   @Override
   protected void failed(Throwable e, Description description) {
@@ -101,17 +89,19 @@ public class ElasticsearchTestRule extends TestWatcher {
   @Override
   protected void finished(Description description) {
     if (!failed) {
-      String indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
-      TestUtil.removeAllIndices(esClient,indexPrefix);
+      final String indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+      TestUtil.removeAllIndices(esClient, indexPrefix);
     }
-    tasklistProperties.getElasticsearch().setIndexPrefix(TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX);
+    tasklistProperties
+        .getElasticsearch()
+        .setIndexPrefix(TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(10);
   }
-  
+
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
     assertThat(getOpenScrollcontextSize())
-      .describedAs("There are too many open scroll contexts left.")
-      .isLessThanOrEqualTo(maxOpenScrollContexts);
+        .describedAs("There are too many open scroll contexts left.")
+        .isLessThanOrEqualTo(maxOpenScrollContexts);
   }
 
   public void refreshIndexesInElasticsearch() {
@@ -121,39 +111,50 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   public void refreshZeebeESIndices() {
     try {
-      RefreshRequest refreshRequest = new RefreshRequest(tasklistProperties.getZeebeElasticsearch().getPrefix() + "*");
+      final RefreshRequest refreshRequest =
+          new RefreshRequest(tasklistProperties.getZeebeElasticsearch().getPrefix() + "*");
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Throwable t) {
-      logger.error("Could not refresh Zeebe Elasticsearch indices", t);
+      LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
     }
   }
 
   public void refreshTasklistESIndices() {
     try {
-      RefreshRequest refreshRequest = new RefreshRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
+      final RefreshRequest refreshRequest =
+          new RefreshRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Throwable t) {
-      logger.error("Could not refresh Tasklist Elasticsearch indices", t);
+      LOGGER.error("Could not refresh Tasklist Elasticsearch indices", t);
     }
   }
 
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), predicate, null, arguments);
+    processRecordsAndWaitFor(
+        recordsReaderHolder.getActiveRecordsReaders(), predicate, null, arguments);
   }
 
-  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), predicate, supplier, arguments);
+  public void processAllRecordsAndWait(
+      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+    processRecordsAndWaitFor(
+        recordsReaderHolder.getActiveRecordsReaders(), predicate, supplier, arguments);
   }
 
-  public void processRecordsWithTypeAndWait(ImportValueType importValueType,Predicate<Object[]> predicate, Object... arguments) {
+  public void processRecordsWithTypeAndWait(
+      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
     processRecordsAndWaitFor(getRecordsReaders(importValueType), predicate, null, arguments);
   }
 
-  public void processRecordsAndWaitFor(Collection<RecordsReader> readers,Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+  public void processRecordsAndWaitFor(
+      Collection<RecordsReader> readers,
+      Predicate<Object[]> predicate,
+      Supplier<Object> supplier,
+      Object... arguments) {
     long shouldImportCount = 0;
-    int waitingRound = 0, maxRounds = 50;
+    int waitingRound = 0;
+    final int maxRounds = 50;
     boolean found = predicate.test(arguments);
-    long start = System.currentTimeMillis();
+    final long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
       testImportListener.resetCounters();
       shouldImportCount = 0;
@@ -161,10 +162,10 @@ public class ElasticsearchTestRule extends TestWatcher {
         if (supplier != null) {
           supplier.get();
         }
-        refreshIndexesInElasticsearch(); 
-        shouldImportCount +=  zeebeImporter.performOneRoundOfImportFor(readers);
+        refreshIndexesInElasticsearch();
+        shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (Exception e) {
-        logger.error(e.getMessage(), e);
+        LOGGER.error(e.getMessage(), e);
       }
       long imported = testImportListener.getImported();
       int waitForImports = 0;
@@ -178,10 +179,10 @@ public class ElasticsearchTestRule extends TestWatcher {
           waitingRound = 0;
           testImportListener.resetCounters();
           shouldImportCount = 0;
-          logger.error(e.getMessage(), e);
+          LOGGER.error(e.getMessage(), e);
         }
         imported = testImportListener.getImported();
-        logger.debug(" {} of {} records processed", imported, shouldImportCount);
+        LOGGER.debug(" {} of {} records processed", imported, shouldImportCount);
       }
       refreshTasklistESIndices();
       found = predicate.test(arguments);
@@ -190,16 +191,17 @@ public class ElasticsearchTestRule extends TestWatcher {
         waitingRound++;
       }
     }
-    long finishedTime = System.currentTimeMillis() - start;
-    
-    if(found) {
-      logger.debug("Conditions met in round {} ({} ms).", waitingRound,finishedTime );
-    }else {
-      logger.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
+    final long finishedTime = System.currentTimeMillis() - start;
+
+    if (found) {
+      LOGGER.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
+    } else {
+      LOGGER.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
     }
   }
 
-  public boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices,int maxChecks) {
+  public boolean areIndicesCreatedAfterChecks(
+      String indexPrefix, int minCountOfIndices, int maxChecks) {
     boolean areCreated = false;
     int checks = 0;
     while (!areCreated && checks <= maxChecks) {
@@ -207,34 +209,41 @@ public class ElasticsearchTestRule extends TestWatcher {
       try {
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (Throwable t) {
-        logger.error("Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, checks, maxChecks);
+        LOGGER.error(
+            "Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",
+            minCountOfIndices,
+            checks,
+            maxChecks);
         sleepFor(200);
       }
     }
-    logger.debug("Elasticsearch indices are created after {} checks", checks);
+    LOGGER.debug("Elasticsearch indices are created after {} checks", checks);
     return areCreated;
   }
 
-  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices) throws IOException {
-    GetIndexResponse response = esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
-    String[] indices = response.getIndices();
-    return indices != null && indices.length >= minCountOfIndices; 
+  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
+      throws IOException {
+    final GetIndexResponse response =
+        esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
+    final String[] indices = response.getIndices();
+    return indices != null && indices.length >= minCountOfIndices;
   }
 
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
     return recordsReaderHolder.getAllRecordsReaders().stream()
-        .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
+        .filter(rr -> rr.getImportValueType().equals(importValueType))
+        .collect(Collectors.toList());
   }
 
   public int getOpenScrollcontextSize() {
     return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
   }
 
-  public int getIntValueForJSON(final String path,final String fieldname,final int defaultValue) {
-    Optional<JsonNode> jsonNode = getJsonFor(path);
-    if(jsonNode.isPresent()) {
-      JsonNode field = jsonNode.get().findValue(fieldname);
-      if(field != null) {
+  public int getIntValueForJSON(final String path, final String fieldname, final int defaultValue) {
+    final Optional<JsonNode> jsonNode = getJsonFor(path);
+    if (jsonNode.isPresent()) {
+      final JsonNode field = jsonNode.get().findValue(fieldname);
+      if (field != null) {
         return field.asInt(defaultValue);
       }
     }
@@ -242,12 +251,13 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
   public Optional<JsonNode> getJsonFor(final String path) {
-    try {      
-      ObjectMapper objectMapper = new ObjectMapper();
-      Response response = esClient.getLowLevelClient().performRequest(new Request("GET",path));
+    try {
+      final ObjectMapper objectMapper = new ObjectMapper();
+      final Response response =
+          esClient.getLowLevelClient().performRequest(new Request("GET", path));
       return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
     } catch (Throwable e) {
-      logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.",e);
+      LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
       return Optional.empty();
     }
   }

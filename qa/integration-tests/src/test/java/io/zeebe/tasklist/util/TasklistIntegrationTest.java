@@ -5,6 +5,11 @@
  */
 package io.zeebe.tasklist.util;
 
+import static org.mockito.Mockito.when;
+
+import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.webapp.security.UserService;
+import io.zeebe.tasklist.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,37 +19,36 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
-import io.zeebe.tasklist.property.TasklistProperties;
-import io.zeebe.tasklist.webapp.security.UserService;
-import io.zeebe.tasklist.zeebe.PartitionHolder;
-import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {TestApplication.class},
-  properties = { TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-    TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-    TasklistProperties.PREFIX + "importer.jobType = testJobType",
-    "graphql.servlet.exception-handlers-enabled = true"},
+    classes = {TestApplication.class},
+    properties = {
+      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      TasklistProperties.PREFIX + "importer.jobType = testJobType",
+      "graphql.servlet.exception-handlers-enabled = true"
+    },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@TestExecutionListeners(
+    listeners = DependencyInjectionTestExecutionListener.class,
+    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class TasklistIntegrationTest {
 
   public static final String DEFAULT_USER = "testuser";
 
   protected OffsetDateTime testStartTime;
 
-  @MockBean
-  protected UserService userService;
+  @MockBean protected UserService userService;
 
   @Before
   public void before() {
     testStartTime = OffsetDateTime.now();
     when(userService.getCurrentUsername()).thenReturn(DEFAULT_USER);
   }
-  
+
   protected void mockPartitionHolder(PartitionHolder partitionHolder) {
-    List<Integer> partitions = new ArrayList<>();
+    final List<Integer> partitions = new ArrayList<>();
     partitions.add(1);
     when(partitionHolder.getPartitionIds()).thenReturn(partitions);
   }

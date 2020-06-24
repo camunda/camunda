@@ -5,15 +5,15 @@
  */
 package io.zeebe.tasklist.webapp.security.sso;
 
-import java.util.Map;
+import com.auth0.jwt.interfaces.Claim;
 import io.zeebe.tasklist.webapp.rest.dto.UserDto;
 import io.zeebe.tasklist.webapp.security.AbstractUserService;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import com.auth0.jwt.interfaces.Claim;
 
 @Component
 @Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
@@ -21,25 +21,21 @@ public class SSOUserService extends AbstractUserService {
 
   private static final String EMPTY = "";
 
-  @Autowired
-  private SSOWebSecurityConfig configuration;
+  @Autowired private SSOWebSecurityConfig configuration;
 
   @Override
   public UserDto getCurrentUser() {
-    SecurityContext context = SecurityContextHolder.getContext();
-    TokenAuthentication tokenAuth = (TokenAuthentication) context.getAuthentication();
+    final SecurityContext context = SecurityContextHolder.getContext();
+    final TokenAuthentication tokenAuth = (TokenAuthentication) context.getAuthentication();
     return buildUserDtoFrom(tokenAuth);
   }
 
   private UserDto buildUserDtoFrom(TokenAuthentication tokenAuth) {
-    Map<String, Claim> claims = tokenAuth.getClaims();
+    final Map<String, Claim> claims = tokenAuth.getClaims();
     String name = "No name";
     if (claims.containsKey(configuration.getNameKey())) {
       name = claims.get(configuration.getNameKey()).asString();
     }
-    return new UserDto()
-        .setFirstname(EMPTY)
-        .setLastname(name)
-        .setCanLogout(false);
+    return new UserDto().setFirstname(EMPTY).setLastname(name).setCanLogout(false);
   }
 }

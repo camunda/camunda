@@ -6,11 +6,12 @@
 package io.zeebe.tasklist.zeebeimport.v24.record.value;
 
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.tasklist.zeebeimport.v24.record.RecordValueWithPayloadImpl;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.tasklist.zeebeimport.v24.record.RecordValueWithPayloadImpl;
 
 public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     implements WorkflowInstanceRecordValue {
+
   private String bpmnProcessId;
   private String elementId;
   private int version;
@@ -21,17 +22,11 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private long parentWorkflowInstanceKey;
   private long parentElementInstanceKey;
 
-  public WorkflowInstanceRecordValueImpl() {
-  }
+  public WorkflowInstanceRecordValueImpl() {}
 
   @Override
   public String getBpmnProcessId() {
     return bpmnProcessId;
-  }
-
-  @Override
-  public String getElementId() {
-    return elementId;
   }
 
   @Override
@@ -47,6 +42,11 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   @Override
   public long getWorkflowInstanceKey() {
     return workflowInstanceKey;
+  }
+
+  @Override
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
@@ -70,36 +70,6 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
-
-    WorkflowInstanceRecordValueImpl that = (WorkflowInstanceRecordValueImpl) o;
-
-    if (version != that.version)
-      return false;
-    if (workflowKey != that.workflowKey)
-      return false;
-    if (workflowInstanceKey != that.workflowInstanceKey)
-      return false;
-    if (flowScopeKey != that.flowScopeKey)
-      return false;
-    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
-      return false;
-    if (elementId != null ? !elementId.equals(that.elementId) : that.elementId != null)
-      return false;
-    if (bpmnElementType != that.bpmnElementType)
-      return false;
-    if (parentWorkflowInstanceKey != that.parentWorkflowInstanceKey)
-      return false;
-    return parentElementInstanceKey != that.parentElementInstanceKey;
-  }
-
-  @Override
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
@@ -115,9 +85,72 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final WorkflowInstanceRecordValueImpl that = (WorkflowInstanceRecordValueImpl) o;
+
+    if (version != that.version) {
+      return false;
+    }
+    if (workflowKey != that.workflowKey) {
+      return false;
+    }
+    if (workflowInstanceKey != that.workflowInstanceKey) {
+      return false;
+    }
+    if (flowScopeKey != that.flowScopeKey) {
+      return false;
+    }
+    if (bpmnProcessId != null
+        ? !bpmnProcessId.equals(that.bpmnProcessId)
+        : that.bpmnProcessId != null) {
+      return false;
+    }
+    if (elementId != null ? !elementId.equals(that.elementId) : that.elementId != null) {
+      return false;
+    }
+    if (bpmnElementType != that.bpmnElementType) {
+      return false;
+    }
+    if (parentWorkflowInstanceKey != that.parentWorkflowInstanceKey) {
+      return false;
+    }
+    return parentElementInstanceKey != that.parentElementInstanceKey;
+  }
+
+  @Override
   public String toString() {
-    return "WorkflowInstanceRecordValueImpl{" + "bpmnProcessId='" + bpmnProcessId + '\'' + ", elementId='" + elementId + '\'' + ", version=" + version
-      + ", workflowKey=" + workflowKey + ", workflowInstanceKey=" + workflowInstanceKey + ", flowScopeKey=" + flowScopeKey + ", bpmnElementType="
-      + bpmnElementType + ", parentWorkflowInstanceKey=" + parentWorkflowInstanceKey + ", parentElementInstanceKey=" + parentElementInstanceKey + "} " + super.toString();
+    return "WorkflowInstanceRecordValueImpl{"
+        + "bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", elementId='"
+        + elementId
+        + '\''
+        + ", version="
+        + version
+        + ", workflowKey="
+        + workflowKey
+        + ", workflowInstanceKey="
+        + workflowInstanceKey
+        + ", flowScopeKey="
+        + flowScopeKey
+        + ", bpmnElementType="
+        + bpmnElementType
+        + ", parentWorkflowInstanceKey="
+        + parentWorkflowInstanceKey
+        + ", parentElementInstanceKey="
+        + parentElementInstanceKey
+        + "} "
+        + super.toString();
   }
 }

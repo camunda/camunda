@@ -5,7 +5,9 @@
  */
 package io.zeebe.tasklist.util.apps.modules;
 
+import io.zeebe.tasklist.Application;
 import io.zeebe.tasklist.data.DataGenerator;
+import io.zeebe.tasklist.util.TestApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -13,20 +15,25 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
-import io.zeebe.tasklist.Application;
-import io.zeebe.tasklist.util.TestApplication;
 
 @SpringBootApplication
-@ComponentScan(basePackages = "io.zeebe.tasklist",
-  excludeFilters = {
-    @ComponentScan.Filter(type=FilterType.REGEX,pattern="io\\.zeebe\\.tasklist\\.util\\.apps\\..*"),
-      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.zeebe\\.tasklist\\.zeebeimport\\..*"),
-      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.zeebe\\.tasklist\\.webapp\\..*"),
-      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.zeebe\\.tasklist\\.it\\..*"),
-      @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = TestApplication.class),
-      @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = Application.class)
-  },
-  nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@ComponentScan(
+    basePackages = "io.zeebe.tasklist",
+    excludeFilters = {
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.zeebe\\.tasklist\\.util\\.apps\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.zeebe\\.tasklist\\.zeebeimport\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.zeebe\\.tasklist\\.webapp\\..*"),
+      @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.zeebe\\.tasklist\\.it\\..*"),
+      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TestApplication.class),
+      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = Application.class)
+    },
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class ModulesTestApplication {
 
   public static void main(String[] args) throws Exception {
@@ -38,5 +45,4 @@ public class ModulesTestApplication {
   public DataGenerator stubDataGenerator() {
     return DataGenerator.DO_NOTHING;
   }
-
 }

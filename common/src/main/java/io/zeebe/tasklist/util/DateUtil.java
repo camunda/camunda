@@ -12,7 +12,6 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
-
 public abstract class DateUtil {
 
   private static final Random RANDOM = new Random();
@@ -20,8 +19,8 @@ public abstract class DateUtil {
   public static OffsetDateTime getRandomStartDate() {
     Instant now = Instant.now();
     now = now.minus((5 + RANDOM.nextInt(10)), ChronoUnit.DAYS);
-    now = now.minus(RANDOM.nextInt(60*24), ChronoUnit.MINUTES);
-    Clock clock = Clock.fixed(now, ZoneOffset.UTC);
+    now = now.minus(RANDOM.nextInt(60 * 24), ChronoUnit.MINUTES);
+    final Clock clock = Clock.fixed(now, ZoneOffset.UTC);
     return OffsetDateTime.now(clock);
   }
 
@@ -37,8 +36,8 @@ public abstract class DateUtil {
     }
     Instant now = Instant.now();
     now = now.minus((1 + RANDOM.nextInt(4)), ChronoUnit.DAYS);
-    now = now.minus(RANDOM.nextInt(60*24), ChronoUnit.MINUTES);
-    Clock clock = Clock.fixed(now, ZoneOffset.UTC);
+    now = now.minus(RANDOM.nextInt(60 * 24), ChronoUnit.MINUTES);
+    final Clock clock = Clock.fixed(now, ZoneOffset.UTC);
     return OffsetDateTime.now(clock);
   }
 

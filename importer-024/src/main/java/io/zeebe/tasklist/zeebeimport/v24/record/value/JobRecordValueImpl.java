@@ -5,10 +5,10 @@
  */
 package io.zeebe.tasklist.zeebeimport.v24.record.value;
 
+import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.tasklist.zeebeimport.v24.record.RecordValueWithPayloadImpl;
 import java.util.Map;
 import java.util.Objects;
-import io.zeebe.tasklist.zeebeimport.v24.record.RecordValueWithPayloadImpl;
-import io.zeebe.protocol.record.value.JobRecordValue;
 
 public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements JobRecordValue {
 
@@ -27,61 +27,15 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String errorMessage;
   private String errorCode;
 
-  public JobRecordValueImpl() {
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return bpmnProcessId;
-  }
-
-  @Override
-  public String getElementId() {
-    return elementId;
-  }
-
-  @Override
-  public long getElementInstanceKey() {
-    return elementInstanceKey;
-  }
+  public JobRecordValueImpl() {}
 
   @Override
   public long getWorkflowInstanceKey() {
     return workflowInstanceKey;
   }
 
-  @Override
-  public long getWorkflowKey() {
-    return workflowKey;
-  }
-
-  @Override
-  public int getWorkflowDefinitionVersion() {
-    return workflowDefinitionVersion;
-  }
-
-  public void setBpmnProcessId(String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
-  }
-
-  public void setElementId(String elementId) {
-    this.elementId = elementId;
-  }
-
-  public void setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
   public void setWorkflowInstanceKey(long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
-  }
-
-  public void setWorkflowKey(long workflowKey) {
-    this.workflowKey = workflowKey;
-  }
-
-  public void setWorkflowDefinitionVersion(int workflowDefinitionVersion) {
-    this.workflowDefinitionVersion = workflowDefinitionVersion;
   }
 
   @Override
@@ -119,32 +73,94 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return errorCode;
   }
 
-  public void setType(String type) {
-    this.type = type;
+  @Override
+  public String getElementId() {
+    return elementId;
   }
 
-  public void setWorker(String worker) {
-    this.worker = worker;
+  @Override
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
-  public void setDeadline(long deadline) {
-    this.deadline = deadline;
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
-  public void setCustomHeaders(Map<String, String> customHeaders) {
-    this.customHeaders = customHeaders;
+  @Override
+  public int getWorkflowDefinitionVersion() {
+    return workflowDefinitionVersion;
   }
 
-  public void setRetries(int retries) {
-    this.retries = retries;
+  @Override
+  public long getWorkflowKey() {
+    return workflowKey;
+  }
+
+  public void setWorkflowKey(long workflowKey) {
+    this.workflowKey = workflowKey;
+  }
+
+  public void setWorkflowDefinitionVersion(int workflowDefinitionVersion) {
+    this.workflowDefinitionVersion = workflowDefinitionVersion;
+  }
+
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
+  }
+
+  public void setElementId(String elementId) {
+    this.elementId = elementId;
+  }
+
+  public void setErrorCode(String errorCode) {
+    this.errorCode = errorCode;
   }
 
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
   }
 
-  public void setErrorCode(String errorCode) {
-    this.errorCode = errorCode;
+  public void setDeadline(long deadline) {
+    this.deadline = deadline;
+  }
+
+  public void setRetries(int retries) {
+    this.retries = retries;
+  }
+
+  public void setWorker(String worker) {
+    this.worker = worker;
+  }
+
+  public void setCustomHeaders(Map<String, String> customHeaders) {
+    this.customHeaders = customHeaders;
+  }
+
+  public void setType(String type) {
+    this.type = type;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        bpmnProcessId,
+        elementId,
+        elementInstanceKey,
+        workflowInstanceKey,
+        workflowKey,
+        workflowDefinitionVersion,
+        type,
+        worker,
+        deadline,
+        customHeaders,
+        retries);
   }
 
   @Override
@@ -170,14 +186,6 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(worker, that.worker)
         && Objects.equals(deadline, that.deadline)
         && Objects.equals(customHeaders, that.customHeaders);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), bpmnProcessId, elementId,
-        elementInstanceKey, workflowInstanceKey, workflowKey,
-        workflowDefinitionVersion, type, worker, deadline,
-        customHeaders, retries);
   }
 
   @Override

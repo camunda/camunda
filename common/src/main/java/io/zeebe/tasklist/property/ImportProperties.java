@@ -23,9 +23,7 @@ public class ImportProperties {
 
   private int schedulerBackoff = DEFAULT_SCHEDULER_BACKOFF;
 
-  /**
-   * Indicates, whether loading of Zeebe data should start on startup.
-   */
+  /** Indicates, whether loading of Zeebe data should start on startup. */
   private boolean startLoadingDataOnStartup = true;
 
   private String jobType = "humanTask";

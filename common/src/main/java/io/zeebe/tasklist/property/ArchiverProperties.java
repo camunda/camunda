@@ -14,13 +14,19 @@ public class ArchiverProperties {
   private int threadsCount = DEFAULT_ARCHIVER_THREADS_COUNT;
 
   /**
-   * This format will be used to create timed indices. It must correspond to rolloverInterval parameter.
+   * This format will be used to create timed indices. It must correspond to rolloverInterval
+   * parameter.
    */
   private String rolloverDateFormat = "yyyy-MM-dd";
+
   private String elsRolloverDateFormat = "date";
   /**
-   * Interval description for "date histogram" aggregation, which is used to group finished instances.
-   * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-datehistogram-aggregation.html">Elasticsearch docs</a>
+   * Interval description for "date histogram" aggregation, which is used to group finished
+   * instances.
+   *
+   * @see <a
+   *     href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-datehistogram-aggregation.html">Elasticsearch
+   *     docs</a>
    */
   private String rolloverInterval = "1d";
 
@@ -29,10 +35,10 @@ public class ArchiverProperties {
   private String waitPeriodBeforeArchiving = "1h";
 
   /**
-   * In case archiver runs without delays, two subsequent runs may try to process the same workflow entities (because of Elasticsearch refresh behaviour).
-   * In general, it's fine, but there are two side effects:
-   * 1. We do the job, that is not needed anymore -> wasting CPU time
-   * 2. Metrics will become incorrect, as it's not possible to distinguish such (duplicated) calls from normal ones.
+   * In case archiver runs without delays, two subsequent runs may try to process the same workflow
+   * entities (because of Elasticsearch refresh behaviour). In general, it's fine, but there are two
+   * side effects: 1. We do the job, that is not needed anymore -> wasting CPU time 2. Metrics will
+   * become incorrect, as it's not possible to distinguish such (duplicated) calls from normal ones.
    */
   private int delayBetweenRuns = 2000;
 

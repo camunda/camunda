@@ -14,15 +14,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 @Configuration
-@ComponentScan(basePackages = "io.zeebe.tasklist.webapp", nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@ConditionalOnProperty(name = "zeebe.tasklist.webappEnabled", havingValue = "true", matchIfMissing = true)
+@ComponentScan(
+    basePackages = "io.zeebe.tasklist.webapp",
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@ConditionalOnProperty(
+    name = "zeebe.tasklist.webappEnabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class WebappModuleConfiguration {
 
-  private static final Logger logger = LoggerFactory.getLogger(WebappModuleConfiguration.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(WebappModuleConfiguration.class);
 
   @PostConstruct
-  public void logModule(){
-    logger.info("Starting module: webapp");
+  public void logModule() {
+    LOGGER.info("Starting module: webapp");
   }
-
 }

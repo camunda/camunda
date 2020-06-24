@@ -14,18 +14,14 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   public static final String PARTITION_ID = "partitionId";
 
-  @Autowired
-  protected TasklistProperties tasklistProperties;
+  @Autowired protected TasklistProperties tasklistProperties;
 
   public String getIndexName() {
-    return String.format("%s-%s-%s_", tasklistProperties.getElasticsearch().getIndexPrefix(), getMainIndexName(), tasklistProperties.getSchemaVersion());
-  }
-
-  protected abstract String getMainIndexName();
-  
-  
-  public String getFileName() {
-    return "/create/index/tasklist-"+getMainIndexName()+".json";
+    return String.format(
+        "%s-%s-%s_",
+        tasklistProperties.getElasticsearch().getIndexPrefix(),
+        getMainIndexName(),
+        tasklistProperties.getSchemaVersion());
   }
 
   @Override
@@ -33,4 +29,9 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
     return getIndexName() + "alias";
   }
 
+  public String getFileName() {
+    return "/create/index/tasklist-" + getMainIndexName() + ".json";
+  }
+
+  protected abstract String getMainIndexName();
 }

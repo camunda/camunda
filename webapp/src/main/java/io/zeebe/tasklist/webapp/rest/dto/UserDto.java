@@ -17,22 +17,22 @@ public class UserDto {
     return firstname;
   }
 
-  public String getLastname() {
-    return lastname;
-  }
-
-  public boolean isCanLogout() {
-    return canLogout;
-  }
-
   public UserDto setFirstname(String firstname) {
     this.firstname = firstname;
     return this;
   }
 
+  public String getLastname() {
+    return lastname;
+  }
+
   public UserDto setLastname(String lastname) {
     this.lastname = lastname;
     return this;
+  }
+
+  public boolean isCanLogout() {
+    return canLogout;
   }
 
   public UserDto setCanLogout(boolean canLogout) {
@@ -46,5 +46,4 @@ public class UserDto {
         .setLastname(userDetails.getLastname())
         .setCanLogout(userDetails.isCanLogout());
   }
-  
 }

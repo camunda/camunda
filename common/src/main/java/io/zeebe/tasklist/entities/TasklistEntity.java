@@ -5,7 +5,6 @@
  */
 package io.zeebe.tasklist.entities;
 
-
 public abstract class TasklistEntity<T extends TasklistEntity<T>> {
 
   private String id;
@@ -18,18 +17,6 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> {
     this.id = id;
     return (T) this;
   }
-  
-  @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-
-    TasklistEntity<T> that = (TasklistEntity<T>) o;
-
-    return id != null ? id.equals(that.id) : that.id == null;
-  }
 
   @Override
   public int hashCode() {
@@ -37,8 +24,21 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final TasklistEntity<T> that = (TasklistEntity<T>) o;
+
+    return id != null ? id.equals(that.id) : that.id == null;
+  }
+
+  @Override
   public String toString() {
-    return "TasklistEntity{"
-      + "id='" + id + "\'}";
+    return "TasklistEntity{" + "id='" + id + "\'}";
   }
 }

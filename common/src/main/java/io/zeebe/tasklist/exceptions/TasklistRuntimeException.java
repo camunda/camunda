@@ -7,8 +7,7 @@ package io.zeebe.tasklist.exceptions;
 
 public class TasklistRuntimeException extends RuntimeException {
 
-  public TasklistRuntimeException() {
-  }
+  public TasklistRuntimeException() {}
 
   public TasklistRuntimeException(String message) {
     super(message);

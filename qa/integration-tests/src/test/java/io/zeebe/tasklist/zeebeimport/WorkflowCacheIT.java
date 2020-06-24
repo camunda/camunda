@@ -5,6 +5,15 @@
  */
 package io.zeebe.tasklist.zeebeimport;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
+import io.zeebe.tasklist.util.ZeebeTestUtil;
+import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import org.junit.After;
@@ -13,19 +22,10 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
-import io.zeebe.tasklist.util.ZeebeTestUtil;
-import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 public class WorkflowCacheIT extends TasklistZeebeIntegrationTest {
 
-  @SpyBean
-  private WorkflowCache workflowCache;
+  @SpyBean private WorkflowCache workflowCache;
 
   @Autowired
   @Qualifier("workflowIsDeployedCheck")
@@ -33,9 +33,10 @@ public class WorkflowCacheIT extends TasklistZeebeIntegrationTest {
 
   @After
   public void after() {
-    //clean the cache
+    // clean the cache
     try {
-      FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("cache"), new ConcurrentHashMap<>());
+      FieldSetter.setField(
+          workflowCache, WorkflowCache.class.getDeclaredField("cache"), new ConcurrentHashMap<>());
     } catch (NoSuchFieldException e) {
       fail("Failed to inject cache into some of the beans");
     }
@@ -50,8 +51,8 @@ public class WorkflowCacheIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void testWorkflowNameAndTaskNameReturnedAndReused() {
-    String workflowId1 = ZeebeTestUtil.deployWorkflow(zeebeClient, "simple_workflow.bpmn");
-    String workflowId2 = ZeebeTestUtil.deployWorkflow(zeebeClient, "simple_workflow_2.bpmn");
+    final String workflowId1 = ZeebeTestUtil.deployWorkflow(zeebeClient, "simple_workflow.bpmn");
+    final String workflowId2 = ZeebeTestUtil.deployWorkflow(zeebeClient, "simple_workflow_2.bpmn");
 
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId1);
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId2);
@@ -59,10 +60,10 @@ public class WorkflowCacheIT extends TasklistZeebeIntegrationTest {
     String demoProcessName = workflowCache.getWorkflowName(workflowId1);
     assertThat(demoProcessName).isNotNull();
 
-    //request task name, must be already in cache
+    // request task name, must be already in cache
     String taskName = workflowCache.getTaskName(workflowId1, "taskA");
     assertThat(taskName).isNotNull();
-    //request once again, the cache should be used
+    // request once again, the cache should be used
     demoProcessName = workflowCache.getWorkflowName(workflowId1);
     assertThat(demoProcessName).isNotNull();
     taskName = workflowCache.getTaskName(workflowId1, "taskA");
@@ -70,5 +71,4 @@ public class WorkflowCacheIT extends TasklistZeebeIntegrationTest {
 
     verify(workflowCache, times(1)).putToCache(any(), any());
   }
-
 }

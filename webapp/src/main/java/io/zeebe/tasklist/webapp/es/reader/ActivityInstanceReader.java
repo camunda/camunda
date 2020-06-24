@@ -5,6 +5,13 @@
  */
 package io.zeebe.tasklist.webapp.es.reader;
 
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
+import io.zeebe.tasklist.entities.ActivityInstanceEntity;
+import io.zeebe.tasklist.es.schema.templates.ActivityInstanceTemplate;
+import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
+import io.zeebe.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
@@ -15,34 +22,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import io.zeebe.tasklist.entities.ActivityInstanceEntity;
-import io.zeebe.tasklist.es.schema.templates.ActivityInstanceTemplate;
-import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
-import io.zeebe.tasklist.util.ElasticsearchUtil;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 public class ActivityInstanceReader extends AbstractReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(ActivityInstanceReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ActivityInstanceReader.class);
 
-  @Autowired
-  private ActivityInstanceTemplate activityInstanceTemplate;
+  @Autowired private ActivityInstanceTemplate activityInstanceTemplate;
 
   public List<ActivityInstanceEntity> getAllActivityInstances(Long workflowInstanceKey) {
-    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
-    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(activityInstanceTemplate)
-      .source(new SearchSourceBuilder()
-        .query(constantScoreQuery(workflowInstanceKeyQuery))
-        .sort(ActivityInstanceTemplate.POSITION, SortOrder.ASC));
+    final TermQueryBuilder workflowInstanceKeyQuery =
+        termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(activityInstanceTemplate)
+            .source(
+                new SearchSourceBuilder()
+                    .query(constantScoreQuery(workflowInstanceKeyQuery))
+                    .sort(ActivityInstanceTemplate.POSITION, SortOrder.ASC));
     try {
       return scroll(searchRequest, ActivityInstanceEntity.class);
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining all activity instances: %s", e.getMessage());
-      logger.error(message, e);
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining all activity instances: %s", e.getMessage());
+      LOGGER.error(message, e);
       throw new TasklistRuntimeException(message, e);
     }
   }
-
 }

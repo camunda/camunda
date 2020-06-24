@@ -5,22 +5,24 @@
  */
 package io.zeebe.tasklist.exceptions;
 
-
 public class PersistenceException extends Exception {
 
   private static final long serialVersionUID = 1L;
 
-  private Integer failingRequestId;
+  private final Integer failingRequestId;
 
   public PersistenceException() {
+    this.failingRequestId = 0;
   }
 
   public PersistenceException(String message) {
     super(message);
+    this.failingRequestId = 0;
   }
 
   public PersistenceException(String message, Throwable cause) {
     super(message, cause);
+    this.failingRequestId = 0;
   }
 
   public PersistenceException(String message, Throwable cause, Integer failingRequestId) {
@@ -30,13 +32,10 @@ public class PersistenceException extends Exception {
 
   public PersistenceException(Throwable cause) {
     super(cause);
+    this.failingRequestId = 0;
   }
 
   public Integer getFailingRequestId() {
     return failingRequestId;
-  }
-
-  public void setFailingRequestId(Integer failingRequestId) {
-    this.failingRequestId = failingRequestId;
   }
 }

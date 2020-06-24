@@ -12,5 +12,4 @@ public interface UserService {
   String getCurrentUsername();
 
   UserDto getCurrentUser();
-
 }

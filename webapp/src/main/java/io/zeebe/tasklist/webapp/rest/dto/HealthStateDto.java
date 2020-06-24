@@ -5,15 +5,13 @@
  */
 package io.zeebe.tasklist.webapp.rest.dto;
 
-
 public class HealthStateDto {
 
   public static final String HEALTH_STATUS_OK = "OK";
 
   private String state;
 
-  public HealthStateDto() {
-  }
+  public HealthStateDto() {}
 
   public HealthStateDto(String state) {
     this.state = state;
@@ -28,19 +26,21 @@ public class HealthStateDto {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-
-    HealthStateDto that = (HealthStateDto) o;
-
-    return state != null ? state.equals(that.state) : that.state == null;
+  public int hashCode() {
+    return state != null ? state.hashCode() : 0;
   }
 
   @Override
-  public int hashCode() {
-    return state != null ? state.hashCode() : 0;
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final HealthStateDto that = (HealthStateDto) o;
+
+    return state != null ? state.equals(that.state) : that.state == null;
   }
 }

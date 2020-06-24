@@ -5,6 +5,8 @@
  */
 package io.zeebe.tasklist.util;
 
+import io.zeebe.tasklist.Application;
+import io.zeebe.tasklist.data.DataGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -12,16 +14,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
-import io.zeebe.tasklist.Application;
-import io.zeebe.tasklist.data.DataGenerator;
 
 @SpringBootApplication
-@ComponentScan(basePackages = "io.zeebe.tasklist",
-  excludeFilters = {
-    @ComponentScan.Filter(type=FilterType.REGEX,pattern="io\\.zeebe\\.tasklist\\.util\\.apps\\..*"),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = Application.class),
-  },
-  nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@ComponentScan(
+    basePackages = "io.zeebe.tasklist",
+    excludeFilters = {
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.zeebe\\.tasklist\\.util\\.apps\\..*"),
+      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = Application.class),
+    },
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class TestApplication {
 
   public static void main(String[] args) throws Exception {
@@ -33,5 +36,4 @@ public class TestApplication {
   public DataGenerator stubDataGenerator() {
     return DataGenerator.DO_NOTHING;
   }
-
 }

@@ -49,26 +49,6 @@ public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
-
-    VariableEntity that = (VariableEntity) o;
-
-    if (name != null ? !name.equals(that.name) : that.name != null)
-      return false;
-    if (value != null ? !value.equals(that.value) : that.value != null)
-      return false;
-    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
-      return false;
-    return workflowInstanceKey != null ? workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey == null;
-  }
-
-  @Override
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (name != null ? name.hashCode() : 0);
@@ -76,5 +56,33 @@ public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
     result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final VariableEntity that = (VariableEntity) o;
+
+    if (name != null ? !name.equals(that.name) : that.name != null) {
+      return false;
+    }
+    if (value != null ? !value.equals(that.value) : that.value != null) {
+      return false;
+    }
+    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null) {
+      return false;
+    }
+    return workflowInstanceKey != null
+        ? workflowInstanceKey.equals(that.workflowInstanceKey)
+        : that.workflowInstanceKey == null;
   }
 }

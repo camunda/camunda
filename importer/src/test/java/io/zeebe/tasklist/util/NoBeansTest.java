@@ -12,9 +12,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-    classes = {TestApplicationWithNoBeans.class})
+@SpringBootTest(classes = {TestApplicationWithNoBeans.class})
 @ActiveProfiles("test")
-public abstract class NoBeansTest {
-
-}
+public abstract class NoBeansTest {}

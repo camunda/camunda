@@ -113,8 +113,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     response.reset();
     response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
 
-    PrintWriter writer = response.getWriter();
-    String jsonResponse =
+    final PrintWriter writer = response.getWriter();
+    final String jsonResponse =
         Json.createObjectBuilder().add("message", ex.getMessage()).build().toString();
 
     writer.append(jsonResponse);
@@ -128,15 +128,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
    * Browser applications) The CSRF Token is expected to be set in HTTP Request Header from the
    * client. So an attacker can't trick the user to submit unindented data to the server (by a
    * link).
-   *
-   * @param request
-   * @param response
-   * @return
    */
   private HttpServletResponse addCSRFTokenWhenAvailable(
       HttpServletRequest request, HttpServletResponse response) {
     if (shouldAddCSRF(request)) {
-      CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+      final CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
       if (token != null) {
         response.setHeader(X_CSRF_HEADER, token.getHeaderName());
         response.setHeader(X_CSRF_PARAM, token.getParameterName());
@@ -151,7 +147,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   protected boolean shouldAddCSRF(HttpServletRequest request) {
     final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    String path = request.getRequestURI();
+    final String path = request.getRequestURI();
     if (auth != null && auth.isAuthenticated() && (path == null || !path.contains("logout"))) {
       return true;
     }

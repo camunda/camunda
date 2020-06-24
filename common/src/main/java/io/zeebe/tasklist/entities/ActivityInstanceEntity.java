@@ -92,36 +92,6 @@ public class ActivityInstanceEntity extends TasklistZeebeEntity<ActivityInstance
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
-
-    ActivityInstanceEntity that = (ActivityInstanceEntity) o;
-
-    if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
-      return false;
-    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
-      return false;
-    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
-      return false;
-    if (state != that.state)
-      return false;
-    if (type != that.type)
-      return false;
-    if (incidentKey != null ? !incidentKey.equals(that.incidentKey) : that.incidentKey != null)
-      return false;
-    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
-      return false;
-    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
-      return false;
-    return position != null ? position.equals(that.position) : that.position == null;
-  }
-
-  @Override
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
@@ -134,5 +104,48 @@ public class ActivityInstanceEntity extends TasklistZeebeEntity<ActivityInstance
     result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (position != null ? position.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final ActivityInstanceEntity that = (ActivityInstanceEntity) o;
+
+    if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null) {
+      return false;
+    }
+    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null) {
+      return false;
+    }
+    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null) {
+      return false;
+    }
+    if (state != that.state) {
+      return false;
+    }
+    if (type != that.type) {
+      return false;
+    }
+    if (incidentKey != null ? !incidentKey.equals(that.incidentKey) : that.incidentKey != null) {
+      return false;
+    }
+    if (workflowInstanceKey != null
+        ? !workflowInstanceKey.equals(that.workflowInstanceKey)
+        : that.workflowInstanceKey != null) {
+      return false;
+    }
+    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null) {
+      return false;
+    }
+    return position != null ? position.equals(that.position) : that.position == null;
   }
 }

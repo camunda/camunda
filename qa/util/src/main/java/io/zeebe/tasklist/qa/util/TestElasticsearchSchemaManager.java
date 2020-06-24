@@ -5,14 +5,14 @@
  */
 package io.zeebe.tasklist.qa.util;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import io.zeebe.tasklist.es.ElasticsearchSchemaManager;
 import io.zeebe.tasklist.es.schema.indices.IndexDescriptor;
 import io.zeebe.tasklist.es.schema.templates.TemplateDescriptor;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
@@ -28,12 +28,13 @@ import org.springframework.stereotype.Component;
 @Profile("test")
 public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
 
-  private static final Logger logger = LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
   @Override
   public boolean initializeSchema() {
-    //do nothing
-    logger.info("INIT: no schema will be created");
+    // do nothing
+    LOGGER.info("INIT: no schema will be created");
     return true;
   }
 
@@ -41,10 +42,13 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
   protected boolean createIndex(IndexDescriptor indexDescriptor) {
     final Map<String, Object> indexDescription = readJSONFileToMap(indexDescriptor.getFileName());
     // Adjust aliases in case of other configured indexNames, e.g. non-default prefix
-    indexDescription.put("aliases", Collections.singletonMap(indexDescriptor.getAlias(), Collections.EMPTY_MAP));
+    indexDescription.put(
+        "aliases", Collections.singletonMap(indexDescriptor.getAlias(), Collections.EMPTY_MAP));
     addSettings(indexDescription);
 
-    return createIndex(new CreateIndexRequest(indexDescriptor.getIndexName()).source(indexDescription), indexDescriptor.getIndexName());
+    return createIndex(
+        new CreateIndexRequest(indexDescriptor.getIndexName()).source(indexDescription),
+        indexDescriptor.getIndexName());
   }
 
   @Override
@@ -53,13 +57,17 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
 
     // Adjust prefixes and aliases in case of other configured indexNames, e.g. non-default prefix
     template.put("index_patterns", Collections.singletonList(templateDescriptor.getIndexPattern()));
-    template.put("aliases", Collections.singletonMap(templateDescriptor.getAlias(), Collections.EMPTY_MAP));
+    template.put(
+        "aliases", Collections.singletonMap(templateDescriptor.getAlias(), Collections.EMPTY_MAP));
     addSettings(template);
 
-    return putIndexTemplate(new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(template),
-        templateDescriptor.getTemplateName())
+    return putIndexTemplate(
+            new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(template),
+            templateDescriptor.getTemplateName())
         // This is necessary, otherwise Tasklist won't find indexes at startup
-        && createIndex(new CreateIndexRequest(templateDescriptor.getMainIndexName()), templateDescriptor.getMainIndexName());
+        && createIndex(
+            new CreateIndexRequest(templateDescriptor.getMainIndexName()),
+            templateDescriptor.getMainIndexName());
   }
 
   private void addSettings(Map<String, Object> definition) {
@@ -83,10 +91,12 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
 
   public void deleteSchema() {
     try {
-      String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
-      logger.info("Removing indices " + prefix + "*");
+      final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+      LOGGER.info("Removing indices " + prefix + "*");
       esClient.indices().delete(new DeleteIndexRequest(prefix + "*"), RequestOptions.DEFAULT);
-      esClient.indices().deleteTemplate(new DeleteIndexTemplateRequest(prefix + "*"), RequestOptions.DEFAULT);
+      esClient
+          .indices()
+          .deleteTemplate(new DeleteIndexTemplateRequest(prefix + "*"), RequestOptions.DEFAULT);
     } catch (ElasticsearchStatusException | IOException e) {
       throw new TasklistRuntimeException("Failed to delete indices ", e);
     }
@@ -96,7 +106,7 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
     try {
       deleteSchema();
     } catch (Throwable t) {
-      logger.debug(t.getMessage());
+      LOGGER.debug(t.getMessage());
     }
   }
 }

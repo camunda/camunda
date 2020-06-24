@@ -60,29 +60,6 @@ public class UserEntity extends TasklistEntity<UserEntity> {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
-
-    UserEntity that = (UserEntity) o;
-
-    if (username != null ? !username.equals(that.username) : that.username != null)
-      return false;
-    if (password != null ? !password.equals(that.password) : that.password != null)
-      return false;
-    if (role != null ? !role.equals(that.role) : that.role != null)
-      return false;
-    if (firstname != null ? !firstname.equals(that.firstname) : that.firstname != null)
-      return false;
-    return lastname != null ? lastname.equals(that.lastname) : that.lastname == null;
-
-  }
-
-  @Override
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (username != null ? username.hashCode() : 0);
@@ -93,13 +70,41 @@ public class UserEntity extends TasklistEntity<UserEntity> {
     return result;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final UserEntity that = (UserEntity) o;
+
+    if (username != null ? !username.equals(that.username) : that.username != null) {
+      return false;
+    }
+    if (password != null ? !password.equals(that.password) : that.password != null) {
+      return false;
+    }
+    if (role != null ? !role.equals(that.role) : that.role != null) {
+      return false;
+    }
+    if (firstname != null ? !firstname.equals(that.firstname) : that.firstname != null) {
+      return false;
+    }
+    return lastname != null ? lastname.equals(that.lastname) : that.lastname == null;
+  }
+
   public static UserEntity from(String username, String password, String role) {
-    UserEntity userEntity = new UserEntity();
+    final UserEntity userEntity = new UserEntity();
     userEntity.setId(username);
     userEntity.setUsername(username);
     userEntity.setPassword(password);
     userEntity.setRole(role);
     return userEntity;
   }
-
 }

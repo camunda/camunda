@@ -5,17 +5,21 @@
  */
 package io.zeebe.tasklist.modules;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.zeebe.tasklist.ImportModuleConfiguration;
+import io.zeebe.tasklist.WebappModuleConfiguration;
 import io.zeebe.tasklist.property.TasklistProperties;
 import org.junit.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.TestPropertySource;
-import io.zeebe.tasklist.ImportModuleConfiguration;
-import io.zeebe.tasklist.WebappModuleConfiguration;
-import static org.assertj.core.api.Assertions.assertThat;
 
-@TestPropertySource(properties = {TasklistProperties.PREFIX + ".importerEnabled = false",
-    TasklistProperties.PREFIX + ".archiverEnabled = false",
-    "graphql.servlet.websocket.enabled=false"})
+@TestPropertySource(
+    properties = {
+      TasklistProperties.PREFIX + ".importerEnabled = false",
+      TasklistProperties.PREFIX + ".archiverEnabled = false",
+      "graphql.servlet.websocket.enabled=false"
+    })
 public class OnlyWebappIT extends ModuleIntegrationTest {
 
   @Test
@@ -27,5 +31,4 @@ public class OnlyWebappIT extends ModuleIntegrationTest {
   public void testImportModuleIsNotPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
   }
-
 }

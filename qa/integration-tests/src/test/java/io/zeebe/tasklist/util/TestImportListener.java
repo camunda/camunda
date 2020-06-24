@@ -5,10 +5,10 @@
  */
 package io.zeebe.tasklist.util;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import org.springframework.stereotype.Component;
 import io.zeebe.tasklist.zeebeimport.ImportBatch;
 import io.zeebe.tasklist.zeebeimport.ImportListener;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.stereotype.Component;
 
 @Component
 public class TestImportListener implements ImportListener {
@@ -38,5 +38,4 @@ public class TestImportListener implements ImportListener {
   public int getFailed() {
     return failed.get();
   }
-
 }

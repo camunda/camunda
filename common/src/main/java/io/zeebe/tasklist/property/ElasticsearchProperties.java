@@ -10,8 +10,8 @@ public class ElasticsearchProperties {
   public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
-  
-  private String clusterName= "elasticsearch";
+
+  private String clusterName = "elasticsearch";
 
   private String host = "localhost";
 

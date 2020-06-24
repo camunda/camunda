@@ -13,8 +13,8 @@ public abstract class AbstractUserService implements UserService {
 
   @Override
   public String getCurrentUsername() {
-    SecurityContext context = SecurityContextHolder.getContext();
-    Authentication authentication = context.getAuthentication();
+    final SecurityContext context = SecurityContextHolder.getContext();
+    final Authentication authentication = context.getAuthentication();
     return authentication.getName();
   }
 }

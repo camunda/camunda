@@ -12,5 +12,4 @@ public interface ImportBatchProcessor {
   void performImport(ImportBatch importBatch) throws PersistenceException;
 
   String getZeebeVersion();
-
 }

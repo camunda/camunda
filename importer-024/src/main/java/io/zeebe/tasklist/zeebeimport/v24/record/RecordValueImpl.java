@@ -13,5 +13,4 @@ public abstract class RecordValueImpl implements RecordValue {
   public String toJson() {
     throw new UnsupportedOperationException("toJson operation is not supported");
   }
-
 }

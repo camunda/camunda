@@ -12,9 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
-/**
- * This class contains all project configuration parameters.
- */
+/** This class contains all project configuration parameters. */
 @Component
 @Configuration
 @ConfigurationProperties(TasklistProperties.PREFIX)
@@ -28,27 +26,22 @@ public class TasklistProperties {
   private boolean archiverEnabled = true;
   private boolean webappEnabled = true;
 
-  /**
-   * Indicates, whether CSRF prevention is enabled.
-   */
+  /** Indicates, whether CSRF prevention is enabled. */
   private boolean csrfPreventionEnabled = true;
-  
-  /** 
-   * Standard user data
-   */
+
+  /** Standard user data */
   private String username = "demo";
+
   private String password = "demo";
 
-  /**
-   * Maximum size of batch operation.
-   */
+  /** Maximum size of batch operation. */
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
   private boolean enterprise = false;
 
   @Value("${io.zeebe.tasklist.internal.schema.version}")
   private String schemaVersion;
-  
+
   @Value("${io.zeebe.tasklist.internal.schema.previous_version}")
   private String previousSchemaVersion;
 
@@ -58,14 +51,11 @@ public class TasklistProperties {
   @NestedConfigurationProperty
   private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
 
-  @NestedConfigurationProperty
-  private ZeebeProperties zeebe = new ZeebeProperties();
+  @NestedConfigurationProperty private ZeebeProperties zeebe = new ZeebeProperties();
 
-  @NestedConfigurationProperty
-  private ImportProperties importer = new ImportProperties();
+  @NestedConfigurationProperty private ImportProperties importer = new ImportProperties();
 
-  @NestedConfigurationProperty
-  private ArchiverProperties archiver = new ArchiverProperties();
+  @NestedConfigurationProperty private ArchiverProperties archiver = new ArchiverProperties();
 
   @NestedConfigurationProperty
   private ClusterNodeProperties clusterNode = new ClusterNodeProperties();
@@ -105,7 +95,7 @@ public class TasklistProperties {
   public boolean isCsrfPreventionEnabled() {
     return csrfPreventionEnabled;
   }
-  
+
   public void setCsrfPreventionEnabled(boolean csrfPreventionEnabled) {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }
@@ -189,7 +179,7 @@ public class TasklistProperties {
   public void setSchemaVersion(String schemaVersion) {
     this.schemaVersion = schemaVersion;
   }
-  
+
   public String getPreviousSchemaVersion() {
     return previousSchemaVersion.toLowerCase();
   }
@@ -197,5 +187,4 @@ public class TasklistProperties {
   public void setPreviousSchemaVersion(String previousSchemaVersion) {
     this.previousSchemaVersion = previousSchemaVersion;
   }
-
 }

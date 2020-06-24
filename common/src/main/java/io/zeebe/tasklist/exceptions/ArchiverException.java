@@ -7,8 +7,7 @@ package io.zeebe.tasklist.exceptions;
 
 public class ArchiverException extends Exception {
 
-  public ArchiverException() {
-  }
+  public ArchiverException() {}
 
   public ArchiverException(String message) {
     super(message);

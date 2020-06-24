@@ -10,5 +10,4 @@ import io.zeebe.test.EmbeddedBrokerRule;
 public interface EmbeddedZeebeConfigurer {
 
   void injectPrefixToZeebeConfig(EmbeddedBrokerRule brokerRule, String exporterId, String prefix);
-
 }

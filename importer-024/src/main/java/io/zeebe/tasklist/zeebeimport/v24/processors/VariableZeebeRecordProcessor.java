@@ -5,6 +5,16 @@
  */
 package io.zeebe.tasklist.zeebeimport.v24.processors;
 
+import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.tasklist.entities.VariableEntity;
+import io.zeebe.tasklist.es.schema.templates.VariableTemplate;
+import io.zeebe.tasklist.exceptions.PersistenceException;
+import io.zeebe.tasklist.util.ElasticsearchUtil;
+import io.zeebe.tasklist.zeebeimport.v24.record.Intent;
+import io.zeebe.tasklist.zeebeimport.v24.record.value.VariableRecordValueImpl;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,20 +27,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.tasklist.entities.VariableEntity;
-import io.zeebe.tasklist.es.schema.templates.VariableTemplate;
-import io.zeebe.tasklist.exceptions.PersistenceException;
-import io.zeebe.tasklist.util.ElasticsearchUtil;
-import io.zeebe.tasklist.zeebeimport.v24.record.Intent;
-import io.zeebe.tasklist.zeebeimport.v24.record.value.VariableRecordValueImpl;
-import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 @Component
 public class VariableZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(VariableZeebeRecordProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(VariableZeebeRecordProcessor.class);
 
   private static final Set<String> VARIABLE_STATES = new HashSet<>();
 
@@ -39,22 +40,21 @@ public class VariableZeebeRecordProcessor {
     VARIABLE_STATES.add(Intent.UPDATED.name());
   }
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
-  public void processVariableRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    VariableRecordValueImpl recordValue = (VariableRecordValueImpl)record.getValue();
+  public void processVariableRecord(Record record, BulkRequest bulkRequest)
+      throws PersistenceException {
+    final VariableRecordValueImpl recordValue = (VariableRecordValueImpl) record.getValue();
 
-    //update variable
+    // update variable
     bulkRequest.add(persistVariable(record, recordValue));
-
   }
 
-  private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
-    VariableEntity entity = new VariableEntity();
+  private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue)
+      throws PersistenceException {
+    final VariableEntity entity = new VariableEntity();
     entity.setId(VariableEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
@@ -67,19 +67,23 @@ public class VariableZeebeRecordProcessor {
 
   private UpdateRequest getVariableQuery(VariableEntity entity) throws PersistenceException {
     try {
-      logger.debug("Variable instance for list view: id {}", entity.getId());
-      Map<String, Object> updateFields = new HashMap<>();
+      LOGGER.debug("Variable instance for list view: id {}", entity.getId());
+      final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(VariableTemplate.VALUE, entity.getValue());
 
-      return new UpdateRequest(variableTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(updateFields)
-        .retryOnConflict(UPDATE_RETRY_COUNT);
+      return new UpdateRequest(
+              variableTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+          .doc(updateFields)
+          .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
-      logger.error("Error preparing the query to upsert variable instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert variable instance [%s]  for list view", entity.getId()), e);
+      LOGGER.error("Error preparing the query to upsert variable instance for list view", e);
+      throw new PersistenceException(
+          String.format(
+              "Error preparing the query to upsert variable instance [%s]  for list view",
+              entity.getId()),
+          e);
     }
   }
-
 }

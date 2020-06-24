@@ -15,13 +15,11 @@ public class ClientConfigRestService {
 
   public static final String CLIENT_CONFIG_RESOURCE = "/client-config.js";
 
-  @Autowired
-  private TasklistProperties tasklistProperties;
+  @Autowired private TasklistProperties tasklistProperties;
 
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
-    return String.format("window.clientConfig = { \"isEnterprise\": %s };", tasklistProperties.isEnterprise());
+    return String.format(
+        "window.clientConfig = { \"isEnterprise\": %s };", tasklistProperties.isEnterprise());
   }
-
-
 }

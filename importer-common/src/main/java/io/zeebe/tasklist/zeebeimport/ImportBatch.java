@@ -5,22 +5,23 @@
  */
 package io.zeebe.tasklist.zeebeimport;
 
-import java.io.IOException;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.zeebe.tasklist.zeebe.ImportValueType;
 import io.zeebe.tasklist.zeebe.ZeebeESConstants;
+import java.io.IOException;
+import java.util.List;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * One batch for importing Zeebe data. Contains list of records as well as partition id and value type of the records.
+ * One batch for importing Zeebe data. Contains list of records as well as partition id and value
+ * type of the records.
  */
 public class ImportBatch {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportBatch.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportBatch.class);
 
   private int partitionId;
 
@@ -32,7 +33,11 @@ public class ImportBatch {
 
   private int finishedWiCount = 0;
 
-  public ImportBatch(int partitionId, ImportValueType importValueType, List<SearchHit> hits, String lastRecordIndexName) {
+  public ImportBatch(
+      int partitionId,
+      ImportValueType importValueType,
+      List<SearchHit> hits,
+      String lastRecordIndexName) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
     this.hits = hits;
@@ -86,40 +91,20 @@ public class ImportBatch {
   public long getLastProcessedPosition(ObjectMapper objectMapper) {
     try {
       if (hits != null && hits.size() != 0) {
-        final ObjectNode node = objectMapper.readValue(hits.get(hits.size() - 1).getSourceAsString(), ObjectNode.class);
+        final ObjectNode node =
+            objectMapper.readValue(hits.get(hits.size() - 1).getSourceAsString(), ObjectNode.class);
         if (node.has(ZeebeESConstants.POSITION_FIELD_NAME)) {
           return node.get(ZeebeESConstants.POSITION_FIELD_NAME).longValue();
         }
       }
     } catch (IOException e) {
-      logger.warn(String.format("Unable to parse Zeebe object: %s", e.getMessage()), e);
+      LOGGER.warn(String.format("Unable to parse Zeebe object: %s", e.getMessage()), e);
     }
     return 0;
   }
 
   public String getAliasName() {
     return importValueType.getAliasTemplate();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-
-    ImportBatch that = (ImportBatch) o;
-
-    if (partitionId != that.partitionId)
-      return false;
-    if (finishedWiCount != that.finishedWiCount)
-      return false;
-    if (importValueType != that.importValueType)
-      return false;
-    if (hits != null ? !hits.equals(that.hits) : that.hits != null)
-      return false;
-    return lastRecordIndexName != null ? lastRecordIndexName.equals(that.lastRecordIndexName) : that.lastRecordIndexName == null;
-
   }
 
   @Override
@@ -130,5 +115,33 @@ public class ImportBatch {
     result = 31 * result + (lastRecordIndexName != null ? lastRecordIndexName.hashCode() : 0);
     result = 31 * result + finishedWiCount;
     return result;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final ImportBatch that = (ImportBatch) o;
+
+    if (partitionId != that.partitionId) {
+      return false;
+    }
+    if (finishedWiCount != that.finishedWiCount) {
+      return false;
+    }
+    if (importValueType != that.importValueType) {
+      return false;
+    }
+    if (hits != null ? !hits.equals(that.hits) : that.hits != null) {
+      return false;
+    }
+    return lastRecordIndexName != null
+        ? lastRecordIndexName.equals(that.lastRecordIndexName)
+        : that.lastRecordIndexName == null;
   }
 }

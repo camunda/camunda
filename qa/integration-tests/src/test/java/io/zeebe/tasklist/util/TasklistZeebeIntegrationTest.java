@@ -5,6 +5,19 @@
  */
 package io.zeebe.tasklist.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
+import io.zeebe.tasklist.zeebe.PartitionHolder;
+import io.zeebe.tasklist.zeebeimport.ImportPositionHolder;
+import io.zeebe.test.ClientRule;
+import io.zeebe.test.EmbeddedBrokerRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -12,57 +25,29 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import io.micrometer.core.instrument.Meter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.tasklist.property.TasklistProperties;
-import io.zeebe.tasklist.zeebe.PartitionHolder;
-import io.zeebe.tasklist.zeebeimport.ImportPositionHolder;
-import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
-import io.zeebe.test.ClientRule;
-import io.zeebe.test.EmbeddedBrokerRule;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTest {
 
-  @MockBean
-  protected ZeebeClient mockedZeebeClient;    //we don't want to create ZeebeClient, we will rather use the one from test rule
-  
-  protected ZeebeClient zeebeClient;
-
-  @Autowired
-  public BeanFactory beanFactory;
-
-  @Rule
-  public final TasklistZeebeRule zeebeRule;
-
-  protected ClientRule clientRule;
-
+  @Autowired public BeanFactory beanFactory;
+  @Rule public final TasklistZeebeRule zeebeRule;
   public EmbeddedBrokerRule brokerRule;
+  @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
-  @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  @MockBean
+  protected ZeebeClient
+      mockedZeebeClient; // we don't want to create ZeebeClient, we will rather use the one from
+  // test rule
 
-  @Autowired
-  protected PartitionHolder partitionHolder;
+  protected ZeebeClient zeebeClient;
+  protected ClientRule clientRule;
+  @Autowired protected PartitionHolder partitionHolder;
 
-  @Autowired
-  protected ImportPositionHolder importPositionHolder;
-
-  @Autowired
-  private WorkflowCache workflowCache;
-
-  @Autowired
-  protected TasklistProperties tasklistProperties;
-
-  private String workerName;
-
-  @Autowired
-  private MeterRegistry meterRegistry;
-
+  @Autowired protected ImportPositionHolder importPositionHolder;
+  @Autowired protected TasklistProperties tasklistProperties;
   protected TasklistTester tester;
+  @Autowired private WorkflowCache workflowCache;
+  private String workerName;
+  @Autowired private MeterRegistry meterRegistry;
 
   public TasklistZeebeIntegrationTest() {
     zeebeRule = new TasklistZeebeRule();
@@ -85,11 +70,11 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
     workflowCache.clearCache();
     importPositionHolder.clearCache();
     try {
-      FieldSetter.setField(partitionHolder, PartitionHolder.class.getDeclaredField("zeebeClient"), getClient());
+      FieldSetter.setField(
+          partitionHolder, PartitionHolder.class.getDeclaredField("zeebeClient"), getClient());
     } catch (NoSuchFieldException e) {
       fail("Failed to inject ZeebeClient into some of the beans");
     }
-
   }
 
   @After
@@ -111,7 +96,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   }
 
   protected void clearMetrics() {
-    for (Meter meter: meterRegistry.getMeters()) {
+    for (Meter meter : meterRegistry.getMeters()) {
       meterRegistry.remove(meter);
     }
   }

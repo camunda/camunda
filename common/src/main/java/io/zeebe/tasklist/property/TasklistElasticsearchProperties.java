@@ -22,5 +22,4 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
   public void setDefaultIndexPrefix() {
     setIndexPrefix(DEFAULT_INDEX_PREFIX);
   }
-
 }

@@ -12,9 +12,8 @@ public interface TemplateDescriptor {
   String getIndexPattern();
 
   String getMainIndexName();
-  
+
   String getFileName();
 
   String getAlias();
-
 }

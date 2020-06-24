@@ -53,6 +53,8 @@
     <skip.fe.build>false</skip.fe.build>
 
     <plugin.version.license>3.0</plugin.version.license>
+    <plugin.version.checkstyle>3.1.1</plugin.version.checkstyle>
+    <plugin.version.fmt>2.9</plugin.version.fmt>
     <license.header>${project.baseUri}/../license/license-header</license.header>
   </properties>
 
@@ -318,6 +320,49 @@
           <artifactId>maven-shade-plugin</artifactId>
           <version>3.2.3</version>
         </plugin>
+
+        <!-- CHECKSTYLE -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>${plugin.version.checkstyle}</version>
+          <configuration>
+            <configLocation>build-tools/check/.checkstyle.xml</configLocation>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            <encoding>UTF-8</encoding>
+            <failOnViolation>true</failOnViolation>
+            <sourceDirectories>
+              <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+              <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+            </sourceDirectories>
+          </configuration>
+          <executions>
+            <execution>
+              <id>validate-java</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <configuration>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+
+        <!-- Google code format plugin -->
+        <plugin>
+          <groupId>com.coveo</groupId>
+          <artifactId>fmt-maven-plugin</artifactId>
+          <version>${plugin.version.fmt}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>format</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
 
     </pluginManagement>
@@ -326,6 +371,14 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.coveo</groupId>
+        <artifactId>fmt-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

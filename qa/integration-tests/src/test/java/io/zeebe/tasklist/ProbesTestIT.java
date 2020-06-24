@@ -21,40 +21,43 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = { TestApplication.class, TasklistProperties.class, TestElasticsearchSchemaManager.class, Probes.class },
+    classes = {
+      TestApplication.class,
+      TasklistProperties.class,
+      TestElasticsearchSchemaManager.class,
+      Probes.class
+    },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
-        "graphql.servlet.websocket.enabled=false"
-    }
-)
-public class ProbesTestIT{
+      "graphql.servlet.websocket.enabled=false"
+    })
+public class ProbesTestIT {
 
-  @Autowired
-  private TasklistProperties tasklistProperties;
-  
-  @Autowired
-  private TestElasticsearchSchemaManager elasticsearchSchemaManager;
-  
-  @Autowired
-  private Probes probes;
-  
+  @Autowired private TasklistProperties tasklistProperties;
+
+  @Autowired private TestElasticsearchSchemaManager elasticsearchSchemaManager;
+
+  @Autowired private Probes probes;
+
   @Before
   public void before() {
-     tasklistProperties.getElasticsearch().setIndexPrefix("test-probes-"+TestUtil.createRandomString(5));
+    tasklistProperties
+        .getElasticsearch()
+        .setIndexPrefix("test-probes-" + TestUtil.createRandomString(5));
   }
-  
+
   @After
   public void after() {
     elasticsearchSchemaManager.deleteSchemaQuietly();
     tasklistProperties.getElasticsearch().setDefaultIndexPrefix();
   }
-  
+
   @Test
   public void testIsReady() {
     elasticsearchSchemaManager.createSchema();
     assertThat(probes.isReady()).isTrue();
   }
-  
+
   @Test
   public void testIsNotReady() {
     assertThat(probes.isReady()).isFalse();
@@ -65,10 +68,9 @@ public class ProbesTestIT{
     elasticsearchSchemaManager.createSchema();
     assertThat(probes.isLive()).isTrue();
   }
-  
+
   @Test
   public void testIsNotLive() {
     assertThat(probes.isLive()).isFalse();
   }
-  
 }

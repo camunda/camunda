@@ -24,12 +24,12 @@ public class TaskTemplate extends AbstractTemplateDescriptor {
   public static final String ASSIGNEE = "assignee";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
 
-//  public static final List<String> ALL_FIELDS = asList(ID, KEY, WORKFLOW_INSTANCE_KEY, POSITION, PARTITION_ID, CREATION_TIME, COMPLETION_TIME, ELEMENT_ID,
-//      STATE, ASSIGNEE, BPMN_PROCESS_ID);
+  //  public static final List<String> ALL_FIELDS = asList(ID, KEY, WORKFLOW_INSTANCE_KEY, POSITION,
+  // PARTITION_ID, CREATION_TIME, COMPLETION_TIME, ELEMENT_ID,
+  //      STATE, ASSIGNEE, BPMN_PROCESS_ID);
 
   @Override
   protected String getIndexNameFormat() {
     return INDEX_NAME;
   }
-
 }

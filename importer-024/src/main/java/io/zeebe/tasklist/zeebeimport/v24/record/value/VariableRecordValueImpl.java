@@ -5,8 +5,8 @@
  */
 package io.zeebe.tasklist.zeebeimport.v24.record.value;
 
-import io.zeebe.tasklist.zeebeimport.v24.record.RecordValueImpl;
 import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.zeebe.tasklist.zeebeimport.v24.record.RecordValueImpl;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {
 
@@ -41,44 +41,24 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     return workflowKey;
   }
 
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public void setValue(String value) {
-    this.value = value;
-  }
-
-  public void setScopeKey(long scopeKey) {
-    this.scopeKey = scopeKey;
+  public void setWorkflowKey(long workflowKey) {
+    this.workflowKey = workflowKey;
   }
 
   public void setWorkflowInstanceKey(long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
-  public void setWorkflowKey(long workflowKey) {
-    this.workflowKey = workflowKey;
+  public void setScopeKey(long scopeKey) {
+    this.scopeKey = scopeKey;
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+  public void setValue(String value) {
+    this.value = value;
+  }
 
-    VariableRecordValueImpl that = (VariableRecordValueImpl) o;
-
-    if (scopeKey != that.scopeKey)
-      return false;
-    if (workflowInstanceKey != that.workflowInstanceKey)
-      return false;
-    if (workflowKey != that.workflowKey)
-      return false;
-    if (name != null ? !name.equals(that.name) : that.name != null)
-      return false;
-    return value != null ? value.equals(that.value) : that.value == null;
+  public void setName(String name) {
+    this.name = name;
   }
 
   @Override
@@ -92,8 +72,47 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final VariableRecordValueImpl that = (VariableRecordValueImpl) o;
+
+    if (scopeKey != that.scopeKey) {
+      return false;
+    }
+    if (workflowInstanceKey != that.workflowInstanceKey) {
+      return false;
+    }
+    if (workflowKey != that.workflowKey) {
+      return false;
+    }
+    if (name != null ? !name.equals(that.name) : that.name != null) {
+      return false;
+    }
+    return value != null ? value.equals(that.value) : that.value == null;
+  }
+
+  @Override
   public String toString() {
-    return "VariableRecordValueImpl{" + "name='" + name + '\'' + ", value='" + value + '\'' + ", scopeKey=" + scopeKey + ", workflowInstanceKey="
-      + workflowInstanceKey + ", workflowKey=" + workflowKey + "} " + super.toString();
+    return "VariableRecordValueImpl{"
+        + "name='"
+        + name
+        + '\''
+        + ", value='"
+        + value
+        + '\''
+        + ", scopeKey="
+        + scopeKey
+        + ", workflowInstanceKey="
+        + workflowInstanceKey
+        + ", workflowKey="
+        + workflowKey
+        + "} "
+        + super.toString();
   }
 }

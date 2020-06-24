@@ -6,17 +6,19 @@
 package io.zeebe.tasklist.zeebeimport.v24.record;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordValue;
 
 public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   private int partitionId;
+
   @JsonDeserialize(using = StringToIntentSerializer.class)
   private Intent intent;
+
   private RecordType recordType;
   private RejectionType rejectionType;
   private String rejectionReason;
@@ -29,17 +31,36 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   private T value;
 
-  public RecordImpl() {
+  public RecordImpl() {}
+
+  @Override
+  public long getPosition() {
+    return position;
   }
 
   @Override
-  public int getPartitionId() {
-    return partitionId;
+  public long getSourceRecordPosition() {
+    return sourceRecordPosition;
+  }
+
+  @Override
+  public long getKey() {
+    return key;
+  }
+
+  @Override
+  public long getTimestamp() {
+    return timestamp;
   }
 
   @Override
   public Intent getIntent() {
     return intent;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
   }
 
   @Override
@@ -62,6 +83,31 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     return valueType;
   }
 
+  public void setValueType(ValueType valueType) {
+    this.valueType = valueType;
+  }
+
+  @Override
+  public T getValue() {
+    return value;
+  }
+
+  public void setValue(T value) {
+    this.value = value;
+  }
+
+  public void setRejectionReason(String rejectionReason) {
+    this.rejectionReason = rejectionReason;
+  }
+
+  public void setRejectionType(RejectionType rejectionType) {
+    this.rejectionType = rejectionType;
+  }
+
+  public void setRecordType(RecordType recordType) {
+    this.recordType = recordType;
+  }
+
   public void setPartitionId(int partitionId) {
     this.partitionId = partitionId;
   }
@@ -70,75 +116,25 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     this.intent = intent;
   }
 
-  public void setRecordType(RecordType recordType) {
-    this.recordType = recordType;
-  }
-
-  public void setRejectionType(RejectionType rejectionType) {
-    this.rejectionType = rejectionType;
-  }
-
-  public void setRejectionReason(String rejectionReason) {
-    this.rejectionReason = rejectionReason;
-  }
-
-  public void setValueType(ValueType valueType) {
-    this.valueType = valueType;
-  }
-
-  @Override
-  public long getKey() {
-    return key;
-  }
-
-  @Override
-  public long getPosition() {
-    return position;
-  }
-
-  @Override
-  public long getTimestamp() {
-    return timestamp;
-  }
-
-  @Override
-  public long getSourceRecordPosition() {
-    return sourceRecordPosition;
-  }
-
-  @Override
-  public T getValue() {
-    return value;
-  }
-
-  @Override
-  public Record<T> clone() {
-    throw new UnsupportedOperationException("Clone not implemented");
+  public void setTimestamp(long timestamp) {
+    this.timestamp = timestamp;
   }
 
   public void setKey(long key) {
     this.key = key;
   }
 
-  public void setPosition(long position) {
-    this.position = position;
-  }
-
-  public void setTimestamp(long timestamp) {
-    this.timestamp = timestamp;
-  }
-
   public void setSourceRecordPosition(long sourceRecordPosition) {
     this.sourceRecordPosition = sourceRecordPosition;
   }
 
-  public void setValue(T value) {
-    this.value = value;
+  public void setPosition(long position) {
+    this.position = position;
   }
 
   @Override
-  public String toJson() {
-    throw new UnsupportedOperationException("toJson operation is not supported");
+  public Record<T> clone() {
+    throw new UnsupportedOperationException("Clone not implemented");
   }
 
   @Override
@@ -168,5 +164,10 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
         + ", value="
         + value
         + '}';
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("toJson operation is not supported");
   }
 }

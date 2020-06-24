@@ -6,7 +6,6 @@
 package io.zeebe.tasklist.zeebeimport.v24.record;
 
 public enum Intent implements io.zeebe.protocol.record.intent.Intent {
-
   CREATED,
 
   RESOLVED,
@@ -22,7 +21,7 @@ public enum Intent implements io.zeebe.protocol.record.intent.Intent {
 
   PAYLOAD_UPDATED,
 
-  //JOB
+  // JOB
   ACTIVATED,
 
   COMPLETED,
@@ -35,7 +34,7 @@ public enum Intent implements io.zeebe.protocol.record.intent.Intent {
 
   CANCELED,
 
-  //VARIABLE
+  // VARIABLE
   UPDATED,
 
   UNKNOWN;

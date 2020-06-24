@@ -14,12 +14,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { ModulesTestApplication.class },
-    properties = { TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-    "graphql.servlet.websocket.enabled=false"})
+@SpringBootTest(
+    classes = {ModulesTestApplication.class},
+    properties = {
+      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      "graphql.servlet.websocket.enabled=false"
+    })
 public abstract class ModuleIntegrationTest {
 
-  @Autowired
-  protected ApplicationContext applicationContext;
-
+  @Autowired protected ApplicationContext applicationContext;
 }

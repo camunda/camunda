@@ -5,12 +5,12 @@
  */
 package io.zeebe.tasklist.webapp.security.es;
 
-import java.util.Arrays;
-import java.util.Collection;
 import io.zeebe.tasklist.entities.UserEntity;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
 import io.zeebe.tasklist.webapp.security.sso.SSOWebSecurityConfig;
+import java.util.Arrays;
+import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Profile("!" + SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 public class ElasticSearchUserDetailsService implements UserDetailsService {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticSearchUserDetailsService.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ElasticSearchUserDetailsService.class);
 
   private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
   private static final String ACT_ADMIN_ROLE = "ACTRADMIN";
@@ -36,14 +37,11 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
   private static final String USER_DEFAULT_FIRSTNAME = "Demo";
   private static final String USER_DEFAULT_LASTNAME = "user";
 
-  @Autowired
-  private UserStorage userStorage;
+  @Autowired private UserStorage userStorage;
 
-  @Autowired
-  private TasklistProperties tasklistProperties;
+  @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired
-  private PasswordEncoder passwordEncoder;
+  @Autowired private PasswordEncoder passwordEncoder;
 
   @Bean
   public PasswordEncoder getPasswordEncoder() {
@@ -52,7 +50,7 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
 
   public void initializeUsers() {
     if (tasklistProperties.getElasticsearch().isCreateSchema()) {
-      String username = tasklistProperties.getUsername();
+      final String username = tasklistProperties.getUsername();
       if (!userExists(username)) {
         addUserWith(username, tasklistProperties.getPassword(), USER_ROLE);
       }
@@ -62,37 +60,42 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
     }
   }
 
-  private ElasticSearchUserDetailsService addUserWith(String username, String password, String role) {
-    logger.info("Create user in ElasticSearch for username {}",username);
-    String passwordEncoded = passwordEncoder.encode(password);
-    userStorage.create(UserEntity.from(username, passwordEncoded, role)
-      .setFirstname(USER_DEFAULT_FIRSTNAME)
-      .setLastname(USER_DEFAULT_LASTNAME));
+  private ElasticSearchUserDetailsService addUserWith(
+      String username, String password, String role) {
+    LOGGER.info("Create user in ElasticSearch for username {}", username);
+    final String passwordEncoded = passwordEncoder.encode(password);
+    userStorage.create(
+        UserEntity.from(username, passwordEncoded, role)
+            .setFirstname(USER_DEFAULT_FIRSTNAME)
+            .setLastname(USER_DEFAULT_LASTNAME));
     return this;
   }
-  
+
   @Override
   public User loadUserByUsername(String username) throws UsernameNotFoundException {
     try {
-      UserEntity userEntity = userStorage.getByName(username);
-      return new User(userEntity.getUsername(), userEntity.getPassword(), toAuthorities(userEntity.getRole()))
+      final UserEntity userEntity = userStorage.getByName(username);
+      return new User(
+              userEntity.getUsername(),
+              userEntity.getPassword(),
+              toAuthorities(userEntity.getRole()))
           .setFirstname(userEntity.getFirstname())
           .setLastname(userEntity.getLastname());
-    }catch(NotFoundException e) {
-      throw new UsernameNotFoundException(String.format("User with username '%s' not found.",username),e);
+    } catch (NotFoundException e) {
+      throw new UsernameNotFoundException(
+          String.format("User with username '%s' not found.", username), e);
     }
   }
 
   private Collection<? extends GrantedAuthority> toAuthorities(String role) {
     return Arrays.asList(new SimpleGrantedAuthority("ROLE_" + role));
   }
-  
+
   private boolean userExists(String username) {
     try {
-      return userStorage.getByName(username)!=null;
-    }catch(Throwable t) {
+      return userStorage.getByName(username) != null;
+    } catch (Throwable t) {
       return false;
     }
   }
-
 }

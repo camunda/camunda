@@ -5,12 +5,13 @@
  */
 package io.zeebe.tasklist.webapp.graphql.entity;
 
+import static io.zeebe.tasklist.util.CollectionUtil.map;
+
+import io.zeebe.tasklist.entities.TaskEntity;
+import io.zeebe.tasklist.entities.TaskState;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import io.zeebe.tasklist.entities.TaskEntity;
-import io.zeebe.tasklist.entities.TaskState;
-import static io.zeebe.tasklist.util.CollectionUtil.map;
 
 public final class TaskDTO {
 
@@ -122,35 +123,6 @@ public final class TaskDTO {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-
-    TaskDTO taskDTO = (TaskDTO) o;
-
-    if (id != null ? !id.equals(taskDTO.id) : taskDTO.id != null)
-      return false;
-    if (elementId != null ? !elementId.equals(taskDTO.elementId) : taskDTO.elementId != null)
-      return false;
-    if (workflowId != null ? !workflowId.equals(taskDTO.workflowId) : taskDTO.workflowId != null)
-      return false;
-    if (bpmnProcessId != null ? !bpmnProcessId.equals(taskDTO.bpmnProcessId) : taskDTO.bpmnProcessId != null)
-      return false;
-    if (creationTime != null ? !creationTime.equals(taskDTO.creationTime) : taskDTO.creationTime != null)
-      return false;
-    if (completionTime != null ? !completionTime.equals(taskDTO.completionTime) : taskDTO.completionTime != null)
-      return false;
-    if (assigneeUsername != null ? !assigneeUsername.equals(taskDTO.assigneeUsername) : taskDTO.assigneeUsername != null)
-      return false;
-    if (variables != null ? !variables.equals(taskDTO.variables) : taskDTO.variables != null)
-      return false;
-    return taskState == taskDTO.taskState;
-
-  }
-
-  @Override
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
     result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
@@ -165,9 +137,77 @@ public final class TaskDTO {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final TaskDTO taskDTO = (TaskDTO) o;
+
+    if (id != null ? !id.equals(taskDTO.id) : taskDTO.id != null) {
+      return false;
+    }
+    if (elementId != null ? !elementId.equals(taskDTO.elementId) : taskDTO.elementId != null) {
+      return false;
+    }
+    if (workflowId != null ? !workflowId.equals(taskDTO.workflowId) : taskDTO.workflowId != null) {
+      return false;
+    }
+    if (bpmnProcessId != null
+        ? !bpmnProcessId.equals(taskDTO.bpmnProcessId)
+        : taskDTO.bpmnProcessId != null) {
+      return false;
+    }
+    if (creationTime != null
+        ? !creationTime.equals(taskDTO.creationTime)
+        : taskDTO.creationTime != null) {
+      return false;
+    }
+    if (completionTime != null
+        ? !completionTime.equals(taskDTO.completionTime)
+        : taskDTO.completionTime != null) {
+      return false;
+    }
+    if (assigneeUsername != null
+        ? !assigneeUsername.equals(taskDTO.assigneeUsername)
+        : taskDTO.assigneeUsername != null) {
+      return false;
+    }
+    if (variables != null ? !variables.equals(taskDTO.variables) : taskDTO.variables != null) {
+      return false;
+    }
+    return taskState == taskDTO.taskState;
+  }
+
+  @Override
   public String toString() {
-    return "TaskDTO{" + "id='" + id + '\'' + ", elementId='" + elementId + '\'' + ", workflowId='" + workflowId + '\'' + ", bpmnProcessId='" + bpmnProcessId
-        + '\'' + ", creationTime=" + creationTime + ", completionTime=" + completionTime + ", assigneeUsername='" + assigneeUsername + '\'' + ", variables="
-        + variables + ", taskState=" + taskState + '}';
+    return "TaskDTO{"
+        + "id='"
+        + id
+        + '\''
+        + ", elementId='"
+        + elementId
+        + '\''
+        + ", workflowId='"
+        + workflowId
+        + '\''
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", creationTime="
+        + creationTime
+        + ", completionTime="
+        + completionTime
+        + ", assigneeUsername='"
+        + assigneeUsername
+        + '\''
+        + ", variables="
+        + variables
+        + ", taskState="
+        + taskState
+        + '}';
   }
 }

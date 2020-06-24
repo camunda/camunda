@@ -28,6 +28,4 @@ public class ActivityInstanceTemplate extends AbstractTemplateDescriptor {
   protected String getIndexNameFormat() {
     return INDEX_NAME;
   }
-
-
 }

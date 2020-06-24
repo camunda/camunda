@@ -7,12 +7,11 @@ package io.zeebe.tasklist.util;
 
 public class ThreadUtil {
 
-	public static void sleepFor(long milliseconds) {
-		try {
-			Thread.sleep(milliseconds);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-	}
-
+  public static void sleepFor(long milliseconds) {
+    try {
+      Thread.sleep(milliseconds);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+  }
 }

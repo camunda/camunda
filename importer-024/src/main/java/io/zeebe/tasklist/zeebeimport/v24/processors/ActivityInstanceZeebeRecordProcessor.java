@@ -5,20 +5,11 @@
  */
 package io.zeebe.tasklist.zeebeimport.v24.processors;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -33,15 +24,26 @@ import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.v24.record.Intent;
 import io.zeebe.tasklist.zeebeimport.v24.record.RecordImpl;
 import io.zeebe.tasklist.zeebeimport.v24.record.value.WorkflowInstanceRecordValueImpl;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class ActivityInstanceZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(ActivityInstanceZeebeRecordProcessor.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ActivityInstanceZeebeRecordProcessor.class);
 
   private static final Set<String> AI_FINISH_STATES = new HashSet<>();
   private static final Set<String> AI_START_STATES = new HashSet<>();
@@ -53,20 +55,24 @@ public class ActivityInstanceZeebeRecordProcessor {
     AI_START_STATES.add(ELEMENT_ACTIVATING.name());
   }
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private ActivityInstanceTemplate activityInstanceTemplate;
+  @Autowired private ActivityInstanceTemplate activityInstanceTemplate;
 
-  public void processWorkflowInstanceRecord(Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
+  public void processWorkflowInstanceRecord(
+      Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest)
+      throws PersistenceException {
 
-    for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+    for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry :
+        records.entrySet()) {
       ActivityInstanceEntity actEntity = null;
-      for (RecordImpl record: wiRecordsEntry.getValue()) {
+      for (RecordImpl record : wiRecordsEntry.getValue()) {
         final String intentStr = record.getIntent().name();
-        WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-        if (!isProcessEvent(recordValue) && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
+        final WorkflowInstanceRecordValueImpl recordValue =
+            (WorkflowInstanceRecordValueImpl) record.getValue();
+        if (!isProcessEvent(recordValue)
+            && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name())
+            && !intentStr.equals(Intent.UNKNOWN.name())) {
           actEntity = updateActivityInstance(record, intentStr, recordValue, actEntity);
         }
       }
@@ -76,7 +82,11 @@ public class ActivityInstanceZeebeRecordProcessor {
     }
   }
 
-  private ActivityInstanceEntity updateActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue, ActivityInstanceEntity entity) {
+  private ActivityInstanceEntity updateActivityInstance(
+      Record record,
+      String intentStr,
+      WorkflowInstanceRecordValueImpl recordValue,
+      ActivityInstanceEntity entity) {
     if (entity == null) {
       entity = new ActivityInstanceEntity();
     }
@@ -102,16 +112,20 @@ public class ActivityInstanceZeebeRecordProcessor {
       }
     }
 
-    entity.setType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
+    entity.setType(
+        ActivityType.fromZeebeBpmnElementType(
+            recordValue.getBpmnElementType() == null
+                ? null
+                : recordValue.getBpmnElementType().name()));
 
     return entity;
-
   }
 
-  private UpdateRequest getActivityInstanceQuery(ActivityInstanceEntity entity) throws PersistenceException {
+  private UpdateRequest getActivityInstanceQuery(ActivityInstanceEntity entity)
+      throws PersistenceException {
     try {
-      logger.debug("Activity instance for list view: id {}", entity.getId());
-      Map<String, Object> updateFields = new HashMap<>();
+      LOGGER.debug("Activity instance for list view: id {}", entity.getId());
+      final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ActivityInstanceTemplate.ID, entity.getId());
       updateFields.put(ActivityInstanceTemplate.PARTITION_ID, entity.getPartitionId());
       updateFields.put(ActivityInstanceTemplate.TYPE, entity.getType());
@@ -127,34 +141,51 @@ public class ActivityInstanceZeebeRecordProcessor {
         updateFields.put(ActivityInstanceTemplate.POSITION, entity.getPosition());
       }
 
-      //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
-      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      // TODO some weird not efficient magic is needed here, in order to format date fields
+      // properly, may be this can be improved
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return new UpdateRequest(activityInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(jsonMap)
-        .retryOnConflict(UPDATE_RETRY_COUNT);
+      return new UpdateRequest(
+              activityInstanceTemplate.getMainIndexName(),
+              ElasticsearchUtil.ES_INDEX_TYPE,
+              entity.getId())
+          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+          .doc(jsonMap)
+          .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
-      logger.error("Error preparing the query to upsert activity instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
+      LOGGER.error("Error preparing the query to upsert activity instance for list view", e);
+      throw new PersistenceException(
+          String.format(
+              "Error preparing the query to upsert activity instance [%s]  for list view",
+              entity.getId()),
+          e);
     }
   }
 
-  private UpdateRequest getActivityInstanceFromIncidentQuery(ActivityInstanceEntity entity) throws PersistenceException {
+  private UpdateRequest getActivityInstanceFromIncidentQuery(ActivityInstanceEntity entity)
+      throws PersistenceException {
     try {
-      logger.debug("Activity instance for list view: id {}", entity.getId());
-      Map<String, Object> jsonMap = new HashMap<>();
+      LOGGER.debug("Activity instance for list view: id {}", entity.getId());
+      final Map<String, Object> jsonMap = new HashMap<>();
       jsonMap.put(ActivityInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
 
-      return new UpdateRequest(activityInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(jsonMap)
-        .retryOnConflict(UPDATE_RETRY_COUNT);
+      return new UpdateRequest(
+              activityInstanceTemplate.getMainIndexName(),
+              ElasticsearchUtil.ES_INDEX_TYPE,
+              entity.getId())
+          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+          .doc(jsonMap)
+          .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
-      logger.error("Error preparing the query to upsert activity instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
+      LOGGER.error("Error preparing the query to upsert activity instance for list view", e);
+      throw new PersistenceException(
+          String.format(
+              "Error preparing the query to upsert activity instance [%s]  for list view",
+              entity.getId()),
+          e);
     }
   }
 
@@ -169,5 +200,4 @@ public class ActivityInstanceZeebeRecordProcessor {
     }
     return bpmnElementType.equals(type);
   }
-
 }

@@ -5,31 +5,30 @@
  */
 package io.zeebe.tasklist.zeebeimport;
 
-import java.util.concurrent.Callable;
 import io.zeebe.tasklist.Metrics;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
+import java.util.concurrent.Callable;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class AbstractImportBatchProcessor implements ImportBatchProcessor {
 
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private RestHighLevelClient esClient;
 
-  @Autowired
-  private Metrics metrics;
+  @Autowired private Metrics metrics;
 
   @Override
   public void performImport(ImportBatch importBatch) throws PersistenceException {
-    BulkRequest bulkRequest = new BulkRequest();
+    final BulkRequest bulkRequest = new BulkRequest();
     processZeebeRecords(importBatch, bulkRequest);
     try {
-      withTimer(() -> {
-        ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
-        return null;
-      });
+      withTimer(
+          () -> {
+            ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+            return null;
+          });
     } catch (Exception e) {
       throw new PersistenceException(e);
     }
@@ -39,6 +38,6 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
     metrics.getTimer(Metrics.TIMER_NAME_IMPORT_INDEX_QUERY).recordCallable(callable);
   }
 
-  protected abstract void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException;
-
+  protected abstract void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest)
+      throws PersistenceException;
 }

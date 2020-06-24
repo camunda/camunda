@@ -3,11 +3,11 @@ zeebe.broker:
     partitionsCount: 2
 
   exporters:
-#    debug:
-#      className: io.zeebe.broker.exporter.DebugExporter
-#      args:
-#        logLevel: "debug"
-#        prettyPrint: true
+    #    debug:
+    #      className: io.zeebe.broker.exporter.DebugExporter
+    #      args:
+    #        logLevel: "debug"
+    #        prettyPrint: true
     elasticsearch:
       className: io.zeebe.exporter.ElasticsearchExporter
       args:

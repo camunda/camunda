@@ -20,5 +20,4 @@ public class ImportPositionIndex extends AbstractIndexDescriptor {
   protected String getMainIndexName() {
     return INDEX_NAME;
   }
-
 }

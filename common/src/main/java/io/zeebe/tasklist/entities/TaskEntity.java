@@ -91,35 +91,6 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
-
-    TaskEntity that = (TaskEntity) o;
-
-    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
-      return false;
-    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
-      return false;
-    if (elementId != null ? !elementId.equals(that.elementId) : that.elementId != null)
-      return false;
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
-      return false;
-    if (creationTime != null ? !creationTime.equals(that.creationTime) : that.creationTime != null)
-      return false;
-    if (completionTime != null ? !completionTime.equals(that.completionTime) : that.completionTime != null)
-      return false;
-    if (state != that.state)
-      return false;
-    return assignee != null ? assignee.equals(that.assignee) : that.assignee == null;
-
-  }
-
-  @Override
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
@@ -131,5 +102,51 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (assignee != null ? assignee.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final TaskEntity that = (TaskEntity) o;
+
+    if (bpmnProcessId != null
+        ? !bpmnProcessId.equals(that.bpmnProcessId)
+        : that.bpmnProcessId != null) {
+      return false;
+    }
+    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null) {
+      return false;
+    }
+    if (elementId != null ? !elementId.equals(that.elementId) : that.elementId != null) {
+      return false;
+    }
+    if (workflowInstanceId != null
+        ? !workflowInstanceId.equals(that.workflowInstanceId)
+        : that.workflowInstanceId != null) {
+      return false;
+    }
+    if (creationTime != null
+        ? !creationTime.equals(that.creationTime)
+        : that.creationTime != null) {
+      return false;
+    }
+    if (completionTime != null
+        ? !completionTime.equals(that.completionTime)
+        : that.completionTime != null) {
+      return false;
+    }
+    if (state != that.state) {
+      return false;
+    }
+    return assignee != null ? assignee.equals(that.assignee) : that.assignee == null;
   }
 }

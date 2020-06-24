@@ -1,10 +1,10 @@
 {
-	"source": {
-		"index": [
-			"tasklist-user-${schema.previous_version}_"
-		]
-	},
-	"dest": {
-		"index": "tasklist-user-${schema.version}_"
-	}
+  "source": {
+    "index": [
+      "tasklist-user-${schema.previous_version}_"
+    ]
+  },
+  "dest": {
+    "index": "tasklist-user-${schema.version}_"
+  }
 }

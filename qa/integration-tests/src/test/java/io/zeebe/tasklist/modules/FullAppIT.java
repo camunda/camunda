@@ -5,10 +5,11 @@
  */
 package io.zeebe.tasklist.modules;
 
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.tasklist.ImportModuleConfiguration;
 import io.zeebe.tasklist.WebappModuleConfiguration;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
 
 public class FullAppIT extends ModuleIntegrationTest {
 
@@ -17,5 +18,4 @@ public class FullAppIT extends ModuleIntegrationTest {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
   }
-
 }

@@ -11,15 +11,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
+
   public static final String PARTITION_ID = "partitionId";
 
-  @Autowired
-  private TasklistProperties tasklistProperties;
-
-  @Override
-  public String getMainIndexName() {
-    return String.format("%s-%s-%s_", tasklistProperties.getElasticsearch().getIndexPrefix(), getIndexNameFormat(), tasklistProperties.getSchemaVersion());
-  }
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Override
   public String getTemplateName() {
@@ -27,18 +22,27 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
   }
 
   @Override
-  public String getAlias() {
-    return getMainIndexName() + "alias";
-  }
-  
-  @Override
-  public String getFileName() {
-    return "/create/template/tasklist-"+getIndexNameFormat()+".json";
+  public String getIndexPattern() {
+    return getMainIndexName() + "*";
   }
 
   @Override
-  public String getIndexPattern() {
-    return getMainIndexName() + "*";
+  public String getMainIndexName() {
+    return String.format(
+        "%s-%s-%s_",
+        tasklistProperties.getElasticsearch().getIndexPrefix(),
+        getIndexNameFormat(),
+        tasklistProperties.getSchemaVersion());
+  }
+
+  @Override
+  public String getFileName() {
+    return "/create/template/tasklist-" + getIndexNameFormat() + ".json";
+  }
+
+  @Override
+  public String getAlias() {
+    return getMainIndexName() + "alias";
   }
 
   protected abstract String getIndexNameFormat();

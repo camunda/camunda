@@ -5,13 +5,13 @@
  */
 package io.zeebe.tasklist.util;
 
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.function.Predicate;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.function.Predicate;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -19,24 +19,22 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 public class MetricAssert {
-  
+
   public static final String ENDPOINT = "/actuator/prometheus";
-  
+
   public static void assertThatMetricsAreDisabledFrom(MockMvc mockMvc) {
-    MockHttpServletRequestBuilder request = get(ENDPOINT);
+    final MockHttpServletRequestBuilder request = get(ENDPOINT);
     try {
-      mockMvc.perform(request)
-          .andExpect(status().is(404));
+      mockMvc.perform(request).andExpect(status().is(404));
     } catch (Exception e) {
       throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
     }
   }
-  
+
   public static void assertThatMetricsFrom(MockMvc mockMvc, Matcher<? super String> matcher) {
-    MockHttpServletRequestBuilder request = get(ENDPOINT);
+    final MockHttpServletRequestBuilder request = get(ENDPOINT);
     try {
-      mockMvc.perform(request).andExpect(status().isOk())
-        .andExpect(content().string(matcher));
+      mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().string(matcher));
     } catch (Exception e) {
       throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
     }
@@ -54,7 +52,7 @@ public class MetricAssert {
 
     @Override
     public boolean matches(Object o) {
-      Double metricValue = getMetricValue(o);
+      final Double metricValue = getMetricValue(o);
       if (metricValue != null) {
         return valueMatcher.test(metricValue);
       }
@@ -62,9 +60,9 @@ public class MetricAssert {
     }
 
     public Double getMetricValue(Object o) {
-      Optional<String> metricString = getMetricString(o);
+      final Optional<String> metricString = getMetricString(o);
       if (metricString.isPresent()) {
-        String[] oneMetric = metricString.get().split(" ");
+        final String[] oneMetric = metricString.get().split(" ");
         if (oneMetric.length > 1) {
           return Double.valueOf(oneMetric[1]);
         }
@@ -73,15 +71,14 @@ public class MetricAssert {
     }
 
     public Optional<String> getMetricString(Object o) {
-      String s = (String)o;
-      String[] strings = s.split("\\n");
-      return Arrays.stream(strings).filter(str -> str.toLowerCase().contains(metricName) && !str.startsWith("#")).findFirst();
+      final String s = (String) o;
+      final String[] strings = s.split("\\n");
+      return Arrays.stream(strings)
+          .filter(str -> str.toLowerCase().contains(metricName) && !str.startsWith("#"))
+          .findFirst();
     }
 
     @Override
-    public void describeTo(Description description) {
-
-    }
+    public void describeTo(Description description) {}
   }
-
 }

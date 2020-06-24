@@ -11,10 +11,10 @@ import java.util.Map;
 import java.util.Objects;
 
 public abstract class RecordValueWithPayloadImpl implements RecordValue, RecordValueWithVariables {
+
   private Map<String, Object> variables;
 
-  public RecordValueWithPayloadImpl() {
-  }
+  public RecordValueWithPayloadImpl() {}
 
   @Override
   public Map<String, Object> getVariables() {
@@ -31,19 +31,21 @@ public abstract class RecordValueWithPayloadImpl implements RecordValue, RecordV
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-
-    RecordValueWithPayloadImpl that = (RecordValueWithPayloadImpl) o;
-
-    return Objects.equals(variables, that.variables);
+  public int hashCode() {
+    return variables != null ? variables.hashCode() : 0;
   }
 
   @Override
-  public int hashCode() {
-    return variables != null ? variables.hashCode() : 0;
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final RecordValueWithPayloadImpl that = (RecordValueWithPayloadImpl) o;
+
+    return Objects.equals(variables, that.variables);
   }
 }

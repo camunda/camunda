@@ -5,16 +5,20 @@
  */
 package io.zeebe.tasklist.modules;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.zeebe.tasklist.ImportModuleConfiguration;
+import io.zeebe.tasklist.WebappModuleConfiguration;
 import io.zeebe.tasklist.property.TasklistProperties;
 import org.junit.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.TestPropertySource;
-import io.zeebe.tasklist.ImportModuleConfiguration;
-import io.zeebe.tasklist.WebappModuleConfiguration;
-import static org.assertj.core.api.Assertions.assertThat;
 
-@TestPropertySource(properties = {TasklistProperties.PREFIX + ".webappEnabled = false",
-    TasklistProperties.PREFIX + ".archiverEnabled = false"})
+@TestPropertySource(
+    properties = {
+      TasklistProperties.PREFIX + ".webappEnabled = false",
+      TasklistProperties.PREFIX + ".archiverEnabled = false"
+    })
 public class OnlyImportIT extends ModuleIntegrationTest {
 
   @Test
@@ -26,5 +30,4 @@ public class OnlyImportIT extends ModuleIntegrationTest {
   public void testWebappModuleIsNotPresent() {
     applicationContext.getBean(WebappModuleConfiguration.class);
   }
-
 }

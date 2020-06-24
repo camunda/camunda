@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public enum ActivityType {
-
   UNSPECIFIED,
   PROCESS,
   SUB_PROCESS,
@@ -27,7 +26,7 @@ public enum ActivityType {
   CALL_ACTIVITY,
   UNKNOWN;
 
-  private static final Logger logger = LoggerFactory.getLogger(ActivityType.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ActivityType.class);
 
   public static ActivityType fromZeebeBpmnElementType(String bpmnElementType) {
     if (bpmnElementType == null) {
@@ -36,9 +35,10 @@ public enum ActivityType {
     try {
       return ActivityType.valueOf(bpmnElementType);
     } catch (IllegalArgumentException ex) {
-      logger.error("Activity type not found for value [{}]. UNKNOWN type will be assigned.", bpmnElementType);
+      LOGGER.error(
+          "Activity type not found for value [{}]. UNKNOWN type will be assigned.",
+          bpmnElementType);
       return UNKNOWN;
     }
   }
-
 }

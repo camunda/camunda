@@ -20,8 +20,8 @@ public class DefaultUserService extends AbstractUserService {
 
   @Override
   public UserDto getCurrentUser() {
-    SecurityContext context = SecurityContextHolder.getContext();
-    Authentication authentication = context.getAuthentication();
-    return UserDto.fromUser((User)authentication.getPrincipal());
+    final SecurityContext context = SecurityContextHolder.getContext();
+    final Authentication authentication = context.getAuthentication();
+    return UserDto.fromUser((User) authentication.getPrincipal());
   }
 }

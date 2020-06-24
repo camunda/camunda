@@ -5,27 +5,6 @@
  */
 package io.zeebe.tasklist.util;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.Properties;
-import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexTemplatesRequest;
-import org.elasticsearch.client.indices.GetIndexTemplatesResponse;
-import org.elasticsearch.client.indices.IndexTemplateMetaData;
-import org.elasticsearch.client.indices.PutIndexTemplateRequest;
-import org.elasticsearch.common.settings.Settings;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.tasklist.property.TasklistProperties;
@@ -33,27 +12,38 @@ import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.SocketUtil;
+import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Properties;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class TasklistZeebeRule extends TestWatcher {
 
+  public static final String YYYY_MM_DD = "uuuu-MM-dd";
   private static final String REQUEST_TIMEOUT_IN_MILLISECONDS = "15000"; // 15 seconds
   private static final String ELASTICSEARCH_EXPORTER_ID = "elasticsearch";
-
-  private static final Logger logger = LoggerFactory.getLogger(TasklistZeebeRule.class);
-  public static final String YYYY_MM_DD = "uuuu-MM-dd";
-
-  @Autowired
-  public TasklistProperties tasklistProperties;
+  private static final Logger LOGGER = LoggerFactory.getLogger(TasklistZeebeRule.class);
+  @Autowired public TasklistProperties tasklistProperties;
 
   @Autowired
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  @Autowired
-  private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
-
   protected final EmbeddedBrokerRule brokerRule;
-  protected final RecordingExporterTestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+  @Autowired private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
   private ClientRule clientRule;
 
   private String prefix;
@@ -63,22 +53,35 @@ public class TasklistZeebeRule extends TestWatcher {
     brokerRule = new EmbeddedBrokerRule();
   }
 
-  @Override
-  public void starting(Description description) {
-    this.prefix = TestUtil.createRandomString(10);
-    tasklistProperties.getZeebeElasticsearch().setPrefix(prefix);
-    embeddedZeebeConfigurer.injectPrefixToZeebeConfig(brokerRule, ELASTICSEARCH_EXPORTER_ID, prefix);
-    start();
-  }
-
   public void refreshIndices(Instant instant) {
     try {
-      String date = DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
-      RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
+      final String date =
+          DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
+      final RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }
+  }
+
+  @Override
+  public Statement apply(Statement base, Description description) {
+    final Statement statement = this.recordingExporterTestWatcher.apply(base, description);
+    return super.apply(statement, description);
+  }
+
+  @Override
+  protected void failed(Throwable e, Description description) {
+    this.failed = true;
+  }
+
+  @Override
+  public void starting(Description description) {
+    this.prefix = TestUtil.createRandomString(10);
+    tasklistProperties.getZeebeElasticsearch().setPrefix(prefix);
+    embeddedZeebeConfigurer.injectPrefixToZeebeConfig(
+        brokerRule, ELASTICSEARCH_EXPORTER_ID, prefix);
+    start();
   }
 
   @Override
@@ -89,17 +92,6 @@ public class TasklistZeebeRule extends TestWatcher {
     }
   }
 
-  @Override
-  protected void failed(Throwable e, Description description) {
-    this.failed = true;
-  }
-
-  @Override
-  public Statement apply(Statement base, Description description) {
-    Statement statement = this.recordingExporterTestWatcher.apply(base, description);
-    return super.apply(statement, description);
-  }
-
   /**
    * Starts the broker and the client. This is blocking and will return once the broker is ready to
    * accept commands.
@@ -107,9 +99,10 @@ public class TasklistZeebeRule extends TestWatcher {
    * @throws IllegalStateException if no exporter has previously been configured
    */
   public void start() {
-    long startTime = System.currentTimeMillis();
+    final long startTime = System.currentTimeMillis();
     brokerRule.startBroker();
-    logger.info("\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
+    LOGGER.info(
+        "\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
 
     clientRule = new ClientRule(this::newClientProperties);
     clientRule.createClient();
@@ -135,9 +128,12 @@ public class TasklistZeebeRule extends TestWatcher {
 
   private Properties newClientProperties() {
     final Properties properties = new Properties();
-    properties.put(ClientProperties.BROKER_CONTACTPOINT, SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
+    properties.put(
+        ClientProperties.BROKER_CONTACTPOINT,
+        SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
     properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
-    properties.setProperty(ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
+    properties.setProperty(
+        ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
     return properties;
   }
 

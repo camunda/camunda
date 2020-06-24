@@ -7,12 +7,12 @@ package io.zeebe.tasklist.property;
 
 public class ZeebeElasticsearchProperties extends ElasticsearchProperties {
 
-  public ZeebeElasticsearchProperties() {
-    this.setDateFormat("yyyy-MM-dd");   //hard-coded, as not configurable on Zeebe side
-    this.setElsDateFormat("date");      //hard-coded, as not configurable on Zeebe side
-  }
-
   private String prefix = "zeebe-record";
+
+  public ZeebeElasticsearchProperties() {
+    this.setDateFormat("yyyy-MM-dd"); // hard-coded, as not configurable on Zeebe side
+    this.setElsDateFormat("date"); // hard-coded, as not configurable on Zeebe side
+  }
 
   public String getPrefix() {
     return prefix;

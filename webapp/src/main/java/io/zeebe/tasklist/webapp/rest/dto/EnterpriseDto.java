@@ -20,6 +20,11 @@ public class EnterpriseDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(enterprise);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -27,19 +32,12 @@ public class EnterpriseDto {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EnterpriseDto that = (EnterpriseDto) o;
+    final EnterpriseDto that = (EnterpriseDto) o;
     return enterprise == that.enterprise;
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(enterprise);
-  }
-
-  @Override
   public String toString() {
-    return "EnterpriseDto{" +
-        "enterprise=" + enterprise +
-        '}';
+    return "EnterpriseDto{" + "enterprise=" + enterprise + '}';
   }
 }

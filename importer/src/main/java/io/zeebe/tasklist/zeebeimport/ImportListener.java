@@ -8,6 +8,6 @@ package io.zeebe.tasklist.zeebeimport;
 public interface ImportListener {
 
   void finished(ImportBatch importBatch);
-  void failed(ImportBatch importBatch);
 
+  void failed(ImportBatch importBatch);
 }

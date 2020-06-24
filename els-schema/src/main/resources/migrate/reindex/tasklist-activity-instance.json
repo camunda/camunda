@@ -1,14 +1,14 @@
 {
-	"source": {
-		"index": [
-			"tasklist-activity-instance-${schema.previous_version}_*"
-		]
-	},
-	"dest": {
-		"index": "tasklist-activity-instance-${schema.version}_"
-	},
-	"script": {
-		"lang": "painless",
-		"source": "ctx._index = 'tasklist-activity-instance-${schema.version}_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))"
-	}
+  "source": {
+    "index": [
+      "tasklist-activity-instance-${schema.previous_version}_*"
+    ]
+  },
+  "dest": {
+    "index": "tasklist-activity-instance-${schema.version}_"
+  },
+  "script": {
+    "lang": "painless",
+    "source": "ctx._index = 'tasklist-activity-instance-${schema.version}_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))"
+  }
 }

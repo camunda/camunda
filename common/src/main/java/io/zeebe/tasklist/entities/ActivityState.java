@@ -6,10 +6,8 @@
 package io.zeebe.tasklist.entities;
 
 public enum ActivityState {
-
   ACTIVE,
   INCIDENT,
   COMPLETED,
   TERMINATED
-
 }

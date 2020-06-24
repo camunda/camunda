@@ -5,10 +5,10 @@
  */
 package io.zeebe.tasklist.zeebeimport.v24.record.value.deployment;
 
-import java.util.Arrays;
-import java.util.Objects;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class DeploymentResourceImpl implements DeploymentResource {
 
@@ -16,8 +16,7 @@ public class DeploymentResourceImpl implements DeploymentResource {
   private ResourceType resourceType;
   private String resourceName;
 
-  public DeploymentResourceImpl() {
-  }
+  public DeploymentResourceImpl() {}
 
   @Override
   public byte[] getResource() {
@@ -34,16 +33,23 @@ public class DeploymentResourceImpl implements DeploymentResource {
     return resourceName;
   }
 
-  public void setResource(byte[] resource) {
-    this.resource = resource;
+  public void setResourceName(String resourceName) {
+    this.resourceName = resourceName;
   }
 
   public void setResourceType(ResourceType resourceType) {
     this.resourceType = resourceType;
   }
 
-  public void setResourceName(String resourceName) {
-    this.resourceName = resourceName;
+  public void setResource(byte[] resource) {
+    this.resource = resource;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(resourceType, resourceName);
+    result = 31 * result + Arrays.hashCode(resource);
+    return result;
   }
 
   @Override
@@ -58,13 +64,6 @@ public class DeploymentResourceImpl implements DeploymentResource {
     return Arrays.equals(resource, that.resource)
         && resourceType == that.resourceType
         && Objects.equals(resourceName, that.resourceName);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(resourceType, resourceName);
-    result = 31 * result + Arrays.hashCode(resource);
-    return result;
   }
 
   @Override

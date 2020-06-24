@@ -6,6 +6,11 @@
 package io.zeebe.tasklist.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.Node;
@@ -15,26 +20,15 @@ import org.apache.logging.log4j.core.impl.ThrowableProxy;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.core.util.StringBuilderWriter;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 /**
  * Idea and code (slightly changed) from
  * <li><a href=
- * "https://k11i.biz/blog/2018/10/03/stackdriver-logging-friendly-layout-java/">https://k11i.biz/blog/2018/10/03/stackdriver-logging-friendly-layout-java/</a></li>
+ *     "https://k11i.biz/blog/2018/10/03/stackdriver-logging-friendly-layout-java/">https://k11i.biz/blog/2018/10/03/stackdriver-logging-friendly-layout-java/</a>
  */
 @Plugin(name = "StackdriverJSONLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE)
 public class StackdriverJSONLayout extends AbstractStringLayout {
-  
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  @PluginFactory
-  public static StackdriverJSONLayout create() {
-    return new StackdriverJSONLayout();
-  }
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   public StackdriverJSONLayout() {
     this(StandardCharsets.UTF_8);
@@ -42,6 +36,11 @@ public class StackdriverJSONLayout extends AbstractStringLayout {
 
   protected StackdriverJSONLayout(Charset charset) {
     super(charset);
+  }
+
+  @PluginFactory
+  public static StackdriverJSONLayout create() {
+    return new StackdriverJSONLayout();
   }
 
   @Override
@@ -58,12 +57,12 @@ public class StackdriverJSONLayout extends AbstractStringLayout {
   }
 
   protected Map<String, Object> logEventToMap(LogEvent event) {
-    Map<String, Object> map = new LinkedHashMap<>();
+    final Map<String, Object> map = new LinkedHashMap<>();
 
     map.put("timestampSeconds", event.getTimeMillis() / 1000);
     map.put("timestampNanos", (event.getTimeMillis() % 1000) * 1_000_000);
     // 'Level' is equal to 'severity' in gcloud/stackdriver
-    putIfNotNull("severity", event.getLevel().toString(), map); 
+    putIfNotNull("severity", event.getLevel().toString(), map);
     putIfNotNull("thread", event.getThreadName(), map);
     putIfNotNull("logger", event.getLoggerName(), map);
     putIfNotNull("message", event.getMessage().getFormattedMessage(), map);

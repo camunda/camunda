@@ -5,12 +5,13 @@
  */
 package io.zeebe.tasklist.zeebeimport.v24.record.value;
 
-import java.util.Map;
-import io.zeebe.tasklist.zeebeimport.v24.record.RecordValueImpl;
 import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.zeebe.tasklist.zeebeimport.v24.record.RecordValueImpl;
+import java.util.Map;
 
-public class VariableDocumentRecordImpl extends RecordValueImpl implements VariableDocumentRecordValue {
+public class VariableDocumentRecordImpl extends RecordValueImpl
+    implements VariableDocumentRecordValue {
 
   private VariableDocumentUpdateSemantic updateSemantics;
   private long scopeKey;
@@ -26,11 +27,6 @@ public class VariableDocumentRecordImpl extends RecordValueImpl implements Varia
     return updateSemantics;
   }
 
-  @Override
-  public Map<String, Object> getVariables() {
-    return variables;
-  }
-
   public void setUpdateSemantics(VariableDocumentUpdateSemantic updateSemantics) {
     this.updateSemantics = updateSemantics;
   }
@@ -39,25 +35,13 @@ public class VariableDocumentRecordImpl extends RecordValueImpl implements Varia
     this.scopeKey = scopeKey;
   }
 
-  public void setVariables(Map<String, Object> variables) {
-    this.variables = variables;
+  @Override
+  public Map<String, Object> getVariables() {
+    return variables;
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-
-    VariableDocumentRecordImpl that = (VariableDocumentRecordImpl) o;
-
-    if (scopeKey != that.scopeKey)
-      return false;
-    if (updateSemantics != that.updateSemantics)
-      return false;
-    return variables != null ? variables.equals(that.variables) : that.variables == null;
-
+  public void setVariables(Map<String, Object> variables) {
+    this.variables = variables;
   }
 
   @Override
@@ -66,5 +50,25 @@ public class VariableDocumentRecordImpl extends RecordValueImpl implements Varia
     result = 31 * result + (int) (scopeKey ^ (scopeKey >>> 32));
     result = 31 * result + (variables != null ? variables.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final VariableDocumentRecordImpl that = (VariableDocumentRecordImpl) o;
+
+    if (scopeKey != that.scopeKey) {
+      return false;
+    }
+    if (updateSemantics != that.updateSemantics) {
+      return false;
+    }
+    return variables != null ? variables.equals(that.variables) : that.variables == null;
   }
 }

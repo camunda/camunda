@@ -5,16 +5,16 @@
  */
 package io.zeebe.tasklist.webapp.graphql.query;
 
-import org.springframework.stereotype.Component;
 import graphql.kickstart.tools.GraphQLQueryResolver;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import org.springframework.stereotype.Component;
 
 @Component
 public final class UserQueryResolver implements GraphQLQueryResolver {
 
-  //TODO #45
+  // TODO #45
   public UserDTO currentUser() {
-    UserDTO user = new UserDTO();
+    final UserDTO user = new UserDTO();
     user.setUsername("demo");
     user.setFirstname("Demo");
     user.setLastname("User");

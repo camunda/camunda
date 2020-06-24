@@ -1,54 +1,53 @@
 {
-	"order": 30,
-	"index_patterns": [
-		"tasklist-task-${schema.version}_*"
-	],
-	"mappings": {
-		"dynamic": "strict",
-		"properties": {
-			"elementId": {
-				"type": "keyword"
-			},
-			"partitionId": {
-				"type": "integer"
-			},
-			"completionTime": {
-				"format": "date_time",
-				"type": "date"
-			},
-			"workflowInstanceId": {
-				"type": "long"
-			},
-			"id": {
-				"type": "keyword"
-			},
-			"position": {
-				"type": "long"
-			},
-			"state": {
-				"type": "keyword"
-			},
-			"key": {
-				"type": "long"
-			},
-			"creationTime": {
-				"format": "date_time",
-				"type": "date"
-			},
-			"bpmnProcessId": {
-				"type": "keyword"
-			},
-			"workflowId": {
-				"type": "keyword"
-			},
-			"assignee": {
-				"type": "keyword"
-			}
-
-		}
-	},
-	"aliases": {
-		"tasklist-task-${schema.version}_alias": {
-		}
-	}
+  "order": 30,
+  "index_patterns": [
+    "tasklist-task-${schema.version}_*"
+  ],
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "elementId": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "completionTime": {
+        "format": "date_time",
+        "type": "date"
+      },
+      "workflowInstanceId": {
+        "type": "long"
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "position": {
+        "type": "long"
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "creationTime": {
+        "format": "date_time",
+        "type": "date"
+      },
+      "bpmnProcessId": {
+        "type": "keyword"
+      },
+      "workflowId": {
+        "type": "keyword"
+      },
+      "assignee": {
+        "type": "keyword"
+      }
+    }
+  },
+  "aliases": {
+    "tasklist-task-${schema.version}_alias": {
+    }
+  }
 }

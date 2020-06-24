@@ -5,16 +5,17 @@
  */
 package io.zeebe.tasklist.util;
 
+import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.test.EmbeddedBrokerRule;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.springframework.stereotype.Component;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.test.EmbeddedBrokerRule;
 
 @Component("embeddedZeebeConfigurer")
 public class EmbeddedZeebeConfigurerImpl implements EmbeddedZeebeConfigurer {
 
-  public void injectPrefixToZeebeConfig(EmbeddedBrokerRule brokerRule, String exporterId, String prefix) {
+  public void injectPrefixToZeebeConfig(
+      EmbeddedBrokerRule brokerRule, String exporterId, String prefix) {
     final ExporterCfg exporterCfg = brokerRule.getBrokerCfg().getExporters().get(exporterId);
     final Map<String, String> indexArgs = (Map<String, String>) exporterCfg.getArgs().get("index");
     if (indexArgs != null) {
@@ -22,7 +23,5 @@ public class EmbeddedZeebeConfigurerImpl implements EmbeddedZeebeConfigurer {
     } else {
       Assertions.fail("Unable to configure Elasticsearch exporter");
     }
-
   }
-
 }

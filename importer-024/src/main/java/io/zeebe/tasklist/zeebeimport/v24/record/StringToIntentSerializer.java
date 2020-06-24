@@ -5,15 +5,17 @@
  */
 package io.zeebe.tasklist.zeebeimport.v24.record;
 
-import java.io.IOException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import java.io.IOException;
 
 public class StringToIntentSerializer extends JsonDeserializer<Intent> {
+
   @Override
-  public Intent deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+  public Intent deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+      throws IOException, JsonProcessingException {
 
     final String stringValue = jsonParser.getText();
 
@@ -21,7 +23,7 @@ public class StringToIntentSerializer extends JsonDeserializer<Intent> {
       try {
         return Intent.valueOf(stringValue);
       } catch (IllegalArgumentException ex) {
-        //
+        // ignore me
       }
     }
     return Intent.UNKNOWN;

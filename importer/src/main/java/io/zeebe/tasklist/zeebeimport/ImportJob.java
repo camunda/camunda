@@ -5,13 +5,17 @@
  */
 package io.zeebe.tasklist.zeebeimport;
 
+import static io.zeebe.tasklist.util.ElasticsearchUtil.ZEEBE_INDEX_DELIMITER;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.tasklist.entities.meta.ImportPositionEntity;
+import io.zeebe.tasklist.exceptions.NoSuchIndexException;
+import io.zeebe.tasklist.property.TasklistProperties;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-import io.zeebe.tasklist.entities.meta.ImportPositionEntity;
-import io.zeebe.tasklist.exceptions.NoSuchIndexException;
-import io.zeebe.tasklist.property.TasklistProperties;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -23,18 +27,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static io.zeebe.tasklist.util.ElasticsearchUtil.ZEEBE_INDEX_DELIMITER;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-/**
- * Import job for one batch of Zeebe data.
- */
+/** Import job for one batch of Zeebe data. */
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class ImportJob implements Callable<Boolean> {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportJob.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportJob.class);
 
   private ImportBatch importBatch;
 
@@ -42,27 +41,22 @@ public class ImportJob implements Callable<Boolean> {
 
   private ImportPositionEntity lastProcessedPosition;
 
-  @Autowired
-  private ImportBatchProcessorFactory importBatchProcessorFactory;
+  @Autowired private ImportBatchProcessorFactory importBatchProcessorFactory;
 
   @Autowired
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @Autowired
-  private ImportPositionHolder importPositionHolder;
+  @Autowired private ImportPositionHolder importPositionHolder;
 
-  @Autowired
-  private RecordsReaderHolder recordsReaderHolder;
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired(required = false)
   private List<ImportListener> importListeners;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private TasklistProperties tasklistProperties;
+  @Autowired private TasklistProperties tasklistProperties;
 
   public ImportJob(ImportBatch importBatch, ImportPositionEntity previousPosition) {
     this.importBatch = importBatch;
@@ -73,15 +67,15 @@ public class ImportJob implements Callable<Boolean> {
   public Boolean call() {
     processPossibleIndexChange();
 
-    //separate importbatch in sub-batches per index
-    List<ImportBatch> subBatches = createSubBatchesPerIndexName();
+    // separate importbatch in sub-batches per index
+    final List<ImportBatch> subBatches = createSubBatchesPerIndexName();
 
-    for (ImportBatch subBatch: subBatches) {
+    for (ImportBatch subBatch : subBatches) {
       final boolean success = processOneIndexBatch(subBatch);
-      if (!success){
+      if (!success) {
         notifyImportListenersAsFailed(importBatch);
         return false;
-      } //else continue
+      } // else continue
     }
     importPositionHolder.recordLatestLoadedPosition(getLastProcessedPosition());
     for (ImportBatch subBatch : subBatches) {
@@ -91,38 +85,49 @@ public class ImportJob implements Callable<Boolean> {
   }
 
   private void processPossibleIndexChange() {
-    //if there was index change, comparing with previous batch, or there are more than one indices in current batch, refresh Zeebe indices
+    // if there was index change, comparing with previous batch, or there are more than one indices
+    // in current batch, refresh Zeebe indices
     final List<SearchHit> hits = importBatch.getHits();
-    if (indexChange() || hits.stream().map(SearchHit::getIndex).collect(Collectors.toSet()).size() > 1) {
+    if (indexChange()
+        || hits.stream().map(SearchHit::getIndex).collect(Collectors.toSet()).size() > 1) {
       refreshZeebeIndices();
-      //reread batch
-      RecordsReader recordsReader = recordsReaderHolder.getRecordsReader(importBatch.getPartitionId(), importBatch.getImportValueType());
+      // reread batch
+      final RecordsReader recordsReader =
+          recordsReaderHolder.getRecordsReader(
+              importBatch.getPartitionId(), importBatch.getImportValueType());
       if (recordsReader != null) {
         try {
-          importBatch = recordsReader.readNextBatch(previousPosition.getPosition(), importBatch.getLastProcessedPosition(objectMapper));
+          importBatch =
+              recordsReader.readNextBatch(
+                  previousPosition.getPosition(),
+                  importBatch.getLastProcessedPosition(objectMapper));
         } catch (NoSuchIndexException ex) {
-          logger.warn("Indices are not found" + importBatch.toString());
+          LOGGER.warn("Indices are not found" + importBatch.toString());
         }
       } else {
-        logger.warn("Unable to find records reader for partitionId {} and ImportValueType {}", importBatch.getPartitionId(), importBatch.getImportValueType());
+        LOGGER.warn(
+            "Unable to find records reader for partitionId {} and ImportValueType {}",
+            importBatch.getPartitionId(),
+            importBatch.getImportValueType());
       }
     }
   }
 
   private boolean processOneIndexBatch(ImportBatch subBatch) {
     try {
-      String version = extractZeebeVersionFromIndexName(subBatch.getLastRecordIndexName());
-      ImportBatchProcessor importBatchProcessor = importBatchProcessorFactory.getImportBatchProcessor(version);
+      final String version = extractZeebeVersionFromIndexName(subBatch.getLastRecordIndexName());
+      final ImportBatchProcessor importBatchProcessor =
+          importBatchProcessorFactory.getImportBatchProcessor(version);
       importBatchProcessor.performImport(subBatch);
       return true;
     } catch (Throwable ex) {
-      logger.error(ex.getMessage(), ex);
+      LOGGER.error(ex.getMessage(), ex);
       return false;
     }
   }
 
   private List<ImportBatch> createSubBatchesPerIndexName() {
-    List<ImportBatch> subBatches = new ArrayList<>();
+    final List<ImportBatch> subBatches = new ArrayList<>();
     if (importBatch.getHits().size() <= 1) {
       subBatches.add(importBatch);
       return subBatches;
@@ -130,16 +135,26 @@ public class ImportJob implements Callable<Boolean> {
       String previousIndexName = null;
       List<SearchHit> subBatchHits = new ArrayList<>();
       for (SearchHit hit : importBatch.getHits()) {
-        String indexName = hit.getIndex();
+        final String indexName = hit.getIndex();
         if (previousIndexName != null && !indexName.equals(previousIndexName)) {
-          //start new sub-batch
-          subBatches.add(new ImportBatch(importBatch.getPartitionId(), importBatch.getImportValueType(), subBatchHits, previousIndexName));
+          // start new sub-batch
+          subBatches.add(
+              new ImportBatch(
+                  importBatch.getPartitionId(),
+                  importBatch.getImportValueType(),
+                  subBatchHits,
+                  previousIndexName));
           subBatchHits = new ArrayList<>();
         }
         subBatchHits.add(hit);
         previousIndexName = indexName;
       }
-      subBatches.add(new ImportBatch(importBatch.getPartitionId(), importBatch.getImportValueType(), subBatchHits, previousIndexName));
+      subBatches.add(
+          new ImportBatch(
+              importBatch.getPartitionId(),
+              importBatch.getImportValueType(),
+              subBatchHits,
+              previousIndexName));
       return subBatches;
     }
   }
@@ -150,34 +165,41 @@ public class ImportJob implements Callable<Boolean> {
     if (split.length >= 3) {
       zeebeVersion = split[2].replace("-snapshot", "");
     } else {
-      //last version before introducing versions in index names was 0.22.0
+      // last version before introducing versions in index names was 0.22.0
       zeebeVersion = "0.22.0";
     }
     return zeebeVersion;
   }
 
   public void refreshZeebeIndices() {
-    final String indexPattern = importBatch.getImportValueType().getIndicesPattern(tasklistProperties.getZeebeElasticsearch().getPrefix());
-    RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
+    final String indexPattern =
+        importBatch
+            .getImportValueType()
+            .getIndicesPattern(tasklistProperties.getZeebeElasticsearch().getPrefix());
+    final RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
     try {
-      RefreshResponse refresh = zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      final RefreshResponse refresh =
+          zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
       if (refresh.getFailedShards() > 0) {
-        logger.warn("Unable to refresh indices: {}", indexPattern);
+        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
       }
     } catch (Exception ex) {
-      logger.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
     }
   }
 
   public void recordLatestScheduledPosition() {
-    importPositionHolder.recordLatestScheduledPosition(importBatch.getAliasName(), importBatch.getPartitionId(), getLastProcessedPosition());
+    importPositionHolder.recordLatestScheduledPosition(
+        importBatch.getAliasName(), importBatch.getPartitionId(), getLastProcessedPosition());
   }
 
   public ImportPositionEntity getLastProcessedPosition() {
     if (lastProcessedPosition == null) {
-      long lastRecordPosition = importBatch.getLastProcessedPosition(objectMapper);
+      final long lastRecordPosition = importBatch.getLastProcessedPosition(objectMapper);
       if (lastRecordPosition != 0) {
-        lastProcessedPosition = ImportPositionEntity.createFrom(previousPosition, lastRecordPosition, importBatch.getLastRecordIndexName());
+        lastProcessedPosition =
+            ImportPositionEntity.createFrom(
+                previousPosition, lastRecordPosition, importBatch.getLastRecordIndexName());
       } else {
         lastProcessedPosition = previousPosition;
       }
@@ -186,7 +208,9 @@ public class ImportJob implements Callable<Boolean> {
   }
 
   public boolean indexChange() {
-    if (importBatch.getLastRecordIndexName() != null && previousPosition != null && previousPosition.getIndexName() != null) {
+    if (importBatch.getLastRecordIndexName() != null
+        && previousPosition != null
+        && previousPosition.getIndexName() != null) {
       return !importBatch.getLastRecordIndexName().equals(previousPosition.getIndexName());
     } else {
       return false;

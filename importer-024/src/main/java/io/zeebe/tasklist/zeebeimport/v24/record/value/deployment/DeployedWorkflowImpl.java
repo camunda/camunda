@@ -5,17 +5,17 @@
  */
 package io.zeebe.tasklist.zeebeimport.v24.record.value.deployment;
 
-import java.util.Objects;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import java.util.Objects;
 
 public class DeployedWorkflowImpl implements DeployedWorkflow {
+
   private String bpmnProcessId;
   private String resourceName;
   private long workflowKey;
   private int version;
 
-  public DeployedWorkflowImpl() {
-  }
+  public DeployedWorkflowImpl() {}
 
   @Override
   public String getBpmnProcessId() {
@@ -23,8 +23,8 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
   }
 
   @Override
-  public String getResourceName() {
-    return resourceName;
+  public int getVersion() {
+    return version;
   }
 
   @Override
@@ -33,12 +33,8 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
   }
 
   @Override
-  public int getVersion() {
-    return version;
-  }
-
-  public void setBpmnProcessId(String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
+  public String getResourceName() {
+    return resourceName;
   }
 
   public void setResourceName(String resourceName) {
@@ -51,6 +47,15 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
 
   public void setVersion(int version) {
     this.version = version;
+  }
+
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(bpmnProcessId, resourceName, workflowKey, version);
   }
 
   @Override
@@ -66,11 +71,6 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
         && version == that.version
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(resourceName, that.resourceName);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(bpmnProcessId, resourceName, workflowKey, version);
   }
 
   @Override

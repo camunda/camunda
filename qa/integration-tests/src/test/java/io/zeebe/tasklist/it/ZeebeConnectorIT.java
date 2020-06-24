@@ -5,18 +5,20 @@
  */
 package io.zeebe.tasklist.it;
 
-import org.apache.http.HttpStatus;
-import org.assertj.core.api.Assertions;
-import io.zeebe.tasklist.util.TestApplication;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.tasklist.property.TasklistProperties;
-import io.zeebe.tasklist.util.EmbeddedZeebeConfigurer;
-import io.zeebe.tasklist.webapp.rest.HealthCheckRestService;
 import io.zeebe.tasklist.util.ElasticsearchTestRule;
+import io.zeebe.tasklist.util.EmbeddedZeebeConfigurer;
 import io.zeebe.tasklist.util.TasklistIntegrationTest;
 import io.zeebe.tasklist.util.TasklistZeebeRule;
+import io.zeebe.tasklist.util.TestApplication;
 import io.zeebe.tasklist.util.ZeebeClientRule;
+import io.zeebe.tasklist.webapp.rest.HealthCheckRestService;
 import io.zeebe.tasklist.zeebe.PartitionHolder;
 import io.zeebe.tasklist.zeebeimport.ZeebeImporter;
+import org.apache.http.HttpStatus;
+import org.assertj.core.api.Assertions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Rule;
@@ -28,37 +30,32 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(
-    classes = { TestApplication.class},
-    properties = {TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-        TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-        TasklistProperties.PREFIX + ".zeebe.brokerContactPoint = localhost:55500"},
+    classes = {TestApplication.class},
+    properties = {
+      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      TasklistProperties.PREFIX + ".zeebe.brokerContactPoint = localhost:55500"
+    },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
-  @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
-  @Autowired
-  private ZeebeImporter zeebeImporter;
+  @Autowired private ZeebeImporter zeebeImporter;
 
-  @Autowired
-  private PartitionHolder partitionHolder;
+  @Autowired private PartitionHolder partitionHolder;
 
-  @Autowired
-  private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
+  @Autowired private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
 
-  @Autowired
-  private TasklistProperties tasklistProperties;
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @Autowired
-  private TestRestTemplate testRestTemplate;
+  @Autowired private TestRestTemplate testRestTemplate;
 
   private TasklistZeebeRule tasklistZeebeRule;
 
@@ -76,40 +73,49 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   @Test
   public void testZeebeConnection() throws Exception {
-    //when 1
-    //no Zeebe broker is running
+    // when 1
+    // no Zeebe broker is running
 
-    //then 1
-    //application context must be successfully started
+    // then 1
+    // application context must be successfully started
     testRequest(HealthCheckRestService.HEALTH_CHECK_URL);
-    //import is working fine
+    // import is working fine
     zeebeImporter.performOneRoundOfImport();
-    //partition list is empty
+    // partition list is empty
     assertThat(partitionHolder.getPartitionIds()).isEmpty();
 
-    //when 2
-    //Zeebe is started
+    // when 2
+    // Zeebe is started
     startZeebe();
 
-    //then 2
-    //data import is working
+    // then 2
+    // data import is working
     zeebeImporter.performOneRoundOfImport();
-    //partition list is not empty
+    // partition list is not empty
     assertThat(partitionHolder.getPartitionIds()).isNotEmpty();
-
   }
 
   private void testRequest(String url) {
-    final ResponseEntity<Object> entity = testRestTemplate.exchange(url, HttpMethod.GET, null, Object.class);
+    final ResponseEntity<Object> entity =
+        testRestTemplate.exchange(url, HttpMethod.GET, null, Object.class);
     assertThat(entity.getStatusCode().value()).isEqualTo(HttpStatus.SC_OK);
   }
 
   private void startZeebe() {
     tasklistZeebeRule = new TasklistZeebeRule();
     try {
-      FieldSetter.setField(tasklistZeebeRule, TasklistZeebeRule.class.getDeclaredField("tasklistProperties"), tasklistProperties);
-      FieldSetter.setField(tasklistZeebeRule, TasklistZeebeRule.class.getDeclaredField("zeebeEsClient"), zeebeEsClient);
-      FieldSetter.setField(tasklistZeebeRule, TasklistZeebeRule.class.getDeclaredField("embeddedZeebeConfigurer"), embeddedZeebeConfigurer);
+      FieldSetter.setField(
+          tasklistZeebeRule,
+          TasklistZeebeRule.class.getDeclaredField("tasklistProperties"),
+          tasklistProperties);
+      FieldSetter.setField(
+          tasklistZeebeRule,
+          TasklistZeebeRule.class.getDeclaredField("zeebeEsClient"),
+          zeebeEsClient);
+      FieldSetter.setField(
+          tasklistZeebeRule,
+          TasklistZeebeRule.class.getDeclaredField("embeddedZeebeConfigurer"),
+          embeddedZeebeConfigurer);
     } catch (NoSuchFieldException e) {
       Assertions.fail("Failed to inject fields in tasklistZeebeRule");
     }
@@ -118,7 +124,10 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
     clientRule.before();
     tasklistProperties.getZeebeElasticsearch().setPrefix(tasklistZeebeRule.getPrefix());
     try {
-      FieldSetter.setField(partitionHolder, PartitionHolder.class.getDeclaredField("zeebeClient"), clientRule.getClient());
+      FieldSetter.setField(
+          partitionHolder,
+          PartitionHolder.class.getDeclaredField("zeebeClient"),
+          clientRule.getClient());
     } catch (NoSuchFieldException e) {
       Assertions.fail("Failed to inject ZeebeClient into some of the beans");
     }
@@ -126,25 +135,23 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   @Test
   public void testRecoverAfterZeebeRestart() throws Exception {
-    //when 1
-    //Zeebe is started
+    // when 1
+    // Zeebe is started
     startZeebe();
 
-    //then 1
-    //data import is working
+    // then 1
+    // data import is working
     zeebeImporter.performOneRoundOfImport();
 
-    //when 2
-    //Zeebe is restarted
+    // when 2
+    // Zeebe is restarted
     tasklistZeebeRule.finished(null);
     clientRule.after();
     tasklistZeebeRule.starting(null);
     clientRule.before();
 
-    //then 2
-    //data import is still working
+    // then 2
+    // data import is still working
     zeebeImporter.performOneRoundOfImport();
-
   }
-
 }

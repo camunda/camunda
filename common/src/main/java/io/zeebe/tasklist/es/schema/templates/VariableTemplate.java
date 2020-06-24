@@ -22,5 +22,4 @@ public class VariableTemplate extends AbstractTemplateDescriptor {
   protected String getIndexNameFormat() {
     return INDEX_NAME;
   }
-
 }
