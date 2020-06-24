@@ -7,6 +7,8 @@ package org.camunda.optimize.upgrade.plan;
 
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
+import java.util.List;
+
 public class UpgradePlanBuilder {
 
   public static AddUpgradeDependenciesBuilder createUpgradePlan() {
@@ -69,6 +71,11 @@ public class UpgradePlanBuilder {
 
     public AddUpgradeStepBuilder addUpgradeStep(UpgradeStep upgradeStep) {
       upgradeExecutionPlan.addUpgradeStep(upgradeStep);
+      return this;
+    }
+
+    public AddUpgradeStepBuilder addUpgradeSteps(List<UpgradeStep> upgradeSteps) {
+      upgradeExecutionPlan.addUpgradeSteps(upgradeSteps);
       return this;
     }
 

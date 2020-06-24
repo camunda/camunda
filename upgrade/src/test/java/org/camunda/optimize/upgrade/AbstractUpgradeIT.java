@@ -20,16 +20,10 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
-import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
-import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
-import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
-import org.camunda.optimize.upgrade.version30.AlertIndexV2;
-import org.camunda.optimize.upgrade.version30.SingleDecisionReportIndexV2;
-import org.camunda.optimize.upgrade.version30.SingleProcessReportIndexV2;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -60,12 +54,6 @@ import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig
 public abstract class AbstractUpgradeIT {
 
   protected static final MetadataIndex METADATA_INDEX = new MetadataIndex();
-  protected static final SingleProcessReportIndexV2 SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexV2();
-  protected static final SingleDecisionReportIndexV2 SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndexV2();
-  protected static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
-  protected static final TimestampBasedImportIndex TIMESTAMP_BASED_IMPORT_INDEX = new TimestampBasedImportIndex();
-  protected static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
-  protected static final AlertIndexV2 ALERT_INDEX = new AlertIndexV2();
 
   protected ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;
@@ -130,8 +118,8 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
   }
 
-  protected String getVersionedIndexName(final String indexName, final int version) {
-    return indexNameService.getOptimizeIndexNameForAliasAndVersion(
+  private String getVersionedIndexName(final String indexName, final int version) {
+    return OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion(
       indexNameService.getOptimizeIndexAliasForIndex(indexName),
       String.valueOf(version)
     );

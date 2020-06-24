@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +31,14 @@ public enum AggregationType {
   public static List<AggregationType> getAggregationTypesAsListWithoutSum() {
     return Arrays.stream(AggregationType.values())
       .filter(type -> !AggregationType.SUM.equals(type))
+      .collect(Collectors.toList());
+  }
+
+  public static List<AggregationType> getAggregationTypesAsListForProcessParts() {
+    // process parts does not support the median since it does the result calculation
+    // with a script and the script does not allow sorting over all values.
+    return Arrays.stream(AggregationType.values())
+      .filter(type -> !ImmutableSet.of(AggregationType.SUM, AggregationType.MEDIAN).contains(type))
       .collect(Collectors.toList());
   }
 

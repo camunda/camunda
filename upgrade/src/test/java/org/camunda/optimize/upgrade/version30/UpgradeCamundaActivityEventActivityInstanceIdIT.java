@@ -6,14 +6,13 @@
 package org.camunda.optimize.upgrade.version30;
 
 import lombok.SneakyThrows;
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.version30.indices.CamundaActivityEventIndexV1;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -27,9 +26,7 @@ import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpgradeIT {
-
-  private static final String FROM_VERSION = "3.0.0";
+public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpgrade30IT {
 
   private static final String PROCESS_START_SUFFIX = "_processInstanceStart";
   private static final String PROCESS_END_SUFFIX = "_processInstanceEnd";
@@ -47,17 +44,6 @@ public class UpgradeCamundaActivityEventActivityInstanceIdIT extends AbstractUpg
   @Override
   public void setUp() throws Exception {
     super.setUp();
-
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      SINGLE_PROCESS_REPORT_INDEX,
-      SINGLE_DECISION_REPORT_INDEX,
-      COMBINED_REPORT_INDEX,
-      TIMESTAMP_BASED_IMPORT_INDEX,
-      IMPORT_INDEX_INDEX,
-      ALERT_INDEX
-    ));
-    setMetadataIndexVersion(FROM_VERSION);
 
     createCamundaActivityEventV1IndexForDefinitionKey(FIRST_DEFINITION_KEY);
     createCamundaActivityEventV1IndexForDefinitionKey(SECOND_DEFINITION_KEY);

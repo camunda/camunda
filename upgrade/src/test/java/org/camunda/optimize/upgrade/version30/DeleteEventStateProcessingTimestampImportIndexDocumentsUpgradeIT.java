@@ -6,7 +6,6 @@
 package org.camunda.optimize.upgrade.version30;
 
 import lombok.SneakyThrows;
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
@@ -20,9 +19,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DeleteEventStateProcessingTimestampImportIndexDocumentsUpgradeIT extends AbstractUpgradeIT {
+public class DeleteEventStateProcessingTimestampImportIndexDocumentsUpgradeIT extends AbstractUpgrade30IT {
 
-  private static final String FROM_VERSION = "3.0.0";
   // This import is included in the bulk
   private static final String ACTIVITY_IMPORT_INDEX_DOC_ID = "activityImportIndex";
 
@@ -30,17 +28,6 @@ public class DeleteEventStateProcessingTimestampImportIndexDocumentsUpgradeIT ex
   @Override
   public void setUp() throws Exception {
     super.setUp();
-
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      SINGLE_PROCESS_REPORT_INDEX,
-      SINGLE_DECISION_REPORT_INDEX,
-      COMBINED_REPORT_INDEX,
-      TIMESTAMP_BASED_IMPORT_INDEX,
-      IMPORT_INDEX_INDEX,
-      ALERT_INDEX
-    ));
-    setMetadataIndexVersion(FROM_VERSION);
 
     upgradeDependencies.getEsClient()
       .getHighLevelClient()

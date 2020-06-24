@@ -7,17 +7,24 @@ package org.camunda.optimize.upgrade.main.impl;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomNumberBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -33,28 +40,36 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+@Slf4j
 public class UpgradeFrom30To31 extends UpgradeProcedure {
   public static final String FROM_VERSION = "3.0.0";
   public static final String TO_VERSION = "3.1.0";
@@ -91,12 +106,63 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(resetRunningProcessInstanceImport())
       .addUpgradeStep(addDateVariableUnitAndCustomBucketFieldsToReportConfiguration(SINGLE_PROCESS_REPORT_INDEX_NAME))
       .addUpgradeStep(addDateVariableUnitAndCustomBucketFieldsToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME))
-      .addUpgradeStep(migrateAlertThresholdToNewDataType());
+      .addUpgradeStep(migrateAlertThresholdToNewDataType())
+      .addUpgradeSteps(addProcessInstanceIdToEventsMigrationSteps());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteTraceStateIndices(upgradeBuilder);
     deleteSequenceCountIndices(upgradeBuilder);
     upgradeBuilder.addUpgradeStep(deleteTraceStateImportIndexData());
     return upgradeBuilder.build();
+  }
+
+  private List<UpgradeStep> addProcessInstanceIdToEventsMigrationSteps() {
+
+    List<ProcessInstanceIndex> processInstanceIndices = getAllEventProcessPublishStates().stream()
+      .map(EventProcessPublishStateDto::getId)
+      .filter(Objects::nonNull)
+      .map(EventProcessInstanceIndex::new)
+      .collect(Collectors.toList());
+    processInstanceIndices.add(new ProcessInstanceIndex());
+    //@formatter:off
+    final String script =
+      "if (ctx._source.processInstanceId != null) {\n" +
+        "def processInstanceId = ctx._source.processInstanceId;" +
+        "if (ctx._source.events != null) {" +
+          "for (event in ctx._source.events) {" +
+            "event.processInstanceId = processInstanceId;" +
+          "}" +
+        "}" +
+      "}\n"
+      ;
+    //@formatter:on
+    return processInstanceIndices.stream()
+      .map(index -> new UpdateIndexStep(index, script))
+      .collect(Collectors.toList());
+  }
+
+  private List<EventProcessPublishStateDto> getAllEventProcessPublishStates() {
+    log.debug("Fetching all available event process publish states with deleted state.");
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .size(LIST_FETCH_LIMIT);
+    final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(upgradeDependencies.getConfigurationService().getElasticsearchScrollTimeout()));
+
+    final SearchResponse scrollResp;
+    try {
+      scrollResp = upgradeDependencies.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Was not able to retrieve event process publish states!", e);
+    }
+
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      IndexableEventProcessPublishStateDto.class,
+      upgradeDependencies.getObjectMapper(),
+      upgradeDependencies.getEsClient(),
+      upgradeDependencies.getConfigurationService().getElasticsearchScrollTimeout()
+    ).stream().map(IndexableEventProcessPublishStateDto::toEventProcessPublishStateDto).collect(Collectors.toList());
   }
 
   private UpgradeStep migrateAlertThresholdToNewDataType() {

@@ -181,6 +181,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -189,6 +190,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -272,6 +274,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -280,6 +283,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -337,6 +341,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -345,6 +350,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -405,6 +411,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -413,6 +420,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -481,6 +489,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -537,6 +546,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -545,6 +555,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -594,6 +605,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );

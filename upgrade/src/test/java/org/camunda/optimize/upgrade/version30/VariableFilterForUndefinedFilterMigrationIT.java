@@ -6,7 +6,6 @@
 package org.camunda.optimize.upgrade.version30;
 
 import lombok.SneakyThrows;
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
@@ -18,9 +17,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.version30.indices.SingleProcessReportIndexV2;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,8 +33,8 @@ import static org.assertj.core.api.Fail.fail;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
-public class VariableFilterForUndefinedFilterMigrationIT extends AbstractUpgradeIT {
-  private static final String FROM_VERSION = "3.0.0";
+public class VariableFilterForUndefinedFilterMigrationIT extends AbstractUpgrade30IT {
+
   private static final String PROCESS_REPORT_UNDEFINED_TRUE_ID = "ad3eec4f-5011-4e48-a630-d4a4e69fbbd8";
   private static final String PROCESS_REPORT_UNDEFINED_FALSE_ID = "bd3eec4f-5011-4e48-a630-d4a4e69fbbd8";
   private static final String DECISION_REPORT_UNDEFINED_TRUE_ID = "ad5a0c57-2690-4a20-9952-e72d6a50375c";
@@ -45,17 +44,6 @@ public class VariableFilterForUndefinedFilterMigrationIT extends AbstractUpgrade
   @Override
   public void setUp() throws Exception {
     super.setUp();
-
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      SINGLE_PROCESS_REPORT_INDEX,
-      SINGLE_DECISION_REPORT_INDEX,
-      COMBINED_REPORT_INDEX,
-      TIMESTAMP_BASED_IMPORT_INDEX,
-      IMPORT_INDEX_INDEX,
-      ALERT_INDEX
-    ));
-    setMetadataIndexVersion(FROM_VERSION);
 
     executeBulk("steps/3.0/report_data/30-report-with-filterForUndefined-filters-bulk");
   }

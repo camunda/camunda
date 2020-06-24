@@ -25,7 +25,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -596,12 +595,8 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
         idToNewEndDate.put(id, newStartDate.plusSeconds(1L));
       });
 
-    try {
-      engineDatabaseExtension.changeProcessInstanceStartDates(idToNewStartDate);
-      engineDatabaseExtension.changeProcessInstanceEndDates(idToNewEndDate);
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException("Failed updating process instance dates", e);
-    }
+    engineDatabaseExtension.changeProcessInstanceStartDates(idToNewStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDates(idToNewEndDate);
   }
 
   @Test

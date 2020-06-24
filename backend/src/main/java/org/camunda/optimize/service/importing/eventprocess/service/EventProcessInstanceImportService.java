@@ -169,6 +169,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
           .id(eventId)
           .activityId(eventToFlowNodeMapping.getFlowNodeId())
           .activityType(eventToFlowNodeMapping.getFlowNodeType())
+          .processInstanceId(processInstanceDto.getProcessInstanceId())
           .build();
 
         final EventMappingDto eventMapping = eventProcessPublishStateDto.getMappings()

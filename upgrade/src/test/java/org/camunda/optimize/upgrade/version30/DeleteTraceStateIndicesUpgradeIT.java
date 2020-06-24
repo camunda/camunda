@@ -6,10 +6,8 @@
 package org.camunda.optimize.upgrade.version30;
 
 import lombok.SneakyThrows;
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
-import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -22,9 +20,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class DeleteTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
-
-  private static final String FROM_VERSION = "3.0.0";
+public class DeleteTraceStateIndicesUpgradeIT extends AbstractUpgrade30IT {
 
   private static final String CAMUNDA_DEFINITION_KEY_ONE = "invoice";
   private static final String CAMUNDA_DEFINITION_KEY_TWO = "reviewinvoice";
@@ -33,17 +29,6 @@ public class DeleteTraceStateIndicesUpgradeIT extends AbstractUpgradeIT {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      SINGLE_PROCESS_REPORT_INDEX,
-      SINGLE_DECISION_REPORT_INDEX,
-      COMBINED_REPORT_INDEX,
-      TIMESTAMP_BASED_IMPORT_INDEX,
-      IMPORT_INDEX_INDEX,
-      ALERT_INDEX
-    ));
-    setMetadataIndexVersion(FROM_VERSION);
 
     createTraceStateIndexForDefinitionKey(CAMUNDA_DEFINITION_KEY_ONE);
     createTraceStateIndexForDefinitionKey(CAMUNDA_DEFINITION_KEY_TWO);

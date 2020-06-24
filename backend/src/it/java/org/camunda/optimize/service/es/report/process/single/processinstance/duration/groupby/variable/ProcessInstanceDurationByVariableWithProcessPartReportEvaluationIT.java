@@ -37,7 +37,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -72,10 +71,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   private static final String END_LOOP = "splittingGateway";
   private static final String TEST_ACTIVITY = "testActivity";
 
-  private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
+  private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListForProcessParts();
 
   @Test
-  public void reportEvaluationForOneProcess() throws Exception {
+  public void reportEvaluationForOneProcess() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -125,7 +124,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void reportEvaluationById() throws Exception {
+  public void reportEvaluationById() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -175,7 +174,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void evaluateReportForMultipleEvents() throws Exception {
+  public void evaluateReportForMultipleEvents() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processEngineDto = deploySimpleServiceTaskProcess();
@@ -213,7 +212,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void testCustomOrderOnResultKeyIsApplied() throws SQLException {
+  public void testCustomOrderOnResultKeyIsApplied() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processEngineDto = deploySimpleServiceTaskProcess();
@@ -260,7 +259,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void testCustomOrderOnResultValueIsApplied() throws SQLException {
+  public void testCustomOrderOnResultValueIsApplied() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processEngineDto = deploySimpleServiceTaskProcess();
@@ -313,7 +312,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void testEvaluationResultForAllAggregationTypes() throws SQLException {
+  public void testEvaluationResultForAllAggregationTypes() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processEngineDto = deploySimpleServiceTaskProcess();
@@ -801,7 +800,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void takeCorrectActivityOccurrences() throws Exception {
+  public void takeCorrectActivityOccurrences() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now().minusHours(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartLoopingProcess();
@@ -830,7 +829,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void unknownStartReturnsZero() throws SQLException {
+  public void unknownStartReturnsZero() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
@@ -859,7 +858,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void unknownEndReturnsZero() throws SQLException {
+  public void unknownEndReturnsZero() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
@@ -908,7 +907,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
+  public void otherProcessDefinitionsDoNoAffectResult() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto procDefDto = deploySimpleServiceTaskProcess();
@@ -971,7 +970,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void filterInReportWorks() throws Exception {
+  public void filterInReportWorks() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE);
@@ -1022,7 +1021,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void variableTypeIsImportant() throws SQLException {
+  public void variableTypeIsImportant() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     Map<String, Object> variables = new HashMap<>();
@@ -1065,7 +1064,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void otherVariablesDoNotDistortTheResult() throws SQLException {
+  public void otherVariablesDoNotDistortTheResult() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     Map<String, Object> variables = new HashMap<>();
@@ -1109,7 +1108,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void worksWithAllVariableTypes() throws SQLException {
+  public void worksWithAllVariableTypes() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -1367,7 +1366,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
   private void startThreeProcessInstances(OffsetDateTime activityStartDate,
                                           ProcessDefinitionEngineDto procDefDto,
-                                          List<Integer> activityDurationsInSec) throws SQLException {
+                                          List<Integer> activityDurationsInSec) {
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE);
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(

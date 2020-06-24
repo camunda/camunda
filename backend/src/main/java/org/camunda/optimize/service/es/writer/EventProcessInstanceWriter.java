@@ -197,7 +197,7 @@ public class EventProcessInstanceWriter {
         ".filter(flowNodeInstanceUpdate -> !appliedUpdates.contains(flowNodeInstanceUpdate))\n" +
         ".collect(Collectors.toList());\n" +
 
-      "addGatewaysForProcessInstance(processInstance, params.gatewayLookup, eventDateComparator, dateFormatter);\n" +
+      "addGatewaysForProcessInstance(processInstance, params.gatewayLookup, eventDateComparator, processInstanceUpdate.processInstanceId, dateFormatter);\n" +
       "updateProcessInstance(processInstance, dateFormatter);\n"
       ;
     // @formatter:on
@@ -249,7 +249,7 @@ public class EventProcessInstanceWriter {
   private String createAddGatewaysForProcessInstanceFunction() {
     // @formatter:off
     return
-      "void addGatewaysForProcessInstance(def instance, def gatewayLookup, def startEndDateComparator, def dateFormatter) {\n" +
+      "void addGatewaysForProcessInstance(def instance, def gatewayLookup, def startEndDateComparator, def processInstanceId, def dateFormatter) {\n" +
         "List gatewayEventsToAdd = new ArrayList();\n" +
         "List gatewayIdsInModel = gatewayLookup.stream().map(gateway -> gateway.id).collect(Collectors.toList());\n" +
         "List existingEvents = new ArrayList(instance.events);\n" +
@@ -260,11 +260,11 @@ public class EventProcessInstanceWriter {
             // Gateways with a single source flow node are opening gateways.
             "if (possibleGateway.previousNodeIds.size() == 1) {\n" +
               "addOpeningGatewayInstances(possibleGateway, gatewayIdsInModel, existingEvents, gatewayEventsToAdd," +
-                                  "eventAddedCount, dateFormatter);\n" +
+                                  "eventAddedCount, processInstanceId, dateFormatter);\n" +
             // Gateways with a single target flow node are closing gateways.
             "} else if (possibleGateway.nextNodeIds.size() == 1) {\n" +
               "addClosingGatewayInstances(possibleGateway, gatewayIdsInModel, existingEvents, gatewayEventsToAdd," +
-                                  "eventAddedCount, dateFormatter);\n" +
+                                  "eventAddedCount, processInstanceId, dateFormatter);\n" +
             "}\n" +
           "}\n" +
           "existingEvents.addAll(gatewayEventsToAdd);\n" +
@@ -278,7 +278,7 @@ public class EventProcessInstanceWriter {
     // @formatter:off
     return
       "void addOpeningGatewayInstances(def possibleGateway, def gatewayIdsInModel, def existingEvents, def gatewayEventsToAdd," +
-                             "def eventAddedCount, def dateFormatter) {\n" +
+                             "def eventAddedCount, def processInstanceId, def dateFormatter) {\n" +
         // For event based gateways
         "if (possibleGateway.type.equals(\"eventBasedGateway\")) {\n" +
           "def previousNodeId = possibleGateway.previousNodeIds.get(0);\n" +
@@ -289,7 +289,7 @@ public class EventProcessInstanceWriter {
               "if (possibleGateway.nextNodeIds.contains(event.activityId) && event.startDate != null) {\n" +
                 "eventAddedCount ++;\n" +
                 "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                    "event.startDate, event.startDate, eventAddedCount);\n" +
+                                    "event.startDate, event.startDate, processInstanceId, eventAddedCount);\n" +
                 "gatewayEventsToAdd.add(newGateway);\n" +
               "}\n" +
             "}\n" +
@@ -308,7 +308,7 @@ public class EventProcessInstanceWriter {
               "def targetEvent = targetEvents.remove(0);\n" +
               "eventAddedCount ++;\n" +
               "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                  "sourceEvent.endDate, targetEvent.startDate, eventAddedCount);\n" +
+                                  "sourceEvent.endDate, targetEvent.startDate, processInstanceId, eventAddedCount);\n" +
               "calculateAndAssignEventDuration(newGateway, dateFormatter);\n" +
               "gatewayEventsToAdd.add(newGateway);\n" +
               "gatewayCanBeAdded = !sourceEvents.isEmpty() && !targetEvents.isEmpty();\n" +
@@ -322,7 +322,7 @@ public class EventProcessInstanceWriter {
             "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
               "eventAddedCount ++;\n" +
               "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                  "event.endDate, event.endDate, eventAddedCount);\n" +
+                                  "event.endDate, event.endDate, processInstanceId, eventAddedCount);\n" +
               "gatewayEventsToAdd.add(newGateway);\n" +
             "}\n" +
           "}\n" +
@@ -333,7 +333,7 @@ public class EventProcessInstanceWriter {
             "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
               "eventAddedCount ++;\n" +
               "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                  "event.startDate, event.startDate, eventAddedCount);\n" +
+                                  "event.startDate, event.startDate, processInstanceId, eventAddedCount);\n" +
               "gatewayEventsToAdd.add(newGateway);\n" +
             "}\n" +
           "}\n" +
@@ -346,7 +346,7 @@ public class EventProcessInstanceWriter {
     // @formatter:off
     return
       "void addClosingGatewayInstances(def possibleGateway, def gatewayIdsInModel, def existingEvents, def gatewayEventsToAdd," +
-                             "def eventAddedCount, def dateFormatter) {\n" +
+                             "def eventAddedCount, def processInstanceId, def dateFormatter) {\n" +
         // For exclusive gateways
         "if (possibleGateway.type.equals(\"exclusiveGateway\")) {\n" +
           // if the target flow node event is not a gateway, we can add an exclusive gateway for every
@@ -356,7 +356,7 @@ public class EventProcessInstanceWriter {
               "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
                 "eventAddedCount ++;\n" +
                 "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                    "event.startDate, event.startDate, eventAddedCount);\n" +
+                                    "event.startDate, event.startDate, processInstanceId, eventAddedCount);\n" +
                 "gatewayEventsToAdd.add(newGateway);\n" +
               "}\n" +
             "}\n" +
@@ -367,7 +367,7 @@ public class EventProcessInstanceWriter {
               "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
                 "eventAddedCount ++;\n" +
                 "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                    "event.endDate, event.endDate, eventAddedCount);\n" +
+                                    "event.endDate, event.endDate, processInstanceId, eventAddedCount);\n" +
                 "gatewayEventsToAdd.add(newGateway);\n" +
               "}\n" +
             "}\n" +
@@ -394,7 +394,7 @@ public class EventProcessInstanceWriter {
             "def lastEventForGateway = eventsForGateway.get(eventsForGateway.size() - 1);" +
             "eventAddedCount ++;\n" +
             "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                  "firstEventForGateway.endDate, lastEventForGateway.endDate, eventAddedCount);\n" +
+                                  "firstEventForGateway.endDate, lastEventForGateway.endDate, processInstanceId, eventAddedCount);\n" +
             "calculateAndAssignEventDuration(newGateway, dateFormatter);\n" +
             "gatewayEventsToAdd.add(newGateway);\n" +
             "gatewayCanBeAdded = !relatedEventsByActivityId.values().stream().anyMatch(eventsForActivity -> eventsForActivity.isEmpty());\n" +
@@ -407,14 +407,15 @@ public class EventProcessInstanceWriter {
   private String createNewGatewayFunction() {
     // @formatter:off
     return
-      "def createNewGateway(def activityId, def activityType, def startDate, def endDate, def eventAddedCount) {\n" +
+      "def createNewGateway(def activityId, def activityType, def startDate, def endDate, def processInstanceId, def eventAddedCount) {\n" +
         "def newGateway = [\n" +
           "'id': activityId + '_' + eventAddedCount,\n" +
           "'activityId': activityId,\n" +
           "'activityType': activityType,\n" +
           "'durationInMs': 0,\n" +
           "'startDate': startDate,\n" +
-          "'endDate': endDate\n" +
+          "'endDate': endDate,\n" +
+          "'processInstanceId': processInstanceId\n" +
         "];\n" +
         "return newGateway;\n" +
       "}\n";

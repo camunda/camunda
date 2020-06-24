@@ -28,7 +28,6 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -38,21 +37,16 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithProcessPartReportEvaluationIT
   extends AbstractProcessDefinitionIT {
@@ -60,14 +54,14 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
   private static final String START_LOOP = "mergeExclusiveGateway";
   private static final String END_LOOP = "splittingGateway";
 
-  private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
+  private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListForProcessParts();
 
   protected abstract ProcessReportDataType getTestReportDataType();
 
   protected abstract ProcessGroupByType getGroupByType();
 
   @Test
-  public void reportEvaluationForOneProcess() throws Exception {
+  public void reportEvaluationForOneProcess() {
 
     // given
     OffsetDateTime procInstReferenceDate = OffsetDateTime.now();
@@ -101,23 +95,23 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
-    assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
-    assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
+    assertThat(resultReportDataDto.getConfiguration().getProcessPart()).isPresent();
 
-    assertThat(evaluationResponse.getResult().getInstanceCount(), is(1L));
+    assertThat(evaluationResponse.getResult().getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1000.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
   }
 
   @Test
-  public void reportEvaluationById() throws Exception {
+  public void reportEvaluationById() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     OffsetDateTime activityStartDate = OffsetDateTime.now();
@@ -151,22 +145,22 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
-    assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
-    assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
-    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
+    assertThat(resultReportDataDto.getConfiguration().getProcessPart()).isPresent();
+    assertThat(evaluationResponse.getResult().getData()).isNotNull();
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1000.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
   }
 
   @Test
-  public void evaluateReportForMultipleEvents() throws Exception {
+  public void evaluateReportForMultipleEvents() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto procDefDto = deploySimpleServiceTaskProcess();
@@ -187,14 +181,14 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData).isNotNull();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.)));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.));
   }
 
   @Test
-  public void evaluateReportForMultipleEventsWithAllAggregationTypes() throws Exception {
+  public void evaluateReportForMultipleEventsWithAllAggregationTypes() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto procDefDto = deploySimpleServiceTaskProcess();
@@ -220,7 +214,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
   }
 
   @Test
-  public void multipleEventsInEachDateRange() throws Exception {
+  public void multipleEventsInEachDateRange() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto procDefDto = deploySimpleServiceTaskProcess();
@@ -245,23 +239,20 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(2));
+    assertThat(resultData)
+      .isNotNull()
+      .hasSize(2);
     ZonedDateTime startOfToday = truncateToStartOfUnit(procInstRefDate, ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(
-      resultData.get(0).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.))
-    );
-    assertThat(resultData.get(1).getKey(), is(localDateTimeToString(startOfToday.minusDays(1))));
+      resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.));
+    assertThat(resultData.get(1).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(1)));
     assertThat(
-      resultData.get(1).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(2000., 4000., 12000.))
-    );
+      resultData.get(1).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000., 4000., 12000.));
   }
 
   @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() throws SQLException {
+  public void multipleBuckets_noFilter_resultLimitedByConfig() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto procDefDto = deploySimpleServiceTaskProcess();
@@ -290,12 +281,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
-    assertThat(result.getIsComplete(), is(false));
+    assertThat(resultData).hasSize(2);
+    assertThat(result.getIsComplete()).isFalse();
   }
 
   @Test
-  public void takeCorrectActivityOccurrences() throws Exception {
+  public void takeCorrectActivityOccurrences() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     OffsetDateTime activityStartDate = OffsetDateTime.now().minusHours(1);
@@ -319,15 +310,15 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData()).isNotNull();
     final List<MapResultEntryDto> resultData = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(2000.)));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000.));
   }
 
   @Test
-  public void unknownStartReturnsEmptyResult() throws SQLException {
+  public void unknownStartReturnsEmptyResult() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -352,12 +343,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().isEmpty(), is(true));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEmpty();
   }
 
   @Test
-  public void unknownEndReturnsEmptyResult() throws SQLException {
+  public void unknownEndReturnsEmptyResult() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -382,8 +373,8 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().isEmpty(), is(true));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEmpty();
   }
 
   @Test
@@ -401,12 +392,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().isEmpty(), is(true));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEmpty();
   }
 
   @Test
-  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
+  public void otherProcessDefinitionsDoNoAffectResult() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     OffsetDateTime activityStartdate = OffsetDateTime.now();
@@ -442,11 +433,11 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData()).isNotNull();
     final List<MapResultEntryDto> resultData = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.)));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
   }
 
   @Test
@@ -476,11 +467,11 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
   }
 
   @Test
-  public void filterInReportWorks() throws Exception {
+  public void filterInReportWorks() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     Map<String, Object> variables = new HashMap<>();
@@ -511,8 +502,8 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     // then
     List<MapResultEntryDto> resultData = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
 
     // when
     reportData.setFilter(createVariableFilter("false"));
@@ -520,11 +511,11 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     resultData = result.getData();
-    assertThat(resultData.isEmpty(), is(true));
+    assertThat(result.getData()).isEmpty();
   }
 
   @Test
-  public void processInstancesAtSameIntervalAreGroupedTogether() throws Exception {
+  public void processInstancesAtSameIntervalAreGroupedTogether() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     OffsetDateTime activityStartDate = OffsetDateTime.now();
@@ -569,12 +560,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
+    assertThat(resultData).hasSize(2);
     ZonedDateTime startOfToday = truncateToStartOfUnit(procInstRefDate, ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.)));
-    assertThat(resultData.get(1).getKey(), is(localDateTimeToString(startOfToday.minusDays(1))));
-    assertThat(resultData.get(1).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
+    assertThat(resultData.get(1).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(1)));
+    assertThat(resultData.get(1).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -610,13 +601,11 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
+    assertThat(resultKeys)
       // expect descending order
-      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
-    );
+      .isSortedAccordingTo(Comparator.reverseOrder());
   }
 
   @Test
@@ -651,13 +640,11 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
+    assertThat(resultKeys)
       // expect ascending order
-      contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+      .isSortedAccordingTo(Comparator.naturalOrder());
   }
 
 
@@ -709,19 +696,17 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
       // then
       final List<MapResultEntryDto> resultData = result.getData();
-      assertThat(resultData.size(), is(3));
+      assertThat(resultData).hasSize(3);
       final List<Double> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
         .collect(Collectors.toList());
-      assertThat(
-        bucketValues,
-        contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
-      );
+      assertThat(bucketValues)
+        .isSortedAccordingTo(Comparator.naturalOrder());
     });
   }
 
   @Test
-  public void emptyIntervalBetweenTwoProcessInstances() throws Exception {
+  public void emptyIntervalBetweenTwoProcessInstances() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto procDefDto = deploySimpleServiceTaskProcess();
@@ -753,18 +738,18 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.)));
-    assertThat(resultData.get(1).getKey(), is(localDateTimeToString(startOfToday.minusDays(1))));
-    assertThat(resultData.get(1).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(0.)));
-    assertThat(resultData.get(2).getKey(), is(localDateTimeToString(startOfToday.minusDays(2))));
-    assertThat(resultData.get(2).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(2000.)));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.));
+    assertThat(resultData.get(1).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(1)));
+    assertThat(resultData.get(1).getValue()).isNull();
+    assertThat(resultData.get(2).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(2)));
+    assertThat(resultData.get(2).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000.));
   }
 
   @Test
-  public void groupedByHour() throws Exception {
+  public void groupedByHour() {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);
     OffsetDateTime now = OffsetDateTime.now();
@@ -786,12 +771,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData()).isNotNull();
     assertDateResultMap(result.getData(), 5, now, ChronoUnit.HOURS);
   }
 
   @Test
-  public void groupedByDay() throws Exception {
+  public void groupedByDay() {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
@@ -813,12 +798,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData()).isNotNull();
     assertDateResultMap(result.getData(), 8, now, ChronoUnit.DAYS);
   }
 
   @Test
-  public void groupedByWeek() throws Exception {
+  public void groupedByWeek() {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
@@ -840,12 +825,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData()).isNotNull();
     assertDateResultMap(result.getData(), 8, now, ChronoUnit.WEEKS);
   }
 
   @Test
-  public void groupedByMonth() throws Exception {
+  public void groupedByMonth() {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
@@ -867,12 +852,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData()).isNotNull();
     assertDateResultMap(result.getData(), 8, now, ChronoUnit.MONTHS);
   }
 
   @Test
-  public void groupedByYear() throws Exception {
+  public void groupedByYear() {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
@@ -894,7 +879,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData()).isNotNull();
     assertDateResultMap(result.getData(), 8, now, ChronoUnit.YEARS);
   }
 
@@ -902,19 +887,19 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
                                    int size,
                                    OffsetDateTime now,
                                    ChronoUnit unit) {
-    assertThat(resultData.size(), is(size));
+    assertThat(resultData.size()).isEqualTo(size);
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
       .forEach(i -> {
         String expectedDateString = localDateTimeToString(finalStartOfUnit.minus(i, unit));
-        assertThat(resultData.get(i).getKey(), is(expectedDateString));
-        assertThat(resultData.get(i).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
+        assertThat(resultData.get(i).getKey()).isEqualTo(expectedDateString);
+        assertThat(resultData.get(i).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
       });
   }
 
   private void updateProcessInstancesDates(List<ProcessInstanceEngineDto> procInsts,
                                            OffsetDateTime now,
-                                           ChronoUnit unit) throws SQLException {
+                                           ChronoUnit unit) {
     Map<String, OffsetDateTime> idToNewStartDate = new HashMap<>();
     Map<String, OffsetDateTime> idToNewEndDate = new HashMap<>();
     for (int i = 0; i < procInsts.size(); i++) {
@@ -1012,8 +997,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
   protected void startThreeProcessInstances(OffsetDateTime procInstRefDate,
                                             int daysToShiftProcessInstance,
                                             ProcessDefinitionEngineDto procDefDto,
-                                            List<Integer> activityDurationsInSec) throws
-                                                                                  SQLException {
+                                            List<Integer> activityDurationsInSec) {
     OffsetDateTime activityStartDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(procDefDto.getId());
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, daysToShiftProcessInstance);
@@ -1054,11 +1038,9 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       final List<MapResultEntryDto> resultData = results.get(aggType).getData();
-      assertThat(resultData, is(notNullValue()));
-      assertThat(
-        resultData.get(0).getValue(),
-        is(calculateExpectedValueGivenDurations(expectedDurations).get(aggType))
-      );
+      assertThat(resultData).isNotNull();
+      assertThat(resultData.get(0).getValue())
+        .isEqualTo(calculateExpectedValueGivenDurations(expectedDurations).get(aggType));
     });
   }
 }

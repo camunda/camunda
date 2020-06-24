@@ -25,6 +25,7 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   private String id;
   private String activityId;
   private String activityType;
+  private String processInstanceId;
   private Long durationInMs;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;

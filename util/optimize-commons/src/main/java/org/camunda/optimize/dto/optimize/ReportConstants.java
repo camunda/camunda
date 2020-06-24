@@ -1,4 +1,4 @@
-/*
+  /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
@@ -114,4 +114,12 @@ public class ReportConstants {
   public static final String DATE_TYPE_LOWERCASE = "date";
 
   public static final VariableType[] ALL_SUPPORTED_VARIABLE_TYPES = VariableType.values();
+
+  // A report result can have three states in theory for duration reports:
+  // * an arbitrary positive value,
+  // * zero duration
+  // * no data available
+  // To differentiate between an activity/process instance took 0ms and no data available the
+  // null result indicates that there's no data.
+  public static final Double NO_DATA_AVAILABLE_RESULT = null;
 }

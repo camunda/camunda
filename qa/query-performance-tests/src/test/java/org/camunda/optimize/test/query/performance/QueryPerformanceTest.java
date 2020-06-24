@@ -109,8 +109,6 @@ public class QueryPerformanceTest {
   }
 
   private static Stream<SingleReportDataDto> getPossibleReports() {
-    return createAllPossibleReports().stream()
-      // we exclude all process part queries as they easily overload es for bigger datasets, see OPT-3565
-      .filter(singleReportDataDto -> !singleReportDataDto.getConfiguration().getProcessPart().isPresent());
+    return createAllPossibleReports().stream();
   }
 }

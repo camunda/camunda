@@ -32,17 +32,18 @@ public class ProcessViewInstanceDurationOnProcessPart extends ProcessViewInstanc
     ProcessPartDto processPart = context.getReportConfiguration()
       .getProcessPart()
       .orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
-    return createProcessPartAggregation(processPart.getStart(), processPart.getEnd());
+    return createProcessPartAggregation(
+      processPart.getStart(),
+      processPart.getEnd(),
+      getAggregationStrategy(context.getReportData()).getAggregationType()
+    );
   }
 
   @Override
   public ViewResult retrieveResult(final SearchResponse response,
                                    final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
-    final Double durationInMs = processProcessPartAggregationOperations(
-      aggs,
-      getAggregationStrategy(context.getReportData()).getAggregationType()
-    );
+    final Double durationInMs = processProcessPartAggregationOperations(aggs);
     return new ViewResult().setNumber(durationInMs);
   }
 

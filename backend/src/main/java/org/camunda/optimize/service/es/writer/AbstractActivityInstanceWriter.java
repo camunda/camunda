@@ -112,6 +112,7 @@ public abstract class AbstractActivityInstanceWriter {
         .activityType(activity.getActivityType())
         .startDate(activity.getStartDate())
         .endDate(activity.getEndDate())
+        .processInstanceId(activity.getProcessInstanceId())
         .build()
       ).collect(Collectors.toList());
   }

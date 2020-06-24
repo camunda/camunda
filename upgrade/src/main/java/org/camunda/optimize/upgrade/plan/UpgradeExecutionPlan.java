@@ -137,6 +137,10 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     this.upgradeSteps.add(upgradeStep);
   }
 
+  public void addUpgradeSteps(List<UpgradeStep> upgradeSteps) {
+    this.upgradeSteps.addAll(upgradeSteps);
+  }
+
   public void setEsIndexAdjuster(final ESIndexAdjuster esIndexAdjuster) {
     this.esIndexAdjuster = esIndexAdjuster;
   }

@@ -26,8 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ProcessInstanceDurationByProcessInstanceEndDateWithProcessPartReportEvaluationIT
   extends AbstractProcessInstanceDurationByProcessInstanceDateWithProcessPartReportEvaluationIT {
@@ -63,7 +62,7 @@ public class ProcessInstanceDurationByProcessInstanceEndDateWithProcessPartRepor
   }
 
   @Test
-  public void testEmptyBucketsAreReturnedForEndDateFilterPeriod() throws SQLException {
+  public void testEmptyBucketsAreReturnedForEndDateFilterPeriod() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto procDefDto = deploySimpleServiceTaskProcess();
@@ -93,36 +92,26 @@ public class ProcessInstanceDurationByProcessInstanceEndDateWithProcessPartRepor
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(5));
+    assertThat(resultData.size()).isEqualTo(5);
 
-    assertThat(
-      resultData.get(0).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(0).getValue(), is(1000.));
+    assertThat(resultData.get(0).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
 
-    assertThat(
-      resultData.get(1).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(1).getValue(), is(0.));
+    assertThat(resultData.get(1).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
+    assertThat(resultData.get(1).getValue()).isNull();
 
-    assertThat(
-      resultData.get(2).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(2).getValue(), is(2000.));
+    assertThat(resultData.get(2).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS));
+    assertThat(resultData.get(2).getValue()).isEqualTo(2000.);
 
-    assertThat(
-      resultData.get(3).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(3).getValue(), is(0.));
+    assertThat(resultData.get(3).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS));
+    assertThat(resultData.get(3).getValue()).isNull();
 
-    assertThat(
-      resultData.get(4).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(4).getValue(), is(0.));
+    assertThat(resultData.get(4).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS));
+    assertThat(resultData.get(4).getValue()).isNull();
   }
 }

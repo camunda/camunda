@@ -5,9 +5,7 @@
  */
 package org.camunda.optimize.upgrade.version30;
 
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -22,24 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler.BEGINNING_OF_TIME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
-public class ResetRunningProcessImportMigrationIT extends AbstractUpgradeIT {
-  private static final String FROM_VERSION = "3.0.0";
+public class ResetRunningProcessImportMigrationIT extends AbstractUpgrade30IT {
 
   @BeforeEach
   @Override
   public void setUp() throws Exception {
     super.setUp();
-
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      SINGLE_PROCESS_REPORT_INDEX,
-      SINGLE_DECISION_REPORT_INDEX,
-      COMBINED_REPORT_INDEX,
-      TIMESTAMP_BASED_IMPORT_INDEX,
-      IMPORT_INDEX_INDEX,
-      ALERT_INDEX
-    ));
-    setMetadataIndexVersion(FROM_VERSION);
 
     upgradeDependencies.getEsClient()
       .getHighLevelClient()
@@ -54,7 +40,6 @@ public class ResetRunningProcessImportMigrationIT extends AbstractUpgradeIT {
     // given
     final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
     final OffsetDateTime otherIndexExpectedTimestamp = OffsetDateTime.parse("2020-01-01T01:00+01:00");
-    final OffsetDateTime instanceIndexExpectedTimestamp = BEGINNING_OF_TIME;
 
     // when
     upgradePlan.execute();
@@ -65,7 +50,7 @@ public class ResetRunningProcessImportMigrationIT extends AbstractUpgradeIT {
     assertThat(timestampBasedImportIndexDtos.size()).isEqualTo(2);
     assertThat(timestampBasedImportIndexDtos)
       .filteredOn(indexDto -> indexDto.getEsTypeIndexRefersTo().equals("runningProcessInstanceImportIndex"))
-      .allMatch(indexDto -> indexDto.getTimestampOfLastEntity().isEqual(instanceIndexExpectedTimestamp));
+      .allMatch(indexDto -> indexDto.getTimestampOfLastEntity().isEqual(BEGINNING_OF_TIME));
     assertThat(timestampBasedImportIndexDtos)
       .filteredOn(indexDto -> indexDto.getEsTypeIndexRefersTo().equals("otherIndex"))
       .allMatch(indexDto -> indexDto.getTimestampOfLastEntity().isEqual(otherIndexExpectedTimestamp));

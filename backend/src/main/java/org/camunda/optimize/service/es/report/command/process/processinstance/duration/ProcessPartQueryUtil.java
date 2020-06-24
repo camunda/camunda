@@ -5,68 +5,44 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.ScriptedMetric;
 import org.elasticsearch.search.aggregations.metrics.ScriptedMetricAggregationBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDouble;
+import static org.camunda.optimize.dto.optimize.ReportConstants.NO_DATA_AVAILABLE_RESULT;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.scriptedMetric;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 
 public class ProcessPartQueryUtil {
 
   private static final String SCRIPT_AGGREGATION = "scriptAggregation";
   private static final String NESTED_AGGREGATION = "nestedAggregation";
-  private static final String TERMS_AGGREGATIONS = "termsAggregations";
 
   private ProcessPartQueryUtil(){}
 
-  public static Double processProcessPartAggregationOperations(Aggregations aggs, AggregationType aggregationType) {
-    Terms agg = aggs.get(TERMS_AGGREGATIONS);
-    DescriptiveStatistics stats = new DescriptiveStatistics();
-    for (Terms.Bucket entry : agg.getBuckets()) {
-      Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
-      ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
+  public static Double processProcessPartAggregationOperations(Aggregations aggs) {
+    Nested nested = aggs.get(NESTED_AGGREGATION);
+    ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
 
-      if (scriptedMetric.aggregation() instanceof Number) {
-        final Number scriptedResult = (Number) scriptedMetric.aggregation();
-        stats.addValue(scriptedResult.longValue());
-      }
+    if (scriptedMetric.aggregation() instanceof Number) {
+      final Number scriptedResult = (Number) scriptedMetric.aggregation();
+      return scriptedResult.doubleValue();
     }
-    return getResultForGivenAggregationType(stats, aggregationType);
-  }
-
-  private static Double getResultForGivenAggregationType(DescriptiveStatistics stats, AggregationType aggregationType) {
-    switch (aggregationType) {
-      case MIN:
-        return mapToDouble(stats.getMin());
-      case MAX:
-        return mapToDouble(stats.getMax());
-      case AVERAGE:
-        return mapToDouble(stats.getMean());
-      case MEDIAN:
-        return mapToDouble(stats.getPercentile(50));
-      default:
-        throw new OptimizeRuntimeException(String.format("Unknown aggregation type [%s]", aggregationType));
-    }
+    return NO_DATA_AVAILABLE_RESULT;
   }
 
   public static BoolQueryBuilder addProcessPartQuery(BoolQueryBuilder boolQueryBuilder,
@@ -88,10 +64,12 @@ public class ProcessPartQueryUtil {
     return boolQueryBuilder;
   }
 
-  public static AggregationBuilder createProcessPartAggregation(String startFlowNodeId, String endFlowNodeId) {
+  public static AggregationBuilder createProcessPartAggregation(String startFlowNodeId, String endFlowNodeId,
+                                                                final AggregationType aggregationType) {
     Map<String, Object> params = new HashMap<>();
     params.put("startFlowNodeId", startFlowNodeId);
     params.put("endFlowNodeId", endFlowNodeId);
+    params.put("aggregationType", aggregationType.getId());
 
     ScriptedMetricAggregationBuilder findStartAndEndDatesForEvents = scriptedMetric(SCRIPT_AGGREGATION)
       .initScript(createInitScript())
@@ -101,22 +79,17 @@ public class ProcessPartQueryUtil {
       .params(params);
     NestedAggregationBuilder searchThroughTheEvents =
       nested(NESTED_AGGREGATION, ProcessInstanceIndex.EVENTS);
-    return
-      terms(TERMS_AGGREGATIONS)
-        .field(ProcessInstanceIndex.PROCESS_INSTANCE_ID)
-        .subAggregation(
-          searchThroughTheEvents
-            .subAggregation(
-              findStartAndEndDatesForEvents
-            )
-        );
+    return searchThroughTheEvents
+      .subAggregation(
+        findStartAndEndDatesForEvents
+      );
   }
 
   private static Script createInitScript() {
     // @formatter:off
     return new Script(
-        "state.starts = [];" +
-        "state.ends = []"
+      "state.procInstIdToStartDates = new HashMap();" +
+      "state.procInstIdToEndDates = new HashMap();"
     );
     // @formatter:on
   }
@@ -124,16 +97,19 @@ public class ProcessPartQueryUtil {
   private static Script createMapScript() {
     // @formatter:off
     return new Script(
+      "def processInstanceId = doc['events.processInstanceId'].value;" +
       "if(doc['events.activityId'].value == params.startFlowNodeId && " +
           "doc['events.startDate'].size() != 0 && doc['events.startDate'].value != null && " +
           "doc['events.startDate'].value.toInstant().toEpochMilli() != 0) {" +
         "long startDateInMillis = doc['events.startDate'].value.toInstant().toEpochMilli();" +
-        "state.starts.add(startDateInMillis);" +
+        "state.procInstIdToStartDates.putIfAbsent(processInstanceId, new ArrayList());" +
+        "state.procInstIdToStartDates.get(processInstanceId).add(startDateInMillis);" +
       "} else if(doc['events.activityId'].value == params.endFlowNodeId && " +
           "doc['events.endDate'].size() != 0 && doc['events.endDate'].value != null && " +
           "doc['events.endDate'].value.toInstant().toEpochMilli() != 0) {" +
         "long endDateInMillis = doc['events.endDate'].value.toInstant().toEpochMilli();" +
-        "state.ends.add(endDateInMillis);" +
+        "state.procInstIdToEndDates.putIfAbsent(processInstanceId, new ArrayList());" +
+        "state.procInstIdToEndDates.get(processInstanceId).add(endDateInMillis);" +
       "}"
     );
     // @formatter:on
@@ -142,16 +118,36 @@ public class ProcessPartQueryUtil {
   private static Script createCombineScript() {
     // @formatter:off
     return new Script(
-        "if (!state.starts.isEmpty() && !state.ends.isEmpty()) {" +
-        "long minStart = state.starts.stream().min(Long::compareTo).get(); " +
-        "List endsLargerMinStart = state.ends.stream().filter(e -> e >= minStart).collect(Collectors.toList());" +
-        "if (!endsLargerMinStart.isEmpty()) {" +
-          "long closestEnd = endsLargerMinStart.stream()" +
-            ".min(Comparator.comparingDouble(v -> Math.abs(v - minStart))).get();" +
-          "return closestEnd-minStart;" +
+      "double sum = 0.0;" +
+      "long count = 0;" +
+      "double min = Double.MAX_VALUE;" +
+      "double max = Double.MIN_VALUE;" +
+      "for (procInstIdToStartDatesEntry in state.procInstIdToStartDates.entrySet()) {  " +
+        "def endDates = state.procInstIdToEndDates.getOrDefault(procInstIdToStartDatesEntry.getKey(), new ArrayList());" +
+        "def startDates = procInstIdToStartDatesEntry.getValue();" +
+        "if (!startDates.isEmpty() && !endDates.isEmpty()) {" +
+          "long minStartDate = startDates.stream().min(Long::compareTo).get(); " +
+          "List endDatesLargerMinStartDate = endDates.stream().filter(e -> e >= minStartDate).collect(Collectors.toList());" +
+          "if (!endDatesLargerMinStartDate.isEmpty()) {" +
+            "long closestEndDate = endDatesLargerMinStartDate.stream()" +
+              ".min(Comparator.comparingDouble(v -> Math.abs(v - minStartDate))).get();" +
+            "double duration = closestEndDate - minStartDate;" +
+            "min = duration < min? duration : min;" +
+            "max = duration > max? duration : max;" +
+            "sum += duration;" +
+            "count += 1;" +
+          "}" +
         "}" +
       "}" +
-      "return null;"
+      "Map result = new HashMap();" +
+      // the params object is only available in Elasticsearch from 7.3 so we have to use this workaround
+      // see https://github.com/elastic/elasticsearch/issues/42046
+      "result.put('aggregationType', params.aggregationType);" +
+      "result.put('sum', sum);" +
+      "result.put('count', count);" +
+      "result.put('min', min);" +
+      "result.put('max', max);" +
+      "return result;"
     );
     // @formatter:on
   }
@@ -159,16 +155,37 @@ public class ProcessPartQueryUtil {
   private static Script getReduceScript() {
     // @formatter:off
     return new Script(
-      "if (states.size() == 1) {" +
-        "return states.get(0);" +
+      "if (states == null || states.isEmpty()) {" +
+        "return null;" +
       "}" +
-      "long sum = 0; " +
+      "double sum = 0; " +
+      "long count = 0; " +
+      "double min = Double.MAX_VALUE;" +
+      "double max = Double.MIN_VALUE;" +
       "for (a in states) { " +
         "if (a != null) {" +
-          "sum += a " +
+          "sum += a.get('sum');" +
+          "count += a.get('count');" +
+          "min = a.get('min') < min? a.get('min') : min;" +
+          "max = a.get('max') > max? a.get('max') : max;" +
         "}" +
-      "} " +
-      "return sum / Math.max(1, states.size());"
+      "}" +
+      "if (count == 0) {" +
+        "return null;" +
+      "}" +
+      // return correct result depending on the aggregation type
+      "def aggregationType = states.get(0).aggregationType;" +
+      "if (aggregationType == 'avg') {" +
+        "return sum / count;" +
+      "} else if (aggregationType == 'min') {" +
+        "return min;" +
+      "} else if (aggregationType == 'max') {" +
+        "return max;" +
+      "} else if (aggregationType == 'sum') {" +
+        "return sum;" +
+      "} else {" +
+        "Debug.explain('Aggregation type ' + aggregationType + 'is not supported!');" +
+      "}"
     );
     // @formatter:on
   }
