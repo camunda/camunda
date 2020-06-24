@@ -2,9 +2,8 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
-}
+// https://github.com/camunda-ci/jenkins-global-shared-library
+@Library('camunda-ci') _
 
 // general properties for CI execution
 static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
@@ -229,7 +228,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        if (slaveDisconnected()) {
+        if (agentDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

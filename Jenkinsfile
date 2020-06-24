@@ -1,5 +1,8 @@
 #!/usr/bin/env groovy
 
+// https://github.com/camunda-ci/jenkins-global-shared-library
+@Library('camunda-ci') _
+
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 MAVEN_DOCKER_IMAGE = "maven:3.6.3-jdk-8-slim";
@@ -8,10 +11,6 @@ static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
 static String getCamBpmDockerImage(String camBpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
-}
-
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(100000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
 }
 
 String storeNumOfBuilds() {
@@ -496,7 +495,7 @@ pipeline {
     changed {
       // Do not send email if the slave disconnected
       script {
-        if (!slaveDisconnected()){
+        if (!agentDisconnected()){
           buildNotification(currentBuild.result)
         }
       }
@@ -504,7 +503,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        if (slaveDisconnected()) {
+        if (agentDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }
