@@ -53,7 +53,7 @@ The step has an index name, a version where the change happened, an order number
 To track the application of a step and also for protocol usage the step stores additionally an applied marker and created and applied dates.
 The description field is for documentation purposes.
 
-All available steps will be stored in its own index in Elasticsearch ( `operate-migration-steps-repositoy`) Each change in schema will delivered by a new Operate version. Every Operate version contains migration steps for the change as json files. Operate updates the current migration steps repository in Elasticsearch. The steps repository contains all available steps and its states.
+All available steps will be stored in its own index in Elasticsearch ( `operate-migration-steps-repository`) Each change in schema will delivered by a new Operate version. Every Operate version contains migration steps for the change as json files. Operate updates the current migration steps repository in Elasticsearch. The steps repository contains all available steps and its states.
 By using this steps repository it is possible to apply needed steps to migrate from previous to current schema. Already applied and new steps will be detected and either applied
 or ignored.
 
@@ -61,11 +61,11 @@ or ignored.
 
 #### Migrate by using standalone application
 
-Make sure that Elasticsearch that contains Operate data is running. The migration script will connect by default to specified connection in Operate settings.
+Make sure that Elasticsearch which contains the Operate data is running. The migration script will connect to specified connection in Operate configuration.
 
 Execute ```<application-directory>/bin/migrate```
 
-First the current schema will be created if not exist. Then the migration takes place. If everything was successful the previous schema will be deleted. 
+First the current schema will be created if not exist. Then will the steps are updated. After that the migration from previous to current version will be executed.If everything was successful the previous schema will be deleted. 
 The application exits.
 
 
@@ -77,6 +77,12 @@ The application exits.
 
 At the start of Operate webapplication the current schema will be created if not exist. If the automatic migration is enabled the migration will be started.
 The migration runs only when ONE previous schema version exists. 
+
+#### Further notes
+
+* If migration fails, it is OK to retry it. All applied steps are stored and only these steps will be applied that hasn't executed yet.
+* In case upgrade happens in the cluster with several Operate nodes, only one node must execute schema upgrade, the others must wait till the migration happens.
+* All steps are stored in Elasticsearch index `operate-migration-steps-repository`. Developers can store documentation and comments in `description` field of every step.
 
 #### Configure migration
 
