@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublis
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomNumberBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
+import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
@@ -156,7 +156,7 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       throw new OptimizeRuntimeException("Was not able to retrieve event process publish states!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       IndexableEventProcessPublishStateDto.class,
       upgradeDependencies.getObjectMapper(),
