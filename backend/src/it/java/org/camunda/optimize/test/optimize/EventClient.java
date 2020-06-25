@@ -15,6 +15,9 @@ import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toList;
 
 @AllArgsConstructor
 public class EventClient {
@@ -30,6 +33,15 @@ public class EventClient {
         embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getAccessToken()
       )
       .execute();
+  }
+
+  public List<CloudEventDto> ingestEventBatchWithTimestamp(final Instant timestamp,
+                                                           final int eventCount) {
+    final List<CloudEventDto> ingestedEvents = IntStream.range(0, eventCount)
+      .mapToObj(operand -> createCloudEventDto().toBuilder().time(timestamp).build())
+      .collect(toList());
+    ingestEventBatch(ingestedEvents);
+    return ingestedEvents;
   }
 
   public CloudEventDto createCloudEventDto() {

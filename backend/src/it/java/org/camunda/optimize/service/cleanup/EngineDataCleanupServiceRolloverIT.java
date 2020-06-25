@@ -10,8 +10,6 @@ import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,21 +20,12 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class OptimizeCleanupServiceRolloverIT extends AbstractOptimizeCleanupIT {
+public class EngineDataCleanupServiceRolloverIT extends AbstractEngineDataCleanupIT {
 
   @BeforeEach
   @AfterEach
-  public void cleanUpEventIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
-    elasticSearchIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
-      new EventIndex()
-    );
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
-      new VariableUpdateInstanceIndex()
-    );
+  public void beforeAndAfter() {
+    cleanUpEventIndices();
   }
 
   @Test

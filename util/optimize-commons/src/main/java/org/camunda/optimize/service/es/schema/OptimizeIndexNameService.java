@@ -31,6 +31,15 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     return getOptimizeIndexAliasForIndexNameAndPrefix(index, indexPrefix);
   }
 
+  public String createVersionedOptimizeIndexPattern(final IndexMappingCreator indexMappingCreator) {
+    return getOptimizeIndexNameForAliasAndVersion(
+      getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
+      String.valueOf(indexMappingCreator.getVersion())
+    )
+      // match all indices of that version with this wildcard, which also catches potentially rolled over indices
+      + "*";
+  }
+
   public String getVersionedOptimizeIndexNameForIndexMapping(final IndexMappingCreator indexMappingCreator) {
     return getOptimizeIndexNameForAliasAndVersion(
       getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
@@ -38,7 +47,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     ) + indexMappingCreator.getIndexNameInitialSuffix();
   }
 
-  public String getOptimizeIndexNameForAliasAndVersion(final IndexMappingCreator indexMappingCreator){
+  public String getOptimizeIndexNameForAliasAndVersion(final IndexMappingCreator indexMappingCreator) {
     return getOptimizeIndexNameForAliasAndVersion(
       getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
       String.valueOf(indexMappingCreator.getVersion())

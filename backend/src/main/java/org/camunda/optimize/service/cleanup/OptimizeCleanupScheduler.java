@@ -8,8 +8,10 @@ package org.camunda.optimize.service.cleanup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
@@ -21,16 +23,16 @@ import java.util.List;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class OptimizeCleanupScheduler extends AbstractScheduledService {
+public class OptimizeCleanupScheduler extends AbstractScheduledService implements ConfigurationReloadable {
 
   private final ConfigurationService configurationService;
-  private final List<OptimizeCleanupService> cleanupServices;
+  private final List<CleanupService> cleanupServices;
 
   @PostConstruct
   public void init() {
     log.info("Initializing OptimizeCleanupScheduler");
     getCleanupConfiguration().validate();
-    if (getCleanupConfiguration().getEnabled()) {
+    if (getCleanupConfiguration().isEnabled()) {
       startCleanupScheduling();
     }
   }
@@ -55,20 +57,28 @@ public class OptimizeCleanupScheduler extends AbstractScheduledService {
     log.info("Running optimize history cleanup...");
     final OffsetDateTime startTime = OffsetDateTime.now();
 
-    cleanupServices.forEach(optimizeCleanupService -> {
-      try {
-        optimizeCleanupService.doCleanup(startTime);
-      } catch (Exception e) {
-        log.error("Execution of cleanupService {} failed", optimizeCleanupService.getClass().getSimpleName(), e);
-      }
-    });
+    cleanupServices.stream()
+      .filter(CleanupService::isEnabled)
+      .forEach(optimizeCleanupService -> {
+        log.info("Running CleanupService {}", optimizeCleanupService.getClass().getSimpleName());
+        try {
+          optimizeCleanupService.doCleanup(startTime);
+        } catch (Exception e) {
+          log.error("Execution of cleanupService {} failed", optimizeCleanupService.getClass().getSimpleName(), e);
+        }
+      });
 
     final long durationSeconds = OffsetDateTime.now().minusSeconds(startTime.toEpochSecond()).toEpochSecond();
     log.info("Finished optimize history cleanup in {}s", durationSeconds);
   }
 
-  public List<OptimizeCleanupService> getCleanupServices() {
+  public List<CleanupService> getCleanupServices() {
     return cleanupServices;
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    init();
   }
 
   protected OptimizeCleanupConfiguration getCleanupConfiguration() {

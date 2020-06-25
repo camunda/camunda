@@ -17,7 +17,7 @@ import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.springframework.stereotype.Component;
 
@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.cleanup.OptimizeCleanupService.enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown;
+import static org.camunda.optimize.service.cleanup.CleanupService.enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 
 @AllArgsConstructor
 @Component
 @Slf4j
-public class OptimizeProcessCleanupService implements OptimizeCleanupService {
+public class EngineDataProcessCleanupService implements CleanupService {
 
   private final ConfigurationService configurationService;
   private final ProcessDefinitionReader processDefinitionReader;
@@ -42,6 +42,11 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
   private final BusinessKeyWriter businessKeyWriter;
   private final CamundaActivityEventWriter camundaActivityEventWriter;
   private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
+
+  @Override
+  public boolean isEnabled() {
+    return getCleanupConfiguration().isEnabled();
+  }
 
   @Override
   public void doCleanup(final OffsetDateTime startTime) {
@@ -124,8 +129,8 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
       .collect(Collectors.toSet());
   }
 
-  private OptimizeCleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
+  private EngineCleanupConfiguration getCleanupConfiguration() {
+    return this.configurationService.getCleanupServiceConfiguration().getEngineDataCleanupConfiguration();
   }
 
 }

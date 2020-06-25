@@ -7,24 +7,21 @@ package org.camunda.optimize.service.util.configuration;
 
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.junit.jupiter.api.Test;
 
 import java.time.Period;
 
-import static org.hamcrest.core.Is.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 public class OptimizeCleanupConfigurationTest {
 
   @Test
   public void testGetCleanupConfigurationNormalizeCronExpression() {
-    final CleanupMode defaultMode = CleanupMode.VARIABLES;
-    final Period defaultTtl = Period.parse("P1M");
-    final OptimizeCleanupConfiguration underTest = new OptimizeCleanupConfiguration(
-      true, "* * * * *", defaultTtl, defaultMode
-    );
+    final OptimizeCleanupConfiguration underTest = new OptimizeCleanupConfiguration("* * * * *");
 
     assertThat(underTest.getCronTrigger(), is("0 * * * * *"));
   }
@@ -34,10 +31,11 @@ public class OptimizeCleanupConfigurationTest {
     final CleanupMode defaultMode = CleanupMode.VARIABLES;
     final Period defaultTtl = Period.parse("P1M");
     final OptimizeCleanupConfiguration underTest = new OptimizeCleanupConfiguration(
-      true, "* * * * *", defaultTtl, defaultMode
+      "* * * * *", new EngineCleanupConfiguration(true, defaultTtl, defaultMode)
     );
 
     final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
+      .getEngineDataCleanupConfiguration()
       .getProcessDefinitionCleanupConfigurationForKey("unknownKey");
 
     assertThat(configForUnknownKey.getProcessDataCleanupMode(), is(defaultMode));
@@ -50,15 +48,16 @@ public class OptimizeCleanupConfigurationTest {
     final Period defaultTtl = Period.parse("P1M");
     final String key = "myKey";
     final OptimizeCleanupConfiguration underTest = new OptimizeCleanupConfiguration(
-      true, "* * * * *", defaultTtl, defaultMode
+      "* * * * *", new EngineCleanupConfiguration(true, defaultTtl, defaultMode)
     );
 
     final Period customTtl = Period.parse("P1Y");
-    underTest.getProcessDefinitionSpecificConfiguration().put(
+    underTest.getEngineDataCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
       key, new ProcessDefinitionCleanupConfiguration(customTtl)
     );
 
     final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
+      .getEngineDataCleanupConfiguration()
       .getProcessDefinitionCleanupConfigurationForKey(key);
 
     assertThat(configForUnknownKey.getProcessDataCleanupMode(), is(defaultMode));
@@ -71,15 +70,16 @@ public class OptimizeCleanupConfigurationTest {
     final Period defaultTtl = Period.parse("P1M");
     final String key = "myKey";
     final OptimizeCleanupConfiguration underTest = new OptimizeCleanupConfiguration(
-      true, "* * * * *", defaultTtl, defaultMode
+      "* * * * *", new EngineCleanupConfiguration(true, defaultTtl, defaultMode)
     );
 
     final CleanupMode customMode = CleanupMode.ALL;
-    underTest.getProcessDefinitionSpecificConfiguration().put(
+    underTest.getEngineDataCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
       key, new ProcessDefinitionCleanupConfiguration(customMode)
     );
 
     final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
+      .getEngineDataCleanupConfiguration()
       .getProcessDefinitionCleanupConfigurationForKey(key);
 
     assertThat(configForUnknownKey.getProcessDataCleanupMode(), is(customMode));
@@ -90,10 +90,11 @@ public class OptimizeCleanupConfigurationTest {
   public void testGetDecisionDefinitionCleanupConfigurationDefaultsForUnknownKey() {
     final Period defaultTtl = Period.parse("P1M");
     final OptimizeCleanupConfiguration underTest = new OptimizeCleanupConfiguration(
-      true, "* * * * *", defaultTtl, CleanupMode.ALL
+      "* * * * *", new EngineCleanupConfiguration(true, defaultTtl, CleanupMode.ALL)
     );
 
     final DecisionDefinitionCleanupConfiguration configForUnknownKey = underTest
+      .getEngineDataCleanupConfiguration()
       .getDecisionDefinitionCleanupConfigurationForKey("unknownKey");
 
     assertThat(configForUnknownKey.getTtl(), is(defaultTtl));
@@ -104,15 +105,15 @@ public class OptimizeCleanupConfigurationTest {
     final Period defaultTtl = Period.parse("P1M");
     final String key = "myKey";
     final OptimizeCleanupConfiguration underTest = new OptimizeCleanupConfiguration(
-      true, "* * * * *", defaultTtl, CleanupMode.ALL
+      "* * * * *", new EngineCleanupConfiguration(true, defaultTtl, CleanupMode.ALL)
     );
 
     final Period customTtl = Period.parse("P1Y");
-    underTest.getDecisionDefinitionSpecificConfiguration().put(
-      key, new DecisionDefinitionCleanupConfiguration(customTtl)
-    );
+    underTest.getEngineDataCleanupConfiguration()
+      .getDecisionDefinitionSpecificConfiguration()
+      .put(key, new DecisionDefinitionCleanupConfiguration(customTtl));
 
-    final DecisionDefinitionCleanupConfiguration configForUnknownKey = underTest
+    final DecisionDefinitionCleanupConfiguration configForUnknownKey = underTest.getEngineDataCleanupConfiguration()
       .getDecisionDefinitionCleanupConfigurationForKey(key);
 
     assertThat(configForUnknownKey.getTtl(), is(customTtl));

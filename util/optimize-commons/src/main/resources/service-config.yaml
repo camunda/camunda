@@ -395,28 +395,36 @@ sharing:
   enabled: true
 
 historyCleanup:
-  # switch for the cleanup, defaults to false
-  enabled: false
   # cron expression for when the cleanup should run
   cronTrigger: '0 1 * * *'
-  # time to live (ttl) for process instance data, from when reached the process instance will get cleaned up
-  # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
-  ttl: 'P2Y'
-  # type of process data cleanup to perform, possible values:
-  # 'all' - delete everything related to the process instance
-  # 'variables' - only delete associated variables of a process instance
-  processDataCleanupMode: 'all'
-  # process definition specific configuration parameters that will overwrite the general parameters (ttl, processDataCleanupMode)
-  # for the specific processDefinition key
-  perProcessDefinitionConfig:
-  # 'myProcessDefinitionKey':
-  #   ttl: 'P2M'
-  #    mode: 'variables'
-  # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
-  # for the specific decisionDefinition key
-  perDecisionDefinitionConfig:
-  # 'myDecisionDefinitionKey':
-  #   ttl: 'P2M'
+  engineDataCleanup:
+    # switch for the camunda process data cleanup, defaults to false
+    enabled: false
+    # time to live (ttl) for instance data, when reached the corresponding process/decision instance will get cleaned up
+    # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
+    ttl: 'P2Y'
+    # type of process data cleanup to perform, possible values:
+    # 'all' - delete everything related to the process instance
+    # 'variables' - only delete associated variables of a process instance
+    processDataCleanupMode: 'all'
+    # process definition specific configuration parameters that will overwrite the general parameters (ttl, processDataCleanupMode)
+    # for the specific processDefinition key
+    perProcessDefinitionConfig:
+    # 'myProcessDefinitionKey':
+    #   ttl: 'P2M'
+    #    mode: 'variables'
+    # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
+    # for the specific decisionDefinition key
+    perDecisionDefinitionConfig:
+    # 'myDecisionDefinitionKey':
+    #   ttl: 'P2M'
+  ingestedEventCleanup:
+    # switch for the ingested event data cleanup, defaults to false
+    enabled: false
+    # time to live (ttl) for ingested cloud event data based on their `time` property
+    # https://docs.camunda.org/optimize/latest/technical-guide/event-ingestion-rest-api/#request-body
+    # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
+    ttl: 'P2Y'
 
 locales:
   # all locales available

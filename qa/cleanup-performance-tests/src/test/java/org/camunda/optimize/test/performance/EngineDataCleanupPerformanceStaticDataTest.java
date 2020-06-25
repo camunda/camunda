@@ -6,6 +6,7 @@
 package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
+import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 // fixed ordering for now to save import time, we first test clearing variables, then clear whole instances
 @TestMethodOrder(value = MethodOrderer.Alphanumeric.class)
-public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
+public class EngineDataCleanupPerformanceStaticDataTest extends AbstractEngineDataCleanupTest {
 
   @BeforeAll
   public static void setUp() {
@@ -40,10 +41,8 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
   @Test
   public void aCleanupModeVariablesAndDecisionDataPerformanceTest() throws Exception {
     //given TTL of 0
-    embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
-    embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
+    getEngineDataCleanupConfiguration().setDefaultTtl(Period.parse("P0D"));
+    getEngineDataCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
     final int countProcessDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME);
     final int processInstanceCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME);
     final int activityCount = elasticSearchIntegrationTestExtension.getActivityCount();
@@ -92,9 +91,8 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
   @Test
   public void bCleanupModeAllPerformanceTest() throws Exception {
     //given ttl of 0
-    embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
-    embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration()
-      .setDefaultProcessDataCleanupMode(CleanupMode.ALL);
+    getEngineDataCleanupConfiguration().setDefaultTtl(Period.parse("P0D"));
+    getEngineDataCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
     final int countProcessDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME);
     final int countDecisionDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME);
     // and run the cleanup
@@ -130,6 +128,12 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
       elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME),
       is(countDecisionDefinitions)
     );
+  }
+
+  private EngineCleanupConfiguration getEngineDataCleanupConfiguration() {
+    return embeddedOptimizeExtension.getConfigurationService()
+      .getCleanupServiceConfiguration()
+      .getEngineDataCleanupConfiguration();
   }
 
   private Integer getFinishedProcessInstanceActivityCount() {

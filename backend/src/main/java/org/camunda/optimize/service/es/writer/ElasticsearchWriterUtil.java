@@ -172,7 +172,7 @@ public class ElasticsearchWriterUtil {
   }
 
   public static boolean tryDeleteByQueryRequest(OptimizeElasticsearchClient esClient,
-                                                AbstractQueryBuilder queryBuilder,
+                                                AbstractQueryBuilder<?> queryBuilder,
                                                 String deletedItemName,
                                                 String deletedItemIdentifier,
                                                 final boolean refresh,

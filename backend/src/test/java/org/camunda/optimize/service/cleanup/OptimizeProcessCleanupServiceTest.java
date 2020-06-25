@@ -20,7 +20,7 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
-import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,7 +90,7 @@ public class OptimizeProcessCleanupServiceTest {
     mockNextPageOfEntities();
 
     //when
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -108,7 +108,7 @@ public class OptimizeProcessCleanupServiceTest {
     mockProcessDefinitions(processDefinitionKeys);
     mockGetProcessInstanceIdsForVariableDelete(processDefinitionKeys);
     mockNextPageOfEntities();
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -126,7 +126,7 @@ public class OptimizeProcessCleanupServiceTest {
     mockNextPageOfEntities();
 
     //when
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -154,7 +154,7 @@ public class OptimizeProcessCleanupServiceTest {
     mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeysWithDefaultMode);
     mockGetProcessInstanceIdsForVariableDelete(processDefinitionKeysWithSpecificMode);
     mockNextPageOfEntities();
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -183,7 +183,7 @@ public class OptimizeProcessCleanupServiceTest {
     mockProcessDefinitions(allProcessDefinitionKeys);
     mockGetProcessInstanceIdsForProcessInstanceDelete(allProcessDefinitionKeys);
     mockNextPageOfEntities();
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -206,7 +206,7 @@ public class OptimizeProcessCleanupServiceTest {
     mockNextPageOfEntities();
 
     //when
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -225,7 +225,7 @@ public class OptimizeProcessCleanupServiceTest {
     mockProcessDefinitions(generateRandomDefinitionsKeys(3));
 
     //when I run the cleanup
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
 
     //then it fails with an exception
     OptimizeConfigurationException exception = assertThrows(
@@ -258,12 +258,12 @@ public class OptimizeProcessCleanupServiceTest {
     });
   }
 
-  private void doCleanup(final OptimizeCleanupService underTest) {
+  private void doCleanup(final CleanupService underTest) {
     underTest.doCleanup(OffsetDateTime.now());
   }
 
-  private OptimizeCleanupConfiguration getCleanupConfig() {
-    return configurationService.getCleanupServiceConfiguration();
+  private EngineCleanupConfiguration getCleanupConfig() {
+    return configurationService.getCleanupServiceConfiguration().getEngineDataCleanupConfiguration();
   }
 
   private void assertDeleteProcessInstancesExecutedFor(final List<String> expectedProcessDefinitionKeys,
@@ -367,8 +367,8 @@ public class OptimizeProcessCleanupServiceTest {
     return processDefinitionOptimizeDto;
   }
 
-  private OptimizeCleanupService createOptimizeCleanupServiceToTest() {
-    return new OptimizeProcessCleanupService(
+  private CleanupService createOptimizeCleanupServiceToTest() {
+    return new EngineDataProcessCleanupService(
       configurationService,
       processDefinitionReader,
       processInstanceReader,

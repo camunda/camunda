@@ -21,8 +21,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public abstract class AbstractCleanupTest {
-  protected static final Logger logger = LoggerFactory.getLogger(AbstractCleanupTest.class);
+public abstract class AbstractEngineDataCleanupTest {
+  protected static final Logger logger = LoggerFactory.getLogger(AbstractEngineDataCleanupTest.class);
 
   private static final Properties properties = PropertyUtil.loadProperties("static-cleanup-test.properties");
 

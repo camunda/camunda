@@ -21,8 +21,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class OptimizeCleanupSchedulerTest {
@@ -35,16 +37,21 @@ public class OptimizeCleanupSchedulerTest {
   }
 
   @Test
-  public void testAllCleanupServicesAreCalled() {
+  public void testAllEnabledCleanupServicesAreCalled() {
     // given
     final OptimizeCleanupScheduler underTest = createOptimizeCleanupServiceToTest();
-    final OptimizeCleanupService mockedCleanupService1 = mock(OptimizeCleanupService.class);
-    final OptimizeCleanupService mockedCleanupService2 = mock(OptimizeCleanupService.class);
+    final CleanupService mockedCleanupService1 = mock(CleanupService.class);
+    final CleanupService mockedCleanupService2 = mock(CleanupService.class);
+    final CleanupService mockedCleanupService3 = mock(CleanupService.class);
+    when(mockedCleanupService1.isEnabled()).thenReturn(true);
     doNothing().when(mockedCleanupService1).doCleanup(any());
+    when(mockedCleanupService2.isEnabled()).thenReturn(true);
     doNothing().when(mockedCleanupService2).doCleanup(any());
+    when(mockedCleanupService3.isEnabled()).thenReturn(false);
 
     underTest.getCleanupServices().add(mockedCleanupService1);
     underTest.getCleanupServices().add(mockedCleanupService2);
+    underTest.getCleanupServices().add(mockedCleanupService3);
 
     //when
     underTest.runCleanup();
@@ -52,15 +59,18 @@ public class OptimizeCleanupSchedulerTest {
     //then
     verify(mockedCleanupService1, times(1)).doCleanup(any());
     verify(mockedCleanupService2, times(1)).doCleanup(any());
+    verify(mockedCleanupService3, never()).doCleanup(any());
   }
 
   @Test
   public void testFailingCleanupServiceDoesntAffectOthersExecution() {
     // given
     final OptimizeCleanupScheduler underTest = createOptimizeCleanupServiceToTest();
-    final OptimizeCleanupService mockedCleanupService1 = mock(OptimizeCleanupService.class);
-    final OptimizeCleanupService mockedCleanupService2 = mock(OptimizeCleanupService.class);
+    final CleanupService mockedCleanupService1 = mock(CleanupService.class);
+    final CleanupService mockedCleanupService2 = mock(CleanupService.class);
+    when(mockedCleanupService1.isEnabled()).thenReturn(true);
     doThrow(RuntimeException.class).when(mockedCleanupService1).doCleanup(any());
+    when(mockedCleanupService2.isEnabled()).thenReturn(true);
     doNothing().when(mockedCleanupService2).doCleanup(any());
 
     underTest.getCleanupServices().add(mockedCleanupService1);
@@ -77,7 +87,7 @@ public class OptimizeCleanupSchedulerTest {
   @Test
   public void testFailInitOnInvalidConfig() {
     // given
-    getCleanupConfiguration().setDefaultTtl(null);
+    getCleanupConfiguration().getEngineDataCleanupConfiguration().setDefaultTtl(null);
 
     //when
     final OptimizeCleanupScheduler underTest = createOptimizeCleanupServiceToTest();

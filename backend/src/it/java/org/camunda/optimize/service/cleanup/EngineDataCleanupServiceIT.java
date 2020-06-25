@@ -22,30 +22,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class OptimizeCleanupServiceIT extends AbstractOptimizeCleanupIT {
-
-  @Test
-  public void verifyCleanupDisabledByDefault() {
-    assertThat(getCleanupConfiguration().getEnabled()).isFalse();
-    assertThat(embeddedOptimizeExtension.getCleanupScheduler().isScheduledToRun()).isFalse();
-  }
-
-  @Test
-  public void testCleanupIsScheduledSuccessfully() {
-    embeddedOptimizeExtension.getCleanupScheduler().startCleanupScheduling();
-    try {
-      assertThat(embeddedOptimizeExtension.getCleanupScheduler().isScheduledToRun()).isTrue();
-    } finally {
-      embeddedOptimizeExtension.getCleanupScheduler().stopCleanupScheduling();
-    }
-  }
-
-  @Test
-  public void testCleanupScheduledStoppedSuccessfully() {
-    embeddedOptimizeExtension.getCleanupScheduler().startCleanupScheduling();
-    embeddedOptimizeExtension.getCleanupScheduler().stopCleanupScheduling();
-    assertThat(embeddedOptimizeExtension.getCleanupScheduler().isScheduledToRun()).isFalse();
-  }
+public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
 
   @Test
   @SneakyThrows
@@ -66,6 +43,25 @@ public class OptimizeCleanupServiceIT extends AbstractOptimizeCleanupIT {
     //then
     assertNoInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+  }
+
+  @Test
+  @SneakyThrows
+  public void testCleanupModeAll_disabled() {
+    // given
+    getCleanupConfiguration().setEnabled(false);
+    getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
+    final List<ProcessInstanceEngineDto> unaffectedProcessInstances =
+      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+
+    importAllEngineEntitiesFromScratch();
+
+    //when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    //then
+    assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(unaffectedProcessInstances));
   }
 
   @Test

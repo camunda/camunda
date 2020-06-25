@@ -13,7 +13,7 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,7 +63,7 @@ public class OptimizeDecisionCleanupServiceTest {
     mockDecisionDefinitions(decisionDefinitionKeys);
 
     //when
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -79,7 +79,7 @@ public class OptimizeDecisionCleanupServiceTest {
 
     //when
     mockDecisionDefinitions(decisionDefinitionKeys);
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -104,7 +104,7 @@ public class OptimizeDecisionCleanupServiceTest {
 
     //when
     mockDecisionDefinitions(allDecisionDefinitionKeys);
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -125,7 +125,7 @@ public class OptimizeDecisionCleanupServiceTest {
     mockDecisionDefinitions(ListUtils.union(decisionDefinitionKeys, decisionDefinitionKeys));
 
     //when
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -149,12 +149,12 @@ public class OptimizeDecisionCleanupServiceTest {
     assertThat(exception.getMessage(), containsString(configuredKey));
   }
 
-  private void doCleanup(final OptimizeCleanupService underTest) {
+  private void doCleanup(final CleanupService underTest) {
     underTest.doCleanup(OffsetDateTime.now());
   }
 
-  private OptimizeCleanupConfiguration getCleanupConfig() {
-    return configurationService.getCleanupServiceConfiguration();
+  private EngineCleanupConfiguration getCleanupConfig() {
+    return configurationService.getCleanupServiceConfiguration().getEngineDataCleanupConfiguration();
   }
 
   private void assertKeysWereCalledWithExpectedTtl(Map<String, OffsetDateTime> capturedInvocationArguments,
@@ -224,8 +224,8 @@ public class OptimizeDecisionCleanupServiceTest {
     return decisionDefinitionOptimizeDto;
   }
 
-  private OptimizeDecisionCleanupService createOptimizeCleanupServiceToTest() {
-    return new OptimizeDecisionCleanupService(
+  private EngineDataDecisionCleanupService createOptimizeCleanupServiceToTest() {
+    return new EngineDataDecisionCleanupService(
       configurationService,
       decisionDefinitionReader,
       decisionInstanceWriter

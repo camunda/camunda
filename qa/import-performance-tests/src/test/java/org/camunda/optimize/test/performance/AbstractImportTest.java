@@ -57,7 +57,7 @@ public abstract class AbstractImportTest {
     maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));
     elasticSearchIntegrationTestExtension.disableCleanup();
     configurationService = embeddedOptimizeExtension.getConfigurationService();
-    configurationService.getCleanupServiceConfiguration().setEnabled(false);
+    configurationService.getCleanupServiceConfiguration().getEngineDataCleanupConfiguration().setEnabled(false);
   }
 
   protected void logStats() {

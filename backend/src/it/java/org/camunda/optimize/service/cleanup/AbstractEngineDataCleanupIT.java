@@ -16,8 +16,10 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
-import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.EngineCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.VariableTestUtil;
@@ -26,6 +28,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -49,7 +52,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-public abstract class AbstractOptimizeCleanupIT extends AbstractIT {
+public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
   private static final RandomStringGenerator KEY_GENERATOR = new RandomStringGenerator.Builder()
     .withinRange('a', 'z').build();
 
@@ -58,6 +61,27 @@ public abstract class AbstractOptimizeCleanupIT extends AbstractIT {
   public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
     engineIntegrationExtension.getEngineName()
   );
+
+  @BeforeEach
+  public void enableCamundaCleanup() {
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCleanupServiceConfiguration()
+      .getEngineDataCleanupConfiguration()
+      .setEnabled(true);
+  }
+
+  public void cleanUpEventIndices() {
+    elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
+    elasticSearchIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
+    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeElasticClient(),
+      new EventIndex()
+    );
+    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeElasticClient(),
+      new VariableUpdateInstanceIndex()
+    );
+  }
 
   protected void configureHigherProcessSpecificTtl(final String processDefinitionKey) {
     getCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
@@ -216,8 +240,10 @@ public abstract class AbstractOptimizeCleanupIT extends AbstractIT {
     );
   }
 
-  protected OptimizeCleanupConfiguration getCleanupConfiguration() {
-    return embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration();
+  protected EngineCleanupConfiguration getCleanupConfiguration() {
+    return embeddedOptimizeExtension.getConfigurationService()
+      .getCleanupServiceConfiguration()
+      .getEngineDataCleanupConfiguration();
   }
 
   protected List<CamundaActivityEventDto> getCamundaActivityEvents() {
