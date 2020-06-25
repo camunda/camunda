@@ -61,7 +61,7 @@ public final class BrokerRequestLimiter extends AbstractLimiter<BrokerRequest<?>
   }
 
   private boolean isWhitelisted(final Intent intent) {
-    return JobIntent.COMPLETED == intent;
+    return JobIntent.COMPLETE == intent;
   }
 
   public static final class Builder extends AbstractLimiter.Builder<Builder> {
