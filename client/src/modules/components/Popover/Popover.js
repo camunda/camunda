@@ -158,6 +158,7 @@ export default class Popover extends React.Component {
     return (
       <div ref={this.storePopoverRootRef} className={classnames('Popover', className)}>
         <Button
+          icon={icon && !title}
           active={active}
           main={main}
           onClick={this.toggleOpen}

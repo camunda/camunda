@@ -23,6 +23,12 @@ it('should render the provided title in the button', () => {
   expect(node).toIncludeText('Foobar');
 });
 
+it('should specify the open button as icon button if it has an icon, but no title', () => {
+  const node = shallow(<Popover icon="open" />);
+
+  expect(node.find('.Popover__button').prop('icon')).toBe(true);
+});
+
 it('should do not display child content initially', () => {
   const node = shallow(<Popover title="a">Child content</Popover>);
 
