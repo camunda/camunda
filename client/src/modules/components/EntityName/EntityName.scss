@@ -79,6 +79,21 @@
       margin-left: -20px;
       padding-top: 20px;
       width: 277px;
+
+      dl {
+        margin: 0;
+
+        dt {
+          font-size: 12px;
+          color: $grey-lighten-56;
+        }
+
+        dd {
+          margin: 3px 0 10px;
+          font-size: 14px;
+          color: $grey-darken-33;
+        }
+      }
     }
   }
 }

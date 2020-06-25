@@ -68,7 +68,7 @@ export function ReportTemplateModal({onClose, mightFail}) {
   const [xml, setXml] = useState();
   const [template, setTemplate] = useState();
 
-  const {definitionKey, versions, tenants} = definition;
+  const {definitionKey, definitionName, versions, tenants} = definition;
 
   useEffect(() => {
     const {definitionKey, versions, tenants} = definition;
@@ -106,8 +106,13 @@ export function ReportTemplateModal({onClose, mightFail}) {
               definitionKey={definitionKey}
               versions={versions}
               tenants={tenants}
-              onChange={({key, versions, tenantIds}) =>
-                setDefinition({definitionKey: key, versions, tenants: tenantIds})
+              onChange={({key, versions, tenantIds, name}) =>
+                setDefinition({
+                  definitionKey: key,
+                  versions,
+                  tenants: tenantIds,
+                  definitionName: name,
+                })
               }
             />
           </div>
@@ -149,6 +154,7 @@ export function ReportTemplateModal({onClose, mightFail}) {
                 configuration: {xml},
                 processDefinitionKey: definitionKey,
                 processDefinitionVersions: versions,
+                processDefinitionName: definitionName,
                 tenantIds: tenants,
                 ...(template || {}),
               },

@@ -61,8 +61,7 @@ it('should show relevant information', () => {
   expect(node).toIncludeText('2, 1');
   expect(node).toIncludeText('Sales, Consulting');
   expect(node).toIncludeText('Process Instance Count by Start Date');
-  expect(node).toIncludeText('Test Person');
-  expect(node).toIncludeText('Jun 23');
+  expect(node.find('LastModifiedInfo')).toExist();
 });
 
 it('should not show tenant section if there is only one tenant', () => {

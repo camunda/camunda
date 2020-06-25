@@ -14,6 +14,7 @@ import {
   Button,
   ShareEntity,
   DashboardRenderer,
+  LastModifiedInfo,
   Icon,
   Dropdown,
   Popover,
@@ -109,7 +110,7 @@ export default themed(
           >
             <div className="header">
               <div className="head">
-                <EntityName>{name}</EntityName>
+                <EntityName details={<LastModifiedInfo entity={this.props} />}>{name}</EntityName>
                 <div className="tools">
                   {!fullScreenActive && (
                     <React.Fragment>

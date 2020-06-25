@@ -15,6 +15,7 @@ import {
   BPMNDiagram,
   MessageBox,
   EntityName,
+  LastModifiedInfo,
 } from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -109,7 +110,9 @@ export default withErrorHandling(
         <div className="ProcessView">
           <div className="header">
             <div className="head">
-              <EntityName>{name}</EntityName>
+              <EntityName details={<LastModifiedInfo entity={this.state.data} />}>
+                {name}
+              </EntityName>
               <div className="tools">
                 {isPublishing && (
                   <>

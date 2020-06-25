@@ -6,13 +6,13 @@
 
 import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
-import moment from 'moment';
 
 import {Button} from 'components';
 import RawDataModal from './RawDataModal';
 import DiagramModal from './DiagramModal';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {LastModifiedInfo} from 'components';
 import {formatters, reportConfig} from 'services';
 import {loadTenants} from './service';
 import {t} from 'translation';
@@ -100,63 +100,51 @@ export function ReportDetails({report, mightFail}) {
 
   return (
     <div className="ReportDetails">
-      <dl>
-        {name && (
-          <>
-            <dt>{t('report.definition.' + type)}</dt>
-            <dd>{name}</dd>
-          </>
-        )}
+      {name && (
+        <dl>
+          <dt>{t('report.definition.' + type)}</dt>
+          <dd>{name}</dd>
 
-        {versionInfo && (
-          <>
-            <dt>{t('common.definitionSelection.version.label')}</dt>
-            <dd>{versionInfo}</dd>
-          </>
-        )}
+          {versionInfo && (
+            <>
+              <dt>{t('common.definitionSelection.version.label')}</dt>
+              <dd>{versionInfo}</dd>
+            </>
+          )}
 
-        {tenantInfo && (
-          <>
-            <dt>{t('common.tenant.label')}</dt>
-            <dd>{tenantInfo}</dd>
-          </>
-        )}
+          {tenantInfo && (
+            <>
+              <dt>{t('common.tenant.label')}</dt>
+              <dd>{tenantInfo}</dd>
+            </>
+          )}
 
-        {report.data.view && report.data.groupBy && (
-          <>
-            <dt>{t('report.view.' + type)}</dt>
-            <dd
-              className={classnames({
-                nowrap: report.data.view.entity === 'variable',
-              })}
-            >
-              {getSelectedView(report.data.view, report.data.groupBy, type)}
-            </dd>
-          </>
-        )}
-
-        {key && versionInfo && (
-          <div className="modalsButtons">
-            <Button link onClick={() => setShowRawData(true)}>
-              {t('common.entity.viewRawData')}
-            </Button>
-            <Button link onClick={() => setShowDiagram(true)}>
-              {t('common.entity.viewModel.' + report.reportType)}
-            </Button>
-          </div>
-        )}
-
-        <hr />
-        <dt>{t('common.entity.createdBy')}</dt>
-        <dd>{report.owner}</dd>
-
-        <dt>{t('common.entity.modifiedTitle')}</dt>
-        <dd>
-          {moment(report.lastModified).format('lll')}
-          <br />
-          {t('common.entity.byModifier', {modifier: report.lastModifier})}
-        </dd>
-      </dl>
+          {report.data.view && report.data.groupBy && (
+            <>
+              <dt>{t('report.view.' + type)}</dt>
+              <dd
+                className={classnames({
+                  nowrap: report.data.view.entity === 'variable',
+                })}
+              >
+                {getSelectedView(report.data.view, report.data.groupBy, type)}
+              </dd>
+            </>
+          )}
+        </dl>
+      )}
+      {key && versionInfo && (
+        <div className="modalsButtons">
+          <Button link onClick={() => setShowRawData(true)}>
+            {t('common.entity.viewRawData')}
+          </Button>
+          <Button link onClick={() => setShowDiagram(true)}>
+            {t('common.entity.viewModel.' + report.reportType)}
+          </Button>
+        </div>
+      )}
+      <hr />
+      <LastModifiedInfo entity={report} />
       {showRawData && (
         <RawDataModal report={report} name={nameOrKey} close={() => setShowRawData(false)} />
       )}

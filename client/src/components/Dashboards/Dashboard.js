@@ -32,6 +32,7 @@ export class Dashboard extends React.Component {
       name: null,
       lastModified: null,
       lastModifier: null,
+      owner: null,
       currentUserRole: null,
       loaded: false,
       redirect: '',
@@ -64,6 +65,7 @@ export class Dashboard extends React.Component {
       name: t('dashboard.new'),
       lastModified: getFormattedNowDate(),
       lastModifier: user.name,
+      owner: user.name,
       currentUserRole: 'editor',
       reports: [],
       availableFilters: [],
@@ -80,6 +82,7 @@ export class Dashboard extends React.Component {
           lastModifier,
           currentUserRole,
           lastModified,
+          owner,
           reports,
           availableFilters,
         } = response;
@@ -87,6 +90,7 @@ export class Dashboard extends React.Component {
         this.setState({
           lastModifier,
           lastModified,
+          owner,
           currentUserRole,
           loaded: true,
           name,
@@ -172,6 +176,7 @@ export class Dashboard extends React.Component {
       lastModified,
       currentUserRole,
       lastModifier,
+      owner,
       sharingEnabled,
       isAuthorizedToShare,
       reports,
@@ -194,6 +199,7 @@ export class Dashboard extends React.Component {
       name,
       lastModified,
       lastModifier,
+      owner,
       id: this.getId(),
     };
 

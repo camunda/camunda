@@ -44,3 +44,4 @@ export {HeatmapOverlay} from './HeatmapOverlay';
 export {EntityList} from './EntityList';
 export {UserTypeahead} from './UserTypeahead';
 export {DateRangeInput} from './DateRangeInput';
+export {LastModifiedInfo} from './LastModifiedInfo';

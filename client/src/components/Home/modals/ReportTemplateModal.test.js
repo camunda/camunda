@@ -64,9 +64,12 @@ it('should fetch and show the bpmn diagram when a definition is selected', () =>
 it('should include the selected parameters in the link state when creating a report', () => {
   const node = shallow(<ReportTemplateModal {...props} />);
 
-  node
-    .find(DefinitionSelection)
-    .simulate('change', {key: 'processDefinition', versions: ['1'], tenantIds: [null]});
+  node.find(DefinitionSelection).simulate('change', {
+    key: 'processDefinition',
+    versions: ['1'],
+    tenantIds: [null],
+    name: 'Process Definition Name',
+  });
 
   runLastEffect();
 
