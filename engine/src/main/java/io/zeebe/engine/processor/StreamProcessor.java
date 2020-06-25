@@ -14,7 +14,6 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.util.LangUtil;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitorable;
 import io.zeebe.util.health.HealthStatus;
@@ -99,19 +98,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
       snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
-    } catch (final Throwable e) {
-      onFailure(e);
-      LangUtil.rethrowUnchecked(e);
-    }
 
-    try {
       processingStateMachine = new ProcessingStateMachine(processingContext, this::isOpened);
+
+      healthCheckTick();
       openFuture.complete(null);
 
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
 
-      healthCheckTick();
       final ActorFuture<Void> recoverFuture =
           reProcessingStateMachine.startRecover(snapshotPosition);
 
@@ -127,7 +122,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
           });
     } catch (final RuntimeException e) {
       onFailure(e);
-      throw e;
     }
   }
 
@@ -160,11 +154,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
   @Override
   protected void handleFailure(final Exception failure) {
-    LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), failure);
-    if (this.failureListener != null) {
-      this.failureListener.onFailure();
-    }
-    actor.fail();
+    onFailure(failure);
   }
 
   @Override
@@ -276,6 +266,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   }
 
   private void onFailure(final Throwable throwable) {
+    LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
     actor.fail();
     if (!openFuture.isDone()) {
       openFuture.completeExceptionally(throwable);
