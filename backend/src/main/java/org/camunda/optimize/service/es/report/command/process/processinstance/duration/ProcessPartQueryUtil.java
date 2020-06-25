@@ -162,19 +162,23 @@ public class ProcessPartQueryUtil {
       "long count = 0; " +
       "double min = Double.MAX_VALUE;" +
       "double max = Double.MIN_VALUE;" +
+      "def aggregationType = 'avg';" +
       "for (a in states) { " +
         "if (a != null) {" +
           "sum += a.get('sum');" +
           "count += a.get('count');" +
           "min = a.get('min') < min? a.get('min') : min;" +
           "max = a.get('max') > max? a.get('max') : max;" +
+          // it will be the same type for each shard but since we need to make sure that we assign the type
+          // for a state that's non null. Until Elasticsearch 7.3 we can't access the params object directly.
+          // See https://github.com/elastic/elasticsearch/issues/42046 for the origin of the problem.
+          "aggregationType = a.get('aggregationType');" +
         "}" +
       "}" +
       "if (count == 0) {" +
         "return null;" +
       "}" +
       // return correct result depending on the aggregation type
-      "def aggregationType = states.get(0).aggregationType;" +
       "if (aggregationType == 'avg') {" +
         "return sum / count;" +
       "} else if (aggregationType == 'min') {" +
