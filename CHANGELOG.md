@@ -1,3 +1,18 @@
+<a name="0.20.3"></a>
+## 0.20.3 (2020-06-25)
+
+
+#### Features
+
+* **broker:**  add metric exporter (backport) ([2ed68a8e](https://github.com/zeebe-io/zeebe/commit/2ed68a8e4294b9be246c97b4ba6138a218eac8ca))
+
+#### Bug Fixes
+
+* **broker:**  run atomix compaction even under highload ([42c40aea](https://github.com/zeebe-io/zeebe/commit/42c40aea5b76462c33bd58d72b8e7e3e39c6c8d4))
+* **gateway:**  allow job complete command in backpressure ([84259222](https://github.com/zeebe-io/zeebe/commit/8425922254b67cfd0de4604b97baa2798fefd53c))
+
+
+
 <a name="0.20.3-rc2"></a>
 ## 0.20.3-rc2 (2020-05-28)
 
