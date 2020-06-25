@@ -187,7 +187,7 @@ public class ReportRestService {
   public AuthorizedEvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
                                                               @NotNull ReportDefinitionDto reportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final AuthorizedReportEvaluationResult reportEvaluationResult = reportEvaluationService.evaluateReport(
+    final AuthorizedReportEvaluationResult reportEvaluationResult = reportEvaluationService.evaluateUnsavedReport(
       userId,
       reportDefinitionDto
     );

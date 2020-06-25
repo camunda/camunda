@@ -446,7 +446,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  public void evaluateUnsavedReport_ignoresOwnerAndModifierNames(ReportType reportType) {
+  public void evaluateUnsavedReport_reflectOwnerAndModifierNames_ownerHasNoAuthSideEffects(ReportType reportType) {
     //given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
     final SingleReportDefinitionDto<?> reportDefinitionDto;
@@ -463,7 +463,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
         throw new IllegalStateException("Uncovered type: " + reportType);
     }
 
-    // set owner should be ignored in the context of full config evaluation
+    // owner different from current user should not cause the evaluation to be rejected
     reportDefinitionDto.setOwner("Sauron");
     reportDefinitionDto.setLastModifier("Frodo Beutlin");
 
@@ -474,8 +474,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // then
     assertThat(result.getCurrentUserRole()).isEqualTo(RoleType.EDITOR);
-    assertThat(result.getReportDefinition().getOwner()).isNull();
-    assertThat(result.getReportDefinition().getLastModifier()).isNull();
+    assertThat(result.getReportDefinition().getOwner()).isEqualTo(reportDefinitionDto.getOwner());
+    assertThat(result.getReportDefinition().getLastModifier()).isEqualTo(reportDefinitionDto.getLastModifier());
   }
 
   @ParameterizedTest
