@@ -10,7 +10,10 @@ import update from 'immutability-helper';
 
 import {loadTenants} from './service';
 
+import {Button} from 'components';
 import {ReportDetails} from './ReportDetails';
+import RawDataModal from './RawDataModal';
+import DiagramModal from './DiagramModal';
 
 jest.mock('react', () => {
   const outstandingEffects = [];
@@ -86,4 +89,22 @@ it('should have special handling for variable views', () => {
 
   expect(node).toIncludeText('Variable x');
   expect(node.find('dd.nowrap')).toExist();
+});
+
+it('should open raw data modal which button is clicked', () => {
+  const node = shallow(<ReportDetails {...props} />);
+  runLastEffect();
+
+  node.find('.modalsButtons').find(Button).at(0).simulate('click');
+
+  expect(node.find(RawDataModal)).toExist();
+});
+
+it('should open diagram modal when button is clicked', () => {
+  const node = shallow(<ReportDetails {...props} />);
+  runLastEffect();
+
+  node.find('.modalsButtons').find(Button).at(1).simulate('click');
+
+  expect(node.find(DiagramModal)).toExist();
 });

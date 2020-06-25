@@ -674,6 +674,11 @@
       "modifiedTitle": "Modified",
       "byModifier": "by {modifier}",
       "createdBy": "Created by",
+      "viewRawData": "View Raw data",
+      "viewModel": {
+        "decision": "View Decision Table",
+        "process": "View Process Model"
+      },
       "namePlaceholder": {
         "Report": "Report name",
         "Dashboard": "Dashboard name",

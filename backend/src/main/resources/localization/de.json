@@ -674,6 +674,11 @@
       "modifiedTitle": "Bearbeitet",
       "byModifier": "durch {modifier}",
       "createdBy": "Erstellt von",
+      "viewRawData": "Rohdaten",
+      "viewModel": {
+        "decision": "Entscheidungstabelle",
+        "process": "Prozessmodell"
+      },
       "namePlaceholder": {
         "Report": "Berichtsname",
         "Dashboard": "Dashboard-Name",

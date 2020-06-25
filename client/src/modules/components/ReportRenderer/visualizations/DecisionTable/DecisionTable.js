@@ -55,14 +55,19 @@ export class DecisionTable extends React.Component {
 
   loadXML = async (xml, decisionDefinitionKey) => {
     const {entryPoints, Addon: HitsColumn} = createHitsColumnAddon();
+    const additionalModules = [];
 
     if (this.viewer) {
       this.viewer.destroy();
     }
 
+    if (!this.props.hitsHidden) {
+      additionalModules.push(HitsColumn);
+    }
+
     this.viewer = new Viewer({
       container: this.container.current,
-      decisionTable: {additionalModules: [HitsColumn]},
+      decisionTable: {additionalModules},
     });
 
     const dmn13Xml = await this.migrateDiagram(xml);

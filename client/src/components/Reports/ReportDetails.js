@@ -8,12 +8,14 @@ import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
 import moment from 'moment';
 
+import {Button} from 'components';
+import RawDataModal from './RawDataModal';
+import DiagramModal from './DiagramModal';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {formatters, reportConfig} from 'services';
-import {t} from 'translation';
-
 import {loadTenants} from './service';
+import {t} from 'translation';
 
 import './ReportDetails.scss';
 
@@ -59,11 +61,14 @@ function getVersions(data) {
 
 export function ReportDetails({report, mightFail}) {
   const [tenants, setTenants] = useState();
+  const [showRawData, setShowRawData] = useState();
+  const [showDiagram, setShowDiagram] = useState();
 
   const key = getKey(report.data);
   const name = getName(report.data);
   const versions = getVersions(report.data);
   const type = report.reportType;
+  const nameOrKey = name || key;
 
   useEffect(() => {
     if (key && versions) {
@@ -130,6 +135,17 @@ export function ReportDetails({report, mightFail}) {
           </>
         )}
 
+        {key && versionInfo && (
+          <div className="modalsButtons">
+            <Button link onClick={() => setShowRawData(true)}>
+              {t('common.entity.viewRawData')}
+            </Button>
+            <Button link onClick={() => setShowDiagram(true)}>
+              {t('common.entity.viewModel.' + report.reportType)}
+            </Button>
+          </div>
+        )}
+
         <hr />
         <dt>{t('common.entity.createdBy')}</dt>
         <dd>{report.owner}</dd>
@@ -141,6 +157,12 @@ export function ReportDetails({report, mightFail}) {
           {t('common.entity.byModifier', {modifier: report.lastModifier})}
         </dd>
       </dl>
+      {showRawData && (
+        <RawDataModal report={report} name={nameOrKey} close={() => setShowRawData(false)} />
+      )}
+      {showDiagram && (
+        <DiagramModal report={report} name={nameOrKey} close={() => setShowDiagram(false)} />
+      )}
     </div>
   );
 }

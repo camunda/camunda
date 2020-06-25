@@ -107,3 +107,10 @@ it('should display meaningful data if there are no evaluations', () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should not include hits addon if hitsHidden is specified', () => {
+  Viewer.mockClear();
+  shallow(<DecisionTable {...props} hitsHidden />);
+
+  expect(Viewer.mock.calls[0][0].decisionTable.additionalModules).toHaveLength(0);
+});
