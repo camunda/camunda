@@ -15,7 +15,7 @@ import {
 
 interface GetTask {
   task: {
-    key: Task['key'];
+    id: Task['id'];
     name: Task['name'];
     assignee: Task['assignee'];
     workflowName: Task['workflowName'];
@@ -25,15 +25,15 @@ interface GetTask {
 }
 
 interface GetTaskVariables {
-  key: Task['key'];
+  id: Task['id'];
 }
 
 const GET_TASK =
   process.env.NODE_ENV === 'test'
     ? gql`
-        query GetTask($key: ID!) {
-          task(key: $key) {
-            key
+        query GetTask($id: ID!) {
+          task(id: $id) {
+            id
             name
             workflowName
             assignee
@@ -43,9 +43,9 @@ const GET_TASK =
         }
       `
     : gql`
-        query GetTask($key: ID!) {
-          task(key: $key) @client {
-            key
+        query GetTask($id: ID!) {
+          task(id: $id) @client {
+            id
             name
             workflowName
             assignee
@@ -58,7 +58,7 @@ const GET_TASK =
 const mockGetTaskUnclaimed = {
   request: {
     query: GET_TASK,
-    variables: {key: '1'},
+    variables: {id: '1'},
   },
   result: {
     data: {
@@ -70,7 +70,7 @@ const mockGetTaskUnclaimed = {
 const mockGetTaskClaimed = {
   request: {
     query: GET_TASK,
-    variables: {key: '1'},
+    variables: {id: '1'},
   },
   result: {
     data: {
@@ -82,7 +82,7 @@ const mockGetTaskClaimed = {
 const mockGetTaskCompleted = {
   request: {
     query: GET_TASK,
-    variables: {key: '0'},
+    variables: {id: '0'},
   },
   result: {
     data: {

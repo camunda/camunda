@@ -8,7 +8,7 @@ import * as React from 'react';
 import {useQuery} from '@apollo/react-hooks';
 import {useLocation} from 'react-router-dom';
 
-import {EmptyMessage} from './styled';
+import {EmptyMessage, UL} from './styled';
 import {Task} from './Task';
 import {
   GET_TASKS,
@@ -68,13 +68,13 @@ const Tasks: React.FC = () => {
   const {tasks} = data;
 
   return (
-    <ul>
+    <UL>
       {tasks.length > 0 ? (
         tasks.map((task) => {
           return (
             <Task
-              key={task.key}
-              taskKey={task.key}
+              key={task.id}
+              taskId={task.id}
               name={task.name}
               workflowName={task.workflowName}
               assignee={task.assignee}
@@ -85,7 +85,7 @@ const Tasks: React.FC = () => {
       ) : (
         <EmptyMessage>There are no tasks available.</EmptyMessage>
       )}
-    </ul>
+    </UL>
   );
 };
 

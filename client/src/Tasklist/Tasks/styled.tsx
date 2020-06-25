@@ -20,4 +20,8 @@ const EmptyMessage = styled.div`
   background-color: ${({theme}) => theme.colors.ui04};
 `;
 
-export {EmptyMessage};
+const UL = styled.ul`
+  overflow-y: auto;
+`;
+
+export {EmptyMessage, UL};

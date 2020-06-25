@@ -55,6 +55,7 @@ const Style = createGlobalStyle`
     -moz-osx-font-smoothing: antialiased;
     -webkit-font-smoothing: antialiased;
     height: 100%;
+    overflow: hidden;
     font-family: IBMPlexSans;
     margin: 0;
     padding: 0;

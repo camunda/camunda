@@ -12,16 +12,16 @@ import {unclaimedTask} from 'modules/mock-schema/mocks/task';
 const UNCLAIM_TASK =
   process.env.NODE_ENV === 'test'
     ? gql`
-        mutation UnclaimTask($key: ID!) {
-          unclaimTask(key: $key) {
-            key
+        mutation UnclaimTask($id: ID!) {
+          unclaimTask(id: $id) {
+            id
           }
         }
       `
     : gql`
-        mutation UnclaimTask($key: ID!) {
-          unclaimTask(key: $key) @client {
-            key
+        mutation UnclaimTask($id: ID!) {
+          unclaimTask(id: $id) @client {
+            id
           }
         }
       `;
@@ -29,7 +29,7 @@ const UNCLAIM_TASK =
 const mockUnclaimTask = {
   request: {
     query: UNCLAIM_TASK,
-    variables: {key: '1'},
+    variables: {id: '1'},
   },
   result: {
     data: {

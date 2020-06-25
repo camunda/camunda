@@ -16,20 +16,20 @@ import {formatDate} from 'modules/utils/formatDate';
 import {Container, ClaimButton} from './styled';
 
 const Details: React.FC = () => {
-  const {key} = useParams();
+  const {id} = useParams();
 
   const [claimTask] = useMutation<GetTask, GetTaskVariables>(CLAIM_TASK, {
-    variables: {key},
-    refetchQueries: [{query: GET_TASK, variables: {key}}],
+    variables: {id},
+    refetchQueries: [{query: GET_TASK, variables: {id}}],
   });
 
   const [unclaimTask] = useMutation<GetTask, GetTaskVariables>(UNCLAIM_TASK, {
-    variables: {key},
-    refetchQueries: [{query: GET_TASK, variables: {key}}],
+    variables: {id},
+    refetchQueries: [{query: GET_TASK, variables: {id}}],
   });
 
   const {data, loading} = useQuery<GetTask, GetTaskVariables>(GET_TASK, {
-    variables: {key},
+    variables: {id},
   });
 
   if (loading || data === undefined) {

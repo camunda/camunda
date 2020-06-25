@@ -22,14 +22,14 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MockedResponse} from '@apollo/react-testing';
 
 type GetWrapperProps = {
-  key: string;
+  id: string;
   mocks: MockedResponse[];
 };
 
-const getWrapper = ({key, mocks}: GetWrapperProps) => {
+const getWrapper = ({id, mocks}: GetWrapperProps) => {
   const Wrapper: React.FC = ({children}) => (
-    <MemoryRouter initialEntries={[`/${key}`]}>
-      <Route path="/:key">
+    <MemoryRouter initialEntries={[`/${id}`]}>
+      <Route path="/:id">
         <MockedApolloProvider mocks={mocks}>
           <MockThemeProvider>{children}</MockThemeProvider>
         </MockedApolloProvider>
@@ -43,7 +43,7 @@ const getWrapper = ({key, mocks}: GetWrapperProps) => {
 describe('<Details />', () => {
   it('should render completed task details', async () => {
     render(<Details />, {
-      wrapper: getWrapper({key: '0', mocks: [mockGetTaskCompleted]}),
+      wrapper: getWrapper({id: '0', mocks: [mockGetTaskCompleted]}),
     });
 
     expect(await screen.findByText('My Completed Task')).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe('<Details />', () => {
 
   it('should render unclaimed task details', async () => {
     render(<Details />, {
-      wrapper: getWrapper({key: '1', mocks: [mockGetTaskUnclaimed]}),
+      wrapper: getWrapper({id: '1', mocks: [mockGetTaskUnclaimed]}),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe('<Details />', () => {
   it('should render unclaimed task and claim it', async () => {
     render(<Details />, {
       wrapper: getWrapper({
-        key: '1',
+        id: '1',
         mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetTaskClaimed],
       }),
     });
@@ -95,7 +95,7 @@ describe('<Details />', () => {
   it('should render claimed task and unclaim it', async () => {
     render(<Details />, {
       wrapper: getWrapper({
-        key: '1',
+        id: '1',
         mocks: [mockGetTaskClaimed, mockUnclaimTask, mockGetTaskUnclaimed],
       }),
     });

@@ -7,7 +7,7 @@
 import {Task} from 'modules/types';
 
 const unclaimedTask: Task = {
-  key: '1',
+  id: '1',
   name: 'My Task',
   workflowName: 'Nice Workflow',
   assignee: null,
@@ -19,6 +19,7 @@ const unclaimedTask: Task = {
 
 const claimedTask: Task = {
   ...unclaimedTask,
+  id: '2',
   assignee: {
     username: 'Demo',
     firstname: 'Demo',
@@ -27,7 +28,7 @@ const claimedTask: Task = {
 };
 
 const completedTask: Task = {
-  key: '0',
+  id: '0',
   name: 'My Completed Task',
   workflowName: 'Cool Workflow',
   assignee: {

@@ -60,11 +60,11 @@ describe('<Filters />', () => {
 
   it('should preserve existing search params on the URL', () => {
     const mockSearchParam = {
-      key: 'foo',
+      id: 'foo',
       value: 'bar',
     } as const;
     const history = createMemoryHistory({
-      initialEntries: [`/?${mockSearchParam.key}=${mockSearchParam.value}`],
+      initialEntries: [`/?${mockSearchParam.id}=${mockSearchParam.value}`],
     });
     render(<Filters />, {
       wrapper: getWrapper(history),
@@ -79,7 +79,7 @@ describe('<Filters />', () => {
     const searchParams = new URLSearchParams(history.location.search);
 
     expect(searchParams.get('filter')).toBe(FILTERS[0]);
-    expect(searchParams.get(mockSearchParam.key)).toBe(mockSearchParam.value);
+    expect(searchParams.get(mockSearchParam.id)).toBe(mockSearchParam.value);
   });
 
   it('should load a value from the URL', () => {

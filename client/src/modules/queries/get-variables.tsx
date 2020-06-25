@@ -14,7 +14,7 @@ import {
 
 interface GetVariables {
   task: {
-    key: Task['key'];
+    id: Task['id'];
     variables: Task['variables'];
   };
 }
@@ -22,15 +22,15 @@ interface GetVariables {
 const GET_TASK_VARIABLES =
   process.env.NODE_ENV === 'test'
     ? gql`
-        query GetTask($key: ID!) {
-          task(key: $key) {
+        query GetTask($id: ID!) {
+          task(id: $id) {
             variables
           }
         }
       `
     : gql`
-        query GetTask($key: ID!) {
-          task(key: $key) @client {
+        query GetTask($id: ID!) {
+          task(id: $id) @client {
             variables
           }
         }
@@ -39,7 +39,7 @@ const GET_TASK_VARIABLES =
 const mockTaskWithVariables = {
   request: {
     query: GET_TASK_VARIABLES,
-    variables: {key: '0'},
+    variables: {id: '0'},
   },
   result: {
     data: {
@@ -51,7 +51,7 @@ const mockTaskWithVariables = {
 const mockTaskWithoutVariables = {
   request: {
     query: GET_TASK_VARIABLES,
-    variables: {key: '1'},
+    variables: {id: '1'},
   },
   result: {
     data: {

@@ -14,11 +14,11 @@ import {Table, TD, RowTH, ColumnTH, TR} from 'modules/components/Table/styled';
 import {Title, EmptyMessage} from './styled';
 
 const Variables: React.FC = () => {
-  const {key} = useParams();
+  const {id} = useParams();
   const {data, loading} = useQuery<GetVariables, GetTaskVariables>(
     GET_TASK_VARIABLES,
     {
-      variables: {key},
+      variables: {id},
     },
   );
 

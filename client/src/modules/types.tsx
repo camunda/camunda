@@ -18,7 +18,7 @@ type Variable = Readonly<{
 type TaskState = 'CREATED' | 'COMPLETED';
 
 type Task = Readonly<{
-  key: string;
+  id: string;
   name: string;
   workflowName: string;
   creationTime: string;
@@ -28,4 +28,4 @@ type Task = Readonly<{
   taskState: TaskState;
 }>;
 
-export type {User, Variable, Task};
+export type {User, Variable, Task, TaskState};

@@ -8,7 +8,7 @@ import {Task} from 'modules/types';
 
 const tasks: ReadonlyArray<Task> = [
   {
-    key: '0',
+    id: '0',
     name: 'name',
     workflowName: 'workflowName',
     creationTime: '2020-05-28 10:11:12',
@@ -18,7 +18,7 @@ const tasks: ReadonlyArray<Task> = [
     taskState: 'COMPLETED',
   },
   {
-    key: '1',
+    id: '1',
     name: 'name',
     workflowName: 'workflowName',
     creationTime: '2020-05-29 13:14:15',
@@ -35,7 +35,7 @@ const tasks: ReadonlyArray<Task> = [
     taskState: 'CREATED',
   },
   {
-    key: '2',
+    id: '2',
     name: 'name',
     workflowName: 'workflowName',
     creationTime: '2020-05-30 16:17:18',

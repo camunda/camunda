@@ -6,15 +6,15 @@
 
 /* istanbul ignore file */
 
-const KEY_PARAM = ':key';
+const ID_PARAM = ':id';
 
 const Pages = {
-  Initial({useKeyParam} = {useKeyParam: false}) {
-    return `/${useKeyParam ? `${KEY_PARAM}?` : ''}`;
+  Initial({useIdParam} = {useIdParam: false}) {
+    return `/${useIdParam ? `${ID_PARAM}?` : ''}`;
   },
   Login: '/login',
-  TaskDetails(key: string = KEY_PARAM) {
-    return `/${key}`;
+  TaskDetails(id: string = ID_PARAM) {
+    return `/${id}`;
   },
 } as const;
 

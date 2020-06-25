@@ -17,10 +17,10 @@ import {
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './';
 
-const getWrapper = (key: string, mock: MockedResponse) => {
+const getWrapper = (id: string, mock: MockedResponse) => {
   const Wrapper: React.FC = ({children}) => (
-    <MemoryRouter initialEntries={[`/${key}`]}>
-      <Route path="/:key">
+    <MemoryRouter initialEntries={[`/${id}`]}>
+      <Route path="/:id">
         <MockedApolloProvider mocks={[mock]}>
           <MockThemeProvider>{children}</MockThemeProvider>
         </MockedApolloProvider>

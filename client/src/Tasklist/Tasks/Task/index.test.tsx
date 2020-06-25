@@ -23,7 +23,7 @@ describe('<Task />', () => {
   it('should render task', () => {
     render(
       <Task
-        taskKey="1"
+        taskId="1"
         name="name"
         workflowName="workflowName"
         creationTime="2020-05-29 14:00:00"
@@ -43,7 +43,7 @@ describe('<Task />', () => {
   it('should render -- as assignee if task is not assigned', () => {
     render(
       <Task
-        taskKey="1"
+        taskId="1"
         name="name"
         workflowName="workflowName"
         creationTime="2020-05-29 14:00:00"
@@ -62,7 +62,7 @@ describe('<Task />', () => {
     global.console.error = jest.fn();
     render(
       <Task
-        taskKey="1"
+        taskId="1"
         name="name"
         workflowName="workflowName"
         creationTime="invalid date"
@@ -81,7 +81,7 @@ describe('<Task />', () => {
   it('should navigate to task detail on click', () => {
     render(
       <Task
-        taskKey="1"
+        taskId="1"
         name="name"
         workflowName="workflowName"
         creationTime="2020-05-29 14:00:00"

@@ -21,7 +21,7 @@ import {formatDate} from 'modules/utils/formatDate';
 import {Task as TaskType} from 'modules/types';
 
 interface Props {
-  taskKey: TaskType['key'];
+  taskId: TaskType['id'];
   name: TaskType['name'];
   workflowName: TaskType['workflowName'];
   assignee: TaskType['assignee'];
@@ -29,17 +29,17 @@ interface Props {
 }
 
 const Task: React.FC<Props> = ({
-  taskKey,
+  taskId,
   name,
   workflowName,
   assignee,
   creationTime,
 }) => {
-  const {key} = useParams();
+  const {id} = useParams();
 
   return (
-    <Link to={Pages.TaskDetails(taskKey)}>
-      <Entry isSelected={key === taskKey} data-testid={`task-${taskKey}`}>
+    <Link to={Pages.TaskDetails(taskId)}>
+      <Entry isSelected={id === taskId} data-testid={`task-${taskId}`}>
         <TaskInfo>
           <TaskName>{name}</TaskName>
           <WorkflowName>{workflowName}</WorkflowName>

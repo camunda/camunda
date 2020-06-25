@@ -6,7 +6,7 @@
 
 /* istanbul ignore file */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 interface BaseProps {
   hasRoundTopLeftCorner?: boolean;
@@ -44,11 +44,13 @@ const Base = styled.div<BaseProps>`
 
 interface BodyProps {
   hasTransparentBackground?: boolean;
+  extraBodyStyles?: ReturnType<typeof css>;
 }
 
 const Body = styled.div<BodyProps>`
   background-color: ${({hasTransparentBackground, theme}) =>
     hasTransparentBackground ? 'transparent' : theme.colors.ui04};
+  ${({extraBodyStyles}) => extraBodyStyles};
 `;
 
 const Footer = styled.div`

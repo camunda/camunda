@@ -12,16 +12,16 @@ import {claimedTask} from 'modules/mock-schema/mocks/task';
 const CLAIM_TASK =
   process.env.NODE_ENV === 'test'
     ? gql`
-        mutation ClaimTask($key: ID!) {
-          claimTask(key: $key) {
-            key
+        mutation ClaimTask($id: ID!) {
+          claimTask(id: $id) {
+            id
           }
         }
       `
     : gql`
-        mutation ClaimTask($key: ID!) {
-          claimTask(key: $key) @client {
-            key
+        mutation ClaimTask($id: ID!) {
+          claimTask(id: $id) @client {
+            id
           }
         }
       `;
@@ -29,7 +29,7 @@ const CLAIM_TASK =
 const mockClaimTask = {
   request: {
     query: CLAIM_TASK,
-    variables: {key: '1'},
+    variables: {id: '1'},
   },
   result: {
     data: {

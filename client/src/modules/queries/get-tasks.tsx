@@ -13,7 +13,7 @@ import {Task} from 'modules/types';
 
 interface GetTasks {
   tasks: ReadonlyArray<{
-    key: Task['key'];
+    id: Task['id'];
     name: Task['name'];
     assignee: Task['assignee'];
     workflowName: Task['workflowName'];
@@ -41,31 +41,20 @@ type GetTasksVariables =
   | GetUnclaimedVariables
   | GetCompletedVariables;
 
-const GET_TASKS =
-  process.env.NODE_ENV === 'test'
-    ? gql`
-        query GetTasks($assignee: ID, $assigned: Boolean, $state: String) {
-          tasks(assignee: $assignee, assigned: $assigned, state: $state) {
-            key
-            name
-            workflowName
-            assignee
-            creationTime
-          }
-        }
-      `
-    : gql`
-        query GetTasks($assignee: ID, $assigned: Boolean, $state: String) {
-          tasks(assignee: $assignee, assigned: $assigned, state: $state)
-            @client {
-            key
-            name
-            workflowName
-            assignee
-            creationTime
-          }
-        }
-      `;
+const GET_TASKS = gql`
+  query GetTasks($assignee: String, $assigned: Boolean, $state: TaskState) {
+    tasks(query: {assignee: $assignee, assigned: $assigned, state: $state}) {
+      id
+      name
+      workflowName
+      assignee {
+        firstname
+        lastname
+      }
+      creationTime
+    }
+  }
+`;
 
 const mockGetAllOpenTasks = {
   request: {

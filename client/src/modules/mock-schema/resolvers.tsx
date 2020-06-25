@@ -6,26 +6,25 @@
 
 /* istanbul ignore file */
 
-import {Resolvers} from 'apollo-boost';
+import {Resolvers, gql} from 'apollo-boost';
+import {Task} from 'modules/types';
 
-import {tasks} from './mocks/tasks';
 interface ResolverMap {
-  [field: string]: (parent: any, args: any) => any;
+  [field: string]: (parent: any, args: any, context: any) => any;
 }
 
 interface AppResolvers extends Resolvers {
   Query: ResolverMap;
-  Task: ResolverMap;
 }
 
 type IsAssigned = {
-  [key: number]: boolean;
+  [id: string]: boolean;
 };
 
 const isAssigned: IsAssigned = {};
 
-const getAssignee = (key: number) => {
-  switch (isAssigned[key]) {
+const getAssignee = (task: Task) => {
+  switch (isAssigned[task.id]) {
     case true:
       return {
         username: 'Demo',
@@ -35,59 +34,46 @@ const getAssignee = (key: number) => {
     case false:
       return null;
     default:
-      return tasks[key].assignee;
+      return task.assignee;
   }
 };
 
 const resolvers: AppResolvers = {
-  Task: {
-    key({index}) {
-      return tasks[index].key;
-    },
-    name({index}) {
-      return tasks[index].name;
-    },
-    workflowName({index}) {
-      return tasks[index].workflowName;
-    },
-    creationTime({index}) {
-      return tasks[index].creationTime;
-    },
-    completionTime({index}) {
-      return tasks[index].completionTime;
-    },
-    assignee({index}) {
-      return getAssignee(index);
-    },
-    variables({index}) {
-      return tasks[index].variables;
-    },
-    taskState({index}) {
-      return tasks[index].taskState;
-    },
-  },
   Query: {
-    tasks() {
-      return [...new Array(3)].map((_, index) => ({
-        __typename: 'Task',
-        index,
-      }));
-    },
-    task(_, {key}) {
+    task(_, {id}, context) {
+      const result: {tasks: Task[]} = context.client.readQuery({
+        query: gql`
+          query GetTasks {
+            tasks(query: {}) {
+              id
+              name
+              workflowName
+              assignee
+              creationTime
+            }
+          }
+        `,
+      });
+      const task = result.tasks.find((task) => task.id === id);
       return {
-        __typename: 'Task',
-        index: key,
+        ...task,
+        assignee: task ? getAssignee(task) : null,
+        completionTime: null,
+        variables:
+          task?.name === 'registerPassenger'
+            ? [{name: 'passengerId', value: '123645'}]
+            : [],
       };
     },
   },
   Mutation: {
-    claimTask(_, {key}) {
-      isAssigned[key] = true;
-      return {__typename: 'Task', index: key};
+    claimTask(_, {id}) {
+      isAssigned[id] = true;
+      return {__typename: 'Task', id};
     },
-    unclaimTask(_, {key}) {
-      isAssigned[key] = false;
-      return {__typename: 'Task', index: key};
+    unclaimTask(_, {id}) {
+      isAssigned[id] = false;
+      return {__typename: 'Task', id};
     },
   },
 };

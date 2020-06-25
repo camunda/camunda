@@ -20,6 +20,7 @@ import {
   TasksPanel,
   DetailsPanel,
   NoTaskSelectedMessage,
+  panelBodyStyles,
 } from './styled';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
@@ -28,7 +29,11 @@ const Tasklist: React.FC = () => {
     <>
       <Header />
       <Container>
-        <TasksPanel title="Tasks" hasTransparentBackground>
+        <TasksPanel
+          title="Tasks"
+          hasTransparentBackground
+          extraBodyStyles={panelBodyStyles}
+        >
           <Filters />
           <Tasks />
         </TasksPanel>
