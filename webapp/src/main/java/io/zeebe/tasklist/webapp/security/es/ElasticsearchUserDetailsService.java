@@ -23,20 +23,21 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
 @Configuration
+@Component
 @Profile("!" + SSOWebSecurityConfig.SSO_AUTH_PROFILE)
-public class ElasticSearchUserDetailsService implements UserDetailsService {
+public class ElasticsearchUserDetailsService implements UserDetailsService {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ElasticSearchUserDetailsService.class);
+      LoggerFactory.getLogger(ElasticsearchUserDetailsService.class);
 
   private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
   private static final String ACT_ADMIN_ROLE = "ACTRADMIN";
   private static final String USER_ROLE = "USER";
   private static final String USER_DEFAULT_FIRSTNAME = "Demo";
-  private static final String USER_DEFAULT_LASTNAME = "user";
-
+  private static final String USER_DEFAULT_LASTNAME = "User";
   @Autowired private UserStorage userStorage;
 
   @Autowired private TasklistProperties tasklistProperties;
@@ -60,7 +61,15 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
     }
   }
 
-  private ElasticSearchUserDetailsService addUserWith(
+  private boolean userExists(String username) {
+    try {
+      return userStorage.getByName(username) != null;
+    } catch (Throwable t) {
+      return false;
+    }
+  }
+
+  private ElasticsearchUserDetailsService addUserWith(
       String username, String password, String role) {
     LOGGER.info("Create user in ElasticSearch for username {}", username);
     final String passwordEncoded = passwordEncoder.encode(password);
@@ -89,13 +98,5 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
 
   private Collection<? extends GrantedAuthority> toAuthorities(String role) {
     return Arrays.asList(new SimpleGrantedAuthority("ROLE_" + role));
-  }
-
-  private boolean userExists(String username) {
-    try {
-      return userStorage.getByName(username) != null;
-    } catch (Throwable t) {
-      return false;
-    }
   }
 }

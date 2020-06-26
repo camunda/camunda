@@ -5,6 +5,9 @@
  */
 package io.zeebe.tasklist.webapp.security.es;
 
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.zeebe.tasklist.entities.UserEntity;
 import io.zeebe.tasklist.es.schema.indices.UserIndex;
@@ -14,11 +17,13 @@ import io.zeebe.tasklist.webapp.es.reader.AbstractReader;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
 import io.zeebe.tasklist.webapp.security.sso.SSOWebSecurityConfig;
 import java.io.IOException;
+import java.util.List;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -73,6 +78,35 @@ public class UserStorage extends AbstractReader {
       esClient.index(request, RequestOptions.DEFAULT);
     } catch (Throwable t) {
       LOGGER.error("Could not create user with username {}", user.getUsername(), t);
+    }
+  }
+
+  public List<UserEntity> getUsersByUsernames(List<String> usernames) {
+
+    // TODO query only needed fields
+    final ConstantScoreQueryBuilder esQuery =
+        constantScoreQuery(idsQuery().addIds(usernames.toArray(String[]::new)));
+
+    // TODO #47 we need the results in same order as list of ids: script exapmles:
+    // https://gist.github.com/darklow/7132077
+    final SearchRequest searchRequest =
+        new SearchRequest(userIndex.getAlias())
+            .source(
+                new SearchSourceBuilder()
+                    .query(esQuery)
+                    .fetchSource(
+                        new String[] {UserIndex.USERNAME, UserIndex.FIRSTNAME, UserIndex.LASTNAME},
+                        null));
+
+    try {
+      final List<UserEntity> userEntities =
+          ElasticsearchUtil.scroll(searchRequest, UserEntity.class, objectMapper, esClient);
+      return userEntities;
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining users: %s", e.getMessage());
+      LOGGER.error(message, e);
+      throw new TasklistRuntimeException(message, e);
     }
   }
 

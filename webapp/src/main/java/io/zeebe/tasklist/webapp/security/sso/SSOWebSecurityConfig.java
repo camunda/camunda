@@ -8,6 +8,7 @@ package io.zeebe.tasklist.webapp.security.sso;
 import static io.zeebe.tasklist.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
 
 import com.auth0.AuthenticationController;
+import io.zeebe.tasklist.webapp.rest.HealthCheckRestService;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import javax.servlet.http.HttpServletRequest;
@@ -48,6 +49,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
     "/documentation",
     "/webjars/**",
     "/error",
+    HealthCheckRestService.HEALTH_CHECK_URL,
     NO_PERMISSION,
     LOGOUT_RESOURCE,
     ACTUATOR_ENDPOINTS,

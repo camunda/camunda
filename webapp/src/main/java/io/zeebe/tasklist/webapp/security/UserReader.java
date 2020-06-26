@@ -5,11 +5,12 @@
  */
 package io.zeebe.tasklist.webapp.security;
 
-import io.zeebe.tasklist.webapp.rest.dto.UserDto;
+import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import java.util.List;
 
-public interface UserService {
+public interface UserReader {
 
-  String getCurrentUsername();
+  public UserDTO getCurrentUser();
 
-  UserDto getCurrentUser();
+  public List<UserDTO> getUsersByUsernames(List<String> usernames);
 }

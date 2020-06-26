@@ -5,9 +5,12 @@
  */
 package io.zeebe.tasklist.webapp.security.sso;
 
+import static io.zeebe.tasklist.util.CollectionUtil.map;
+
 import com.auth0.jwt.interfaces.Claim;
-import io.zeebe.tasklist.webapp.rest.dto.UserDto;
-import io.zeebe.tasklist.webapp.security.AbstractUserService;
+import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import io.zeebe.tasklist.webapp.security.UserReader;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -17,25 +20,39 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
-public class SSOUserService extends AbstractUserService {
+public class SSOUserReader implements UserReader {
 
   private static final String EMPTY = "";
 
   @Autowired private SSOWebSecurityConfig configuration;
 
   @Override
-  public UserDto getCurrentUser() {
+  public UserDTO getCurrentUser() {
     final SecurityContext context = SecurityContextHolder.getContext();
     final TokenAuthentication tokenAuth = (TokenAuthentication) context.getAuthentication();
-    return buildUserDtoFrom(tokenAuth);
+    return buildUserDTOFrom(tokenAuth);
   }
 
-  private UserDto buildUserDtoFrom(TokenAuthentication tokenAuth) {
+  private UserDTO buildUserDTOFrom(TokenAuthentication tokenAuth) {
     final Map<String, Claim> claims = tokenAuth.getClaims();
     String name = "No name";
     if (claims.containsKey(configuration.getNameKey())) {
       name = claims.get(configuration.getNameKey()).asString();
     }
-    return new UserDto().setFirstname(EMPTY).setLastname(name).setCanLogout(false);
+    return createUserDTO(name);
+  }
+
+  private UserDTO createUserDTO(String name) {
+    return new UserDTO()
+        .setUsername(name)
+        .setFirstname(EMPTY)
+        .setLastname(name)
+        .setCanLogout(false);
+  }
+
+  @Override
+  public List<UserDTO> getUsersByUsernames(List<String> usernames) {
+    // TODO #47
+    return map(usernames, this::createUserDTO);
   }
 }

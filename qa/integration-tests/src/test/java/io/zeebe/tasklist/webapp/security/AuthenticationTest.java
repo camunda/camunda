@@ -40,10 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-/**
- * This test tests: * authentication and security of REST API * /api/authentications/user endpoint
- * to get current user * {@link UserStorage} is mocked (integration with ELS is not tested)
- */
+/** This tests: authentication and security over GraphQL API /currentUser to get current user */
 @ActiveProfiles({"auth", "test"})
 public class AuthenticationTest extends TasklistIntegrationTest {
 
@@ -63,7 +60,6 @@ public class AuthenticationTest extends TasklistIntegrationTest {
   @Autowired private TestRestTemplate testRestTemplate;
 
   @Autowired private PasswordEncoder encoder;
-
   @Autowired private ObjectMapper objectMapper;
 
   @MockBean private UserStorage userStorage;
@@ -156,9 +152,8 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     final GraphQLResponse response = new GraphQLResponse(responseEntity, objectMapper);
     assertThat(response.get("$.data.currentUser.username")).isEqualTo(USERNAME);
-    // TODO issue #45
-    //    assertThat(response.get("$.data.currentUser.firstname")).isEqualTo(FIRSTNAME);
-    //    assertThat(response.get("$.data.currentUser.lastname")).isEqualTo(LASTNAME);
+    assertThat(response.get("$.data.currentUser.firstname")).isEqualTo(FIRSTNAME);
+    assertThat(response.get("$.data.currentUser.lastname")).isEqualTo(LASTNAME);
   }
 
   @Test

@@ -43,16 +43,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
       TasklistProperties.PREFIX + ".password = psw1",
       "graphql.servlet.websocket.enabled=false"
     })
-public class ElasticSearchUserDetailsServiceIT extends TasklistIntegrationTest {
+public class ElasticsearchUserDetailsServiceIT extends TasklistIntegrationTest {
 
   private static final String TEST_USERNAME = "user1";
   private static final String TEST_PASSWORD = "psw1";
   private static final String TEST_FIRSTNAME = "Quentin";
   private static final String TEST_LASTNAME = "Tarantino ";
+
   @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
-  @Autowired private ElasticSearchUserDetailsService userDetailsService;
+  @Autowired private ElasticsearchUserDetailsService userDetailsService;
+
   @Autowired private RestHighLevelClient esClient;
+
   @Autowired private UserIndex userIndex;
+
   @Autowired private PasswordEncoder passwordEncoder;
 
   @Before
@@ -61,7 +65,7 @@ public class ElasticSearchUserDetailsServiceIT extends TasklistIntegrationTest {
   }
 
   @After
-  public void deleteUser() {
+  public void deleteUser() throws IOException {
     deleteById(TEST_USERNAME);
   }
 
@@ -100,14 +104,9 @@ public class ElasticSearchUserDetailsServiceIT extends TasklistIntegrationTest {
     }
   }
 
-  @SuppressWarnings("checkstyle:EmptyCatchBlock")
-  public void deleteById(String id) {
-    try {
-      final DeleteRequest request =
-          new DeleteRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, id);
-      esClient.delete(request, RequestOptions.DEFAULT);
-    } catch (IOException ex) {
-      //
-    }
+  public void deleteById(String id) throws IOException {
+    final DeleteRequest request =
+        new DeleteRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, id);
+    esClient.delete(request, RequestOptions.DEFAULT);
   }
 }

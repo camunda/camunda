@@ -5,8 +5,13 @@
  */
 package io.zeebe.tasklist.data;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.tasklist.entities.UserEntity;
+import io.zeebe.tasklist.es.schema.indices.UserIndex;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.util.ZeebeTestUtil;
 import java.io.IOException;
 import java.util.Random;
@@ -14,14 +19,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,6 +43,8 @@ public class DevDataGenerator implements DataGenerator {
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
+  @Autowired private RestHighLevelClient esClient;
+
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired private ZeebeClient zeebeClient;
@@ -41,6 +52,12 @@ public class DevDataGenerator implements DataGenerator {
   private Random random = new Random();
 
   private ExecutorService executor = Executors.newSingleThreadExecutor();
+
+  private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired private UserIndex userIndex;
 
   private boolean shutdown = false;
 
@@ -50,6 +67,7 @@ public class DevDataGenerator implements DataGenerator {
       executor.submit(
           () -> {
             try {
+              createDemoUsers();
               Thread.sleep(10_000);
               createZeebeData();
             } catch (Exception ex) {
@@ -57,6 +75,39 @@ public class DevDataGenerator implements DataGenerator {
             }
           });
     }
+  }
+
+  public void createDemoUsers() {
+    createUser("john", "John", "Doe");
+    createUser("jane", "Jane", "Doe");
+    createUser("joe", "Average", "Joe");
+    for (int i = 0; i < 5; i++) {
+      final String firstname = NameGenerator.getRandomFirstName();
+      final String lastname = NameGenerator.getRandomLastName();
+      createUser(firstname + "." + lastname, firstname, lastname);
+    }
+  }
+
+  private void createUser(String username, String firstname, String lastname) {
+    final String password = username;
+    final String passwordEncoded = passwordEncoder.encode(password);
+    final UserEntity user =
+        UserEntity.from(username, passwordEncoded, "USER")
+            .setFirstname(firstname)
+            .setLastname(lastname);
+    try {
+      final IndexRequest request =
+          new IndexRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, user.getId())
+              .source(userEntityToJSONString(user), XContentType.JSON);
+      esClient.index(request, RequestOptions.DEFAULT);
+    } catch (Throwable t) {
+      LOGGER.error("Could not create demo user with username {}", user.getUsername(), t);
+    }
+    LOGGER.info("Created demo user {} with password {}", username, password);
+  }
+
+  protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {
+    return objectMapper.writeValueAsString(aUser);
   }
 
   private void createZeebeData() {

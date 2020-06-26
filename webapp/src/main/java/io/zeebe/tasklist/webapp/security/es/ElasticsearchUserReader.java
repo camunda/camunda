@@ -5,9 +5,11 @@
  */
 package io.zeebe.tasklist.webapp.security.es;
 
-import io.zeebe.tasklist.webapp.rest.dto.UserDto;
-import io.zeebe.tasklist.webapp.security.AbstractUserService;
+import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import io.zeebe.tasklist.webapp.security.UserReader;
 import io.zeebe.tasklist.webapp.security.sso.SSOWebSecurityConfig;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -16,12 +18,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("!" + SSOWebSecurityConfig.SSO_AUTH_PROFILE)
-public class DefaultUserService extends AbstractUserService {
+public class ElasticsearchUserReader implements UserReader {
+
+  @Autowired private UserStorage userStorage;
 
   @Override
-  public UserDto getCurrentUser() {
+  public UserDTO getCurrentUser() {
     final SecurityContext context = SecurityContextHolder.getContext();
     final Authentication authentication = context.getAuthentication();
-    return UserDto.fromUser((User) authentication.getPrincipal());
+    return UserDTO.createFrom((User) authentication.getPrincipal());
+  }
+
+  @Override
+  public List<UserDTO> getUsersByUsernames(List<String> usernames) {
+    return UserDTO.createFrom(userStorage.getUsersByUsernames(usernames));
   }
 }

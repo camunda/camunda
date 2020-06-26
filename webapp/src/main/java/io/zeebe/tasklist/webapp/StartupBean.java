@@ -8,7 +8,7 @@ package io.zeebe.tasklist.webapp;
 import io.zeebe.tasklist.data.DataGenerator;
 import io.zeebe.tasklist.es.ElasticsearchConnector;
 import io.zeebe.tasklist.property.TasklistProperties;
-import io.zeebe.tasklist.webapp.security.es.ElasticSearchUserDetailsService;
+import io.zeebe.tasklist.webapp.security.es.ElasticsearchUserDetailsService;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -31,7 +31,7 @@ public class StartupBean {
   @Autowired private RestHighLevelClient zeebeEsClient;
 
   @Autowired(required = false)
-  private ElasticSearchUserDetailsService elasticsearchUserDetailsService;
+  private ElasticsearchUserDetailsService elasticsearchUserDetailsService;
 
   @Autowired private DataGenerator dataGenerator;
 

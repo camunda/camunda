@@ -10,8 +10,8 @@ import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
 import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
-import io.zeebe.tasklist.webapp.es.reader.UserReader;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import io.zeebe.tasklist.webapp.security.UserReader;
 import java.util.concurrent.CompletableFuture;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -56,8 +56,7 @@ public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuild
         USER_DATA_LOADER,
         new DataLoader<String, UserDTO>(
             usernames ->
-                CompletableFuture.supplyAsync(
-                    () -> UserDTO.createFrom(userReader.getUsersByUsernames(usernames)))));
+                CompletableFuture.supplyAsync(() -> userReader.getUsersByUsernames(usernames))));
     return dataLoaderRegistry;
   }
 }

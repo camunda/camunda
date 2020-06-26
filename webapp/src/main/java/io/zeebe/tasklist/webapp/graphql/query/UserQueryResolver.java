@@ -7,17 +7,16 @@ package io.zeebe.tasklist.webapp.graphql.query;
 
 import graphql.kickstart.tools.GraphQLQueryResolver;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import io.zeebe.tasklist.webapp.security.UserReader;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public final class UserQueryResolver implements GraphQLQueryResolver {
 
-  // TODO #45
+  @Autowired private UserReader userReader;
+
   public UserDTO currentUser() {
-    final UserDTO user = new UserDTO();
-    user.setUsername("demo");
-    user.setFirstname("Demo");
-    user.setLastname("User");
-    return user;
+    return userReader.getCurrentUser();
   }
 }

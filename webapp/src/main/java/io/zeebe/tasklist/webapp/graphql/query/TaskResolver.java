@@ -11,7 +11,6 @@ import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.tools.GraphQLResolver;
 import graphql.schema.DataFetchingEnvironment;
 import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
-import io.zeebe.tasklist.webapp.es.reader.UserReader;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
 import java.util.concurrent.CompletableFuture;
@@ -21,8 +20,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TaskResolver implements GraphQLResolver<TaskDTO> {
-
-  @Autowired private UserReader userReader;
 
   @Autowired private WorkflowCache workflowCache;
 
