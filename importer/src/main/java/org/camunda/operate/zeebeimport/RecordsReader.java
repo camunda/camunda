@@ -219,12 +219,14 @@ public class RecordsReader {
             executeNext();
           } else {
             //retry the same job
+            sleepFor(2000L);
             execute(active);
           }
           return imported;
         } catch (Exception ex) {
           logger.error("Exception occurred when importing data: " + ex.getMessage(), ex);
           //retry the same job
+          sleepFor(2000L);
           execute(active);
           return false;
         }
