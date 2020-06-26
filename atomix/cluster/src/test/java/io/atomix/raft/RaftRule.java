@@ -238,10 +238,13 @@ public final class RaftRule extends ExternalResource {
   }
 
   public void shutdownServer(final RaftServer raftServer) throws Exception {
-    raftServer.shutdown().get(30, TimeUnit.SECONDS);
-    servers.remove(raftServer.name());
-    compactAwaiters.remove(raftServer.name());
-    memberLog.remove(raftServer.name());
+    shutdownServer(raftServer.name());
+  }
+
+  public void shutdownServer(final String nodeName) throws Exception {
+    servers.remove(nodeName).shutdown().get(30, TimeUnit.SECONDS);
+    compactAwaiters.remove(nodeName);
+    memberLog.remove(nodeName);
   }
 
   private RaftMember getRaftMember(final String memberId) {

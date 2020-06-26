@@ -228,7 +228,37 @@ public class RaftFailOverTest {
     final var snapshot = raftRule.getSnapshotOnNode(follower);
 
     assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(100);
-    assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
+    assertThat(snapshot.getTerm()).isEqualTo(leaderSnapshot.getTerm());
+    assertThat(snapshot.getId()).isEqualTo(leaderSnapshot.getId());
+  }
+
+  @Test
+  public void shouldReplicateSnapshotMultipleTimesAfterMultipleDataLoss() throws Exception {
+    // given
+    raftRule.appendEntries(128);
+    raftRule.doSnapshot(100);
+    final var follower = raftRule.shutdownFollower();
+    final var leaderSnapshot = raftRule.getSnapshotFromLeader();
+    raftRule.triggerDataLossOnNode(follower);
+    raftRule.bootstrapNode(follower);
+
+    final var firstSnapshot = raftRule.getSnapshotOnNode(follower);
+
+    // when another data loss happens
+    raftRule.shutdownServer(follower);
+    raftRule.triggerDataLossOnNode(follower);
+    assertThat(firstSnapshot.getPath()).doesNotExist();
+    raftRule.bootstrapNode(follower);
+
+    // then snapshot is replicated again
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(100)).isTrue();
+    final var newSnapshot = raftRule.getSnapshotOnNode(follower);
+
+    assertThat(newSnapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(100);
+    assertThat(newSnapshot.getTerm()).isEqualTo(leaderSnapshot.getTerm());
+    assertThat(newSnapshot.getId()).isEqualTo(leaderSnapshot.getId());
+    assertThat(newSnapshot).isEqualTo(firstSnapshot);
+    assertThat(newSnapshot.getPath()).exists();
   }
 
   @Test
