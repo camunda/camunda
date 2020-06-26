@@ -11,12 +11,15 @@ import static java.lang.Runtime.getRuntime;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.cluster.protocol.GroupMembershipProtocol;
+import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.utils.net.Address;
 import io.zeebe.gateway.impl.SpringGatewayBridge;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport;
 import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport.Scope;
 import io.zeebe.util.VersionUtil;
@@ -52,6 +55,21 @@ public class StandaloneGateway {
   }
 
   private AtomixCluster createAtomixCluster(final ClusterCfg clusterCfg) {
+    final MembershipCfg membershipCfg = clusterCfg.getMembership();
+    final GroupMembershipProtocol membershipProtocol =
+        SwimMembershipProtocol.builder()
+            .withFailureTimeout(membershipCfg.getFailureTimeout())
+            .withGossipInterval(membershipCfg.getGossipInterval())
+            .withProbeInterval(membershipCfg.getProbeInterval())
+            .withProbeTimeout(membershipCfg.getProbeTimeout())
+            .withBroadcastDisputes(membershipCfg.isBroadcastDisputes())
+            .withBroadcastUpdates(membershipCfg.isBroadcastUpdates())
+            .withGossipFanout(membershipCfg.getGossipFanout())
+            .withNotifySuspect(membershipCfg.isNotifySuspect())
+            .withSuspectProbes(membershipCfg.getSuspectProbes())
+            .withSyncInterval(membershipCfg.getSyncInterval())
+            .build();
+
     final var atomix =
         AtomixCluster.builder()
             .withMemberId(clusterCfg.getMemberId())
@@ -61,6 +79,7 @@ public class StandaloneGateway {
                 BootstrapDiscoveryProvider.builder()
                     .withNodes(Address.from(clusterCfg.getContactPoint()))
                     .build())
+            .withMembershipProtocol(membershipProtocol)
             .build();
 
     atomix.start();

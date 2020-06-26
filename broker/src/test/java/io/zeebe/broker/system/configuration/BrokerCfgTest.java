@@ -590,6 +590,26 @@ public final class BrokerCfgTest {
     assertThat(arguments.get("username").asText()).isEqualTo("***");
   }
 
+  @Test
+  public void shouldSetCustomMembershipConfig() {
+    // when
+    final BrokerCfg brokerCfg = readConfig("membership-cfg");
+
+    // then
+    final var membershipCfg = brokerCfg.getCluster().getMembership();
+
+    assertThat(membershipCfg.isBroadcastDisputes()).isFalse();
+    assertThat(membershipCfg.isBroadcastUpdates()).isTrue();
+    assertThat(membershipCfg.isNotifySuspect()).isTrue();
+    assertThat(membershipCfg.getGossipInterval()).isEqualTo(Duration.ofSeconds(2));
+    assertThat(membershipCfg.getGossipFanout()).isEqualTo(3);
+    assertThat(membershipCfg.getProbeInterval()).isEqualTo(Duration.ofSeconds(3));
+    assertThat(membershipCfg.getProbeTimeout()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(membershipCfg.getSuspectProbes()).isEqualTo(5);
+    assertThat(membershipCfg.getFailureTimeout()).isEqualTo(Duration.ofSeconds(20));
+    assertThat(membershipCfg.getSyncInterval()).isEqualTo(Duration.ofSeconds(25));
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".yaml";
 

@@ -25,6 +25,8 @@ public final class GatewayCfgTest {
   private static final String EMPTY_CFG_FILENAME = "/configuration/gateway.empty.yaml";
   private static final String CUSTOM_CFG_FILENAME = "/configuration/gateway.custom.yaml";
   private static final GatewayCfg CUSTOM_CFG = new GatewayCfg();
+  private static final String CUSTOM_MEMBERSHIP_CFG_FILENAME =
+      "/configuration/gateway.membership.custom.yaml";
 
   static {
     DEFAULT_CFG.init();
@@ -116,6 +118,26 @@ public final class GatewayCfgTest {
   }
 
   @Test
+  public void shouldSetCustomMembershipConfig() {
+    // when
+    final GatewayCfg gatewayCfg = readConfig(CUSTOM_MEMBERSHIP_CFG_FILENAME);
+
+    // then
+    final var membershipCfg = gatewayCfg.getCluster().getMembership();
+
+    assertThat(membershipCfg.isBroadcastDisputes()).isFalse();
+    assertThat(membershipCfg.isBroadcastUpdates()).isTrue();
+    assertThat(membershipCfg.isNotifySuspect()).isTrue();
+    assertThat(membershipCfg.getGossipInterval()).isEqualTo(Duration.ofSeconds(2));
+    assertThat(membershipCfg.getGossipFanout()).isEqualTo(3);
+    assertThat(membershipCfg.getProbeInterval()).isEqualTo(Duration.ofSeconds(3));
+    assertThat(membershipCfg.getProbeTimeout()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(membershipCfg.getSuspectProbes()).isEqualTo(5);
+    assertThat(membershipCfg.getFailureTimeout()).isEqualTo(Duration.ofSeconds(20));
+    assertThat(membershipCfg.getSyncInterval()).isEqualTo(Duration.ofSeconds(25));
+  }
+
+  @Test
   public void shouldUseEnvironmentVariables() {
     // given
     setEnv("zeebe.gateway.network.host", "zeebe");
@@ -179,7 +201,7 @@ public final class GatewayCfgTest {
   }
 
   @Test
-  public void shoudldInitializeMonitoringCfgWhenInitIsCalled() {
+  public void shouldInitializeMonitoringCfgWhenInitIsCalled() {
     // given
     final GatewayCfg sutGatewayConfig = new GatewayCfg();
 

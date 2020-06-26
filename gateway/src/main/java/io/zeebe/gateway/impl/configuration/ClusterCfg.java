@@ -26,6 +26,7 @@ public final class ClusterCfg {
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
   private String host = DEFAULT_CLUSTER_HOST;
   private int port = DEFAULT_CLUSTER_PORT;
+  private MembershipCfg membership = new MembershipCfg();
 
   public String getMemberId() {
     return memberId;
@@ -79,6 +80,14 @@ public final class ClusterCfg {
   public ClusterCfg setClusterName(final String name) {
     clusterName = name;
     return this;
+  }
+
+  public MembershipCfg getMembership() {
+    return membership;
+  }
+
+  public void setMembership(final MembershipCfg membership) {
+    this.membership = membership;
   }
 
   @Override
