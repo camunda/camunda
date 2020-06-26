@@ -14,9 +14,7 @@ import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
-import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
-import io.zeebe.gateway.cmd.GrpcStatusException;
-import io.zeebe.gateway.cmd.GrpcStatusExceptionImpl;
+import io.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
 import io.zeebe.gateway.cmd.PartitionNotFoundException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.RequestRetryHandler;
@@ -376,19 +374,12 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       final GrpcRequestT grpcRequest,
       final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
       final StreamObserver<GrpcResponseT> streamObserver) {
-    final BrokerRequest<BrokerResponseT> brokerRequest;
     try {
-      brokerRequest = requestMapper.apply(grpcRequest);
-    } catch (final MsgpackPropertyException e) {
-      streamObserver.onError(
-          convertThrowable(
-              new GrpcStatusExceptionImpl(e.getMessage(), Status.INVALID_ARGUMENT, e)));
-      return null;
+      return requestMapper.apply(grpcRequest);
     } catch (final Exception e) {
       streamObserver.onError(convertThrowable(e));
       return null;
     }
-    return brokerRequest;
   }
 
   public static StatusRuntimeException convertThrowable(final Throwable cause) {
@@ -396,36 +387,45 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
     if (cause instanceof ExecutionException) {
       return convertThrowable(cause.getCause());
-    }
-
-    if (cause instanceof BrokerErrorException) {
+    } else if (cause instanceof BrokerErrorException) {
       status = mapBrokerErrorToStatus(((BrokerErrorException) cause).getError());
+      // When there is back pressure, there will be a lot of `RESOURCE_EXHAUSTED` errors and the log
+      // can get flooded. Until we find a way to limit the number of log messages,
+      // let's do not log them.
+      if (status.getCode() != Status.RESOURCE_EXHAUSTED.getCode()) {
+        Loggers.GATEWAY_LOGGER.error(
+            "Expected to handle gRPC request, but received error from broker", cause);
+      }
     } else if (cause instanceof BrokerRejectionException) {
       status = mapRejectionToStatus(((BrokerRejectionException) cause).getRejection());
-    } else if (cause instanceof ClientOutOfMemoryException) {
-      status = Status.UNAVAILABLE.augmentDescription(cause.getMessage());
+      Loggers.GATEWAY_LOGGER.debug(
+          "Expected to handle gRPC request, but broker rejected request", cause);
     } else if (cause instanceof TimeoutException) { // can be thrown by transport
       status =
           Status.DEADLINE_EXCEEDED.augmentDescription(
               "Time out between gateway and broker: " + cause.getMessage());
-    } else if (cause instanceof GrpcStatusException) {
-      status = ((GrpcStatusException) cause).getGrpcStatus();
+      Loggers.GATEWAY_LOGGER.debug(
+          "Expected to handle gRPC request, but request timed out between gateway and broker",
+          cause);
+    } else if (cause instanceof InvalidBrokerRequestArgumentException) {
+      status = Status.INVALID_ARGUMENT.augmentDescription(cause.getMessage());
+      Loggers.GATEWAY_LOGGER.debug(
+          "Expected to handle gRPC request, but broker argument was invalid", cause);
+    } else if (cause instanceof MsgpackPropertyException) {
+      status = Status.INVALID_ARGUMENT.augmentDescription(cause.getMessage());
+      Loggers.GATEWAY_LOGGER.debug(
+          "Expected to handle gRPC request, but messagepack property was invalid", cause);
     } else if (cause instanceof PartitionNotFoundException) {
       status = Status.NOT_FOUND.augmentDescription(cause.getMessage());
+      Loggers.GATEWAY_LOGGER.debug(
+          "Expected to handle gRPC request, but request could not be delivered", cause);
     } else {
       status = status.augmentDescription("Unexpected error occurred during the request processing");
+      Loggers.GATEWAY_LOGGER.error(
+          "Expected to handle gRPC request, but an unexpected error occurred", cause);
     }
 
-    final StatusRuntimeException convertedThrowable = status.withCause(cause).asRuntimeException();
-
-    // When there is back pressure, there will be a lot of `RESOURCE_EXHAUSTED` errors and the log
-    // can get flooded. Until we find a way to limit the number of log messages,
-    // let's do not log them.
-    if (status.getCode() != Status.RESOURCE_EXHAUSTED.getCode()) {
-      Loggers.GATEWAY_LOGGER.error("Error handling gRPC request", convertedThrowable);
-    }
-
-    return convertedThrowable;
+    return status.withCause(cause).asRuntimeException();
   }
 
   private static Status mapBrokerErrorToStatus(final BrokerError error) {

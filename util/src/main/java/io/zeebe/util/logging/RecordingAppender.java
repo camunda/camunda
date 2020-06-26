@@ -14,24 +14,41 @@ import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.ErrorHandler;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.appender.NullAppender;
 
 /**
  * An {@link Appender} decorator which delegates all method to the underlying appender while
  * recording all events it receives through {@link #append(LogEvent)}. These are accessible
- * afterwards through {@link #getAppendedEvents()}, in the order in which they were appended.
+ * afterwards through {@link #getAppendedEvents()}, in the order in which they were appended. The
+ * default underlying appender is a {@link NullAppender}.
+ *
+ * <p>Note, that the RecordingAppender when used to record the log events of a {@link
+ * io.zeebe.util.ZbLogger}, that the appender can only record logs starting at the enabled log
+ * level.
  */
-final class RecordingAppender implements Appender {
+// todo: move this class to zeebe-test-utils
+public final class RecordingAppender implements Appender {
   private final Appender delegate;
   private final List<LogEvent> appendedEvents;
 
+  /**
+   * Construct a RecordingAppender.
+   *
+   * @param delegate The underlying appender to delegate all log events to
+   */
   public RecordingAppender(final Appender delegate) {
     this.delegate = delegate;
     this.appendedEvents = new ArrayList<>();
   }
 
+  /** Construct a RecordingAppender using a NullAppender as underlying appender. */
+  public RecordingAppender() {
+    this(NullAppender.createAppender("RecordingAppender"));
+  }
+
   @Override
   public void append(final LogEvent event) {
-    appendedEvents.add(event);
+    appendedEvents.add(event.toImmutable());
     delegate.append(event);
   }
 
