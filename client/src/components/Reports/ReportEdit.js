@@ -11,7 +11,13 @@ import {Redirect, withRouter} from 'react-router-dom';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {ReportRenderer, LoadingIndicator, MessageBox, EntityNameForm} from 'components';
+import {
+  ReportRenderer,
+  LoadingIndicator,
+  MessageBox,
+  EntityNameForm,
+  InstanceCount,
+} from 'components';
 import {getOptimizeVersion} from 'config';
 
 import {
@@ -28,7 +34,6 @@ import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
 import {t} from 'translation';
 import ConflictModal from './ConflictModal';
-import InstanceCount from './InstanceCount';
 
 export class ReportEdit extends React.Component {
   state = {

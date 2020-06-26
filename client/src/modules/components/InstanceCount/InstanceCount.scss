@@ -4,13 +4,17 @@
   margin-top: 3px;
   height: 16px;
 
-  > .content {
+  .countString {
     font-size: 12px;
     color: $grey-lighten-56;
   }
 
   .Popover {
     display: inline;
+
+    .countString {
+      margin-bottom: 10px;
+    }
 
     .Popover__button {
       font-size: 12px;

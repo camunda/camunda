@@ -29,7 +29,7 @@ export const editButton = Selector('.edit-button');
 export const addButton = Selector('.AddButton');
 export const reportLabel = reportItem.find('.name .type');
 export const contextMenu = (entity) => entity.find('.Dropdown');
-export const dashboardReportLink = Selector('.OptimizeReport__heading');
+export const dashboardReportLink = Selector('.OptimizeReport .EntityName a');
 export const breadcrumb = (text) => Selector('.HeaderNav a').withText(text);
 export const dashboardView = Selector('.DashboardView');
 export const modalNameInput = Selector('.Modal input[type="text"]');

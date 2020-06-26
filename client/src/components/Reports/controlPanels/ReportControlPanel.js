@@ -8,23 +8,19 @@ import React from 'react';
 import equal from 'deep-equal';
 
 import {DefinitionSelection} from 'components';
+import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
-
-import ReportSelect from './ReportSelect';
-
-import {Filter} from './filter';
 import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables} from 'services';
-
-import {TargetValueComparison} from './targetValue';
-import {ProcessPart} from './ProcessPart';
-
-import {isDurationHeatmap, isProcessInstanceDuration} from './service';
-
-import {Configuration} from './Configuration';
-
-import './ReportControlPanel.scss';
 import {t} from 'translation';
 import {showError} from 'notifications';
+
+import ReportSelect from './ReportSelect';
+import {TargetValueComparison} from './targetValue';
+import {ProcessPart} from './ProcessPart';
+import {Configuration} from './Configuration';
+import {isDurationHeatmap, isProcessInstanceDuration} from './service';
+
+import './ReportControlPanel.scss';
 
 const {process: processConfig} = reportConfig;
 

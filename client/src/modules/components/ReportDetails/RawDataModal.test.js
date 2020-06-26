@@ -19,7 +19,7 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
-jest.mock('./newReport.json', () => ({new: {data: {configuration: {}}}}));
+jest.mock('config', () => ({newReport: {new: {data: {configuration: {}}}}}));
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),

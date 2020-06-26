@@ -91,7 +91,7 @@ export default class Popover extends React.Component {
       const buttonLeftPosition = this.buttonRef.getBoundingClientRect().left;
       const buttonBottomPosition = this.buttonRef.getBoundingClientRect().bottom;
       this.initilizeFooterRef();
-      const footerTop = this.footerRef.getBoundingClientRect().top;
+      const footerTop = this.footerRef?.getBoundingClientRect().top ?? 0;
 
       const bodyWidth = document.body.clientWidth;
       const margin = 10;

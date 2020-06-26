@@ -11,8 +11,7 @@ import {withErrorHandling} from 'HOC';
 import {evaluateReport} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
-
-import defaults from './newReport.json';
+import {newReport} from 'config';
 
 import './RawDataModal.scss';
 
@@ -21,7 +20,7 @@ export function RawDataModal({name, report, close, mightFail}) {
 
   useEffect(() => {
     const newType = report.type === 'decision' ? 'new-decision' : 'new';
-    const defaultReport = defaults[newType];
+    const defaultReport = newReport[newType];
 
     mightFail(
       evaluateReport({

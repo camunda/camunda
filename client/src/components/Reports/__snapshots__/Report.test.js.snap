@@ -3,73 +3,15 @@
 exports[`should apply templates from the location state 1`] = `
 Object {
   "configuration": Object {
-    "aggregationType": "avg",
-    "alwaysShowAbsolute": false,
-    "alwaysShowRelative": false,
-    "color": "#1991c8",
-    "columnOrder": Object {
-      "inputVariables": Array [],
-      "instanceProps": Array [],
-      "outputVariables": Array [],
-      "variables": Array [],
-    },
-    "distributedBy": "none",
-    "excludedColumns": Array [],
-    "flowNodeExecutionState": "all",
-    "heatmapTargetValue": Object {
-      "active": false,
-      "values": Object {},
-    },
-    "hiddenNodes": Object {
-      "active": false,
-      "keys": Array [],
-    },
-    "hideAbsoluteValue": false,
-    "hideRelativeValue": false,
-    "pointMarkers": true,
-    "precision": null,
-    "processPart": null,
-    "showGradientBars": true,
-    "showInstanceCount": false,
-    "sorting": null,
-    "targetValue": Object {
-      "active": false,
-      "countChart": Object {
-        "isBelow": false,
-        "value": "100",
-      },
-      "countProgress": Object {
-        "baseline": "0",
-        "target": "100",
-      },
-      "durationChart": Object {
-        "isBelow": false,
-        "unit": "hours",
-        "value": "2",
-      },
-      "durationProgress": Object {
-        "baseline": Object {
-          "unit": "hours",
-          "value": "0",
-        },
-        "target": Object {
-          "unit": "hours",
-          "value": "2",
-        },
-      },
-    },
-    "userTaskDurationTime": "total",
-    "xlabel": "",
+    "data": "rest of configuration",
     "xml": "processXML",
-    "ylabel": "",
   },
-  "filter": Array [],
   "groupBy": Object {
     "type": "flowNodes",
     "value": null,
   },
   "processDefinitionKey": "key",
-  "processDefinitionName": null,
+  "processDefinitionName": "Definition Name",
   "processDefinitionVersions": Array [
     "latest",
   ],

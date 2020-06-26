@@ -10,11 +10,10 @@ import moment from 'moment';
 import {withErrorHandling, withUser} from 'HOC';
 import {ErrorPage, LoadingIndicator} from 'components';
 import {evaluateReport} from 'services';
+import {newReport} from 'config';
 
 import ReportEdit from './ReportEdit';
 import ReportView from './ReportView';
-
-import newReport from './newReport.json';
 
 import './Report.scss';
 import {t} from 'translation';

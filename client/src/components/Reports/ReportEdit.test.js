@@ -11,9 +11,7 @@ import {ReportEdit} from './ReportEdit';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {EntityNameForm} from 'components';
-
-import InstanceCount from './InstanceCount';
+import {EntityNameForm, InstanceCount} from 'components';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');

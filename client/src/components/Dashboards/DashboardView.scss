@@ -14,6 +14,12 @@
 }
 
 .DashboardView {
+  .OptimizeReport:hover {
+    .Popover__button {
+      opacity: 1;
+    }
+  }
+
   .share-button .Popover__dialog {
     padding: 20px 40px;
   }

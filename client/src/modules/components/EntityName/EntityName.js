@@ -5,12 +5,13 @@
  */
 
 import React, {useState, useRef, useEffect} from 'react';
+import {Link} from 'react-router-dom';
 
 import {Popover} from 'components';
 
 import './EntityName.scss';
 
-export default function EntityName({children, details}) {
+export default function EntityName({children, details, linkTo}) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [hovering, setHovering] = useState(false);
   const nameRef = useRef(null);
@@ -20,17 +21,23 @@ export default function EntityName({children, details}) {
     setShowTooltip(node?.scrollWidth > node?.clientWidth);
   }, [setShowTooltip, nameRef, children]);
 
+  const titleProps = {
+    className: 'name',
+    ref: nameRef,
+    onMouseEnter: () => setHovering(true),
+    onMouseLeave: () => setHovering(false),
+  };
+
   return (
     <div className="EntityName">
       <div className="name-container">
-        <h1
-          className="name"
-          ref={nameRef}
-          onMouseEnter={() => setHovering(true)}
-          onMouseLeave={() => setHovering(false)}
-        >
-          {children}
-        </h1>
+        {linkTo ? (
+          <Link to={linkTo} {...titleProps}>
+            {children}
+          </Link>
+        ) : (
+          <h1 {...titleProps}>{children}</h1>
+        )}
         {details && <Popover icon="down">{details}</Popover>}
       </div>
       {showTooltip && hovering && (

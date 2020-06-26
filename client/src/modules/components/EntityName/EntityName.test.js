@@ -17,3 +17,11 @@ it('should show details content in a popover', () => {
   expect(node.find(Popover)).toExist();
   expect(node.find(Popover).prop('children')).toBe('some details');
 });
+
+it('should render a Link if linkTo is set', () => {
+  const node = shallow(<EntityName linkTo="report/1/">My Report</EntityName>);
+
+  expect(node.find('h1')).not.toExist();
+  expect(node.find('Link')).toExist();
+  expect(node.find('Link').prop('to')).toBe('report/1/');
+});

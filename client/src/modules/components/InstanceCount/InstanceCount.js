@@ -7,12 +7,11 @@
 import React, {useState} from 'react';
 
 import {Popover} from 'components';
+import {FilterList} from 'filter';
 import {getFlowNodeNames, loadInputVariables, loadOutputVariables} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
-
-import {FilterList} from './controlPanels/filter';
 
 import './InstanceCount.scss';
 
@@ -65,20 +64,21 @@ export function InstanceCount({report, noInfo, mightFail}) {
           }}
         >
           <Popover title={t('report.instanceCount.appliedFilters')} disabled={noInfo}>
+            <div className="countString">
+              {typeof instanceCount === 'number' &&
+                t(`report.instanceCount.reportFilters${instanceCount !== 1 ? '-plural' : ''}`, {
+                  count: instanceCount,
+                })}
+            </div>
             <FilterList data={data.filter} flowNodeNames={flowNodeNames} variables={variables} />
           </Popover>
         </span>
       )}{' '}
-      <span className="content">
+      <span className="countString">
         {typeof instanceCount === 'number' &&
-          t(
-            `report.instanceCount.label${instanceCount !== 1 ? '-plural' : ''}${
-              hasFilter ? '-withFilter' : ''
-            }`,
-            {
-              count: instanceCount,
-            }
-          )}
+          t(`report.instanceCount.label${instanceCount !== 1 ? '-plural' : ''}`, {
+            count: instanceCount,
+          })}
       </span>
     </div>
   );

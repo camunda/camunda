@@ -8,20 +8,17 @@ import React from 'react';
 import equal from 'deep-equal';
 
 import {DefinitionSelection} from 'components';
-
-import {Configuration} from './Configuration';
-import ReportSelect from './ReportSelect';
-
-import {DecisionFilter} from './filter';
-
+import {DecisionFilter} from 'filter';
 import {
   loadInputVariables,
   loadOutputVariables,
   reportConfig,
   loadDecisionDefinitionXml,
 } from 'services';
-
 import {t} from 'translation';
+
+import {Configuration} from './Configuration';
+import ReportSelect from './ReportSelect';
 
 const {decision: decisionConfig} = reportConfig;
 

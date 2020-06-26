@@ -123,3 +123,25 @@ it('should limit the height and show scrollbar when there is not space', () => {
   expect(node.state().dialogStyles.height).toBe('80px');
   expect(node.find('.Popover__dialog')).toHaveClassName('scrollable');
 });
+
+it('should not crash on pages without a footer', () => {
+  const node = shallow(
+    <Popover title="a">
+      <p>Child content</p>
+    </Popover>
+  );
+
+  node.instance().buttonRef = {
+    getBoundingClientRect: () => ({left: 0, bottom: 0}),
+  };
+
+  node.instance().popoverDialogRef = {
+    clientWidth: 50,
+    clientHeight: 200,
+  };
+
+  node.instance().calculateDialogStyle();
+  node.setState({open: true});
+  node.update();
+  expect(node.find('.Popover__dialog')).toExist();
+});

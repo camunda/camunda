@@ -1,55 +1,60 @@
-.OptimizeReport__visualization {
-  position: absolute;
-  top: 2em;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  overflow: auto;
+@import 'shared-styles/shared-styles.scss';
+
+.OptimizeReport {
   padding: 10px;
-}
 
-.OptimizeReport__header {
-  position: absolute;
-  top: 0;
-  height: 2em;
-  left: 0;
-  right: 0;
-  line-height: 2em;
-  font-weight: bold;
-  padding-left: 10px;
-  padding-right: 25px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .titleBar {
+    display: flex;
 
-.OptimizeReport__heading {
-  font-size: 21px;
-  margin: 0;
-  font-weight: bold;
-  text-decoration: none;
-  color: #6c737f;
-}
+    .Popover__button {
+      opacity: 0;
 
-.OptimizeReport__heading:active,
-.OptimizeReport__heading:visited {
-  color: #6c737f;
-}
-
-.OptimizeReport__visualization {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-
-  .Table {
-    table-layout: fixed;
-    min-width: 100%;
+      &.active,
+      &.focus-visible {
+        opacity: 1;
+      }
+    }
   }
-}
 
-.dark {
-  .OptimizeReport__heading,
-  .OptimizeReport__heading:active {
-    color: #ddd;
+  .EntityName {
+    .Popover {
+      margin-top: -2px;
+    }
+
+    .name-container .name {
+      font-size: 14px;
+      line-height: 18px;
+      font-weight: 500;
+      color: $grey-darken-23;
+    }
+  }
+
+  .InstanceCount {
+    margin-top: 0;
+    > .countString {
+      display: none;
+    }
+
+    .Popover__button {
+      vertical-align: middle;
+    }
+  }
+
+  .visualization {
+    position: absolute;
+    top: 33px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow: auto;
+    padding: inherit;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+
+    .Table {
+      table-layout: fixed;
+      min-width: 100%;
+    }
   }
 }

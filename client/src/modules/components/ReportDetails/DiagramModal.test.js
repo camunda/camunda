@@ -11,11 +11,6 @@ import {BPMNDiagram, DMNDiagram} from 'components';
 
 import DiagramModal from './DiagramModal';
 
-jest.mock('./newReport.json', () => {
-  const report = {data: {configuration: {}}};
-  return {new: report, 'new-decision': report};
-});
-
 const props = {
   report: {
     data: {

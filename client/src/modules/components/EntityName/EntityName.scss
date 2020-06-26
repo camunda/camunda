@@ -97,3 +97,9 @@
     }
   }
 }
+
+.dark .EntityName {
+  .name-container .name {
+    color: $silver-darken-87;
+  }
+}

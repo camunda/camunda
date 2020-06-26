@@ -13,6 +13,10 @@ import ReportView from './ReportView';
 
 import {loadEntity, evaluateReport} from 'services';
 
+jest.mock('config', () => ({
+  newReport: {new: {data: {configuration: {data: 'rest of configuration'}}}},
+}));
+
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
@@ -86,6 +90,7 @@ it('should apply templates from the location state', async () => {
           data: {
             configuration: {xml: 'processXML'},
             processDefinitionKey: 'key',
+            processDefinitionName: 'Definition Name',
             processDefinitionVersions: ['latest'],
             tenantIds: [null, 'a'],
             view: {entity: 'flowNode', property: 'frequency'},

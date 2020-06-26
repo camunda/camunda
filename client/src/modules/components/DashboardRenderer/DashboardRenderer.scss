@@ -5,13 +5,16 @@
   width: calc(100% + 20px);
 
   .grid-entry {
-    overflow: auto;
     background-color: white;
     border: 1px solid lightgray;
     display: flex;
     border-radius: 4px;
     flex-grow: 1;
     transition: none;
+
+    &:focus-within {
+      z-index: var(--z-above);
+    }
   }
 
   .react-grid-placeholder {

@@ -9,10 +9,8 @@ import {shallow} from 'enzyme';
 
 import ReportView from './ReportView';
 
-import {Deleter, ReportRenderer} from 'components';
+import {Deleter, ReportRenderer, InstanceCount} from 'components';
 import {checkDeleteConflict} from 'services';
-
-import InstanceCount from './InstanceCount';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');

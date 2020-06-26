@@ -45,3 +45,5 @@ export {EntityList} from './EntityList';
 export {UserTypeahead} from './UserTypeahead';
 export {DateRangeInput} from './DateRangeInput';
 export {LastModifiedInfo} from './LastModifiedInfo';
+export {ReportDetails} from './ReportDetails';
+export {InstanceCount} from './InstanceCount';

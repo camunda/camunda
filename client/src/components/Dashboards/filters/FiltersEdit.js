@@ -10,13 +10,12 @@ import useDeepCompareEffect from 'use-deep-compare-effect';
 import {getVariableNames, getVariableValues} from './service';
 
 import {ActionItem, Dropdown} from 'components';
+import {VariableFilter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
 import './FiltersEdit.scss';
-
-import {VariableFilter} from '../../Reports';
 
 export function FiltersEdit({availableFilters, setAvailableFilters, reports = [], mightFail}) {
   const [showVariableModal, setShowVariableModal] = useState(false);

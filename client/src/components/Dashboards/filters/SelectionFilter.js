@@ -8,9 +8,8 @@ import React from 'react';
 import classnames from 'classnames';
 
 import {Popover, Form, Switch, Button, Icon} from 'components';
+import {VariablePreview} from 'filter';
 import {t} from 'translation';
-
-import {VariablePreview} from '../../Reports';
 
 import './SelectionFilter.scss';
 

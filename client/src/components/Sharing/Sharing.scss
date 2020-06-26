@@ -32,4 +32,10 @@
   .Table {
     min-width: 25%;
   }
+
+  .OptimizeReport:hover {
+    .Popover__button {
+      opacity: 1;
+    }
+  }
 }

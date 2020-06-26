@@ -7,13 +7,21 @@
 import React from 'react';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, ShareEntity, ReportRenderer, Popover, Icon, Deleter, EntityName} from 'components';
+import {
+  Button,
+  ShareEntity,
+  ReportRenderer,
+  Popover,
+  Icon,
+  Deleter,
+  EntityName,
+  InstanceCount,
+  ReportDetails,
+} from 'components';
 import {isSharingEnabled} from 'config';
 import {checkDeleteConflict} from 'services';
 import {t} from 'translation';
 
-import ReportDetails from './ReportDetails';
-import InstanceCount from './InstanceCount';
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
 
 import './ReportView.scss';
