@@ -11,6 +11,12 @@
   ],
   "__requires": [
     {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
@@ -50,6 +56,7 @@
   "annotations": {
     "list": [
       {
+        "$$hashKey": "object:47",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -64,7 +71,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1591877809149,
+  "iteration": 1593111084962,
   "links": [],
   "panels": [
     {
@@ -79,6 +86,118 @@
       "id": 56,
       "panels": [
         {
+          "datasource": "$DS_PROMETHEUS",
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 1
+          },
+          "id": 137,
+          "links": [],
+          "options": {
+            "fieldOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "defaults": {
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 100
+                    }
+                  ]
+                },
+                "title": ""
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "auto",
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "6.7.1",
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_stream_processor_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"processed\"}[1m])) by (pod, partition, processor, action)",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}}-{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Processing per Partition",
+          "type": "gauge"
+        },
+        {
+          "datasource": "$DS_PROMETHEUS",
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 1
+          },
+          "id": 138,
+          "links": [],
+          "options": {
+            "fieldOptions": {
+              "calcs": [
+                "last"
+              ],
+              "defaults": {
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 100
+                    }
+                  ]
+                },
+                "title": ""
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "auto",
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "6.7.1",
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (pod, partition, exporter)",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}}-{{partition}}",
+              "refId": "B"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Exporting per Partition",
+          "type": "gauge"
+        },
+        {
           "columns": [
             {
               "text": "Current",
@@ -91,7 +210,7 @@
             "h": 9,
             "w": 5,
             "x": 0,
-            "y": 1
+            "y": 7
           },
           "id": 68,
           "links": [],
@@ -213,7 +332,7 @@
             "h": 9,
             "w": 9,
             "x": 5,
-            "y": 1
+            "y": 7
           },
           "hiddenSeries": false,
           "id": 116,
@@ -320,7 +439,7 @@
             "h": 9,
             "w": 5,
             "x": 14,
-            "y": 1
+            "y": 7
           },
           "id": 129,
           "pageSize": null,
@@ -426,7 +545,7 @@
             "h": 9,
             "w": 5,
             "x": 19,
-            "y": 1
+            "y": 7
           },
           "id": 54,
           "pageSize": null,
@@ -515,7 +634,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 10
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 58,
@@ -628,7 +747,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 10
+            "y": 16
           },
           "id": 117,
           "interval": null,
@@ -703,7 +822,7 @@
             "h": 8,
             "w": 9,
             "x": 15,
-            "y": 10
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 74,
@@ -804,7 +923,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 14
+            "y": 20
           },
           "id": 118,
           "interval": null,
@@ -879,7 +998,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 18
+            "y": 24
           },
           "hiddenSeries": false,
           "id": 87,
@@ -990,7 +1109,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 24
           },
           "hiddenSeries": false,
           "id": 31,
@@ -1101,7 +1220,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 26
+            "y": 32
           },
           "hiddenSeries": false,
           "id": 62,
@@ -1191,7 +1310,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 26
+            "y": 32
           },
           "hiddenSeries": false,
           "id": 93,
@@ -1302,12 +1421,11 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 2
+            "y": 44
           },
           "hideTimeOverride": false,
           "id": 12,
           "links": [],
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -1361,12 +1479,11 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 2
+            "y": 44
           },
           "hideTimeOverride": false,
           "id": 13,
           "links": [],
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -1425,8 +1542,9 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 49
           },
+          "hiddenSeries": false,
           "id": 2,
           "legend": {
             "avg": false,
@@ -1521,8 +1639,9 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 49
           },
+          "hiddenSeries": false,
           "id": 3,
           "legend": {
             "avg": false,
@@ -1617,8 +1736,9 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 55
           },
+          "hiddenSeries": false,
           "id": 4,
           "legend": {
             "avg": false,
@@ -1713,8 +1833,9 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 55
           },
+          "hiddenSeries": false,
           "id": 5,
           "legend": {
             "avg": false,
@@ -1809,8 +1930,9 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 61
           },
+          "hiddenSeries": false,
           "id": 15,
           "legend": {
             "avg": false,
@@ -1912,8 +2034,9 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 61
           },
+          "hiddenSeries": false,
           "id": 18,
           "legend": {
             "avg": false,
@@ -4312,7 +4435,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 73
+            "y": 50
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4376,7 +4499,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 73
+            "y": 50
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4435,7 +4558,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 79
+            "y": 56
           },
           "hiddenSeries": false,
           "id": 79,
@@ -4527,7 +4650,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 79
+            "y": 56
           },
           "hiddenSeries": false,
           "id": 114,
@@ -4620,7 +4743,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 86
+            "y": 63
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4684,7 +4807,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 86
+            "y": 63
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4749,7 +4872,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 93
+            "y": 70
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4809,7 +4932,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 93
+            "y": 70
           },
           "hiddenSeries": false,
           "id": 72,
@@ -4903,7 +5026,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 101
+            "y": 78
           },
           "hiddenSeries": false,
           "id": 95,
@@ -5260,7 +5383,7 @@
     "list": [
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -5382,5 +5505,5 @@
   "variables": {
     "list": []
   },
-  "version": 3
+  "version": 4
 }
