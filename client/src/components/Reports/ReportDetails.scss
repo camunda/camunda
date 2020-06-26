@@ -1,24 +1,18 @@
 @import 'shared-styles/shared-styles.scss';
 
 .ReportDetails {
-  .nowrap {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  dl {
+    margin: 0;
 
-  .modalsButtons .Button {
-    font-size: 12px;
-    margin-right: 22px;
-  }
+    dt {
+      font-size: 12px;
+      color: $grey-lighten-56;
+    }
 
-  hr {
-    border: none;
-    border-bottom: 1px solid $silver-darken-87;
-    margin: 20px 0;
-
-    &:first-child {
-      display: none;
+    dd {
+      margin: 3px 0 10px;
+      font-size: 14px;
+      color: $grey-darken-33;
     }
   }
 }

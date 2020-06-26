@@ -1,0 +1,28 @@
+@import 'shared-styles/shared-styles.scss';
+
+.SingleReportDetails {
+  h2 {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .nowrap {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .modalsButtons .Button {
+    font-size: 12px;
+
+    &:first-child {
+      margin-right: 22px;
+    }
+  }
+
+  hr {
+    border: none;
+    border-bottom: 1px solid $silver-darken-87;
+    margin: 20px 0;
+  }
+}
