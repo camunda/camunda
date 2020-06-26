@@ -665,7 +665,7 @@ public class DefinitionReader {
         if (ProcessDefinitionOptimizeDto.class.equals(type)) {
           ProcessDefinitionOptimizeDto processDefinition = (ProcessDefinitionOptimizeDto) definitionDto;
           processDefinition.setType(DefinitionType.PROCESS);
-          processDefinition.setIsEventBased(resolveIsEventProcessFromIndexAlias(hit.getIndex()));
+          processDefinition.setEventBased(resolveIsEventProcessFromIndexAlias(hit.getIndex()));
         } else {
           definitionDto.setType(DefinitionType.DECISION);
         }

@@ -24,7 +24,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
   private Map<String, String> flowNodeNames = new HashMap<>();
   private Map<String, String> userTaskNames = new HashMap<>();
   @JsonIgnore
-  private Boolean isEventBased;
+  private boolean eventBased;
 
   public ProcessDefinitionOptimizeDto() {
     this.setType(DefinitionType.PROCESS);

@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
@@ -196,23 +197,27 @@ public class DefinitionRestService {
     if (!definitionDto.isPresent()) {
       logAndThrowNotFoundException(type, key, version);
     }
+    final Response.ResponseBuilder responseBuilder = Response.ok().type(MediaType.APPLICATION_XML);
+    if (ReportConstants.LATEST_VERSION.equals(version)) {
+      addNoStoreCacheHeader(responseBuilder);
+    }
     switch (type) {
       case PROCESS:
         final ProcessDefinitionOptimizeDto processDef = (ProcessDefinitionOptimizeDto) definitionDto.get();
-        final Response.ResponseBuilder processResponse = Response.ok(
-          processDef.getBpmn20Xml(),
-          MediaType.APPLICATION_XML
-        );
-        if (Boolean.TRUE.equals(processDef.getIsEventBased())) {
-          addNoStoreCacheHeader(processResponse);
+        responseBuilder.entity(processDef.getBpmn20Xml());
+        if (processDef.isEventBased()) {
+          addNoStoreCacheHeader(responseBuilder);
         }
-        return processResponse.build();
+        break;
       case DECISION:
         final DecisionDefinitionOptimizeDto decisionDef = (DecisionDefinitionOptimizeDto) definitionDto.get();
-        return Response.ok(decisionDef.getDmn10Xml(), MediaType.APPLICATION_XML).build();
+        responseBuilder.entity(decisionDef.getDmn10Xml());
+        break;
       default:
         throw new BadRequestException("Unknown DefinitionType:" + type);
     }
+
+    return responseBuilder.build();
   }
 
   private void addNoStoreCacheHeader(final Response.ResponseBuilder processResponse) {

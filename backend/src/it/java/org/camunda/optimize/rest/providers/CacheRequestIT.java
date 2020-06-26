@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
@@ -56,9 +57,6 @@ public class CacheRequestIT extends AbstractIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitionXmlRequest_cacheControlHeadersAreNotSetOnNon2xxStatusResponse(DefinitionType type) {
     // given
-    OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
-    LocalDateUtil.setCurrentTime(now);
-
     String key = "test", version = "1";
     createAndSaveDefinitionToElasticsearch(key, version, type, false, null);
 
@@ -75,13 +73,32 @@ public class CacheRequestIT extends AbstractIT {
   }
 
   @Test
-  public void getDefinitionXmlRequest_cacheControlHeadersAreNotIncludedForEventBasedProcesses() {
+  public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForEventBasedProcesses() {
     // given
     String key = "test", version = "1";
     createAndSaveDefinitionToElasticsearch(key, version, DefinitionType.PROCESS, true, null);
 
     // when
     Response response = executeDefinitionRequest(key, version, DefinitionType.PROCESS);
+
+    // then
+    final MultivaluedMap<String, Object> headers = response.getHeaders();
+
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(headers).isNotNull();
+    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains("no-store");
+    assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForLatestVersion(DefinitionType type) {
+    // given
+    String key = "test", version = "1";
+    createAndSaveDefinitionToElasticsearch(key, version, type, false, "1");
+
+    // when
+    Response response = executeDefinitionRequest(key, ReportConstants.LATEST_VERSION, type);
 
     // then
     final MultivaluedMap<String, Object> headers = response.getHeaders();

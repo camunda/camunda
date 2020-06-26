@@ -119,7 +119,7 @@ public class DefinitionAuthorizationService {
 
   public boolean isAuthorizedToAccessProcessDefinition(final String userId,
                                                        final ProcessDefinitionOptimizeDto processDefinition) {
-    if (Boolean.TRUE.equals(processDefinition.getIsEventBased())) {
+    if (processDefinition.isEventBased()) {
       return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey()).orElse(false);
     } else {
       return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
