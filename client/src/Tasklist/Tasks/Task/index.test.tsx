@@ -73,7 +73,6 @@ describe('<Task />', () => {
       },
     );
 
-    // @ts-ignore - we need to wait for the next release of @testing-library/jest-dom to remove this ignore
     expect(screen.getByTestId('creation-time')).toBeEmptyDOMElement();
     global.console.error = originalConsoleError;
   });
