@@ -1,2 +1,2 @@
 "decisionDefinitionKey","decisionDefinitionId","decisionInstanceId","evaluationDateTime","engineName","tenantId","input:categoryInput","input:amountInput","output:classificationOutput","output:auditOutput"
-"invoiceClassification","${DD_ID}","${DI_ID}","2019-01-29T18:20:23.277+01:00","1",,"Misc","200.0","day-to-day expense","false"
+"invoiceClassification","${DD_ID}","${DI_ID}","2019-01-29T18:20:23.277+01:00","camunda-bpm",,"Misc","200.0","day-to-day expense","false"

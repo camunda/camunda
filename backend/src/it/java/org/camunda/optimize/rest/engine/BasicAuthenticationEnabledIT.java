@@ -27,6 +27,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.RE
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -35,14 +36,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class BasicAuthenticationEnabledIT extends AbstractIT {
 
   private static final String HTTP_LOCALHOST = "http://localhost:8080";
-  private static final String DEFAULT_ENGINE = "1";
   private static final String TEST_USERNAME = "genzo";
   private static final String TEST_PASSWORD = "genzo";
 
   @BeforeEach
   public void init() {
     EngineConfiguration engineConfiguration = embeddedOptimizeExtension
-      .getConfigurationService().getConfiguredEngines().get(DEFAULT_ENGINE);
+      .getConfigurationService().getConfiguredEngines().get(DEFAULT_ENGINE_ALIAS);
     engineConfiguration.getAuthentication().setEnabled(true);
     engineConfiguration.getAuthentication().setPassword(TEST_USERNAME);
     engineConfiguration.getAuthentication().setUser(TEST_PASSWORD);
@@ -56,7 +56,7 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
   @AfterEach
   public void cleanup() {
     EngineConfiguration engineConfiguration = embeddedOptimizeExtension
-      .getConfigurationService().getConfiguredEngines().get(DEFAULT_ENGINE);
+      .getConfigurationService().getConfiguredEngines().get(DEFAULT_ENGINE_ALIAS);
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-rest");
   }

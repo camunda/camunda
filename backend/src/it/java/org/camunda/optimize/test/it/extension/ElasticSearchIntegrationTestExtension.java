@@ -291,7 +291,10 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
-    return getLastImportTimestampOfTimestampBasedImportIndex(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME, "1");
+    return getLastImportTimestampOfTimestampBasedImportIndex(
+      ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME,
+      EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS
+    );
   }
 
   private OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String esType, final String engine)

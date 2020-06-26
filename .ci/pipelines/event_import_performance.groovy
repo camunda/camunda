@@ -195,7 +195,7 @@ pipeline {
                 set -o pipefail
 
                 # ingest events
-                bash .ci/pipelines/event_import_performance/ingestEvents.sh ${NAMESPACE} .ci/pipelines/event_import_performance/eventTemplates ${EXTERNAL_EVENT_COUNT} secret
+                bash .ci/pipelines/event_import_performance/ingestEvents.sh ${NAMESPACE} ${EXTERNAL_EVENT_COUNT} secret
 
                 curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
                 # assert expected counts

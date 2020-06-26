@@ -1,6 +1,6 @@
 ---
 engines:
-  '1':
+  'camunda-bpm':
     name: ${prefixedDefaultEngineName:integrationTest}
     rest: 'http://localhost:8080/engine-rest/ding-dong-you-rest-path-is-wrong'
     authentication:

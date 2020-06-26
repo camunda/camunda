@@ -12,11 +12,13 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +26,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
@@ -55,6 +58,16 @@ public class ProcessInstanceReader {
     );
   }
 
+  public PageResultDto<String> getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(final String processDefinitionKey,
+                                                                                              final OffsetDateTime endDate,
+                                                                                              final Integer limit,
+                                                                                              final PageResultDto<String> previousPage) {
+    return getNextPageOfProcessInstanceIds(
+      previousPage,
+      () -> getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(processDefinitionKey, endDate, limit)
+    );
+  }
+
   public PageResultDto<String> getFirstPageOfProcessInstanceIdsThatEndedBefore(final String processDefinitionKey,
                                                                                final OffsetDateTime endDate,
                                                                                final Integer limit) {
@@ -66,18 +79,38 @@ public class ProcessInstanceReader {
     );
   }
 
-  public PageResultDto<String> getNextPageOfProcessInstanceIds(final PageResultDto<String> previousPage) {
+  public PageResultDto<String> getNextPageOfProcessInstanceIdsThatEndedBefore(final String processDefinitionKey,
+                                                                              final OffsetDateTime endDate,
+                                                                              final Integer limit,
+                                                                              final PageResultDto<String> previousPage) {
+    return getNextPageOfProcessInstanceIds(
+      previousPage,
+      () -> getFirstPageOfProcessInstanceIdsThatEndedBefore(processDefinitionKey, endDate, limit)
+    );
+  }
+
+  private PageResultDto<String> getNextPageOfProcessInstanceIds(final PageResultDto<String> previousPage,
+                                                                final Supplier<PageResultDto<String>> firstPageFetchFunction) {
     if (previousPage.isLastPage()) {
       return new PageResultDto<>(previousPage.getLimit());
     }
-    return ElasticsearchReaderUtil.retrieveNextScrollResultsPage(
-      previousPage.getPagingState(),
-      String.class,
-      searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID),
-      esClient,
-      configurationService.getElasticsearchScrollTimeout(),
-      previousPage.getLimit()
-    );
+    try {
+      return ElasticsearchReaderUtil.retrieveNextScrollResultsPage(
+        previousPage.getPagingState(),
+        String.class,
+        searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID),
+        esClient,
+        configurationService.getElasticsearchScrollTimeout(),
+        previousPage.getLimit()
+      );
+    } catch (ElasticsearchStatusException e) {
+      if (RestStatus.NOT_FOUND.equals(e.status())) {
+        // this error occurs when the scroll id expired in the meantime, thus just restart it
+        return firstPageFetchFunction.get();
+      } else {
+        throw e;
+      }
+    }
   }
 
   private PageResultDto<String> getFirstPageOfProcessInstanceIdsForFilter(final BoolQueryBuilder filterQuery,

@@ -36,6 +36,7 @@ import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler.DECISION_DEFINITION_IMPORT_INDEX_DOC_ID;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -380,7 +381,7 @@ public class DecisionImportIT extends AbstractImportIT {
   }
 
   private SearchResponse getDecisionDefinitionIndexById() throws IOException {
-    final String decisionDefinitionIndexId = DECISION_DEFINITION_IMPORT_INDEX_DOC_ID + "-1";
+    final String decisionDefinitionIndexId = DECISION_DEFINITION_IMPORT_INDEX_DOC_ID + "-" + DEFAULT_ENGINE_ALIAS;
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termsQuery("_id", decisionDefinitionIndexId))
       .size(100);

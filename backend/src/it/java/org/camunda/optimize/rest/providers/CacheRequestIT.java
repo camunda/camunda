@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.providers;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -25,6 +26,9 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -39,7 +43,7 @@ public class CacheRequestIT extends AbstractIT {
     LocalDateUtil.setCurrentTime(now);
 
     String key = "test", version = "1";
-    createAndSaveDefinitionToElasticsearch(key, version, type, false, "1");
+    createAndSaveDefinitionToElasticsearch(key, version, type, false);
 
     // when
     Response response = executeDefinitionRequest(key, version, type);
@@ -58,10 +62,12 @@ public class CacheRequestIT extends AbstractIT {
   public void getDefinitionXmlRequest_cacheControlHeadersAreNotSetOnNon2xxStatusResponse(DefinitionType type) {
     // given
     String key = "test", version = "1";
-    createAndSaveDefinitionToElasticsearch(key, version, type, false, null);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.revokeAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
+    createAndSaveDefinitionToElasticsearch(key, version, type, false);
 
     // when
-    Response response = executeDefinitionRequest(key, version, type);
+    Response response = executeDefinitionRequest(key, version, type, KERMIT_USER, KERMIT_USER);
 
     // then
     final MultivaluedMap<String, Object> headers = response.getHeaders();
@@ -76,7 +82,7 @@ public class CacheRequestIT extends AbstractIT {
   public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForEventBasedProcesses() {
     // given
     String key = "test", version = "1";
-    createAndSaveDefinitionToElasticsearch(key, version, DefinitionType.PROCESS, true, null);
+    createAndSaveDefinitionToElasticsearch(key, version, DefinitionType.PROCESS, true);
 
     // when
     Response response = executeDefinitionRequest(key, version, DefinitionType.PROCESS);
@@ -95,7 +101,7 @@ public class CacheRequestIT extends AbstractIT {
   public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForLatestVersion(DefinitionType type) {
     // given
     String key = "test", version = "1";
-    createAndSaveDefinitionToElasticsearch(key, version, type, false, "1");
+    createAndSaveDefinitionToElasticsearch(key, version, type, false);
 
     // when
     Response response = executeDefinitionRequest(key, ReportConstants.LATEST_VERSION, type);
@@ -109,15 +115,16 @@ public class CacheRequestIT extends AbstractIT {
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 
-  private void createAndSaveDefinitionToElasticsearch(final String key, final String version,
-                                                      final DefinitionType type, final boolean isEventBased,
-                                                      final String engine) {
+  private void createAndSaveDefinitionToElasticsearch(final String key,
+                                                      final String version,
+                                                      final DefinitionType type,
+                                                      final boolean isEventBased) {
     switch (type) {
       case DECISION:
         DecisionDefinitionOptimizeDto decisionDefinitionDto = new DecisionDefinitionOptimizeDto();
         decisionDefinitionDto.setDmn10Xml("DecisionModelXml");
         decisionDefinitionDto.setKey(key);
-        decisionDefinitionDto.setEngine(engine);
+        decisionDefinitionDto.setEngine(DEFAULT_ENGINE_ALIAS);
         decisionDefinitionDto.setVersion(version);
         decisionDefinitionDto.setId("id-" + key + "-version-" + version);
         elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
@@ -133,7 +140,7 @@ public class CacheRequestIT extends AbstractIT {
           processDefinitionOptimizeDto.setBpmn20Xml("ProcessModelXml");
           processDefinitionOptimizeDto.setKey(key);
           processDefinitionOptimizeDto.setVersion(version);
-          processDefinitionOptimizeDto.setEngine(engine);
+          processDefinitionOptimizeDto.setEngine(DEFAULT_ENGINE_ALIAS);
           processDefinitionOptimizeDto.setId("id-" + key + "-version-" + version);
           elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
             PROCESS_DEFINITION_INDEX_NAME, processDefinitionOptimizeDto.getId(), processDefinitionOptimizeDto
@@ -143,16 +150,27 @@ public class CacheRequestIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private Response executeDefinitionRequest(String key, String version, DefinitionType type) {
+  private Response executeDefinitionRequest(final String key, final String version, final DefinitionType type) {
+    return executeDefinitionRequest(key, version, type, null, null);
+  }
+
+  private Response executeDefinitionRequest(final String key,
+                                            final String version,
+                                            final DefinitionType type,
+                                            final String user,
+                                            final String password) {
+    final OptimizeRequestExecutor requestExecutor = embeddedOptimizeExtension
+      .getRequestExecutor();
+    if (user != null) {
+      requestExecutor.withUserAuthentication(user, password);
+    }
     switch (type) {
       case DECISION:
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
+        return requestExecutor
           .buildGetDecisionDefinitionXmlRequest(key, version)
           .execute();
       case PROCESS:
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
+        return requestExecutor
           .buildGetProcessDefinitionXmlRequest(key, version)
           .execute();
     }

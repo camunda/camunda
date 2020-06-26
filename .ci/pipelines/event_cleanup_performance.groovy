@@ -120,7 +120,20 @@ pipeline {
                 # kubectl
                 gcloud components install kubectl --quiet
 
-                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "30s" "false" "${ES_NUM_NODES}"
+                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "30s" "true" "${ES_NUM_NODES}"
+            """)
+        }
+      }
+    }
+    stage('ExternalEventIngestion') {
+      steps {
+        container('gcloud') {
+          sh("""
+                # make sure that on piping we fail if any command of the pipe failed
+                set -o pipefail
+
+                # ingest events
+                bash .ci/pipelines/event_import_performance/ingestEvents.sh ${NAMESPACE} ${EXTERNAL_EVENT_COUNT} secret
             """)
         }
       }
@@ -130,6 +143,21 @@ pipeline {
         container('gcloud') {
           sh ("""
                 bash .ci/podSpecs/performanceTests/wait-for-import-to-finish.sh "${NAMESPACE}"
+            """)
+        }
+      }
+    }
+    stage('EventProcessPublish') {
+      steps {
+        container('gcloud') {
+          sh ("""
+                # make sure that on piping we fail if any command of the pipe failed
+                set -o pipefail
+
+                bash .ci/pipelines/event_import_performance/create-and-publish-event-process.sh ${NAMESPACE} .ci/pipelines/event_import_performance/invoiceEventProcessMapping.json
+                bash .ci/pipelines/event_import_performance/create-and-publish-event-process.sh ${NAMESPACE} .ci/pipelines/event_import_performance/externalInvoiceEventProcessMapping.json
+                curl -s "http://elasticsearch.${NAMESPACE}:9200/_cat/indices?v" || true
+
                 bash .ci/podSpecs/performanceTests/scale-optimize-down.sh "${NAMESPACE}"
             """)
         }
@@ -139,7 +167,7 @@ pipeline {
       steps {
         container('maven') {
           runMaven('-T\$LIMITS_CPU -pl backend -am -DskipTests -Dskip.fe.build -Dskip.docker clean install')
-          runMaven("-Pengine-cleanup-performance -f qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.${NAMESPACE}:5432/engine -Dengine.url=http://cambpm.${NAMESPACE}:8080/engine-rest -Des.host=elasticsearch.${NAMESPACE} -Dcleanup.timeout.minutes=${CLEANUP_TIMEOUT_MINUTES}")
+          runMaven("-Pevent-cleanup-performance -f qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.${NAMESPACE}:5432/engine -Dengine.url=http://cambpm.${NAMESPACE}:8080/engine-rest -Des.host=elasticsearch.${NAMESPACE} -Dcleanup.timeout.minutes=${CLEANUP_TIMEOUT_MINUTES}")
         }
       }
       post {

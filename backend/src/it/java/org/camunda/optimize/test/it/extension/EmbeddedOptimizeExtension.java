@@ -77,7 +77,7 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 public class EmbeddedOptimizeExtension
   implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
-  public static final String DEFAULT_ENGINE_ALIAS = "1";
+  public static final String DEFAULT_ENGINE_ALIAS = "camunda-bpm";
 
   private String context = null;
   private OptimizeRequestExecutor requestExecutor;

@@ -105,7 +105,9 @@ public class EngineDataProcessCleanupService implements CleanupService {
       variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
       processInstanceWriter.deleteByIds(currentInstanceIds);
       currentPageOfProcessInstanceIds = processInstanceReader
-        .getNextPageOfProcessInstanceIds(currentPageOfProcessInstanceIds);
+        .getNextPageOfProcessInstanceIdsThatEndedBefore(
+          definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT, currentPageOfProcessInstanceIds
+        );
     }
   }
 
@@ -118,7 +120,9 @@ public class EngineDataProcessCleanupService implements CleanupService {
       processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(currentInstanceIds);
 
       currentPageOfProcessInstanceIds = processInstanceReader
-        .getNextPageOfProcessInstanceIds(currentPageOfProcessInstanceIds);
+        .getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+          definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT, currentPageOfProcessInstanceIds
+        );
     }
   }
 

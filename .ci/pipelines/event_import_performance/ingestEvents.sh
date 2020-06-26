@@ -6,12 +6,11 @@ die () {
     exit 1
 }
 
-[[ "$#" -eq 4 ]] || die "4 arguments required [NAMESPACE] [EVENT_FOLDER] [EXTERNAL_EVENT_COUNT] [SECRET], $# provided"
+[[ "$#" -eq 3 ]] || die "3 arguments required [NAMESPACE] [EXTERNAL_EVENT_COUNT] [SECRET], $# provided"
 
 NAMESPACE=$1
-EVENT_FOLDER=$2
-EXTERNAL_EVENT_COUNT=$3
-SECRET=$4
+EXTERNAL_EVENT_COUNT=$2
+SECRET=$3
 
 BATCH_FILE="/tmp/currentBatch.json"
 BATCH_SIZE=10000
@@ -27,7 +26,7 @@ CURRENT_BATCH_SIZE=0
 CURRENT_INSTANCE_ID=1
 echo "[" > $BATCH_FILE
 for (( i=1; i<=$EXTERNAL_EVENT_COUNT; )); do
-  # one iteration through the events in the folder is ine process instance
+  # one iteration through the events in the folder is one process instance
   # create a traceId for this instance
   CURRENT_TRACE_ID="$CURRENT_INSTANCE_ID"
   CURRENT_INSTANCE_ID=$((CURRENT_INSTANCE_ID+1))
@@ -36,7 +35,7 @@ for (( i=1; i<=$EXTERNAL_EVENT_COUNT; )); do
     # create event uuid
     CURRENT_EVENT_ID=$i
     # modify the event template with the current values & append the event to the batch file
-    printf "$EVENT_TEMPLATE" "$CURRENT_EVENT_ID" "$CURRENT_EVENT_NAME" "$CURRENT_TRACE_ID" "$((START_TIMESTAMP_SECONDS+i))" >> $BATCH_FILE
+    TZ=UTC printf "$EVENT_TEMPLATE" "$CURRENT_EVENT_ID" "$CURRENT_EVENT_NAME" "$CURRENT_TRACE_ID" "$((START_TIMESTAMP_SECONDS+i))" >> $BATCH_FILE
     # if batch size is reached or end of generation, ingest the current batch
     if [[ $CURRENT_BATCH_SIZE -ge $BATCH_SIZE || $i -ge $EXTERNAL_EVENT_COUNT ]]
     then

@@ -16,7 +16,7 @@ import javax.websocket.Session;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
-import static org.camunda.optimize.websocket.StatusWebSocketIT.ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,8 +51,8 @@ public class AssertHasChangedStatusClientSocket {
     assertThat(dto.getIsImporting(), is(notNullValue()));
     initialStatusReceivedLatch.countDown();
 
-    importStatusChanged |= importStatus != null && dto.getIsImporting().get(ENGINE_ALIAS) != importStatus;
-    importStatus = dto.getIsImporting().get(ENGINE_ALIAS);
+    importStatusChanged |= importStatus != null && dto.getIsImporting().get(DEFAULT_ENGINE_ALIAS) != importStatus;
+    importStatus = dto.getIsImporting().get(DEFAULT_ENGINE_ALIAS);
     receivedTwoUpdatesLatch.countDown();
   }
 

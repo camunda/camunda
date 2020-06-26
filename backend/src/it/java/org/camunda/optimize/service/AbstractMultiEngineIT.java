@@ -225,7 +225,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
   protected void removeDefaultEngineConfiguration() {
     configurationService
       .getConfiguredEngines()
-      .remove("1");
+      .remove(DEFAULT_ENGINE_ALIAS);
     embeddedOptimizeExtension.reloadConfiguration();
   }
 

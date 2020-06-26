@@ -39,9 +39,7 @@ public class EngineRestFilterPluginIT extends AbstractIT {
       Collections.singletonList("org.camunda.optimize.testplugin.engine.rest")
     );
     embeddedOptimizeExtension.reloadConfiguration();
-    EngineConfiguration engineConfiguration = embeddedOptimizeExtension.getConfigurationService()
-      .getConfiguredEngines()
-      .get("1");
+    EngineConfiguration engineConfiguration = embeddedOptimizeExtension.getDefaultEngineConfiguration();
     engineConfiguration.getAuthentication().setEnabled(true);
     engineConfiguration.getAuthentication().setPassword("kermit");
     engineConfiguration.getAuthentication().setUser("kermit");

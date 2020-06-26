@@ -46,7 +46,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
@@ -56,8 +58,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class OptimizeProcessCleanupServiceTest {
   private static final List<String> INSTANCE_IDS = ImmutableList.of("1", "2");
-  private static final PageResultDto<String> FIRST_PAGE = new PageResultDto("1", 1, INSTANCE_IDS.subList(0, 1));
-  private static final PageResultDto<String> SECOND_PAGE = new PageResultDto("1", 1, INSTANCE_IDS.subList(1, 2));
+  private static final PageResultDto<String> FIRST_PAGE = new PageResultDto<>("1", 1, INSTANCE_IDS.subList(0, 1));
+  private static final PageResultDto<String> SECOND_PAGE = new PageResultDto<>("1", 1, INSTANCE_IDS.subList(1, 2));
 
   @Mock
   private ProcessDefinitionReader processDefinitionReader;
@@ -107,7 +109,7 @@ public class OptimizeProcessCleanupServiceTest {
     //when
     mockProcessDefinitions(processDefinitionKeys);
     mockGetProcessInstanceIdsForVariableDelete(processDefinitionKeys);
-    mockNextPageOfEntities();
+    mockNextPageOfEntitiesThatHaveVariables();
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
@@ -154,6 +156,7 @@ public class OptimizeProcessCleanupServiceTest {
     mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeysWithDefaultMode);
     mockGetProcessInstanceIdsForVariableDelete(processDefinitionKeysWithSpecificMode);
     mockNextPageOfEntities();
+    mockNextPageOfEntitiesThatHaveVariables();
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
@@ -247,10 +250,33 @@ public class OptimizeProcessCleanupServiceTest {
   }
 
   private void mockNextPageOfEntities() {
-    when(processInstanceReader.getNextPageOfProcessInstanceIds(eq(FIRST_PAGE)))
-      .thenReturn(SECOND_PAGE);
-    when(processInstanceReader.getNextPageOfProcessInstanceIds(eq(SECOND_PAGE)))
-      .thenReturn(new PageResultDto<>(1));
+    when(processInstanceReader.getNextPageOfProcessInstanceIdsThatEndedBefore(
+      anyString(),
+      any(OffsetDateTime.class),
+      anyInt(),
+      eq(FIRST_PAGE)
+    )).thenReturn(SECOND_PAGE);
+    when(processInstanceReader.getNextPageOfProcessInstanceIdsThatEndedBefore(
+      anyString(),
+      any(OffsetDateTime.class),
+      anyInt(),
+      eq(SECOND_PAGE)
+    )).thenReturn(new PageResultDto<>(1));
+  }
+
+  private void mockNextPageOfEntitiesThatHaveVariables() {
+    when(processInstanceReader.getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+      anyString(),
+      any(OffsetDateTime.class),
+      anyInt(),
+      eq(FIRST_PAGE)
+    )).thenReturn(SECOND_PAGE);
+    when(processInstanceReader.getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+      anyString(),
+      any(OffsetDateTime.class),
+      anyInt(),
+      eq(SECOND_PAGE)
+    )).thenReturn(new PageResultDto<>(1));
   }
 
   private void mockGetProcessInstanceIdsForVariableDelete(final List<String> expectedKeys) {

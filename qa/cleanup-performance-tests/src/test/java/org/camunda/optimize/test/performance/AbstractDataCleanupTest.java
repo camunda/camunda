@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.test.performance;
 
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
@@ -21,8 +22,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public abstract class AbstractEngineDataCleanupTest {
-  protected static final Logger logger = LoggerFactory.getLogger(AbstractEngineDataCleanupTest.class);
+public abstract class AbstractDataCleanupTest {
+  protected static final Logger logger = LoggerFactory.getLogger(AbstractDataCleanupTest.class);
 
   private static final Properties properties = PropertyUtil.loadProperties("static-cleanup-test.properties");
 
@@ -44,9 +45,10 @@ public abstract class AbstractEngineDataCleanupTest {
     embeddedOptimizeExtension.setupOptimize();
   }
 
-  protected static void importData() {
+  protected static void importEngineData() {
     final OffsetDateTime importStart = OffsetDateTime.now();
     logger.info("Starting import of engine data to Optimize...");
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
     embeddedOptimizeExtension.importAllEngineData();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     OffsetDateTime afterImport = OffsetDateTime.now();
@@ -70,5 +72,8 @@ public abstract class AbstractEngineDataCleanupTest {
     }
   }
 
+  protected CleanupConfiguration getCleanupConfiguration() {
+    return embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration();
+  }
 
 }

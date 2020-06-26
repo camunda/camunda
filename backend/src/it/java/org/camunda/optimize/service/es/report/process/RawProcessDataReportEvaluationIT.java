@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -82,7 +83,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEndDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getDuration(), is(notNullValue()));
-    assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
+    assertThat(rawDataProcessInstanceDto.getEngineName(), is(DEFAULT_ENGINE_ALIAS));
     assertThat(rawDataProcessInstanceDto.getBusinessKey(), is(BUSINESS_KEY));
     assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));
@@ -116,7 +117,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEndDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getDuration(), is(notNullValue()));
-    assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
+    assertThat(rawDataProcessInstanceDto.getEngineName(), is(DEFAULT_ENGINE_ALIAS));
     assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));
   }
@@ -149,7 +150,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEndDate(), is(nullValue()));
     assertThat(rawDataProcessInstanceDto.getDuration(), is(nullValue()));
-    assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
+    assertThat(rawDataProcessInstanceDto.getEngineName(), is(DEFAULT_ENGINE_ALIAS));
     assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));
   }
@@ -185,7 +186,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEndDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getDuration(), is(notNullValue()));
-    assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
+    assertThat(rawDataProcessInstanceDto.getEngineName(), is(DEFAULT_ENGINE_ALIAS));
     assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));
   }
