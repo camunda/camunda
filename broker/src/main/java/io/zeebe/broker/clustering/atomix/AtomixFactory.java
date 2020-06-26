@@ -26,6 +26,7 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.MembershipCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.logstreams.impl.log.ZeebeEntryValidator;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -102,6 +103,7 @@ public final class AtomixFactory {
             .withDataDirectory(raftDirectory)
             .withSnapshotStoreFactory(new FileBasedSnapshotStoreFactory())
             .withStorageLevel(dataCfg.getAtomixStorageLevel())
+            .withEntryValidator(new ZeebeEntryValidator())
             .withFlushOnCommit();
 
     // by default, the Atomix max entry size is 1 MB

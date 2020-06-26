@@ -8,7 +8,6 @@
 package io.zeebe.dispatcher.impl.log;
 
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_ACTIVE_PARTITION_ID_OFFSET;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_INITIAL_PARTITION_ID_OFFSET;
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_MAX_FRAME_LENGTH_OFFSET;
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_META_DATA_LENGTH;
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
@@ -31,10 +30,7 @@ public class LogBuffer {
 
   protected final int partitionSize;
 
-  public LogBuffer(
-      final AllocatedBuffer allocatedBuffer,
-      final int partitionSize,
-      final int initialPartitionId) {
+  public LogBuffer(final AllocatedBuffer allocatedBuffer, final int partitionSize) {
     this.partitionSize = partitionSize;
     rawBuffer = allocatedBuffer;
 
@@ -44,8 +40,7 @@ public class LogBuffer {
         new UnsafeBuffer(
             rawBuffer.getRawBuffer(), logMetadataOffset(partitionSize), LOG_META_DATA_LENGTH);
 
-    metadataBuffer.putInt(LOG_INITIAL_PARTITION_ID_OFFSET, initialPartitionId);
-    metadataBuffer.putIntVolatile(LOG_ACTIVE_PARTITION_ID_OFFSET, initialPartitionId);
+    metadataBuffer.putIntVolatile(LOG_ACTIVE_PARTITION_ID_OFFSET, 0);
   }
 
   public LogBufferPartition getPartition(final int id) {
@@ -56,10 +51,6 @@ public class LogBuffer {
     return metadataBuffer.getIntVolatile(LOG_ACTIVE_PARTITION_ID_OFFSET);
   }
 
-  public int getInitialPartitionId() {
-    return metadataBuffer.getInt(LOG_INITIAL_PARTITION_ID_OFFSET);
-  }
-
   public int getPartitionCount() {
     return partitions.length;
   }
@@ -68,7 +59,7 @@ public class LogBuffer {
     return metadataBuffer.getInt(LOG_MAX_FRAME_LENGTH_OFFSET);
   }
 
-  public void onActiveParitionFilled(final int activePartitionId) {
+  public void onActivePartitionFilled(final int activePartitionId) {
     final int nextPartitionId = 1 + activePartitionId;
     final int nextNextPartitionId = 1 + nextPartitionId;
     final LogBufferPartition nextNextPartition =
@@ -83,9 +74,7 @@ public class LogBuffer {
         (nextPartitionId % getPartitionCount()));
   }
 
-  public int cleanPartitions() {
-    int workCount = 0;
-
+  public void cleanPartitions() {
     for (int i = 0; i < LogBufferDescriptor.PARTITION_COUNT; i++) {
       final LogBufferPartition partition = partitions[i];
 
@@ -93,11 +82,8 @@ public class LogBuffer {
         LOG.trace("Clean partition {}", i);
 
         partition.clean();
-        ++workCount;
       }
     }
-
-    return workCount;
   }
 
   public void close() {

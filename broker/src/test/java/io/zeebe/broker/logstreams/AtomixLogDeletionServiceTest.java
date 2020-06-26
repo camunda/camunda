@@ -55,7 +55,7 @@ public final class AtomixLogDeletionServiceTest {
   private Compactor compactor;
 
   @Before
-  public void setUp() throws IOException {
+  public void setUp() {
     compactor = new Compactor();
     deletionService =
         new LogDeletionService(

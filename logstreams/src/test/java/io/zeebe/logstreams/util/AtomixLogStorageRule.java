@@ -14,13 +14,15 @@ import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
+import io.atomix.raft.zeebe.EntryValidator;
+import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
-import io.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
@@ -32,6 +34,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -40,7 +43,7 @@ import org.junit.rules.TemporaryFolder;
 
 public final class AtomixLogStorageRule extends ExternalResource
     implements AtomixReaderFactory, AtomixAppenderSupplier, ZeebeLogAppender, Supplier<LogStorage> {
-  private final LoggedEventImpl event = new LoggedEventImpl();
+
   private final TemporaryFolder temporaryFolder;
   private final int partitionId;
   private final UnaryOperator<RaftStorage.Builder> builder;
@@ -53,26 +56,48 @@ public final class AtomixLogStorageRule extends ExternalResource
 
   private AtomixLogStorage storage;
   private LongConsumer positionListener;
+  private Consumer<Throwable> writeErrorListener;
+  private EntryValidator entryValidator;
 
   public AtomixLogStorageRule(final TemporaryFolder temporaryFolder) {
     this(temporaryFolder, 0);
   }
 
   public AtomixLogStorageRule(final TemporaryFolder temporaryFolder, final int partitionId) {
-    this(temporaryFolder, partitionId, UnaryOperator.identity());
+    this(
+        temporaryFolder,
+        partitionId,
+        UnaryOperator.identity(),
+        (a, b) -> ValidationResult.success());
+  }
+
+  public AtomixLogStorageRule(
+      final TemporaryFolder temporaryFolder,
+      final int partitionId,
+      final EntryValidator entryValidator) {
+    this(temporaryFolder, partitionId, UnaryOperator.identity(), entryValidator);
   }
 
   public AtomixLogStorageRule(
       final TemporaryFolder temporaryFolder,
       final int partitionId,
       final UnaryOperator<RaftStorage.Builder> builder) {
+    this(temporaryFolder, partitionId, builder, (a, b) -> ValidationResult.success());
+  }
+
+  public AtomixLogStorageRule(
+      final TemporaryFolder temporaryFolder,
+      final int partitionId,
+      final UnaryOperator<RaftStorage.Builder> builder,
+      final EntryValidator entryValidator) {
     this.temporaryFolder = temporaryFolder;
     this.partitionId = partitionId;
     this.builder = builder;
+    this.entryValidator = entryValidator;
   }
 
   @Override
-  public void before() throws Throwable {
+  public void before() {
     open();
   }
 
@@ -87,12 +112,28 @@ public final class AtomixLogStorageRule extends ExternalResource
       final long highestPosition,
       final ByteBuffer data,
       final AppendListener listener) {
-    final Indexed<ZeebeEntry> entry =
-        raftLog
-            .writer()
-            .append(
-                new ZeebeEntry(
-                    0, System.currentTimeMillis(), lowestPosition, highestPosition, data));
+    final ZeebeEntry zbEntry =
+        new ZeebeEntry(0, System.currentTimeMillis(), lowestPosition, highestPosition, data);
+    final Indexed<RaftLogEntry> lastEntry = raftLog.writer().getLastEntry();
+
+    ZeebeEntry lastZbEntry = null;
+    if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
+      lastZbEntry = ((ZeebeEntry) lastEntry.cast().entry());
+    }
+
+    final ValidationResult result = entryValidator.validateEntry(lastZbEntry, zbEntry);
+    if (result.failed()) {
+      final Throwable exception = new IllegalStateException(result.getErrorMessage());
+      listener.onWriteError(exception);
+      if (writeErrorListener != null) {
+        writeErrorListener.accept(exception);
+      }
+
+      return;
+    }
+
+    final Indexed<ZeebeEntry> entry = raftLog.writer().append(zbEntry);
+
     listener.onWrite(entry);
     raftLog.writer().commit(entry.index());
 
@@ -104,7 +145,7 @@ public final class AtomixLogStorageRule extends ExternalResource
 
   public Indexed<ZeebeEntry> appendEntry(
       final long lowestPosition, final long highestPosition, final ByteBuffer data) {
-    final var listener = new NoopListener();
+    final NoopListener listener = new NoopListener();
     appendEntry(lowestPosition, highestPosition, data, listener);
 
     return listener.lastWrittenEntry;
@@ -132,6 +173,10 @@ public final class AtomixLogStorageRule extends ExternalResource
 
   public void setPositionListener(final LongConsumer positionListener) {
     this.positionListener = positionListener;
+  }
+
+  public void setWriteErrorListener(final Consumer<Throwable> errorListener) {
+    this.writeErrorListener = errorListener;
   }
 
   public void open() {
@@ -174,6 +219,7 @@ public final class AtomixLogStorageRule extends ExternalResource
     Optional.ofNullable(raftStorage).ifPresent(RaftStorage::deleteLog);
     raftStorage = null;
     positionListener = null;
+    writeErrorListener = null;
   }
 
   public int getPartitionId() {
@@ -212,7 +258,7 @@ public final class AtomixLogStorageRule extends ExternalResource
         .withRetainStaleSnapshots();
   }
 
-  private static final class NoopListener implements AppendListener {
+  private final class NoopListener implements AppendListener {
     private Indexed<ZeebeEntry> lastWrittenEntry;
 
     @Override
@@ -221,12 +267,12 @@ public final class AtomixLogStorageRule extends ExternalResource
     }
 
     @Override
-    public void onWriteError(final Throwable throwable) {}
+    public void onWriteError(final Throwable error) {}
 
     @Override
     public void onCommit(final Indexed<ZeebeEntry> indexed) {}
 
     @Override
-    public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable throwable) {}
+    public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
   }
 }

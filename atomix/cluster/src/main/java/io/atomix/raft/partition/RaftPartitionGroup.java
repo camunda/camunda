@@ -34,6 +34,7 @@ import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftStateMachineFactory;
 import io.atomix.raft.snapshot.PersistedSnapshotStoreFactory;
+import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageLevel;
 import io.atomix.utils.concurrent.BlockingAwareThreadPoolContextFactory;
 import io.atomix.utils.concurrent.Futures;
@@ -480,6 +481,17 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     public Builder withSnapshotStoreFactory(
         final PersistedSnapshotStoreFactory persistedSnapshotStoreFactory) {
       config.getStorageConfig().setPersistedSnapshotStoreFactory(persistedSnapshotStoreFactory);
+      return this;
+    }
+
+    /**
+     * Sets the entry validator to be called when an entry is appended.
+     *
+     * @param entryValidator the entry validator
+     * @return the Raft Partition group builder
+     */
+    public Builder withEntryValidator(final EntryValidator entryValidator) {
+      config.setEntryValidator(entryValidator);
       return this;
     }
 

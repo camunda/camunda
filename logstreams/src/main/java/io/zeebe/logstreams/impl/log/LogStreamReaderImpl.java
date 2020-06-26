@@ -83,7 +83,6 @@ public final class LogStreamReaderImpl implements LogStreamReader {
 
     if (storageReader.isEmpty()) {
       state = IteratorState.EMPTY_LOG_STREAM;
-      return UNINITIALIZED;
     } else {
       if (readLastBlockIntoBuffer()) {
         do {
@@ -96,8 +95,9 @@ public final class LogStreamReaderImpl implements LogStreamReader {
 
       // if the log is not empty this should not happen however
       Loggers.LOGSTREAMS_LOGGER.warn("Unexpected non-empty log failed to read the last block");
-      return UNINITIALIZED;
     }
+
+    return UNINITIALIZED;
   }
 
   @Override

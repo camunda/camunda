@@ -30,6 +30,8 @@ import io.atomix.raft.impl.zeebe.ZeebeRaftStateMachine;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.zeebe.EntryValidator;
+import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.concurrent.ThreadContextFactory;
@@ -575,6 +577,7 @@ public interface RaftServer {
     protected ThreadContextFactory threadContextFactory;
     protected RaftStateMachineFactory stateMachineFactory = ZeebeRaftStateMachine::new;
     protected Supplier<JournalIndex> journalIndexFactory;
+    protected EntryValidator entryValidator = new NoopEntryValidator();
 
     protected Builder(final MemberId localMemberId) {
       this.localMemberId = checkNotNull(localMemberId, "localMemberId cannot be null");
@@ -718,6 +721,11 @@ public interface RaftServer {
 
     public Builder withJournalIndexFactory(final Supplier<JournalIndex> journalIndexFactory) {
       this.journalIndexFactory = journalIndexFactory;
+      return this;
+    }
+
+    public Builder withEntryValidator(final EntryValidator entryValidator) {
+      this.entryValidator = entryValidator;
       return this;
     }
   }

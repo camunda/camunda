@@ -7,7 +7,6 @@
  */
 package io.zeebe.logstreams.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
@@ -197,11 +196,12 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
       copyExistingEventToBuffer();
     }
 
-    long result = claimBatchForEvents();
-    if (result >= 0) {
+    long position = claimBatchForEvents();
+    if (position >= 0) {
       try {
         // return position of last event
-        result = writeEventsToBuffer(claimedBatch.getBuffer());
+        writeEventsToBuffer(claimedBatch.getBuffer(), position);
+        position += eventCount - 1;
 
         claimedBatch.commit();
       } catch (final Exception e) {
@@ -211,25 +211,24 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
         reset();
       }
     }
-    return result;
+    return position;
   }
 
   private long claimBatchForEvents() {
     final int batchLength = eventLength + (eventCount * HEADER_BLOCK_LENGTH);
 
-    long claimedPosition = -1;
+    long claimedPosition;
     do {
-      claimedPosition = logWriteBuffer.claim(claimedBatch, eventCount, batchLength);
+      claimedPosition = logWriteBuffer.claimFragmentBatch(claimedBatch, eventCount, batchLength);
     } while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
 
     return claimedPosition;
   }
 
-  private long writeEventsToBuffer(final MutableDirectBuffer writeBuffer) {
-    long lastEventPosition = -1L;
+  private void writeEventsToBuffer(
+      final MutableDirectBuffer writeBuffer, final long firstPosition) {
     eventBufferOffset = 0;
 
-    final long[] positions = new long[eventCount];
     for (int i = 0; i < eventCount; i++) {
       final long key = eventBuffer.getLong(eventBufferOffset, Protocol.ENDIANNESS);
       eventBufferOffset += SIZE_OF_LONG;
@@ -246,17 +245,14 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
       final int fragmentLength = headerLength(metadataLength) + valueLength;
 
       // allocate fragment for log entry
-      final long nextFragmentPosition = claimedBatch.nextFragment(fragmentLength, logId);
+      claimedBatch.nextFragment(fragmentLength, logId);
       final int bufferOffset = claimedBatch.getFragmentOffset();
 
-      final long position = nextFragmentPosition - alignedFramedLength(fragmentLength);
-      positions[i] = position;
-
       // write log entry header
-      setPosition(writeBuffer, bufferOffset, position);
+      setPosition(writeBuffer, bufferOffset, firstPosition + i);
 
       if (sourceIndex >= 0 && sourceIndex < i) {
-        setSourceEventPosition(writeBuffer, bufferOffset, positions[sourceIndex]);
+        setSourceEventPosition(writeBuffer, bufferOffset, firstPosition + sourceIndex);
       } else {
         setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
       }
@@ -275,10 +271,7 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
       writeBuffer.putBytes(
           valueOffset(bufferOffset, metadataLength), eventBuffer, eventBufferOffset, valueLength);
       eventBufferOffset += valueLength;
-
-      lastEventPosition = position;
     }
-    return lastEventPosition;
   }
 
   private void resetEvent() {

@@ -52,6 +52,7 @@ import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
+import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ComposableFuture;
@@ -114,6 +115,7 @@ public class RaftContext implements AutoCloseable {
   private volatile long lastApplied;
   private volatile long lastAppliedTerm;
   private volatile boolean started;
+  private EntryValidator entryValidator;
 
   @SuppressWarnings("unchecked")
   public RaftContext(
@@ -726,6 +728,24 @@ public class RaftContext implements AutoCloseable {
    */
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = checkNotNull(heartbeatInterval, "heartbeatInterval cannot be null");
+  }
+
+  /**
+   * Returns the entry validator to be called when an entry is appended.
+   *
+   * @return The entry validator.
+   */
+  public EntryValidator getEntryValidator() {
+    return entryValidator;
+  }
+
+  /**
+   * Sets the entry validator to be called when an entry is appended.
+   *
+   * @param validator The entry validator.
+   */
+  public void setEntryValidator(final EntryValidator validator) {
+    this.entryValidator = validator;
   }
 
   /**

@@ -318,6 +318,7 @@ public class DefaultRaftServer implements RaftServer {
               stateMachineFactory);
       raft.setElectionTimeout(electionTimeout);
       raft.setHeartbeatInterval(heartbeatInterval);
+      raft.setEntryValidator(entryValidator);
 
       return new DefaultRaftServer(raft);
     }

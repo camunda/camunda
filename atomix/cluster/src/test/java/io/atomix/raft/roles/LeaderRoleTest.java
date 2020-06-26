@@ -16,6 +16,7 @@
 package io.atomix.raft.roles;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -31,8 +32,10 @@ import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
+import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -78,6 +81,7 @@ public class LeaderRoleTest {
 
     final PersistedSnapshotStore persistedSnapshotStore = mock(PersistedSnapshotStore.class);
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
+    when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.success());
 
     leaderRole = new LeaderRole(context);
     // since we mock RaftContext we should simulate leader close on transition
@@ -320,7 +324,29 @@ public class LeaderRoleTest {
     final AtomicReference<Throwable> catchedError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
     final CountDownLatch latch = new CountDownLatch(1);
-    final AppendListener listener =
+
+    // when
+    leaderRole.appendEntry(
+        0,
+        1,
+        data,
+        new AppendListener() {
+          @Override
+          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
+
+          @Override
+          public void onWriteError(final Throwable error) {}
+
+          @Override
+          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
+
+          @Override
+          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
+        });
+    leaderRole.appendEntry(
+        2,
+        3,
+        data,
         new AppendListener() {
 
           @Override
@@ -337,11 +363,7 @@ public class LeaderRoleTest {
 
           @Override
           public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
-        };
-
-    // when
-    leaderRole.appendEntry(0, 1, data, mock(AppendListener.class));
-    leaderRole.appendEntry(2, 3, data, listener);
+        });
 
     // then
     latch.await(10, TimeUnit.SECONDS);
@@ -402,20 +424,34 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldNotAppendInconsistentEntry() throws InterruptedException {
+  public void shouldDetectInconsistencyWithLastEntry() throws InterruptedException {
     // given
     when(writer.append(any(ZeebeEntry.class)))
         .then(
             i -> {
               final ZeebeEntry zeebeEntry = i.getArgument(0);
-              final Indexed<RaftLogEntry> indexedEntry = new Indexed<>(1, zeebeEntry, 45);
-              when(writer.getLastEntry()).thenReturn(indexedEntry);
-
-              return indexedEntry;
+              return new Indexed<>(1, zeebeEntry, 45);
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
-    final CountDownLatch latch = new CountDownLatch(1);
+    final CountDownLatch latch = new CountDownLatch(2);
+    when(context.getEntryValidator())
+        .thenReturn(
+            (lastEntry, entry) -> {
+              if (lastEntry != null) {
+                assertThat(lastEntry.highestPosition()).isEqualTo(7);
+                assertThat(entry.lowestPosition()).isEqualTo(9);
+                assertThat(entry.highestPosition()).isEqualTo(9);
+                entry.data().rewind();
+                data.rewind();
+                assertThat(entry.data()).isEqualTo(data);
+                latch.countDown();
+                return ValidationResult.failure("expected");
+              }
+              return ValidationResult.success();
+            });
+    leaderRole = new LeaderRole(context);
+
     final AppendListener listener =
         new AppendListener() {
           @Override
@@ -433,13 +469,12 @@ public class LeaderRoleTest {
           public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
-    leaderRole.appendEntry(6, 7, data, listener);
-
     // when
-    leaderRole.appendEntry(7, 7, data, listener);
+    leaderRole.appendEntry(6, 7, data, new TestAppender());
+    leaderRole.appendEntry(9, 9, data, listener);
 
     // then
-    assertTrue(latch.await(2, TimeUnit.SECONDS));
+    assertTrue(latch.await(5, TimeUnit.SECONDS));
     verify(leaderRole.raft, timeout(2000).atLeast(1)).transition(Role.FOLLOWER);
   }
 }

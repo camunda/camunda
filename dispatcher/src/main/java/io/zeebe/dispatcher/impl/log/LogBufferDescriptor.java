@@ -63,8 +63,6 @@ public final class LogBufferDescriptor {
   // log metadata constants
   /** Offset within the log meta data where the active Partition id is stored. */
   public static final int LOG_ACTIVE_PARTITION_ID_OFFSET;
-  /** Offset within the log meta data where the active Partition id is stored. */
-  public static final int LOG_INITIAL_PARTITION_ID_OFFSET;
   /** Offset within the log meta data which the MTU length is stored; */
   public static final int LOG_MAX_FRAME_LENGTH_OFFSET;
   /**
@@ -84,8 +82,6 @@ public final class LogBufferDescriptor {
    *  +---------------------------------------------------------------+
    *  |                     Cache Line Padding                      ...
    * ...                                                              |
-   *  +---------------------------------------------------------------+
-   *  |                     Initial Partition Id                      |
    *  +---------------------------------------------------------------+
    *  |                       Max Frame Length                        |
    *  +---------------------------------------------------------------+
@@ -111,9 +107,6 @@ public final class LogBufferDescriptor {
 
     LOG_ACTIVE_PARTITION_ID_OFFSET = offset;
     offset += (CACHE_LINE_LENGTH * 2);
-
-    LOG_INITIAL_PARTITION_ID_OFFSET = offset;
-    offset += SIZE_OF_INT;
 
     LOG_MAX_FRAME_LENGTH_OFFSET = offset;
     offset += SIZE_OF_INT;

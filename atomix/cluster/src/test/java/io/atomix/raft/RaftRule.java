@@ -36,6 +36,8 @@ import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.zeebe.EntryValidator;
+import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageLevel;
@@ -91,6 +93,7 @@ public final class RaftRule extends ExternalResource {
   private final AtomicReference<CommitAwaiter> commitAwaiterRef = new AtomicReference<>();
   private final Map<String, AtomicReference<CountDownLatch>> compactAwaiters = new HashMap<>();
   private long position;
+  private EntryValidator entryValidator = new NoopEntryValidator();
 
   private RaftRule(final int nodeCount) {
     this.nodeCount = nodeCount;
@@ -105,6 +108,11 @@ public final class RaftRule extends ExternalResource {
 
   public static RaftRule withoutNodes() {
     return new RaftRule(-1);
+  }
+
+  public RaftRule setEntryValidator(final EntryValidator entryValidator) {
+    this.entryValidator = entryValidator;
+    return this;
   }
 
   @Override
@@ -435,7 +443,8 @@ public final class RaftRule extends ExternalResource {
     final RaftServer.Builder defaults =
         RaftServer.builder(memberId)
             .withMembershipService(mock(ClusterMembershipService.class))
-            .withProtocol(protocol);
+            .withProtocol(protocol)
+            .withEntryValidator(entryValidator);
     final RaftServer server = configurator.apply(defaults).build();
 
     servers.put(memberId.id(), server);

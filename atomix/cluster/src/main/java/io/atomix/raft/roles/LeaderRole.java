@@ -47,6 +47,7 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.Configuration;
+import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageException;
@@ -68,6 +69,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private Scheduled appendTimer;
   private long configuring;
   private CompletableFuture<Void> commitInitialEntriesFuture;
+  private ZeebeEntry lastZbEntry = null;
 
   public LeaderRole(final RaftContext context) {
     super(context);
@@ -86,7 +88,25 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // Commit the initial leader entries.
     commitInitialEntriesFuture = commitInitialEntries();
 
+    lastZbEntry = findLastZeebeEntry();
+
     return super.start().thenRun(this::startTimers).thenApply(v -> this);
+  }
+
+  private ZeebeEntry findLastZeebeEntry() {
+    long index = raft.getLogWriter().getLastIndex();
+    while (index > 0) {
+      raft.getLogReader().reset(index);
+      final Indexed<RaftLogEntry> lastEntry = raft.getLogReader().next();
+
+      if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
+        return ((ZeebeEntry) lastEntry.entry());
+      }
+
+      --index;
+    }
+
+    return null;
   }
 
   @Override
@@ -664,11 +684,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       return;
     }
 
-    if (!isEntryConsistent(lowestPosition)) {
-      appendListener.onWriteError(
-          new IllegalStateException("New entry has lower Zeebe log position than last entry."));
+    final ValidationResult result = raft.getEntryValidator().validateEntry(lastZbEntry, entry);
+    if (result.failed()) {
+      appendListener.onWriteError(new IllegalStateException(result.getErrorMessage()));
       raft.transition(Role.FOLLOWER);
-      return;
     }
 
     append(entry)
@@ -682,37 +701,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   raft.transition(Role.FOLLOWER);
                 }
               } else {
+                if (indexed.type().equals(ZeebeEntry.class)) {
+                  lastZbEntry = indexed.entry();
+                }
+
                 appendListener.onWrite(indexed);
                 replicate(indexed, appendListener);
               }
             });
-  }
-
-  /**
-   * Returns true if the supplied position is higher than the last ZeebeEntry in the log or if no
-   * ZeebeEntry was found at all.
-   */
-  private boolean isEntryConsistent(final long newEntryPosition) {
-    Indexed<RaftLogEntry> lastEntry = raft.getLogWriter().getLastEntry();
-
-    if (lastEntry == null || lastEntry.type() != ZeebeEntry.class) {
-      long index = raft.getLogWriter().getLastIndex();
-      // if the last index doesn't exist, getLastIndex() will already return the index before
-      // the current segment
-      if (lastEntry != null) {
-        index--;
-      }
-
-      do {
-        raft.getLogReader().reset(index);
-        lastEntry = raft.getLogReader().next();
-        --index;
-      } while (index > 0 && lastEntry != null && lastEntry.type() != ZeebeEntry.class);
-    }
-
-    return lastEntry == null
-        || lastEntry.type() != ZeebeEntry.class
-        || newEntryPosition > ((ZeebeEntry) lastEntry.entry()).highestPosition();
   }
 
   private void replicate(final Indexed<ZeebeEntry> indexed, final AppendListener appendListener) {
