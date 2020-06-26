@@ -14,6 +14,7 @@ export {Input} from './Input';
 export {Select} from './Select';
 export {ButtonGroup} from './ButtonGroup';
 export {BPMNDiagram, ClickBehavior, PartHighlight} from './BPMNDiagram';
+export {DMNDiagram} from './DMNDiagram';
 export {CopyToClipboard} from './CopyToClipboard';
 export {ReportRenderer, NoDataNotice} from './ReportRenderer';
 export {ErrorBoundary} from './ErrorBoundary';

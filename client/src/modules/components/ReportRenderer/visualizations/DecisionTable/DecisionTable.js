@@ -4,112 +4,41 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState, useCallback, useMemo} from 'react';
 
-import './DecisionTable.scss';
-import 'dmn-js/dist/assets/dmn-js-decision-table.css';
-
+import {DMNDiagram} from 'components';
 import {themed} from 'theme';
 import {formatters} from 'services';
 
-import Viewer from 'dmn-js';
-import createHitsColumnAddon from './HitsColumnAddon';
 import DmnJsPortal from './DmnJsPortal';
-import {migrateDiagram} from '@bpmn-io/dmn-migrate';
-import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
+import createHitsColumnAddon from './HitsColumnAddon';
 
-export class DecisionTable extends React.Component {
-  state = {
-    entryPoints: {rules: {}},
-  };
+import './DecisionTable.scss';
 
-  container = React.createRef();
-
-  componentDidMount() {
-    const {
-      configuration: {xml},
+export function DecisionTable({report, theme}) {
+  const {
+    result: {data, instanceCount},
+    data: {
       decisionDefinitionKey,
-    } = this.props.report.data;
-
-    this.loadXML(xml, decisionDefinitionKey);
-  }
-
-  componentDidUpdate({
-    report: {
-      data: {
-        decisionDefinitionKey: prevKey,
-        configuration: {xml: prevXml},
-      },
+      configuration: {xml, hideAbsoluteValue, hideRelativeValue, showGradientBars},
     },
-  }) {
-    const {
-      configuration: {xml},
-      decisionDefinitionKey,
-    } = this.props.report.data;
+  } = report;
 
-    if (prevXml !== xml || prevKey !== decisionDefinitionKey) {
-      this.loadXML(xml, decisionDefinitionKey);
-    }
-  }
+  const resultObj = useMemo(() => formatters.objectifyResult(data), [data]);
+  const [entryPoints, setEntryPoints] = useState({rules: {}});
 
-  loadXML = async (xml, decisionDefinitionKey) => {
-    const {entryPoints, Addon: HitsColumn} = createHitsColumnAddon();
-    const additionalModules = [];
-
-    if (this.viewer) {
-      this.viewer.destroy();
-    }
-
-    if (!this.props.hitsHidden) {
-      additionalModules.push(HitsColumn);
-    }
-
-    this.viewer = new Viewer({
-      container: this.container.current,
-      decisionTable: {additionalModules},
-    });
-
-    const dmn13Xml = await this.migrateDiagram(xml);
-    this.viewer.importXML(dmn13Xml, () => {
-      this.viewer.open(
-        this.viewer
-          .getViews()
-          .find(
-            ({type, element: {id}}) => type === 'decisionTable' && id === decisionDefinitionKey
-          ),
-        () => this.setState({entryPoints})
-      );
-    });
-  };
-
-  migrateDiagram = (xml) => {
-    return new Promise((resolve, reject) => {
-      this.props.mightFail(migrateDiagram(xml), resolve, (error) => reject(showError(error)));
-    });
-  };
-
-  renderRuleCell = (ruleId) => {
-    const {
-      result: {data, instanceCount},
-      data: {
-        configuration: {hideAbsoluteValue, hideRelativeValue, showGradientBars},
-      },
-    } = this.props.report;
-
-    const resultObj = formatters.objectifyResult(data);
-
+  const renderRuleCell = (ruleId) => {
     const resultNumber = resultObj[ruleId] || 0;
     const percentage = Math.round((resultNumber / instanceCount) * 1000) / 10 || 0;
 
-    const node = this.state.entryPoints.rules[ruleId];
+    const node = entryPoints.rules[ruleId];
     if (showGradientBars) {
       const progress = resultNumber / instanceCount;
 
-      node.style.background = `linear-gradient(to right, ${getColor(
-        this.props.theme,
-        0
-      )} 0%, ${getColor(this.props.theme, progress)} ${percentage}%, transparent ${percentage}%)`;
+      node.style.background = `linear-gradient(to right, ${getColor(theme, 0)} 0%, ${getColor(
+        theme,
+        progress
+      )} ${percentage}%, transparent ${percentage}%)`;
     } else {
       node.style.background = '';
     }
@@ -124,35 +53,42 @@ export class DecisionTable extends React.Component {
     }
 
     return (
-      <DmnJsPortal key={ruleId} renderIn={this.state.entryPoints.rules[ruleId]}>
+      <DmnJsPortal key={ruleId} renderIn={entryPoints.rules[ruleId]}>
         <i>{outputString}</i>
       </DmnJsPortal>
     );
   };
 
-  render() {
-    const {rules, summary} = this.state.entryPoints;
-    const {
-      result: {instanceCount, data},
-    } = this.props.report;
+  const {rules, summary} = entryPoints;
+  const hitCount = data.map(({value}) => value).reduce((sum, current) => sum + current, 0);
 
-    const hitCount = data.map(({value}) => value).reduce((sum, current) => sum + current, 0);
+  const hitsColumn = useMemo(createHitsColumnAddon, []);
+  const additionalModules = useMemo(() => [hitsColumn.Addon], [hitsColumn.Addon]);
+  const onLoad = useCallback(() => {
+    setEntryPoints(hitsColumn.entryPoints);
+  }, [hitsColumn.entryPoints]);
 
-    return (
-      <div ref={this.container} className="DecisionTable">
-        {Object.keys(rules).map(this.renderRuleCell)}
+  return (
+    <div className="DecisionTable">
+      <DMNDiagram
+        xml={xml}
+        decisionDefinitionKey={decisionDefinitionKey}
+        additionalModules={additionalModules}
+        onLoad={onLoad}
+      >
+        {Object.keys(rules).map(renderRuleCell)}
         <DmnJsPortal renderIn={summary}>
           <b>
             {instanceCount} Evaluation{instanceCount !== 1 ? 's' : ''}
             {hitCount > instanceCount && ` / ${hitCount} Hits`}
           </b>
         </DmnJsPortal>
-      </div>
-    );
-  }
+      </DMNDiagram>
+    </div>
+  );
 }
 
-export default themed(withErrorHandling(DecisionTable));
+export default themed(DecisionTable);
 
 function getColor(theme, progress) {
   if (theme === 'light') {

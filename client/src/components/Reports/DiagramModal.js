@@ -6,46 +6,27 @@
 
 import React from 'react';
 
-import {Modal, Button, BPMNDiagram, ReportRenderer} from 'components';
+import {Modal, Button, BPMNDiagram, DMNDiagram} from 'components';
 import {t} from 'translation';
-
-import defaults from './newReport.json';
 
 import './DiagramModal.scss';
 
 export default function DiagramModal({name, report, close}) {
+  const {
+    data: {
+      decisionDefinitionKey,
+      configuration: {xml},
+    },
+  } = report;
+
   return (
     <Modal className="DiagramModal" open size="max" onClose={close}>
       <Modal.Header>{name}</Modal.Header>
       <Modal.Content>
         {report.reportType === 'decision' ? (
-          <ReportRenderer
-            hitsHidden
-            report={{
-              ...report,
-              data: {
-                ...report.data,
-                configuration: {
-                  ...defaults['new-decision'].data.configuration,
-                  xml: report.data.configuration.xml,
-                },
-                view: {
-                  property: 'frequency',
-                },
-                groupBy: {
-                  type: 'matchedRule',
-                },
-                visualization: 'table',
-              },
-              result: {
-                ...report.result,
-                instanceCount: 1,
-                data: [{}],
-              },
-            }}
-          />
+          <DMNDiagram xml={xml} decisionDefinitionKey={decisionDefinitionKey} />
         ) : (
-          <BPMNDiagram xml={report.data.configuration.xml} />
+          <BPMNDiagram xml={xml} />
         )}
       </Modal.Content>
       <Modal.Actions>

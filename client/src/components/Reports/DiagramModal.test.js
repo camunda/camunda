@@ -7,7 +7,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {BPMNDiagram} from 'components';
+import {BPMNDiagram, DMNDiagram} from 'components';
+
 import DiagramModal from './DiagramModal';
 
 jest.mock('./newReport.json', () => {
@@ -32,10 +33,10 @@ it('Should display BPMNDiagram with the report xml', () => {
   expect(node.find(BPMNDiagram).prop('xml')).toBe(props.report.data.configuration.xml);
 });
 
-it('should display a report grouped by rules for decision reports', () => {
+it('Should display DMNDiagram with the report xml', () => {
   const node = shallow(
     <DiagramModal {...props} report={{...props.report, reportType: 'decision'}} />
   );
 
-  expect(node).toMatchSnapshot();
+  expect(node.find(DMNDiagram).prop('xml')).toBe(props.report.data.configuration.xml);
 });

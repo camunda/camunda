@@ -1,9 +1,4 @@
 .DecisionTable {
-  .view-drd,
-  .powered-by-logo {
-    display: none;
-  }
-
   .hit.header {
     vertical-align: bottom;
   }
@@ -25,23 +20,10 @@
   }
 }
 
-.dark {
-  .dmn-decision-table-container {
-    color: inherit;
-
-    .tjs-table tbody tr:nth-child(2n) {
-      background-color: #444;
-    }
-
-    .decision-table-properties {
-      color: inherit;
-      background-color: inherit;
-    }
-
-    .CustomCell,
-    .hit.header,
-    tfoot td {
-      border: inherit;
-    }
+.dark .DecisionTable {
+  .CustomCell,
+  .hit.header,
+  tfoot td {
+    border: inherit;
   }
 }
