@@ -76,12 +76,25 @@ public class UserDTO {
   }
 
   @Override
-  public boolean equals(Object other) {
-    return Objects.equals(this, other);
+  public int hashCode() {
+    return Objects.hash(canLogout, firstname, lastname, username);
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hashCode(this);
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    final UserDTO other = (UserDTO) obj;
+    return canLogout == other.canLogout
+        && Objects.equals(firstname, other.firstname)
+        && Objects.equals(lastname, other.lastname)
+        && Objects.equals(username, other.username);
   }
 }
