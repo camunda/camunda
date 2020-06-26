@@ -30,7 +30,7 @@ type User {
     username: ID!
     firstname: String
     lastname: String
-    canLogout: Boolean
+    canLogout: Boolean!
 }
 
 type Query {
