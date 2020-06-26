@@ -34,3 +34,7 @@ es:
 
 eventBasedProcess:
   authorizedUserIds: ['demo']
+
+plugin:
+  # as default just use an existing directory
+  directory: '.'
