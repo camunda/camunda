@@ -160,6 +160,30 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   }
 
   @Test
+  public void shouldRemoveNodeOnPartition() throws Exception {
+    // Start a node and check its events.
+    startProtocol(member1);
+    startProtocol(member2);
+    startProtocol(member3);
+
+    awaitMembers(member3, member1, member2, member3);
+    awaitMembers(member2, member1, member2, member3);
+    awaitMembers(member1, member1, member2, member3);
+
+    clearEvents(member1, member2, member3);
+
+    // when Isolate node 3 from the rest of the cluster.
+    partition(member3);
+
+    // then
+    // Nodes 1 and 2 should see REACHABILITY_CHANGED events and then MEMBER_REMOVED events.
+    checkEvent(member1, REACHABILITY_CHANGED, member3);
+    checkEvent(member2, REACHABILITY_CHANGED, member3);
+    checkEvent(member1, MEMBER_REMOVED, member3);
+    checkEvent(member2, MEMBER_REMOVED, member3);
+  }
+
+  @Test
   public void testSwimProtocol() throws Exception {
     // Start a node and check its events.
     startProtocol(member1);
@@ -175,15 +199,10 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     // Isolate node 3 from the rest of the cluster.
     partition(member3);
 
-    // Nodes 1 and 2 should see REACHABILITY_CHANGED events and then MEMBER_REMOVED events.
-    checkEvent(member1, REACHABILITY_CHANGED, member3);
-    checkEvent(member2, REACHABILITY_CHANGED, member3);
-    checkEvent(member1, MEMBER_REMOVED, member3);
-    checkEvent(member2, MEMBER_REMOVED, member3);
-
     // Verify that node 3 was removed from nodes 1 and 2.
-    checkMembers(member1, member1, member2);
-    checkMembers(member2, member1, member2);
+    awaitMembers(member2, member1, member2);
+    awaitMembers(member1, member1, member2);
+    clearEvents(member1, member2);
 
     // Node 3 should also see REACHABILITY_CHANGED and MEMBER_REMOVED events for nodes 1 and 2.
     checkEvents(
@@ -383,7 +402,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     final var expectedMembers = Sets.newHashSet(members);
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(1))
+        .atMost(Duration.ofSeconds(5))
         .until(() -> expectedMembers.equals(protocol.getMembers()));
   }
 
