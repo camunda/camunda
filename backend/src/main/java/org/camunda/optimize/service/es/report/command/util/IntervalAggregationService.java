@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -22,7 +23,9 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.range.Range;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
-import org.elasticsearch.search.aggregations.metrics.Stats;
+import org.elasticsearch.search.aggregations.metrics.ParsedMax;
+import org.elasticsearch.search.aggregations.metrics.ParsedMin;
+import org.elasticsearch.search.aggregations.metrics.ParsedValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
@@ -38,14 +41,16 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @RequiredArgsConstructor
 @Component
 @Slf4j
 public class IntervalAggregationService {
 
-  private static final String STATS_AGGREGATION = "minMaxValueOfData";
+  private static final String MIN_AGGREGATION = "minValueOfData";
+  private static final String MAX_AGGREGATION = "maxValueOfData";
+  public static final String MIN_COUNT_AGGREGATION = "countOfMinValues";
+  public static final String MAX_COUNT_AGGREGATION = "countOfMaxValues";
   public static final String RANGE_AGGREGATION = "rangeAggregation";
 
   private final OptimizeElasticsearchClient esClient;
@@ -74,16 +79,31 @@ public class IntervalAggregationService {
     }
   }
 
-  public Stats getMinMaxStats(QueryBuilder query, String indexName, String field) {
-    AggregationBuilder statsAgg = AggregationBuilders
-      .stats(STATS_AGGREGATION)
-      .field(field)
-      .format(OPTIMIZE_DATE_FORMAT);
+  public MinMaxStatDto getMinMaxStats(QueryBuilder query, String indexName, String minMaxField) {
+    return getMinMaxStats(query, indexName, minMaxField, minMaxField);
+  }
+
+  public MinMaxStatDto getMinMaxStats(QueryBuilder query, String indexName, String minField, String maxField) {
+    AggregationBuilder minFieldCount = AggregationBuilders
+      .count(MIN_COUNT_AGGREGATION)
+      .field(minField);
+    AggregationBuilder maxFieldCount = AggregationBuilders
+      .count(MAX_COUNT_AGGREGATION)
+      .field(minField);
+    AggregationBuilder minAgg = AggregationBuilders
+      .min(MIN_AGGREGATION)
+      .field(minField);
+    AggregationBuilder maxAgg = AggregationBuilders
+      .max(MAX_AGGREGATION)
+      .field(maxField);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(statsAgg)
+      .aggregation(minFieldCount)
+      .aggregation(maxFieldCount)
+      .aggregation(minAgg)
+      .aggregation(maxAgg)
       .size(0);
     SearchRequest searchRequest = new SearchRequest(indexName).source(searchSourceBuilder);
 
@@ -91,11 +111,16 @@ public class IntervalAggregationService {
     try {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String reason = "Could not automatically determine interval of group by date on field [" + field + "]!";
+      String reason = String.format(
+        "Could not retrieve stats for minField %s and maxField %s on index %s",
+        minField,
+        maxField,
+        indexName
+      );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    return response.getAggregations().get(STATS_AGGREGATION);
+    return mapStatsAggregationToStatDto(response);
   }
 
   public Optional<AggregationBuilder> createIntervalAggregation(Optional<org.apache.commons.lang3.Range<OffsetDateTime>> rangeToUse,
@@ -114,8 +139,8 @@ public class IntervalAggregationService {
   private Optional<AggregationBuilder> createIntervalAggregation(QueryBuilder query,
                                                                  String indexName,
                                                                  String field) {
-    Stats stats = getMinMaxStats(query, indexName, field);
-    if (stats.getCount() > 1) {
+    MinMaxStatDto stats = getMinMaxStats(query, indexName, field);
+    if (stats.getMinFieldCount() > 1) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);
       return Optional.of(createIntervalAggregationFromGivenRange(field, min, max));
@@ -181,5 +206,20 @@ public class IntervalAggregationService {
         throw new IllegalStateException(String.format("Duplicate key %s", u));
       }, LinkedHashMap::new));
     return result;
+  }
+
+  private MinMaxStatDto mapStatsAggregationToStatDto(final SearchResponse response) {
+    final ParsedValueCount minCountAgg = response.getAggregations().get(MIN_COUNT_AGGREGATION);
+    final ParsedValueCount maxCountAgg = response.getAggregations().get(MAX_COUNT_AGGREGATION);
+    final ParsedMin minAgg = response.getAggregations().get(MIN_AGGREGATION);
+    final ParsedMax maxAgg = response.getAggregations().get(MAX_AGGREGATION);
+    return new MinMaxStatDto(
+      minCountAgg.getValue(),
+      maxCountAgg.getValue(),
+      minAgg.getValue(),
+      maxAgg.getValue(),
+      minAgg.getValueAsString(),
+      maxAgg.getValueAsString()
+    );
   }
 }

@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.value
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -100,13 +101,14 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   private final ConfigurationService configurationService;
 
   @Override
-  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
-                                                                   final BoolQueryBuilder baseQuery) {
+  public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
+                                                                           final BoolQueryBuilder baseQuery) {
     if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
       DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
-        Stats minMaxStats = getMinMaxStats(context, baseQuery, getDateField());
-        return Optional.of(minMaxStats);
+        return Optional.of(
+          getMinMaxStats(context, baseQuery, getDateField())
+        );
       }
     }
     return Optional.empty();
@@ -290,8 +292,8 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   private Optional<AggregationBuilder> createIntervalAggregation(final ExecutionContext<ProcessReportDataDto> context,
                                                                  final QueryBuilder query,
                                                                  final String field) {
-    Stats stats = getMinMaxStats(context, query, field);
-    if (stats.getCount() > 1) {
+    MinMaxStatDto stats = getMinMaxStats(context, query, field);
+    if (stats.getMinFieldCount() > 1) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);
       return Optional.of(createIntervalAggregationFromGivenRange(context, field, min, max));
@@ -300,10 +302,9 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     }
   }
 
-  private Stats getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
-                               final QueryBuilder query,
-                               final String field) {
-
+  private MinMaxStatDto getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
+                                       final QueryBuilder query,
+                                       final String field) {
     final StatsAggregationBuilder minMaxOfUserTaskDate = AggregationBuilders
       .stats(STATS_AGGREGATION)
       .field(field)
@@ -328,7 +329,14 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     }
     final Nested userTasks = response.getAggregations().get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
-    return filteredUserTasks.getAggregations().get(STATS_AGGREGATION);
+    final Stats minMaxStats = filteredUserTasks.getAggregations().get(STATS_AGGREGATION);
+    return new MinMaxStatDto(
+      minMaxStats.getCount(),
+      minMaxStats.getMin(),
+      minMaxStats.getMax(),
+      minMaxStats.getMinAsString(),
+      minMaxStats.getMaxAsString()
+    );
   }
 
   @Override

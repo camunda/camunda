@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Runni
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -25,7 +26,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filters;
 import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
-import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -38,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.getDateHistogramIntervalInMsFromMinMax;
@@ -63,27 +64,41 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
   }
 
   @Override
+  public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
+                                                                           final BoolQueryBuilder baseQuery) {
+    if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
+      DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
+      if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
+        return Optional.of(
+          intervalAggregationService.getMinMaxStats(
+            baseQuery,
+            PROCESS_INSTANCE_INDEX_NAME,
+            START_DATE,
+            END_DATE
+          ));
+      }
+    }
+    return Optional.empty();
+  }
+
+  @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final Stats startDateStats = intervalAggregationService.getMinMaxStats(
+    final MinMaxStatDto minMaxStats = intervalAggregationService.getMinMaxStats(
       searchSourceBuilder.query(),
       PROCESS_INSTANCE_INDEX_NAME,
-      START_DATE
-    );
-    final Stats endDateStats = intervalAggregationService.getMinMaxStats(
-      searchSourceBuilder.query(),
-      PROCESS_INSTANCE_INDEX_NAME,
+      START_DATE,
       END_DATE
     );
-    final GroupByDateUnit unit = getGroupByDateUnit(startDateStats, context.getReportData());
-    // if the report contains no instances (stats are empty), no aggregations can be created as they are based on
-    // instances data (start and end date stats)
-    return startDateStats.getCount() == 0 || endDateStats.getCount() == 0
+    final GroupByDateUnit unit = getGroupByDateUnit(minMaxStats, context.getReportData());
+    // if the report contains no completed instances (stats are empty), no aggregations can be created as they are
+    // based on instances data (start and end date stats)
+    return minMaxStats.getMinFieldCount() == 0 || minMaxStats.getMaxFieldCount() == 0
       ? Collections.emptyList()
       : createAggregation(
-      OffsetDateTime.parse(startDateStats.getMinAsString(), formatter)
+      OffsetDateTime.parse(minMaxStats.getMinAsString(), formatter)
         .withOffsetSameInstant(OffsetDateTime.now().getOffset()),
-      OffsetDateTime.parse(endDateStats.getMaxAsString(), formatter)
+      OffsetDateTime.parse(minMaxStats.getMaxAsString(), formatter)
         .withOffsetSameInstant(OffsetDateTime.now().getOffset()),
       unit,
       context
@@ -237,11 +252,11 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     return date.getDayOfWeek().getValue() - 1;
   }
 
-  private GroupByDateUnit getGroupByDateUnit(final Stats stats,
+  private GroupByDateUnit getGroupByDateUnit(final MinMaxStatDto stats,
                                              final ProcessReportDataDto processReportData) {
     // if there is only one instance and grouping is automatic, we always group by month instead
     GroupByDateUnit unit = ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
-    return GroupByDateUnit.AUTOMATIC.equals(unit) && stats.getCount() == 1
+    return GroupByDateUnit.AUTOMATIC.equals(unit) && stats.getMinFieldCount() == 1
       ? GroupByDateUnit.MONTH
       : unit;
   }

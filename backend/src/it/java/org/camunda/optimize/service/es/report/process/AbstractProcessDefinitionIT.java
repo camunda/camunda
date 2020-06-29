@@ -161,7 +161,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition() {
-    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance("aProcess", "anActivityId");
+    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(TEST_PROCESS, "anActivityId");
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 

@@ -22,6 +22,8 @@ public class EndDateGroupByDto extends ProcessGroupByDto<DateGroupByValueDto> {
 
   @Override
   protected boolean isTypeCombinable(final ProcessGroupByDto<?> that) {
-    return Objects.equals(type, that.type) || Objects.equals(that.type, ProcessGroupByType.START_DATE);
+    return Objects.equals(type, that.type)
+      || Objects.equals(that.type, ProcessGroupByType.START_DATE)
+      || Objects.equals(that.type, ProcessGroupByType.RUNNING_DATE);
   }
 }

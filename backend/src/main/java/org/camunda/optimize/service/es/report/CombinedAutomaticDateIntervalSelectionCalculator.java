@@ -6,14 +6,11 @@
 package org.camunda.optimize.service.es.report;
 
 import org.apache.commons.lang3.Range;
-import org.elasticsearch.search.aggregations.metrics.Stats;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class CombinedAutomaticDateIntervalSelectionCalculator
   extends AbstractCombinedIntervalSelectionCalculator<OffsetDateTime> {
@@ -27,16 +24,18 @@ public class CombinedAutomaticDateIntervalSelectionCalculator
 
   @Override
   public Optional<Range<OffsetDateTime>> calculateInterval() {
-    List<Stats> allStats = minMaxCommandStats.stream()
-      .filter(s -> s.getCount() > 1)
-      .collect(Collectors.toList());
     Optional<OffsetDateTime> max =
-      allStats.stream().max(Comparator.comparing(Stats::getMax))
-        .map(Stats::getMaxAsString)
+      minMaxCommandStats.stream()
+        .filter(s -> s.getMaxFieldCount() > 0)
+        .max(Comparator.comparing(MinMaxStatDto::getMax))
+        .map(MinMaxStatDto::getMaxAsString)
         .map(m -> OffsetDateTime.parse(m, dateTimeFormatter));
-    Optional<OffsetDateTime> min = allStats.stream().min(Comparator.comparing(Stats::getMin))
-      .map(Stats::getMinAsString)
-      .map(m -> OffsetDateTime.parse(m, dateTimeFormatter));
+    Optional<OffsetDateTime> min =
+      minMaxCommandStats.stream()
+        .filter(s -> s.getMinFieldCount() > 0)
+        .min(Comparator.comparing(MinMaxStatDto::getMin))
+        .map(MinMaxStatDto::getMinAsString)
+        .map(m -> OffsetDateTime.parse(m, dateTimeFormatter));
     if (max.isPresent() && min.isPresent()) {
       Range<OffsetDateTime> range = Range.between(min.get(), max.get());
       return Optional.of(range);

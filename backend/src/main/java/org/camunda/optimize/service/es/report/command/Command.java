@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.command;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.elasticsearch.search.aggregations.metrics.Stats;
 
 import java.util.Optional;
 
@@ -19,7 +19,7 @@ public interface Command<RD extends ReportDefinitionDto<?>> {
 
   String createCommandKey();
 
-  default Optional<Stats> calculateDateRangeForAutomaticGroupByDate(
+  default Optional<MinMaxStatDto> retrieveStatsForCombinedAutomaticGroupByDate(
     final CommandContext<SingleProcessReportDefinitionDto> reportDefinitionDto) {
     // this method is used for *combined* grouped by date with automatic interval
     // commands to calculate what's the total data range. This allows to calculate
@@ -28,7 +28,7 @@ public interface Command<RD extends ReportDefinitionDto<?>> {
     return Optional.empty();
   }
 
-  default Optional<Stats> calculateNumberRangeForCombinedGroupByNumberVariable(
+  default Optional<MinMaxStatDto> retrieveStatsForCombinedGroupByNumberVariable(
     final CommandContext<SingleProcessReportDefinitionDto> reportDefinitionDto) {
     // this method is used for *combined* grouped by number variable report
     // to calculate what's the total data range. This allows to calculate

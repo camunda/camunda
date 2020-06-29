@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.Optional;
 
 public abstract class AbstractCombinedIntervalSelectionCalculator<T> {
-  protected List<Stats> minMaxCommandStats = new ArrayList<>();
+  protected List<MinMaxStatDto> minMaxCommandStats = new ArrayList<>();
 
-  public void addStat(Stats minMaxStat) {
+  public void addStat(MinMaxStatDto minMaxStat) {
     minMaxCommandStats.add(minMaxStat);
   }
 

@@ -15,7 +15,6 @@ import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -66,10 +65,10 @@ public class CombinedReportEvaluator {
           CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
           commandContext.setReportDefinition(reportDefinition);
 
-          Optional<Stats> dateStat = command.calculateDateRangeForAutomaticGroupByDate(commandContext);
-          dateStat.ifPresent(dateIntervalCalculator::addStat);
+          Optional<MinMaxStatDto> dateStats = command.retrieveStatsForCombinedAutomaticGroupByDate(commandContext);
+          dateStats.ifPresent(dateIntervalCalculator::addStat);
 
-          Optional<Stats> numberStat = command.calculateNumberRangeForCombinedGroupByNumberVariable(commandContext);
+          Optional<MinMaxStatDto> numberStat = command.retrieveStatsForCombinedGroupByNumberVariable(commandContext);
           numberStat.ifPresent(numberRangeCalculator::addStat);
         }
       );

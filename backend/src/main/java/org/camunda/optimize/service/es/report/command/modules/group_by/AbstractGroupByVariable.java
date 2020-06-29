@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
@@ -36,13 +37,12 @@ import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
-import org.elasticsearch.search.aggregations.metrics.Stats;
+import org.elasticsearch.search.aggregations.metrics.ParsedStats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -99,11 +99,10 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   protected abstract BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<Data> context);
 
   @Override
-  public Optional<Stats> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<Data> context,
-                                                                      final BoolQueryBuilder baseQuery) {
+  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<Data> context,
+                                                                              final BoolQueryBuilder baseQuery) {
     if (isGroupedByNumberVariable(getVariableType(context))) {
-      Stats minMaxStats = getMinMaxStats(baseQuery, context);
-      return Optional.of(minMaxStats);
+      return Optional.of(getMinMaxStats(baseQuery, context));
     }
     return Optional.empty();
   }
@@ -176,8 +175,8 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private Optional<AggregationBuilder> createNumberVariableAggregation(final QueryBuilder baseQuery,
                                                                        final ExecutionContext<Data> context) {
-    final Stats minMaxStats = getMinMaxStats(baseQuery, context);
-    if (minMaxStats.getCount() == 0) {
+    final MinMaxStatDto minMaxStats = getMinMaxStats(baseQuery, context);
+    if (minMaxStats.getMinFieldCount() == 0) {
       return Optional.empty();
     }
 
@@ -214,11 +213,11 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
                                                                      final ExecutionContext<Data> context) {
     GroupByDateUnit unit = getGroupByDateUnit(context);
     if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
-      Stats minMaxStats = getMinMaxStats(baseQuery, context);
-      if (minMaxStats.getCount() == 0) {
+      MinMaxStatDto minMaxStats = getMinMaxStats(baseQuery, context);
+      if (minMaxStats.getMinFieldCount() == 0) {
         return Optional.empty();
       }
-      if (minMaxStats.getCount() != 1) {
+      if (minMaxStats.getMinFieldCount() != 1) {
         return Optional.of(createAutomaticIntervalAggregation(minMaxStats, context));
       }
       // if there is only one instance we always group by month
@@ -236,7 +235,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
         .timeZone(ZoneId.systemDefault()));
   }
 
-  private AggregationBuilder createAutomaticIntervalAggregation(final Stats minMaxStats,
+  private AggregationBuilder createAutomaticIntervalAggregation(final MinMaxStatDto minMaxStats,
                                                                 final ExecutionContext<Data> context) {
     OffsetDateTime minDateTime =
       OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMin())), ZoneId.systemDefault());
@@ -252,8 +251,8 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     return automaticIntervalAggregation.subAggregation(distributedByPart.createAggregation(context));
   }
 
-  protected Stats getMinMaxStats(final QueryBuilder baseQuery,
-                                 final ExecutionContext<Data> context) {
+  protected MinMaxStatDto getMinMaxStats(final QueryBuilder baseQuery,
+                                         final ExecutionContext<Data> context) {
     AggregationBuilder statsAggregation = VariableType.DATE.equals(getVariableType(context))
       ? stats(STATS).field(getNestedVariableValueFieldLabel(VariableType.DATE)).format(OPTIMIZE_DATE_FORMAT)
       : stats(STATS).field(getNestedVariableValueFieldLabel(getVariableType(context)));
@@ -286,7 +285,14 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
     final ParsedNested nestedAgg = response.getAggregations().get(NESTED_AGGREGATION);
     final ParsedFilter filterAgg = nestedAgg.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    return filterAgg.getAggregations().get(STATS);
+    final ParsedStats stats = filterAgg.getAggregations().get(STATS);
+    return new MinMaxStatDto(
+      stats.getCount(),
+      stats.getMin(),
+      stats.getMax(),
+      stats.getMinAsString(),
+      stats.getMaxAsString()
+    );
   }
 
   @Override
@@ -346,14 +352,14 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   }
 
   private Double getMaxForNumberVariableAggregation(final ExecutionContext<Data> context,
-                                                    final Stats minMaxStats) {
+                                                    final MinMaxStatDto minMaxStats) {
     return context.getNumberVariableRange().isPresent()
       ? context.getNumberVariableRange().get().getMaximum()
       : minMaxStats.getMax();
   }
 
   private Optional<Double> getBaselineForNumberVariableAggregation(final ExecutionContext<Data> context,
-                                                                   final Stats minMaxStats) {
+                                                                   final MinMaxStatDto minMaxStats) {
     final Optional<Range<Double>> range = context.getNumberVariableRange();
     final Optional<Double> baselineForSingleReport = context.getReportData()
       .getConfiguration()
@@ -376,7 +382,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private Double getGroupByNumberVariableUnit(final ExecutionContext<Data> context,
                                               final Double baseline,
-                                              final Stats minMaxStats) {
+                                              final MinMaxStatDto minMaxStats) {
     final Optional<Range<Double>> rangeForCombinedReport = context.getNumberVariableRange();
     final double maxVariableValue = rangeForCombinedReport.isPresent()
       ? rangeForCombinedReport.get().getMaximum()
