@@ -17,6 +17,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public final class ActivateJobsHandler {
@@ -34,7 +35,7 @@ public final class ActivateJobsHandler {
       final int maxJobsToActivate,
       final String type,
       final Consumer<ActivateJobsResponse> onResponse,
-      final Consumer<Integer> onCompleted) {
+      final BiConsumer<Integer, Boolean> onCompleted) {
     activateJobs(
         request,
         partitionIdIteratorForType(type, partitionsCount),
@@ -50,9 +51,16 @@ public final class ActivateJobsHandler {
       final int remainingAmount,
       final String jobType,
       final Consumer<ActivateJobsResponse> onResponse,
-      final Consumer<Integer> onCompleted) {
+      final BiConsumer<Integer, Boolean> onCompleted) {
     activateJobs(
-        request, partitionIdIterator, remainingAmount, jobType, onResponse, onCompleted, false);
+        request,
+        partitionIdIterator,
+        remainingAmount,
+        jobType,
+        onResponse,
+        onCompleted,
+        false,
+        false);
   }
 
   private void activateJobs(
@@ -61,8 +69,9 @@ public final class ActivateJobsHandler {
       final int remainingAmount,
       final String jobType,
       final Consumer<ActivateJobsResponse> onResponse,
-      final Consumer<Integer> onCompleted,
-      final boolean pollPrevPartition) {
+      final BiConsumer<Integer, Boolean> onCompleted,
+      final boolean pollPrevPartition,
+      final boolean resourceExhaustedWasPresent) {
 
     if (remainingAmount > 0 && (pollPrevPartition || partitionIdIterator.hasNext())) {
       final int partitionId =
@@ -90,18 +99,34 @@ public final class ActivateJobsHandler {
                 jobType,
                 onResponse,
                 onCompleted,
-                response.getTruncated());
+                response.getTruncated(),
+                resourceExhaustedWasPresent);
           },
           error -> {
             logErrorResponse(partitionIdIterator, jobType, error);
+
+            final boolean wasResourceExhausted = wasResourceExhausted(error);
+
             activateJobs(
-                request, partitionIdIterator, remainingAmount, jobType, onResponse, onCompleted);
+                request,
+                partitionIdIterator,
+                remainingAmount,
+                jobType,
+                onResponse,
+                onCompleted,
+                false,
+                wasResourceExhausted);
           });
     } else {
       // enough jobs activated or no more partitions left to check
       jobTypeToNextPartitionId.put(jobType, partitionIdIterator.getCurrentPartitionId());
-      onCompleted.accept(remainingAmount);
+      onCompleted.accept(remainingAmount, resourceExhaustedWasPresent);
     }
+  }
+
+  private boolean wasResourceExhausted(final Throwable error) {
+    final StatusRuntimeException statusRuntimeException = EndpointManager.convertThrowable(error);
+    return statusRuntimeException.getStatus().getCode() == Code.RESOURCE_EXHAUSTED;
   }
 
   private void logErrorResponse(
