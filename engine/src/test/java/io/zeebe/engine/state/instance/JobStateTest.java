@@ -79,6 +79,24 @@ public final class JobStateTest {
   }
 
   @Test
+  public void shoulDisableJob() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord();
+    jobState.create(key, jobRecord);
+
+    // when
+    jobState.disable(key, jobRecord);
+
+    // then
+    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertJobState(key, State.FAILED);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+  }
+
+  @Test
   public void shouldTimeoutJob() {
     // given
     final long key = 1L;
