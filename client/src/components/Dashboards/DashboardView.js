@@ -241,16 +241,18 @@ export default themed(
               onDelete={onDelete}
               onClose={() => this.setState({deleting: null})}
             />
-            <DashboardRenderer
-              loadReport={evaluateReport}
-              reports={reports}
-              filter={filter}
-              addons={
-                autoRefreshInterval && [
-                  <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
-                ]
-              }
-            />
+            <div className="content">
+              <DashboardRenderer
+                loadReport={evaluateReport}
+                reports={reports}
+                filter={filter}
+                addons={
+                  autoRefreshInterval && [
+                    <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
+                  ]
+                }
+              />
+            </div>
           </div>
         </Fullscreen>
       );

@@ -57,7 +57,7 @@ export function FiltersEdit({availableFilters, setAvailableFilters, reports = []
 
   return (
     <div className="FiltersEdit">
-      <h3>{t('dashboard.filter.label')}</h3>
+      <h3>{t('dashboard.filter.info')}</h3>
       <span className="hint">{t('dashboard.filter.notice')}</span>
       <ul>
         {availableFilters.map(({type, data}, idx) => (

@@ -484,8 +484,10 @@
     "noReportAccess": "No access to report",
     "filter": {
       "varAbbreviation": "Var",
-      "label": "Filters",
-      "notice": "Filters apply to all compatible Reports on this Dashboard.",
+      "label": "Report Filters",
+      "viewLabel": "Filter Report data",
+      "info": "Select filter types for use in the Dashboard",
+      "notice": "Added options will be available for selection in the saved Dashboard.",
       "resetAll": "Reset all",
       "operatorLink": "Values linked by {operator} logic",
       "multiple": "multiple",

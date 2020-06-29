@@ -1,10 +1,17 @@
 @import 'shared-styles/shared-styles.scss';
 
 .FiltersView {
-  border: 1px solid $silver-darken-80;
-  border-radius: 3px;
-  padding: 15px 13px 20px;
+  border-top: 1px solid $silver-darken-80;
+  border-bottom: 1px solid $silver-darken-80;
+  padding: 15px 20px 20px 40px;
   margin-bottom: 20px;
+
+  h3 {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
 
   > * {
     width: 190px;
@@ -39,12 +46,6 @@
 
     .DateFilter__Dashboard.fixed {
       width: max-content;
-    }
-
-    .title {
-      font-weight: bold;
-      font-style: italic;
-      color: $grey-darken-23;
     }
   }
 

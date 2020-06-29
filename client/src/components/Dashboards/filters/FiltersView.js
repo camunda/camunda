@@ -18,6 +18,7 @@ import './FiltersView.scss';
 export default function FiltersView({availableFilters, filter = [], setFilter}) {
   return (
     <div className="FiltersView">
+      <h3>{t('dashboard.filter.viewLabel')}</h3>
       {availableFilters.map(({type, data}, idx) => {
         switch (type) {
           case 'state':
