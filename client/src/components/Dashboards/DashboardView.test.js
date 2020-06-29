@@ -152,20 +152,22 @@ it('should show a filters toggle button if filters are available', () => {
   expect(node.find('.filter-button')).toExist();
 });
 
-it('should show a filters section', () => {
+it('should toggle filters section', () => {
   const node = shallow(<DashboardView availableFilters={[{type: 'state'}]} />);
-
-  node.find('.filter-button').simulate('click');
 
   expect(node.find('.filter-button')).toHaveProp('active');
   expect(node.find('FiltersView')).toExist();
+
+  node.find('.filter-button').simulate('click');
+
+  expect(node.find('.filter-button').prop('active')).toBe(false);
+  expect(node.find('FiltersView')).not.toExist();
 });
 
 it('should reset filters when closing the filters section', () => {
   const filter = [{type: 'runningInstancesOnly', data: null}];
   const node = shallow(<DashboardView availableFilters={[{type: 'state'}]} />);
 
-  node.find('.filter-button').simulate('click');
   node.find('FiltersView').prop('setFilter')(filter);
 
   expect(node.find('FiltersView').prop('filter')).toEqual(filter);

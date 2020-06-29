@@ -38,7 +38,7 @@ export default themed(
       fullScreenActive: false,
       autoRefreshInterval: null,
       deleting: null,
-      filtersShown: false,
+      filtersShown: this.props.availableFilters?.length > 0,
       filter: [],
     };
 

@@ -166,7 +166,6 @@ test('filters', async (t) => {
 
   await t.expect(e.report.visible).ok();
 
-  await t.click(e.filtersButton);
   await t.click(e.instanceStateFilter);
   await t.click(e.switchElement('Running'));
 

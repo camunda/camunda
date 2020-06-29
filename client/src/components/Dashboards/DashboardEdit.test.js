@@ -77,3 +77,9 @@ it('should have a toggleable Filters Edit section', () => {
 
   expect(node.find(FiltersEdit)).toExist();
 });
+
+it('should shows Filters Edit by default if there are initial filters defined', () => {
+  const node = shallow(<DashboardEdit initialAvailableFilters={[{}]} />);
+
+  expect(node.find(FiltersEdit)).toExist();
+});

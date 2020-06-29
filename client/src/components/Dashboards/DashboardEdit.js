@@ -23,11 +23,12 @@ export default class DashboardEdit extends React.Component {
   constructor(props) {
     super(props);
 
+    const {name, initialAvailableFilters, initialReports} = props;
     this.state = {
-      reports: props.initialReports,
-      availableFilters: props.initialAvailableFilters,
-      name: props.name,
-      filtersShown: false,
+      reports: initialReports,
+      availableFilters: initialAvailableFilters,
+      name: name,
+      filtersShown: initialAvailableFilters?.length > 0,
     };
   }
 
