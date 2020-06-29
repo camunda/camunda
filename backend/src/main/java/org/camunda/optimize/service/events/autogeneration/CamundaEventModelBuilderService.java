@@ -102,7 +102,7 @@ public class CamundaEventModelBuilderService {
 
     for (EventTypeDto startEvent : startEvents) {
       if (generatedModelBuilder == null) {
-        nextBuilder = addStartEvent(startEvent, generateNodeId(startEvent), processBuilder);
+        nextBuilder = addStartEvent(startEvent, generateNodeId(startEvent), processBuilder, startEvents.indexOf(startEvent));
       } else {
         nextBuilder = addIntermediateEvent(startEvent, generateNodeId(startEvent), generatedModelBuilder);
       }
