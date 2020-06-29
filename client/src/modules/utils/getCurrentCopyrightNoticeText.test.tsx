@@ -9,6 +9,10 @@ import {getCurrentCopyrightNoticeText} from './getCurrentCopyrightNoticeText';
 const getFullYearMock = jest.spyOn(Date.prototype, 'getFullYear');
 
 describe('getCurrentCopyrightNoticeText()', () => {
+  afterAll(() => {
+    getFullYearMock.mockRestore();
+  });
+
   it('should return the copyright notice with the correct year', () => {
     const mockYear = 1999;
 

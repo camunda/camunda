@@ -6,23 +6,38 @@
 
 import * as React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
+import {MockedResponse} from '@apollo/react-testing';
 
 import {Dropdown} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
+import {
+  mockGetCurrentUser,
+  mockSSOGetCurrentUser,
+} from 'modules/queries/get-current-user';
 
-const Wrapper: React.FC = ({children}) => {
-  return (
-    <MockedApolloProvider mocks={[mockGetCurrentUser]}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </MockedApolloProvider>
-  );
+const fetchMock = jest.spyOn(window, 'fetch');
+
+const getWrapper = (mocks: MockedResponse[]) => {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <MockedApolloProvider mocks={mocks}>
+        <MockThemeProvider>{children}</MockThemeProvider>
+      </MockedApolloProvider>
+    );
+  };
+
+  return Wrapper;
 };
-describe('<Dropdown />', () => {
+
+describe.only('<Dropdown />', () => {
+  afterAll(() => {
+    fetchMock.mockRestore();
+  });
+
   it('should render dropdown', async () => {
     render(<Dropdown />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper([mockGetCurrentUser]),
     });
 
     expect(await screen.findByText('Demo user')).toBeInTheDocument();
@@ -36,7 +51,7 @@ describe('<Dropdown />', () => {
         <div data-testid="some-other-element" />
       </>,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper([mockGetCurrentUser]),
       },
     );
 
@@ -73,9 +88,30 @@ describe('<Dropdown />', () => {
     // menu should be displayed on dropdown click
     fireEvent.click(screen.getByText('Demo user'));
     expect(screen.getByText('Logout')).toBeInTheDocument();
+  });
 
-    // menu should not be displayed if one of the dropdown items are clicked
+  it('should hide the menu after the option is clicked', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 200}));
+    render(<Dropdown />, {
+      wrapper: getWrapper([mockGetCurrentUser]),
+    });
+
+    fireEvent.click(await screen.findByText('Demo user'));
     fireEvent.click(screen.getByText('Logout'));
+
+    expect(screen.queryByText('Logout')).not.toBeInTheDocument();
+  });
+
+  it('should not allow a SSO user to logout', async () => {
+    render(<Dropdown />, {
+      wrapper: getWrapper([mockSSOGetCurrentUser]),
+    });
+
+    expect(await screen.findByText('Demo user')).toBeInTheDocument();
+    expect(screen.queryByTestId('dropdown-icon')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Demo user'));
+
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
   });
 });

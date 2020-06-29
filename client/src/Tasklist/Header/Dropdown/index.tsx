@@ -41,16 +41,23 @@ const Dropdown: React.FC = () => {
     return null;
   }
 
-  const {firstname, lastname} = data.currentUser;
+  const {firstname, lastname, canLogout} = data.currentUser;
 
   return (
     <Container ref={dropdownRef}>
-      <Button onKeyDown={handleKeyPress} onClick={() => setIsOpen(!isOpen)}>
+      <Button
+        onKeyDown={handleKeyPress}
+        onClick={() => {
+          if (canLogout) {
+            setIsOpen(!isOpen);
+          }
+        }}
+      >
         <LabelWrapper>{`${firstname} ${lastname}`}</LabelWrapper>
-        <Icon data-testid="dropdown-icon" />
+        {canLogout && <Icon data-testid="dropdown-icon" />}
       </Button>
 
-      {isOpen && (
+      {isOpen && canLogout && (
         <Menu>
           <Option
             onClick={() => {
