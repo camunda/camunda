@@ -51,6 +51,7 @@ import io.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.zeebe.client.impl.command.TopologyRequestImpl;
 import io.zeebe.client.impl.worker.JobClientImpl;
 import io.zeebe.client.impl.worker.JobWorkerBuilderImpl;
+import io.zeebe.client.util.VersionUtil;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.io.Closeable;
@@ -123,6 +124,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
+    channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
 
     return channelBuilder.build();
   }
