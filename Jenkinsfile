@@ -189,7 +189,8 @@ pipeline {
 
             post {
                 failure {
-                    archive "**/*/surefire-reports/*-output.txt"
+                    zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
+
                     script {
                       if (fileExists('./target/FlakyTests.txt')) {
                           currentBuild.description = "Flaky Tests: <br>" + readFile('./target/FlakyTests.txt').split('\n').join('<br>')
