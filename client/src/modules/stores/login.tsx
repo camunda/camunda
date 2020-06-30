@@ -7,6 +7,7 @@
 import {decorate, observable, action} from 'mobx';
 
 import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
+import {resetApolloStore} from 'modules/apollo-client';
 
 const Endpoints = {
   Login: '/api/login',
@@ -43,6 +44,8 @@ class Login {
     if (!response.ok) {
       throw new Error('Logout failed');
     }
+
+    resetApolloStore();
 
     this.isLoggedIn = false;
   };
