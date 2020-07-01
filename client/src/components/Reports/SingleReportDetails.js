@@ -99,6 +99,8 @@ export function SingleReportDetails({report, showReportName, mightFail}) {
     versionInfo = versions.join(', ');
   }
 
+  const closePopover = () => document.querySelector('.Popover__button.active').click();
+
   return (
     <div className="SingleReportDetails">
       {showReportName && <h2>{reportName}</h2>}
@@ -146,12 +148,8 @@ export function SingleReportDetails({report, showReportName, mightFail}) {
         </div>
       )}
       {name && <hr />}
-      {showRawData && (
-        <RawDataModal report={report} name={nameOrKey} close={() => setShowRawData(false)} />
-      )}
-      {showDiagram && (
-        <DiagramModal report={report} name={nameOrKey} close={() => setShowDiagram(false)} />
-      )}
+      {showRawData && <RawDataModal report={report} name={nameOrKey} close={closePopover} />}
+      {showDiagram && <DiagramModal report={report} name={nameOrKey} close={closePopover} />}
     </div>
   );
 }
