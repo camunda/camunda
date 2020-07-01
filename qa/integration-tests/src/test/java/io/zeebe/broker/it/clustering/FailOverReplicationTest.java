@@ -99,7 +99,8 @@ public class FailOverReplicationTest {
     clusteringRule.connect(oldLeader);
 
     // then
-    Awaitility.await().pollInterval(Duration.ofMillis(100))
+    Awaitility.await()
+        .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofSeconds(10))
         .until(() -> getSegmentsCount(oldLeader), count -> count >= segmentCount);
     assertThat(getSegmentsCount(oldLeader)).isGreaterThanOrEqualTo(segmentCount);
