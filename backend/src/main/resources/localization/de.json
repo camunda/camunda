@@ -218,7 +218,7 @@
       "chart": "Balkendiagram: Prozessinstanz Anzahl"
     },
     "instanceCount": {
-      "appliedFilters": "Angewandte Filter.",
+      "appliedFilters": "Angewandte Filter",
       "label": "Zeigt Daten von {count} Instanz.",
       "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanz.",
       "label-plural": "Zeigt Daten von {count} Instanzen.",

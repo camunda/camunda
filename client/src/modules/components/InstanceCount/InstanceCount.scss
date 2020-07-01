@@ -25,6 +25,10 @@
       background: transparent;
       border: 0;
 
+      &::after {
+        content: '.';
+      }
+
       .downIcon {
         display: none;
       }

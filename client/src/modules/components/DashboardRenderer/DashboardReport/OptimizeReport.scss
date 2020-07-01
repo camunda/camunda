@@ -35,8 +35,12 @@
       display: none;
     }
 
-    .Popover__button {
+    .Popover .Popover__button {
       vertical-align: middle;
+
+      &::after {
+        content: '';
+      }
     }
   }
 
