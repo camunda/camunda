@@ -28,7 +28,7 @@ public class Dispatcher extends Actor {
 
   private static final Logger LOG = Loggers.DISPATCHER_LOGGER;
   private static final String ERROR_MESSAGE_CLAIM_FAILED =
-      "Expected to claim segment of size %d, but can't claim more then %d bytes.";
+      "Expected to claim segment of size %d, but can't claim more than %d bytes.";
 
   private final LogBuffer logBuffer;
   private final LogBufferAppender logAppender;
@@ -142,7 +142,7 @@ public class Dispatcher extends Actor {
         (partition, activePartitionId) ->
             logAppender.claim(
                 partition, activePartitionId, claim, length, streamId, onClaimComplete),
-        length);
+        LogBufferAppender.claimedFragmentLength(length));
   }
 
   /**
@@ -163,7 +163,7 @@ public class Dispatcher extends Actor {
         (partition, activePartitionId) ->
             logAppender.claim(
                 partition, activePartitionId, batch, fragmentCount, batchLength, onClaimComplete),
-        batchLength);
+        LogBufferAppender.claimedBatchLength(fragmentCount, batchLength));
   }
 
   private long offer(
