@@ -31,15 +31,6 @@ public class DecisionDefinitionReader {
     );
   }
 
-  public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinitionByKeyAndEngineOmitXml(final String decisionDefinitionKey,
-                                                                                            final String engineAlias) {
-    return definitionReader.getDefinitionByKeyAndEngineOmitXml(
-      DefinitionType.DECISION,
-      decisionDefinitionKey,
-      engineAlias
-    );
-  }
-
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(final boolean fullyImported,
                                                                     final boolean withXml) {
     return definitionReader.getDefinitions(

@@ -126,7 +126,7 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
     authorizations.setEngine(resourceAuthorizations.getEngine());
 
     // global authorizations
-    resourceAuthorizations.getAllAuthorizations().forEach(
+    resourceAuthorizations.getGlobalAuthorizations().forEach(
       authorization -> addGloballyAuthorizedResources(authorization, relevantPermissions, authorizations, resourceType)
     );
 
@@ -148,7 +148,7 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
                                                                final List<GroupDto> userGroups) {
     return new EngineAuthorizations(
       engine,
-      allEngineAuthorizations,
+      extractGlobalAuthorizations(allEngineAuthorizations),
       extractGroupAuthorizations(userGroups, allEngineAuthorizations),
       extractUserAuthorizations(userId, allEngineAuthorizations)
     );
@@ -159,10 +159,17 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
                                                                final List<GroupDto> groups) {
     return new EngineAuthorizations(
       engine,
-      allEngineAuthorizations,
+      extractGlobalAuthorizations(allEngineAuthorizations),
       extractGroupAuthorizations(groups, allEngineAuthorizations),
       Collections.EMPTY_LIST
     );
+  }
+
+  private static List<AuthorizationDto> extractGlobalAuthorizations(final List<AuthorizationDto> allAuthorizations) {
+    return allAuthorizations
+      .stream()
+      .filter(authorization -> authorization.getType() == AUTHORIZATION_TYPE_GLOBAL)
+      .collect(Collectors.toList());
   }
 
   private static List<AuthorizationDto> extractGroupAuthorizations(final List<GroupDto> groupsOfUser,

@@ -389,7 +389,10 @@ public class DefinitionService {
       .map(definitionWithTenantIdsDto -> mapToDefinitionWithTenantsDto(
         definitionWithTenantIdsDto,
         definitionAuthorizationService.resolveAuthorizedTenantsForProcess(
-          userId, definitionWithTenantIdsDto, definitionWithTenantIdsDto.getTenantIds()
+          userId,
+          definitionWithTenantIdsDto,
+          definitionWithTenantIdsDto.getTenantIds(),
+          definitionWithTenantIdsDto.getEngines()
         )
       ))
       .filter(definitionWithTenantsDto -> !definitionWithTenantsDto.getTenants().isEmpty());
@@ -403,7 +406,8 @@ public class DefinitionService {
       definitionWithTenantIdsDto.getName(),
       definitionWithTenantIdsDto.getType(),
       definitionWithTenantIdsDto.getIsEventProcess(),
-      authorizedTenants
+      authorizedTenants,
+      definitionWithTenantIdsDto.getEngines()
     );
   }
 

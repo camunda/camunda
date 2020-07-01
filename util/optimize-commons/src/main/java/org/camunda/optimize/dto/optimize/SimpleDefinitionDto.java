@@ -12,7 +12,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.experimental.FieldNameConstants;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -28,4 +31,15 @@ public class SimpleDefinitionDto {
   private DefinitionType type;
   @JsonIgnore
   private Boolean isEventProcess = false;
+  @NonNull
+  private Set<String> engines = new HashSet<>();
+
+  public SimpleDefinitionDto(@NonNull final String key, final String name, @NonNull final DefinitionType type,
+                             final Boolean isEventProcess, @NonNull String engine) {
+    this.key = key;
+    this.name = name;
+    this.type = type;
+    this.isEventProcess = isEventProcess;
+    this.engines = Collections.singleton(engine);
+  }
 }

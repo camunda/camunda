@@ -404,11 +404,10 @@ public class EventProcessService {
 
   private boolean validateEventSourceAuthorisation(final String userId, final EventSourceEntryDto eventSource) {
     return EventSourceType.EXTERNAL.equals(eventSource.getType())
-      || definitionAuthorizationService.isAuthorizedToSeeDefinition(
+      || definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
       userId,
       IdentityType.USER,
       eventSource.getProcessDefinitionKey(),
-      PROCESS,
       eventSource.getTenants()
     );
   }

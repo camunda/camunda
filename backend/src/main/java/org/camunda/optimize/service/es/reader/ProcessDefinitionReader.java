@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 
 @AllArgsConstructor
 @Component
@@ -20,15 +19,6 @@ import java.util.Optional;
 public class ProcessDefinitionReader {
 
   private final DefinitionReader definitionReader;
-
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionByKeyAndEngineOmitXml(final String processDefinitionKey,
-                                                                                          final String engineAlias) {
-    return definitionReader.getDefinitionByKeyAndEngineOmitXml(
-      DefinitionType.PROCESS,
-      processDefinitionKey,
-      engineAlias
-    );
-  }
 
   public List<ProcessDefinitionOptimizeDto> getProcessDefinitions(final boolean fullyImported,
                                                                   final boolean withXml) {

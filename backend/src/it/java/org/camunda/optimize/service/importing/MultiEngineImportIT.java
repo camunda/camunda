@@ -29,7 +29,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   public void allProcessDefinitionsAreImported() {
     // given
     addSecondEngineToConfiguration();
-    deployAndStartSimpleProcessDefinitionForAllEngines();
+    deployAndStartProcessDefinitionForAllEngines();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -47,7 +47,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   public void allProcessDefinitionsAreImported_importDeactivatedForOneEngine() {
     // given
     addSecondEngineToConfiguration(false);
-    deployAndStartSimpleProcessDefinitionForAllEngines();
+    deployAndStartProcessDefinitionForAllEngines();
 
     // when
     try {
@@ -69,7 +69,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   public void allProcessInstancesEventsAndVariablesAreImported() {
     // given
     addSecondEngineToConfiguration();
-    deployAndStartSimpleProcessDefinitionForAllEngines();
+    deployAndStartProcessDefinitionForAllEngines();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -85,7 +85,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   public void allProcessInstancesEventsAndVariablesAreImported_importDeactivatedForOneEngine() {
     // given
     addSecondEngineToConfiguration(false);
-    deployAndStartSimpleProcessDefinitionForAllEngines();
+    deployAndStartProcessDefinitionForAllEngines();
 
     // when
     try {
@@ -108,7 +108,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     secondaryEngineIntegrationExtension.grantAllAuthorizations("admin");
     addSecureSecondEngineToConfiguration();
     embeddedOptimizeExtension.reloadConfiguration();
-    deployAndStartSimpleProcessDefinitionForAllEngines();
+    deployAndStartProcessDefinitionForAllEngines();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -150,7 +150,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
     // given
     addSecondEngineToConfiguration();
-    deployAndStartSimpleProcessDefinitionForAllEngines();
+    deployAndStartProcessDefinitionForAllEngines();
     // we need finished user tasks
     deployAndStartUserTaskProcessForAllEngines();
     finishAllUserTasksForAllEngines();

@@ -79,7 +79,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
                                                              final String tenantIdEngine2) {
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        deployAndStartSimpleProcessDefinitionForAllEngines(tenantIdEngine1, tenantIdEngine2);
+        deployAndStartProcessDefinitionForAllEngines(tenantIdEngine1, tenantIdEngine2);
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
         deployAndStartDecisionDefinitionForAllEngines(tenantIdEngine1, tenantIdEngine2);
@@ -96,26 +96,28 @@ public class AbstractMultiEngineIT extends AbstractIT {
   }
 
   protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2) {
-    engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId1);
-    secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(
-      createSimpleDmnModel(DECISION_KEY_2),
-      tenantId2
-    );
+    deployAndStartDecisionDefinitionForAllEngines(tenantId1, tenantId2, DECISION_KEY_1, DECISION_KEY_2);
   }
 
-  protected void deployAndStartSimpleProcessDefinitionForAllEngines() {
-    deployAndStartSimpleProcessDefinitionForAllEngines(null, null);
+  protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2,
+                                                               final String decisionKey1, final String decisionKey2) {
+    engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey1), tenantId1);
+    secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey2), tenantId2);
   }
 
-  protected void deployAndStartSimpleProcessDefinitionForAllEngines(final String tenantId1,
-                                                                    final String tenantId2) {
-    deployAndStartSimpleProcessDefinitionForAllEngines(PROCESS_KEY_1, PROCESS_KEY_2, tenantId1, tenantId2);
+  protected void deployAndStartProcessDefinitionForAllEngines() {
+    deployAndStartProcessDefinitionForAllEngines(null, null);
   }
 
-  protected void deployAndStartSimpleProcessDefinitionForAllEngines(final String key1,
-                                                                    final String key2,
-                                                                    final String tenantId1,
-                                                                    final String tenantId2) {
+  protected void deployAndStartProcessDefinitionForAllEngines(final String tenantId1,
+                                                              final String tenantId2) {
+    deployAndStartProcessDefinitionForAllEngines(PROCESS_KEY_1, PROCESS_KEY_2, tenantId1, tenantId2);
+  }
+
+  protected void deployAndStartProcessDefinitionForAllEngines(final String key1,
+                                                              final String key2,
+                                                              final String tenantId1,
+                                                              final String tenantId2) {
     deployAndStartProcessOnDefaultEngine(key1, tenantId1);
     deployAndStartProcessOnSecondEngine(key2, tenantId2);
   }

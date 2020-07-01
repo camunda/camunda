@@ -268,43 +268,52 @@ public class DefinitionRestServiceIT extends AbstractIT {
         // names of definitions #3 start with an `a` and are expected first
         new DefinitionWithTenantsDto(
           decisionDefinition3.getKey(), decisionDefinition3.getName(), DefinitionType.DECISION,
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           processDefinition3.getKey(), processDefinition3.getName(), DefinitionType.PROCESS,
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           eventProcessDefinition3.getKey(), eventProcessDefinition3.getName(), DefinitionType.PROCESS, true,
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         // then we expect the decision definition #1 as the `1` name suffix is smaller than the `2` and first letter
         // case is ignored
         new DefinitionWithTenantsDto(
           decisionDefinition1.getKey(), decisionDefinition1.getName(), DefinitionType.DECISION,
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           decisionDefinition2.getKey(), decisionDefinition2.getName(), DefinitionType.DECISION,
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         // then the event definitions as they start with "E"
         new DefinitionWithTenantsDto(
           eventProcessDefinition1.getKey(), eventProcessDefinition1.getName(), DefinitionType.PROCESS, true,
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           eventProcessDefinition2.getKey(), eventProcessDefinition2.getName(), DefinitionType.PROCESS, true,
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         // and last the process definitions as they start with `P`
         new DefinitionWithTenantsDto(
           processDefinition1.getKey(), processDefinition1.getName(), DefinitionType.PROCESS,
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           processDefinition2.getKey(), processDefinition2.getName(), DefinitionType.PROCESS,
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         )
       );
   }
@@ -353,22 +362,26 @@ public class DefinitionRestServiceIT extends AbstractIT {
         new DefinitionWithTenantsDto(
           decisionDefinition1_1.getKey(), decisionDefinition1_1.getName(), DefinitionType.DECISION,
           // expected order is by id
-          Lists.newArrayList(TENANT_1, TENANT_2)
+          Lists.newArrayList(TENANT_1, TENANT_2),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           decisionDefinition2_2.getKey(), decisionDefinition2_2.getName(), DefinitionType.DECISION,
           // expected order is by id
-          Lists.newArrayList(TENANT_2, TENANT_3)
+          Lists.newArrayList(TENANT_2, TENANT_3),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           processDefinition1_1.getKey(), processDefinition1_1.getName(), DefinitionType.PROCESS,
           // expected order is by id
-          Lists.newArrayList(TENANT_1, TENANT_2)
+          Lists.newArrayList(TENANT_1, TENANT_2),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           processDefinition2_2.getKey(), processDefinition2_2.getName(), DefinitionType.PROCESS,
           // expected order is by id
-          Lists.newArrayList(TENANT_2, TENANT_3)
+          Lists.newArrayList(TENANT_2, TENANT_3),
+          DEFAULT_ENGINE_ALIAS
         )
       );
   }
@@ -400,17 +413,20 @@ public class DefinitionRestServiceIT extends AbstractIT {
         new DefinitionWithTenantsDto(
           decisionDefinition1_1.getKey(), decisionDefinition1_1.getName(), DefinitionType.DECISION,
           // for shared definition expected order is not defined first, then all tenants by id
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           eventProcessDefinition1_1.getKey(), eventProcessDefinition1_1.getName(), DefinitionType.PROCESS, true,
           // expected is null tenant for eventProcesses
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           processDefinition1_1.getKey(), processDefinition1_1.getName(), DefinitionType.PROCESS,
           // for shared definition expected order is not defined first, then all tenants by id
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
+          DEFAULT_ENGINE_ALIAS
         )
       );
   }
@@ -425,7 +441,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final String processKey1 = "process1";
     final String processName1 = "Process Definition1";
     final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
-      processKey1, processName1, DefinitionType.PROCESS, false
+      processKey1, processName1, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", null, processName1);
     createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_1.getId(), processName1);
@@ -434,14 +450,14 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // `A` prefix should put this first in any list
     final String processName2 = "A Process Definition2";
     final SimpleDefinitionDto processDefinition2 = new SimpleDefinitionDto(
-      processKey2, processName2, DefinitionType.PROCESS, false
+      processKey2, processName2, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
     createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
     final String decisionKey1 = "decision1";
     final String decisionName1 = "Decision Definition1";
     final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
-      decisionKey1, decisionName1, DefinitionType.DECISION, false
+      decisionKey1, decisionName1, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "1", null, decisionName1);
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_1.getId(), decisionName1);
@@ -453,20 +469,20 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_3.getId(), decisionName2);
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_2.getId(), decisionName2);
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
-      decisionKey2, decisionName2, DefinitionType.DECISION, false
+      decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
 
     final DefinitionOptimizeDto eventProcess1 = createEventBasedDefinition(
       "eventProcessKey1", "Event Process Definition1"
     );
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
-      eventProcess1.getKey(), eventProcess1.getName(), DefinitionType.PROCESS, true
+      eventProcess1.getKey(), eventProcess1.getName(), DefinitionType.PROCESS, true, DEFAULT_ENGINE_ALIAS
     );
     final DefinitionOptimizeDto eventProcess2 = createEventBasedDefinition(
       "eventProcessKey2", "Event Process Definition2"
     );
     final SimpleDefinitionDto eventProcessDefinition2 = new SimpleDefinitionDto(
-      eventProcess2.getKey(), eventProcess2.getName(), DefinitionType.PROCESS, true
+      eventProcess2.getKey(), eventProcess2.getName(), DefinitionType.PROCESS, true, DEFAULT_ENGINE_ALIAS
     );
 
     // when
@@ -480,32 +496,38 @@ public class DefinitionRestServiceIT extends AbstractIT {
         new DefinitionWithTenantsDto(
           processDefinition2.getKey(), processDefinition2.getName(), DefinitionType.PROCESS,
           // expected order is by id
-          Lists.newArrayList(TENANT_2, TENANT_3)
+          Lists.newArrayList(TENANT_2, TENANT_3),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           decisionDefinition1.getKey(), decisionDefinition1.getName(), DefinitionType.DECISION,
           // expected order is by id
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           decisionDefinition2.getKey(), decisionDefinition2.getName(), DefinitionType.DECISION,
           // expected order is by id
-          Lists.newArrayList(TENANT_2, TENANT_3)
+          Lists.newArrayList(TENANT_2, TENANT_3),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           eventProcessDefinition1.getKey(), eventProcessDefinition1.getName(), DefinitionType.PROCESS, true,
           // expected is null tenant for eventProcesses
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           eventProcessDefinition2.getKey(), eventProcessDefinition2.getName(), DefinitionType.PROCESS, true,
           // expected is null tenant for eventProcesses
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
         ),
         new DefinitionWithTenantsDto(
           processDefinition1.getKey(), processDefinition1.getName(), DefinitionType.PROCESS,
           // for shared definition expected order is not defined first, then all tenants by id
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3)
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
+          DEFAULT_ENGINE_ALIAS
         )
       );
   }
@@ -1044,7 +1066,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final String processKey1 = "process1";
     final String processName1 = "Process Definition1";
     final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
-      processKey1, processName1, DefinitionType.PROCESS, false
+      processKey1, processName1, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_1.getId(), processName1);
     createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_2.getId(), processName1);
@@ -1052,7 +1074,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // `A` prefix should put this first in any list
     final String processName2 = "A Process Definition2";
     final SimpleDefinitionDto processDefinition2 = new SimpleDefinitionDto(
-      processKey2, processName2, DefinitionType.PROCESS, false
+      processKey2, processName2, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
     createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
@@ -1060,7 +1082,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final String decisionKey1 = "decision1";
     final String decisionName1 = "Decision Definition1";
     final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
-      decisionKey1, decisionName1, DefinitionType.DECISION, false
+      decisionKey1, decisionName1, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_1.getId(), decisionName1);
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_2.getId(), decisionName1);
@@ -1071,7 +1093,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_3.getId(), decisionName2);
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_2.getId(), decisionName2);
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
-      decisionKey2, decisionName2, DefinitionType.DECISION, false
+      decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
 
     // when
@@ -1112,14 +1134,14 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final String processKey1 = "process1";
     final String processName1 = "Process Definition1";
     final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
-      processKey1, processName1, DefinitionType.PROCESS, false
+      processKey1, processName1, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", null, processName1);
 
     final String decisionKey1 = "decision1";
     final String decisionName1 = "Decision Definition1";
     final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
-      decisionKey1, decisionName1, DefinitionType.DECISION, false
+      decisionKey1, decisionName1, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "1", null, decisionName1);
 
@@ -1127,7 +1149,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       "eventProcess1", "Event Process Definition1"
     );
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
-      eventBasedDefinition1.getKey(), eventBasedDefinition1.getName(), PROCESS, true
+      eventBasedDefinition1.getKey(), eventBasedDefinition1.getName(), PROCESS, true, DEFAULT_ENGINE_ALIAS
     );
 
     // when
@@ -1171,7 +1193,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final String processKey1 = "process1";
     final String processName1 = "Process Definition1";
     final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
-      processKey1, processName1, DefinitionType.PROCESS, false
+      processKey1, processName1, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", null, processName1);
     createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_1.getId(), processName1);
@@ -1180,14 +1202,14 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // `A` prefix should put this first in any list
     final String processName2 = "A Process Definition2";
     final SimpleDefinitionDto processDefinition2 = new SimpleDefinitionDto(
-      processKey2, processName2, DefinitionType.PROCESS, false
+      processKey2, processName2, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
     createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
     final String decisionKey1 = "decision1";
     final String decisionName1 = "Decision Definition1";
     final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
-      decisionKey1, decisionName1, DefinitionType.DECISION, false
+      decisionKey1, decisionName1, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "1", null, decisionName1);
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_1.getId(), decisionName1);
@@ -1199,19 +1221,19 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_3.getId(), decisionName2);
     createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_2.getId(), decisionName2);
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
-      decisionKey2, decisionName2, DefinitionType.DECISION, false
+      decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
     final DefinitionOptimizeDto eventBasedDefinition1 = createEventBasedDefinition(
       "eventProcess1", "Event Process Definition1"
     );
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
-      eventBasedDefinition1.getKey(), eventBasedDefinition1.getName(), DefinitionType.PROCESS, true
+      eventBasedDefinition1.getKey(), eventBasedDefinition1.getName(), DefinitionType.PROCESS, true, DEFAULT_ENGINE_ALIAS
     );
     final DefinitionOptimizeDto eventBasedDefinition2 = createEventBasedDefinition(
       "eventProcess2", "An event Process Definition2"
     );
     final SimpleDefinitionDto eventProcessDefinition2 = new SimpleDefinitionDto(
-      eventBasedDefinition2.getKey(), eventBasedDefinition2.getName(), DefinitionType.PROCESS, true
+      eventBasedDefinition2.getKey(), eventBasedDefinition2.getName(), DefinitionType.PROCESS, true, DEFAULT_ENGINE_ALIAS
     );
 
     // when

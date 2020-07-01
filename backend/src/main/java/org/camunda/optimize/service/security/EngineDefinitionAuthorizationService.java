@@ -14,8 +14,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.TenantService;
-import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.es.reader.DefinitionReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
@@ -24,12 +23,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_PERMISSION;
@@ -46,22 +47,19 @@ public class EngineDefinitionAuthorizationService
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final TenantAuthorizationService tenantAuthorizationService;
-  private final ProcessDefinitionReader processDefinitionReader;
-  private final DecisionDefinitionReader decisionDefinitionReader;
+  private final DefinitionReader definitionReader;
   private final TenantService tenantService;
 
   public EngineDefinitionAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
                                               final TenantAuthorizationService tenantAuthorizationService,
                                               final EngineContextFactory engineContextFactory,
                                               final ConfigurationService configurationService,
-                                              final ProcessDefinitionReader processDefinitionReader,
-                                              final DecisionDefinitionReader decisionDefinitionReader,
+                                              final DefinitionReader definitionReader,
                                               final TenantService tenantService) {
     super(engineContextFactory, configurationService);
     this.applicationAuthorizationService = applicationAuthorizationService;
     this.tenantAuthorizationService = tenantAuthorizationService;
-    this.processDefinitionReader = processDefinitionReader;
-    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.definitionReader = definitionReader;
     this.tenantService = tenantService;
   }
 
@@ -100,13 +98,14 @@ public class EngineDefinitionAuthorizationService
                                              final IdentityType identityType,
                                              final String definitionKey,
                                              final DefinitionType definitionType,
-                                             final String tenantId) {
+                                             final List<String> tenantIds) {
     return isAuthorizedToSeeDefinition(
       identityId,
       identityType,
       definitionKey,
       definitionType,
-      Collections.singletonList(tenantId)
+      tenantIds,
+      definitionReader.getDefinitionEngines(definitionType, definitionKey)
     );
   }
 
@@ -114,7 +113,19 @@ public class EngineDefinitionAuthorizationService
                                              final IdentityType identityType,
                                              final String definitionKey,
                                              final DefinitionType definitionType,
-                                             final List<String> tenantIds) {
+                                             final String tenantId,
+                                             final Set<String> engines) {
+    return isAuthorizedToSeeDefinition(
+      identityId, identityType, definitionKey, definitionType, Collections.singletonList(tenantId), engines
+    );
+  }
+
+  public boolean isAuthorizedToSeeDefinition(final String identityId,
+                                             final IdentityType identityType,
+                                             final String definitionKey,
+                                             final DefinitionType definitionType,
+                                             final List<String> tenantIds,
+                                             final Set<String> engines) {
     if (definitionKey == null || definitionKey.isEmpty() || definitionType == null) {
       // null key or type provided is considered authorized
       return true;
@@ -123,10 +134,10 @@ public class EngineDefinitionAuthorizationService
     // empty tenant list or null should be replaced with the actual not defined tenant singleton list
     // as a lacking tenant entry defaults to the not defined tenant
     final List<String> nullSafeTenants = Optional.ofNullable(tenantIds).orElse(new ArrayList<>());
-    final List<String> expectedTenants = nullSafeTenants.size() == 0 ? SINGLETON_LIST_NOT_DEFINED_TENANT : tenantIds;
+    final List<String> expectedTenants = nullSafeTenants.isEmpty() ? SINGLETON_LIST_NOT_DEFINED_TENANT : tenantIds;
     // user needs to be authorized for all considered tenants to get access
     return filterAuthorizedTenantsForDefinition(
-      identityId, identityType, definitionKey, definitionType, expectedTenants
+      identityId, identityType, definitionKey, definitionType, expectedTenants, engines
     ).size() == expectedTenants.size();
   }
 
@@ -157,13 +168,7 @@ public class EngineDefinitionAuthorizationService
                                                         final String processDefinitionKey,
                                                         final String tenantId,
                                                         final String engineAlias) {
-    return isAuthorizedToSeeProcessDefinition(
-      userId,
-      IdentityType.USER,
-      processDefinitionKey,
-      tenantId,
-      engineAlias
-    );
+    return isAuthorizedToSeeProcessDefinition(userId, IdentityType.USER, processDefinitionKey, tenantId, engineAlias);
   }
 
   public boolean isUserAuthorizedToSeeDecisionDefinition(final String identityId,
@@ -171,47 +176,50 @@ public class EngineDefinitionAuthorizationService
                                                          final String tenantId,
                                                          final String engineAlias) {
     return isAuthorizedToSeeFullyQualifiedDefinition(
-      identityId,
-      IdentityType.USER,
-      decisionDefinitionKey,
-      DefinitionType.DECISION,
-      tenantId,
-      engineAlias
+      identityId, IdentityType.USER, decisionDefinitionKey, DefinitionType.DECISION, tenantId, engineAlias
     );
+  }
+
+  public boolean isAuthorizedToSeeDecisionDefinition(final String identityId,
+                                                    final IdentityType identityType,
+                                                    final String definitionKey,
+                                                    final List<String> tenantIds) {
+    return isAuthorizedToSeeDefinition(identityId, identityType, definitionKey, DefinitionType.DECISION, tenantIds);
   }
 
   public List<String> filterAuthorizedTenantsForDefinition(final String identityId,
                                                            final IdentityType identityType,
                                                            final String definitionKey,
                                                            final DefinitionType definitionType,
-                                                           final List<String> tenantIds) {
-    final List<TenantAndEnginePair> availableTenantEnginePairs = resolveTenantAndEnginePairs(tenantIds);
-    return availableTenantEnginePairs
+                                                           final List<String> tenantIds,
+                                                           final Set<String> engines) {
+    final Map<String, Set<String>> tenantsPerEngine = resolveTenantAndEnginePairs(tenantIds)
       .stream()
-      .filter(
-        tenantAndEnginePair -> {
-          if (Objects.equals(tenantAndEnginePair.getTenantId(), TENANT_NOT_DEFINED.getId())
-            && engineContextFactory.getConfiguredEngines().size() > 1) {
-            // in case of the default NONE tenant and a multi-engine scenario,
-            // the definition needs to exist in a particular engine to allow it granting access,
-            // this ensures an ALL ("*") resource grant in one engine does not grant access to definitions
-            // of other engines
-            return definitionExistsForEngine(definitionKey, definitionType, tenantAndEnginePair.getEngine());
-          } else {
-            return true;
-          }
-        })
-      .filter(tenantAndEnginePair -> isAuthorizedToSeeFullyQualifiedDefinition(
-        identityId,
-        identityType,
-        definitionKey,
-        definitionType,
-        tenantAndEnginePair.getTenantId(),
-        tenantAndEnginePair.getEngine()
-      ))
-      .map(TenantAndEnginePair::getTenantId)
-      .distinct()
-      .collect(Collectors.toList());
+      // if a list of engines is provided only consider them, if not any engine can grant access
+      .filter(tenantAndEnginePair -> engines.isEmpty() || engines.contains(tenantAndEnginePair.getEngine()))
+      .collect(groupingBy(
+        TenantAndEnginePair::getEngine,
+        Collectors.mapping(TenantAndEnginePair::getTenantId, Collectors.toSet())
+      ));
+
+    final Set<String> authorizedTenants = new HashSet<>();
+    for (Map.Entry<String, Set<String>> engineAndTenants : tenantsPerEngine.entrySet()) {
+      final String engineId = engineAndTenants.getKey();
+
+      for (String tenantId : engineAndTenants.getValue()) {
+        if (isAuthorizedToSeeFullyQualifiedDefinition(
+          identityId, identityType, definitionKey, definitionType, tenantId, engineId
+        )) {
+          authorizedTenants.add(tenantId);
+        }
+      }
+
+      if (authorizedTenants.containsAll(tenantIds)) {
+        break;
+      }
+
+    }
+    return new ArrayList<>(authorizedTenants);
   }
 
   private int mapToResourceType(final DefinitionType definitionType) {
@@ -285,21 +293,6 @@ public class EngineDefinitionAuthorizationService
         .map(tenantDto -> new TenantAndEnginePair(tenantDto.getId(), engineContext.getEngineAlias()))
       )
       .collect(toList());
-  }
-
-  private boolean definitionExistsForEngine(final String definitionKey,
-                                            final DefinitionType definitionType,
-                                            final String engineAlias) {
-    switch (definitionType) {
-      case PROCESS:
-        return processDefinitionReader.getProcessDefinitionByKeyAndEngineOmitXml(definitionKey, engineAlias)
-          .isPresent();
-      case DECISION:
-        return decisionDefinitionReader.getDecisionDefinitionByKeyAndEngineOmitXml(definitionKey, engineAlias)
-          .isPresent();
-      default:
-        throw new OptimizeRuntimeException("Unsupported definition type: " + definitionType);
-    }
   }
 
   @Value
