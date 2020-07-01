@@ -8,11 +8,9 @@ package org.camunda.optimize.service.cleanup;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.apache.commons.text.RandomStringGenerator;
-import org.assertj.core.api.AbstractLongAssert;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -29,12 +27,10 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Collection;
@@ -45,12 +41,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.DECISION_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
@@ -63,14 +57,6 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
   public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
     engineIntegrationExtension.getEngineName()
   );
-
-  @BeforeEach
-  public void enableCamundaCleanup() {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .getProcessDataCleanupConfiguration()
-      .setEnabled(true);
-  }
 
   public void cleanUpEventIndices() {
     elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
@@ -99,9 +85,8 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
   }
 
   @SneakyThrows
-  protected AbstractLongAssert<?> assertNoInstanceDataExists(final List<ProcessInstanceEngineDto> instances) {
-    return assertThat(getProcessInstancesById(extractProcessInstanceIds(instances)).getHits().getTotalHits().value)
-      .isEqualTo(0);
+  protected void assertNoProcessInstanceDataExists(final List<ProcessInstanceEngineDto> instances) {
+    assertThat(getProcessInstancesById(extractProcessInstanceIds(instances)).getHits().getTotalHits().value).isZero();
   }
 
   protected ProcessInstanceEngineDto startNewInstanceWithEndTimeLessThanTtl(final ProcessInstanceEngineDto originalInstance) {
@@ -125,27 +110,8 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
     );
   }
 
-  @SneakyThrows
-  protected List<String> deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl() {
-    return deployTwoDecisionInstancesWithEvaluationTime(getEndTimeLessThanGlobalTtl());
-  }
-
   protected OffsetDateTime getEndTimeLessThanGlobalTtl() {
     return OffsetDateTime.now().minus(getCleanupConfiguration().getTtl()).minusSeconds(1);
-  }
-
-  protected List<String> deployTwoDecisionInstancesWithEvaluationTime(OffsetDateTime evaluationTime) throws
-                                                                                                     SQLException {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
-      engineIntegrationExtension.deployDecisionDefinition();
-
-    OffsetDateTime lastEvaluationDateFilter = OffsetDateTime.now();
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId());
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId());
-
-    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, evaluationTime);
-
-    return engineDatabaseExtension.getDecisionInstanceIdsWithEvaluationDateEqualTo(evaluationTime);
   }
 
   @SneakyThrows
@@ -209,25 +175,6 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       assertThat((Collection<?>) searchHit.getSourceAsMap().get(VARIABLES)).isNotEmpty();
     }
-  }
-
-  protected SearchResponse getDecisionInstancesById(List<String> decisionInstanceIds) throws IOException {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termsQuery(DECISION_INSTANCE_ID, decisionInstanceIds))
-      .trackTotalHits(true)
-      .size(100);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(DECISION_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
-
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(searchRequest, RequestOptions.DEFAULT);
-  }
-
-  protected void assertDecisionInstancesExistInEs(List<String> decisionInstanceIds) throws IOException {
-    SearchResponse idsResp = getDecisionInstancesById(decisionInstanceIds);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(decisionInstanceIds.size());
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {

@@ -12,17 +12,29 @@ import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
-import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.mockserver.model.JsonBody.json;
 
-public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
+public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanupIT {
+
+  @BeforeEach
+  public void enableProcessCleanup() {
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCleanupServiceConfiguration()
+      .getProcessDataCleanupConfiguration()
+      .setEnabled(true);
+  }
 
   @Test
   @SneakyThrows
@@ -41,7 +53,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    assertNoInstanceDataExists(instancesToGetCleanedUp);
+    assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
   }
 
@@ -66,6 +78,36 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
 
   @Test
   @SneakyThrows
+  public void testCleanupModeAll_customBatchSize() {
+    // given
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setBatchSize(1);
+    final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
+      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+    final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
+      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+
+    importAllEngineEntitiesFromScratch();
+
+    final ClientAndServer elasticsearchFacade = useAndGetElasticsearchMockServer();
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
+    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    instancesToGetCleanedUp.forEach(instance -> elasticsearchFacade.verify(
+      HttpRequest.request()
+        .withPath("/_bulk")
+        .withBody(json(createBulkDeleteProcessInstanceRequestJson(instance.getId()))),
+      VerificationTimes.exactly(1)
+    ));
+  }
+
+  @Test
+  @SneakyThrows
   public void testCleanupModeAll_specificKeyTtl() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
@@ -83,7 +125,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    assertNoInstanceDataExists(instancesToGetCleanedUp);
+    assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
   }
 
@@ -105,7 +147,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    assertNoInstanceDataExists(instancesToGetCleanedUp);
+    assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(getCamundaActivityEvents())
       .extracting(CamundaActivityEventDto::getProcessInstanceId)
@@ -139,7 +181,7 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    assertNoInstanceDataExists(instancesToGetCleanedUp);
+    assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
     assertThat(getCamundaActivityEvents())
       .extracting(CamundaActivityEventDto::getProcessInstanceId)
@@ -172,6 +214,36 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
     //then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
     assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+  }
+
+  @Test
+  @SneakyThrows
+  public void testCleanupModeVariables_customBatchSize() {
+    // given
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
+    getProcessDataCleanupConfiguration().setBatchSize(1);
+    final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
+      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+    final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
+      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+
+    importAllEngineEntitiesFromScratch();
+
+    final ClientAndServer elasticsearchFacade = useAndGetElasticsearchMockServer();
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
+    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    instancesToGetCleanedUp.forEach(instance -> elasticsearchFacade.verify(
+      HttpRequest.request()
+        .withPath("/_bulk")
+        .withBody(json(createBulkUpdateProcessInstanceRequestJson(instance.getId()))),
+      VerificationTimes.exactly(1)
+    ));
   }
 
   @Test
@@ -305,68 +377,21 @@ public class EngineDataCleanupServiceIT extends AbstractEngineDataCleanupIT {
     ));
   }
 
-  @Test
-  @SneakyThrows
-  public void testCleanupWithDecisionInstanceDelete() {
-    // given
-    deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
-
-    importAllEngineEntitiesFromScratch();
-
-    //when
-    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    //then
-    assertDecisionInstancesExistInEs(Collections.emptyList());
+  private String createBulkDeleteProcessInstanceRequestJson(final String processInstanceId) {
+    return createBulkProcessInstanceRequestJson(processInstanceId, "delete");
   }
 
-  @Test
-  @SneakyThrows
-  public void testCleanupWithDecisionInstanceDeleteVerifyThatNewOnesAreUnaffected() {
-    // given
-    deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
-    final List<String> unaffectedDecisionDefinitionsIds = deployTwoDecisionInstancesWithEvaluationTime(
-      OffsetDateTime.now()
-    );
-
-    importAllEngineEntitiesFromScratch();
-
-    //when
-    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    //then
-    assertDecisionInstancesExistInEs(unaffectedDecisionDefinitionsIds);
+  private String createBulkUpdateProcessInstanceRequestJson(final String processInstanceId) {
+    return createBulkProcessInstanceRequestJson(processInstanceId, "update");
   }
 
-  @Test
-  @SneakyThrows
-  public void testFailCleanupOnSpecificKeyConfigWithNoMatchingDecisionDefinitionNoInstancesCleaned() {
-    // given I have a key specific config
-    final String configuredKey = "myMistypedKey";
-    getCleanupConfiguration().getDecisionCleanupConfiguration()
-      .getDecisionDefinitionSpecificConfiguration()
-      .put(
-        configuredKey,
-        new DecisionDefinitionCleanupConfiguration(getCleanupConfiguration().getTtl())
-      );
-    // and deploy processes with different keys
-    final List<String> decisionDefinitionsWithEvaluationTimeLessThanTtl =
-      deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
-    final List<String> unaffectedDecisionDefinitionsIds =
-      deployTwoDecisionInstancesWithEvaluationTime(OffsetDateTime.now());
-
-    importAllEngineEntitiesFromScratch();
-
-    //when
-    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // all data is still there
-    assertDecisionInstancesExistInEs(
-      ListUtils.union(decisionDefinitionsWithEvaluationTimeLessThanTtl, unaffectedDecisionDefinitionsIds)
+  private String createBulkProcessInstanceRequestJson(final String processInstanceId, final String operation) {
+    return String.format(
+      "{\"%s\":{\"_index\":\"%s\",\"_id\":\"%s\"}}",
+      operation,
+      embeddedOptimizeExtension.getOptimizeElasticClient().getIndexNameService()
+        .getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_INDEX_NAME),
+      processInstanceId
     );
   }
 

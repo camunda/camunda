@@ -204,7 +204,7 @@ historyCleanup:
   # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
   ttl: 'P2Y'
   processDataCleanup:
-    # switch for the camunda process data cleanup, defaults to false
+    # switch for the Camunda process data cleanup, defaults to false
     enabled: false
     # type of process data cleanup to perform, possible values:
     # 'all' - delete everything related to the process instance
@@ -217,7 +217,7 @@ historyCleanup:
     #   ttl: 'P2M'
     #    mode: 'variables'
   decisionDataCleanup:
-    # switch for the camunda decision data cleanup, defaults to false
+    # switch for the Camunda decision data cleanup, defaults to false
     enabled: false
     # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
     # for the specific decisionDefinition key

@@ -26,6 +26,10 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractEngineDataCleanu
   @AfterEach
   public void beforeAndAfter() {
     cleanUpEventIndices();
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCleanupServiceConfiguration()
+      .getProcessDataCleanupConfiguration()
+      .setEnabled(true);
   }
 
   @Test
@@ -56,7 +60,7 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractEngineDataCleanu
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertNoInstanceDataExists(instancesToGetCleanedUp);
+    assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(getCamundaActivityEvents())
       .extracting(CamundaActivityEventDto::getProcessInstanceId)

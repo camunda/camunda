@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.cleanup.CleanupService.enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 
 @AllArgsConstructor
 @Component
@@ -78,10 +77,10 @@ public class EngineDataProcessCleanupService implements CleanupService {
     final OffsetDateTime endDate = startTime.minus(cleanupConfigurationForKey.getTtl());
     switch (cleanupConfigurationForKey.getProcessDataCleanupMode()) {
       case ALL:
-        performInstanceDataCleanup(currentProcessDefinitionKey, endDate);
+        performInstanceDataCleanup(currentProcessDefinitionKey, endDate, getBatchSize());
         break;
       case VARIABLES:
-        performVariableDataCleanup(currentProcessDefinitionKey, endDate);
+        performVariableDataCleanup(currentProcessDefinitionKey, endDate, getBatchSize());
         break;
       default:
         throw new IllegalStateException("Unsupported cleanup mode " + cleanupConfigurationForKey.getProcessDataCleanupMode());
@@ -95,9 +94,11 @@ public class EngineDataProcessCleanupService implements CleanupService {
     );
   }
 
-  private void performInstanceDataCleanup(final String definitionKey, final OffsetDateTime endDate) {
+  private void performInstanceDataCleanup(final String definitionKey,
+                                          final OffsetDateTime endDate,
+                                          final int batchSize) {
     PageResultDto<String> currentPageOfProcessInstanceIds = processInstanceReader
-      .getFirstPageOfProcessInstanceIdsThatEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+      .getFirstPageOfProcessInstanceIdsThatEndedBefore(definitionKey, endDate, batchSize);
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
       final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
       camundaActivityEventWriter.deleteByProcessInstanceIds(definitionKey, currentInstanceIds);
@@ -106,14 +107,16 @@ public class EngineDataProcessCleanupService implements CleanupService {
       processInstanceWriter.deleteByIds(currentInstanceIds);
       currentPageOfProcessInstanceIds = processInstanceReader
         .getNextPageOfProcessInstanceIdsThatEndedBefore(
-          definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT, currentPageOfProcessInstanceIds
+          definitionKey, endDate, batchSize, currentPageOfProcessInstanceIds
         );
     }
   }
 
-  private void performVariableDataCleanup(final String definitionKey, final OffsetDateTime endDate) {
+  private void performVariableDataCleanup(final String definitionKey,
+                                          final OffsetDateTime endDate,
+                                          final int batchSize) {
     PageResultDto<String> currentPageOfProcessInstanceIds = processInstanceReader
-      .getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT);
+      .getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(definitionKey, endDate, batchSize);
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
       final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
       variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
@@ -121,7 +124,7 @@ public class EngineDataProcessCleanupService implements CleanupService {
 
       currentPageOfProcessInstanceIds = processInstanceReader
         .getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
-          definitionKey, endDate, MAX_RESPONSE_SIZE_LIMIT, currentPageOfProcessInstanceIds
+          definitionKey, endDate, batchSize, currentPageOfProcessInstanceIds
         );
     }
   }
@@ -136,6 +139,10 @@ public class EngineDataProcessCleanupService implements CleanupService {
 
   private CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
+  }
+
+  private int getBatchSize() {
+    return getCleanupConfiguration().getProcessDataCleanupConfiguration().getBatchSize();
   }
 
 }

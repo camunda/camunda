@@ -27,6 +27,8 @@ public class ProcessCleanupConfiguration {
   private boolean enabled;
   @JsonProperty("cleanupMode")
   private CleanupMode cleanupMode = CleanupMode.ALL;
+  @JsonProperty("batchSize")
+  private int batchSize;
   @JsonProperty("perProcessDefinitionConfig")
   private Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration = new HashMap<>();
 

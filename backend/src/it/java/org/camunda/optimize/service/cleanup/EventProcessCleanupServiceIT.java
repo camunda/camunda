@@ -14,6 +14,7 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfigurat
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -25,6 +26,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
+
+  @BeforeEach
+  public void enableCamundaCleanup() {
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCleanupServiceConfiguration()
+      .getProcessDataCleanupConfiguration()
+      .setEnabled(true);
+  }
 
   @Test
   public void testCleanupModeAll() {
