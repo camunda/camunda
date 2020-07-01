@@ -49,7 +49,7 @@ export default class Popover extends React.Component {
   };
 
   inSameScope = (evt) => {
-    const modal = evt.target.closest('.Modal');
+    const modal = evt.target?.closest('.Modal');
     if (!modal) {
       return true;
     }
@@ -152,11 +152,22 @@ export default class Popover extends React.Component {
     evt.nativeEvent.popoverChain.push(this.id);
   };
 
+  handleKeyPress = (evt) => {
+    if (evt.key === 'Escape' && this.popoverRootRef.contains(evt.target) && this.state.open) {
+      evt.stopPropagation();
+      this.setState({open: false});
+    }
+  };
+
   render() {
     const {disabled, tooltip, icon, title, className, main} = this.props;
     const active = !disabled && this.state.open;
     return (
-      <div ref={this.storePopoverRootRef} className={classnames('Popover', className)}>
+      <div
+        onKeyDown={this.handleKeyPress}
+        ref={this.storePopoverRootRef}
+        className={classnames('Popover', className)}
+      >
         <Button
           icon={icon && !title}
           active={active}

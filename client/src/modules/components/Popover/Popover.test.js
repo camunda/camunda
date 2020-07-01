@@ -11,6 +11,8 @@ import {Button} from 'components';
 
 import Popover from './Popover';
 
+jest.useFakeTimers();
+
 it('should include a button to toggle the popover', () => {
   const node = shallow(<Popover title="Foobar" />);
 
@@ -69,7 +71,10 @@ it('should close the popover when clicking the button again', () => {
   const node = shallow(<Popover title="a">Child content</Popover>);
 
   node.find(Button).simulate('click', {preventDefault: jest.fn()});
+  jest.runAllTimers();
+
   node.find(Button).simulate('click', {preventDefault: jest.fn()});
+  jest.runAllTimers();
 
   expect(node).not.toIncludeText('Child content');
 });
@@ -82,9 +87,21 @@ it('should not close the popover when clicking inside the popover', () => {
   );
 
   node.setState({open: true});
-  node.find('p').simulate('click');
+  node.find('.Popover__dialog').simulate('MouseDown');
+  node.instance().close({});
+  jest.runAllTimers();
 
   expect(node).toIncludeText('Child content');
+});
+
+it('should close popover when pressing escape', async () => {
+  const node = shallow(<Popover title="a">Child content</Popover>);
+
+  node.setState({open: true});
+  node.instance().popoverRootRef = {contains: () => true};
+  node.find('.Popover').simulate('keyDown', {key: 'Escape', stopPropagation: jest.fn()});
+
+  expect(node).not.toIncludeText('Child content');
 });
 
 it('should display tooltip on button', () => {
