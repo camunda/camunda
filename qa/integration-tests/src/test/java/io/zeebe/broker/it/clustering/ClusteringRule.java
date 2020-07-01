@@ -21,6 +21,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
 import io.atomix.raft.partition.RaftPartition;
@@ -396,12 +397,7 @@ public final class ClusteringRule extends ExternalResource {
         .until(Objects::nonNull);
   }
 
-  /**
-   * Returns the current leader for the given partition.
-   *
-   * @param partition
-   * @return
-   */
+  /** Returns the current leader for the given partition. */
   public BrokerInfo getLeaderForPartition(final int partition) {
     return doRepeatedly(
             () -> {
@@ -474,12 +470,7 @@ public final class ClusteringRule extends ExternalResource {
                             && b.getPort() == socketAddress.getPort()));
   }
 
-  /**
-   * Returns for a given broker the leading partition id's.
-   *
-   * @param socketAddress
-   * @return
-   */
+  /** Returns for a given broker the leading partition id's. */
   public List<Integer> getBrokersLeadingPartitions(final InetSocketAddress socketAddress) {
     return client.newTopologyRequest().send().join().getBrokers().stream()
         .filter(
@@ -492,11 +483,7 @@ public final class ClusteringRule extends ExternalResource {
         .collect(Collectors.toList());
   }
 
-  /**
-   * Returns the list of available brokers in a cluster.
-   *
-   * @return
-   */
+  /** Returns the list of available brokers in a cluster. */
   public List<InetSocketAddress> getBrokersInCluster() {
     return client.newTopologyRequest().send().join().getBrokers().stream()
         .map(b -> new InetSocketAddress(b.getHost(), b.getPort()))
@@ -519,11 +506,7 @@ public final class ClusteringRule extends ExternalResource {
     return getOtherBrokers(filter);
   }
 
-  /**
-   * Returns the count of partition leaders
-   *
-   * @return
-   */
+  /** Returns the count of partition leaders */
   public long getPartitionLeaderCount() {
     return client.newTopologyRequest().send().join().getBrokers().stream()
         .flatMap(broker -> broker.getPartitions().stream())
@@ -550,6 +533,20 @@ public final class ClusteringRule extends ExternalResource {
             .orElseThrow();
 
     raftPartition.getServer().stepDown().join();
+  }
+
+  public void disconnect(final Broker broker) {
+    final var atomix = broker.getAtomix();
+
+    final var messagingService = (NettyMessagingService) atomix.getMessagingService();
+    messagingService.stop().join();
+  }
+
+  public void connect(final Broker broker) {
+    final var atomix = broker.getAtomix();
+
+    final var messagingService = (NettyMessagingService) atomix.getMessagingService();
+    messagingService.start().join();
   }
 
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {
